@@ -37,6 +37,8 @@ import org.tartarus.snowball.ext.NorwegianStemmer;
 
 /**
  * {@link Analyzer} for Norwegian.
+ *
+ * @since 3.1
  */
 public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

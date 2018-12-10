@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.no;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.no.NorwegianMinimalStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;

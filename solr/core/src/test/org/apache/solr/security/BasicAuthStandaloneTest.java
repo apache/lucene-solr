@@ -70,7 +70,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     super.setUp();
     instance = new SolrInstance("inst", null);
     instance.setUp();
-    jetty = createJetty(instance);
+    jetty = createAndStartJetty(instance);
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
     HttpClientUtil.clearRequestInterceptors(); // Clear out any old Authorization headers
   }
@@ -149,7 +149,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     log.info("Added Basic Auth security Header {}",encoded );
   }
 
-  private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
+  private JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir().toString(), nodeProperties, buildJettyConfig("/solr"));

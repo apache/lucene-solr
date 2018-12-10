@@ -72,15 +72,22 @@ public class RAMInputStream extends IndexInput implements Cloneable {
     if (bufferPosition == bufferLength) {
       nextBuffer();
     }
-    return currentBuffer[bufferPosition++];
+    if (currentBuffer == null) {
+      throw new EOFException();
+    } else {
+      return currentBuffer[bufferPosition++];
+    }
   }
 
   @Override
   public void readBytes(byte[] b, int offset, int len) throws IOException {
     while (len > 0) {
-
       if (bufferPosition == bufferLength) {
         nextBuffer();
+      }
+
+      if (currentBuffer == null) {
+        throw new EOFException();
       }
 
       int remainInBuffer = bufferLength - bufferPosition;

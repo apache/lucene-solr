@@ -46,7 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     // Is the JDK/env affected by a known bug?
     final String tzDisplayName = TimeZone.getDefault().getDisplayName(false, TimeZone.SHORT, Locale.US);
-    if (!tzDisplayName.matches("[A-Z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
+    if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
       assertTrue("Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
           System.getProperty("java.version").startsWith("11"));
       assumeTrue("SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.", false);

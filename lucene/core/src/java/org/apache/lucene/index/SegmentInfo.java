@@ -211,7 +211,17 @@ public final class SegmentInfo {
       s.append(']');
     }
 
-    // TODO: we could append toString of attributes() here?
+    if (!diagnostics.isEmpty()) {
+      s.append(":[diagnostics=");
+      s.append(diagnostics.toString());
+      s.append(']');
+    }
+
+    if (!attributes.isEmpty()) {
+      s.append(":[attributes=");
+      s.append(attributes.toString());
+      s.append(']');
+    }
 
     return s.toString();
   }

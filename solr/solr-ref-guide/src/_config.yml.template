@@ -86,9 +86,10 @@ solr-attributes: &solr-attributes-ref
   ivy-tika-version: "${ivyversions.org.apache.tika.version}"
   ivy-velocity-tools-version: "${ivyversions./org.apache.velocity/velocity-tools}"
   ivy-zookeeper-version: "${ivyversions./org.apache.zookeeper/zookeeper}"
-  
+
 asciidoctor:
   safe: 0
+  template_dir: _templates
   attributes:
     <<: *solr-attributes-ref
     attribute-missing: "warn"

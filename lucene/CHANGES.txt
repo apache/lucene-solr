@@ -84,8 +84,19 @@ API Changes
 * LUCENE-8498: LowerCaseTokenizer has been removed, and CharTokenizer no longer
   takes a normalizer function. (Alan Woodward)
 
+* LUCENE-7875: Moved MultiFields static methods out of the class.  getLiveDocs is now
+  in MultiBits which is now public.  getMergedFieldInfos and getIndexedFields are now in
+  FieldInfos.  getTerms is now in MultiTerms.  getTermPositionsEnum and getTermDocsEnum
+  were collapsed and renamed to just getTermPostingsEnum and moved to MultiTerms.
+  (David Smiley)
+
 * LUCENE-8513: MultiFields.getFields is now removed.  Please avoid this class,
   and Fields in general, when possible. (David Smiley)
+
+* LUCENE-8497: MultiTermAwareComponent has been removed, and in its place
+  TokenFilterFactory and CharFilterFactory now expose type-safe normalize()
+  methods.  This decouples normalization from tokenization entirely.
+  (Mayya Sharipova, Alan Woodward)
 
 Changes in Runtime Behavior
 
@@ -127,11 +138,13 @@ Changes in Runtime Behavior
   box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
   should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
 
-* LUCENE-7875: Moved MultiFields static methods out of the class.  getLiveDocs is now
-  in MultiBits which is now public.  getMergedFieldInfos and getIndexedFields are now in
-  FieldInfos.  getTerms is now in MultiTerms.  getTermPositionsEnum and getTermDocsEnum
-  were collapsed and renamed to just getTermPostingsEnum and moved to MultiTerms.
-  (David Smiley)
+* LUCENE-8563: BM25 scores don't include the (k1+1) factor in their numerator
+  anymore. This doesn't affect ordering as this is a constant factor which is
+  the same for every document. (Luca Cavanna via Adrien Grand)
+
+* LUCENE-8509: WordDelimiterGraphFilter will no longer set the offsets of internal
+  tokens by default, preventing a number of bugs when the filter is chained with
+  tokenfilters that change the length of their tokens (Alan Woodward)
 
 New Features
 
@@ -142,6 +155,13 @@ New Features
 * LUCENE-8482: LatLonPoint#newDistanceFeatureQuery may be used to boost scores
   based on the haversine distance of a LatLonPoint field to a provided point. This is
   typically useful to boost by distance. (Ignacio Vera)
+
+* LUCENE-8216: Added a new BM25FQuery in sandbox to blend statistics across several fields
+  using the BM25F formula. (Adrien Grand, Jim Ferenczi)
+
+* LUCENE-8564: GraphTokenFilter is an abstract class useful for token filters that need
+  to read-ahead in the token stream and take into account graph structures.  This
+  also changes FixedShingleFilter to extend GraphTokenFilter (Alan Woodward)
 
 Improvements
 
@@ -192,15 +212,72 @@ Optimizations
 * LUCENE-8507: TopFieldCollector can now update the minimum competitive score if the primary sort
   is by relevancy and the total hit count is not required. (Jim Ferenczi)
 
+* LUCENE-8464: ConstantScoreScorer now implements setMinCompetitveScore in order
+  to early terminate the iterator if the minimum score is greater than the constant
+  score. (Christophe Bismuth via Jim Ferenczi)
+
+* LUCENE-8374: Reduce reads for sparse DocValues and whole number numeric DocValues.
+  (Toke Eskildsen)
+
+======================= Lucene 7.7.0 =======================
+
+Build
+
+* LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
+
+Bug fixes:
+
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
+
+New Features
+
+* LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
+  points such as range queries or geo queries.
+  (Christophe Bismuth via Adrien Grand)
+
+* LUCENE-8508: IndexWriter can now set the created version via
+  IndexWriterConfig#setIndexCreatedVersionMajor. This is an expert feature.
+  (Adrien Grand)
+
+Improvements
+
+* LUCENE-8463: TopFieldCollector can now early-terminates queries when sorting by SortField.DOC.
+  (Christophe Bismuth via Jim Ferenczi)
+
+* LUCENE-8562: Speed up merging segments of points with data dimensions by only sorting on the indexed
+  dimensions. (Ignacio Vera)
+
+* LUCENE-8529: TopSuggestDocsCollector will now use the completion key to tiebreak completion
+  suggestion with identical scores. (Jim Ferenczi)
+
+* LUCENE-8575: SegmentInfos#toString now includes attributes and diagnostics.
+  (Namgyu Kim via Adrien Grand)
+
+Optimizations
+
+* LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
+  (Christophe Bismuth via David Smiley)
+
+* LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
+  can safe up to 80% of the heap used compared to the previous implementation and uses non-object
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grant)
+
+Other
+
+* LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
+  (Christoph Büscher via Adrien Grand)
+
 ======================= Lucene 7.6.0 =======================
 
-Build:
+Build
 
 * LUCENE-8504: Upgrade forbiddenapis to version 2.6.  (Uwe Schindler)
 
 * LUCENE-8493: Stop publishing insecure .sha1 files with releases (janhoy)
 
-Bug fixes:
+Bug fixes
 
 * LUCENE-8479: QueryBuilder#analyzeGraphPhrase now throws TooManyClause exception
   if the number of expanded path reaches the BooleanQuery#maxClause limit. (Jim Ferenczi)
@@ -214,6 +291,37 @@ Bug fixes:
 
 * LUCENE-8524: Add the Hangul Letter Araea (interpunct) as a separator in Nori's tokenizer.
   This change also removes empty terms and trim surface form in Nori's Korean dictionary. (Trey Jones, Jim Ferenczi)
+
+* LUCENE-8550: Fix filtering of coplanar points when creating linked list on
+  polygon tesselator. (Ignacio Vera)
+
+* LUCENE-8549: Polygon tessellator throws an error if some parts of the shape
+   could not be processed. (Ignacio Vera)
+
+* LUCENE-8540: Better handling of min/max values for Geo3d encoding. (Ignacio Vera)
+
+* LUCENE-8534: Fix incorrect computation for triangles intersecting polygon edges in
+  shape tessellation. (Ignacio Vera)
+
+* LUCENE-8559: Fix bug where polygon edges were skipped when checking for intersections.
+  (Ignacio Vera)
+
+* LUCENE-8556: Use latitude and longitude instead of encoding values to check if triangle is ear
+  when using morton optimisation. (Ignacio Vera)
+
+* LUCENE-8586: Intervals.or() could get stuck in an infinite loop on certain indexes
+  (Alan Woodward)
+
+* LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
+  to the same doc in the same updates package looses an update if the reset comes before
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8592: Fix index sorting corruption due to numeric overflow. The merge of sorted segments
+  can produce an invalid sort if the sort field is an Integer/Long that uses reverse order and contains
+  values equal to Integer/Long#MIN_VALUE. These values are always sorted first during a merge
+  (instead of last because of the reverse order) due to this bug. Indices affected by the bug can be
+  detected by running the CheckIndex command on a distribution that contains the fix (7.6+).
+  (Jim Ferenczi, Adrien Grand, Mike McCandless, Simon Willnauer)
 
 New Features
 
@@ -230,13 +338,25 @@ New Features
   https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl 
   (Ryadh Dahimene via Jim Ferenczi)
 
-Improvements:
+* LUCENE-8554: Add new LatLonShapeLineQuery that queries indexed LatLonShape fields
+  by arbitrary lines. (Nick Knize)
+
+* LUCENE-8555: Add dateline crossing support to LatLonShapeBoundingBoxQuery. (Nick Knize)
+
+Improvements
 
 * LUCENE-8521: Change LatLonShape encoding to 7 dimensions instead of 6; where the
   first 4 are index dimensions defining the bounding box of the Triangle and the
   remaining 3 data dimensions define the vertices of the triangle. (Nick Knize)
 
-Other:
+* LUCENE-8557: LeafReader.getFieldInfos is now documented and tested that it ought to return
+  the same cached instance.  MemoryIndex's impl now pre-creates the FieldInfos instead of
+  re-calculating a new instance each time.  (Tim Underwood, David Smiley)
+
+* LUCENE-8558: Replace O(N) lookup with O(1) lookup in PerFieldMergeState#FilterFieldInfos.
+  (Kranthi via Simon Willnauer)
+
+Other
 
 * LUCENE-8523: Correct typo in JapaneseNumberFilterFactory javadocs (Ankush Jhalani
   via Alan Woodward)
@@ -246,14 +366,14 @@ Other:
 
 ======================= Lucene 7.5.1 =======================
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-8454: Fix incorrect vertex indexing and other computation errors in
   shape tessellation that would sometimes cause an infinite loop. (Nick Knize)
 
 ======================= Lucene 7.5.0 =======================
 
-API Changes:
+API Changes
 
 * LUCENE-8467: RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream are deprecated
   (Dawid Weiss)
@@ -315,7 +435,7 @@ API Changes:
   IndexReaders, allowing the caller to pass a FilterDirectoryReader, for example.
   (Mike McCandless)
 
-Bug Fixes:
+Bug Fixes
 
 * LUCENE-8445: Tighten condition when two planes are identical to prevent constructing
   bogus tiles when building GeoPolygons. (Ignacio Vera)
@@ -359,7 +479,7 @@ Bug Fixes:
   allow access to it's delegate like other filter readers. This adds a new #getDelegate method
   to access the wrapped reader. (Simon Willnauer)
 
-Changes in Runtime Behavior:
+Changes in Runtime Behavior
 
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges and findForcedDeletesMerges (Erick Erickson)
@@ -416,7 +536,7 @@ Build
   The buildAndPushRelease.py script validates that RM's PGP key is in the KEYS file.
   Remove unused 'copy-to-stage' and '-dist-keys' targets from ant build. (janhoy)
 
-Other:
+Other
 
 * LUCENE-8485: Update randomizedtesting to version 2.6.4. (Dawid Weiss)
 
@@ -443,7 +563,7 @@ Other:
 
 ======================= Lucene 7.4.1 =======================
 
-Bug Fixes:
+Bug Fixes
  
  * LUCENE-8365: Fix ArrayIndexOutOfBoundsException in UnifiedHighlighter. This fixes 
    a "off by one" error in the UnifiedHighlighter's code that is only triggered when

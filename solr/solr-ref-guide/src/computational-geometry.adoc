@@ -17,8 +17,7 @@
 // under the License.
 
 
-This section of the math expressions user guide covers computational geometry
-functions.
+This section of the math expressions user guide covers computational geometry functions.
 
 == Convex Hull
 

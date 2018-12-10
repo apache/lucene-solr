@@ -30,6 +30,8 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.ClassicTokenizerFactory" maxTokenLength="120"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class ClassicTokenizerFactory extends TokenizerFactory {
   private final int maxTokenLength;

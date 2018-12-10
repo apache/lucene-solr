@@ -178,7 +178,7 @@ public final class LongRange extends Range {
               return 100; // TODO: use cost of range.accept()
             }
           };
-          return new ConstantScoreScorer(this, score(), twoPhase);
+          return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
         }
 
         @Override

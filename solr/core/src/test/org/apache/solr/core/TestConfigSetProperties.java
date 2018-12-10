@@ -46,22 +46,18 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyConfigSetProperties() throws Exception {
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       createConfigSetProps("");
-      fail("Excepted SolrException");
-    } catch (SolrException ex) {
-      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
-    }
+    });
+    assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test
   public void testConfigSetPropertiesNotMap() throws Exception {
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       createConfigSetProps(JSONUtil.toJSON(new String[] {"test"}));
-      fail("Expected SolrException");
-    } catch (SolrException ex) {
-      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
-    }
+    });
+    assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test

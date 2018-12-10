@@ -72,6 +72,8 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  *                rulefiles="Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
   static final String RULEFILES = "rulefiles";

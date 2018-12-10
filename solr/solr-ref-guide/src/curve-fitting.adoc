@@ -16,9 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+These functions support constructing a curve.
 
 == Polynomial Curve Fitting
-
 
 The `polyfit` function is a general purpose curve fitter used to model
 the non-linear relationship between two random variables.
@@ -223,12 +223,12 @@ responds with:
 
 == Harmonic Curve Fitting
 
-The `harmonicFit` function or `harmfit` (for short) fits a smooth line through control points of a sine wave.
+The `harmonicFit` function (or `harmfit`, for short) fits a smooth line through control points of a sine wave.
 The `harmfit` function is passed x- and y-axes and fits a smooth curve to the data.
-If only a single array is provided it is treated as the y-axis and a sequence is generated
+If a single array is provided it is treated as the y-axis and a sequence is generated
 for the x-axis.
 
-The example below shows `harmfit` fitting a single oscillation of a sine wave. `harmfit`
+The example below shows `harmfit` fitting a single oscillation of a sine wave. The `harmfit` function
 returns the smoothed values at each control point. The return value is also a model which can be used by
 the `predict`, `derivative` and `integrate` functions.
 
@@ -238,7 +238,7 @@ There are also three helper functions that can be used to retrieve the estimated
 * `getAngularFrequency`: Returns the angular frequency of the sine wave.
 * `getPhase`: Returns the phase of the sine wave.
 
-*Note*: The `harmfit` function works best when run on a single oscillation rather then a long sequence of
+NOTE: The `harmfit` function works best when run on a single oscillation rather then a long sequence of
 oscillations. This is particularly true if the sine wave has noise. After the curve has been fit it can be
 extrapolated to any point in time in the past or future.
 
@@ -287,7 +287,6 @@ interpolate or extrapolate the sine wave.
 The example below uses the fitted model to extrapolate the sine wave beyond the control points
 to the x-axis points 20, 21, 22, 23.
 
-
 [source,text]
 ----
 let(x=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
@@ -322,10 +321,9 @@ let(x=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
 }
 ----
 
-
 == Gaussian Curve Fitting
 
-The `gaussfit` function fits a smooth curve through a gaussian peak.
+The `gaussfit` function fits a smooth curve through a Gaussian peak.
 This is shown in the example below.
 
 
@@ -336,8 +334,7 @@ let(x=array(0,1,2,3,4,5,6,7,8,9, 10),
     f=gaussfit(x, y))
 ----
 
-When this expression is sent to the `/stream` handler it
-responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -371,9 +368,7 @@ responds with:
 Like the `polyfit` function, the `gaussfit` function returns a function that can
 be used directly by the `predict`, `derivative` and `integrate` functions.
 
-The example below demonstrates how to compute an integral for a
-fitted gaussian curve.
-
+The example below demonstrates how to compute an integral for a fitted Gaussian curve.
 
 [source,text]
 ----

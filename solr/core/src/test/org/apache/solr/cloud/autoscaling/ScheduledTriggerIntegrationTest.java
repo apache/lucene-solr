@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.List;
@@ -36,12 +38,11 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.LogLevel;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  * Integration test for {@link ScheduledTrigger}
@@ -55,8 +56,8 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
   private static AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -70,6 +71,11 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
     triggerFiredLatch = new CountDownLatch(1);
   }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
+  }
 
   @Test
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
@@ -81,7 +87,8 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     String collectionName = "testScheduledTrigger";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
         .setMaxShardsPerNode(5).process(solrClient);
-    waitForState("", collectionName, clusterShape(1, 3));
+    
+    cluster.waitForActiveCollection(collectionName, 1, 3);
 
     // create a policy which allows only 1 core per node thereby creating a violation for the above collection
     String setClusterPolicy = "{\n" +
@@ -95,7 +102,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
 
     // start a new node which can be used to balance the cluster as per policy
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    cluster.waitForAllNodes(10);
+    cluster.waitForAllNodes(30);
 
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
@@ -112,7 +119,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    assertTrue("ScheduledTrigger did not fire within 20 seconds", triggerFiredLatch.await(20, TimeUnit.SECONDS));
+    assertTrue("ScheduledTrigger did not fire in time", triggerFiredLatch.await(45, TimeUnit.SECONDS));
     assertEquals(1, events.size());
     Map<String, Object> actionContextProps = actionContextPropertiesRef.get();
     assertNotNull(actionContextProps);

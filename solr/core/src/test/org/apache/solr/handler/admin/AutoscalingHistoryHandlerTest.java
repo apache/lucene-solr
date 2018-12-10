@@ -86,6 +86,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .setCreateNodeSet(systemCollNode)
         .process(solrClient);
+    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL, 1, 1);
     Set<String> otherNodes = cluster.getJettySolrRunners().stream().map(JettySolrRunner::getNodeName)
         .collect(Collectors.toSet());
     otherNodes.remove(systemCollNode);
@@ -93,8 +94,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         .setCreateNodeSet(String.join(",", otherNodes))
         .setMaxShardsPerNode(3)
         .process(solrClient);
-    waitForRecovery(CollectionAdminParams.SYSTEM_COLL);
-    waitForRecovery(COLL_NAME);
+    cluster.waitForActiveCollection(COLL_NAME, 1, 3);
   }
 
   public static class TesterListener extends TriggerListenerBase {
@@ -268,6 +268,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     log.info("### Start add node...");
     JettySolrRunner jetty = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     String nodeAddedName = jetty.getNodeName();
     log.info("### Added node " + nodeAddedName);
     boolean await = actionFiredLatch.await(60, TimeUnit.SECONDS);
@@ -348,7 +349,8 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     log.info("### Stopping node " + nodeToKill);
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(nodeToKill)) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }

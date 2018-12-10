@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -239,7 +240,9 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         stateManager.createData(path, data, CreateMode.PERSISTENT);
       }
       lastState = state;
-    } catch (InterruptedException | BadVersionException | AlreadyExistsException | IOException | KeeperException e) {
+    } catch (AlreadyExistsException e) {
+      
+    } catch (InterruptedException | BadVersionException | IOException | KeeperException e) {
       log.warn("Exception updating trigger state '" + path + "'", e);
     }
   }
@@ -253,6 +256,8 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         VersionedData versionedData = stateManager.getData(path);
         data = versionedData.getData();
       }
+    } catch (AlreadyClosedException e) {
+     
     } catch (Exception e) {
       log.warn("Exception getting trigger state '" + path + "'", e);
     }

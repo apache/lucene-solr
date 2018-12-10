@@ -82,6 +82,13 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     setPositionIncrement(posInc);
   }
 
+  public Token(CharSequence text, int posInc, int start, int end, int posLength) {
+    append(text);
+    setOffset(start, end);
+    setPositionIncrement(posInc);
+    setPositionLength(posLength);
+  }
+
   /**
    * {@inheritDoc}
    * @see FlagsAttribute

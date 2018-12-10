@@ -42,7 +42,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -51,6 +50,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatusResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.Stats;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -205,7 +205,7 @@ public class ScheduledTriggers implements Closeable {
     try {
       st = new TriggerWrapper(newTrigger, cloudManager, queueStats);
     } catch (Exception e) {
-      if (isClosed) {
+      if (isClosed || e instanceof AlreadyClosedException) {
         throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
       }
       if (cloudManager.isClosed()) {
@@ -559,7 +559,7 @@ public class ScheduledTriggers implements Closeable {
       // fire a trigger only if an action is not pending
       // note this is not fool proof e.g. it does not prevent an action being executed while a trigger
       // is still executing. There is additional protection against that scenario in the event listener.
-      if (!hasPendingActions.get())  {
+      if (!hasPendingActions.get()) {
         // this synchronization is usually never under contention
         // but the only reason to have it here is to ensure that when the set-properties API is used
         // to change the schedule delay, we can safely cancel the old scheduled task
@@ -567,28 +567,37 @@ public class ScheduledTriggers implements Closeable {
         // execution of the same trigger instance
         synchronized (TriggerWrapper.this) {
           // replay accumulated events on first run, if any
-          if (replay) {
-            TriggerEvent event;
-            // peek first without removing - we may crash before calling the listener
-            while ((event = queue.peekEvent()) != null) {
-              // override REPLAYING=true
-              event.getProperties().put(TriggerEvent.REPLAYING, true);
-              if (! trigger.getProcessor().process(event)) {
-                log.error("Failed to re-play event, discarding: " + event);
+
+          try {
+            if (replay) {
+              TriggerEvent event;
+              // peek first without removing - we may crash before calling the listener
+              while ((event = queue.peekEvent()) != null) {
+                // override REPLAYING=true
+                event.getProperties().put(TriggerEvent.REPLAYING, true);
+                if (!trigger.getProcessor().process(event)) {
+                  log.error("Failed to re-play event, discarding: " + event);
+                }
+                queue.pollEvent(); // always remove it from queue
               }
-              queue.pollEvent(); // always remove it from queue
+              // now restore saved state to possibly generate new events from old state on the first run
+              try {
+                trigger.restoreState();
+              } catch (Exception e) {
+                // log but don't throw - see below
+                log.error("Error restoring trigger state " + trigger.getName(), e);
+              }
+              replay = false;
             }
-            // now restore saved state to possibly generate new events from old state on the first run
-            try {
-              trigger.restoreState();
-            } catch (Exception e) {
-              // log but don't throw - see below
-              log.error("Error restoring trigger state " + trigger.getName(), e);
-            }
-            replay = false;
+          } catch (AlreadyClosedException e) {
+            
+          } catch (Exception e) {
+            log.error("Unexpected exception from trigger: " + trigger.getName(), e);
           }
           try {
             trigger.run();
+          } catch (AlreadyClosedException e) {
+
           } catch (Exception e) {
             // log but do not propagate exception because an exception thrown from a scheduled operation
             // will suppress future executions

@@ -29,7 +29,7 @@ import org.apache.lucene.util.NumericUtils;
  * Finds all previously indexed shapes that intersect the specified arbitrary.
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields(String, Polygon)} added per document.
+ * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/

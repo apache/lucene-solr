@@ -1,4 +1,6 @@
 = JSON Request API
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 :page-children: json-query-dsl
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -26,12 +28,31 @@ Here's an example of a search request using query parameters only:
 curl "http://localhost:8983/solr/techproducts/query?q=memory&fq=inStock:true"
 
 The same request when passed as JSON in the body:
+[.dynamic-tabs]
+--
+[example.tab-pane#curlsimplejsonquery]
+====
+[.tab-label]*curl*
 [source,bash]
+----
 curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query" : "memory",
   "filter" : "inStock:true"
 }'
+----
+====
+
+[example.tab-pane#solrjsimplejsonquery]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-simple]
+----
+====
+--
 
 == Passing JSON via Request Parameter
 It may sometimes be more convenient to pass the JSON body as a request parameter rather than in the actual body of the HTTP request. Solr treats a `json` parameter the same as a JSON body.
@@ -104,7 +125,13 @@ Note: `debug=true` as well as `debugQuery=true` might have too much performance 
 == Passing Parameters via JSON
 We can also pass normal query request parameters in the JSON body within the params block:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#curljsonqueryparamsblock]
+====
+[.tab-label]*curl*
 [source,bash]
+----
 curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
 {
   params: {
@@ -112,8 +139,21 @@ curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
     rows: 1
   }
 }'
+----
+====
 
-Which is equivalent to
+[example.tab-pane#solrjjsonqueryparamsblock]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-params-block]
+----
+====
+--
+
+Which is equivalent to:
 
 [source,bash]
 curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1"
@@ -131,11 +171,14 @@ Right now only some standard query parameters have JSON equivalents. Unmapped pa
 |`fq`
 |`filter`
 
-|`offset`
 |`start`
+|`offset`
 
-|`limit`
 |`rows`
+|`limit`
+
+|`fl`
+|`fields`
 
 |`sort`
 |`sort`
@@ -167,9 +210,27 @@ And we get an error back containing the error string:
 Of course request templating via parameter substitution works fully with JSON request bodies or parameters as well.
 For example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#curljsonquerymacroexpansion]
+====
+[.tab-label]*curl*
 [source,bash]
-curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory&HOWMANY=10" -d '
+----
+curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory" -d '
 {
   query:"${FIELD}:${TERM}",
-  limit:${HOWMANY}
 }'
+----
+====
+
+[example.tab-pane#solrjjsonquerymacroexpansion]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-macro-expansion]
+----
+====
+--

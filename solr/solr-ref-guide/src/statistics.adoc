@@ -321,6 +321,41 @@ When this expression is sent to the `/stream` handler it responds with:
  }
 ----
 
+The `percentile` function also operates on an array of percentile values.
+The example below is computing the 20th, 40th, 60th and 80th percentiles for a random sample
+of the *response_d* field:
+
+[source,text]
+----
+let(a=random(collection2, q="*:*", rows="15000", fl="response_d"),
+    b=col(a, response_d),
+    c=percentile(b, array(20,40,60,80)))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          818.0835543394625,
+          843.5590348165282,
+          866.1789509894824,
+          892.5033386599067
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 291
+      }
+    ]
+  }
+}
+----
+
 == Covariance and Correlation
 
 Covariance and Correlation measure how random variables move
@@ -543,6 +578,8 @@ array.
 
 * `cbrt`: Returns a numeric array with the cube root of each element of the original array.
 
+* `recip`: Returns a numeric array with the reciprocal of each element of the original array.
+
 Below is an example of a ttest performed on log transformed data sets:
 
 [source,text]
@@ -661,6 +698,47 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+Vectors that have been transformed with the `recip` function can be back-transformed by taking the reciprocal
+of the reciprocal.
+
+The example below shows an example of the back-transformation of the `recip` function.
+
+[source,text]
+----
+let(echo="b,c",
+    a=array(100, 200, 300),
+    b=recip(a),
+    c=recip(b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          0.01,
+          0.005,
+          0.0033333333333333335
+        ],
+        "c": [
+          100,
+          200,
+          300
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
 == Z-scores
 
 The `zscores` function converts a numeric array to an array of z-scores. The z-score
@@ -697,4 +775,3 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
-

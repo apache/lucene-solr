@@ -126,7 +126,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               ,"//result/doc/str[@name='ssto']"
               ,"//result/doc/str[@name='subject']"
               
-              ,"//result/doc[count(*)=4]"
+              ,"//result/doc[count(*)=5]"
               );
     }
   }
@@ -142,7 +142,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 ,"//doc/int[@name='val_i']"
                 ,"//doc/str[@name='ssto']"
                 ,"//doc/str[@name='subject']"
-                ,"//doc[count(*)=4]"
+                ,"//doc[count(*)=5]"
                 );
       }
     }
@@ -172,8 +172,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               ,"//result/doc/str[@name='ssto']"
               ,"//result/doc/str[@name='subject']"
               ,"//result/doc/float[@name='score']"
-              
-              ,"//result/doc[count(*)=5]"
+              ,"//result/doc[count(*)=6]"
               );
     }
   }
@@ -190,7 +189,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 ,"//doc/int[@name='val_i']"
                 ,"//doc/str[@name='ssto']"
                 ,"//doc/str[@name='subject']"
-                ,"//doc[count(*)=4]"
+                ,"//doc[count(*)=5]"
                 );
       }
     }

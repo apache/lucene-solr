@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ar;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ar.ArabicStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -33,6 +32,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.ArabicStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class ArabicStemFilterFactory extends TokenFilterFactory {
 

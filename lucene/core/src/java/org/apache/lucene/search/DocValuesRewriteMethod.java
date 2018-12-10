@@ -150,7 +150,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           } while (termsEnum.next() != null);
 
-          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(fcsi) {
+          return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(fcsi) {
 
             @Override
             public boolean matches() throws IOException {

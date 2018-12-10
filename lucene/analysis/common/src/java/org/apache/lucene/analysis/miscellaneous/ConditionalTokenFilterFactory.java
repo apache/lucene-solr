@@ -30,6 +30,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Abstract parent class for analysis factories that create {@link ConditionalTokenFilter} instances
+ *
+ * @since 7.4.0
  */
 public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 

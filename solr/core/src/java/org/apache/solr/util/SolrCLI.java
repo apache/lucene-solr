@@ -2381,7 +2381,7 @@ public class SolrCLI {
 
     protected void deleteCollection(CommandLine cli) throws Exception {
       String zkHost = getZkHost(cli);
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build()) {
         echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
         cloudSolrClient.connect();
         deleteCollection(cloudSolrClient, cli);

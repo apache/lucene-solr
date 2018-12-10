@@ -56,6 +56,8 @@ public class TestIntervals extends LuceneTestCase {
       "Porridge is great"
   };
 
+  //   0         1         2         3         4         5         6         7         8         9
+  //   012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
   private static String field2_docs[] = {
       "In Xanadu did Kubla Khan a stately pleasure dome decree",
       "Where Alph the sacred river ran through caverns measureless to man",
@@ -258,6 +260,18 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 7, 7, 31, 36);
     assertNull(mi.getSubMatches());
     assertFalse(mi.next());
+  }
+
+  public void testCombinationDisjunction() throws IOException {
+    IntervalsSource source = Intervals.ordered(
+        Intervals.or(Intervals.term("alph"), Intervals.term("sacred")),
+        Intervals.term("measureless")
+    );
+    checkIntervals(source, "field2", 1, new int[][]{
+        {},
+        { 3, 8 },
+        {}, {}, {}, {}
+    });
   }
 
   public void testNesting() throws IOException {
