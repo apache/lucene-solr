@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
-  private static final int MAX_TIMEOUT_SECONDS = 60;
+  private static final int MAX_TIMEOUT_SECONDS = 90;
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

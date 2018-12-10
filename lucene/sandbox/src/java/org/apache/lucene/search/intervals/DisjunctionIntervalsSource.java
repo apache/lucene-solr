@@ -135,6 +135,11 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return current.end();
     }
 
+    @Override
+    public int gaps() {
+      return current.gaps();
+    }
+
     private void reset() throws IOException {
       intervalQueue.clear();
       for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
@@ -229,6 +234,11 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
 
     @Override
+    public int gaps() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int nextInterval() {
       return NO_MORE_INTERVALS;
     }
@@ -269,6 +279,11 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     @Override
     public int end() {
       return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int gaps() {
+      throw new UnsupportedOperationException();
     }
 
     @Override

@@ -476,23 +476,26 @@ public class SimDistribStateManager implements DistribStateManager {
   @Override
   public void removeData(String path, int version) throws NoSuchElementException, NotEmptyException, BadVersionException, IOException {
     multiLock.lock();
+    Node parent;
+    Node n;
     try {
-      Node n = traverse(path, false, CreateMode.PERSISTENT);
+      n = traverse(path, false, CreateMode.PERSISTENT);
       if (n == null) {
         throw new NoSuchElementException(path);
       }
-      Node parent = n.parent;
+      parent = n.parent;
       if (parent == null) {
         throw new IOException("Cannot remove root node");
       }
       if (!n.children.isEmpty()) {
         throw new NotEmptyException(path);
       }
-      parent.removeChild(n.name, version);
     } finally {
       multiLock.unlock();
     }
-
+    
+    // outside the lock to avoid deadlock with update lock
+    parent.removeChild(n.name, version);
   }
 
   @Override

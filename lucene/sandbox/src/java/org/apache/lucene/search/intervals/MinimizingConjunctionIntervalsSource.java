@@ -61,7 +61,7 @@ class MinimizingConjunctionIntervalsSource extends ConjunctionIntervalsSource {
     return new ConjunctionMatchesIterator(it, subs);
   }
 
-  private static class ConjunctionMatchesIterator implements MatchesIterator {
+  private static class ConjunctionMatchesIterator implements IntervalMatchesIterator {
 
     final IntervalIterator iterator;
     final List<CacheingMatchesIterator> subs;
@@ -109,6 +109,11 @@ class MinimizingConjunctionIntervalsSource extends ConjunctionIntervalsSource {
         end = Math.max(end, s.endOffset(endPos));
       }
       return end;
+    }
+
+    @Override
+    public int gaps() {
+      return iterator.gaps();
     }
 
     @Override
