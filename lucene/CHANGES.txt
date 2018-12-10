@@ -98,6 +98,10 @@ API Changes
   methods.  This decouples normalization from tokenization entirely.
   (Mayya Sharipova, Alan Woodward)
 
+* LUCENE-8597: IntervalIterator now exposes a gaps() method that reports the
+  number of gaps between its component sub-intervals.  This can be used in a 
+  new filter available via Intervals.maxgaps().  (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

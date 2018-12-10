@@ -64,7 +64,7 @@ public class TestIntervals extends LuceneTestCase {
       "Down to a sunless sea",
       "So thrice five miles of fertile ground",
       "Pease hot porridge porridge",
-      "Pease porridge porridge hot"
+      "w1 w2 w3 w4 w1 w6 w3 w8 w4 w7 w1 w6"
   };
 
   private static Directory directory;
@@ -84,7 +84,7 @@ public class TestIntervals extends LuceneTestCase {
     for (int i = 0; i < field1_docs.length; i++) {
       Document doc = new Document();
       doc.add(new Field("field1", field1_docs[i], FIELD_TYPE));
-      doc.add(new TextField("field2", field2_docs[i], Field.Store.NO));
+      doc.add(new Field("field2", field2_docs[i], FIELD_TYPE));
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       doc.add(new NumericDocValuesField("id", i));
       writer.addDocument(doc);
@@ -147,6 +147,19 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(end, mi.endPosition());
     assertEquals(startOffset, mi.startOffset());
     assertEquals(endOffset, mi.endOffset());
+  }
+
+  private void assertGaps(IntervalsSource source, int doc, String field, int[] expectedGaps) throws IOException {
+    int ord = ReaderUtil.subIndex(doc, searcher.getIndexReader().leaves());
+    LeafReaderContext ctx = searcher.getIndexReader().leaves().get(ord);
+    IntervalIterator it = source.intervals(field, ctx);
+    assertEquals(doc, it.advance(doc));
+    for (int expectedGap : expectedGaps) {
+      if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+        fail("Unexpected interval " + it);
+      }
+      assertEquals(expectedGap, it.gaps());
+    }
   }
 
   public void testIntervalsOnFieldWithNoPositions() throws IOException {
@@ -241,6 +254,10 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(sub, 17, 17, 96, 99);
     assertFalse(sub.next());
     assertFalse(mi.next());
+
+    assertGaps(source, 1, "field1", new int[]{
+        1, 0, 10
+    });
   }
 
   public void testIntervalDisjunction() throws IOException {
@@ -287,6 +304,7 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {}
     });
+
     assertNull(getMatches(source, 0, "field1"));
     MatchesIterator mi = getMatches(source, 1, "field1");
     assertMatch(mi, 0, 2, 0, 18);
@@ -302,6 +320,11 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 5, 7, 35, 55);
     assertMatch(mi, 6, 17, 41, 99);
     assertFalse(mi.next());
+
+    assertGaps(source, 1, "field1", new int[]{
+        0, 0, 0, 0, 0, 0, 9
+    });
+
   }
 
   public void testNesting2() throws IOException {
@@ -445,6 +468,39 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(subs, 6, 6, 41, 46);
     assertFalse(subs.next());
     assertFalse(mi.next());
+  }
+
+  public void testMaxGaps() throws IOException {
+
+    IntervalsSource source = Intervals.maxgaps(1,
+        Intervals.unordered(Intervals.term("w1"), Intervals.term("w3"), Intervals.term("w4")));
+    checkIntervals(source, "field2", 1, new int[][]{
+        {}, {}, {}, {}, {},
+        { 0, 3, 2, 4, 3, 6 }
+    });
+
+    MatchesIterator mi = getMatches(source, 5, "field2");
+    assertMatch(mi, 0, 3, 0, 11);
+
+  }
+
+  public void testNestedMaxGaps() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(1,
+        Intervals.unordered(
+            Intervals.ordered(Intervals.term("w1"), Intervals.term("w3")),
+            Intervals.term("w4")
+        ));
+    checkIntervals(source, "field2", 1, new int[][]{
+        {}, {}, {}, {}, {},
+        { 0, 3, 3, 6, 4, 8 }
+    });
+
+    assertGaps(source, 5, "field2", new int[]{ 0, 0, 1 });
+
+    MatchesIterator mi = getMatches(source, 5, "field2");
+    assertMatch(mi, 0, 3, 0, 11);
+    assertMatch(mi, 3, 6, 9, 20);
+    assertMatch(mi, 4, 8, 12, 26);
   }
 
 }
