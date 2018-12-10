@@ -210,7 +210,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
     String newNode = cluster.simAddNode();
 
-    if (!triggerFiredLatch.await(220000 / SPEED, TimeUnit.MILLISECONDS)) {
+    if (!triggerFiredLatch.await(320000 / SPEED, TimeUnit.MILLISECONDS)) {
       fail("Both triggers should have fired by now");
     }
 
@@ -438,7 +438,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     String newNode = cluster.simAddNode();
-    boolean await = triggerFiredLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     TriggerEvent nodeAddedEvent = events.iterator().next();
