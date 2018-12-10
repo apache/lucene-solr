@@ -1369,7 +1369,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           OverseerCollectionMessageHandler.NUM_SLICES, "1",
           CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       simCreateCollection(props, new NamedList());
-      CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 90, TimeUnit.SECONDS,
+      CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
           CloudTestUtils.clusterShape(1, Integer.parseInt(repFactor), false, true));
     } catch (Exception e) {
       throw new IOException(e);

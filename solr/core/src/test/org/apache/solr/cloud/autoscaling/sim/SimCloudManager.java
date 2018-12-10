@@ -889,6 +889,7 @@ public class SimCloudManager implements SolrCloudManager {
     IOUtils.closeQuietly(stateManager);
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
+    triggerThread.interrupt();
     try {
       triggerThread.join();
     } catch (InterruptedException e) {
