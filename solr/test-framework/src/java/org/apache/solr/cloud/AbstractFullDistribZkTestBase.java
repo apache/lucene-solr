@@ -55,6 +55,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -1012,6 +1013,59 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose, true, timeoutSeconds);
+  }
+
+  protected boolean waitForReloads(String collectionName, CloudSolrClient client, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
+
+
+    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+
+    boolean allTimesAreCorrect = false;
+    while (! timeout.hasTimedOut()) {
+      Map<String,Long> urlToTimeAfter = new HashMap<>();
+      collectStartTimes(collectionName, client, urlToTimeAfter);
+
+      boolean retry = false;
+      Set<Entry<String,Long>> entries = urlToTimeBefore.entrySet();
+      for (Entry<String,Long> entry : entries) {
+        Long beforeTime = entry.getValue();
+        Long afterTime = urlToTimeAfter.get(entry.getKey());
+        assertNotNull(afterTime);
+        if (afterTime <= beforeTime) {
+          retry = true;
+          break;
+        }
+
+      }
+      if (!retry) {
+        allTimesAreCorrect = true;
+        break;
+      }
+    }
+    return allTimesAreCorrect;
+  }
+
+  protected void collectStartTimes(String collectionName, CloudSolrClient client, Map<String,Long> urlToTime)
+      throws SolrServerException, IOException {
+
+    ClusterState clusterState = cloudClient.getZkStateReader()
+        .getClusterState();
+    DocCollection collectionState = clusterState.getCollectionOrNull(collectionName);
+    if (collectionState != null) {
+      for (Slice shard : collectionState) {
+        for (Replica replica : shard) {
+          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
+          CoreStatus coreStatus;
+          try (HttpSolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
+            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
+          }
+          long before = coreStatus.getCoreStartTime().getTime();
+          urlToTime.put(coreProps.getCoreUrl(), before);
+        }
+      }
+    } else {
+      throw new IllegalArgumentException("Could not find collection " + collectionName);
+    }
   }
 
   protected void checkQueries() throws Exception {
