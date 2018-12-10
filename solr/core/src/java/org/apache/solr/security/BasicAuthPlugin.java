@@ -48,9 +48,9 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

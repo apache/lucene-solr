@@ -138,10 +138,6 @@ public class HttpShardHandler extends ShardHandler {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
 
-    // If request has a Principal (authenticated user), extract it for passing on to the new shard request
-    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    final Principal userPrincipal = requestInfo == null ? null : requestInfo.getReq().getUserPrincipal();
-
     Callable<ShardResponse> task = () -> {
 
       ShardResponse srsp = new ShardResponse();
@@ -160,7 +156,8 @@ public class HttpShardHandler extends ShardHandler {
 
         QueryRequest req = makeQueryRequest(sreq, params, shard);
         req.setMethod(SolrRequest.METHOD.POST);
-        req.setUserPrincipal(userPrincipal);
+        SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+        if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
 
         // no need to set the response parser as binary is the default
         // req.setResponseParser(new BinaryResponseParser());

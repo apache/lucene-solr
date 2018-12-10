@@ -32,12 +32,13 @@ import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient; // jdoc
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -284,7 +285,8 @@ public class SolrCmdDistributor implements Closeable {
 
   private void submit(final Req req, boolean isCommit) {
     // Copy user principal from the original request to the new update request, for later authentication interceptor use
-    req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+    if (SolrRequestInfo.getRequestInfo() != null)
+      req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
 
     if (req.synchronous) {
       blockAndDoRetries();

@@ -109,6 +109,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -1867,6 +1868,10 @@ public class CoreContainer {
     }
     
     return tragicException != null;
+  }
+
+  static {
+    ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
   }
 
 }
