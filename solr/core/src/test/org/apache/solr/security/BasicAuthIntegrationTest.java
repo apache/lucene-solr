@@ -62,7 +62,6 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrCLI;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,7 +89,6 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LogLevel("org.apache.solr.security=DEBUG")
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBasicAuth() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
