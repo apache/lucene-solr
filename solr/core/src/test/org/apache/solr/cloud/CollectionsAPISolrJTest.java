@@ -213,7 +213,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
 
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 300; i++) {
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
