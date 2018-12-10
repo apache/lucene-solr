@@ -647,14 +647,23 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
       assertEquals(null, cmp);
 
-      int timesReplicated = Integer.parseInt(getSlaveDetails("timesIndexReplicated"));
-      String timesFailed = getSlaveDetails("timesFailed");
-      if (null == timesFailed) {
+      String timesReplicatedString = getSlaveDetails("timesIndexReplicated");
+      String timesFailed;
+      Integer previousTimesFailed = null;
+      if (timesReplicatedString == null) {
         timesFailed = "0";
+      } else {
+        int timesReplicated = Integer.parseInt(timesReplicatedString);
+        timesFailed = getSlaveDetails("timesFailed");
+        if (null == timesFailed) {
+          timesFailed = "0";
+        }
+
+        previousTimesFailed = Integer.parseInt(timesFailed);
+        // Sometimes replication will fail because master's core is still loading; make sure there was one success
+        assertEquals(1, timesReplicated - previousTimesFailed);
+
       }
-      int previousTimesFailed = Integer.parseInt(timesFailed);
-      // Sometimes replication will fail because master's core is still loading; make sure there was one success
-      assertEquals(1, timesReplicated - previousTimesFailed);
 
       masterJetty.stop();
 
@@ -672,7 +681,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertEquals(nDocs, numFound(slaveQueryRsp));
 
       int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
-      assertTrue(failed > previousTimesFailed);
+      if (previousTimesFailed != null) {
+        assertTrue(failed > previousTimesFailed);
+      }
       assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
     } finally {
       resetFactory();
@@ -684,7 +695,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
     QueryResponse response = slaveClient.query(params);
-    System.out.println("SHALIN: " + response.getResponse());
+
     // details/slave/timesIndexReplicated
     NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
     NamedList<Object> slave = (NamedList<Object>) details.get("slave");
