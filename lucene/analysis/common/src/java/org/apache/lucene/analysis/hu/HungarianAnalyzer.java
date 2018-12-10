@@ -37,6 +37,8 @@ import org.tartarus.snowball.ext.HungarianStemmer;
 
 /**
  * {@link Analyzer} for Hungarian.
+ *
+ * @since 3.1
  */
 public final class HungarianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

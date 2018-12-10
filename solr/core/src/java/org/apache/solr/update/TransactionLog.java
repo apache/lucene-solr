@@ -125,7 +125,7 @@ public class TransactionLog implements Closeable {
     }
 
     @Override
-    public String readExternString(DataInputInputStream fis) throws IOException {
+    public CharSequence readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
       // no need to synchronize globalStringList - it's only updated before the first record is written to the log

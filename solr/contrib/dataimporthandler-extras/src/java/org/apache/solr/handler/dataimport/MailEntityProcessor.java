@@ -66,7 +66,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
   
   public void init(Context context) {
     super.init(context);
-    // set attributes using XXX getXXXFromContext(attribute, defualtValue);
+    // set attributes using XXX getXXXFromContext(attribute, defaultValue);
     // applies variable resolver and return default if value is not found or null
     // REQUIRED : connection and folder info
     user = getStringFromContext("user", null);

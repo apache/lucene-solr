@@ -3081,7 +3081,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testSoftUpdateDocuments() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("soft_delete"));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setMergePolicy(NoMergePolicy.INSTANCE)
+        .setSoftDeletesField("soft_delete"));
     expectThrows(IllegalArgumentException.class, () -> {
       writer.softUpdateDocument(null, new Document(), new NumericDocValuesField("soft_delete", 1));
     });
@@ -3601,4 +3603,35 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
   }
+
+  public void testSetIndexCreatedVersion() throws IOException {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+        () -> new IndexWriterConfig().setIndexCreatedVersionMajor(Version.LATEST.major+1));
+    assertEquals("indexCreatedVersionMajor may not be in the future: current major version is " +
+        Version.LATEST.major + ", but got: " + (Version.LATEST.major+1), e.getMessage());
+    e = expectThrows(IllegalArgumentException.class,
+        () -> new IndexWriterConfig().setIndexCreatedVersionMajor(Version.LATEST.major-2));
+    assertEquals("indexCreatedVersionMajor may not be less than the minimum supported version: " +
+        (Version.LATEST.major-1) + ", but got: " + (Version.LATEST.major-2), e.getMessage());
+
+    for (int previousMajor = Version.LATEST.major - 1; previousMajor <= Version.LATEST.major; previousMajor++) {
+      for (int newMajor = Version.LATEST.major - 1; newMajor <= Version.LATEST.major; newMajor++) {
+        for (OpenMode openMode : OpenMode.values()) {
+          try (Directory dir = newDirectory()) {
+            try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setIndexCreatedVersionMajor(previousMajor))) {}
+            SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
+            assertEquals(previousMajor, infos.getIndexCreatedVersionMajor());
+            try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setOpenMode(openMode).setIndexCreatedVersionMajor(newMajor))) {}
+            infos = SegmentInfos.readLatestCommit(dir);
+            if (openMode == OpenMode.CREATE) {
+              assertEquals(newMajor, infos.getIndexCreatedVersionMajor());
+            } else {
+              assertEquals(previousMajor, infos.getIndexCreatedVersionMajor());
+            }
+          }
+        }
+      }
+    }
+  }
+
 }

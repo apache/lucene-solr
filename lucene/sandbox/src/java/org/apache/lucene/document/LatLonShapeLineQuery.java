@@ -1,0 +1,138 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.lucene.document;
+
+import java.util.Arrays;
+
+import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.NumericUtils;
+
+/**
+ * Finds all previously indexed shapes that intersect the specified arbitrary {@code Line}.
+ * <p>
+ * Note:
+ * <ul>
+ *    <li>{@code QueryRelation.WITHIN} queries are not yet supported</li>
+ *    <li>Dateline crossing is not yet supported</li>
+ * </ul>
+ * <p>
+ * todo:
+ * <ul>
+ *   <li>Add distance support for buffered queries</li>
+ * </ul>
+ * <p>The field must be indexed using
+ * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ *
+ *  @lucene.experimental
+ **/
+final class LatLonShapeLineQuery extends LatLonShapeQuery {
+  final Line[] lines;
+  final private Line2D line2D;
+
+  public LatLonShapeLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+    super(field, queryRelation);
+    /** line queries do not support within relations, only intersects and disjoint */
+    if (queryRelation == QueryRelation.WITHIN) {
+      throw new IllegalArgumentException("LatLonShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
+    }
+
+    if (lines == null) {
+      throw new IllegalArgumentException("lines must not be null");
+    }
+    if (lines.length == 0) {
+      throw new IllegalArgumentException("lines must not be empty");
+    }
+    for (int i = 0; i < lines.length; ++i) {
+      if (lines[i] == null) {
+        throw new IllegalArgumentException("line[" + i + "] must not be null");
+      } else if (lines[i].minLon > lines[i].maxLon) {
+        throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
+      }
+    }
+    this.lines = lines.clone();
+    this.line2D = Line2D.create(lines);
+  }
+
+  @Override
+  protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
+                                                        int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    double minLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minYOffset));
+    double minLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minXOffset));
+    double maxLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxYOffset));
+    double maxLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxXOffset));
+
+    // check internal node against query
+    return line2D.relate(minLat, maxLat, minLon, maxLon);
+  }
+
+  @Override
+  protected boolean queryMatches(byte[] t) {
+    long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
+    long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
+    long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
+
+    int aX = (int)((a >>> 32) & 0x00000000FFFFFFFFL);
+    int bX = (int)((b >>> 32) & 0x00000000FFFFFFFFL);
+    int cX = (int)((c >>> 32) & 0x00000000FFFFFFFFL);
+    int aY = (int)(a & 0x00000000FFFFFFFFL);
+    int bY = (int)(b & 0x00000000FFFFFFFFL);
+    int cY = (int)(c & 0x00000000FFFFFFFFL);
+
+    double alat = GeoEncodingUtils.decodeLatitude(aY);
+    double alon = GeoEncodingUtils.decodeLongitude(aX);
+    double blat = GeoEncodingUtils.decodeLatitude(bY);
+    double blon = GeoEncodingUtils.decodeLongitude(bX);
+    double clat = GeoEncodingUtils.decodeLatitude(cY);
+    double clon = GeoEncodingUtils.decodeLongitude(cX);
+
+    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
+      return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+    }
+    // INTERSECTS
+    return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  @Override
+  public String toString(String field) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append(getClass().getSimpleName());
+    sb.append(':');
+    if (this.field.equals(field) == false) {
+      sb.append(" field=");
+      sb.append(this.field);
+      sb.append(':');
+    }
+    sb.append("Line(" + lines[0].toGeoJSON() + ")");
+    return sb.toString();
+  }
+
+  @Override
+  protected boolean equalsTo(Object o) {
+    return super.equalsTo(o) && Arrays.equals(lines, ((LatLonShapeLineQuery)o).lines);
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = super.hashCode();
+    hash = 31 * hash + Arrays.hashCode(lines);
+    return hash;
+  }
+}

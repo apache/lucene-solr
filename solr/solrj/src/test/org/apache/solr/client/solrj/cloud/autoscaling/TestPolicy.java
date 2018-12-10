@@ -1972,16 +1972,25 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testMoveReplicaSuggester() {
     String autoScalingjson = "  '{cluster-policy':[" +
-        "    {      'cores':'<10',      'node':'#ANY'}," +
-        "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
-        "    {      'nodeRole':'overseer','replica':0}]," +
-        "  'cluster-preferences':[{'minimize':'cores'}]}";
+        "{'cores':'<10', 'node':'#ANY'}," +
+        "{'replica':'<2', 'shard':'#EACH','node':'#ANY'}]," +
+        "'cluster-preferences':[{'minimize':'cores'}]}";
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData((Map) loadFromResource("testMoveReplicaSuggester.json")));
-    Suggester suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    Suggester suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
     SolrRequest op = suggester.getSuggestion();
     assertNotNull(op);
-    suggester = suggester.getSession().getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    suggester = suggester.getSession()
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    op = suggester.getSuggestion();
+    assertNull(op);
+
+    suggester = suggester.getSession()
+        .getSuggester(MOVEREPLICA)
+        .forceOperation(true)
+        .hint(Hint.TARGET_NODE, "10.0.0.6:8983_solr");
     op = suggester.getSuggestion();
     assertNull(op);
   }
@@ -2183,7 +2192,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(0, violations.get(0).getViolatingReplicas().size());
 
     l = PolicyHelper.getSuggestions(cfg, cloudManagerWithData((Map) loadFromResource("testFreeDiskSuggestions.json")));
-    assertEquals(4, l.size());
+    assertEquals(3, l.size());
     assertEquals("r4", l.get(0)._get("operation/command/move-replica/replica", null));
     assertEquals("node1", l.get(0)._get("operation/command/move-replica/targetNode", null));
 
@@ -2192,8 +2201,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     assertEquals("r2", l.get(2)._get("operation/command/move-replica/replica", null));
     assertEquals("node1", l.get(2)._get("operation/command/move-replica/targetNode", null));
-
-    assertEquals("improvement", l.get(3)._get("type", null));
 
 
   }

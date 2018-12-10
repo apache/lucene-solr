@@ -126,7 +126,7 @@ final class LatLonDocValuesDistanceQuery extends Query {
           }
 
         };
-        return new ConstantScoreScorer(this, boost, iterator);
+        return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
       @Override

@@ -196,18 +196,15 @@ public class TestConfig extends SolrTestCaseJ4 {
     Assert.assertEquals(-1, SolrConfig.convertHeapOptionStyleConfigStringToBytes(""));
 
     // Invalid values
-    try {
+    RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
       SolrConfig.convertHeapOptionStyleConfigStringToBytes("3jbk32k"); // valid suffix but non-numeric prefix
-      Assert.fail();
-    } catch (RuntimeException e) {
-      Assert.assertTrue(e.getMessage().contains("Invalid"));
-    }
-    try {
+    });
+    assertTrue(thrown.getMessage().contains("Invalid"));
+
+    thrown = expectThrows(RuntimeException.class, () -> {
       SolrConfig.convertHeapOptionStyleConfigStringToBytes("300x"); // valid prefix but invalid suffix
-      Assert.fail();
-    } catch (RuntimeException e) {
-      Assert.assertTrue(e.getMessage().contains("Invalid"));
-    }
+    });
+    assertTrue(thrown.getMessage().contains("Invalid"));
   }
 
   @Test

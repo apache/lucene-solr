@@ -34,6 +34,8 @@ import org.tartarus.snowball.ext.LithuanianStemmer;
 
 /**
  * {@link Analyzer} for Lithuanian.
+ *
+ * @since 5.3.0
  */
 public final class LithuanianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

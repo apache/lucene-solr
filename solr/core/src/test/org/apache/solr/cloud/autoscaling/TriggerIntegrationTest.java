@@ -142,7 +142,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     // restart Overseer. Even though we reset the autoscaling config some already running
     // trigger threads may still continue to execute and produce spurious events
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     Thread.sleep(5000);
 
     throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS));
@@ -163,6 +164,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       // lets start a node
       cluster.startJettySolrRunner();
     }
+    cluster.waitForAllNodes(30);
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     // clear any events or markers
     // todo: consider the impact of such cleanup on regular cluster restarts
@@ -217,7 +219,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-
+    cluster.waitForAllNodes(30);
     if (!triggerFiredLatch.await(30, TimeUnit.SECONDS)) {
       fail("Both triggers should have fired by now");
     }
@@ -261,7 +263,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     for (int i = 0; i < jettySolrRunners.size(); i++) {
       JettySolrRunner jettySolrRunner = jettySolrRunners.get(i);
       if (jettySolrRunner == newNode) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }
@@ -350,9 +353,11 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     // stop the overseer, somebody else will take over as the overseer
-    cluster.stopJettySolrRunner(index);
+    JettySolrRunner j = cluster.stopJettySolrRunner(index);
+    cluster.waitForJettyToStop(j);
     Thread.sleep(10000);
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
@@ -461,6 +466,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     // add node to generate the event
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     boolean await = actionStarted.await(60, TimeUnit.SECONDS);
     assertTrue("action did not start", await);
     eventQueueActionWait = 1;
@@ -472,7 +478,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     events.clear();
     actionStarted = new CountDownLatch(1);
     // kill overseer leader
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     Thread.sleep(5000);
     // new overseer leader should be elected and run triggers
     await = actionInterrupted.await(3, TimeUnit.SECONDS);

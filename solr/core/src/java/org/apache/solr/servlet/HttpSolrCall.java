@@ -885,9 +885,8 @@ public class HttpSolrCall {
     boolean byCoreName = false;
 
     if (slices == null) {
-      activeSlices = new ArrayList<>();
-      // look by core name
       byCoreName = true;
+      activeSlices = new ArrayList<>();
       getSlicesForCollections(clusterState, activeSlices, true);
       if (activeSlices.isEmpty()) {
         getSlicesForCollections(clusterState, activeSlices, false);
@@ -930,7 +929,7 @@ public class HttpSolrCall {
         if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !collectionName.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }

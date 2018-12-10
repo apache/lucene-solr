@@ -24,6 +24,7 @@ public enum FieldFlag {
   TOKENIZED('T', "Tokenized"), 
   STORED('S', "Stored"), 
   DOC_VALUES('D', "DocValues"),
+  UNINVERTIBLE('U', "UnInvertible"),
   MULTI_VALUED('M', "Multivalued"),
   TERM_VECTOR_STORED('V', "TermVector Stored"), 
   TERM_VECTOR_OFFSET('o', "Store Offset With TermVector"),

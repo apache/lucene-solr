@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarity.LegacyBM25Similarity;
 import org.junit.After;
 
 /**
@@ -36,7 +36,7 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
   public void testCurrentBM25() throws Exception {
     // no sys prop set, rely on LATEST
     initCore("solrconfig-basic.xml","schema-tiny.xml");
-    BM25Similarity sim = getSimilarity("text", BM25Similarity.class);
+    LegacyBM25Similarity sim = getSimilarity("text", LegacyBM25Similarity.class);
     assertEquals(0.75F, sim.getB(), 0.0F);
   }
 }

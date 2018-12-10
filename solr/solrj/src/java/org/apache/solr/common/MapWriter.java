@@ -145,5 +145,14 @@ public interface MapWriter extends MapSerializable , NavigableObject {
       put(k, (Boolean) v);
       return this;
     }
+
+    /**This is an optimization to avoid the instanceof checks.
+     *
+     */
+    default EntryWriter put(CharSequence k, CharSequence v) throws IOException {
+      put(k, (Object)v);
+      return this;
+
+    }
   }
 }

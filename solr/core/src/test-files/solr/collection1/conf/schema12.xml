@@ -715,6 +715,10 @@
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
 
+  <dynamicField name="*_ii" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
+  <dynamicField name="*_iis" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
+  <dynamicField name="*_ff" type="pfloat" indexed="false" stored="false" useDocValuesAsStored="false"/>
+
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
 

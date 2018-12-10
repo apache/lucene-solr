@@ -135,6 +135,11 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return current.end();
     }
 
+    @Override
+    public int gaps() {
+      return current.gaps();
+    }
+
     private void reset() throws IOException {
       intervalQueue.clear();
       for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
@@ -146,7 +151,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
     @Override
     public int nextInterval() throws IOException {
-      if (current == EMPTY) {
+      if (current == EMPTY || current == EXHAUSTED) {
         if (intervalQueue.size() > 0) {
           current = intervalQueue.top();
         }
@@ -160,7 +165,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
         }
       }
       if (intervalQueue.size() == 0) {
-        current = EMPTY;
+        current = EXHAUSTED;
         return NO_MORE_INTERVALS;
       }
       current = intervalQueue.top();
@@ -226,6 +231,59 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     @Override
     public int end() {
       return -1;
+    }
+
+    @Override
+    public int gaps() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextInterval() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public float matchCost() {
+      return 0;
+    }
+  };
+
+  private static final IntervalIterator EXHAUSTED = new IntervalIterator() {
+
+    @Override
+    public int docID() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int start() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int end() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int gaps() {
+      throw new UnsupportedOperationException();
     }
 
     @Override

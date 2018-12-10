@@ -16,7 +16,6 @@
  */
 package org.apache.solr.ltr.model;
 
-import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +94,11 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class NeuralNetworkModel extends LTRScoringModel {
 
+  /**
+   * layers is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private List<Layer> layers;
 
   protected interface Activation {

@@ -353,13 +353,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String q = sb.toString();
 
     // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
-    try {
+    {
       ignoreException("Too many clauses");
-      assertJQ(req("q",q)
-          ,"/response/numFound==6");
-      fail();
-    } catch (Exception e) {
-      // expect "too many clauses" exception... see SOLR-10921
+      SolrException e = expectThrows(SolrException.class, "exoected too many clauses exception",
+          () -> assertJQ(req("q", q), "/response/numFound==6"));
       assertTrue(e.getMessage().contains("many clauses"));
     }
 
@@ -1114,13 +1111,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     for (String suffix:fieldSuffix) {
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
       qParser.setIsFilter(true); // this may change in the future
-      try {
-        qParser.getQuery();
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-        assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
-      }
+      SolrException e = expectThrows(SolrException.class, "Expecting exception", qParser::getQuery);
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
     }
     
     

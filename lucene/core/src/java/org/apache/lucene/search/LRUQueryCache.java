@@ -766,7 +766,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new ScorerSupplier() {
         @Override
         public Scorer get(long LeadCost) throws IOException {
-          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, disi);
+          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
         }
         
         @Override
@@ -844,7 +844,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return null;
       }
 
-      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, disi));
+      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
   }

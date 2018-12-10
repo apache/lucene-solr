@@ -20,9 +20,6 @@ package org.apache.lucene.analysis.ar;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -34,8 +31,10 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.ArabicNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
-public class ArabicNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class ArabicNormalizationFilterFactory extends TokenFilterFactory {
 
   /** Creates a new ArabicNormalizationFilterFactory */
   public ArabicNormalizationFilterFactory(Map<String,String> args) {
@@ -46,12 +45,12 @@ public class ArabicNormalizationFilterFactory extends TokenFilterFactory impleme
   }
 
   @Override
-  public ArabicNormalizationFilter create(TokenStream input) {
+  public TokenStream create(TokenStream input) {
     return new ArabicNormalizationFilter(input);
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

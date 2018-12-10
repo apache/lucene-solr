@@ -24,6 +24,7 @@ import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 import org.noggit.ObjectBuilder;
@@ -36,6 +37,20 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
 
+  public void testSortEquality() throws Exception {
+    assertEquals(new FacetRequest.FacetSort("count", FacetRequest.SortDirection.desc),
+                 FacetRequest.FacetSort.COUNT_DESC);
+    assertEquals(new FacetRequest.FacetSort("index", FacetRequest.SortDirection.asc),
+                 FacetRequest.FacetSort.INDEX_ASC);
+    assertEquals(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc),
+                 new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc));
+    // negative assertions...
+    assertThat(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc),
+               not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc)));
+    assertThat(new FacetRequest.FacetSort("bar", FacetRequest.SortDirection.desc),
+               not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc)));
+  }
+  
   public void testEquality() throws IOException {
     try (SolrQueryRequest req = req("custom_req_param","foo_i",
                                     "overridden_param","xxxxx_i")) {

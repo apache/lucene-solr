@@ -568,7 +568,7 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
  ** it may be infeasible to use `required`
  ** even child documents need a unique `id`
  * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
- * If you associate a child document as a field (e.g. comment), that field need not be defined in the schema, and probably
+ * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
    shouldn't be as it would be confusing.  There is no child document field type.
 
 === XML Examples
@@ -640,4 +640,3 @@ For the anonymous relationship, note the special `\_childDocuments_` key whose c
   }
 ]
 ----
-

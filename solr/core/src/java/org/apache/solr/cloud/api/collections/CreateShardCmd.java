@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -71,7 +70,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+    ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
     // wait for a while until we see the shard
     ocmh.waitForNewShard(collectionName, sliceName);
     String async = message.getStr(ASYNC);

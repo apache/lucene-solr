@@ -95,7 +95,15 @@ public abstract class Suggester implements MapWriter {
       Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
       ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
     } else {
-      hints.put(hint, value == null ? null : String.valueOf(value));
+      if (value == null) {
+        hints.put(hint, null);
+      } else {
+        if ((value instanceof Map) || (value instanceof Number)) {
+          hints.put(hint, value);
+        } else {
+          hints.put(hint, String.valueOf(value));
+        }
+      }
     }
     return this;
   }
@@ -113,10 +121,26 @@ public abstract class Suggester implements MapWriter {
     return this;
   }
 
-  protected boolean isNodeSuitableForReplicaAddition(Row row) {
-    if (!row.isLive) return false;
-    if (!isAllowed(row.node, Hint.TARGET_NODE)) return false;
-    if (!isAllowed(row.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+  protected boolean isNodeSuitableForReplicaAddition(Row targetRow, Row srcRow) {
+    if (!targetRow.isLive) return false;
+    if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) return false;
+    if (!isAllowed(targetRow.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+
+    if (srcRow != null) {// if the src row has the same violation it's not
+      for (Violation v1 : originalViolations) {
+        if (!v1.getClause().getThirdTag().varType.meta.isNodeSpecificVal()) continue;
+        if (v1.getClause().hasComputedValue) continue;
+        if (targetRow.node.equals(v1.node)) {
+          for (Violation v2 : originalViolations) {
+            if (srcRow.node.equals(v2.node)) {
+              if (v1.getClause().equals(v2.getClause()))
+                return false;
+            }
+          }
+        }
+      }
+    }
+
     return true;
   }
 
@@ -291,7 +315,11 @@ public abstract class Suggester implements MapWriter {
       for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
         if (shard.getValue() == null || shard.getValue().isEmpty()) continue;
-        replicaList.add(new Pair<>(shard.getValue().get(0), r));
+        for (ReplicaInfo replicaInfo : shard.getValue()) {
+          if (replicaInfo.getName().startsWith("SYNTHETIC.")) continue;
+          replicaList.add(new Pair<>(shard.getValue().get(0), r));
+          break;
+        }
       }
     }
   }
@@ -303,10 +331,8 @@ public abstract class Suggester implements MapWriter {
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;
-//      if (!executeInStrictMode && !clause.strict) {
       if (this.deviations == null) this.deviations = new LinkedHashMap<>();
       this.deviations.put(originalClause, new double[1]);
-//      }
       List<Violation> errs = clause.test(session, this.deviations == null ? null : this.deviations.get(originalClause));
       if (!errs.isEmpty() &&
           (executeInStrictMode || clause.strict)) errors.addAll(errs);
@@ -371,6 +397,11 @@ public abstract class Suggester implements MapWriter {
     }),
     NUMBER(true, o -> {
       if (!(o instanceof Number)) throw new RuntimeException("NUMBER hint must be a number");
+    }),
+    PARAMS(false, o -> {
+      if (!(o instanceof Map)) {
+        throw new RuntimeException("PARAMS hint must be a Map<String, Object>");
+      }
     }),
     REPLICA(true);
 

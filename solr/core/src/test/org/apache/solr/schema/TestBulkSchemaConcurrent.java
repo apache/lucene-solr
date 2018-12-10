@@ -23,6 +23,7 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     final int threadCount = 5;
     setupRestTestHarnesses();
     Thread[] threads = new Thread[threadCount];
-    final List<List> collectErrors = new ArrayList<>();
+    final List<List> collectErrors = Collections.synchronizedList(new ArrayList<>());
 
     for (int i = 0 ; i < threadCount ; i++) {
       final int finalI = i;

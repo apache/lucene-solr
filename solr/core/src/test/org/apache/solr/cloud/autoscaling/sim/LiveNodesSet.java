@@ -49,6 +49,10 @@ public class LiveNodesSet implements Iterable<String> {
   public void removeLiveNodesListener(LiveNodesListener listener) {
     listeners.remove(listener);
   }
+  
+  public void removeAllLiveNodesListeners() {
+    listeners.clear();
+  }
 
   private void fireListeners(SortedSet<String> oldNodes, SortedSet<String> newNodes) {
     for (LiveNodesListener listener : listeners) {

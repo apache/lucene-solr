@@ -3,42 +3,17 @@ layout: default
 ---
 {% comment %}NOTE: page_id is also definied in default.html{% endcomment %}
 {% assign page_id = page.url | split: '/' | last | remove: '.html' %}
-<div class="post-header">
-   <h1 class="post-title-main">{{ page.title }}</h1>
-</div>
-
-<!-- This adds a workflow map, to a page
-     See http://idratherbewriting.com/documentation-theme-jekyll/mydoc_workflow_maps.html
-     Leaving it here commented out in case we want to implement this in the future
-{% if page.simple_map == true %}
-<script>
-    $(document).ready ( function(){
-        $('.box{{page.box_number}}').addClass('active');
-    });
-</script>
-{% include custom/{{page.map_name}}.html %}
-{% elsif page.complex_map == true %}
-<script>
-    $(document).ready ( function(){
-        $('.modalButton{{page.box_number}}').addClass('active');
-    });
-</script>
-{% include custom/{{page.map_name}}.html %}
-{% endif %} -->
-
-<div class="post-content">
-
-   {% if page.summary %}
-    <div class="summary">{{ page.summary }}</div>
-   {% endif %}
+<header class="header">
+   <h1 class="title-main">{{ page.title }}</h1>
+</header>
 
     {% unless page.toc == false %}
     {% include toc.html %}
     {% endunless %}
 
-<div class="main-content">
-  {{content}}
-</div>
+<section class="content">
+   {{content}}
+</section>
 
 <!-- Adds tags, if any -->
     <div class="tags">
@@ -56,16 +31,12 @@ layout: default
 <!-- Adds nav links on each page -->
     {% assign scrollnav = site.data.scrollnav[page_id] %}
     {% if scrollnav %}
-    <div class="scrollnav row">
+    <nav class="scrollnav row">
       {% if scrollnav.prev %}
       <a class="btn btn-primary prev" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
       {% endif %}
       {% if scrollnav.next %}
       <a class="btn btn-primary next" href="{{ scrollnav.next.url }}">{{ scrollnav.next.title }}</a>
       {% endif %}
-    </div>
+   </nav>
     {% endif %}
-
-</div>
-
-{% include footer.html %}

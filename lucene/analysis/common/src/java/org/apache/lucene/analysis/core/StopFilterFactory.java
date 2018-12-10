@@ -69,6 +69,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *      for details.
  *  </li>
  * </ul>
+ *
+ * @since 3.1
  */
 public class StopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String FORMAT_WORDSET = "wordset";

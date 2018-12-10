@@ -19,10 +19,15 @@ package org.apache.lucene.document;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
+
+import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 
 /** random bounding box and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -66,12 +71,32 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       Polygon p = (Polygon)shape;
       if (queryRelation == QueryRelation.WITHIN) {
         // within: bounding box of shape should be within query box
-        return minLat <= quantizeLat(p.minLat) && maxLat >= quantizeLat(p.maxLat)
-            && minLon <= quantizeLon(p.minLon) && maxLon >= quantizeLon(p.maxLon);
+        double pMinLat = quantizeLat(p.minLat);
+        double pMinLon = quantizeLon(p.minLon);
+        double pMaxLat = quantizeLat(p.maxLat);
+        double pMaxLon = quantizeLon(p.maxLon);
+
+        if (minLon > maxLon) {
+          // crosses dateline:
+          return minLat <= pMinLat && maxLat >= pMaxLat
+              && ((MIN_LON_INCL <= pMinLon && maxLon >= pMaxLon)
+              ||  (minLon <= pMinLon && MAX_LON_INCL >= pMaxLon));
+        }
+        return minLat <= pMinLat && maxLat >= pMaxLat
+            && minLon <= pMinLon && maxLon >= pMaxLon;
       }
 
       Polygon2D poly = Polygon2D.create(quantizePolygon(p));
-      Relation r = poly.relate(minLat, maxLat, minLon, maxLon);
+      Relation r;
+      if (minLon > maxLon) {
+        // crosses dateline:
+        r = poly.relate(minLat, maxLat, MIN_LON_INCL, maxLon);
+        if (r == Relation.CELL_OUTSIDE_QUERY) {
+          r = poly.relate(minLat, maxLat, minLon, MAX_LON_INCL);
+        }
+      } else {
+        r = poly.relate(minLat, maxLat, minLon, maxLon);
+      }
       if (queryRelation == QueryRelation.DISJOINT) {
         return r == Relation.CELL_OUTSIDE_QUERY;
       }
@@ -79,11 +104,20 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
+    public boolean testLineQuery(Line2D query, Object shape) {
+      return testPolygon(query, (Polygon) shape);
+    }
+
+    @Override
     public boolean testPolygonQuery(Polygon2D query, Object shape) {
-      List<Tessellator.Triangle> tessellation = Tessellator.tessellate((Polygon) shape);
+      return testPolygon(query, (Polygon) shape);
+    }
+
+    private boolean testPolygon(EdgeTree tree, Polygon shape) {
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
         // we quantize the triangle for consistency with the index
-        Relation r = query.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
+        Relation r = tree.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
             quantizeLon(t.getLon(1)), quantizeLat(t.getLat(1)),
             quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2)));
         if (queryRelation == QueryRelation.DISJOINT) {

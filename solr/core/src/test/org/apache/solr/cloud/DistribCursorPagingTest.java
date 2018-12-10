@@ -253,12 +253,14 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
                     "fl", "id",
                     "facet", "true",
                     "facet.field", "str",
+                    "facet.mincount", "1",
                     "json.nl", "map",
                     "sort", intsort + " asc, id asc");
     rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
     assertNumFound(8, rsp);
     assertStartsAt(0, rsp);
     assertDocList(rsp, 7, 0, 3);
+    assertEquals(3, rsp.getFacetField("str").getValues().size());
     assertEquals("a", rsp.getFacetField("str").getValues().get(0).getName());
     assertEquals(4, rsp.getFacetField("str").getValues().get(0).getCount());
     cursorMark = assertHashNextCursorMark(rsp);

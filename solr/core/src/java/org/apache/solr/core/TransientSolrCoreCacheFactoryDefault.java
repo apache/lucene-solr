@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 public class TransientSolrCoreCacheFactoryDefault extends TransientSolrCoreCacheFactory {
 
-  TransientSolrCoreCache transientSolrCoreCache = null;
+  volatile TransientSolrCoreCache transientSolrCoreCache = null;
 
   @Override
   public TransientSolrCoreCache getTransientSolrCoreCache() {
