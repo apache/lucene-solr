@@ -246,12 +246,12 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
 
     switch (frsp.getStatus()) {
       case HttpServletResponse.SC_UNAUTHORIZED:
-        // TODO: Cannot tell whether the 401 is due to wrong or missing credentials
+        // Cannot tell whether the 401 is due to wrong or missing credentials
         numWrongCredentials.inc();
         break;
 
       case HttpServletResponse.SC_FORBIDDEN:
-        // TODO: Are there other status codes which should also translate to error?
+        // Are there other status codes which should also translate to error?
         numErrors.mark();
         break;
       default:
