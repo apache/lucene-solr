@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -989,30 +990,32 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public void testAbuseOfSort() {
 
     assertU(adoc("id", "9999991",
-                 "sortabuse_b", "true",
+                 "sortabuse_not_uninvertible", "xxx",
                  "sortabuse_t", "zzz xxx ccc vvv bbb nnn aaa sss ddd fff ggg"));
     assertU(adoc("id", "9999992",
-                 "sortabuse_b", "true",
+                 "sortabuse_not_uninvertible", "yyy",
                  "sortabuse_t", "zzz xxx ccc vvv bbb nnn qqq www eee rrr ttt"));
 
     assertU(commit());
 
-    RuntimeException outerEx = expectThrows(RuntimeException.class, () -> {
-      ignoreException("can not sort on multivalued field: sortabuse_t");
-      assertQ("sort on something that shouldn't work",
-          req("q", "sortabuse_b:true",
-              "sort", "sortabuse_t asc"),
-          "*[count(//doc)=2]");
-    });
-    Throwable root = getRootCause(outerEx);
-    assertEquals("sort exception root cause",
-        SolrException.class, root.getClass());
-    SolrException e = (SolrException) root;
-    assertEquals("incorrect error type",
-        SolrException.ErrorCode.BAD_REQUEST,
-        SolrException.ErrorCode.getErrorCode(e.code()));
-    assertTrue("exception doesn't contain field name",
-        e.getMessage().contains("sortabuse_t"));
+    for (String f : Arrays.asList("sortabuse_not_uninvertible", "sortabuse_t")) {
+      RuntimeException outerEx = expectThrows(RuntimeException.class, () -> {
+          ignoreException("sortabuse");
+          assertQ("sort on something that shouldn't work",
+                  req("q", "*:*",
+                      "sort", f+ " asc"),
+                  "*[count(//doc)=2]");
+        });
+      Throwable root = getRootCause(outerEx);
+      assertEquals("sort exception root cause",
+                   SolrException.class, root.getClass());
+      SolrException e = (SolrException) root;
+      assertEquals("incorrect error type",
+                   SolrException.ErrorCode.BAD_REQUEST,
+                   SolrException.ErrorCode.getErrorCode(e.code()));
+      assertTrue("exception doesn't contain field name",
+                 e.getMessage().contains(f));
+    }
   }
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */

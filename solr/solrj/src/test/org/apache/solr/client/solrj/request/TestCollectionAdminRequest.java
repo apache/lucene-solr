@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
 import org.apache.solr.common.SolrException;

@@ -1,0 +1,4 @@
+= block_with_title :class=>['olist', style]
+  ol class=style start=(attr :start) type=list_marker_keyword reversed=(option? 'reversed')
+    - items.each do |item|
+      li =(print_item_content item)

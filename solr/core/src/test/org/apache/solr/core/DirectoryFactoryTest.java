@@ -67,45 +67,54 @@ public class DirectoryFactoryTest extends LuceneTestCase {
   }
 
   @Test
-  public void testGetDataHome() throws Exception {
+  public void testGetDataHomeRAMDirectory() throws Exception {
+    doTestGetDataHome(RAMDirectoryFactory.class);
+  }
+  
+  @Test
+  public void testGetDataHomeByteBuffersDirectory() throws Exception {
+    doTestGetDataHome(ByteBuffersDirectoryFactory.class);
+  }
+  
+  private void doTestGetDataHome(Class<? extends DirectoryFactory> directoryFactoryClass) throws Exception {
     NodeConfig config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     CoreContainer cc = new CoreContainer(config);
     Properties cp = cc.getContainerProperties();
-    RAMDirectoryFactory rdf = new RAMDirectoryFactory();
-    rdf.initCoreContainer(cc);
-    rdf.init(new NamedList());
+    DirectoryFactory df = directoryFactoryClass.newInstance();
+    df.initCoreContainer(cc);
+    df.init(new NamedList());
 
     // No solr.data.home property set. Absolute instanceDir
-    assertDataHome("/tmp/inst1/data", "/tmp/inst1", rdf, cc);
+    assertDataHome("/tmp/inst1/data", "/tmp/inst1", df, cc);
 
     // Simulate solr.data.home set in solrconfig.xml <directoryFactory> tag
     NamedList args = new NamedList();
     args.add("solr.data.home", "/solrdata/");
-    rdf.init(args);
-    assertDataHome("/solrdata/inst_dir/data", "inst_dir", rdf, cc);
+    df.init(args);
+    assertDataHome("/solrdata/inst_dir/data", "inst_dir", df, cc);
     
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     cc = new CoreContainer(config);
-    rdf = new RAMDirectoryFactory();
-    rdf.initCoreContainer(cc);
-    rdf.init(new NamedList());
-    assertDataHome(solrHome.resolve("solrdata/inst_dir/data").toAbsolutePath().toString(), "inst_dir", rdf, cc);
+    df = directoryFactoryClass.newInstance();
+    df.initCoreContainer(cc);
+    df.init(new NamedList());
+    assertDataHome(solrHome.resolve("solrdata/inst_dir/data").toAbsolutePath().toString(), "inst_dir", df, cc);
     // Test parsing last component of instanceDir, and using custom dataDir
-    assertDataHome(solrHome.resolve("solrdata/myinst/mydata").toAbsolutePath().toString(), "/path/to/myinst", rdf, cc, "dataDir", "mydata");
+    assertDataHome(solrHome.resolve("solrdata/myinst/mydata").toAbsolutePath().toString(), "/path/to/myinst", df, cc, "dataDir", "mydata");
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     cc = new CoreContainer(config);
-    rdf = new RAMDirectoryFactory();
-    rdf.initCoreContainer(cc);
-    rdf.init(new NamedList());
-    assertDataHome("/foo/inst_dir/data", "inst_dir", rdf, cc);
+    df = directoryFactoryClass.newInstance();
+    df.initCoreContainer(cc);
+    df.init(new NamedList());
+    assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
   }
 
-  private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, CoreContainer cc, String... properties) throws IOException {
-    String dataHome = rdf.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
+  private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
+    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 

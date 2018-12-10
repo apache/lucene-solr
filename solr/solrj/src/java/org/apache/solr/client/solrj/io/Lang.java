@@ -36,7 +36,7 @@ public class Lang {
   public static void register(StreamFactory streamFactory) {
     streamFactory
         // source streams
-        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("search", SearchFacadeStream.class)
         .withFunctionName("facet", FacetStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
@@ -80,6 +80,7 @@ public class Lang {
         .withFunctionName("significantTerms", SignificantTermsStream.class)
         .withFunctionName("cartesianProduct", CartesianProductStream.class)
         .withFunctionName("shuffle", ShuffleStream.class)
+        .withFunctionName("export", ShuffleStream.class)
         .withFunctionName("calc", CalculatorStream.class)
         .withFunctionName("eval", EvalStream.class)
         .withFunctionName("echo", EchoStream.class)
@@ -90,6 +91,7 @@ public class Lang {
         .withFunctionName("timeseries", TimeSeriesStream.class)
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
+        .withFunctionName("plist", ParallelListStream.class)
 
             // metrics
         .withFunctionName("min", MinMetric.class)
@@ -271,6 +273,11 @@ public class Lang {
         .withFunctionName("getRadius", GetRadiusEvaluator.class)
         .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
         .withFunctionName("pairSort", PairSortEvaluator.class)
+        .withFunctionName("recip", RecipEvaluator.class)
+        .withFunctionName("pivot", PivotEvaluator.class)
+        .withFunctionName("ltrim", LeftShiftEvaluator.class)
+        .withFunctionName("rtrim", RightShiftEvaluator.class)
+
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
@@ -303,6 +310,7 @@ public class Lang {
         .withFunctionName("mult", MultiplyEvaluator.class)
         .withFunctionName("sub", SubtractEvaluator.class)
         .withFunctionName("log", NaturalLogEvaluator.class)
+        .withFunctionName("log10", Log10Evaluator.class)
         .withFunctionName("pow", PowerEvaluator.class)
         .withFunctionName("mod", ModuloEvaluator.class)
         .withFunctionName("ceil", CeilingEvaluator.class)

@@ -245,7 +245,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
         }
         try {
-          Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
         }
@@ -328,6 +328,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
     }
+    log.info("Returning CreateReplica command.");
     return new CreateReplica(collection, shard, node, replicaType, coreName, coreNodeName);
   }
 

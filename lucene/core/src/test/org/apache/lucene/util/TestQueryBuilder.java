@@ -170,6 +170,17 @@ public class TestQueryBuilder extends LuceneTestCase {
         queryBuilder.createPhraseQuery("field", "guinea pig"));
   }
 
+  public void testMultiWordSynonymsPhraseWithSlop() throws Exception {
+    BooleanQuery expected = new BooleanQuery.Builder()
+        .add(new PhraseQuery.Builder().setSlop(4)
+                .add(new Term("field", "guinea")).add(new Term("field", "pig")).build(), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("field", "cavy")), BooleanClause.Occur.SHOULD)
+        .build();
+    QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
+    assertEquals(expected,
+        queryBuilder.createPhraseQuery("field", "guinea pig", 4));
+  }
+
   /** forms graph query */
   public void testMultiWordSynonymsBoolean() throws Exception {
     for (BooleanClause.Occur occur : new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {

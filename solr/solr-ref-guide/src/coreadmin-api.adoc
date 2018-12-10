@@ -235,7 +235,7 @@ Multi-valued, directories that would be merged.
 Multi-valued, source cores that would be merged.
 
 `async`::
-Request ID to track this action which will be processed asynchronously
+Request ID to track this action which will be processed asynchronously.
 
 
 [[coreadmin-split]]

@@ -74,6 +74,10 @@ This project includes portions of the Jekyll Documentation Theme
 Copyright (c) 2016 Tom Johnson
 License: MIT https://github.com/tomjohnson1492/documentation-theme-jekyll/blob/gh-pages/licenses/LICENSE
 
+This project includes templates from the Asciidoctor HTML5 backend converter
+Copyright (c) 2014-2018 Jakub Jirutka
+License: MIT https://github.com/jirutka/asciidoctor-html5s/blob/master/LICENSE
+
 This project includes the Navgoco JQuery plugin
 Copyright (c) 2013 Christopher Tsoulloftas, http://www.komposta.net
 License: BSD https://github.com/tefra/navgoco/blob/master/LICENSE-BSD

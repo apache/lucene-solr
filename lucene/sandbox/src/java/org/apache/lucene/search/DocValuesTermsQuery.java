@@ -184,7 +184,7 @@ public class DocValuesTermsQuery extends Query {
         if (matchesAtLeastOneTerm == false) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
 
           @Override
           public boolean matches() throws IOException {

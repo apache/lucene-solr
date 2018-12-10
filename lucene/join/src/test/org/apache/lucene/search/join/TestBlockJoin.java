@@ -44,7 +44,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiBits;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -651,11 +652,11 @@ public class TestBlockJoin extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
       System.out.println("TEST: joinReader=" + joinR);
 
-      Bits liveDocs = MultiFields.getLiveDocs(joinR);
+      Bits liveDocs = MultiBits.getLiveDocs(joinR);
       for(int docIDX=0;docIDX<joinR.maxDoc();docIDX++) {
         System.out.println("  docID=" + docIDX + " doc=" + joinR.document(docIDX) + " deleted?=" + (liveDocs != null && liveDocs.get(docIDX) == false));
       }
-      PostingsEnum parents = MultiFields.getTermDocsEnum(joinR, "isParent", new BytesRef("x"));
+      PostingsEnum parents = MultiTerms.getTermPostingsEnum(joinR, "isParent", new BytesRef("x"), (int) PostingsEnum.FREQS);
       System.out.println("parent docIDs:");
       while (parents.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
         System.out.println("  " + parents.docID());

@@ -1398,7 +1398,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
             @Override
             public Scorer get(long leadCost) throws IOException {
               scorerCreated.set(true);
-              return new ConstantScoreScorer(weight, boost, DocIdSetIterator.all(1));
+              return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.all(1));
             }
 
             @Override
@@ -1484,7 +1484,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           scorerCreatedCount.incrementAndGet();
-          return new ConstantScoreScorer(this, 1, DocIdSetIterator.all(context.reader().maxDoc()));
+          return new ConstantScoreScorer(this, 1, scoreMode, DocIdSetIterator.all(context.reader().maxDoc()));
         }
 
         @Override

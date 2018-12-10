@@ -55,7 +55,7 @@ public class SolrRequestInfo {
     SolrRequestInfo prev = threadLocal.get();
     if (prev != null) {
       log.error("Previous SolrRequestInfo was not closed!  req=" + prev.req.getOriginalParams().toString());
-      log.error("prev == info : {}", prev.req == info.req);
+      log.error("prev == info : {}", prev.req == info.req, new RuntimeException());
     }
     assert prev == null;
 

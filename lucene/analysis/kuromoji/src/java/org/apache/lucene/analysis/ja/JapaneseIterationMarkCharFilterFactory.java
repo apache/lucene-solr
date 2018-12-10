@@ -17,14 +17,10 @@
 package org.apache.lucene.analysis.ja;
 
 
-import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.ja.JapaneseIterationMarkCharFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
-
 import java.io.Reader;
 import java.util.Map;
+
+import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapaneseIterationMarkCharFilter}.
@@ -35,8 +31,10 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 4.0.0
  */
-public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
+public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory {
 
   private static final String NORMALIZE_KANJI_PARAM = "normalizeKanji";
   private static final String NORMALIZE_KANA_PARAM = "normalizeKana";
@@ -55,12 +53,12 @@ public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory im
   }
 
   @Override
-  public CharFilter create(Reader input) {
+  public Reader create(Reader input) {
     return new JapaneseIterationMarkCharFilter(input, normalizeKanji, normalizeKana);
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public Reader normalize(Reader input) {
+    return create(input);
   }
 }

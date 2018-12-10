@@ -338,7 +338,10 @@ public class Policy implements MapWriter {
         .filter(Clause::isPerCollectiontag)
         .map(clause -> {
           Map<String, Object> copy = new LinkedHashMap<>(clause.original);
-          if (!copy.containsKey("collection")) copy.put("collection", coll);
+          if (!copy.containsKey("collection")) {
+            copy.put("collection", coll);
+            copy.put(Clause.class.getName(), clause);
+          }
           return Clause.create(copy);
         })
         .filter(it -> (it.getCollection().isPass(coll)))

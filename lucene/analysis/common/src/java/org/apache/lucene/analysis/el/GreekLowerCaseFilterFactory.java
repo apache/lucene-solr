@@ -20,9 +20,6 @@ package org.apache.lucene.analysis.el;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -34,8 +31,10 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.GreekLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
-public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
  
   /** Creates a new GreekLowerCaseFilterFactory */
   public GreekLowerCaseFilterFactory(Map<String,String> args) {
@@ -46,13 +45,13 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
   }
 
   @Override
-  public GreekLowerCaseFilter create(TokenStream in) {
+  public TokenStream create(TokenStream in) {
     return new GreekLowerCaseFilter(in);
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }
 

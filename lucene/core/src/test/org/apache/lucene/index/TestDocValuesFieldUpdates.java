@@ -69,4 +69,67 @@ public class TestDocValuesFieldUpdates extends LuceneTestCase {
     assertEquals(24, iterator.longValue());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, iterator.nextDoc());
   }
+
+  public void testUpdateAndResetSameDoc() {
+    NumericDocValuesFieldUpdates updates = new NumericDocValuesFieldUpdates(0, "test", 2);
+    updates.add(0, 1);
+    updates.reset(0);
+    updates.finish();
+    NumericDocValuesFieldUpdates.Iterator iterator = updates.iterator();
+    assertEquals(0, iterator.nextDoc());
+    assertFalse(iterator.hasValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, iterator.nextDoc());
+  }
+
+  public void testUpdateAndResetUpdateSameDoc() {
+    NumericDocValuesFieldUpdates updates = new NumericDocValuesFieldUpdates(0, "test", 3);
+    updates.add(0, 1);
+    updates.add(0);
+    updates.add(0, 2);
+    updates.finish();
+    NumericDocValuesFieldUpdates.Iterator iterator = updates.iterator();
+    assertEquals(0, iterator.nextDoc());
+    assertTrue(iterator.hasValue());
+    assertEquals(2, iterator.longValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, iterator.nextDoc());
+  }
+
+  public void testUpdatesAndResetRandom() {
+    NumericDocValuesFieldUpdates updates = new NumericDocValuesFieldUpdates(0, "test", 10);
+    int numUpdates = 10 + random().nextInt(100);
+    Integer[] values = new Integer[5];
+    for (int i = 0; i < 5; i++) {
+      values[i] = random().nextBoolean() ? null : random().nextInt(100);
+      if (values[i] == null) {
+        updates.reset(i);
+      } else {
+        updates.add(i, values[i]);
+      }
+    }
+    for (int i = 0; i < numUpdates; i++) {
+      int docId = random().nextInt(5);
+      values[docId] = random().nextBoolean() ? null : random().nextInt(100);
+      if (values[docId] == null) {
+        updates.reset(docId);
+      } else {
+        updates.add(docId, values[docId]);
+      }
+    }
+
+    updates.finish();
+    NumericDocValuesFieldUpdates.Iterator iterator = updates.iterator();
+    int idx = 0;
+    while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      assertEquals(idx, iterator.docID());
+      if (values[idx] == null) {
+        assertFalse(iterator.hasValue());
+      } else {
+        assertTrue(iterator.hasValue());
+        assertEquals(values[idx].longValue(), iterator.longValue());
+      }
+      idx++;
+    }
+
+
+  }
 }

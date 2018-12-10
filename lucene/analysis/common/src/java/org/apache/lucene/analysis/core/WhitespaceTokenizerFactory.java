@@ -45,6 +45,8 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  *       It is rare to need to change this
  *      else {@link CharTokenizer}::DEFAULT_MAX_TOKEN_LEN</li>
  * </ul>
+ *
+ * @since 3.1
  */
 public class WhitespaceTokenizerFactory extends TokenizerFactory {
   public static final String RULE_JAVA = "java";

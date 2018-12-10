@@ -139,7 +139,7 @@ final class LatLonDocValuesBoxQuery extends Query {
             return 5; // 5 comparisons
           }
         };
-        return new ConstantScoreScorer(this, boost, iterator);
+        return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
       @Override

@@ -439,9 +439,8 @@ public class StreamFactory implements Serializable {
     if("null".equals(lower)){ return null; }
     if("true".equals(lower) || "false".equals(lower)){ return Boolean.parseBoolean(lower); }
     try{ return Long.valueOf(original); } catch(Exception ignored){};
-    try{ if (original.matches(".{1,8}")){ return Double.valueOf(original); }} catch(Exception ignored){};
-    try{ if (original.matches(".{1,17}")){ return Double.valueOf(original); }} catch(Exception ignored){};
-    
+    try{ return Double.valueOf(original); } catch(Exception ignored){};
+
     // is a string
     return original;
   }

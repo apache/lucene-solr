@@ -115,7 +115,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     
     // try a reconnect from disconnect
     zkServer = new ZkTestServer(zkDir, zkPort);
-    zkServer.run();
+    zkServer.run(false);
     
     Thread.sleep(300);
     

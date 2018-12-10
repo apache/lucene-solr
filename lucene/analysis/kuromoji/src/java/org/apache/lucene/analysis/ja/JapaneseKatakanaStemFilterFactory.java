@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
 
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapaneseKatakanaStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;

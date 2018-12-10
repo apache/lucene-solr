@@ -46,15 +46,15 @@ import org.rrd4j.core.RrdDb;
 @LogLevel("org.apache.solr.cloud=DEBUG")
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
-  private static SolrCloudManager cloudManager;
-  private static SolrMetricManager metricManager;
-  private static TimeSource timeSource;
-  private static SolrClient solrClient;
-  private static boolean simulated;
-  private static int SPEED;
+  private volatile static SolrCloudManager cloudManager;
+  private volatile static SolrMetricManager metricManager;
+  private volatile static TimeSource timeSource;
+  private volatile static SolrClient solrClient;
+  private volatile static boolean simulated;
+  private volatile static int SPEED;
 
-  private static MetricsHistoryHandler handler;
-  private static MetricsHandler metricsHandler;
+  private volatile static MetricsHistoryHandler handler;
+  private volatile static MetricsHandler metricsHandler;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -80,6 +80,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+    
     if (!simulated) {
       cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
       metricManager = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager();
@@ -110,7 +111,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testBasic() throws Exception {
     timeSource.sleep(10000);
     List<Pair<String, Long>> list = handler.getFactory().list(100);

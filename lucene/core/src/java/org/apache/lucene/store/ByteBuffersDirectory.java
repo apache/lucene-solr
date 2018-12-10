@@ -68,21 +68,14 @@ public final class ByteBuffersDirectory extends BaseDirectory {
         return new ByteBuffersIndexInput(dataInput, inputName);
       };
 
-  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY = 
-      (fileName, output) -> {
-        byte[] array = output.toArrayCopy();
-        String inputName = String.format(Locale.ROOT, "%s (file=%s, length=%s)",
-            ByteArrayIndexInput.class.getSimpleName(),
-            fileName,
-            array.length);
-        return new ByteArrayIndexInput(inputName, array, 0, array.length);
-      };
+  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY = OUTPUT_AS_ONE_BUFFER;
 
   public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS_LUCENE = 
       (fileName, output) -> {
         List<ByteBuffer> bufferList = output.toBufferList();
-        int chunkSizePower;
         bufferList.add(ByteBuffer.allocate(0));
+
+        int chunkSizePower;
         int blockSize = ByteBuffersDataInput.determineBlockPage(bufferList);
         if (blockSize == 0) {
           chunkSizePower = 30;
@@ -95,8 +88,8 @@ public final class ByteBuffersDirectory extends BaseDirectory {
             fileName);
 
         ByteBufferGuard guard = new ByteBufferGuard("none", (String resourceDescription, ByteBuffer b) -> {});
-        return ByteBufferIndexInput.newInstance(inputName, 
-            bufferList.toArray(new ByteBuffer [bufferList.size()]), 
+        return ByteBufferIndexInput.newInstance(inputName,
+            bufferList.toArray(new ByteBuffer [bufferList.size()]),
             output.size(), chunkSizePower, guard);
       };
 

@@ -203,8 +203,8 @@ public class PolicyHelper {
 
   public static MapWriter getDiagnostics(Policy.Session session) {
     List<Row> sorted = session.getSortedNodes();
-    Set<String> alreadyWritten = new HashSet<>();
-    BiPredicate<String, Object> p = dedupeKeyPredicate(alreadyWritten)
+    Set<CharSequence> alreadyWritten = new HashSet<>();
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(alreadyWritten)
         .and(ConditionalMapWriter.NON_NULL_VAL)
         .and((s, o) -> !(o instanceof Map) || !((Map) o).isEmpty());
 
@@ -237,12 +237,18 @@ public class PolicyHelper {
     ctx.session = policy.createSession(cloudManager);
     List<Violation> violations = ctx.session.getViolations();
     for (Violation violation : violations) {
-      String name = violation.getClause().isPerCollectiontag() ?
-          violation.getClause().tag.name :
-          violation.getClause().globalTag.name;
-      Variable.Type tagType = VariableBase.getTagType(name);
-      tagType.getSuggestions(ctx.setViolation(violation));
+      violation.getClause().getThirdTag().varType.getSuggestions(ctx.setViolation(violation));
       ctx.violation = null;
+    }
+
+    for (Violation current : ctx.session.getViolations()) {
+      for (Violation old : violations) {
+        if (current.equals(old)) {
+          //could not be resolved
+          ctx.suggestions.add(new Suggester.SuggestionInfo(current, null, "unresolved-violation"));
+          break;
+        }
+      }
     }
 
     if (ctx.needMore()) {

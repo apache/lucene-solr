@@ -229,8 +229,7 @@ public class QueryScorer implements Scorer {
   }
   
   protected WeightedSpanTermExtractor newTermExtractor(String defaultField) {
-    return defaultField == null ? new WeightedSpanTermExtractor()
-    : new WeightedSpanTermExtractor(defaultField);
+    return new WeightedSpanTermExtractor(defaultField);
   }
 
   /*

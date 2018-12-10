@@ -25,6 +25,8 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Abstract parent class for analysis factories that create {@link org.apache.lucene.analysis.TokenFilter}
  * instances.
+ *
+ * @since 3.1
  */
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
@@ -71,4 +73,13 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   /** Transform the specified input TokenStream */
   public abstract TokenStream create(TokenStream input);
+
+  /**
+   * Normalize the specified input TokenStream
+   * While the default implementation returns input unchanged,
+   * filters that should be applied at normalization time can delegate to {@code create} method.
+   */
+  public TokenStream normalize(TokenStream input) {
+    return input;
+  }
 }

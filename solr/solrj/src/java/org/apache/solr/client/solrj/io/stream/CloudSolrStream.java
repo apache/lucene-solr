@@ -167,7 +167,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
     
     // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
+    StreamExpression expression = new StreamExpression("search");
     
     // collection
     expression.addParameter(collection);
@@ -206,7 +206,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
     
-    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setFunctionName("search");
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
     explanation.setExpression(toExpression(factory).toString());
@@ -226,7 +226,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  protected void init(String collectionName, String zkHost, SolrParams params) throws IOException {
+  void init(String collectionName, String zkHost, SolrParams params) throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
