@@ -147,6 +147,8 @@ Bug Fixes
   
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
+* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
+
 Improvements
 ----------------------
 

@@ -23,10 +23,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -2667,6 +2670,69 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     } finally {
       cache.close();
     }
+  }
+
+  @Test
+  public void tooLargeForGetRequest() throws IOException, SolrServerException {
+    // Test expressions which are larger than GET can handle
+    UpdateRequest updateRequest = new UpdateRequest();
+    for (int i = 0; i < 10; i++) {
+      updateRequest.add(id, "a"+i, "test_t", "a b c d m l");
+    }
+    for(int i=1; i<=50; i++) {
+      updateRequest.add(id, "id_"+(i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
+    }
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrClientCache cache = new SolrClientCache();
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(cache);
+    String longQuery = "\"id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + ")\"";
+        
+    try {
+      assertSuccess("significantTerms("+COLLECTIONORALIAS+", q="+longQuery+", field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")", streamContext);
+      String expr = "timeseries("+COLLECTIONORALIAS+", q="+longQuery+", start=\"2013-01-01T01:00:00.000Z\", " +
+              "end=\"2016-12-01T01:00:00.000Z\", " +
+              "gap=\"+1YEAR\", " +
+              "field=\"test_dt\", " +
+              "format=\"yyyy\", " +
+              "count(*), sum(price_f), max(price_f), min(price_f))";
+      assertSuccess(expr, streamContext);
+      expr = "facet("
+                    +   "collection1, "
+                    +   "q="+longQuery+", "
+                    +   "fl=\"a_s,a_i,a_f\", "
+                    +   "sort=\"a_s asc\", "
+                    +   "buckets=\"a_s\", "
+                    +   "bucketSorts=\"sum(a_i) asc\", "
+                    +   "bucketSizeLimit=100, "
+                    +   "sum(a_i), sum(a_f), "
+                    +   "min(a_i), min(a_f), "
+                    +   "max(a_i), max(a_f), "
+                    +   "avg(a_i), avg(a_f), "
+                    +   "count(*)"
+                    + ")";
+      assertSuccess(expr, streamContext);
+      expr = "stats(" + COLLECTIONORALIAS + ", q="+longQuery+", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))"; 
+      assertSuccess(expr, streamContext);
+      expr = "search(" + COLLECTIONORALIAS + ", q="+longQuery+", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")";
+      assertSuccess(expr, streamContext);
+      expr = "random(" + COLLECTIONORALIAS + ", q="+longQuery+", rows=\"1000\", fl=\"id, a_i\")";
+      assertSuccess(expr, streamContext);
+    } finally {
+      cache.close();
+    }
+  }
+
+  private void assertSuccess(String expr, StreamContext streamContext) throws IOException {
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    solrStream.setStreamContext(streamContext);
+    getTuples(solrStream);
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -185,7 +186,7 @@ public class SearchStream extends TupleStream implements Expressible  {
     }
 
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
     try {
       QueryResponse response = request.process(cloudSolrClient, collection);
       SolrDocumentList docs = response.getResults();
