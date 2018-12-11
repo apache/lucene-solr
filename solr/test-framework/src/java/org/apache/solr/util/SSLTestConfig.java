@@ -39,6 +39,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
+import org.apache.solr.client.solrj.util.Constants;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -100,7 +101,12 @@ public class SSLTestConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    this.useSsl = useSSL;
+    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
+    if (Constants.JRE_IS_MINIMUM_JAVA11) {
+      this.useSsl = false;
+    } else {
+      this.useSsl = useSSL;
+    }
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 

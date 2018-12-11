@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.client.solrj.util.Constants;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /** 
@@ -35,12 +34,7 @@ public class SSLConfig {
 
   /** NOTE: all other settings are ignored if useSSL is false; trustStore settings are ignored if clientAuth is false */
   public SSLConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
-    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
-    if (Constants.JRE_IS_MINIMUM_JAVA11) {
-      this.useSsl = false;
-    } else {
-      this.useSsl = useSSL;
-    }
+    this.useSsl = useSSL;
     this.clientAuth = clientAuth;
     this.keyStore = keyStore;
     this.keyStorePassword = keyStorePassword;
