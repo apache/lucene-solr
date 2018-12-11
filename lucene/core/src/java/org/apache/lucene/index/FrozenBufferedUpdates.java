@@ -468,7 +468,7 @@ final class FrozenBufferedUpdates {
                                             long delGen,
                                             boolean segmentPrivateDeletes) throws IOException {
 
-    TermsEnum termsEnum;
+    TermsEnum termsEnum = null;
     PostingsEnum postingsEnum = null;
 
     // TODO: we can process the updates per DV field, from last to first so that
@@ -492,11 +492,14 @@ final class FrozenBufferedUpdates {
       boolean isNumeric = value.isNumeric();
       FieldUpdatesBuffer.BufferedUpdateIterator iterator = value.iterator();
       FieldUpdatesBuffer.BufferedUpdate bufferedUpdate;
+      String previousField = null;
       while ((bufferedUpdate = iterator.next()) != null) {
-        Terms terms = segState.reader.terms(bufferedUpdate.termField);
-        if (terms != null) {
-          termsEnum = terms.iterator();
-        } else {
+        if (previousField == null || previousField.equals(bufferedUpdate.termField) == false) {
+          previousField = bufferedUpdate.termField;
+          Terms terms = segState.reader.terms(previousField);
+          termsEnum = terms == null ? null : terms.iterator();
+        }
+        if (termsEnum == null) {
           // no terms in this segment for this field
           continue;
         }

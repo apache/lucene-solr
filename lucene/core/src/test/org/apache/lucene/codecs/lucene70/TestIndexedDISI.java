@@ -150,39 +150,6 @@ public class TestIndexedDISI extends LuceneTestCase {
       }
     }
   }
-  public void testDenseMultiBlock() throws IOException {
-    try (Directory dir = newDirectory()) {
-      int maxDoc = 10 * 65536; // 10 blocks
-      FixedBitSet set = new FixedBitSet(maxDoc);
-      for (int i = 0; i < maxDoc; i += 2) { // Set every other to ensure dense
-        set.set(i);
-      }
-      doTest(set, dir);
-    }
-  }
-
-  public void testOneDocMissingFixed() throws IOException {
-    int maxDoc = 9699;
-    FixedBitSet set = new FixedBitSet(maxDoc);
-    set.set(0, maxDoc);
-    set.clear(1345);
-    try (Directory dir = newDirectory()) {
-
-      final int cardinality = set.cardinality();
-      long length;
-      try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-        IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
-        length = out.getFilePointer();
-      }
-
-      int step = 16000;
-      try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
-        BitSetIterator disi2 = new BitSetIterator(set, cardinality);
-        assertAdvanceEquality(disi, disi2, step);
-      }
-    }
-  }
 
   public void testRandom() throws IOException {
     try (Directory dir = newDirectory()) {
@@ -221,14 +188,32 @@ public class TestIndexedDISI extends LuceneTestCase {
     try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
       IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
       BitSetIterator disi2 = new BitSetIterator(set, cardinality);
-      assertSingleStepEquality(disi, disi2);
+      int i = 0;
+      for (int doc = disi2.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = disi2.nextDoc()) {
+        assertEquals(doc, disi.nextDoc());
+        assertEquals(i++, disi.index());
+      }
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc());
     }
 
     for (int step : new int[] {1, 10, 100, 1000, 10000, 100000}) {
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
-        assertAdvanceEquality(disi, disi2, step);
+        int index = -1;
+        while (true) {
+          int target = disi2.docID() + step;
+          int doc;
+          do {
+            doc = disi2.nextDoc();
+            index++;
+          } while (doc < target);
+          assertEquals(doc, disi.advance(target));
+          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+            break;
+          }
+          assertEquals(index, disi.index());
+        }
       }
     }
 
@@ -236,61 +221,29 @@ public class TestIndexedDISI extends LuceneTestCase {
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
-        int disi2length = set.length();
-        assertAdvanceExactRandomized(disi, disi2, disi2length, step);
+        int index = -1;
+        for (int target = 0; target < set.length(); ) {
+          target += TestUtil.nextInt(random(), 0, step);
+          int doc = disi2.docID();
+          while (doc < target) {
+            doc = disi2.nextDoc();
+            index++;
+          }
+
+          boolean exists = disi.advanceExact(target);
+          assertEquals(doc == target, exists);
+          if (exists) {
+            assertEquals(index, disi.index());
+          } else if (random().nextBoolean()) {
+            assertEquals(doc, disi.nextDoc());
+            assertEquals(index, disi.index());
+            target = doc;
+          }
+        }
       }
     }
 
     dir.deleteFile("foo");
-  }
-
-  private void assertAdvanceExactRandomized(IndexedDISI disi, BitSetIterator disi2, int disi2length, int step)
-      throws IOException {
-    int index = -1;
-    for (int target = 0; target < disi2length; ) {
-      target += TestUtil.nextInt(random(), 0, step);
-      int doc = disi2.docID();
-      while (doc < target) {
-        doc = disi2.nextDoc();
-        index++;
-      }
-
-      boolean exists = disi.advanceExact(target);
-      assertEquals(doc == target, exists);
-      if (exists) {
-        assertEquals(index, disi.index());
-      } else if (random().nextBoolean()) {
-        assertEquals(doc, disi.nextDoc());
-        assertEquals(index, disi.index());
-        target = doc;
-      }
-    }
-  }
-
-  private void assertSingleStepEquality(IndexedDISI disi, BitSetIterator disi2) throws IOException {
-    int i = 0;
-    for (int doc = disi2.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = disi2.nextDoc()) {
-      assertEquals(doc, disi.nextDoc());
-      assertEquals(i++, disi.index());
-    }
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc());
-  }
-
-  private void assertAdvanceEquality(IndexedDISI disi, BitSetIterator disi2, int step) throws IOException {
-    int index = -1;
-    while (true) {
-      int target = disi2.docID() + step;
-      int doc;
-      do {
-        doc = disi2.nextDoc();
-        index++;
-      } while (doc < target);
-      assertEquals(doc, disi.advance(target));
-      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-        break;
-      }
-      assertEquals("Expected equality using step " + step + " at docID " + doc, index, disi.index());
-    }
   }
 
 }
