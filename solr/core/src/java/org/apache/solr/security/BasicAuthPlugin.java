@@ -263,7 +263,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     public String toString() {
       return new ToStringBuilder(this)
           .append("username", username)
-          .append("pwd", password)
+          .append("pwd", "*****")
           .toString();
     }
   }
