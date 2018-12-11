@@ -701,7 +701,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     
     assertNotNull(listenerEvents.entrySet().toString(), listenerEvents.get("srt"));
 
-    assertTrue(listenerEvents.toString(), listenerEvents.get("srt").size() >= 1);
+    assertTrue(listenerEvents.entrySet().toString(), listenerEvents.get("srt").size() >= 1);
 
     CapturedEvent ev = listenerEvents.get("srt").get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
