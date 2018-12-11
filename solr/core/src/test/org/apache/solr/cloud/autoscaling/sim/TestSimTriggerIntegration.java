@@ -210,7 +210,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
     String newNode = cluster.simAddNode();
 
-    if (!triggerFiredLatch.await(320000 / SPEED, TimeUnit.MILLISECONDS)) {
+    if (!triggerFiredLatch.await(420000 / SPEED, TimeUnit.MILLISECONDS)) {
       fail("Both triggers should have fired by now");
     }
 
@@ -436,7 +436,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     String newNode = cluster.simAddNode();
-    boolean await = triggerFiredLatch.await(90000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(240000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     TriggerEvent nodeAddedEvent = events.iterator().next();
@@ -922,7 +922,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     }
 
 
-    if (!triggerFiredLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS)) {
+    if (!triggerFiredLatch.await(120000 / SPEED, TimeUnit.MILLISECONDS)) {
       fail("Trigger should have fired by now");
     }
     assertEquals(1, events.size());
@@ -1185,7 +1185,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(6000);
+    cluster.getTimeSource().sleep(8000);
 
     // there must be exactly one SUCCEEDED event
     capturedEvents = listenerEvents.get("bar");
