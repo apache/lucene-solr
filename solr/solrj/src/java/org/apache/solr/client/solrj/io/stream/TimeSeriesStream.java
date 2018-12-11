@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -288,7 +289,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(paramsLoc);
+    QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);

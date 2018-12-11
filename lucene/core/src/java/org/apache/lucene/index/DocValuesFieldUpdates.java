@@ -18,10 +18,13 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedMutable;
 
@@ -251,7 +254,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
     this.type = type;
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1) + SHIFT;
-    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.DEFAULT);
   }
 
   final boolean getFinished() {
@@ -282,7 +285,6 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-
     // shrink wrap
     if (size < docs.size()) {
       resize(size);
@@ -302,9 +304,9 @@ abstract class DocValuesFieldUpdates implements Accountable {
       }
     }.sort(0, size);
   }
-  
+
   /** Returns true if this instance contains any updates. */
-  synchronized final boolean any() {
+  synchronized boolean any() {
     return size > 0;
   }
 
@@ -316,7 +318,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
    * Adds an update that resets the documents value.
    * @param doc the doc to update
    */
-  final synchronized void reset(int doc) {
+  synchronized void reset(int doc) {
     addInternal(doc, HAS_NO_VALUE_MASK);
   }
   final synchronized int add(int doc) {
@@ -431,21 +433,42 @@ abstract class DocValuesFieldUpdates implements Accountable {
   }
 
   static abstract class SingleValueDocValuesFieldUpdates extends DocValuesFieldUpdates {
-
+    private final BitSet bitSet;
+    private BitSet hasNoValue;
+    private boolean hasAtLeastOneValue;
     protected SingleValueDocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
       super(maxDoc, delGen, field, type);
+      this.bitSet = new SparseFixedBitSet(maxDoc);
     }
 
     @Override
     void add(int doc, long value) {
       assert longValue() == value;
-      super.add(doc);
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue != null) {
+        hasNoValue.clear(doc);
+      }
     }
 
     @Override
     void add(int doc, BytesRef value) {
       assert binaryValue().equals(value);
-      super.add(doc);
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue != null) {
+        hasNoValue.clear(doc);
+      }
+    }
+
+    @Override
+    synchronized void reset(int doc) {
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue == null) {
+        hasNoValue = new SparseFixedBitSet(maxDoc);
+      }
+      hasNoValue.set(doc);
     }
 
     @Override
@@ -458,11 +481,28 @@ abstract class DocValuesFieldUpdates implements Accountable {
     protected abstract long longValue();
 
     @Override
+    synchronized boolean any() {
+      return super.any() || hasAtLeastOneValue;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return super.ramBytesUsed() + bitSet.ramBytesUsed();
+    }
+
+    @Override
     Iterator iterator() {
-      return new DocValuesFieldUpdates.AbstractIterator(size, docs, delGen) {
+      BitSetIterator iterator = new BitSetIterator(bitSet, maxDoc);
+      return new DocValuesFieldUpdates.Iterator() {
+
         @Override
-        protected void set(long idx) {
-          // nothing to do;
+        public int docID() {
+          return iterator.docID();
+        }
+
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
         }
 
         @Override
@@ -473,6 +513,19 @@ abstract class DocValuesFieldUpdates implements Accountable {
         @Override
         BytesRef binaryValue() {
           return SingleValueDocValuesFieldUpdates.this.binaryValue();
+        }
+
+        @Override
+        long delGen() {
+          return delGen;
+        }
+
+        @Override
+        boolean hasValue() {
+          if (hasNoValue != null) {
+            return hasNoValue.get(docID()) == false;
+          }
+          return true;
         }
       };
     }

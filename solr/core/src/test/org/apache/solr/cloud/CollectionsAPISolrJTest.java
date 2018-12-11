@@ -75,7 +75,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     
     // clear any persisted auto scaling configuration
     zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-    cluster.deleteAllCollections();
     
     final ClusterProperties props = new ClusterProperties(zkClient());
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
@@ -130,7 +129,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
 
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 300; i++) {
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
@@ -214,7 +213,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
 
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 300; i++) {
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);

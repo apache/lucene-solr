@@ -44,6 +44,8 @@
  * <ul>
  *   <li>{@link org.apache.lucene.search.intervals.Intervals#maxwidth(int, org.apache.lucene.search.intervals.IntervalsSource)}
  *          &mdash; Filters out intervals that are larger than a set width</li>
+ *   <li>{@link org.apache.lucene.search.intervals.Intervals#maxgaps(int, org.apache.lucene.search.intervals.IntervalsSource)}
+ *          &mdash; Filters out intervals that have more than a set number of gaps between their constituent sub-intervals</li>
  *   <li>{@link org.apache.lucene.search.intervals.Intervals#containedBy(org.apache.lucene.search.intervals.IntervalsSource, org.apache.lucene.search.intervals.IntervalsSource)}
  *          &mdash; Returns intervals that are contained by another interval</li>
  *   <li>{@link org.apache.lucene.search.intervals.Intervals#notContainedBy(org.apache.lucene.search.intervals.IntervalsSource, org.apache.lucene.search.intervals.IntervalsSource)}

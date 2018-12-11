@@ -65,6 +65,11 @@ public abstract class IntervalFilter extends IntervalIterator {
   }
 
   @Override
+  public int gaps() {
+    return in.gaps();
+  }
+
+  @Override
   public float matchCost() {
     return in.matchCost();
   }

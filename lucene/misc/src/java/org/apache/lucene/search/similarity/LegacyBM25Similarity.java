@@ -89,6 +89,14 @@ public final class LegacyBM25Similarity extends Similarity {
     bm25Similarity.setDiscountOverlaps(v);
   }
 
+  /**
+   * Returns true if overlap tokens are discounted from the document's length.
+   * @see #setDiscountOverlaps
+   */
+  public boolean getDiscountOverlaps() {
+    return bm25Similarity.getDiscountOverlaps();
+  }
+
   @Override
   public String toString() {
     return bm25Similarity.toString();

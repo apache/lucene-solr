@@ -103,7 +103,7 @@ public class SSLTestConfig {
     this.useSsl = useSSL;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
-    
+
     final String resourceName = checkPeerName
       ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
     trustStore = keyStore = Resource.newClassPathResource(resourceName);

@@ -25,34 +25,28 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
 
-class LowpassIntervalsSource extends IntervalsSource {
+/**
+ * An IntervalsSource that filters the intervals from another IntervalsSource
+ */
+public abstract class FilteredIntervalsSource extends IntervalsSource {
 
-  final IntervalsSource in;
-  private final int maxWidth;
+  private final String name;
+  private final IntervalsSource in;
 
-  LowpassIntervalsSource(IntervalsSource in, int maxWidth) {
+  /**
+   * Create a new FilteredIntervalsSource
+   * @param name  the name of the filter
+   * @param in    the source to filter
+   */
+  public FilteredIntervalsSource(String name, IntervalsSource in) {
+    this.name = name;
     this.in = in;
-    this.maxWidth = maxWidth;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    LowpassIntervalsSource that = (LowpassIntervalsSource) o;
-    return maxWidth == that.maxWidth &&
-        Objects.equals(in, that.in);
-  }
-
-  @Override
-  public String toString() {
-    return "MAXWIDTH/" + maxWidth + "(" + in + ")";
-  }
-
-  @Override
-  public void extractTerms(String field, Set<Term> terms) {
-    in.extractTerms(field, terms);
-  }
+  /**
+   * @return {@code false} if the current interval should be filtered out
+   */
+  protected abstract boolean accept(IntervalIterator it);
 
   @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
@@ -63,7 +57,7 @@ class LowpassIntervalsSource extends IntervalsSource {
     return new IntervalFilter(i) {
       @Override
       protected boolean accept() {
-        return (i.end() - i.start()) + 1 <= maxWidth;
+        return FilteredIntervalsSource.this.accept(in);
       }
     };
   }
@@ -77,14 +71,33 @@ class LowpassIntervalsSource extends IntervalsSource {
     IntervalIterator filtered = new IntervalFilter(IntervalMatches.wrapMatches(mi, doc)) {
       @Override
       protected boolean accept() {
-        return (this.in.end() - this.in.start()) + 1 <= maxWidth;
+        return FilteredIntervalsSource.this.accept(in);
       }
     };
     return IntervalMatches.asMatches(filtered, mi, doc);
   }
 
   @Override
+  public void extractTerms(String field, Set<Term> terms) {
+    in.extractTerms(field, terms);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    FilteredIntervalsSource that = (FilteredIntervalsSource) o;
+    return Objects.equals(name, that.name) &&
+        Objects.equals(in, that.in);
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(in, maxWidth);
+    return Objects.hash(name, in);
+  }
+
+  @Override
+  public String toString() {
+    return name + "(" + in + ")";
   }
 }

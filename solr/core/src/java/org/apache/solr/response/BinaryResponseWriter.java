@@ -22,16 +22,20 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utf8CharSequence;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -40,8 +44,11 @@ import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
+
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
+//  public static boolean useUtf8CharSeq = true;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -80,14 +87,32 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
+      if (o instanceof StoredField) {
+        CharSequence val = ((StoredField) o).getCharSequenceValue();
+        if (val instanceof Utf8CharSequence) {
+          codec.writeUTF8Str((Utf8CharSequence) val);
+          return null;
+        }
+      }
       if (o instanceof ResultContext) {
         ReturnFields orig = returnFields;
         ResultContext res = (ResultContext)o;
         if(res.getReturnFields()!=null) {
           returnFields = res.getReturnFields();
         }
-        writeResults(res, codec);
+//        if (useUtf8CharSeq) {
+        ResultContext.READASBYTES.set(fieldName -> {
+          SchemaField fld = res.getRequest().getSchema().getFieldOrNull(fieldName);
+          return fld != null && fld.getType().isUtf8Field();
+        });
+
+        try {
+          writeResults(res, codec);
+        } finally {
+          ResultContext.READASBYTES.remove();
+        }
         returnFields = orig;
+
         return null; // null means we completely handled it
       }
       if (o instanceof DocList) {
@@ -173,6 +198,100 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     }
     catch (Exception ex) {
       throw new RuntimeException(ex);
+    }
+  }
+
+  static class MaskCharSeqSolrDocument extends SolrDocument {
+    /**
+     * Get the value or collection of values for a given field.
+     */
+    @Override
+    public Object getFieldValue(String name) {
+      return convertCharSeq(_fields.get(name));
+    }
+
+    /**
+     * Get a collection of values for a given field name
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public Collection<Object> getFieldValues(String name) {
+      Object v = _fields.get(name);
+      if (v instanceof Collection) {
+        return convertCharSeq((Collection<Object>) v);
+      }
+      if (v != null) {
+        ArrayList<Object> arr = new ArrayList<>(1);
+        arr.add(convertCharSeq(v));
+        return arr;
+      }
+      return null;
+    }
+
+    public Collection<Object> getRawFieldValues(String name) {
+      Object v = _fields.get(name);
+      if (v instanceof Collection) {
+        return (Collection<Object>) v;
+      }
+      if (v != null) {
+        ArrayList<Object> arr = new ArrayList<>(1);
+        arr.add(v);
+        return arr;
+      }
+      return null;
+    }
+
+
+    /**
+     * Iterate of String-&gt;Object keys
+     */
+    @Override
+    public Iterator<Entry<String, Object>> iterator() {
+      Iterator<Entry<String, Object>> it = _fields.entrySet().iterator();
+      return new Iterator<Entry<String, Object>>() {
+        @Override
+        public boolean hasNext() {
+          return it.hasNext();
+        }
+
+        @Override
+        public Entry<String, Object> next() {
+          return convertCharSeq(it.next());
+        }
+      };
+    }
+
+
+    ///////////////////////////////////////////////////////////////////
+    // Get the field values
+    ///////////////////////////////////////////////////////////////////
+
+    /**
+     * returns the first value for a field
+     */
+    @Override
+    public Object getFirstValue(String name) {
+      Object v = _fields.get(name);
+      if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
+      Collection c = (Collection) v;
+      if (c.size() > 0) {
+        return convertCharSeq(c.iterator().next());
+      }
+      return null;
+    }
+
+    @Override
+    public Object get(Object key) {
+      return convertCharSeq(_fields.get(key));
+    }
+
+    public Object getRaw(Object key) {
+      return _fields.get(key);
+    }
+
+    @Override
+    public void forEach(Consumer<? super Entry<String, Object>> action) {
+      super.forEach(action);
     }
   }
 

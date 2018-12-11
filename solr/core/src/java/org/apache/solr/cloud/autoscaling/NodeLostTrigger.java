@@ -69,7 +69,8 @@ public class NodeLostTrigger extends TriggerBase {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       lost.forEach(n -> {
         // don't add nodes that have since came back
-        if (!lastLiveNodes.contains(n)) {
+        if (!lastLiveNodes.contains(n) && !nodeNameVsTimeRemoved.containsKey(n)) {
+          // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeRemoved for a node may also be restored
           log.debug("Adding lost node from marker path: {}", n);
           nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
