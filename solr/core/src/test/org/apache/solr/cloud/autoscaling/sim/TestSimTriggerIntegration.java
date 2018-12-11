@@ -739,7 +739,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     cluster.getTimeSource().sleep(10000);
     // kill overseer
     cluster.simRestartOverseer(null);
-    await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    await = triggerFiredLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
   }
