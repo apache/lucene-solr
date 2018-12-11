@@ -72,6 +72,11 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+Bug Fixes
+----------------------
+
+* SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
+
 Improvements
 ----------------------
 
