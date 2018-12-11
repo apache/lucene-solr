@@ -108,14 +108,6 @@ final class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   @Override
-  protected void copy(int i, int j) {
-    super.copy(i, j);
-
-    offsets.set(j, offsets.get(i));
-    lengths.set(j, lengths.get(i));
-  }
-
-  @Override
   protected void grow(int size) {
     super.grow(size);
     offsets = offsets.grow(size);
