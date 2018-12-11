@@ -21,10 +21,10 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SparseFixedBitSet;
+import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedMutable;
 
@@ -32,11 +32,11 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Holds updates of a single DocValues field, for a set of documents within one segment.
- * 
+ *
  * @lucene.experimental
  */
 abstract class DocValuesFieldUpdates implements Accountable {
-  
+
   protected static final int PAGE_SIZE = 1024;
   private static final long HAS_VALUE_MASK = 1;
   private static final long HAS_NO_VALUE_MASK = 0;
@@ -260,7 +260,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
   final boolean getFinished() {
     return finished;
   }
-  
+
   abstract void add(int doc, long value);
 
   abstract void add(int doc, BytesRef value);
@@ -285,11 +285,17 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-    // shrink wrap
-    if (size < docs.size()) {
-      resize(size);
-    }
-    new InPlaceMergeSorter() {
+
+    // Swaps and comparisons are quite costly with all these packed ints,
+    // so we use TimSorter instead of InPlaceMergeSorter, which has the nice
+    // property of doing fewer swaps/copies at the expense of a higher memory
+    // usage
+    final int tempSlotsOffset = size;
+    // we grow the current structures to get temporary storage
+    resize(Math.addExact(size, size / 2)); // 50% extra memory for temp slots
+    final int numTempSlots = Math.toIntExact(docs.size() - size);
+    new TimSorter(numTempSlots) {
+
       @Override
       protected void swap(int i, int j) {
         DocValuesFieldUpdates.this.swap(i, j);
@@ -302,7 +308,33 @@ abstract class DocValuesFieldUpdates implements Accountable {
         // stable and preserving original order so the last update to that docID wins
         return Long.compare(docs.get(i)>>>1, docs.get(j)>>>1);
       }
+
+      @Override
+      protected void save(int i, int len) {
+        assert len <= numTempSlots;
+        for (int k = 0; k < len; ++k) {
+          copy(i + k, tempSlotsOffset + k);
+        }
+      }
+
+      @Override
+      protected void restore(int src, int dest) {
+        copy(tempSlotsOffset + src, dest);
+      }
+
+      @Override
+      protected void copy(int src, int dest) {
+        DocValuesFieldUpdates.this.copy(src, dest);
+      }
+
+      @Override
+      protected int compareSaved(int i, int j) {
+        return compare(tempSlotsOffset + i, j);
+      }
     }.sort(0, size);
+
+    // shrink wrap to save memory, this will also release temporary storage
+    resize(size);
   }
 
   /** Returns true if this instance contains any updates. */
@@ -348,6 +380,10 @@ abstract class DocValuesFieldUpdates implements Accountable {
     long tmpDoc = docs.get(j);
     docs.set(j, docs.get(i));
     docs.set(i, tmpDoc);
+  }
+
+  protected void copy(int i, int j) {
+    docs.set(j, docs.get(i));
   }
 
   protected void grow(int size) {
@@ -477,7 +513,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
 
     protected abstract BytesRef binaryValue();
-    
+
     protected abstract long longValue();
 
     @Override

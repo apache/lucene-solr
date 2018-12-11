@@ -100,6 +100,12 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   @Override
+  protected void copy(int i, int j) {
+    super.copy(i, j);
+    values.set(j, values.get(i));
+  }
+
+  @Override
   protected void grow(int size) {
     super.grow(size);
     values = values.grow(size);
