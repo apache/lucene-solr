@@ -173,6 +173,7 @@ public class Http2SolrClient extends SolrClient {
       httpClientExecutor.setName("h2sc-qtp-"+ Arrays.toString(Thread.currentThread().getStackTrace()));
     }
     httpClientExecutor.setDaemon(true);
+    httpClientExecutor.setIdleTimeout(1000000000);
 
     SslContextFactory sslContextFactory;
     boolean ssl;
@@ -229,6 +230,7 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.release(this);
+    System.out.println("Done close " + httpClient.getExecutor().toString());
   }
 
   public boolean isV2ApiRequest(final SolrRequest request) {
