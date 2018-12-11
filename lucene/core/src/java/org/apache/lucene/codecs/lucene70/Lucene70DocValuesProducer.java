@@ -57,7 +57,6 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
   private final Map<String,SortedNumericEntry> sortedNumerics = new HashMap<>();
   private long ramBytesUsed;
   private final IndexInput data;
-  private final IndexedDISICacheFactory disiCacheFactory = new IndexedDISICacheFactory();
   private final int maxDoc;
 
   /** expert: instantiates a new reader */
@@ -120,23 +119,23 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       }
       byte type = meta.readByte();
       if (type == Lucene70DocValuesFormat.NUMERIC) {
-        numerics.put(info.name, readNumeric(meta, info.name));
+        numerics.put(info.name, readNumeric(meta));
       } else if (type == Lucene70DocValuesFormat.BINARY) {
-        binaries.put(info.name, readBinary(meta, info.name));
+        binaries.put(info.name, readBinary(meta));
       } else if (type == Lucene70DocValuesFormat.SORTED) {
-        sorted.put(info.name, readSorted(meta, info.name));
+        sorted.put(info.name, readSorted(meta));
       } else if (type == Lucene70DocValuesFormat.SORTED_SET) {
-        sortedSets.put(info.name, readSortedSet(meta, info.name));
+        sortedSets.put(info.name, readSortedSet(meta));
       } else if (type == Lucene70DocValuesFormat.SORTED_NUMERIC) {
-        sortedNumerics.put(info.name, readSortedNumeric(meta, info.name));
+        sortedNumerics.put(info.name, readSortedNumeric(meta));
       } else {
         throw new CorruptIndexException("invalid type: " + type, meta);
       }
     }
   }
 
-  private NumericEntry readNumeric(ChecksumIndexInput meta, String name) throws IOException {
-    NumericEntry entry = new NumericEntry(name);
+  private NumericEntry readNumeric(ChecksumIndexInput meta) throws IOException {
+    NumericEntry entry = new NumericEntry();
     readNumeric(meta, entry);
     return entry;
   }
@@ -168,8 +167,8 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     entry.valuesLength = meta.readLong();
   }
 
-  private BinaryEntry readBinary(ChecksumIndexInput meta, String name) throws IOException {
-    BinaryEntry entry = new BinaryEntry(name);
+  private BinaryEntry readBinary(ChecksumIndexInput meta) throws IOException {
+    BinaryEntry entry = new BinaryEntry();
     entry.dataOffset = meta.readLong();
     entry.dataLength = meta.readLong();
     entry.docsWithFieldOffset = meta.readLong();
@@ -187,8 +186,8 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     return entry;
   }
 
-  private SortedEntry readSorted(ChecksumIndexInput meta, String name) throws IOException {
-    SortedEntry entry = new SortedEntry(name);
+  private SortedEntry readSorted(ChecksumIndexInput meta) throws IOException {
+    SortedEntry entry = new SortedEntry();
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
     entry.numDocsWithField = meta.readInt();
@@ -199,12 +198,12 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     return entry;
   }
 
-  private SortedSetEntry readSortedSet(ChecksumIndexInput meta, String name) throws IOException {
-    SortedSetEntry entry = new SortedSetEntry(name);
+  private SortedSetEntry readSortedSet(ChecksumIndexInput meta) throws IOException {
+    SortedSetEntry entry = new SortedSetEntry();
     byte multiValued = meta.readByte();
     switch (multiValued) {
       case 0: // singlevalued
-        entry.singleValueEntry = readSorted(meta, name);
+        entry.singleValueEntry = readSorted(meta);
         return entry;
       case 1: // multivalued
         break;
@@ -246,8 +245,8 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     entry.termsIndexAddressesLength = meta.readLong();
   }
 
-  private SortedNumericEntry readSortedNumeric(ChecksumIndexInput meta, String name) throws IOException {
-    SortedNumericEntry entry = new SortedNumericEntry(name);
+  private SortedNumericEntry readSortedNumeric(ChecksumIndexInput meta) throws IOException {
+    SortedNumericEntry entry = new SortedNumericEntry();
     readNumeric(meta, entry);
     entry.numDocsWithField = meta.readInt();
     if (entry.numDocsWithField != entry.numValues) {
@@ -263,23 +262,9 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
   @Override
   public void close() throws IOException {
     data.close();
-    disiCacheFactory.releaseAll();
   }
 
-  // Highly debatable if this is a sane construct as the name is only used for debug/logging/inspection purposes
-  // This was introduced in LUCENE-8374
-  private static class EntryImpl {
-    final String name;
-
-    public EntryImpl(String name) {
-      this.name = name;
-    }
-  }
-
-  private static class NumericEntry extends EntryImpl {
-    public NumericEntry(String name) {
-      super(name);
-    }
+  private static class NumericEntry {
     long[] table;
     int blockShift;
     byte bitsPerValue;
@@ -292,10 +277,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     long valuesLength;
   }
 
-  private static class BinaryEntry extends EntryImpl {
-    public BinaryEntry(String name) {
-      super(name);
-    }
+  private static class BinaryEntry {
     long dataOffset;
     long dataLength;
     long docsWithFieldOffset;
@@ -308,10 +290,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     DirectMonotonicReader.Meta addressesMeta;
   }
 
-  private static class TermsDictEntry extends EntryImpl {
-    public TermsDictEntry(String name) {
-      super(name);
-    }
+  private static class TermsDictEntry {
     long termsDictSize;
     int termsDictBlockShift;
     DirectMonotonicReader.Meta termsAddressesMeta;
@@ -329,9 +308,6 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private static class SortedEntry extends TermsDictEntry {
-    public SortedEntry(String name) {
-      super(name);
-    }
     long docsWithFieldOffset;
     long docsWithFieldLength;
     int numDocsWithField;
@@ -341,9 +317,6 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private static class SortedSetEntry extends TermsDictEntry {
-    public SortedSetEntry(String name) {
-      super(name);
-    }
     SortedEntry singleValueEntry;
     long docsWithFieldOffset;
     long docsWithFieldLength;
@@ -357,9 +330,6 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private static class SortedNumericEntry extends NumericEntry {
-    public SortedNumericEntry(String name) {
-      super(name);
-    }
     int numDocsWithField;
     DirectMonotonicReader.Meta addressesMeta;
     long addressesOffset;
@@ -368,7 +338,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
 
   @Override
   public long ramBytesUsed() {
-    return ramBytesUsed + disiCacheFactory.ramBytesUsed();
+    return ramBytesUsed;
   }
 
   @Override
@@ -526,8 +496,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       }
     } else {
       // sparse
-      final IndexedDISI disi = disiCacheFactory.createCachedIndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numValues, entry.name);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numValues);
       if (entry.bitsPerValue == 0) {
         return new SparseNumericDocValues(disi) {
           @Override
@@ -798,8 +767,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       }
     } else {
       // sparse
-      final IndexedDISI disi = disiCacheFactory.createCachedIndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField, entry.name);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
       if (entry.minLength == entry.maxLength) {
         // fixed length
         final int length = entry.maxLength;
@@ -900,8 +868,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = disiCacheFactory.createCachedIndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField, entry.name);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
       return new BaseSortedDocValues(entry, data) {
 
         @Override
@@ -1269,8 +1236,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = disiCacheFactory.createCachedIndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField, entry.name);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
       return new SortedNumericDocValues() {
 
         boolean set;
@@ -1396,8 +1362,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = disiCacheFactory.createCachedIndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField, entry.name);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
       return new BaseSortedSetDocValues(entry, data) {
 
         boolean set;
