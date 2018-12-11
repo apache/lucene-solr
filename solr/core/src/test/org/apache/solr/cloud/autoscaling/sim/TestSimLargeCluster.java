@@ -697,7 +697,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     boolean await = triggerFinishedLatch.await(waitForSeconds * 45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(15000);
+    cluster.getTimeSource().sleep(25000);
     
     assertNotNull(listenerEvents.entrySet().toString(), listenerEvents.get("srt"));
 
