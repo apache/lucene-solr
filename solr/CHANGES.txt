@@ -167,6 +167,8 @@ Improvements
 
 * SOLR-12833: Add configurable timeout to VersionBucket lock. (Jeffery Yuan, Mark Miller)
 
+* SOLR-12885: BinaryResponseWriter (javabin format) should directly copy from BytesRef to output (noble)
+
 Other Changes
 ----------------------
 

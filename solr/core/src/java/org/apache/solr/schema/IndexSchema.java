@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -138,6 +139,8 @@ public class IndexSchema {
   protected Collection<SchemaField> requiredFields = new HashSet<>();
   protected volatile DynamicField[] dynamicFields;
   public DynamicField[] getDynamicFields() { return dynamicFields; }
+
+  protected Map<String, SchemaField> dynamicFieldCache = new ConcurrentHashMap<>();
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -1195,9 +1198,14 @@ public class IndexSchema {
   public SchemaField getFieldOrNull(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f;
+    f = dynamicFieldCache.get(fieldName);
+    if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.makeSchemaField(fieldName);
+      if (df.matches(fieldName)) {
+        dynamicFieldCache.put(fieldName, f = df.makeSchemaField(fieldName));
+        break;
+      }
     }
 
     return f;
