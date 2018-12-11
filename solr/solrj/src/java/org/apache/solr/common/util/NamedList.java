@@ -79,7 +79,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     for (int i = 0; i < nvPairs.size(); i+=2) {
-      ew.put((String) nvPairs.get(i), nvPairs.get(i+1));
+      ew.put((CharSequence) nvPairs.get(i), nvPairs.get(i + 1));
     }
   }
 

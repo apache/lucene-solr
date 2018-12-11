@@ -20,11 +20,14 @@ package org.apache.solr.common.util;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.noggit.CharArr;
 
 /**A mutable byte[] backed Utf8CharSequence. This is quite similar to the BytesRef of Lucene
+ * Do not alter the contents of the byte[] . it may be inconsistent with the cached String
  * This is designed for single-threaded use
  *
  */
@@ -60,6 +63,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   @Override
   public int write(int start, byte[] buffer, int pos) {
     if (start == -1 || start >= length) return -1;
+    if (length == 0) return 0;
     int writableBytes = Math.min(length - start, buffer.length - pos);
     System.arraycopy(buf, offset + start, buffer, pos, writableBytes);
     return writableBytes;
@@ -139,11 +143,11 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return new ByteArrayUtf8CharSequence(bytes, 0, length, utf16, hashCode);
   }
 
-  public static Map.Entry convertCharSeq(Map.Entry result) {
-    if (result.getKey() instanceof Utf8CharSequence || result.getValue() instanceof Utf8CharSequence) {
-      return new AbstractMap.SimpleEntry(convertCharSeq(result.getKey()), convertCharSeq(result.getValue()));
+  public static Map.Entry convertCharSeq(Map.Entry e) {
+    if (e.getKey() instanceof Utf8CharSequence || e.getValue() instanceof Utf8CharSequence) {
+      return new AbstractMap.SimpleEntry(convertCharSeq(e.getKey()), convertCharSeq(e.getValue()));
     }
-    return result;
+    return e;
 
   }
 
@@ -157,7 +161,12 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
       }
     }
     if (needsCopy) {
-      ArrayList copy = new ArrayList(vals.size());
+      Collection copy =  null;
+      if (vals instanceof Set){
+        copy = new HashSet(vals.size());
+      } else {
+        copy = new ArrayList(vals.size());
+      }
       for (Object o : vals) copy.add(convertCharSeq(o));
       return copy;
     }
