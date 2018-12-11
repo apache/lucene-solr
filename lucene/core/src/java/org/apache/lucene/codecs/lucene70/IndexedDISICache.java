@@ -118,9 +118,7 @@ public class IndexedDISICache implements Accountable {
     this.name = "";
   }
 
-  /**
-   * Shared between all structures that are too small to meaningfully use jump-tables.
-   */
+  // Used to represent no caching.
   public static final IndexedDISICache EMPTY = new IndexedDISICache();
 
   /**
@@ -158,10 +156,6 @@ public class IndexedDISICache implements Accountable {
        return target >> RANK_BLOCK_BITS << RANK_BLOCK_BITS;
   }
 
-  /**
-   * Offsets stated the block starts.
-   * @return true if the cache has offsets.
-   */
   public boolean hasOffsets() {
     return blockCache != null;
   }
@@ -305,7 +299,6 @@ public class IndexedDISICache implements Accountable {
   }
 
   /**
-   * Creation stats intended for human inspection.
    * @return Human readable details from the creation of the cache instance.
    */
   public String getCreationStats() {
@@ -313,7 +306,6 @@ public class IndexedDISICache implements Accountable {
   }
 
   /**
-   * Cache name, as stated in the constructor.
    * @return Human-readable name for the cache instance.
    */
   public String getName() {

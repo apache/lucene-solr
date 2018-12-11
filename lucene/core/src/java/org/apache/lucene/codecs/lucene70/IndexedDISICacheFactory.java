@@ -48,12 +48,6 @@ public class IndexedDISICacheFactory implements Accountable {
   private final Map<String, VaryingBPVJumpTable> vBPVPool = new HashMap<>();
 
   /**
-   * Creates a {@link IndexedDISICache} and {@link VaryingBPVJumpTable} holding factory,
-   * intended for shared use within a single segment.
-   */
-  public IndexedDISICacheFactory() { }
-
-  /**
    * Create a cached {@link IndexedDISI} instance.
    * @param data   persistent data containing the DISI-structure.
    * @param cost   cost as defined for IndexedDISI.
@@ -152,24 +146,13 @@ public class IndexedDISICacheFactory implements Accountable {
     return cache;
   }
 
-  /**
-   * Cache statistics intended for external inspection.
-   * @return the number of total blocks where jumps are accelerated by jump-tables.
-   */
+  // Statistics
   public long getDISIBlocksWithOffsetsCount() {
     return disiPool.values().stream().filter(IndexedDISICache::hasOffsets).count();
   }
-  /**
-   * Cache statistics intended for external inspection.
-   * @return the total number of DENSE blocks where index-counts are accelerated by rank.
-   */
   public long getDISIBlocksWithRankCount() {
     return disiPool.values().stream().filter(IndexedDISICache::hasRank).count();
   }
-  /**
-   * Cache statistics intended for external inspection.
-   * @return the number of numeric blocks where jumps are accelerated by jump-tables
-   */
   public long getVaryingBPVCount() {
     return vBPVPool.size();
   }
