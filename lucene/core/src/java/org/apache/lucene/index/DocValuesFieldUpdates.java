@@ -487,7 +487,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
 
     @Override
     public long ramBytesUsed() {
-      return super.ramBytesUsed() + bitSet.ramBytesUsed();
+      return super.ramBytesUsed() + bitSet.ramBytesUsed() + (hasNoValue == null ? 0 : hasNoValue.ramBytesUsed());
     }
 
     @Override

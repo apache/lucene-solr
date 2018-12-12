@@ -59,6 +59,13 @@ Upgrade Notes
 * SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
   this may be the culprit.
 
+* If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring will be lower due to SOLR-13025.
+  But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force
+  the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default 
+  SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
+  See also explanation in Reference Guide chapter "Other Schema Elements".
+
+
 New Features
 ----------------------
 
@@ -71,6 +78,11 @@ New Features
 * SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity (Andy Hind via Tommaso Teofili)
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
+
+Bug Fixes
+----------------------
+
+* SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
 
 Improvements
 ----------------------
@@ -88,6 +100,10 @@ Optimizations
 ----------------------
 
 * SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
+
+* SOLR-13025: Due to LUCENE-8563, the BM25Similarity formula no longer includes the (k1+1) factor in the numerator
+  This gives a lower absolute score but doesn't affect ordering, as this is a constant factor which is the same 
+  for every document. Use LegacyBM25SimilarityFactory if you need the old 6.x/7.x scoring. See also upgrade notes (janhoy)
 
 Other Changes
 ----------------------
@@ -138,6 +154,8 @@ New Features
 
 * SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting
   the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
+
+* SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
 Bug Fixes
 ----------------------
