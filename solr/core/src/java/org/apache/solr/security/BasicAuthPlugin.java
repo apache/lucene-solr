@@ -40,7 +40,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.annotation.Contract;
 import org.apache.http.annotation.ThreadingBehavior;
@@ -49,9 +48,6 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -77,7 +73,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       try {
         blockUnknown = Boolean.parseBoolean(o.toString());
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value for parameter " + BLOCK_UNKNOWN);
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value for parameter " + PROPERTY_BLOCK_UNKNOWN);
       }
     }
     o = pluginConfig.get(FORWARD_CREDENTIALS);

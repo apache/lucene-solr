@@ -224,7 +224,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
-      assertAuthMetricsMinimums(18, 8, 9, 1, 0, 0);
+      assertAuthMetricsMinimums(19, 9, 9, 1, 0, 0);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -250,26 +250,30 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         cluster.getSolrClient().query(COLLECTION, params);
       });
       assertEquals(401, exp.code());
-      assertAuthMetricsMinimums(20, 8, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+      assertAuthMetricsMinimums(21, 9, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(6, 6, 0, 0, 0, 0);
 
       // Query that succeeds
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params);
       req.setBasicAuthCredentials("harry", "HarryIsUberCool");
       cluster.getSolrClient().request(req, COLLECTION);
-      
-      assertAuthMetricsMinimums(21, 9, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(7, 7, 0, 0, 0, 0);
+
+      assertAuthMetricsMinimums(22, 10, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(11, 11, 0, 0, 0, 0);
       
       addDocument("harry","HarryIsUberCool","id", "5");
+      assertAuthMetricsMinimums(23, 11, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
 
       // Validate forwardCredentials
       assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
-      // TODO: Validate that this requests were handled by PKI plugin
+      assertAuthMetricsMinimums(24, 12, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { forwardCredentials: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/forwardCredentials", "true", 20, "harry", "HarryIsUberCool");
       assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
-      // NOCOMMIT: Validate that sub requests were handled by BasicAuth plugin
+      assertAuthMetricsMinimums(31, 19, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
