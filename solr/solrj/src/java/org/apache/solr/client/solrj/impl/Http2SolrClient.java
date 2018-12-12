@@ -67,6 +67,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -172,16 +173,7 @@ public class Http2SolrClient extends SolrClient {
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
     ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(16,
-        256, 60, TimeUnit.SECONDS, queue, new ThreadFactory() {
-      private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "h2sc-"+queue.hashCode()+"-"+threadNumber.incrementAndGet());
-        t.setDaemon(true);
-        return t;
-      }
-    });
+        256, 60, TimeUnit.SECONDS, queue, new SolrjNamedThreadFactory("h2sc"));
 
     SslContextFactory sslContextFactory;
     boolean ssl;
