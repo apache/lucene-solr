@@ -838,7 +838,7 @@ public class SimCloudManager implements SolrCloudManager {
           results.add("success", "");
           break;
         case ADDROLE:
-          nodeStateProvider.simAddNodeValue(req.getParams().get("node"), "nodeRole", req.getParams().get("role"));
+          nodeStateProvider.simSetNodeValue(req.getParams().get("node"), "nodeRole", req.getParams().get("role"));
           break;
         case CREATESHARD:
           try {
@@ -889,6 +889,7 @@ public class SimCloudManager implements SolrCloudManager {
     IOUtils.closeQuietly(stateManager);
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
+    triggerThread.interrupt();
     try {
       triggerThread.join();
     } catch (InterruptedException e) {

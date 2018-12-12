@@ -25,7 +25,7 @@ Versions of Major Components
 Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache ZooKeeper 3.4.11
+Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
 Upgrade Notes
@@ -73,6 +73,11 @@ New Features
 * SOLR-12879: MinHash query parser that builds queries providing a measure of Jaccard similarity (Andy Hind via Tommaso Teofili)
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
+
+Bug Fixes
+----------------------
+
+* SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
 
 Improvements
 ----------------------
@@ -126,7 +131,7 @@ Versions of Major Components
 Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 1.7 and Velocity Tools 2.0
-Apache ZooKeeper 3.4.11
+Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
 
@@ -149,6 +154,8 @@ Bug Fixes
   
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
+* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
+
 Improvements
 ----------------------
 
@@ -167,6 +174,8 @@ Improvements
 
 * SOLR-12833: Add configurable timeout to VersionBucket lock. (Jeffery Yuan, Mark Miller)
 
+* SOLR-12885: BinaryResponseWriter (javabin format) should directly copy from BytesRef to output (noble)
+
 Other Changes
 ----------------------
 
@@ -180,6 +189,7 @@ Other Changes
 
 * SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
 
+* SOLR-12727: Upgrade ZooKeeper dependency to 3.4.13 (Kevin Risden, Erick Erickson)
 
 ==================  7.6.0 ==================
 

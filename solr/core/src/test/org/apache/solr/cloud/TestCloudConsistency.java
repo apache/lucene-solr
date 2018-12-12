@@ -229,6 +229,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
     waitForState("Timeout waiting for active collection", collection, clusterShape(1, 3));
+    
+    cluster.waitForActiveCollection(collection, 1, 3);
   }
 
   private void addDocs(String collection, int numDocs, int startId) throws SolrServerException, IOException {

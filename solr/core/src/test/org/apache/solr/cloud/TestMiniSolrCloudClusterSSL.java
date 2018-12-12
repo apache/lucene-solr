@@ -85,6 +85,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   
   @Before
   public void before() {
+    assumeFalse("@AwaitsFix: SOLR-12988 - ssl issues on Java 11/12", Constants.JRE_IS_MINIMUM_JAVA11);
+    
     // undo the randomization of our super class
     log.info("NOTE: This Test ignores the randomized SSL & clientAuth settings selected by base class");
     HttpClientUtil.resetHttpClientBuilder(); // also resets SchemaRegistryProvider
@@ -261,8 +263,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     CollectionAdminRequest.createCollection(collection, CONF_NAME, NUM_SERVERS, 1)
         .withProperty("config", "solrconfig-tlog.xml")
         .process(cloudClient);
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, zkStateReader, true, true, 330);
+    cluster.waitForActiveCollection(collection, NUM_SERVERS, NUM_SERVERS);
     assertEquals("sanity query", 0, cloudClient.query(collection, params("q","*:*")).getStatus());
   }
   

@@ -14,31 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
 
+package org.apache.lucene.search.intervals;
 
-import java.net.URL;
-import java.util.Arrays;
+import org.apache.lucene.search.MatchesIterator;
 
-import org.apache.lucene.util.Constants;
-import org.apache.solr.util.RandomizeSSL;
-import org.junit.BeforeClass;
+/**
+ * An extension of MatchesIterator that allows the gaps from a wrapped
+ * IntervalIterator to be reported.
+ *
+ * This is necessary because {@link MatchesIterator#getSubMatches()} returns
+ * the submatches of all nested matches as a flat iterator, but
+ * {@link IntervalIterator#gaps()} only returns the gaps between its immediate
+ * sub-matches, so we can't calculate the latter using the former.
+ */
+interface IntervalMatchesIterator extends MatchesIterator {
 
-@RandomizeSSL(1.0)
+  /**
+   * The number of top-level gaps inside the current match
+   */
+  int gaps();
 
-public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest {
-
-    @BeforeClass
-    public static void checkUrls() throws Exception {
-      assumeFalse("@AwaitsFix: SOLR-12988 - ssl issues on Java 11/12", Constants.JRE_IS_MINIMUM_JAVA11);
-      
-      URL[] urls = new URL[] {
-          jetty.getBaseUrl(), yetty.getBaseUrl() 
-      };
-      for (URL u : urls) {
-        assertEquals("expect https urls ","https", u.getProtocol());
-      }
-      assertFalse("expect different urls "+Arrays.toString(urls),
-              urls[0].equals(urls[1]));
-    }
 }

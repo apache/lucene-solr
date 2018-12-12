@@ -114,7 +114,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         target.waitForActiveCollection("cdcr-target", 1, 2);
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
-        Thread.sleep(1000);
+        Thread.sleep(6000);
 
         CdcrTestsUtil.cdcrStart(targetSolrClient);
         CdcrTestsUtil.cdcrStart(sourceSolrClient);

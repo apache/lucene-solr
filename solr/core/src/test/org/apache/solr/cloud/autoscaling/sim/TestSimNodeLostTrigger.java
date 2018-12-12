@@ -109,7 +109,7 @@ public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
       do {
         trigger.run();
         timeSource.sleep(1000);
-        if (counter++ > 10) {
+        if (counter++ > 20) {
           fail("Lost node was not discovered by trigger even after 10 seconds");
         }
       } while (!fired.get());

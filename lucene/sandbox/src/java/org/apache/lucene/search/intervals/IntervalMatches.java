@@ -99,6 +99,15 @@ final class IntervalMatches {
       }
 
       @Override
+      public int gaps() {
+        assert state == State.ITERATING;
+        if (mi instanceof IntervalMatchesIterator) {
+          return ((IntervalMatchesIterator)mi).gaps();
+        }
+        return 0;
+      }
+
+      @Override
       public int nextInterval() throws IOException {
         assert state == State.ITERATING;
         if (mi.next()) {

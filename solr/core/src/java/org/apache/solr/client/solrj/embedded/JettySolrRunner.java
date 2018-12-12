@@ -85,7 +85,7 @@ public class JettySolrRunner {
 
   private static final int THREAD_POOL_MAX_THREADS = 10000;
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
-  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 160000;
+  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 260000;
   
   Server server;
 

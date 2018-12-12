@@ -77,7 +77,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13028")
+  //Commented out 11-Dec-2018 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13028")
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);

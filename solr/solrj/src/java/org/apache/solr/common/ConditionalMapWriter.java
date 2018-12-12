@@ -30,11 +30,13 @@ public class ConditionalMapWriter implements MapWriter {
     this.predicate = predicate;
   }
 
-  private class EntryWriterWrapper implements EntryWriter {
+  public static class EntryWriterWrapper implements EntryWriter {
     private final EntryWriter delegate;
+    private final BiPredicate<CharSequence, Object> predicate;
 
-    EntryWriterWrapper(EntryWriter delegate) {
+    public EntryWriterWrapper(EntryWriter delegate, BiPredicate<CharSequence, Object> predicate) {
       this.delegate = delegate;
+      this.predicate = predicate;
     }
 
     @Override
@@ -71,7 +73,7 @@ public class ConditionalMapWriter implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    if(delegate!=null) delegate.writeMap(new EntryWriterWrapper(ew));
+    if (delegate != null) delegate.writeMap(new EntryWriterWrapper(ew, predicate));
   }
 
   public static BiPredicate<CharSequence, Object> dedupeKeyPredicate(Set<CharSequence> keys) {

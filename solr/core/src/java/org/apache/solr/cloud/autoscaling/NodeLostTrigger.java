@@ -69,7 +69,8 @@ public class NodeLostTrigger extends TriggerBase {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       lost.forEach(n -> {
         // don't add nodes that have since came back
-        if (!lastLiveNodes.contains(n)) {
+        if (!lastLiveNodes.contains(n) && !nodeNameVsTimeRemoved.containsKey(n)) {
+          // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeRemoved for a node may also be restored
           log.debug("Adding lost node from marker path: {}", n);
           nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
@@ -148,7 +149,7 @@ public class NodeLostTrigger extends TriggerBase {
       }
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-      log.info("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
+      log.debug("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
 
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map

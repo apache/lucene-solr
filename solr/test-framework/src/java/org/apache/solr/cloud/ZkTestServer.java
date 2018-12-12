@@ -104,6 +104,8 @@ public class ZkTestServer {
   protected volatile SolrZkClient rootClient;
   protected volatile SolrZkClient chRootClient;
 
+  private volatile ZKDatabase zkDb;
+
   static public enum LimitViolationAction {
     IGNORE,
     REPORT,
@@ -454,7 +456,7 @@ public class ZkTestServer {
   }
 
   public String getZkHost() {
-    return "127.0.0.1:" + zkServer.getLocalPort();
+    return "localhost:" + zkServer.getLocalPort();
   }
 
   public String getZkAddress() {
@@ -469,7 +471,7 @@ public class ZkTestServer {
   public String getZkAddress(String chroot) {
     if (!chroot.startsWith("/"))
       chroot = "/" + chroot;
-    return "127.0.0.1:" + zkServer.getLocalPort() + chroot;
+    return "localhost:" + zkServer.getLocalPort() + chroot;
   }
 
   /**
@@ -514,6 +516,7 @@ public class ZkTestServer {
   }
 
   public void setZKDatabase(ZKDatabase zkDb) {
+    this.zkDb = zkDb;
     zkServer.zooKeeperServer.setZKDatabase(zkDb);
   }
   
@@ -611,6 +614,11 @@ public class ZkTestServer {
       } catch (Exception e) {
         log.error("Exception shutting down ZooKeeper Test Server",e);
       }
+      
+      if (zkDb != null) {
+        zkDb.close();
+      }
+      
       while (true) {
         try {
           zooThread.join();

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializable {
+public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializable, MapWriter {
 
   /** Get all field names.
   */
