@@ -89,7 +89,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       false
   );
 
-  protected Http2SolrClient defaultClient;
+  protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
   private LBHttp2SolrClient loadbalancer;
 
