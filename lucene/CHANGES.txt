@@ -59,6 +59,9 @@ Other
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
   (Christoph Büscher via Adrien Grand)
 
+* LUCENE-8605: Separate bounding box spatial logic from query logic on LatLonShapeBoundingBoxQuery.
+  (Ignacio Vera)
+
 ======================= Lucene 7.6.0 =======================
 
 Build
