@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -34,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** Tests helper methods in DocValues */
 public class TestDocValues extends LuceneTestCase {
-  
+
   /** 
    * If the field doesn't exist, we return empty instances:
    * it can easily happen that a segment just doesn't have any docs with the field.
@@ -123,8 +124,72 @@ public class TestDocValues extends LuceneTestCase {
     iw.close();
     dir.close();
   }
-  
-  /** 
+
+  // The LUCENE-8585 jump-tables enables O(1) skipping of IndexedDISI blocks, DENSE block lookup
+  // and numeric multi blocks. This test focuses on testing these jumps.
+  @Slow
+  public void testNumericFieldJumpTables() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final int maxDoc = atLeast(3*65536); // Must be above 3*65536 to trigger IndexedDISI block skips
+    for (int i = 0 ; i < maxDoc ; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      if (random().nextInt(100) > 10) { // Skip 10% to make DENSE blocks
+        int value = random().nextInt(100000);
+        doc.add(new NumericDocValuesField("dv", value));
+        doc.add(new StringField("storedValue", Integer.toString(value), Field.Store.YES));
+      }
+      iw.addDocument(doc);
+    }
+    iw.flush();
+    iw.forceMerge(1, true); // Single segment to force large enough structures
+    iw.commit();
+
+    try (DirectoryReader dr = DirectoryReader.open(iw)) {
+        assertEquals("maxDoc should be as expected", maxDoc, dr.maxDoc());
+        LeafReader r = getOnlyLeafReader(dr);
+
+      // Check non-jumping first
+      {
+        NumericDocValues numDV = DocValues.getNumeric(r, "dv");
+        for (int i = 0; i < maxDoc; i++) {
+          IndexableField fieldValue = r.document(i).getField("storedValue");
+          if (fieldValue == null) {
+            assertFalse("There should be no DocValue for document #" + i, numDV.advanceExact(i));
+          } else {
+            assertTrue("There should be a DocValue for document #" + i, numDV.advanceExact(i));
+            assertEquals("The value for document #" + i + " should be correct",
+                fieldValue.stringValue(), Long.toString(numDV.longValue()));
+          }
+        }
+      }
+
+      // We use steps of 511 to have a non-divisor for the different possible jump-steps 512 (DENSE),
+      // 16384 (variable bits per value) and 65536 (IndexedDISI blocks)
+      {
+        for (int jump = 511; jump < maxDoc; jump += 511) {
+          // Create a new instance each time to ensure jumps from the beginning
+          NumericDocValues numDV = DocValues.getNumeric(r, "dv");
+          for (int index = 0; index < maxDoc; index += jump) {
+            IndexableField fieldValue = r.document(index).getField("storedValue");
+            if (fieldValue == null) {
+              assertFalse("There should be no DocValue for document #" + jump, numDV.advanceExact(index));
+            } else {
+              assertTrue("There should be a DocValue for document #" + jump, numDV.advanceExact(index));
+              assertEquals("The value for document #" + jump + " should be correct",
+                  fieldValue.stringValue(), Long.toString(numDV.longValue()));
+            }
+          }
+        }
+      }
+    }
+
+    iw.close();
+    dir.close();
+  }
+
+  /**
    * field with binary docvalues
    */
   public void testBinaryField() throws Exception {

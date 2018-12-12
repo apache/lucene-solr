@@ -1204,6 +1204,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs) throws Exception {
+    doTestNumericsVsStoredFields(density, longs, 256);
+    // TODO: 200000 docs are needed to test jumps (see LUCENE-8585), but that is quite slow. Maybe it can be nightly?
+    //doTestNumericsVsStoredFields(density, longs, 200000);
+  }
+  private void doTestNumericsVsStoredFields(double density, LongSupplier longs, int minDocs) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -1216,7 +1221,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = atLeast((int) (minDocs*1.172));
     // numDocs should be always > 256 so that in case of a codec that optimizes
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;
@@ -1243,12 +1248,20 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
 
     // merge some segments and ensure that at least one of them has more than
-    // 256 values
-    writer.forceMerge(numDocs / 256);
+    // max(256, minDocs) values
+    writer.forceMerge(numDocs / Math.max(256, minDocs));
 
     writer.close();
-    
     // compare
+    assertDVIterate(dir);
+    if (numDocs > 8192) { // Only spend time testing for jumps if there is room for jumping
+      assertDVAdvance(dir, 8191); // Smallest jump-table block (vBPV) has 16384 entries
+    }
+    dir.close();
+  }
+
+  // Asserts equality of stored value vs. DocValue by iterating DocValues one at a time
+  private void assertDVIterate(Directory dir) throws IOException {
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
@@ -1268,9 +1281,36 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
     }
     ir.close();
-    dir.close();
   }
-  
+
+  // Tests that advanceExact does not change the outcome
+  private void assertDVAdvance(Directory dir, int jumpStep) throws IOException {
+    DirectoryReader ir = DirectoryReader.open(dir);
+    TestUtil.checkReader(ir);
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
+
+
+      for (int jump = jumpStep; jump < r.maxDoc(); jump += jumpStep) {
+        // Create a new instance each time to ensure jumps from the beginning
+        NumericDocValues docValues = DocValues.getNumeric(r, "dv");
+        for (int docID = 0; docID < r.maxDoc(); docID += jump) {
+          String storedValue = r.document(docID).get("stored");
+          if (storedValue == null) {
+            assertFalse("advanceExact: There should be no DocValue for document #" + jump,
+                docValues.advanceExact(docID));
+          } else {
+            assertTrue("advanceExact: There should be a DocValue for document #" + jump,
+                docValues.advanceExact(docID));
+            assertEquals("advanceExact: The value for document #" + jump + " should be correct",
+                Long.parseLong(storedValue), docValues.longValue());
+          }
+        }
+      }
+    }
+    ir.close();
+  }
+
   private void doTestSortedNumericsVsStoredFields(LongSupplier counts, LongSupplier values) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));

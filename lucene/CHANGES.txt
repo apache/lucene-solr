@@ -220,6 +220,9 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
+* LUCENE-8585: Index-time jump-tables for DocValues, for O(1) advance when retrieving doc values.
+  (Toke Eskildsen)
+
 ======================= Lucene 7.7.0 =======================
 
 Build
