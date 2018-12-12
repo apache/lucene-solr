@@ -169,9 +169,9 @@ public class Http2SolrClient extends SolrClient {
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
     QueuedThreadPool httpClientExecutor = new QueuedThreadPool(256, 16, 60000, queue);
     httpClientExecutor.setName("h2sc-qtp"+httpClientExecutor.hashCode());
-    if (System.getProperty("jetty.testMode") != null) {
-      httpClientExecutor.setName("h2sc-qtp-"+ Arrays.toString(Thread.currentThread().getStackTrace()));
-    }
+//    if (System.getProperty("jetty.testMode") != null) {
+//      httpClientExecutor.setName("h2sc-qtp-"+ Arrays.toString(Thread.currentThread().getStackTrace()));
+//    }
     httpClientExecutor.setDaemon(true);
     httpClientExecutor.setIdleTimeout(1000000000);
 
