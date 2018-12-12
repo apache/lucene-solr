@@ -33,10 +33,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
@@ -60,9 +64,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.TimeSource;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -87,8 +91,6 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,13 +171,17 @@ public class Http2SolrClient extends SolrClient {
     HttpClient httpClient;
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-    QueuedThreadPool httpClientExecutor = new QueuedThreadPool(256, 16, 60000, queue);
-    httpClientExecutor.setName("h2sc-qtp"+httpClientExecutor.hashCode());
-//    if (System.getProperty("jetty.testMode") != null) {
-//      httpClientExecutor.setName("h2sc-qtp-"+ Arrays.toString(Thread.currentThread().getStackTrace()));
-//    }
-    httpClientExecutor.setDaemon(true);
-    httpClientExecutor.setIdleTimeout(1000000000);
+    ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(16,
+        256, 60, TimeUnit.SECONDS, queue, new ThreadFactory() {
+      private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "h2sc-"+queue.hashCode()+"-"+threadNumber.incrementAndGet());
+        t.setDaemon(true);
+        return t;
+      }
+    });
 
     SslContextFactory sslContextFactory;
     boolean ssl;
@@ -223,24 +229,10 @@ public class Http2SolrClient extends SolrClient {
     asyncTracker.waitForComplete();
     if (closeClient) {
       try {
-        QueuedThreadPool qtp = (QueuedThreadPool) httpClient.getExecutor();
-
-        // TODO: stop time?
+        ExecutorService executor = (ExecutorService) httpClient.getExecutor();
         httpClient.setStopTimeout(1000);
         httpClient.stop();
-
-        while(!qtp.isStopped()) {
-          qtp.stop();
-          if (qtp.isStopped()) {
-            Thread.sleep(50);
-          }
-        }
-
-        // we tried to kill everything, now we wait for executor to stop
-        qtp.setStopTimeout(Integer.MAX_VALUE);
-        qtp.stop();
-        qtp.join();
-
+        ExecutorUtil.shutdownAndAwaitTermination(executor);
       } catch (Exception e) {
         throw new RuntimeException("Exception on closing client", e);
       }
