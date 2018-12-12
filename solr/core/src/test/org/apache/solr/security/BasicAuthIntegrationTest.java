@@ -254,7 +254,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       });
       assertEquals(401, exp.code());
       assertAuthMetricsMinimums(20, 8, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
 
       // Query that succeeds
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params);
@@ -262,7 +262,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       cluster.getSolrClient().request(req, COLLECTION);
       
       assertAuthMetricsMinimums(21, 9, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(7, 7, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(6, 6, 0, 0, 0, 0);
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
