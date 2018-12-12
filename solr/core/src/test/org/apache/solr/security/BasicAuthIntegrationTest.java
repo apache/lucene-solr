@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 
+import org.apache.commons.io.IOUtils;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -40,14 +41,17 @@ import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -215,14 +219,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("id","4");
-      UpdateRequest update = new UpdateRequest();
-      update.setBasicAuthCredentials("harry","HarryIsUberCool");
-      update.add(doc);
-      update.setCommitWithin(100);
-      cluster.getSolrClient().request(update, COLLECTION);
-
+      addDocument("harry","HarryIsUberCool","id", "4");
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
@@ -279,6 +276,34 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(num, registry0.getMetrics().entrySet().stream().filter(e -> e.getKey().startsWith("SECURITY")).count());
   }
 
+  private QueryResponse executeQuery(ModifiableSolrParams params, String user, String pass) throws IOException, SolrServerException {
+    SolrRequest req = new QueryRequest(params);
+    req.setBasicAuthCredentials(user, pass);
+    QueryResponse resp = (QueryResponse) req.process(cluster.getSolrClient(), COLLECTION);
+    assertNull(resp.getException());
+    assertEquals(0, resp.getStatus());
+    return resp;
+  }
+
+  private void addDocument(String user, String pass, String... fields) throws IOException, SolrServerException {
+    SolrInputDocument doc = new SolrInputDocument();
+    boolean isKey = true;
+    String key = null;
+    for (String field : fields) {
+      if (isKey) {
+        key = field;
+        isKey = false;
+      } else {
+        doc.setField(key, field);
+      }
+    }
+    UpdateRequest update = new UpdateRequest();
+    update.setBasicAuthCredentials(user, pass);
+    update.add(doc);
+    cluster.getSolrClient().request(update, COLLECTION);
+    update.commit(cluster.getSolrClient(), COLLECTION);
+  }
+
   public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
       throws IOException {
     HttpPost httpPost;
@@ -288,7 +313,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
-    assertEquals(200, r.getStatusLine().getStatusCode());
+    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
+    assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
+    assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
     Utils.consumeFully(r.getEntity());
   }
 

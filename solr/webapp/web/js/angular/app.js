@@ -32,7 +32,15 @@ solrAdminApp.config([
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
       }).
+      when('/unknown', {
+        templateUrl: 'partials/unknown.html',
+        controller: 'UnknownController'
+      }).
       when('/login', {
+        templateUrl: 'partials/login.html',
+        controller: 'LoginController'
+      }).
+      when('/login/:route', {
         templateUrl: 'partials/login.html',
         controller: 'LoginController'
       }).
@@ -76,7 +84,7 @@ solrAdminApp.config([
         templateUrl: 'partials/cluster_suggestions.html',
         controller: 'ClusterSuggestionsController'
       }).
-      when('/:core', {
+      when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
       }).
@@ -143,7 +151,8 @@ solrAdminApp.config([
         controller: 'SegmentsController'
       }).
       otherwise({
-        redirectTo: '/'
+        templateUrl: 'partials/unknown.html',
+        controller: 'UnknownController'
       });
 }])
 .constant('Constants', {
@@ -351,7 +360,7 @@ solrAdminApp.config([
         $rootScope.$broadcast('connectionStatusInactive');
       },2000);
     }
-    if (!$location.path().startsWith('/login')) {
+    if (!$location.path().startsWith('/login') && !$location.path().startsWith('/unknown')) {
       sessionStorage.removeItem("http401");
       sessionStorage.removeItem("auth.state");
       sessionStorage.removeItem("auth.statusText");
@@ -379,6 +388,7 @@ solrAdminApp.config([
       var headers = rejection.headers();
       var wwwAuthHeader = headers['www-authenticate'];
       sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
+      sessionStorage.setItem("auth.authDataHeader", headers['x-solr-authdata']);
       sessionStorage.setItem("auth.statusText", rejection.statusText);
       sessionStorage.setItem("http401", "true");
       sessionStorage.removeItem("auth.scheme");

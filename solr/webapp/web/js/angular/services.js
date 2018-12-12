@@ -281,7 +281,53 @@ solrAdminServices.factory('System',
           sessionStorage.removeItem("auth.username");
           sessionStorage.removeItem("auth.wwwAuthHeader");
           sessionStorage.removeItem("auth.statusText");
+          localStorage.removeItem("auth.stateRandom");
+          sessionStorage.removeItem("auth.nonce");
         };
 
+        service.getAuthDataHeader = function () {
+          try {
+            var header64 = sessionStorage.getItem("auth.authDataHeader");
+            var headerJson = base64.decode(header64);
+            return JSON.parse(headerJson);
+          } catch (e) {
+            console.log("WARN: Wrong or missing X-Solr-AuthData header on 401 response " + e);
+            return null;
+          }
+        };
+
+        service.decodeJwtPart = function (jwtPart) {
+          try {
+            return JSON.parse(base64.urldecode(jwtPart));
+          } catch (e) {
+            console.log("WARN: Invalid format of JWT part: " + e);
+            return {};
+          }
+        };
+
+        service.isJwtCallback = function (hash) {
+          var hp = this.decodeHashParams(hash);
+          // console.log("Decoded hash as " + JSON.stringify(hp, undefined, 2)); // For debugging callbacks
+          return (hp['access_token'] && hp['token_type'] && hp['state']) || hp['error'];
+        };
+        
+        service.decodeHashParams = function(hash) {
+          // access_token, token_type, expires_in, state
+          if (hash == null || hash.length === 0) {
+            return {};
+          }
+          var params = {};
+          var parts = hash.split("&");
+          for (var p in parts) {
+            var kv = parts[p].split("=");
+            if (kv.length === 2) {
+              params[kv[0]] = decodeURIComponent(kv[1]);
+            } else {
+              console.log("Invalid callback URI, got parameter " + parts[p] + " but expected key=value");
+            }
+          }
+          return params;
+        };
+        
         return service;
       }]);

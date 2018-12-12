@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -43,6 +44,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mortbay.util.ajax.JSON;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
@@ -386,5 +388,19 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", config.getAuthorizationEndpoint());
     assertEquals(Arrays.asList("READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"), config.getScopesSupported());
     assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
+  }
+
+  @Test
+  public void xSolrAuthDataHeader() {
+    testConfig.put("adminUiScope", "solr:admin");
+    testConfig.put("authorizationEndpoint", "http://acmepaymentscorp/oauth/auz/authorize");
+    testConfig.put("clientId", "solr-cluster");
+    plugin.init(testConfig);
+    String headerBase64 = plugin.generateAuthDataHeader();
+    String headerJson = new String(Base64.base64ToByteArray(headerBase64), StandardCharsets.UTF_8);
+    Map<String,String> parsed = (Map<String, String>) JSON.parse(headerJson);
+    assertEquals("solr:admin", parsed.get("scope"));
+    assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
+    assertEquals("solr-cluster", parsed.get("client_id"));
   }
 }

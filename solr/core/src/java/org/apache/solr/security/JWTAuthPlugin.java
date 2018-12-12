@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -73,6 +75,7 @@ import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
+import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,8 +96,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private static final String PARAM_JWK_CACHE_DURATION = "jwkCacheDur";
   private static final String PARAM_CLAIMS_MATCH = "claimsMatch";
   private static final String PARAM_SCOPE = "scope";
+  private static final String PARAM_ADMINUI_SCOPE = "adminUiScope";
+  private static final String PARAM_REDIRECT_URIS = "redirectUris";
   private static final String PARAM_CLIENT_ID = "clientId";
   private static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
+  private static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
 
   private static final String AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
@@ -102,7 +108,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private final JwtPkiDelegationInterceptor interceptor = new JwtPkiDelegationInterceptor();
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
       PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
-      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL);
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, 
+      PARAM_AUTHORIZATION_ENDPOINT, PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS);
 
   private JwtConsumer jwtConsumer;
   private String iss;
@@ -114,7 +121,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private String principalClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
-  private HashSet<String> requiredScopes = new HashSet<>();
+  private List<String> requiredScopes = new ArrayList<>();
   private String clientId;
   private long jwkCacheDuration;
   private WellKnownDiscoveryConfig oidcDiscoveryConfig;
@@ -122,8 +129,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
   private Map<String, Object> pluginConfig;
   private Instant lastInitTime = Instant.now();
   private CoreContainer coreContainer;
+  private String authorizationEndpoint;
+  private String adminUiScope;
+  private List<String> redirectUris;
 
-  
+
   /**
    * Initialize plugin with core container, this method is chosen by reflection at create time
    * @param coreContainer instance of core container
@@ -146,11 +156,21 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     requireExpirationTime = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_EXPIRATIONTIME, "true")));
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
     confIdpConfigUrl = (String) pluginConfig.get(PARAM_WELL_KNOWN_URL);
+    Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
+    redirectUris = Collections.emptyList();
+    if (redirectUrisObj != null) {
+      if (redirectUrisObj instanceof String) {
+        redirectUris = Collections.singletonList((String) redirectUrisObj);
+      } else if (redirectUrisObj instanceof List) {
+        redirectUris = (List<String>) redirectUrisObj;
+      }
+    } 
     
     if (confIdpConfigUrl != null) {
       log.debug("Initializing well-known oidc config from {}", confIdpConfigUrl);
       oidcDiscoveryConfig = WellKnownDiscoveryConfig.parse(confIdpConfigUrl);
       iss = oidcDiscoveryConfig.getIssuer();
+      authorizationEndpoint = oidcDiscoveryConfig.getAuthorizationEndpoint();
     }
     
     if (pluginConfig.containsKey(PARAM_ISSUER)) {
@@ -158,6 +178,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
         log.debug("Explicitly setting required issuer instead of using issuer from well-known config");
       }
       iss = (String) pluginConfig.get(PARAM_ISSUER);
+    }
+
+    if (pluginConfig.containsKey(PARAM_AUTHORIZATION_ENDPOINT)) {
+      if (authorizationEndpoint != null) {
+        log.debug("Explicitly setting authorizationEndpoint instead of using issuer from well-known config");
+      }
+      authorizationEndpoint = (String) pluginConfig.get(PARAM_AUTHORIZATION_ENDPOINT);
     }
     
     if (pluginConfig.containsKey(PARAM_AUDIENCE)) {
@@ -173,8 +200,20 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
     String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
     if (!StringUtils.isEmpty(requiredScopesStr)) {
-      requiredScopes = new HashSet<>(Arrays.asList(requiredScopesStr.split("\\s+")));
+      requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
+    
+    adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
+    if (adminUiScope == null && requiredScopes.size() > 0) {
+      adminUiScope = requiredScopes.get(0);
+      log.warn("No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
+    }
+    
+    if (adminUiScope == null) {
+      adminUiScope = "solr";
+      log.warn("Warning: No adminUiScope provided, fallback to 'solr' as required scope. If this is not correct, the Admin UI login may not work");
+    }
+    
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
     claimsMatchCompiled = new HashMap<>();
     if (claimsMatch != null) {
@@ -203,7 +242,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
           PARAM_WELL_KNOWN_URL + ", " + PARAM_JWK_URL + " and " + PARAM_JWK);
     }
     if (jwkConfigured == 0) {
-      log.warn("Initialized JWTAuthPlugin without any JWK config. No requests will succeed");
+      log.warn("Initialized JWTAuthPlugin without any JWK config. Requests with jwk header will fail.");
     }
     if (oidcDiscoveryConfig != null) {
       String jwkUrl = oidcDiscoveryConfig.getJwksUrl();
@@ -224,14 +263,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   private void setupJwkUrl(String url) {
     // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
-    try {
-      URL jwkUrl = new URL(url);
-      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
-      }
-    } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
-    }
+// NOCOMMIT: Disable https requirement for now
+//    try {
+//      URL jwkUrl = new URL(url);
+//      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
+//      }
+//    } catch (MalformedURLException e) {
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
+//    }
     HttpsJwks httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
     verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
@@ -301,7 +341,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
         return true;
 
       case AUTZ_HEADER_PROBLEM:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
 
@@ -310,7 +349,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       case JWT_PARSE_ERROR:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
         if (authResponse.getJwtException() != null) {
           log.warn("Exception: {}", authResponse.getJwtException().getMessage());
         }
@@ -318,14 +356,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
         return false;
 
       case SCOPE_MISSING:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
         return false;
         
       case NO_AUTZ_HEADER:
       default:
-        log.debug("Authentication failed with reason {}, message {}", authResponse.getAuthCode(), authResponse.getErrorMessage());
-        authenticationFailure(response, authResponse.getAuthCode().getMsg());
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
         return false;
     }
   }
@@ -462,10 +498,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
   }
 
-  private void authenticationFailure(HttpServletResponse response, String message) throws IOException {
-    authenticationFailure(response, message, HttpServletResponse.SC_UNAUTHORIZED, null);
-  }
-
   /**
    * Operate the commands on the latest conf and return a new conf object
    * If there are errors in the commands , throw a SolrException. return a null
@@ -504,7 +536,19 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
       wwwAuthParams.add("error_description=\"" + message + "\"");
     }
     response.addHeader(HttpHeaders.WWW_AUTHENTICATE, org.apache.commons.lang.StringUtils.join(wwwAuthParams, ", "));
+    response.addHeader(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
     response.sendError(httpCode, message);
+    log.info("JWT Authentication attempt failed: {}", message);
+  }
+
+  protected String generateAuthDataHeader() {
+    Map<String,Object> data = new HashMap<>();
+    data.put(PARAM_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
+    data.put("client_id", clientId);
+    data.put("scope", adminUiScope);
+    data.put("redirect_uris", redirectUris);
+    String headerJson = JSONUtil.toJSON(data);
+    return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 
 
@@ -598,7 +642,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     public static WellKnownDiscoveryConfig parse(String urlString) {
       try {
         URL url = new URL(urlString);
-        if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
+        // NOCOMMIT - require HTTPS
+        if (!Arrays.asList("http", "https", "file").contains(url.getProtocol())) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be HTTPS or file");
         }
         return parse(url.openStream());

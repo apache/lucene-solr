@@ -40,6 +40,7 @@ import org.apache.solr.metrics.SolrMetricProducer;
 public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
+  final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
 
   // Metrics
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
