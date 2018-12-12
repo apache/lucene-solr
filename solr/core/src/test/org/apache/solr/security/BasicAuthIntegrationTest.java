@@ -259,7 +259,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       cluster.getSolrClient().request(req, COLLECTION);
 
       assertAuthMetricsMinimums(22, 10, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(11, 11, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
       
       addDocument("harry","HarryIsUberCool","id", "5");
       assertAuthMetricsMinimums(23, 11, 9, 1, 2, 0);
