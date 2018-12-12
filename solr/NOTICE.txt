@@ -46,6 +46,9 @@ Copyright (c) 2008-2014, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
 This product includes require.js Javascript library created by James Burke
 Copyright (C) 2010-2014 James Burke, https://github.com/jrburke/requirejs
 
+This product includes angular-utf8-base64.js Javascript library created by Andrey Bezyazychniy
+Copyright (c) 2014 Andrey Bezyazychniy, https://github.com/stranger82/angular-utf8-base64
+
 This product includes code copied and modified from the www-authenticate Javascript library 
 Copyright (c) 2013 Randy McLaughlin, MIT-license, https://github.com/randymized/www-authenticate
 
