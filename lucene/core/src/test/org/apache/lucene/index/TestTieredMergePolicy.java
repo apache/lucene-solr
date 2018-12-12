@@ -169,7 +169,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       }
       w.forceMerge(targetCount);
 
-      final long max125Pct = (long) ((tmp.getMaxMergedSegmentMB() * 1024.0 * 1024.0) * 1.25);
+      final double maxSegmentSize = Math.max(tmp.getMaxMergedSegmentMB(), tmp.getFloorSegmentMB());
+      final long max125Pct = (long) ((maxSegmentSize * 1024.0 * 1024.0) * 1.25);
       // Other than in the case where the target count is 1 we can't say much except no segment should be > 125% of max seg size.
       if (targetCount == 1) {
         assertEquals("Should have merged down to one segment", targetCount, w.getSegmentCount());
