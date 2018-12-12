@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -37,16 +36,6 @@ import static java.util.Collections.unmodifiableSet;
  * @since solr 1.3
  */
 public abstract class SolrRequest<T extends SolrResponse> implements Serializable {
-  // This user principal is typically used by Auth plugins during distributed/sharded search
-  private Principal userPrincipal;
-
-  public void setUserPrincipal(Principal userPrincipal) {
-    this.userPrincipal = userPrincipal;
-  }
-
-  public Principal getUserPrincipal() {
-    return userPrincipal;
-  }
 
   public enum METHOD {
     GET,

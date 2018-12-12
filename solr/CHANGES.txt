@@ -79,6 +79,8 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+* SOLR-12121: JWT Token authentication plugin (janhoy)
+
 * SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
 
 Bug Fixes
@@ -844,8 +846,6 @@ New Features
 
 * SOLR-11913: SolrJ SolrParams now implements Iterable<Map.Entry<String, String[]>> and also has a stream() method
   using it for convenience. (David Smiley, Tapan Vaishnav)
-
-* SOLR-12121: JWT Token authentication plugin (janhoy)
 
 * SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
   in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman, Dennis Gove)

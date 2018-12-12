@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,7 +56,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -137,11 +135,7 @@ public class HttpShardHandler extends ShardHandler {
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
-    
-    // If request has a Principal (authenticated user), extract it for passing on to the new shard request
-    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    final Principal userPrincipal = requestInfo == null ? null : requestInfo.getReq().getUserPrincipal();
-    
+
     Callable<ShardResponse> task = () -> {
 
       ShardResponse srsp = new ShardResponse();
@@ -160,7 +154,6 @@ public class HttpShardHandler extends ShardHandler {
 
         QueryRequest req = makeQueryRequest(sreq, params, shard);
         req.setMethod(SolrRequest.METHOD.POST);
-        req.setUserPrincipal(userPrincipal);
 
         // no need to set the response parser as binary is the default
         // req.setResponseParser(new BinaryResponseParser());

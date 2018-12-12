@@ -250,7 +250,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  protected void setHeader(HttpRequest httpRequest) {
+  void setHeader(HttpRequest httpRequest) {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
     if (reqInfo != null) {
