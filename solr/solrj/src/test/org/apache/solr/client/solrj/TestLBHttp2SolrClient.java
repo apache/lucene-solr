@@ -90,7 +90,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    httpClient = new Http2SolrClient.Builder().connectionTimeout(500).idleTimeout(500).build();
+    httpClient = new Http2SolrClient.Builder().connectionTimeout(1000).idleTimeout(2000).build();
 
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i).toFile(), 0);
