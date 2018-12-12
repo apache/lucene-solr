@@ -413,13 +413,11 @@ public class Http2SolrClient extends SolrClient {
         throw new RuntimeException(e);
       } catch (TimeoutException e) {
         throw new SolrServerException(
-            "Timeout occured while waiting response from server at: "
-                + getBaseURL(), e);
+            "Timeout occured while waiting response from server at: " + req.getURI(), e);
       } catch (ExecutionException e) {
         Throwable cause = e.getCause();
         if (cause instanceof ConnectException) {
-          throw new SolrServerException("Server refused connection at: "
-              + getBaseURL(), cause);
+          throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
         }
         if (cause instanceof SolrServerException) {
           throw (SolrServerException) cause;
