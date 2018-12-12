@@ -137,7 +137,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                 if (!authenticate(username, pwd)) {
                   numWrongCredentials.inc();
                   log.debug("Bad auth credentials supplied in Authorization header");
-                  authenticationFailure(response, "Bad credentials");
+                  authenticationFailure(response, isAjaxRequest, "Bad credentials");
                   return false;
                 } else {
                   HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
@@ -152,7 +152,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
                 }
               } else {
                 numErrors.mark();
-                authenticationFailure(response, "Invalid authentication token");
+                authenticationFailure(response, isAjaxRequest, "Invalid authentication token");
                 return false;
               }
             } catch (UnsupportedEncodingException e) {
@@ -160,7 +160,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
             }
           } else {
             numErrors.mark();
-            authenticationFailure(response, "Malformed Basic Auth header");
+            authenticationFailure(response, isAjaxRequest, "Malformed Basic Auth header");
             return false;
           }
         }
@@ -170,7 +170,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     // No auth header OR header empty OR Authorization header not of type Basic, i.e. "unknown" user
     if (blockUnknown) {
       numMissingCredentials.inc();
-      authenticationFailure(response, "require authentication");
+      authenticationFailure(response, isAjaxRequest, "require authentication");
       return false;
     } else {
       numPassThrough.inc();
