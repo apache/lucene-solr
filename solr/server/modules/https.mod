@@ -4,7 +4,6 @@
 
 [depend]
 ssl
-conscrypt
 
 [xml]
 etc/jetty-https.xml

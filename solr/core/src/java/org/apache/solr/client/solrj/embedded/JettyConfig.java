@@ -25,7 +25,7 @@ import java.util.TreeMap;
 
 public class JettyConfig {
 
-  // by default when https is not enabled, jetty will start with http2 + http1 support
+  // by default jetty will start with http2 + http1 support
   public final boolean onlyHttp1;
 
   public final int port;

@@ -6,4 +6,4 @@
 ssl
 
 [xml]
-etc/conscrypt.xml
+etc/jetty-https8.xml
