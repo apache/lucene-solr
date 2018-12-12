@@ -198,7 +198,7 @@ public class AddDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
             if (sb.length() > 0) {
               sb.append(' ');
             }
-            sb.append(info.toString() + "(" + source + "," + shouldRewrite + "," + clazz + ")");
+            sb.append(info.info.name + "(" + source + "," + shouldRewrite + "," + clazz + ")");
           }
         }
         if (needWrapping > 0) {
@@ -233,20 +233,23 @@ public class AddDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
       StringBuilder b = new StringBuilder();
       final int numSegments = oneMerge.segments.size();
       for(int i=0;i<numSegments;i++) {
-        if (i > 0) {
-          b.append('\n');
-        }
-        b.append(oneMerge.segments.get(i).toString());
-        b.append('#');
+        b.append("\n* ");
+        b.append(oneMerge.segments.get(i).info.name);
+        b.append(":");
+        b.append("\n\tsource: ");
         Map<String, String> diag = oneMerge.segments.get(i).info.getDiagnostics();
         b.append(diag.get("source"));
         if (diag.get("class") != null) {
-          b.append('#');
+          b.append("\n\tclass: ");
           b.append(diag.get("class"));
-          if (diag.get("segString") != null) {
-            b.append("#ss=");
-            b.append(diag.get("segString"));
-          }
+        }
+        if (diag.get("wrapping") != null) {
+          b.append("\n\twrapping: ");
+          b.append(diag.get("wrapping"));
+        }
+        if (diag.get("segString") != null) {
+          b.append("\n\tsegString: ");
+          b.append(diag.get("segString").replaceAll("\n", "\n\t| "));
         }
       }
       return b.toString();
@@ -273,6 +276,7 @@ public class AddDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
      */
 
     private String shouldRewrite(SegmentCommitInfo info) {
+      String rewriteReason = null;
       // Need to get a reader for this segment
       try (SegmentReader reader = new SegmentReader(info, Version.LUCENE_8_0_0.major, IOContext.DEFAULT)) {
         // check the marker, if defined
@@ -284,27 +288,24 @@ public class AddDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
 //        }
         StringBuilder sb = new StringBuilder();
         for (FieldInfo fi : reader.getFieldInfos()) {
-          if (fi.getDocValuesType() != DocValuesType.NONE) {
-            Map<String, Object> dvStats = UninvertingReader.getDVStats(reader, fi);
-            if (!((Integer)dvStats.get("numDocs")).equals((Integer)dvStats.get("present"))) {
-              throw new RuntimeException("segment: " + info.toString() + " " + fi.name + ", dvStats: " + dvStats + " diag: " + info.info.getDiagnostics());
-            }
-          }
           if (mapping.apply(fi) != null) {
             if (sb.length() > 0) {
               sb.append(',');
             }
             sb.append(fi.name);
+            sb.append(UninvertingReader.getDVStats(reader, fi).toString());
           }
         }
 //        return sb.toString();
-        return sb.length() > 0 ? sb.toString() : null;
+        rewriteReason = sb.length() > 0 ? sb.toString() : null;
       } catch (IOException e) {
         // It's safer to rewrite the segment if there's an error, although it may lead to a lot of work.
         log.warn("Error opening a reader for segment {}, will rewrite segment", info.toString());
         count("shouldRewriteError");
-        return "error " + e.getMessage();
+        rewriteReason = "error " + e.getMessage();
       }
+      if (rewriteReason == null) rewriteReason = "forced";
+      return rewriteReason;
     }
 
     @Override
@@ -409,7 +410,9 @@ public class AddDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
     @Override
     public void setMergeInfo(SegmentCommitInfo info) {
       super.setMergeInfo(info);
-      info.info.getDiagnostics().put(DIAGNOSTICS_MARKER_PROP, marker);
+      if (marker != null) {
+        info.info.getDiagnostics().put(DIAGNOSTICS_MARKER_PROP, marker);
+      }
       info.info.getDiagnostics().put("class", getClass().getSimpleName());
       info.info.getDiagnostics().put("segString", AddDVMergePolicy.segString(this));
       if (metaPairs != null && metaPairs.length > 1) {
@@ -418,7 +421,9 @@ public class AddDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
           len--;
         }
         for (int i = 0; i < len; i += 2) {
-          info.info.getDiagnostics().put(metaPairs[i], metaPairs[i + 1]);
+          if (metaPairs[i] != null && metaPairs[i + 1] != null) {
+            info.info.getDiagnostics().put(metaPairs[i], metaPairs[i + 1]);
+          }
         }
       }
     }

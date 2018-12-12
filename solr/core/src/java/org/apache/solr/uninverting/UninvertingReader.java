@@ -18,15 +18,19 @@ package org.apache.solr.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -37,7 +41,11 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
@@ -234,52 +242,7 @@ public class UninvertingReader extends FilterLeafReader {
     // Calculate a new FieldInfos that has DocValuesType where we didn't before
     ArrayList<FieldInfo> newFieldInfos = new ArrayList<>(in.getFieldInfos().size());
     for (FieldInfo fi : in.getFieldInfos()) {
-      DocValuesType type = fi.getDocValuesType();
-      // fields which currently don't have docValues, but are uninvertable (indexed or points data present)
-      if (type == DocValuesType.NONE &&
-          (fi.getIndexOptions() != IndexOptions.NONE || (fi.getPointNumBytes() > 0 && fi.getPointDataDimensionCount() == 1))) {
-        Type t = mapping.apply(fi.name); // could definitely return null, thus still can't uninvert it
-        if (t != null) {
-          if (t == Type.INTEGER_POINT || t == Type.LONG_POINT || t == Type.FLOAT_POINT || t == Type.DOUBLE_POINT) {
-            // type uses points
-            if (fi.getPointDataDimensionCount() == 0) {
-              continue;
-            }
-          } else {
-            // type uses inverted index
-            if (fi.getIndexOptions() == IndexOptions.NONE) {
-              continue;
-            }
-          }
-          switch(t) {
-            case INTEGER_POINT:
-            case LONG_POINT:
-            case FLOAT_POINT:
-            case DOUBLE_POINT:
-            case LEGACY_INTEGER:
-            case LEGACY_LONG:
-            case LEGACY_FLOAT:
-            case LEGACY_DOUBLE:
-              type = DocValuesType.NUMERIC;
-              break;
-            case BINARY:
-              type = DocValuesType.BINARY;
-              break;
-            case SORTED:
-              type = DocValuesType.SORTED;
-              break;
-            case SORTED_SET_BINARY:
-            case SORTED_SET_INTEGER:
-            case SORTED_SET_FLOAT:
-            case SORTED_SET_LONG:
-            case SORTED_SET_DOUBLE:
-              type = DocValuesType.SORTED_SET;
-              break;
-            default:
-              throw new AssertionError();
-          }
-        }
-      }
+      DocValuesType type = shouldWrap(fi, mapping);
       if (type != fi.getDocValuesType()) { // we changed it
         wrap = true;
         newFieldInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
@@ -295,6 +258,56 @@ public class UninvertingReader extends FilterLeafReader {
       FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(new FieldInfo[newFieldInfos.size()]));
       return new UninvertingReader(in, mapping, fieldInfos);
     }
+  }
+
+  public static DocValuesType shouldWrap(FieldInfo fi, Function<String, Type> mapping) {
+    DocValuesType type = fi.getDocValuesType();
+    // fields which currently don't have docValues, but are uninvertable (indexed or points data present)
+    if (type == DocValuesType.NONE &&
+        (fi.getIndexOptions() != IndexOptions.NONE || (fi.getPointNumBytes() > 0 && fi.getPointDataDimensionCount() == 1))) {
+      Type t = mapping.apply(fi.name); // could definitely return null, thus still can't uninvert it
+      if (t != null) {
+        if (t == Type.INTEGER_POINT || t == Type.LONG_POINT || t == Type.FLOAT_POINT || t == Type.DOUBLE_POINT) {
+          // type uses points
+          if (fi.getPointDataDimensionCount() == 0) {
+            return null;
+          }
+        } else {
+          // type uses inverted index
+          if (fi.getIndexOptions() == IndexOptions.NONE) {
+            return null;
+          }
+        }
+        switch(t) {
+          case INTEGER_POINT:
+          case LONG_POINT:
+          case FLOAT_POINT:
+          case DOUBLE_POINT:
+          case LEGACY_INTEGER:
+          case LEGACY_LONG:
+          case LEGACY_FLOAT:
+          case LEGACY_DOUBLE:
+            type = DocValuesType.NUMERIC;
+            break;
+          case BINARY:
+            type = DocValuesType.BINARY;
+            break;
+          case SORTED:
+            type = DocValuesType.SORTED;
+            break;
+          case SORTED_SET_BINARY:
+          case SORTED_SET_INTEGER:
+          case SORTED_SET_FLOAT:
+          case SORTED_SET_LONG:
+          case SORTED_SET_DOUBLE:
+            type = DocValuesType.SORTED_SET;
+            break;
+          default:
+            throw new AssertionError();
+        }
+      }
+    }
+    return type;
   }
 
   final Function<String, Type> mapping;
@@ -443,6 +456,108 @@ public class UninvertingReader extends FilterLeafReader {
     }
     String totalSize = RamUsageEstimator.humanReadableUnits(totalBytesUsed);
     return new FieldCacheStats(totalSize, info);
+  }
+
+  public static Map<String, Object> getDVStats(CodecReader reader, FieldInfo fi) throws IOException {
+    DocValuesType type = fi.getDocValuesType();
+    try {
+      int present = 0;
+      int zeroOrNull = 0;
+      Bits liveDocs = reader.getLiveDocs();
+      DocValuesProducer producer = reader.getDocValuesReader();
+      int expected = reader.numDocs();
+      int deletedButPresent = 0;
+      switch (type) {
+        case NUMERIC:
+          NumericDocValues ndv = reader.getNumericDocValues(fi.name);
+          while (ndv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs != null && !liveDocs.get(ndv.docID())) {
+              deletedButPresent++;
+            }
+            long num = ndv.longValue();
+            if (num == 0) {
+              zeroOrNull++;
+            }
+            present++;
+          }
+          break;
+        case BINARY:
+          BinaryDocValues bdv = reader.getBinaryDocValues(fi.name);
+          while (bdv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs != null && !liveDocs.get(bdv.docID())) {
+              deletedButPresent++;
+            }
+            BytesRef bytes = bdv.binaryValue();
+            if (bytes == null || bytes.length == 0) {
+              zeroOrNull++;
+            }
+            present++;
+          }
+          break;
+        case SORTED:
+          SortedDocValues sdv = reader.getSortedDocValues(fi.name);
+          while (sdv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs != null && !liveDocs.get(sdv.docID())) {
+              deletedButPresent++;
+            }
+            BytesRef bytes = sdv.binaryValue();
+            if (bytes == null || bytes.length == 0) {
+              zeroOrNull++;
+            }
+            present++;
+          }
+          break;
+        case SORTED_NUMERIC:
+          SortedNumericDocValues sndv = reader.getSortedNumericDocValues(fi.name);
+          while (sndv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs != null && !liveDocs.get(sndv.docID())) {
+              deletedButPresent++;
+            }
+            if (sndv.docValueCount() > 0) {
+              for (int j = 0; j < sndv.docValueCount(); j++) {
+                long val = sndv.nextValue();
+              }
+              present++;
+            } else {
+              zeroOrNull++;
+            }
+          }
+          break;
+        case SORTED_SET:
+          SortedSetDocValues ssdv = reader.getSortedSetDocValues(fi.name);
+          while (ssdv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            if (liveDocs != null && !liveDocs.get(ssdv.docID())) {
+              deletedButPresent++;
+            }
+            if (ssdv.getValueCount() > 0) {
+              long ord;
+              boolean allPresent = true;
+              while ((ord = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                BytesRef term = ssdv.lookupOrd(ord);
+                if (term == null || term.length == 0) {
+                  allPresent = false;
+                }
+              }
+              if (!allPresent) {
+                zeroOrNull++;
+              }
+              present++;
+            } else {
+              zeroOrNull++;
+            }
+          }
+          break;
+      }
+      Map<String, Object> result = new HashMap<>();
+      result.put("numDocs", reader.numDocs());
+      result.put("expected", expected);
+      result.put("present", present);
+      result.put("nullOrZero", zeroOrNull);
+      result.put("delPresent", deletedButPresent);
+      return result;
+    } catch (IOException e) {
+      return Collections.singletonMap("error", e.getMessage());
+    }
   }
 
   public static int getUninvertedStatsSize() {

@@ -1235,7 +1235,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         "test3"});
     String[] vals = new String[100];
     for (int i = 0; i < 100; i++) {
-      vals[i] = "test " + i;
+      vals[i] = "code/test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
 

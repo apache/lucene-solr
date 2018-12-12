@@ -72,7 +72,7 @@ public final class SegmentReader extends CodecReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
+  public SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
     this.si = si.clone();
     this.originalSi = si;
     this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
