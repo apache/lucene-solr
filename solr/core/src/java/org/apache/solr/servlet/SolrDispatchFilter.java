@@ -102,6 +102,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private final String metricTag = Integer.toHexString(hashCode());
   private SolrMetricManager metricManager;
   private String registryName;
+  private volatile boolean closeOnDestroy = true;
 
   /**
    * Enum to define action that needs to be processed.
@@ -294,26 +295,43 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
+    if (closeOnDestroy) {
+      close();
+    }
+  }
+  
+  public void close() {
+    CoreContainer cc = cores;
+    cores = null;
     try {
-      FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
-      if (fileCleaningTracker != null) {
-        fileCleaningTracker.exitWhenFinished();
-      }
-    } catch (Exception e) {
-      log.warn("Exception closing FileCleaningTracker", e);
-    } finally {
-      SolrRequestParsers.fileCleaningTracker = null;
-    }
-
-    if (metricManager != null) {
-      metricManager.unregisterGauges(registryName, metricTag);
-    }
-
-    if (cores != null) {
       try {
-        cores.shutdown();
+        FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
+        if (fileCleaningTracker != null) {
+          fileCleaningTracker.exitWhenFinished();
+        }
+      } catch (NullPointerException e) {
+        // okay
+      } catch (Exception e) {
+        log.warn("Exception closing FileCleaningTracker", e);
       } finally {
-        cores = null;
+        SolrRequestParsers.fileCleaningTracker = null;
+      }
+
+      if (metricManager != null) {
+        try {
+          metricManager.unregisterGauges(registryName, metricTag);
+        } catch (NullPointerException e) {
+          // okay
+        } catch (Exception e) {
+          log.warn("Exception closing FileCleaningTracker", e);
+        } finally {
+          metricManager = null;
+        }
+      }
+    } finally {
+      if (cc != null) {
+        httpClient = null;
+        cc.shutdown();
       }
     }
   }
@@ -342,18 +360,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
-        return;
-      }
-      if (wrappedRequest.get() != null) {
-        request = wrappedRequest.get();
-      }
-
-      if (cores.getAuthenticationPlugin() != null) {
-        log.debug("User principal: {}", request.getUserPrincipal());
-      }
-
       // No need to even create the HttpSolrCall object if this path is excluded.
       if (excludePatterns != null) {
         String requestPath = request.getServletPath();
@@ -369,6 +375,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             return;
           }
         }
+      }
+
+      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
+      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
+        return;
+      }
+      if (wrappedRequest.get() != null) {
+        request = wrappedRequest.get();
+      }
+
+      if (cores.getAuthenticationPlugin() != null) {
+        log.debug("User principal: {}", request.getUserPrincipal());
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -440,15 +458,27 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       // /admin/info/key must be always open. see SOLR-9188
       // tests work only w/ getPathInfo
       //otherwise it's just enough to have getServletPath()
-      if (PublicKeyHandler.PATH.equals(request.getServletPath()) ||
-          PublicKeyHandler.PATH.equals(request.getPathInfo())) return true;
+      String requestPath = request.getPathInfo();
+      if (requestPath == null) 
+        requestPath = request.getServletPath();
+      if (PublicKeyHandler.PATH.equals(requestPath)) {
+        if (log.isDebugEnabled())
+          log.debug("Pass through PKI authentication endpoint");
+        return true;
+      }
+      // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
+      if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
+        if (log.isDebugEnabled())
+          log.debug("Pass through Admin UI entry point");
+        return true;
+      }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
+        requestContinues = authenticationPlugin.authenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
           wrappedRequest.set((HttpServletRequest) req);
         });
@@ -593,5 +623,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       return response;
     }
+  }
+  
+  public void closeOnDestroy(boolean closeOnDestroy) {
+    this.closeOnDestroy = closeOnDestroy;
   }
 }

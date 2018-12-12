@@ -25,7 +25,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
@@ -39,7 +39,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.security.TestAuthorizationFramework.verifySecurityStatus;
 
-public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
+public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -96,7 +96,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
     QueryRequest query = new QueryRequest(params);
     query.process(cluster.getSolrClient(), "collection");
     assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(), count.get() > 2);
-
+    assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
   }
 
   @After

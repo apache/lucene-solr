@@ -331,6 +331,9 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
     public Shape build() {
       GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points, polyHoles);
       GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, description);
+      if (polygon == null) {
+        throw new InvalidShapeException("Invalid polygon, all points are coplanar");
+      }
       return new Geo3dShape<>(polygon, context);
     }
 

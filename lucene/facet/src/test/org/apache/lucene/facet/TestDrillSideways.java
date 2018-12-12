@@ -726,7 +726,7 @@ public class TestDrillSideways extends FacetTestCase {
               @Override
               public Scorer scorer(LeafReaderContext context) throws IOException {
                 DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-                return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(approximation) {
+                return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(approximation) {
 
                   @Override
                   public boolean matches() throws IOException {

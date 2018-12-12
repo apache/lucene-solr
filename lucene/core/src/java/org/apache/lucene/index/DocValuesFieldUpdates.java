@@ -18,10 +18,13 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedMutable;
 
@@ -251,7 +254,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
     this.type = type;
     bitsPerValue = PackedInts.bitsRequired(maxDoc - 1) + SHIFT;
-    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.DEFAULT);
   }
 
   final boolean getFinished() {
@@ -282,7 +285,6 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-
     // shrink wrap
     if (size < docs.size()) {
       resize(size);
@@ -298,13 +300,13 @@ abstract class DocValuesFieldUpdates implements Accountable {
         // increasing docID order:
         // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
         // stable and preserving original order so the last update to that docID wins
-        return Long.compare(docs.get(i), docs.get(j));
+        return Long.compare(docs.get(i)>>>1, docs.get(j)>>>1);
       }
     }.sort(0, size);
   }
-  
+
   /** Returns true if this instance contains any updates. */
-  synchronized final boolean any() {
+  synchronized boolean any() {
     return size > 0;
   }
 
@@ -316,7 +318,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
    * Adds an update that resets the documents value.
    * @param doc the doc to update
    */
-  final synchronized void reset(int doc) {
+  synchronized void reset(int doc) {
     addInternal(doc, HAS_NO_VALUE_MASK);
   }
   final synchronized int add(int doc) {
@@ -392,9 +394,13 @@ abstract class DocValuesFieldUpdates implements Accountable {
       }
       long longDoc = docs.get(idx);
       ++idx;
-      while (idx < size && docs.get(idx) == longDoc) {
+      for (; idx < size; idx++) {
         // scan forward to last update to this doc
-        ++idx;
+        final long nextLongDoc = docs.get(idx);
+        if ((longDoc >>> 1) != (nextLongDoc >>> 1)) {
+          break;
+        }
+        longDoc = nextLongDoc;
       }
       hasValue = (longDoc & HAS_VALUE_MASK) >  0;
       if (hasValue) {
@@ -423,6 +429,105 @@ abstract class DocValuesFieldUpdates implements Accountable {
     @Override
     final boolean hasValue() {
       return hasValue;
+    }
+  }
+
+  static abstract class SingleValueDocValuesFieldUpdates extends DocValuesFieldUpdates {
+    private final BitSet bitSet;
+    private BitSet hasNoValue;
+    private boolean hasAtLeastOneValue;
+    protected SingleValueDocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
+      super(maxDoc, delGen, field, type);
+      this.bitSet = new SparseFixedBitSet(maxDoc);
+    }
+
+    @Override
+    void add(int doc, long value) {
+      assert longValue() == value;
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue != null) {
+        hasNoValue.clear(doc);
+      }
+    }
+
+    @Override
+    void add(int doc, BytesRef value) {
+      assert binaryValue().equals(value);
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue != null) {
+        hasNoValue.clear(doc);
+      }
+    }
+
+    @Override
+    synchronized void reset(int doc) {
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue == null) {
+        hasNoValue = new SparseFixedBitSet(maxDoc);
+      }
+      hasNoValue.set(doc);
+    }
+
+    @Override
+    void add(int docId, Iterator iterator) {
+      throw new UnsupportedOperationException();
+    }
+
+    protected abstract BytesRef binaryValue();
+    
+    protected abstract long longValue();
+
+    @Override
+    synchronized boolean any() {
+      return super.any() || hasAtLeastOneValue;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return super.ramBytesUsed() + bitSet.ramBytesUsed() + (hasNoValue == null ? 0 : hasNoValue.ramBytesUsed());
+    }
+
+    @Override
+    Iterator iterator() {
+      BitSetIterator iterator = new BitSetIterator(bitSet, maxDoc);
+      return new DocValuesFieldUpdates.Iterator() {
+
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
+        }
+
+        @Override
+        long longValue() {
+          return SingleValueDocValuesFieldUpdates.this.longValue();
+        }
+
+        @Override
+        BytesRef binaryValue() {
+          return SingleValueDocValuesFieldUpdates.this.binaryValue();
+        }
+
+        @Override
+        long delGen() {
+          return delGen;
+        }
+
+        @Override
+        boolean hasValue() {
+          if (hasNoValue != null) {
+            return hasNoValue.get(docID()) == false;
+          }
+          return true;
+        }
+      };
     }
   }
 }

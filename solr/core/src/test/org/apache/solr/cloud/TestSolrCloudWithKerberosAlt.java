@@ -21,6 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
@@ -46,6 +48,7 @@ import org.slf4j.LoggerFactory;
 })
 
 @LuceneTestCase.Slow
+@ThreadLeakLingering(linger = 10000) // minikdc has some lingering threads
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -133,8 +136,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .process(client);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish
-        (collectionName, client.getZkStateReader(), true, true, 330);
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // modify/query collection
 

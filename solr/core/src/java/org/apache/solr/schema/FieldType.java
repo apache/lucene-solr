@@ -62,6 +62,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
@@ -80,7 +81,7 @@ import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MAT
 /**
  * Base class for all field types used by an index schema.
  *
- *
+ * @since 3.1
  */
 public abstract class FieldType extends FieldProperties {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -133,6 +134,8 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
+  public boolean isUtf8Field(){return false;}
+
   /**
    * Returns true if the fields' docValues should be used for obtaining stored value
    */
@@ -157,6 +160,10 @@ public abstract class FieldType extends FieldProperties {
 
   }
 
+  public boolean write(IteratorWriter.ItemWriter itemWriter) {
+    return false;
+  }
+
   // Handle additional arguments...
   protected void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
@@ -168,7 +175,9 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
-
+    
+    properties |= UNINVERTIBLE;
+    
     this.args = Collections.unmodifiableMap(args);
     Map<String,String> initArgs = new HashMap<>(args);
     initArgs.remove(CLASS_NAME); // consume the class arg 
@@ -456,12 +465,18 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
+   * <p>
    * If DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
    * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
    * This specifies the structure to use.
+   * </p>
+   * <p>
+   * This method will not be used if the field is (effectively) <code>uninvertible="false"</code>
+   * </p>
    * 
    * @param sf field instance
    * @return type to uninvert, or {@code null} (to disallow uninversion for the field)
+   * @see SchemaField#isUninvertible()
    */
   public abstract UninvertingReader.Type getUninversionType(SchemaField sf);
 
@@ -1009,6 +1024,7 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(STORE_OFFSETS), hasProperty(STORE_OFFSETS));
       namedPropertyValues.add(getPropertyName(MULTIVALUED), hasProperty(MULTIVALUED));
       namedPropertyValues.add(getPropertyName(LARGE_FIELD), hasProperty(LARGE_FIELD));
+      namedPropertyValues.add(getPropertyName(UNINVERTIBLE), hasProperty(UNINVERTIBLE));
       if (hasProperty(SORT_MISSING_FIRST)) {
         namedPropertyValues.add(getPropertyName(SORT_MISSING_FIRST), true);
       } else if (hasProperty(SORT_MISSING_LAST)) {

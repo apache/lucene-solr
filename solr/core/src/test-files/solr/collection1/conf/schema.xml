@@ -638,6 +638,8 @@
 
   <field name="payloadDelimited" type="payloadDelimited"/>
 
+  <field name="sortabuse_not_uninvertible" type="string" indexed="true" multiValued="false" uninvertible="false" />
+  
   <!-- EnumType -->
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
@@ -753,7 +755,13 @@
   <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
                 
-                
+  <!-- Indexed, but NOT uninvertible -->
+  <dynamicField name="*_s_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" />
+  <!-- docValues, but NOT uninvertible -->
+  <dynamicField name="*_s_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" />
+
+
+  
   <!-- Only Stored numerics -->
   <dynamicField name="*_i_os" type="int" indexed="false" stored="true" docValues="false"/>
   <dynamicField name="*_l_os" type="long" indexed="false" stored="true" docValues="false"/>
@@ -823,6 +831,10 @@
   <copyField source="range_facet_f" dest="range_facet_d_dv"/>
   <copyField source="bday" dest="range_facet_dt_dv"/>
 
+  <copyField source="trait_s" dest="trait_s_not_uninvert"/>
+  <copyField source="trait_s" dest="trait_s_not_uninvert_dv"/>
+  <copyField source="trait_s" dest="trait_s_not_indexed_sS"/>
+  
   <!-- dynamic destination -->
   <copyField source="*_dynamic" dest="dynamic_*"/>
   <copyField source="*_path" dest="*_ancestor"/>

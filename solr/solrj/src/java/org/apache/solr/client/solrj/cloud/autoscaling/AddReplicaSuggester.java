@@ -47,19 +47,16 @@ class AddReplicaSuggester extends Suggester {
       //iterate through  nodes and identify the least loaded
       List<Violation> leastSeriousViolation = null;
       Row bestNode = null;
-      double[] bestDeviation = null;
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
-        if (!isNodeSuitableForReplicaAddition(row)) continue;
+        if (!isNodeSuitableForReplicaAddition(row, null)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type, strict);
-        double[] deviation = new double[1];
-        List<Violation> errs = testChangedMatrix(strict, tmpRow.session, deviation);
+        List<Violation> errs = testChangedMatrix(strict, tmpRow.session);
         if (!containsNewErrors(errs)) {
-          if ((errs.isEmpty() && isLessDeviant(bestDeviation, deviation)) ||//there are no violations but this is deviating less
+          if ((errs.isEmpty() && isLessDeviant()) ||//there are no violations but this is deviating less
               isLessSerious(errs, leastSeriousViolation)) {//there are errors , but this has less serious violation
             leastSeriousViolation = errs;
             bestNode = tmpRow;
-            bestDeviation = deviation;
           }
         }
       }

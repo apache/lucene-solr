@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -398,7 +399,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add("field", field);
       params.add("numTerms", String.valueOf(numTerms*5));
 
-      QueryRequest request= new QueryRequest(params);
+      QueryRequest request= new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
       NamedList res = response.getResponse();
       return res;

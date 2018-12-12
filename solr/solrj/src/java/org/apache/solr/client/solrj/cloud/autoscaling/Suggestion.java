@@ -35,7 +35,7 @@ public class Suggestion {
     int max = Integer.MAX_VALUE;
     public Policy.Session session;
     public Violation violation;
-    private List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
+    List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
     SolrRequest addSuggestion(Suggester suggester) {
       return addSuggestion(suggester, "violation");
     }

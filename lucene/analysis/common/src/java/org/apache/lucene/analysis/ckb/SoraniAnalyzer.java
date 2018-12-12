@@ -36,6 +36,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Sorani Kurdish.
+ *
+ * @since 4.10.0
  */
 public final class SoraniAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

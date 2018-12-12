@@ -53,11 +53,10 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, 1, 4)
         .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 1, 4);
   }
 
   @Test
-  //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void test() throws IOException, SolrServerException, KeeperException, InterruptedException {
     Set<String> coreNames = new HashSet<>();
     Set<String> coreNodeNames = new HashSet<>();
@@ -77,10 +76,11 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         clearedCounter = true;
       }
       if (deleteReplica) {
-        waitForState("Expected " + numLiveReplicas + " active replicas", COLLECTION, clusterShape(1, numLiveReplicas));
+        cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
         DocCollection dc = getCollectionState(COLLECTION);
         Replica replica = getRandomReplica(dc.getSlice("shard1"), (r) -> r.getState() == Replica.State.ACTIVE);
         CollectionAdminRequest.deleteReplica(COLLECTION, "shard1", replica.getName()).process(cluster.getSolrClient());
+        coreNames.remove(replica.getCoreName());
         numLiveReplicas--;
       } else {
         CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
@@ -91,7 +91,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         assertFalse("Core name is not unique coreName=" + coreName + " " + coreNames, coreNames.contains(coreName));
         coreNames.add(coreName);
         numLiveReplicas++;
-        waitForState("Expected " + numLiveReplicas + " active replicas", COLLECTION, clusterShape(1, numLiveReplicas));
+        cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
 
         Replica newReplica = getCollectionState(COLLECTION).getReplicas().stream()
             .filter(r -> r.getCoreName().equals(coreName))

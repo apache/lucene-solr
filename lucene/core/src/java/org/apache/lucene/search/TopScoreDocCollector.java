@@ -44,39 +44,23 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
     }
-
   }
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    private final int totalHitsThreshold;
-
     SimpleTopScoreDocCollector(int numHits, int totalHitsThreshold) {
-      super(numHits);
-      this.totalHitsThreshold = totalHitsThreshold;
+      super(numHits, totalHitsThreshold);
     }
 
     @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context)
-        throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
       return new ScorerLeafCollector() {
-
-        private void updateMinCompetitiveScore() throws IOException {
-          // since we tie-break on doc id and collect in doc id order, we can require
-          // the next float
-          scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
-          totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
-        }
 
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
-          if (totalHits >= totalHitsThreshold
-              && pqTop != null
-              && pqTop.score != Float.NEGATIVE_INFINITY) {
-            updateMinCompetitiveScore();
-          }
+          updateMinCompetitiveScore(scorer);
         }
 
         @Override
@@ -91,7 +75,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
             if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits >= totalHitsThreshold) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
-              updateMinCompetitiveScore();
+              updateMinCompetitiveScore(scorer);
             }
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
@@ -101,17 +85,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           pqTop.doc = doc + docBase;
           pqTop.score = score;
           pqTop = pq.updateTop();
-          if (totalHits >= totalHitsThreshold && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
-            updateMinCompetitiveScore();
-          }
+          updateMinCompetitiveScore(scorer);
         }
 
       };
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
     }
   }
 
@@ -120,8 +97,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     private final ScoreDoc after;
     private int collectedHits;
 
-    PagingTopScoreDocCollector(int numHits, ScoreDoc after) {
-      super(numHits);
+    PagingTopScoreDocCollector(int numHits, ScoreDoc after, int totalHitsThreshold) {
+      super(numHits, totalHitsThreshold);
       this.after = after;
       this.collectedHits = 0;
     }
@@ -138,10 +115,12 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           : new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
     }
 
+
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
       final int afterDoc = after.doc - context.docBase;
+
       return new ScorerLeafCollector() {
         @Override
         public void collect(int doc) throws IOException {
@@ -154,6 +133,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits >= totalHitsThreshold) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
+              updateMinCompetitiveScore(scorer);
+            }
             return;
           }
 
@@ -167,6 +151,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           pqTop.doc = doc + docBase;
           pqTop.score = score;
           pqTop = pq.updateTop();
+          updateMinCompetitiveScore(scorer);
         }
       };
     }
@@ -220,15 +205,17 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     if (after == null) {
       return new SimpleTopScoreDocCollector(numHits, totalHitsThreshold);
     } else {
-      return new PagingTopScoreDocCollector(numHits, after);
+      return new PagingTopScoreDocCollector(numHits, after, totalHitsThreshold);
     }
   }
 
+  final int totalHitsThreshold;
   ScoreDoc pqTop;
 
   // prevents instantiation
-  TopScoreDocCollector(int numHits) {
+  TopScoreDocCollector(int numHits, int totalHitsThreshold) {
     super(new HitQueue(numHits, true));
+    this.totalHitsThreshold = totalHitsThreshold;
     // HitQueue implements getSentinelObject to return a ScoreDoc, so we know
     // that at this point top() is already initialized.
     pqTop = pq.top();
@@ -245,6 +232,17 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   @Override
   public ScoreMode scoreMode() {
-    return ScoreMode.COMPLETE;
+    return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+  }
+
+  protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
+    if (totalHits >= totalHitsThreshold
+          && pqTop != null
+          && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
+      // since we tie-break on doc id and collect in doc id order, we can require
+      // the next float
+      scorer.setMinCompetitiveScore(Math.nextUp(pqTop.score));
+      totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+    }
   }
 }

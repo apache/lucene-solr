@@ -108,13 +108,12 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
     
     ZkStateReader zkStateReader = CLOUD_CLIENT.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION_NAME, zkStateReader, true, true, 330);
-
 
     // really hackish way to get a URL for specific nodes based on shard/replica hosting
     // inspired by TestMiniSolrCloudCluster

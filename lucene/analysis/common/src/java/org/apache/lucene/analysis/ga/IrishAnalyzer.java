@@ -35,6 +35,8 @@ import org.tartarus.snowball.ext.IrishStemmer;
 
 /**
  * {@link Analyzer} for Irish.
+ *
+ * @since 3.6.0
  */
 public final class IrishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

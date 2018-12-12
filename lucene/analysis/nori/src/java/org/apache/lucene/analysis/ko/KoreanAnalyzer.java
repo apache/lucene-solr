@@ -31,6 +31,8 @@ import static org.apache.lucene.analysis.TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FAC
  * Analyzer for Korean that uses morphological analysis.
  * @see KoreanTokenizer
  * @lucene.experimental
+ *
+ * @since 7.4.0
  */
 public class KoreanAnalyzer extends Analyzer {
   private final UserDictionary userDict;

@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -138,6 +139,8 @@ public class IndexSchema {
   protected Collection<SchemaField> requiredFields = new HashSet<>();
   protected volatile DynamicField[] dynamicFields;
   public DynamicField[] getDynamicFields() { return dynamicFields; }
+
+  protected Map<String, SchemaField> dynamicFieldCache = new ConcurrentHashMap<>();
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -358,7 +361,21 @@ public class IndexSchema {
       if (sf == null) {
         return null;
       }
-      return sf.getType().getUninversionType(sf);
+
+      if (sf.isUninvertible()) {
+        return sf.getType().getUninversionType(sf);
+      }
+      // else...
+      
+      // It would be nice to throw a helpful error here, with a good useful message for the user,
+      // but unfortunately, inspite of the UninvertingReader class jdoc claims that the uninversion
+      // process is lazy, that doesn't mean it's lazy as of "When a caller attempts ot use doc values"
+      //
+      // The *mapping* function is consulted on LeafReader init/wrap for every FieldInfos found w/o docValues.
+      //
+      // So if we throw an error here instead of returning null, the act of just opening a
+      // newSearcher will trigger that error for any field, even if no one ever attempts to uninvert it
+      return null;
     };
   }
 
@@ -1181,9 +1198,14 @@ public class IndexSchema {
   public SchemaField getFieldOrNull(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f;
+    f = dynamicFieldCache.get(fieldName);
+    if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.makeSchemaField(fieldName);
+      if (df.matches(fieldName)) {
+        dynamicFieldCache.put(fieldName, f = df.makeSchemaField(fieldName));
+        break;
+      }
     }
 
     return f;

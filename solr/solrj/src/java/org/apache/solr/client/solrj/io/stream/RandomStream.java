@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -178,7 +179,7 @@ public class RandomStream extends TupleStream implements Expressible  {
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      cloudSolrClient = new CloudSolrClient.Builder(hosts, Optional.empty()).build();
+      cloudSolrClient = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
     }
 
     ModifiableSolrParams params = getParams(this.props);
@@ -191,7 +192,7 @@ public class RandomStream extends TupleStream implements Expressible  {
     String sortField = "random_"+seed;
     params.add(SORT, sortField+" asc");
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
     try {
       QueryResponse response = request.process(cloudSolrClient, collection);
       SolrDocumentList docs = response.getResults();

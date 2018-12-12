@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
-import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
@@ -32,7 +31,7 @@ import org.apache.lucene.util.Version;
  * MultiReader} or {@link DirectoryReader}) to emulate a
  * {@link LeafReader}.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiDocValues}, by stepping through
+ * MultiTerms}, {@link MultiDocValues}, by stepping through
  * the sub-readers to merge fields/terms, appending docs, etc.
  *
  * <p><b>NOTE</b>: this class almost always results in a
@@ -47,6 +46,11 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
   private final LeafMetaData metaData;
+
+  // Cached copy of FieldInfos to prevent it from being re-created on each
+  // getFieldInfos call.  Most (if not all) other LeafReader implementations
+  // also have a cached FieldInfos instance so this is consistent. SOLR-12878
+  private final FieldInfos fieldInfos;
 
   final Map<String,Terms> cachedTerms = new ConcurrentHashMap<>();
 
@@ -86,6 +90,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       }
       metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
     }
+    fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
 
   @Override
@@ -112,7 +117,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     try {
       return cachedTerms.computeIfAbsent(field, f -> {
         try {
-          return MultiFields.getTerms(in, f);
+          return MultiTerms.getTerms(in, f);
         } catch (IOException e) { // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
           throw new RuntimeException("unwrapMe", e);
         }
@@ -262,7 +267,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return MultiFields.getLiveDocs(in); // TODO cache?
+    return MultiBits.getLiveDocs(in); // TODO cache?
   }
 
   @Override
@@ -273,8 +278,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public FieldInfos getFieldInfos() {
-    ensureOpen();
-    return MultiFields.getMergedFieldInfos(in); // TODO cache?
+    return fieldInfos;
   }
 
   @Override

@@ -46,7 +46,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -370,7 +369,7 @@ public class UnifiedHighlighter {
       synchronized (this) {
         fieldInfos = this.fieldInfos;
         if (fieldInfos == null) {
-          fieldInfos = MultiFields.getMergedFieldInfos(searcher.getIndexReader());
+          fieldInfos = FieldInfos.getMergedFieldInfos(searcher.getIndexReader());
           this.fieldInfos = fieldInfos;
         }
 

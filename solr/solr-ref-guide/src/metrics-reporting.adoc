@@ -68,8 +68,8 @@ The <<Core Level Metrics,Core (SolrCore) Registry>> includes `solr.core.<collect
   process distributed shard requests also report `shardRequests` sub-counters for each type of distributed
   request.
 * <<Index Merge Metrics,index-level events>>: meters for minor / major merges, number of merged docs, number of deleted docs, gauges for currently running merges and their size.
-* shard replication and transaction log replay on replicas (TBD, SOLR-9856)
-* open / available / pending connections for shard handler and update handler
+* shard replication and transaction log replay on replicas,
+* open / available / pending connections for shard handler and update handler.
 
 === Jetty Registry
 
@@ -161,7 +161,6 @@ Reporter configurations are specified in `solr.xml` file in `<metrics><reporter>
     <int name="port">9999</int>
     <int name="period">60</int>
   </reporter>
-  <metrics>
     <reporter name="log_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
       <int name="period">60</int>
       <str name="filter">QUERY./select.requestTimes</str>

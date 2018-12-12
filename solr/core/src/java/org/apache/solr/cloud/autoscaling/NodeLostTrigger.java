@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -62,13 +63,14 @@ public class NodeLostTrigger extends TriggerBase {
   public void init() throws Exception {
     super.init();
     lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-    log.debug("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
+    log.info("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
     // pick up lost nodes for which marker paths were created
     try {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       lost.forEach(n -> {
         // don't add nodes that have since came back
-        if (!lastLiveNodes.contains(n)) {
+        if (!lastLiveNodes.contains(n) && !nodeNameVsTimeRemoved.containsKey(n)) {
+          // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeRemoved for a node may also be restored
           log.debug("Adding lost node from marker path: {}", n);
           nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
@@ -147,7 +149,7 @@ public class NodeLostTrigger extends TriggerBase {
       }
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-      log.debug("Running NodeLostTrigger: {} with currently live nodes: {}", name, newLiveNodes.size());
+      log.debug("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
 
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
@@ -158,7 +160,7 @@ public class NodeLostTrigger extends TriggerBase {
       Set<String> copyOfLastLiveNodes = new HashSet<>(lastLiveNodes);
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
-        log.debug("Tracking lost node: {}", n);
+        log.info("Tracking lost node: {}", n);
         nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
       });
 
@@ -170,7 +172,8 @@ public class NodeLostTrigger extends TriggerBase {
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
         long now = cloudManager.getTimeSource().getTimeNs();
-        if (TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
+        long te = TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS);
+        if (te >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeRemoved);
         }
@@ -197,6 +200,8 @@ public class NodeLostTrigger extends TriggerBase {
         }
       }
       lastLiveNodes = new HashSet<>(newLiveNodes);
+    } catch (AlreadyClosedException e) { 
+    
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeLostTrigger", e);
     }

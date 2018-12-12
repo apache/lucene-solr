@@ -23,7 +23,6 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.PathTrie;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;

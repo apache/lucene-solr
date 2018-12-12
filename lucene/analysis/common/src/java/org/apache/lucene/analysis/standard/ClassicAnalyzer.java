@@ -36,6 +36,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * ClassicAnalyzer was named StandardAnalyzer in Lucene versions prior to 3.1. 
  * As of 3.1, {@link StandardAnalyzer} implements Unicode text segmentation,
  * as specified by UAX#29.
+ *
+ * @since 3.1
  */
 public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 

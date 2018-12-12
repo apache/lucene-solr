@@ -25,12 +25,25 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.FieldType;
 
 class StringFieldWriter extends FieldWriter {
   private String field;
   private FieldType fieldType;
   private CharsRefBuilder cref = new CharsRefBuilder();
+  final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
+    @Override
+    public String toString() {
+      String str = super.utf16;
+      if (str != null) return str;
+      fieldType.indexedToReadable(new BytesRef(super.buf, super.offset, super.length), cref);
+      str = cref.toString();
+      super.utf16 = str;
+      return str;
+    }
+  };
 
   public StringFieldWriter(String field, FieldType fieldType) {
     this.field = field;
@@ -55,8 +68,14 @@ class StringFieldWriter extends FieldWriter {
       int ord = vals.ordValue();
       ref = vals.lookupOrd(ord);
     }
-    fieldType.indexedToReadable(ref, cref);
-    ew.put(this.field, cref.toString());
+
+    if (ew instanceof JavaBinCodec.BinEntryWriter) {
+      ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
+    } else {
+      fieldType.indexedToReadable(ref, cref);
+      String v = cref.toString();
+      ew.put(this.field, v);
+    }
     return true;
   }
 }

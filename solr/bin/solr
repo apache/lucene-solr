@@ -1911,7 +1911,7 @@ if [ "$GC_LOG_OPTS" != "" ]; then
       # for simplicity, we only look at the prefix '-Xlog:gc'
       # (if 'all' or multiple tags are used starting with anything other then 'gc' the user is on their own)
       # if a single additional ':' exists in param, then there is already an explicit output specifier
-      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20000|")
+      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
     done
   fi
 fi

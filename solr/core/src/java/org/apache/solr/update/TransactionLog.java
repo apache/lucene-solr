@@ -107,14 +107,14 @@ public class TransactionLog implements Closeable {
     }
 
     @Override
-    public void writeExternString(String s) throws IOException {
+    public void writeExternString(CharSequence s) throws IOException {
       if (s == null) {
         writeTag(NULL);
         return;
       }
 
       // no need to synchronize globalStringMap - it's only updated before the first record is written to the log
-      Integer idx = globalStringMap.get(s);
+      Integer idx = globalStringMap.get(s.toString());
       if (idx == null) {
         // write a normal string
         writeStr(s);
@@ -125,7 +125,7 @@ public class TransactionLog implements Closeable {
     }
 
     @Override
-    public String readExternString(DataInputInputStream fis) throws IOException {
+    public CharSequence readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
       // no need to synchronize globalStringList - it's only updated before the first record is written to the log

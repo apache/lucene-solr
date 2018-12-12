@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -37,7 +38,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
@@ -58,11 +62,13 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.response.DocsStreamer;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.LatLonPointSpatialField;
-import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -289,6 +295,22 @@ public class SolrDocumentFetcher {
       this.addLargeFieldsLazily = (documentCache != null && !largeFields.isEmpty());
       //TODO can we return Status.STOP after a val is loaded and we know there are no other fields of interest?
       //    When: toLoad is one single-valued field, no lazyFieldProducer
+    }
+
+
+    @Override
+    public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
+      Predicate<String> readAsBytes = ResultContext.READASBYTES.get();
+      if (readAsBytes != null && readAsBytes.test(fieldInfo.name)) {
+        final FieldType ft = new FieldType(TextField.TYPE_STORED);
+        ft.setStoreTermVectors(fieldInfo.hasVectors());
+        ft.setOmitNorms(fieldInfo.omitsNorms());
+        ft.setIndexOptions(fieldInfo.getIndexOptions());
+        doc.add(new StoredField(fieldInfo.name, new ByteArrayUtf8CharSequence(value, 0, value.length), ft));
+      } else {
+        super.stringField(fieldInfo, value);
+      }
+
     }
 
     @Override

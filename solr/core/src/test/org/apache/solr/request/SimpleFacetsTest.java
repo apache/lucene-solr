@@ -33,6 +33,7 @@ import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.NumberType;
@@ -842,6 +843,89 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     );
   }
 
+  public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
+    // NOTE: mincount=0 affects method detection/coercion, so we include permutations of it
+    
+    { 
+      // an "uninvertible=false" field is not be facetable using the "default" method,
+      // or any explicit method other then "enum".
+      //
+      // it should behave the same as any attempt (using any method) at faceting on
+      // and "indexed=false docValues=false" field -- returning no buckets.
+      
+      final List<SolrParams> paramSets = new ArrayList<>();
+      for (String min : Arrays.asList("0", "1")) {
+        for (String f : Arrays.asList("trait_s_not_uninvert", "trait_s_not_indexed_sS")) {
+          paramSets.add(params("facet.field", "{!key=x}" + f));
+          for (String method : Arrays.asList("fc", "fcs", "uif")) {
+            paramSets.add(params("facet.field", "{!key=x}" + f,
+                                 "facet.mincount", min,
+                                 "facet.method", method));
+            paramSets.add(params("facet.field", "{!key=x}" + f,
+                                 "facet.mincount", min,
+                                 "facet.method", method));
+          }
+        }
+        paramSets.add(params("facet.field", "{!key=x}trait_s_not_indexed_sS",
+                             "facet.mincount", min,
+                             "facet.method", "enum"));
+      }
+      for (SolrParams p : paramSets) {
+        // "empty" results should be the same regardless of mincount
+        assertQ("expect no buckets when field is not-indexed or not-uninvertible",
+                req(p
+                    ,"rows","0"
+                    ,"q", "id_i1:[42 TO 47]"
+                    ,"fq", "id_i1:[42 TO 45]"
+                    ,"facet", "true"
+                    )
+                ,"//*[@numFound='4']"
+                ,"*[count(//lst[@name='x'])=1]"
+                ,"*[count(//lst[@name='x']/int)=0]"
+                );
+      }
+      
+    }
+    
+    { 
+      // the only way to facet on an "uninvertible=false" field is to explicitly request facet.method=enum
+      // in which case it should behave consistently with it's copyField source & equivilent docValues field
+      // (using any method for either of them)
+
+      final List<SolrParams> paramSets = new ArrayList<>();
+      for (String min : Arrays.asList("0", "1")) {
+        paramSets.add(params("facet.field", "{!key=x}trait_s_not_uninvert",
+                             "facet.method", "enum"));
+        for (String okField : Arrays.asList("trait_s", "trait_s_not_uninvert_dv")) {
+          paramSets.add(params("facet.field", "{!key=x}" + okField));
+          for (String method : Arrays.asList("enum","fc", "fcs", "uif")) {
+            paramSets.add(params("facet.field", "{!key=x}" + okField,
+                                 "facet.method", method));
+          }
+        }
+        for (SolrParams p : paramSets) {
+          assertQ("check counts for applied facet queries using filtering (fq)",
+                  req(p
+                      ,"rows","0"
+                      ,"q", "id_i1:[42 TO 47]"
+                      ,"fq", "id_i1:[42 TO 45]"
+                      ,"facet", "true"
+                      ,"facet.mincount", min
+                      )
+                  ,"//*[@numFound='4']"
+                  ,"*[count(//lst[@name='x'])=1]"
+                  ,"*[count(//lst[@name='x']/int)="+("0".equals(min) ? "4]" : "3]")
+                  ,"//lst[@name='x']/int[@name='Tool'][.='2']"
+                  ,"//lst[@name='x']/int[@name='Obnoxious'][.='1']"
+                  ,"//lst[@name='x']/int[@name='Chauvinist'][.='1']"
+                  ,"count(//lst[@name='x']/int[@name='Pig'][.='0'])=" + ("0".equals(min) ? "1" : "0")
+                  );
+        }
+      }
+    }
+  }
+
+  
   public static void indexDateFacets() {
     final String i = "id";
     final String f = "bday";

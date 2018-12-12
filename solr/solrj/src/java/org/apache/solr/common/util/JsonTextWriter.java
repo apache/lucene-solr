@@ -165,15 +165,15 @@ public interface JsonTextWriter extends TextWriter {
       boolean isFirst = true;
 
       @Override
-      public MapWriter.EntryWriter put(String k, Object v) throws IOException {
+      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
         if (isFirst) {
           isFirst = false;
         } else {
           JsonTextWriter.this.writeMapSeparator();
         }
         JsonTextWriter.this.indent();
-        JsonTextWriter.this.writeKey(k, true);
-        writeVal(k, v);
+        JsonTextWriter.this.writeKey(k.toString(), true);
+        writeVal(k.toString(), v);
         return this;
       }
     });

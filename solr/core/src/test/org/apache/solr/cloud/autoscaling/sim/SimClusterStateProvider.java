@@ -145,7 +145,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private final Map<String, Map<String, ActionThrottle>> leaderThrottles = new ConcurrentHashMap<>();
 
   // default map of: operation -> delay
-  private final Map<String, Long> defaultOpDelays = new HashMap<>();
+  private final Map<String, Long> defaultOpDelays = new ConcurrentHashMap<>();
   // per-collection map of: collection -> op -> delay
   private final Map<String, Map<String, Long>> opDelays = new ConcurrentHashMap<>();
 
@@ -153,11 +153,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private volatile int clusterStateVersion = 0;
   private volatile String overseerLeader = null;
 
-  private Map<String, Object> lastSavedProperties = null;
+  private volatile Map<String, Object> lastSavedProperties = null;
 
-  private AtomicReference<Map<String, DocCollection>> collectionsStatesRef = new AtomicReference<>();
+  private final AtomicReference<Map<String, DocCollection>> collectionsStatesRef = new AtomicReference<>();
 
-  private Random bulkUpdateRandom = new Random(0);
+  private final Random bulkUpdateRandom = new Random(0);
 
   private transient boolean closed;
 
@@ -691,79 +691,84 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
   private void simRunLeaderElection(String collection, Slice s, boolean saveState) throws Exception {
     AtomicBoolean stateChanged = new AtomicBoolean(Boolean.FALSE);
-    Replica leader = s.getLeader();
-    if (leader == null || !liveNodes.contains(leader.getNodeName())) {
-      log.trace("Running leader election for {} / {}", collection, s.getName());
-      if (s.getReplicas().isEmpty()) { // no replicas - punt
-        log.trace("-- no replicas in {} / {}", collection, s.getName());
-        return;
-      }
-      ActionThrottle lt = getThrottle(collection, s.getName());
-      synchronized (lt) {
-        // collect all active and live
-        List<ReplicaInfo> active = new ArrayList<>();
-        AtomicBoolean alreadyHasLeader = new AtomicBoolean(false);
-        s.getReplicas().forEach(r -> {
-          // find our ReplicaInfo for this replica
-          ReplicaInfo ri = getReplicaInfo(r);
-          if (ri == null) {
-            throw new IllegalStateException("-- could not find ReplicaInfo for replica " + r);
-          }
-          synchronized (ri) {
-            if (r.isActive(liveNodes.get())) {
-              if (ri.getVariables().get(ZkStateReader.LEADER_PROP) != null) {
-                log.trace("-- found existing leader {} / {}: {}, {}", collection, s.getName(), ri, r);
-                alreadyHasLeader.set(true);
-                return;
-              } else {
-                active.add(ri);
-              }
-            } else { // if it's on a node that is not live mark it down
-              log.trace("-- replica not active on live nodes: {}, {}", liveNodes.get(), r);
-              if (!liveNodes.contains(r.getNodeName())) {
-                ri.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-                ri.getVariables().remove(ZkStateReader.LEADER_PROP);
-                stateChanged.set(true);
+    lock.lockInterruptibly();
+    try {
+      Replica leader = s.getLeader();
+      if (leader == null || !liveNodes.contains(leader.getNodeName())) {
+        log.trace("Running leader election for {} / {}", collection, s.getName());
+        if (s.getReplicas().isEmpty()) { // no replicas - punt
+          log.trace("-- no replicas in {} / {}", collection, s.getName());
+          return;
+        }
+        ActionThrottle lt = getThrottle(collection, s.getName());
+        synchronized (lt) {
+          // collect all active and live
+          List<ReplicaInfo> active = new ArrayList<>();
+          AtomicBoolean alreadyHasLeader = new AtomicBoolean(false);
+          s.getReplicas().forEach(r -> {
+            // find our ReplicaInfo for this replica
+            ReplicaInfo ri = getReplicaInfo(r);
+            if (ri == null) {
+              throw new IllegalStateException("-- could not find ReplicaInfo for replica " + r);
+            }
+            synchronized (ri) {
+              if (r.isActive(liveNodes.get())) {
+                if (ri.getVariables().get(ZkStateReader.LEADER_PROP) != null) {
+                  log.trace("-- found existing leader {} / {}: {}, {}", collection, s.getName(), ri, r);
+                  alreadyHasLeader.set(true);
+                  return;
+                } else {
+                  active.add(ri);
+                }
+              } else { // if it's on a node that is not live mark it down
+                log.trace("-- replica not active on live nodes: {}, {}", liveNodes.get(), r);
+                if (!liveNodes.contains(r.getNodeName())) {
+                  ri.getVariables().put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
+                  ri.getVariables().remove(ZkStateReader.LEADER_PROP);
+                  stateChanged.set(true);
+                }
               }
             }
+          });
+          if (alreadyHasLeader.get()) {
+            log.trace("-- already has leader {} / {}: {}", collection, s.getName(), s);
+            return;
           }
-        });
-        if (alreadyHasLeader.get()) {
-          log.trace("-- already has leader {} / {}: {}", collection, s.getName(), s);
-          return;
-        }
-        if (active.isEmpty()) {
-          log.warn("Can't find any active replicas for {} / {}: {}", collection, s.getName(), s);
-          log.debug("-- liveNodes: {}", liveNodes.get());
-          return;
-        }
-        // pick first active one
-        ReplicaInfo ri = null;
-        for (ReplicaInfo a : active) {
-          if (!a.getType().equals(Replica.Type.PULL)) {
-            ri = a;
-            break;
+          if (active.isEmpty()) {
+            log.warn("Can't find any active replicas for {} / {}: {}", collection, s.getName(), s);
+            log.debug("-- liveNodes: {}", liveNodes.get());
+            return;
           }
+          // pick first active one
+          ReplicaInfo ri = null;
+          for (ReplicaInfo a : active) {
+            if (!a.getType().equals(Replica.Type.PULL)) {
+              ri = a;
+              break;
+            }
+          }
+          if (ri == null) {
+            log.warn("-- can't find any suitable replica type for {} / {}: {}", collection, s.getName(), s);
+            return;
+          }
+          // now mark the leader election throttle
+          lt.minimumWaitBetweenActions();
+          lt.markAttemptingAction();
+          synchronized (ri) {
+            ri.getVariables().put(ZkStateReader.LEADER_PROP, "true");
+          }
+          log.debug("-- elected new leader for {} / {} (currentVersion={}): {}", collection,
+              s.getName(), clusterStateVersion, ri);
+          stateChanged.set(true);
         }
-        if (ri == null) {
-          log.warn("-- can't find any suitable replica type for {} / {}: {}", collection, s.getName(), s);
-          return;
-        }
-        // now mark the leader election throttle
-        lt.minimumWaitBetweenActions();
-        lt.markAttemptingAction();
-        synchronized (ri) {
-          ri.getVariables().put(ZkStateReader.LEADER_PROP, "true");
-        }
-        log.debug("-- elected new leader for {} / {} (currentVersion={}): {}", collection,
-            s.getName(), clusterStateVersion, ri);
-        stateChanged.set(true);
+      } else {
+        log.trace("-- already has leader for {} / {}", collection, s.getName());
       }
-    } else {
-      log.trace("-- already has leader for {} / {}", collection, s.getName());
-    }
-    if (stateChanged.get() || saveState) {
-      collectionsStatesRef.set(null);
+    } finally {
+      if (stateChanged.get() || saveState) {
+        collectionsStatesRef.set(null);
+      }
+      lock.unlock();
     }
   }
 
@@ -1156,6 +1161,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
         .computeIfAbsent(sliceName.get(), ss -> new ConcurrentHashMap<>());
     if (props.containsKey(BUFFERED_UPDATES)) {
+      SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       throw new Exception("--- SOLR-12729: Overlapping splitShard commands for " + collectionName + "/" + sliceName.get());
     }
     props.put(BUFFERED_UPDATES, new AtomicLong());
@@ -1353,20 +1359,22 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
-  public synchronized void createSystemCollection() throws IOException {
+  public void createSystemCollection() throws IOException {
     try {
-      if (colShardReplicaMap.containsKey(CollectionAdminParams.SYSTEM_COLL)) {
-        return;
+
+      synchronized (this) {
+        if (colShardReplicaMap.containsKey(CollectionAdminParams.SYSTEM_COLL)) {
+          return;
+        }
       }
       String repFactor = String.valueOf(Math.min(3, liveNodes.size()));
       ZkNodeProps props = new ZkNodeProps(
           NAME, CollectionAdminParams.SYSTEM_COLL,
           REPLICATION_FACTOR, repFactor,
           OverseerCollectionMessageHandler.NUM_SLICES, "1",
-          CommonAdminParams.WAIT_FOR_FINAL_STATE, "true"
-      );
+          CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       simCreateCollection(props, new NamedList());
-      CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 20, TimeUnit.SECONDS,
+      CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
           CloudTestUtils.clusterShape(1, Integer.parseInt(repFactor), false, true));
     } catch (Exception e) {
       throw new IOException(e);
@@ -1397,16 +1405,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     if (collection == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not set");
     }
-    if (!colShardReplicaMap.containsKey(collection)) {
-      if (CollectionAdminParams.SYSTEM_COLL.equals(collection)) {
-        // auto-create
-        log.trace("-- auto-create .system when req=" + req);
-        createSystemCollection();
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '" + collection + "' doesn't exist");
-      }
-    }
-
+    ensureSystemCollection(collection);
+    
     DocCollection coll = getClusterState().getCollection(collection);
     DocRouter router = coll.getRouter();
     List<String> deletes = req.getDeleteById();
@@ -1628,6 +1628,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     if (collection == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not set");
     }
+    ensureSystemCollection(collection);
     if (!colShardReplicaMap.containsKey(collection)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection does not exist");
     }
@@ -1661,6 +1662,17 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     return rsp;
   }
 
+  private void ensureSystemCollection(String collection) throws InterruptedException, IOException {
+    if (!simListCollections().contains(collection)) {
+      if (CollectionAdminParams.SYSTEM_COLL.equals(collection)) {
+        // auto-create
+        createSystemCollection();
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '" + collection + "' doesn't exist");
+      }
+    }
+  }
+
   private static String createRegistryName(String collection, String shard, Replica r) {
     return SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, collection, shard,
         Utils.parseMetricsReplicaName(collection, r.getCoreName()));
@@ -1678,7 +1690,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_PROPS);
     int version = oldData != null ? oldData.getVersion() : -1;
     stateManager.setData(ZkStateReader.CLUSTER_PROPS, data, version);
-    lastSavedProperties = (Map)Utils.fromJSON(data);
+    lastSavedProperties = new ConcurrentHashMap<>((Map)Utils.fromJSON(data));
     return lastSavedProperties;
   }
 
