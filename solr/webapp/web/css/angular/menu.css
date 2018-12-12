@@ -247,6 +247,8 @@ limitations under the License.
 
 #menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
 
+#menu #login.global p a { background-image: url( ../../img/ico/users.png ); }
+
 #menu #logging.global p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
 #menu #logging.global .level a { background-image: url( ../../img/ico/gear.png ); }
 

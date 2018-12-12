@@ -155,6 +155,8 @@ New Features
 * SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting 
   the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
 
+* SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
+
 Bug Fixes
 ----------------------
 
