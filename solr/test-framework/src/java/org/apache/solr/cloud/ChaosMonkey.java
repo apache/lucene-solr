@@ -17,13 +17,14 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -38,10 +39,12 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -585,15 +588,45 @@ public class ChaosMonkey {
   }
 
   public static void stop(List<JettySolrRunner> jettys) throws Exception {
+    ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+        0,
+        Integer.MAX_VALUE,
+        15, TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+        new DefaultSolrThreadFactory("ChaosMonkey"),
+        false);
     for (JettySolrRunner jetty : jettys) {
-      jetty.stop();
+      executor.submit(() -> {
+        try {
+          jetty.stop();
+        } catch (Exception e) {
+          log.error("error stopping jetty", e);
+          throw new RuntimeException(e);
+        }
+      });
     }
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
-  
+
   public static void start(List<JettySolrRunner> jettys) throws Exception {
+    ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+        0,
+        Integer.MAX_VALUE,
+        15, TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+        new DefaultSolrThreadFactory("ChaosMonkey"),
+        false);
     for (JettySolrRunner jetty : jettys) {
-      jetty.start();
+      executor.submit(() -> {
+        try {
+          jetty.start();
+        } catch (Exception e) {
+          log.error("error starting jetty", e);
+          throw new RuntimeException(e);
+        }
+      });
     }
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
 
   /**

@@ -127,6 +127,19 @@ public class StoredField extends Field {
     super(name, value, type);
   }
 
+  /**
+   * Expert: allows you to customize the {@link
+   * FieldType}.
+   * @param name field name
+   * @param value CharSequence value
+   * @param type custom {@link FieldType} for this field
+   * @throws IllegalArgumentException if the field name, value or type
+   *         is null.
+   */
+  public StoredField(String name, CharSequence value, FieldType type) {
+    super(name, value, type);
+  }
+
   // TODO: not great but maybe not a big problem?
   /**
    * Create a stored-only field with the given integer value.

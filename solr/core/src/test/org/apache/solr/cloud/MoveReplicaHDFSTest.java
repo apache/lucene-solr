@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -35,6 +37,7 @@ import org.junit.Test;
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
 @Nightly // test is too long for non nightly
+@TimeoutSuite(millis = TimeUnits.HOUR)
 public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   private static MiniDFSCluster dfsCluster;

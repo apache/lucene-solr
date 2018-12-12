@@ -238,11 +238,11 @@ public class FastOutputStream extends OutputStream implements DataOutput {
     int start = 0;
     int totalWritten = 0;
     for (; ; ) {
+      if (totalWritten >= utf8.size()) break;
       if (pos >= buf.length) flushBuffer();
       int sz = utf8.write(start, buf, pos);
       pos += sz;
       totalWritten += sz;
-      if (totalWritten >= utf8.size()) break;
       start += sz;
     }
   }

@@ -16,15 +16,15 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarity.LegacyBM25Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * Factory for BM25Similarity. This is the default similarity since 8.x.
- * If you need the exact same formula as in 6.x and 7.x you should instead look at
- * {@link LegacyBM25SimilarityFactory}
+ * Factory for {@link LegacyBM25Similarity}. 
+ * Use this to force explicit creation of the BM25 formula that was used by BM25Similarity before Solr/Lucene 8.0.0.
+ * Note that {@link SchemaSimilarityFactory} will automatically create an instance of LegacyBM25Similarity if luceneMatchVersion is &lt; 8.0.0
  * <p>
  * Parameters:
  * <ul>
@@ -37,12 +37,12 @@ import org.apache.solr.schema.SimilarityFactory;
  * Optional settings:
  * <ul>
  *   <li>discountOverlaps (bool): Sets
- *       {@link BM25Similarity#setDiscountOverlaps(boolean)}</li>
+ *       {@link LegacyBM25Similarity#setDiscountOverlaps(boolean)}</li>
  * </ul>
  * @lucene.experimental
  * @since 8.0.0
  */
-public class BM25SimilarityFactory extends SimilarityFactory {
+public class LegacyBM25SimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private float k1;
   private float b;
@@ -57,7 +57,7 @@ public class BM25SimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    BM25Similarity sim = new BM25Similarity(k1, b);
+    LegacyBM25Similarity sim = new LegacyBM25Similarity(k1, b);
     sim.setDiscountOverlaps(discountOverlaps);
     return sim;
   }

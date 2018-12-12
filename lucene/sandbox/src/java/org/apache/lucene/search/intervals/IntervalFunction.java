@@ -18,6 +18,7 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.util.PriorityQueue;
@@ -67,6 +68,11 @@ abstract class IntervalFunction {
     }
 
     @Override
+    public int gaps() {
+      return 0;
+    }
+
+    @Override
     public int nextInterval() throws IOException {
       if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
         return IntervalIterator.NO_MORE_INTERVALS;
@@ -109,6 +115,7 @@ abstract class IntervalFunction {
   private static class OrderedIntervalIterator extends ConjunctionIntervalIterator {
 
     int start = -1, end = -1, i;
+    int firstEnd;
 
     private OrderedIntervalIterator(List<IntervalIterator> subIntervals) {
       super(subIntervals);
@@ -143,6 +150,7 @@ abstract class IntervalFunction {
           i++;
         }
         start = subIterators.get(0).start();
+        firstEnd = subIterators.get(0).end();
         end = subIterators.get(subIterators.size() - 1).end();
         b = subIterators.get(subIterators.size() - 1).start();
         i = 1;
@@ -152,10 +160,19 @@ abstract class IntervalFunction {
     }
 
     @Override
+    public int gaps() {
+      int gaps = subIterators.get(1).start() - firstEnd - 1;
+      for (int i = 2; i < subIterators.size(); i++) {
+        gaps += (subIterators.get(i).start() - subIterators.get(i - 1).end() - 1);
+      }
+      return gaps;
+    }
+
+    @Override
     protected void reset() throws IOException {
       subIterators.get(0).nextInterval();
       i = 1;
-      start = end = -1;
+      start = end = firstEnd = -1;
     }
   }
 
@@ -183,9 +200,10 @@ abstract class IntervalFunction {
 
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
+    private final int[] innerPositions;
     private final boolean allowOverlaps;
 
-    int start = -1, end = -1, queueEnd;
+    int start = -1, end = -1, firstEnd, queueEnd;
 
     UnorderedIntervalIterator(List<IntervalIterator> subIterators, boolean allowOverlaps) {
       super(subIterators);
@@ -196,6 +214,7 @@ abstract class IntervalFunction {
         }
       };
       this.subIterators = new IntervalIterator[subIterators.size()];
+      this.innerPositions = new int[subIterators.size() * 2];
       this.allowOverlaps = allowOverlaps;
 
       for (int i = 0; i < subIterators.size(); i++) {
@@ -241,6 +260,7 @@ abstract class IntervalFunction {
       // then, minimize it
       do {
         start = queue.top().start();
+        firstEnd = queue.top().end();
         end = queueEnd;
         if (queue.top().end() == end)
           return start;
@@ -258,6 +278,26 @@ abstract class IntervalFunction {
         }
       } while (this.queue.size() == subIterators.length && end == queueEnd);
       return start;
+    }
+
+    @Override
+    public int gaps() {
+      for (int i = 0; i < subIterators.length; i++) {
+        if (subIterators[i].end() > end) {
+          innerPositions[i * 2] = start;
+          innerPositions[i * 2 + 1] = firstEnd;
+        }
+        else {
+          innerPositions[i * 2] = subIterators[i].start();
+          innerPositions[i * 2 + 1] = subIterators[i].end();
+        }
+      }
+      Arrays.sort(innerPositions);
+      int gaps = 0;
+      for (int i = 1; i < subIterators.length; i++) {
+        gaps += (innerPositions[i * 2] - innerPositions[i * 2 - 1] - 1);
+      }
+      return gaps;
     }
 
     @Override
@@ -325,6 +365,11 @@ abstract class IntervalFunction {
         }
 
         @Override
+        public int gaps() {
+          return a.gaps();
+        }
+
+        @Override
         public int nextInterval() throws IOException {
           if (bpos == false)
             return IntervalIterator.NO_MORE_INTERVALS;
@@ -369,6 +414,11 @@ abstract class IntervalFunction {
         @Override
         public int end() {
           return a.end();
+        }
+
+        @Override
+        public int gaps() {
+          return a.gaps();
         }
 
         @Override

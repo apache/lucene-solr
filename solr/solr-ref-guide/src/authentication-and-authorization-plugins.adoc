@@ -157,6 +157,16 @@ Solr has one implementation of an authorization plugin:
 
 * <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
 
+== Authenticating in the Admin UI
+
+Whenever an authentication plugin is enabled, authentication is also required for all or some operations in the Admin UI. The Admin UI is an AngularJS application running inside your browser, and is treated as any other external client by Solr.
+
+When authentication is required the Admin UI will presented you with a login dialogue. The authentication plugins currently supported by the Admin UI are:
+
+* `BasicAuthPlugin`
+ 
+If your plugin of choice is not supported, you will have to interact with Solr sending HTTP requests instead of through the graphical user interface of the Admin UI. All operations supported by Admin UI can be performed through Solr's RESTful APIs.
+
 == Securing Inter-Node Requests
 
 There are a lot of requests that originate from the Solr nodes itself. For example, requests from overseer to nodes, recovery threads, etc. Each Authentication plugin declares whether it is capable of securing inter-node requests or not. If not, Solr will fall back to using a special internode authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes, described below.

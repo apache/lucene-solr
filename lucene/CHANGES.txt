@@ -98,6 +98,10 @@ API Changes
   methods.  This decouples normalization from tokenization entirely.
   (Mayya Sharipova, Alan Woodward)
 
+* LUCENE-8597: IntervalIterator now exposes a gaps() method that reports the
+  number of gaps between its component sub-intervals.  This can be used in a 
+  new filter available via Intervals.maxgaps().  (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -216,9 +220,6 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
-* LUCENE-8374: Reduce reads for sparse DocValues and whole number numeric DocValues.
-  (Toke Eskildsen)
-
 ======================= Lucene 7.7.0 =======================
 
 Build
@@ -262,7 +263,13 @@ Optimizations
 
 * LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
   can safe up to 80% of the heap used compared to the previous implementation and uses non-object
-  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grant)
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grand)
+
+* LUCENE-8598: Moved to the default accepted overhead ratio for packet ints in DocValuesFieldUpdats
+  yields an up-to 4x performance improvement when applying doc values updates. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8599: Use sparse bitset to store docs in SingleValueDocValuesFieldUpdates. 
+  (Simon Willnauer, Adrien Grand)
 
 Other
 

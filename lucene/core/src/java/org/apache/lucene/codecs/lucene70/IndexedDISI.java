@@ -50,9 +50,6 @@ import org.apache.lucene.util.RoaringDocIdSet;
 final class IndexedDISI extends DocIdSetIterator {
 
   static final int MAX_ARRAY_LENGTH = (1 << 12) - 1;
-  static final String NO_NAME = "n/a";
-
-  public final String name;
 
   private static void flush(int block, FixedBitSet buffer, int cardinality, IndexOutput out) throws IOException {
     assert block >= 0 && block < 65536;
@@ -101,49 +98,19 @@ final class IndexedDISI extends DocIdSetIterator {
   /** The slice that stores the {@link DocIdSetIterator}. */
   private final IndexInput slice;
   private final long cost;
-  private final IndexedDISICache cache;
 
   IndexedDISI(IndexInput in, long offset, long length, long cost) throws IOException {
-    this(in, offset, length, cost, NO_NAME);
+    this(in.slice("docs", offset, length), cost);
   }
 
-  IndexedDISI(IndexInput in, long offset, long length, long cost, String name) throws IOException {
-    this(in, offset, length, cost, null, name);
-  }
-
-  IndexedDISI(IndexInput in, long offset, long length, long cost, IndexedDISICache cache) throws IOException {
-    this(in, offset, length, cost, cache, NO_NAME);
-  }
-
-  IndexedDISI(IndexInput in, long offset, long length, long cost, IndexedDISICache cache, String name) throws IOException {
-    this(in.slice("docs", offset, length), cost, cache, name);
-  }
-
+  // This constructor allows to pass the slice directly in case it helps reuse
+  // see eg. Lucene70 norms producer's merge instance
   IndexedDISI(IndexInput slice, long cost) throws IOException {
-    this(slice, cost, NO_NAME);
-  }
-  // This constructor allows to pass the slice directly in case it helps reuse
-  // see eg. Lucene70 norms producer's merge instance
-  IndexedDISI(IndexInput slice, long cost, String name) throws IOException {
-    this(slice, cost, null, name);
-//    IndexedDISICacheFactory.debug(
-//        "Non-cached direct slice IndexedDISI with length " + slice.length() + ": " + slice.toString());
-  }
-
-  IndexedDISI(IndexInput slice, long cost, IndexedDISICache cache) throws IOException {
-    this(slice, cost, cache, NO_NAME);
-  }
-  // This constructor allows to pass the slice directly in case it helps reuse
-  // see eg. Lucene70 norms producer's merge instance
-  IndexedDISI(IndexInput slice, long cost, IndexedDISICache cache, String name) {
-    this.name = name;
     this.slice = slice;
     this.cost = cost;
-    this.cache = cache == null ? IndexedDISICache.EMPTY : cache;
   }
 
   private int block = -1;
-  private long blockStart; // Used with the DENSE cache
   private long blockEnd;
   private int nextBlockIndex = -1;
   Method method;
@@ -159,8 +126,6 @@ final class IndexedDISI extends DocIdSetIterator {
   private int wordIndex = -1;
   // number of one bits encountered so far, including those of `word`
   private int numberOfOnes;
-  // Used with rank for jumps inside of DENSE
-  private int denseOrigoIndex;
 
   // ALL variables
   private int gap;
@@ -173,7 +138,6 @@ final class IndexedDISI extends DocIdSetIterator {
   @Override
   public int advance(int target) throws IOException {
     final int targetBlock = target & 0xFFFF0000;
-    // Note: The cache makes it easy to add support for random access. This has not been done as the API forbids it
     if (block < targetBlock) {
       advanceBlock(targetBlock);
     }
@@ -199,20 +163,6 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   private void advanceBlock(int targetBlock) throws IOException {
-    if (targetBlock >= block+2) { // 1 block skip is (slightly) faster to do without block jump table
-      long offset = cache.getFilePointerForBlock(targetBlock >> IndexedDISICache.BLOCK_BITS);
-      if (offset != -1 && offset > slice.getFilePointer()) {
-        int origo = cache.getIndexForBlock(targetBlock >> IndexedDISICache.BLOCK_BITS);
-        if (origo != -1) {
-          this.nextBlockIndex = origo - 1; // -1 to compensate for the always-added 1 in readBlockHeader
-          slice.seek(offset);
-          readBlockHeader();
-          return;
-        }
-      }
-    }
-
-    // Fallback to non-cached
     do {
       slice.seek(blockEnd);
       readBlockHeader();
@@ -220,7 +170,6 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   private void readBlockHeader() throws IOException {
-    blockStart = slice.getFilePointer();
     block = Short.toUnsignedInt(slice.readShort()) << 16;
     assert block >= 0;
     final int numValues = 1 + Short.toUnsignedInt(slice.readShort());
@@ -238,7 +187,6 @@ final class IndexedDISI extends DocIdSetIterator {
       blockEnd = slice.getFilePointer() + (1 << 13);
       wordIndex = -1;
       numberOfOnes = index + 1;
-      denseOrigoIndex = numberOfOnes;
     }
   }
 
@@ -302,10 +250,6 @@ final class IndexedDISI extends DocIdSetIterator {
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
         final int targetWordIndex = targetInBlock >>> 6;
-
-        // If possible, skip ahead using the rank cache
-        disi.rankSkip(disi, target);
-
         for (int i = disi.wordIndex + 1; i <= targetWordIndex; ++i) {
           disi.word = disi.slice.readLong();
           disi.numberOfOnes += Long.bitCount(disi.word);
@@ -319,10 +263,7 @@ final class IndexedDISI extends DocIdSetIterator {
           return true;
         }
 
-        // There were no set bits at the wanted position. Move forward until one is reached
         while (++disi.wordIndex < 1024) {
-          // This could use the rank cache to skip empty spaces >= 512 bits, but it seems unrealistic
-          // that such blocks would be DENSE
           disi.word = disi.slice.readLong();
           if (disi.word != 0) {
             disi.index = disi.numberOfOnes;
@@ -331,18 +272,12 @@ final class IndexedDISI extends DocIdSetIterator {
             return true;
           }
         }
-        // No set bits in the block at or after the wanted position.
         return false;
       }
-
       @Override
       boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
         final int targetWordIndex = targetInBlock >>> 6;
-
-        // If possible, skip ahead using the rank cache
-        disi.rankSkip(disi, target);
-
         for (int i = disi.wordIndex + 1; i <= targetWordIndex; ++i) {
           disi.word = disi.slice.readLong();
           disi.numberOfOnes += Long.bitCount(disi.word);
@@ -353,8 +288,6 @@ final class IndexedDISI extends DocIdSetIterator {
         disi.index = disi.numberOfOnes - Long.bitCount(leftBits);
         return (leftBits & 1L) != 0;
       }
-
-
     },
     ALL {
       @Override
@@ -379,47 +312,4 @@ final class IndexedDISI extends DocIdSetIterator {
     abstract boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException;
   }
 
-  /**
-   * If the distance between the current position and the target is > 8 words, the rank cache will
-   * be used to guarantee a worst-case of 1 rank-lookup and 7 word-read-and-count-bits operations.
-   * Note: This does not guarantee a skip up to target, only up to nearest rank boundary. It is the
-   * responsibility of the caller to iterate further to reach target.
-   * @param disi standard DISI.
-   * @param target the wanted docID for which to calculate set-flag and index.
-   * @throws IOException if a disi seek failed.
-   */
-  private void rankSkip(IndexedDISI disi, int target) throws IOException {
-    final int targetInBlock = target & 0xFFFF;
-    final int targetWordIndex = targetInBlock >>> 6;
-
-    // If the distance between the current position and the target is >= 8
-    // then it pays to use the rank to jump
-    if (!(disi.cache.hasRank() && targetWordIndex - disi.wordIndex >= IndexedDISICache.RANK_BLOCK_LONGS)) {
-      return;
-    }
-
-    int rankPos = disi.cache.denseRankPosition(target);
-    if (rankPos == -1) {
-      return;
-    }
-    int rank = disi.cache.getRankInBlock(rankPos);
-    if (rank == -1) {
-      return;
-    }
-    int rankIndex = disi.denseOrigoIndex + rank;
-    int rankWordIndex = (rankPos & 0xFFFF) >> 6;
-    long rankOffset = disi.blockStart + 4 + (rankWordIndex * 8);
-
-    long mark = disi.slice.getFilePointer();
-    disi.slice.seek(rankOffset);
-    long rankWord = disi.slice.readLong();
-    int rankNOO = rankIndex + Long.bitCount(rankWord);
-    rankOffset += Long.BYTES;
-
-
-    //disi.slice.seek(mark);
-    disi.wordIndex = rankWordIndex;
-    disi.word = rankWord;
-    disi.numberOfOnes = rankNOO;
-  }
 }

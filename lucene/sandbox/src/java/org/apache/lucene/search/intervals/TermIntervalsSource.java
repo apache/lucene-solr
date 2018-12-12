@@ -96,6 +96,11 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
       public int nextInterval() throws IOException {
         if (upto <= 0)
           return pos = NO_MORE_INTERVALS;

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.index.NumericDocValuesFieldUpdates.SingleValueNumericDocValuesFieldUpdates;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -129,7 +130,63 @@ public class TestDocValuesFieldUpdates extends LuceneTestCase {
       }
       idx++;
     }
+  }
 
-
+  public void testSharedValueUpdates() {
+    int delGen = random().nextInt();
+    int maxDoc = 1 + random().nextInt(1000);
+    long value = random().nextLong();
+    SingleValueNumericDocValuesFieldUpdates update = new SingleValueNumericDocValuesFieldUpdates(delGen, "foo", maxDoc, value);
+    assertEquals(value, update.longValue());
+    Boolean[] values = new Boolean[maxDoc];
+    boolean any = false;
+    boolean noReset = random().nextBoolean(); // sometimes don't reset
+    for (int i = 0; i < maxDoc; i++) {
+      if (random().nextBoolean()) {
+        values[i] = Boolean.TRUE;
+        any = true;
+        update.add(i, value);
+      } else if (random().nextBoolean() && noReset == false) {
+        values[i] = null;
+        any = true;
+        update.reset(i);
+      } else {
+        values[i] = Boolean.FALSE;
+      }
+    }
+    if (noReset == false) {
+      for (int i = 0; i < values.length; i++) {
+        if (rarely()) {
+          if (values[i] == null) {
+            values[i] = Boolean.TRUE;
+            update.add(i, value);
+          } else if (values[i]) {
+            values[i] = null;
+            update.reset(i);
+          }
+        }
+      }
+    }
+    update.finish();
+    DocValuesFieldUpdates.Iterator iterator = update.iterator();
+    assertEquals(any, update.any());
+    assertEquals(delGen, iterator.delGen());
+    int index = 0;
+    while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      int doc = iterator.docID();
+      if (index < iterator.docID()) {
+        for (;index < doc; index++) {
+          assertFalse(values[index]);
+        }
+      }
+      if (index == doc) {
+        if (values[index++] == null) {
+          assertFalse(iterator.hasValue());
+        } else {
+          assertTrue(iterator.hasValue());
+          assertEquals(value, iterator.longValue());
+        }
+      }
+    }
   }
 }

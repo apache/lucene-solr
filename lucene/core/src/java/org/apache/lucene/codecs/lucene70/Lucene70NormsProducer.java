@@ -45,7 +45,6 @@ final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
   private final Map<Integer,NormsEntry> norms = new HashMap<>();
   private final int maxDoc;
   private IndexInput data;
-  private final IndexedDISICacheFactory disiCacheFactory = new IndexedDISICacheFactory();
   private boolean merging;
   private Map<Integer, IndexInput> disiInputs;
   private Map<Integer, RandomAccessInput> dataInputs;
@@ -294,9 +293,7 @@ final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
     } else {
       // sparse
       final IndexInput disiInput = getDisiInput(field, entry);
-      final IndexedDISI disi = disiCacheFactory.createCachedIndexedDISI(
-          disiInput, entry.docsWithFieldOffset + entry.docsWithFieldLength, entry.numDocsWithField, field.name);
-
+      final IndexedDISI disi = new IndexedDISI(disiInput, entry.numDocsWithField);
       if (entry.bytesPerNorm == 0) {
         return new SparseNormsIterator(disi) {
           @Override
@@ -345,12 +342,11 @@ final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
   @Override
   public void close() throws IOException {
     data.close();
-    disiCacheFactory.releaseAll();
   }
 
   @Override
   public long ramBytesUsed() {
-    return 64L * norms.size() + disiCacheFactory.ramBytesUsed(); // good enough
+    return 64L * norms.size(); // good enough
   }
 
   @Override

@@ -52,10 +52,10 @@ public interface Utf8CharSequence extends CharSequence {
     int start = 0;
     int totalWritten = 0;
     for (; ; ) {
+      if (totalWritten >= size()) break;
       int sz = write(start, buf, 0);
       totalWritten += sz;
       if (sz > 0) os.write(buf, 0, sz);
-      if (totalWritten >= size()) break;
       start += sz;
     }
   }

@@ -62,6 +62,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
@@ -133,6 +134,8 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
+  public boolean isUtf8Field(){return false;}
+
   /**
    * Returns true if the fields' docValues should be used for obtaining stored value
    */
@@ -155,6 +158,10 @@ public abstract class FieldType extends FieldProperties {
    */
   protected void init(IndexSchema schema, Map<String, String> args) {
 
+  }
+
+  public boolean write(IteratorWriter.ItemWriter itemWriter) {
+    return false;
   }
 
   // Handle additional arguments...
