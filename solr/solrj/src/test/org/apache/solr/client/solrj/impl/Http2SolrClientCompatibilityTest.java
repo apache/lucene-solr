@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.ParseException;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
+@SolrTestCaseJ4.SuppressSSL
 public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
   public void testSystemPropertyFlag() {
