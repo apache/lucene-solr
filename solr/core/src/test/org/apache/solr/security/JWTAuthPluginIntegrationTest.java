@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -154,7 +155,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
     if (token != null)
       createConn.setRequestProperty("Authorization", "Bearer " + token);
-    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent()));
+    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent(), StandardCharsets.UTF_8));
     String result = br2.lines().collect(Collectors.joining("\n"));
     int code = createConn.getResponseCode();
     createConn.disconnect();
@@ -171,12 +172,12 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
 
     con.setDoOutput(true);
     OutputStream os = con.getOutputStream();
-    os.write(json.getBytes());
+    os.write(json.getBytes(StandardCharsets.UTF_8));
     os.flush();
     os.close();
 
     con.connect();
-    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent()));
+    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent(), StandardCharsets.UTF_8));
     String result = br2.lines().collect(Collectors.joining("\n"));
     int code = con.getResponseCode();
     con.disconnect();
