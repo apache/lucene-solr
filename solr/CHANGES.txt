@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
 
+* SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
+
 Improvements
 ----------------------
 

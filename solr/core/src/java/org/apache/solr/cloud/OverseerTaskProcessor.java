@@ -345,7 +345,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     synchronized (completedTasks) {
       for (String id : completedTasks.keySet()) {
         workQueue.remove(completedTasks.get(id));
-        synchronized (runningTasks) {
+        synchronized (runningZKTasks) {
           runningZKTasks.remove(id);
         }
       }
