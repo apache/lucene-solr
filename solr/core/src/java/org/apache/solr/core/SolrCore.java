@@ -674,7 +674,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         return core;
       } finally {
         // close the new core on any errors that have occurred.
-        if (!success) {
+        if (!success && core != null && core.getOpenCount() > 0) {
           IOUtils.closeQuietly(core);
         }
       }
@@ -896,63 +896,63 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
                   IndexSchema schema, NamedList configSetProperties,
                   CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
-                  IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
+      IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
-    this.coreContainer = coreContainer;
-    
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
 
-    CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
-    coreContainer.solrCores.addCoreDescriptor(cd);
-
-    setName(name);
-    MDCLoggingContext.setCore(this);
-    
-    resourceLoader = config.getResourceLoader();
-    this.solrConfig = config;
-    this.configSetProperties = configSetProperties;
-    // Initialize the metrics manager
-    this.coreMetricManager = initCoreMetricManager(config);
-    this.coreMetricManager.loadReporters();
-
-    if (updateHandler == null) {
-      directoryFactory = initDirectoryFactory();
-      recoveryStrategyBuilder = initRecoveryStrategyBuilder();
-      solrCoreState = new DefaultSolrCoreState(directoryFactory, recoveryStrategyBuilder);
-    } else {
-      solrCoreState = updateHandler.getSolrCoreState();
-      directoryFactory = solrCoreState.getDirectoryFactory();
-      recoveryStrategyBuilder = solrCoreState.getRecoveryStrategyBuilder();
-      isReloaded = true;
-    }
-
-    this.dataDir = initDataDir(dataDir, config, coreDescriptor);
-    this.ulogDir = initUpdateLogDir(coreDescriptor);
-
-    log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(), this.dataDir);
-
-    checkVersionFieldExistsInSchema(schema, coreDescriptor);
-
-    SolrMetricManager metricManager = coreContainer.getMetricManager();
-
-    // initialize searcher-related metrics
-    initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, null);
-
-    SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
-    // this is registered at the CONTAINER level because it's not core-specific - for now we
-    // also register it here for back-compat
-    solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "core");
-    infoRegistry.put("fieldCache", solrFieldCacheBean);
-
-
-    initSchema(config, schema);
-
-    this.maxWarmingSearchers = config.maxWarmingSearchers;
-    this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
+    this.coreContainer = coreContainer;
 
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
+
+      CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
+      coreContainer.solrCores.addCoreDescriptor(cd);
+
+      setName(name);
+      MDCLoggingContext.setCore(this);
+
+      resourceLoader = config.getResourceLoader();
+      this.solrConfig = config;
+      this.configSetProperties = configSetProperties;
+      // Initialize the metrics manager
+      this.coreMetricManager = initCoreMetricManager(config);
+      this.coreMetricManager.loadReporters();
+
+      if (updateHandler == null) {
+        directoryFactory = initDirectoryFactory();
+        recoveryStrategyBuilder = initRecoveryStrategyBuilder();
+        solrCoreState = new DefaultSolrCoreState(directoryFactory, recoveryStrategyBuilder);
+      } else {
+        solrCoreState = updateHandler.getSolrCoreState();
+        directoryFactory = solrCoreState.getDirectoryFactory();
+        recoveryStrategyBuilder = solrCoreState.getRecoveryStrategyBuilder();
+        isReloaded = true;
+      }
+
+      this.dataDir = initDataDir(dataDir, config, coreDescriptor);
+      this.ulogDir = initUpdateLogDir(coreDescriptor);
+
+      log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
+          this.dataDir);
+
+      checkVersionFieldExistsInSchema(schema, coreDescriptor);
+
+      SolrMetricManager metricManager = coreContainer.getMetricManager();
+
+      // initialize searcher-related metrics
+      initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, null);
+
+      SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
+      // this is registered at the CONTAINER level because it's not core-specific - for now we
+      // also register it here for back-compat
+      solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "core");
+      infoRegistry.put("fieldCache", solrFieldCacheBean);
+
+      initSchema(config, schema);
+
+      this.maxWarmingSearchers = config.maxWarmingSearchers;
+      this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
 
       initListeners();
 
@@ -961,7 +961,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       this.codec = initCodec(solrConfig, this.schema);
 
-      memClassLoader = new MemClassLoader(PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())), getResourceLoader());
+      memClassLoader = new MemClassLoader(
+          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
+          getResourceLoader());
       initIndex(prev != null, reload);
 
       initWriters();
@@ -987,7 +989,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       });
 
       this.updateHandler = initUpdateHandler(updateHandler);
-      
+
       initSearcher(prev);
 
       // Initialize the RestManager
@@ -997,7 +999,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
       this.updateHandler.informEventListeners(this);
-   
+
       infoRegistry.put("core", this);
 
       // register any SolrInfoMBeans SolrResourceLoader initialized
@@ -1029,13 +1031,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // should be fine, since counting down on a latch of 0 is still fine
       latch.countDown();
       if (e instanceof OutOfMemoryError) {
-        throw (OutOfMemoryError)e;
+        throw (OutOfMemoryError) e;
       }
 
       try {
         // close down the searcher and any other resources, if it exists, as this
         // is not recoverable
-       close();
+        close();
       } catch (Throwable t) {
         if (t instanceof OutOfMemoryError) {
           throw (OutOfMemoryError) t;
@@ -1048,7 +1050,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
     }
-    
+
     assert ObjectReleaseTracker.track(this);
   }
 

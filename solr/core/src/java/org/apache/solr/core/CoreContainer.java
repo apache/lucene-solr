@@ -32,6 +32,7 @@ import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -1432,6 +1433,7 @@ public class CoreContainer {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
+    SolrCore newCore = null;
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
 
@@ -1439,34 +1441,41 @@ public class CoreContainer {
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
+      Closeable oldCore = null;
+      boolean success = false;
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
         ConfigSet coreConfig = coreConfigService.getConfig(cd);
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
-        SolrCore newCore = core.reload(coreConfig);
+        newCore = core.reload(coreConfig);
+
         registerCore(cd, newCore, false, false);
+
         if (getZkController() != null) {
           DocCollection docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
           assert replica != null;
-          if (replica.getType() == Replica.Type.TLOG) { //TODO: needed here?
+          if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
             getZkController().stopReplicationFromLeader(core.getName());
             if (!cd.getCloudDescriptor().isLeader()) {
               getZkController().startReplicationFromLeader(newCore.getName(), true);
             }
 
-          } else if(replica.getType() == Replica.Type.PULL) {
+          } else if (replica.getType() == Replica.Type.PULL) {
             getZkController().stopReplicationFromLeader(core.getName());
             getZkController().startReplicationFromLeader(newCore.getName(), false);
           }
         }
+        success = true;
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, (Exception) e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
-      }
-      finally {
+      } finally {
+        if (!success && newCore != null && newCore.getOpenCount() > 0) {
+          IOUtils.closeQuietly(newCore);
+        }
         solrCores.removeFromPendingOps(cd.getName());
       }
     } else {
@@ -1479,7 +1488,7 @@ public class CoreContainer {
           solrCores.removeFromPendingOps(clf.cd.getName());
         }
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name);
       }
     }
   }
