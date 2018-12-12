@@ -47,10 +47,10 @@ import org.apache.lucene.util.packed.DirectWriter;
  *         bits of doc IDs are stored as {@link DataOutput#writeShort(short) shorts} while the upper
  *         16 bits are given by the block ID.
  *     <li>DENSE: This strategy is used when a block contains between 4096 and 65535 documents. The
- *         lower bits of doc IDs are stored in a bit set. Advancing < 512 documents is performed using
+ *         lower bits of doc IDs are stored in a bit set. Advancing &lt; 512 documents is performed using
  *         {@link Long#numberOfTrailingZeros(long) ntz} operations while the index is computed by
  *         accumulating the {@link Long#bitCount(long) bit counts} of the visited longs.
- *         Advancing >= 512 documents is performed by skipping to the start of the needed 512 document
+ *         Advancing &gt;= 512 documents is performed by skipping to the start of the needed 512 document
  *         sub-block and iterating to the specific document within that block. The index for the
  *         sub-block that is skipped to is retrieved from a rank-table positioned beforethe bit set.
  *         The rank-table holds the origo index numbers for all 512 documents sub-blocks, represented
