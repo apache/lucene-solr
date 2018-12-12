@@ -51,7 +51,9 @@ Bug Fixes
 
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
-* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
+* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy)
+
+* SOLR-13066: A failure while reloading a SolrCore can result in the SolrCore not being closed. (Mark Miller)
 
 * SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
 
