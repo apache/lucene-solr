@@ -59,8 +59,9 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (ParseException ignored) {}
+    } finally {
+      afterSolrJettyTestBase();
     }
-    afterSolrJettyTestBase();
   }
 
   public void testConnectToNewNodesUsingHttp1() throws Exception {
@@ -78,8 +79,9 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (ParseException ignored) {}
+    } finally {
+      afterSolrJettyTestBase();
     }
-    afterSolrJettyTestBase();
   }
 
   public void testConnectToOldNodesUsingHttp2() throws Exception {
@@ -90,6 +92,8 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .useOnlyHttp1(true)
         .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+
+    System.clearProperty("solr.http1");
     try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
         .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
@@ -101,7 +105,8 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       } catch (SolrServerException e) {
         // expected
       }
+    } finally {
+      afterSolrJettyTestBase();
     }
-    afterSolrJettyTestBase();
   }
 }
