@@ -62,6 +62,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.TimeSource;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -87,6 +88,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,9 +223,24 @@ public class Http2SolrClient extends SolrClient {
     asyncTracker.waitForComplete();
     if (closeClient) {
       try {
+        QueuedThreadPool qtp = (QueuedThreadPool) httpClient.getExecutor();
+
         // TODO: stop time?
         httpClient.setStopTimeout(1000);
         httpClient.stop();
+
+        while(!qtp.isStopped()) {
+          qtp.stop();
+          if (qtp.isStopped()) {
+            Thread.sleep(50);
+          }
+        }
+
+        // we tried to kill everything, now we wait for executor to stop
+        qtp.setStopTimeout(Integer.MAX_VALUE);
+        qtp.stop();
+        qtp.join();
+
       } catch (Exception e) {
         throw new RuntimeException("Exception on closing client", e);
       }
