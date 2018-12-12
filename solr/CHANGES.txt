@@ -79,6 +79,8 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+* SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
+
 Bug Fixes
 ----------------------
 

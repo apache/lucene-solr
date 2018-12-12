@@ -127,44 +127,57 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       if (st.hasMoreTokens()) {
         String basic = st.nextToken();
         if (basic.equalsIgnoreCase("Basic")) {
-          try {
-            String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
-            int p = credentials.indexOf(":");
-            if (p != -1) {
-              final String username = credentials.substring(0, p).trim();
-              String pwd = credentials.substring(p + 1).trim();
-              if (!authenticate(username, pwd)) {
-                log.debug("Bad auth credentials supplied in Authorization header");
-                authenticationFailure(response, isAjaxRequest, "Bad credentials");
+          if (st.hasMoreTokens()) {
+            try {
+              String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+              int p = credentials.indexOf(":");
+              if (p != -1) {
+                final String username = credentials.substring(0, p).trim();
+                String pwd = credentials.substring(p + 1).trim();
+                if (!authenticate(username, pwd)) {
+                  numWrongCredentials.inc();
+                  log.debug("Bad auth credentials supplied in Authorization header");
+                  authenticationFailure(response, isAjaxRequest, "Bad credentials");
+                  return false;
+                } else {
+                  HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
+                    @Override
+                    public Principal getUserPrincipal() {
+                      return new BasicUserPrincipal(username);
+                    }
+                  };
+                  numAuthenticated.inc();
+                  filterChain.doFilter(wrapper, response);
+                  return true;
+                }
               } else {
-                HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-                  @Override
-                  public Principal getUserPrincipal() {
-                    return new BasicUserPrincipal(username);
-                  }
-                };
-                filterChain.doFilter(wrapper, response);
-                return true;
+                numErrors.mark();
+                authenticationFailure(response, isAjaxRequest, "Invalid authentication token");
+                return false;
               }
-
-            } else {
-              authenticationFailure(response, isAjaxRequest, "Invalid authentication token");
+            } catch (UnsupportedEncodingException e) {
+              throw new Error("Couldn't retrieve authentication", e);
             }
-          } catch (UnsupportedEncodingException e) {
-            throw new Error("Couldn't retrieve authentication", e);
+          } else {
+            numErrors.mark();
+            authenticationFailure(response, isAjaxRequest, "Malformed Basic Auth header");
+            return false;
           }
         }
       }
-    } else {
-      if (blockUnknown) {
-        authenticationFailure(response, isAjaxRequest, "require authentication");
-      } else {
-        request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
-        filterChain.doFilter(request, response);
-        return true;
-      }
     }
-    return false;
+    
+    // No auth header OR header empty OR Authorization header not of type Basic, i.e. "unknown" user
+    if (blockUnknown) {
+      numMissingCredentials.inc();
+      authenticationFailure(response, isAjaxRequest, "require authentication");
+      return false;
+    } else {
+      numPassThrough.inc();
+      request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
+      filterChain.doFilter(request, response);
+      return true;
+    }
   }
 
   @Override

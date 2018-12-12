@@ -478,7 +478,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
+        requestContinues = authenticationPlugin.authenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
           wrappedRequest.set((HttpServletRequest) req);
         });
