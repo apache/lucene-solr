@@ -128,7 +128,11 @@ public class SearchStream extends TupleStream implements Expressible  {
     StreamExpression expression = new StreamExpression("search");
 
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
 
     for (Entry<String, String[]> param : params.getMap().entrySet()) {
       for (String val : param.getValue()) {

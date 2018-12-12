@@ -42,19 +42,21 @@ import static org.apache.solr.security.TestAuthorizationFramework.verifySecurity
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private static final String COLLECTION = "pkiCollection";
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
   }
 
   @Test
   public void testPkiAuth() throws Exception {
-
-    CollectionAdminRequest.createCollection("collection", "conf", 2, 1).process(cluster.getSolrClient());
-
     // TODO make a SolrJ helper class for this
     byte[] bytes = Utils.toJSON(makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
         "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
@@ -94,7 +96,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
         return true;
     };
     QueryRequest query = new QueryRequest(params);
-    query.process(cluster.getSolrClient(), "collection");
+    query.process(cluster.getSolrClient(), COLLECTION);
     assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(), count.get() > 2);
     assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
   }
