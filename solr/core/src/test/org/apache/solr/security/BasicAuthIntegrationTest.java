@@ -16,6 +16,9 @@
  */
 package org.apache.solr.security;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonMap;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import com.codahale.metrics.MetricRegistry;
@@ -62,13 +66,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SolrCLI;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonMap;
 
 public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
@@ -76,8 +78,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final String COLLECTION = "authCollection";
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -85,6 +87,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1).process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 3, 3);
+  }
+  
+  @After
+  public void tearDownCluster() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -113,9 +120,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       
       cluster.waitForJettyToStop(randomJetty);
       
-      randomJetty.start(false);
+      randomJetty.start();
       
       cluster.waitForAllNodes(30);
+      
+      cluster.waitForActiveCollection(COLLECTION, 3, 3);
       
       baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
@@ -135,7 +144,10 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         ((GenericSolrRequest)genericReq).setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
       }
 
-
+      // avoid bad connection races due to shutdown
+      cluster.getSolrClient().getHttpClient().getConnectionManager().closeExpiredConnections();
+      cluster.getSolrClient().getHttpClient().getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
+      
       HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().request(genericReq);
       });
@@ -167,8 +179,10 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           "}";
 
       executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
-      assertAuthMetricsMinimums(6, 2, 4, 0, 0, 0);
+      assertAuthMetricsMinimums(5, 2, 3, 0, 0, 0);
 
+      Thread.sleep(2000); // sad little wait to try and avoid other clients from hitting http noresponse after jetty restart
+      
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
 
@@ -178,12 +192,12 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
               "role", "dev"))), "harry", "HarryIsUberCool" );
 
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
-      assertAuthMetricsMinimums(9, 3, 6, 0, 0, 0);
+      assertAuthMetricsMinimums(8, 3, 5, 0, 0, 0);
 
       executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
           ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
-      assertAuthMetricsMinimums(11, 4, 7, 0, 0, 0);
+      assertAuthMetricsMinimums(10, 4, 6, 0, 0, 0);
 
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
@@ -210,7 +224,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
             .setBasicAuthCredentials("harry", "Cool12345"));
         fail("This should not succeed");
       } catch (HttpSolrClient.RemoteSolrException e) {
-        assertAuthMetricsMinimums(15, 5, 9, 1, 0, 0);
+        assertAuthMetricsMinimums(14, 5, 8, 1, 0, 0);
       }
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
@@ -227,7 +241,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
-      assertAuthMetricsMinimums(18, 8, 9, 1, 0, 0);
+      assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -253,7 +267,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         cluster.getSolrClient().query(COLLECTION, params);
       });
       assertEquals(401, exp.code());
-      assertAuthMetricsMinimums(20, 8, 9, 1, 2, 0);
+      assertAuthMetricsMinimums(19, 8, 8, 1, 2, 0);
       assertPkiAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
 
       // Query that succeeds
@@ -261,8 +275,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       req.setBasicAuthCredentials("harry", "HarryIsUberCool");
       cluster.getSolrClient().request(req, COLLECTION);
       
-      assertAuthMetricsMinimums(21, 9, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(6, 6, 0, 0, 0, 0);
+      assertAuthMetricsMinimums(20, 8, 8, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
