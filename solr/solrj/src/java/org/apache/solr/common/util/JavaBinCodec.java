@@ -35,7 +35,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 
+import org.apache.solr.common.ConditionalMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
@@ -471,9 +473,17 @@ public class JavaBinCodec implements PushWriter {
       writeStr(v);
       return this;
     }
+
+    private BiConsumer<CharSequence, Object> biConsumer;
+
+    @Override
+    public BiConsumer<CharSequence, Object> getBiConsumer() {
+      if (biConsumer == null) biConsumer = MapWriter.EntryWriter.super.getBiConsumer();
+      return biConsumer;
+    }
   }
 
-  private final MapWriter.EntryWriter ew = new BinEntryWriter();
+  public final BinEntryWriter ew = new BinEntryWriter();
 
 
   public void writeMap(MapWriter val) throws IOException {
@@ -514,6 +524,7 @@ public class JavaBinCodec implements PushWriter {
   //use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable =false;
+  private ConditionalMapWriter.EntryWriterWrapper cew;
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
     List<SolrDocument> children = doc.getChildDocuments();
@@ -528,14 +539,8 @@ public class JavaBinCodec implements PushWriter {
     int sz = fieldsCount + (children==null ? 0 : children.size());
     writeTag(SOLRDOC);
     writeTag(ORDERED_MAP, sz);
-    for (Map.Entry<String, Object> entry : doc) {
-      String name = entry.getKey();
-      if(toWrite(name)) {
-        writeExternString(name);
-        Object val = entry.getValue();
-        writeVal(val);
-      }
-    }
+    if (cew == null) cew = new ConditionalMapWriter.EntryWriterWrapper(ew, (k, o) -> toWrite(k.toString()));
+    doc.writeMap(cew);
     if (children != null) {
       try {
         ignoreWritable = true;
@@ -683,7 +688,7 @@ public class JavaBinCodec implements PushWriter {
     return m;
   }
 
-  private final ItemWriter itemWriter = new ItemWriter() {
+  public final ItemWriter itemWriter = new ItemWriter() {
     @Override
     public ItemWriter add(Object o) throws IOException {
       writeVal(o);

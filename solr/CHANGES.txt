@@ -59,6 +59,13 @@ Upgrade Notes
 * SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
   this may be the culprit.
 
+* If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring will be lower due to SOLR-13025.
+  But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force
+  the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default 
+  SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
+  See also explanation in Reference Guide chapter "Other Schema Elements".
+
+
 New Features
 ----------------------
 
@@ -76,6 +83,13 @@ New Features
   The BasicAuth plugin now supports a new parameter 'forwardCredentials', and when set to 'true',
   user's BasicAuth credentials will be used instead of PKI for client initiated internode requests. (janhoy, noble) 
 
+* SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
+
+Bug Fixes
+----------------------
+
+* SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
+
 Improvements
 ----------------------
 
@@ -92,6 +106,10 @@ Optimizations
 ----------------------
 
 * SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
+
+* SOLR-13025: Due to LUCENE-8563, the BM25Similarity formula no longer includes the (k1+1) factor in the numerator
+  This gives a lower absolute score but doesn't affect ordering, as this is a constant factor which is the same 
+  for every document. Use LegacyBM25SimilarityFactory if you need the old 6.x/7.x scoring. See also upgrade notes (janhoy)
 
 Other Changes
 ----------------------
@@ -143,6 +161,8 @@ New Features
 * SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting 
   the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
 
+* SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
+
 Bug Fixes
 ----------------------
 
@@ -150,6 +170,8 @@ Bug Fixes
   (Munendra S N via Mikhail Khludnev)
   
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
+
+* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
 
 Improvements
 ----------------------
@@ -168,6 +190,8 @@ Improvements
 * SOLR-12804: Remove static modifier from Overseer queue access. (Mark Miller)
 
 * SOLR-12833: Add configurable timeout to VersionBucket lock. (Jeffery Yuan, Mark Miller)
+
+* SOLR-12885: BinaryResponseWriter (javabin format) should directly copy from BytesRef to output (noble)
 
 Other Changes
 ----------------------

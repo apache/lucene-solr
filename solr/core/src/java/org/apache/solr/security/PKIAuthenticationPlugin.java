@@ -86,6 +86,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
     if (requestURI.endsWith(PublicKeyHandler.PATH)) {
+      numPassThrough.inc();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -94,6 +95,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (header == null) {
       //this must not happen
       log.error("No SolrAuth header present");
+      numMissingCredentials.inc();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -101,6 +103,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() < 2) {
       log.error("Invalid SolrAuth Header {}", header);
+      numErrors.mark();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -111,19 +114,22 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     PKIHeaderData decipher = decipherHeader(nodeName, cipher);
     if (decipher == null) {
       log.error("Could not decipher a header {} . No principal set", header);
+      numMissingCredentials.inc();
       filterChain.doFilter(request, response);
       return true;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
       log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
-        filterChain.doFilter(request, response);
-        return true;
+      numErrors.mark();
+      filterChain.doFilter(request, response);
+      return true;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
         SU :
         new BasicUserPrincipal(decipher.userName);
 
+    numAuthenticated.inc();
     filterChain.doFilter(getWrapper((HttpServletRequest) request, principal), response);
     return true;
   }

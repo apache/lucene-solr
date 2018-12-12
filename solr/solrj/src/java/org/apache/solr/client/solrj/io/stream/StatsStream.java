@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -208,7 +209,7 @@ public class StatsStream extends TupleStream implements Expressible  {
 
     Map<String, List<String>> shardsMap = (Map<String, List<String>>)streamContext.get("shards");
     if(shardsMap == null) {
-      QueryRequest request = new QueryRequest(paramsLoc);
+      QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(zkHost);
       try {
         NamedList response = cloudSolrClient.request(request, collection);
@@ -226,7 +227,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         paramsLoc.add("distrib", "true");
       }
 
-      QueryRequest request = new QueryRequest(paramsLoc);
+      QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       try {
         NamedList response = client.request(request);
         this.tuple = getTuple(response);

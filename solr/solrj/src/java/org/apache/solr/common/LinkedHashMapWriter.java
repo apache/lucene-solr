@@ -38,7 +38,7 @@ public class LinkedHashMapWriter<V> extends LinkedHashMap<String, V> implements 
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    forEach((k, v) -> ew.putNoEx(k, v));
+    forEach(ew.getBiConsumer());
   }
 
   @Override
