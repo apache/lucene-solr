@@ -164,7 +164,8 @@ Whenever an authentication plugin is enabled, authentication is also required fo
 
 When authentication is required the Admin UI will presented you with a login dialogue. The authentication plugins currently supported by the Admin UI are:
 
-* `BasicAuthPlugin`
+* <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
+* <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
  
 If your plugin of choice is not supported, you will have to interact with Solr sending HTTP requests instead of through the graphical user interface of the Admin UI. All operations supported by Admin UI can be performed through Solr's RESTful APIs.
 
