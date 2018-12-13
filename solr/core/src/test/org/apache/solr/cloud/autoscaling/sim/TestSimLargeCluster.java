@@ -62,7 +62,6 @@ import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,7 @@ import org.slf4j.LoggerFactory;
 public class TestSimLargeCluster extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int SPEED = 50;
+  public static final int SPEED = 100;
 
   public static final int NUM_NODES = 100;
  
@@ -85,19 +84,15 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   static CountDownLatch triggerFinishedLatch;
   static int waitForSeconds;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
-  }
-
   @After
   public void tearDownTest() throws Exception {
     shutdownCluster();
-    configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
   }
   
   @Before
   public void setupTest() throws Exception {
+    configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
+    
     waitForSeconds = 5;
     triggerStartedCount.set(0);
     triggerFinishedCount.set(0);
@@ -351,11 +346,16 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
 
-    int count = 50;
+    int count = 1000;
     SolrInputDocument finishedEvent = null;
     long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
     while (count-- > 0) {
       cluster.getTimeSource().sleep(10000);
+      
+      if (cluster.simGetOpCount("MOVEREPLICA") < 2) {
+        continue;
+      }
+      
       long currentNumOps = cluster.simGetOpCount("MOVEREPLICA");
       if (currentNumOps == lastNumOps) {
         int size = systemColl.size() - 1;
@@ -432,7 +432,6 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
           if (cluster != null) {
             cluster.close();
           }
-          setupCluster();
           setUp();
           setupTest();
           long total = doTestNodeLost(wait, delay * 1000, 0);
@@ -699,9 +698,9 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     // wait for listener to capture the SUCCEEDED stage
     cluster.getTimeSource().sleep(25000);
     
-    assertNotNull(listenerEvents.entrySet().toString(), listenerEvents.get("srt"));
+    assertNotNull(listenerEvents.entrySet().iterator().toString(), listenerEvents.get("srt"));
 
-    assertTrue(listenerEvents.entrySet().toString(), listenerEvents.get("srt").size() >= 1);
+    assertTrue(listenerEvents.entrySet().iterator().toString(), listenerEvents.get("srt").size() >= 1);
 
     CapturedEvent ev = listenerEvents.get("srt").get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
