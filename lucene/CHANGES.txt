@@ -220,6 +220,9 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
+* LUCENE-8607: MatchAllDocsQuery can shortcut when total hit count is not
+  required (Alan Woodward, Adrien Grand)
+
 ======================= Lucene 7.7.0 =======================
 
 Build

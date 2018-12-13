@@ -44,8 +44,8 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       "passThrough", "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime");
   private static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors");
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
-  protected static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
-  protected static final String METRICS_PREFIX = "SECURITY./authentication.";
+  private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
+  private static final String METRICS_PREFIX = "SECURITY./authentication.";
   
   /**
    * Used to check metric counts for PKI auth
@@ -68,7 +68,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * @param prefix the prefix to count for
    * @return a map of all counts
    */
-  protected Map<String,Long> countAuthMetrics(String prefix) {
+  Map<String,Long> countAuthMetrics(String prefix) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
     cluster.getJettySolrRunners().forEach(r -> {
       MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
