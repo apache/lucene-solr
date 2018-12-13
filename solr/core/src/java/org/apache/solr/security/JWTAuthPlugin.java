@@ -288,14 +288,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     HttpServletResponse response = (HttpServletResponse) servletResponse;
     
-    // NOCOMMIT: increment metric counters
-    
     String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
     if (jwtConsumer == null) {
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since {}==false", PARAM_BLOCK_UNKNOWN);
         filterChain.doFilter(request, response);
+        numPassThrough.inc();;
         return true;
       }
       // Retry config
@@ -305,6 +304,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
       if (jwtConsumer == null) {
         log.warn("JWTAuth not configured");
+        numErrors.mark();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
       }
     }
@@ -319,21 +319,25 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           }
         };
         if (!(authResponse.getPrincipal() instanceof JWTPrincipal)) {
+          numErrors.mark();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
         }
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
         filterChain.doFilter(wrapper, response);
+        numAuthenticated.inc();
         return true;
 
       case PASS_THROUGH:
         if (log.isDebugEnabled())
           log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
         filterChain.doFilter(request, response);
+        numPassThrough.inc();
         return true;
 
       case AUTZ_HEADER_PROBLEM:
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
+        numErrors.mark();
         return false;
 
       case CLAIM_MISMATCH:
@@ -345,15 +349,18 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           log.warn("Exception: {}", authResponse.getJwtException().getMessage());
         }
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+        numWrongCredentials.inc();
         return false;
 
       case SCOPE_MISSING:
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
+        numWrongCredentials.inc();
         return false;
         
       case NO_AUTZ_HEADER:
       default:
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
+        numMissingCredentials.inc();
         return false;
     }
   }

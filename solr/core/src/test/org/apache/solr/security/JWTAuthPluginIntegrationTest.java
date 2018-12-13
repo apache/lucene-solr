@@ -69,8 +69,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-    String hostport = cluster.getSolrClient().getClusterStateProvider().getLiveNodes().iterator().next().split("_")[0];
-    baseUrl = "http://" + hostport + "/solr/";
+    baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
     String jwkJSON = "{\n" +
         "  \"kty\": \"RSA\",\n" +
@@ -124,6 +123,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  public void testMetrics() {
+    // NOCOMMIT: Metrics tests, with failing requests etc
+  }
+
+  @Test
   public void createCollectionUpdateAndQueryDistributed() throws Exception {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
     assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=" + COLLECTION + "&numShards=2", jwtTestToken).second().intValue());
@@ -134,25 +138,25 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     Pair<String,Integer> result = post(baseUrl + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(1,1);
-    assertAuthMetricsMinimums(3, 0, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
     
     // First a non distributed query
     result = get(baseUrl + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(1,1);
-    assertAuthMetricsMinimums(4, 0, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
 
     // Now do a distributed query, using JWTAUth for inter-node
     result = get(baseUrl + COLLECTION + "/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(5,5);
-    assertAuthMetricsMinimums(5, 0, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
     
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
     verifyInterRequestHeaderCounts(5,5);
-    assertAuthMetricsMinimums(10, 0, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
   }
 
