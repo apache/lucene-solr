@@ -50,7 +50,7 @@ import org.junit.Test;
 
 /**
  * Validate that JWT token authentication works in a real cluster.
- * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request
+ * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request, see SOLR-13070
  */
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 2;
