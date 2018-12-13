@@ -56,6 +56,8 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   
   /**
    * Used to check metric counts for the AuthPlugin in use (except PKI)
+   * 
+   * TODO: many of these params have to be under specified - this should wait a bit to see the desired params and timeout
    */
   protected void assertAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
     assertAuthMetricsMinimums(METRICS_PREFIX, requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, errors);

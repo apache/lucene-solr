@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -44,14 +43,16 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.common.util.TimeSource;
 import org.junit.After;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 /**
  * Test for {@link ExecutePlanAction}
@@ -62,8 +63,8 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
 
   private static final int NODE_COUNT = 2;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NODE_COUNT, TimeSource.get("simTime:50"));
   }
 
@@ -76,7 +77,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     for (String coll: cluster.getSimClusterStateProvider().simListCollections()) {
       log.info("* Collection " + coll + " state: " + state.getCollection(coll));
     }
-
+    shutdownCluster();
   }
 
   @Test
