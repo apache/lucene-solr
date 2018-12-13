@@ -635,7 +635,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     writer.commit();
 
-    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
+    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.getDocStats().numDocs);
 
     doClose();
 

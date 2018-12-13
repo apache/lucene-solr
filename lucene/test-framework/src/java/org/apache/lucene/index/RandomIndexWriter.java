@@ -315,12 +315,8 @@ public class RandomIndexWriter implements Closeable {
     return w.commit();
   }
   
-  public int numDocs() {
-    return w.numDocs();
-  }
-
-  public int maxDoc() {
-    return w.maxDoc();
+  public IndexWriter.DocStats getDocStats() {
+    return w.getDocStats();
   }
 
   public long deleteAll() throws IOException {
