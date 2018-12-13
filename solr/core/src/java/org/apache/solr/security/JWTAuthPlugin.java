@@ -641,8 +641,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     public static WellKnownDiscoveryConfig parse(String urlString) {
       try {
         URL url = new URL(urlString);
-        // NOCOMMIT - require HTTPS
-        if (!Arrays.asList("http", "https", "file").contains(url.getProtocol())) {
+        if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be HTTPS or file");
         }
         return parse(url.openStream());
