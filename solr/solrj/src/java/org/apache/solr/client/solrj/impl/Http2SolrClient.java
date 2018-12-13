@@ -172,7 +172,7 @@ public class Http2SolrClient extends SolrClient {
     HttpClient httpClient;
 
     BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-    ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(16,
+    ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
         256, 60, TimeUnit.SECONDS, queue, new SolrjNamedThreadFactory("h2sc"));
 
     SslContextFactory sslContextFactory;
