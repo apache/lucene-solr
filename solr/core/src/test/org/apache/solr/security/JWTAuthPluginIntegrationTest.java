@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -104,9 +105,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Before
-  public void before() throws IOException, InterruptedException {
+  public void before() throws IOException, InterruptedException, TimeoutException {
     jwtInterceptCount.set(0);
     pkiInterceptCount.set(0);
+    cluster.waitForAllNodes(10);
   }
 
   @Test(expected = IOException.class)
