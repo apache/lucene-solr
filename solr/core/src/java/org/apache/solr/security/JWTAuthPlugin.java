@@ -492,10 +492,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     return builder;
   }
 
-  // NOCOMMIT: v2 api documentation
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+    return Utils.getSpec("cluster.security.JwtAuth.Commands").getSpec();
   }
 
   /**
