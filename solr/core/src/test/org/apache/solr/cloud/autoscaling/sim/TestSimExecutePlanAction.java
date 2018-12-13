@@ -61,11 +61,12 @@ import com.google.common.collect.Lists;
 public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final TimeSource SIM_TIME_SOURCE = TimeSource.get("simTime:50");
   private static final int NODE_COUNT = 2;
 
   @Before
   public void setupCluster() throws Exception {
-    configureCluster(NODE_COUNT, TimeSource.get("simTime:50"));
+    configureCluster(NODE_COUNT, SIM_TIME_SOURCE);
   }
 
   @After
@@ -138,7 +139,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       };
       List<CollectionAdminRequest.AsyncCollectionAdminRequest> operations = Lists.asList(moveReplica, new CollectionAdminRequest.AsyncCollectionAdminRequest[]{mockRequest});
       NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
-          "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTimeNs()),
+          "mock_trigger_name", Collections.singletonList(SIM_TIME_SOURCE.getTimeNs()),
           Collections.singletonList(sourceNodeName), CollectionParams.CollectionAction.MOVEREPLICA.toLower());
       ActionContext actionContext = new ActionContext(cluster, null,
           new HashMap<>(Collections.singletonMap("operations", operations)));
