@@ -273,21 +273,21 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       cluster.getSolrClient().request(req, COLLECTION);
       
       assertAuthMetricsMinimums(20, 8, 8, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
 
       addDocument("harry","HarryIsUberCool","id", "5");
       assertAuthMetricsMinimums(23, 11, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(14, 14, 0, 0, 0, 0);
 
       // Validate forwardCredentials
       assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
       assertAuthMetricsMinimums(24, 12, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(18, 18, 0, 0, 0, 0);
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { forwardCredentials: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/forwardCredentials", "true", 20, "harry", "HarryIsUberCool");
       assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
       assertAuthMetricsMinimums(31, 19, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
+      assertPkiAuthMetricsMinimums(18, 18, 0, 0, 0, 0);
       
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
