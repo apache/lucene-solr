@@ -52,11 +52,6 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
 
     @Override
-    boolean disabled() {
-      return false;
-    }
-
-    @Override
     SolrRequestInfo getRequestInfo() {
       return solrRequestInfo;
     }

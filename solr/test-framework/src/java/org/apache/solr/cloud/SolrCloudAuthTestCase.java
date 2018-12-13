@@ -61,13 +61,13 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    */
   protected void assertAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
     assertAuthMetricsMinimums(METRICS_PREFIX, requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, errors);
-  }  
-  
+  }
+
   /**
    * Common test method to be able to check security from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
-  private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
+  Map<String,Long> countAuthMetrics(String prefix) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
     cluster.getJettySolrRunners().forEach(r -> {
       MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
@@ -79,14 +79,33 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     AUTH_METRICS_KEYS.forEach(k -> {
       counts.put(k, sumCount(prefix, k, metrics));
     });
+    return counts;
+  } 
+  
+  /**
+   * Common test method to be able to check security from any authentication plugin
+   * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
+   */
+  private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
+    Map<String, Long> counts = countAuthMetrics(prefix);
     
     // check each counter
-    assertExpectedMetrics(requests, "requests", counts);
-    assertExpectedMetrics(authenticated, "authenticated", counts);
-    assertExpectedMetrics(passThrough, "passThrough", counts);
-    assertExpectedMetrics(failWrongCredentials, "failWrongCredentials", counts);
-    assertExpectedMetrics(failMissingCredentials, "failMissingCredentials", counts);
-    assertExpectedMetrics(errors, "errors", counts);
+    boolean success = isMetricEuqalOrLarger(requests, "requests", counts)
+        & isMetricEuqalOrLarger(authenticated, "authenticated", counts)
+        & isMetricEuqalOrLarger(passThrough, "passThrough", counts)
+        & isMetricEuqalOrLarger(failWrongCredentials, "failWrongCredentials", counts)
+        & isMetricEuqalOrLarger(failMissingCredentials, "failMissingCredentials", counts)
+        & isMetricEuqalOrLarger(errors, "errors", counts);
+    
+    Map<String, Long> expectedCounts = new HashMap<>();
+    expectedCounts.put("requests", (long) requests);
+    expectedCounts.put("authenticated", (long) authenticated);
+    expectedCounts.put("passThrough", (long) passThrough);
+    expectedCounts.put("failWrongCredentials", (long) failWrongCredentials);
+    expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
+    expectedCounts.put("errors", (long) errors);
+    assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
+    
     if (counts.get("requests") > 0) {
       assertTrue("requestTimes count not > 1", counts.get("requestTimes") > 1);
       assertTrue("totalTime not > 0", counts.get("totalTime") > 0);
@@ -94,11 +113,10 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   }
 
   // Check that the actual metric is equal to or greater than the expected value, never less
-  private void assertExpectedMetrics(int expected, String key, Map<String, Long> counts) {
+  private boolean isMetricEuqalOrLarger(int expected, String key, Map<String, Long> counts) {
     long cnt = counts.get(key);
     log.debug("Asserting that auth metrics count ({}) > expected ({})", cnt, expected);
-    assertTrue("Expected " + key + " metric count to be " + expected + " or higher, but got " + cnt, 
-        cnt >= expected);
+    return(cnt >= expected);
   }
 
   // Have to sum the metrics from all three shards/nodes

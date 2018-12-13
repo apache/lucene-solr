@@ -110,6 +110,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -432,15 +433,11 @@ public class CoreContainer {
       }
 
       HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
-
-    } else {
-      if (pkiAuthenticationPlugin != null) {
-        //this happened due to an authc plugin reload. no need to register the pkiAuthc plugin again
-        if(pkiAuthenticationPlugin.isInterceptorRegistered()) return;
-        log.info("PKIAuthenticationPlugin is managing internode requests");
-        setupHttpClientForAuthPlugin(pkiAuthenticationPlugin);
-        pkiAuthenticationPlugin.setInterceptorRegistered();
-      }
+    }
+    // Always register PKI auth interceptor, which will then delegate the decision of who should secure
+    // each request to the configured authentication plugin.
+    if (pkiAuthenticationPlugin != null && !pkiAuthenticationPlugin.isInterceptorRegistered()) {
+      pkiAuthenticationPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
     }
   }
 
@@ -1886,6 +1883,10 @@ public class CoreContainer {
     }
     
     return tragicException != null;
+  }
+
+  static {
+    ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
   }
 
 }

@@ -65,10 +65,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
 
-  public void setInterceptorRegistered(){
-    this.interceptorRegistered = true;
-  }
-
   public boolean isInterceptorRegistered(){
     return interceptorRegistered;
   }
@@ -230,6 +226,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
+    interceptorRegistered = true;
     return builder;
   }
 
@@ -244,8 +241,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     @Override
     public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-      if (disabled()) return;
-      setHeader(httpRequest);
+      if (cores.getAuthenticationPlugin() == null) {
+        return;
+      }
+      if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
+        log.debug("{} secures this internode request", this.getClass().getSimpleName());
+        setHeader(httpRequest);
+      } else {
+        log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+      }
     }
   }
 
@@ -288,14 +292,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return SolrRequestInfo.getRequestInfo();
   }
 
-  boolean disabled() {
-    return cores.getAuthenticationPlugin() == null ||
-        cores.getAuthenticationPlugin() instanceof HttpClientBuilderPlugin;
-  }
-
   @Override
   public void close() throws IOException {
     HttpClientUtil.removeRequestInterceptor(interceptor);
+    interceptorRegistered = false;
   }
 
   public String getPublicKey() {
