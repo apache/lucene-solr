@@ -64,9 +64,8 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   }
 
   /**
-   * Counts the metrics from all nodes in cluster
-   * @param prefix the prefix to count for
-   * @return a map of all counts
+   * Common test method to be able to check security from any authentication plugin
+   * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
   Map<String,Long> countAuthMetrics(String prefix) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
