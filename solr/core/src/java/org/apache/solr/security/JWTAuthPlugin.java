@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Authenticaion plugin that finds logged in user by validating the signature of a JWT token
  */
-public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin, SpecProvider, ConfigEditablePlugin {
+public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_BLOCK_UNKNOWN = "blockUnknown";
   private static final String PARAM_JWK_URL = "jwkUrl";
@@ -104,8 +104,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   private static final String AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
+  private static final long RETRY_INIT_DELAY_SECONDS = 30;
 
-  private final JwtPkiDelegationInterceptor interceptor = new JwtPkiDelegationInterceptor();
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
       PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
       PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, 
@@ -306,8 +306,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
         return true;
       }
       // Retry config
-      if (lastInitTime.plusSeconds(10).isAfter(Instant.now())) {
-        log.info("Retrying JWTAuthPlugin initialization");
+      if (lastInitTime.plusSeconds(RETRY_INIT_DELAY_SECONDS).isAfter(Instant.now())) {
+        log.info("Retrying JWTAuthPlugin initialization (retry delay={}s)", RETRY_INIT_DELAY_SECONDS);
         init(pluginConfig);
       }
       if (jwtConsumer == null) {
@@ -474,21 +474,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   @Override
   public void close() throws IOException {
-    HttpClientUtil.removeRequestInterceptor(interceptor);
-  }
-
-  /**
-   * Register an interceptor to be able to add our header to inter-node requests
-   * @param builder any existing builder or null to create a new one
-   * @return Returns an instance of a SolrHttpClientBuilder to be used for configuring the
-   * HttpClients for use with SolrJ clients.
-   * @lucene.experimental
-   */
-  @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    // Register interceptor for inter-node requests, that delegates to PKI if JWTPrincipal is not found on http context
-    HttpClientUtil.addRequestInterceptor(interceptor);
-    return builder;
+    jwtConsumer = null;
   }
 
   @Override
@@ -690,31 +676,16 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
     }
   }
 
-  /**
-   * The interceptor class that adds correct header or delegates to PKI.
-   */
-  public class JwtPkiDelegationInterceptor implements HttpRequestInterceptor {
-    private final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-    @Override
-    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
-      if (context instanceof HttpClientContext) {
-        HttpClientContext httpClientContext = (HttpClientContext) context;
-        if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
-          JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
-          request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
-          log.debug("Set JWT header on inter-node request");
-          return;
-        }
-      }
-  
-      if (coreContainer.getPkiAuthenticationPlugin() != null) {
-        log.debug("Inter-node request delegated from JWTAuthPlugin to PKIAuthenticationPlugin");
-        coreContainer.getPkiAuthenticationPlugin().setHeader(request);
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-            "JWTAuthPlugin wants to delegate inter-node request to PKI, but PKI plugin was not initialized");
+  @Override
+  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
+    if (httpContext instanceof HttpClientContext) {
+      HttpClientContext httpClientContext = (HttpClientContext) httpContext;
+      if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
+        JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
+        httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
+        return true;
       }
     }
+    return false;
   }
 }
