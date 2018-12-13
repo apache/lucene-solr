@@ -73,9 +73,7 @@ solrAdminApp.controller('LoginController',
               if (accessToken.length === 3) {
                 var payload = AuthenticationService.decodeJwtPart(accessToken[1]);
                 if (!payload['nonce'] || payload['nonce'] !== sessionStorage.getItem("auth.nonce")) {
-                  // NOCOMMIT: Accept no nonce for now with demo IdP
-                  console.log("Temporarily disregarding missing nonce");
-                  // errorText += "Invalid 'nonce' value, possible attack detected. Please log in again. ";
+                  errorText += "Invalid 'nonce' value, possible attack detected. Please log in again. ";
                 }
 
                 if (errorText === "") {
