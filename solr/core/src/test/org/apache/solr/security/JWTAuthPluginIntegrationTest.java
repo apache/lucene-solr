@@ -35,7 +35,7 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.util.Pair;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -51,7 +51,7 @@ import org.junit.Test;
  * Validate that JWT token authentication works in a real cluster.
  * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request
  */
-public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
+public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
   protected static final int REPLICATION_FACTOR = 1;
@@ -128,23 +128,30 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     
     // Now update three documents
+    assertPkiAuthMetricsMinimums(12, 12, 0, 0, 0, 0);
     Pair<String,Integer> result = post(baseUrl + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(1,1);
-
+    assertAuthMetricsMinimums(3, 0, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
+    
     // First a non distributed query
     result = get(baseUrl + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(1,1);
+    assertAuthMetricsMinimums(4, 0, 0, 0, 0, 0);
 
     // Now do a distributed query, using JWTAUth for inter-node
     result = get(baseUrl + COLLECTION + "/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     verifyInterRequestHeaderCounts(5,5);
+    assertAuthMetricsMinimums(5, 0, 0, 0, 0, 0);
     
     // Delete
     assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
     verifyInterRequestHeaderCounts(5,5);
+    assertAuthMetricsMinimums(10, 0, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
   }
 
   private void verifyInterRequestHeaderCounts(int jwt, int pki) {
