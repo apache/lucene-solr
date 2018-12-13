@@ -127,16 +127,35 @@ public class TestIndexWriter extends LuceneTestCase {
     // add 100 documents
     for (i = 0; i < 100; i++) {
       addDocWithIndex(writer,i);
+      if (random().nextBoolean()) {
+        writer.commit();
+      }
     }
-    assertEquals(100, writer.maxDoc());
+    IndexWriter.DocStats docStats = writer.getDocStats();
+    assertEquals(100, docStats.maxDoc);
+    assertEquals(100, docStats.numDocs);
     writer.close();
 
     // delete 40 documents
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                             .setMergePolicy(NoMergePolicy.INSTANCE));
+                             .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
+                               @Override
+                               public boolean keepFullyDeletedSegment(IOSupplier<CodecReader>
+                                                                          readerIOSupplier) {
+                                 return true;
+                               }
+                             }));
+
     for (i = 0; i < 40; i++) {
       writer.deleteDocuments(new Term("id", ""+i));
+      if (random().nextBoolean()) {
+        writer.commit();
+      }
     }
+    writer.flush();
+    docStats = writer.getDocStats();
+    assertEquals(100, docStats.maxDoc);
+    assertEquals(60, docStats.numDocs);
     writer.close();
 
     reader = DirectoryReader.open(dir);
@@ -145,10 +164,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // merge the index down and check that the new doc count is correct
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    assertEquals(60, writer.numDocs());
+    assertEquals(60, writer.getDocStats().numDocs);
     writer.forceMerge(1);
-    assertEquals(60, writer.maxDoc());
-    assertEquals(60, writer.numDocs());
+    docStats = writer.getDocStats();
+    assertEquals(60, docStats.maxDoc);
+    assertEquals(60, docStats.numDocs);
     writer.close();
 
     // check that the index reader gives the same numbers.
@@ -161,8 +181,9 @@ public class TestIndexWriter extends LuceneTestCase {
     // this existing one works correctly:
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                              .setOpenMode(OpenMode.CREATE));
-    assertEquals(0, writer.maxDoc());
-    assertEquals(0, writer.numDocs());
+    docStats = writer.getDocStats();
+    assertEquals(0, docStats.maxDoc);
+    assertEquals(0, docStats.numDocs);
     writer.close();
     dir.close();
   }
@@ -226,7 +247,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // now open index for create:
     writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                              .setOpenMode(OpenMode.CREATE));
-    assertEquals("should be zero documents", writer.maxDoc(), 0);
+    assertEquals("should be zero documents", writer.getDocStats().maxDoc, 0);
     addDoc(writer);
     writer.close();
 
@@ -2774,7 +2795,7 @@ public class TestIndexWriter extends LuceneTestCase {
       try (IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setIndexCommit(indexCommit))) {
         writer.addDocument(new Document());
         writer.commit();
-        assertEquals(1, writer.maxDoc());
+        assertEquals(1, writer.getDocStats().maxDoc);
         // now check that we moved to 3
         dir.openInput("segments_3", IOContext.READ).close();;
       }
@@ -3170,7 +3191,8 @@ public class TestIndexWriter extends LuceneTestCase {
     for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
      numSoftDeleted += info.getSoftDelCount();
     }
-    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    IndexWriter.DocStats docStats = writer.getDocStats();
+    assertEquals(docStats.maxDoc - docStats.numDocs, numSoftDeleted);
     for (LeafReaderContext context : reader.leaves()) {
       LeafReader leaf = context.reader();
       assertNull(((SegmentReader) leaf).getHardLiveDocs());
@@ -3323,7 +3345,8 @@ public class TestIndexWriter extends LuceneTestCase {
     for (SegmentCommitInfo info : writer.cloneSegmentInfos()) {
       numSoftDeleted += info.getSoftDelCount() + info.getDelCount();
     }
-    assertEquals(writer.maxDoc() - writer.numDocs(), numSoftDeleted);
+    IndexWriter.DocStats docStats = writer.getDocStats();
+    assertEquals(docStats.maxDoc - docStats.numDocs, numSoftDeleted);
     writer.commit();
     try (DirectoryReader dirReader = DirectoryReader.open(dir)) {
       int delCount = 0;

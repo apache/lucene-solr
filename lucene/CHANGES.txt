@@ -62,6 +62,10 @@ Other
 * LUCENE-8605: Separate bounding box spatial logic from query logic on LatLonShapeBoundingBoxQuery.
   (Ignacio Vera)
 
+* LUCENE-8609: Deprecated IndexWriter#numDocs() and IndexWriter#maxDoc() in favor of IndexWriter#getDocStats()
+  that allows to get consistent numDocs and maxDoc stats that are not subject to concurrent changes.
+  (Simon Willnauer, Nhat Nguyen)
+
 ======================= Lucene 7.6.0 =======================
 
 Build

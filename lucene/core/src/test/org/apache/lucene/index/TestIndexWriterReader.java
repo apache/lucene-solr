@@ -386,8 +386,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     addDirThreads.joinThreads();
     
     //assertEquals(100 + numDirs * (3 * numIter / 4) * addDirThreads.numThreads
-    //    * addDirThreads.NUM_INIT_DOCS, addDirThreads.mainWriter.numDocs());
-    assertEquals(addDirThreads.count.intValue(), addDirThreads.mainWriter.numDocs());
+    //    * addDirThreads.NUM_INIT_DOCS, addDirThreads.mainwriter.getDocStats().numDocs);
+    assertEquals(addDirThreads.count.intValue(), addDirThreads.mainWriter.getDocStats().numDocs);
 
     addDirThreads.close(true);
     

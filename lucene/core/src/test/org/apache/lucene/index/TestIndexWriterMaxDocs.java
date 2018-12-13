@@ -186,7 +186,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       w.forceMerge(1);
 
-      assertEquals(5, w.maxDoc());
+      assertEquals(5, w.getDocStats().maxDoc);
 
       // Add 5 more docs
       for(int i=0;i<5;i++) {
@@ -230,7 +230,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       w.forceMerge(1);
 
-      assertEquals(5, w.maxDoc());
+      assertEquals(5, w.getDocStats().maxDoc);
 
       // Add 5 more docs
       for(int i=0;i<5;i++) {
@@ -266,7 +266,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
         w2.addIndexes(new Directory[] {dir});
       });
 
-      assertEquals(1, w2.maxDoc());
+      assertEquals(1, w2.getDocStats().maxDoc);
       DirectoryReader ir = DirectoryReader.open(dir);
       expectThrows(IllegalArgumentException.class, () -> {
         TestUtil.addIndexesSlowly(w2, ir);
