@@ -16,12 +16,12 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -37,13 +37,14 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
+import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  *
@@ -75,8 +76,8 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
   private static TimeSource timeSource;
   private static SolrClient solrClient;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
     timeSource = cluster.getTimeSource();
     solrClient = cluster.simGetSolrClient();
@@ -86,6 +87,11 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
   @AfterClass
   public static void tearDownCluster() throws Exception {
     solrClient = null;
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test

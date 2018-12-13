@@ -37,8 +37,8 @@ import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -60,17 +60,18 @@ public class TestSimNodeLostTrigger extends SimSolrCloudTestCase {
   // currentTimeMillis is not as precise so to avoid false positives while comparing time of fire, we add some delta
   private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(5, TimeSource.get("simTime:" + SPEED));
-    timeSource = cluster.getTimeSource();
-  }
-
   @Before
   public void beforeTest() throws Exception {
+    configureCluster(5, TimeSource.get("simTime:" + SPEED));
+    timeSource = cluster.getTimeSource();
     actionConstructorCalled = new AtomicBoolean(false);
     actionInitCalled = new AtomicBoolean(false);
     actionCloseCalled = new AtomicBoolean(false);
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
