@@ -55,6 +55,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
   protected static final int REPLICATION_FACTOR = 1;
+  private static final String COLLECTION = "jwtColl";
   private static String jwtTestToken;
   private static String baseUrl;
   private static AtomicInteger jwtInterceptCount = new AtomicInteger();
@@ -123,26 +124,27 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudTestCase {
   @Test
   public void createCollectionUpdateAndQueryDistributed() throws Exception {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
-    assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=mycoll&numShards=2", jwtTestToken).second().intValue());
-
-    // Now update two documents
-    Pair<String,Integer> result = post(baseUrl + "mycoll/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
+    assertEquals(200, get(baseUrl + "admin/collections?action=CREATE&name=" + COLLECTION + "&numShards=2", jwtTestToken).second().intValue());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+    
+    // Now update three documents
+    Pair<String,Integer> result = post(baseUrl + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(2,2);
+    verifyInterRequestHeaderCounts(1,1);
 
     // First a non distributed query
-    result = get(baseUrl + "mycoll/query?q=*:*&distrib=false", jwtTestToken);
+    result = get(baseUrl + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(2,2);
+    verifyInterRequestHeaderCounts(1,1);
 
     // Now do a distributed query, using JWTAUth for inter-node
-    result = get(baseUrl + "mycoll/query?q=*:*", jwtTestToken);
+    result = get(baseUrl + COLLECTION + "/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(6,6);
+    verifyInterRequestHeaderCounts(5,5);
     
     // Delete
-    assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=mycoll", jwtTestToken).second().intValue());
-    verifyInterRequestHeaderCounts(6,6);
+    assertEquals(200, get(baseUrl + "admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
+    verifyInterRequestHeaderCounts(5,5);
   }
 
   private void verifyInterRequestHeaderCounts(int jwt, int pki) {
