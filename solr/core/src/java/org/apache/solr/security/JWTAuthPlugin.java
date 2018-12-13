@@ -263,15 +263,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements HttpClientBui
 
   private void setupJwkUrl(String url) {
     // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
-// NOCOMMIT: Disable https requirement for now
-//    try {
-//      URL jwkUrl = new URL(url);
-//      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
-//      }
-//    } catch (MalformedURLException e) {
-//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
-//    }
+    try {
+      URL jwkUrl = new URL(url);
+      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
+      }
+    } catch (MalformedURLException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
+    }
     HttpsJwks httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
     verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
