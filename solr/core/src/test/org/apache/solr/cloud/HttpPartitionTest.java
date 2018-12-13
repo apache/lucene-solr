@@ -381,7 +381,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void waitForState(String collection, String replicaName, Replica.State state, long ms) throws KeeperException, InterruptedException {
-    TimeOut timeOut = new TimeOut(ms, TimeUnit.MILLISECONDS, TimeSource.CURRENT_TIME);
+    TimeOut timeOut = new TimeOut(ms, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     Replica.State replicaState = Replica.State.ACTIVE;
     while (!timeOut.hasTimedOut()) {
       ZkStateReader zkr = cloudClient.getZkStateReader();
