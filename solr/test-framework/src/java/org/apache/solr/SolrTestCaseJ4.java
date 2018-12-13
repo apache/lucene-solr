@@ -131,6 +131,10 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.update.processor.DistributedStandaloneUpdateProcessor;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -2837,6 +2841,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
                          entry.getValue());
 
     }
+  }
+
+  public static DistributedUpdateProcessor createDistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
+                                                                            UpdateRequestProcessor next) {
+    if(h.getCoreContainer().isZooKeeperAware()) {
+      return new DistributedZkUpdateProcessor(req, rsp, next);
+    }
+    return new DistributedStandaloneUpdateProcessor(req, rsp, next);
   }
   
   /**

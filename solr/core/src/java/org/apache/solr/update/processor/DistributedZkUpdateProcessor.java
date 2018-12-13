@@ -17,18 +17,35 @@
 
 package org.apache.solr.update.processor;
 
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
+  private final CloudDescriptor cloudDesc;
+
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
-                                              SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
+                                      SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    super(req, rsp, next);
+    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
   }
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
-                                              SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
+                                      SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger,
+                                      UpdateRequestProcessor next) {
     super(req, rsp, docMerger, next);
+    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
+  }
+
+  @Override
+  String getCollectionName(CloudDescriptor cloudDesc) {
+    return cloudDesc.getCollectionName();
+  }
+
+  @Override
+  Replica.Type getReplicaType(CloudDescriptor cloudDesc) {
+    return cloudDesc.getReplicaType();
   }
 }

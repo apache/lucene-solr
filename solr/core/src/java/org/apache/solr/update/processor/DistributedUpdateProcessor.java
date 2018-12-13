@@ -73,6 +73,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -203,20 +204,28 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   private final boolean cloneRequiredOnLeader;
   private final Replica.Type replicaType;
 
-  public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
+    UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
+
+  abstract String getCollectionName(CloudDescriptor cloudDescriptor);
+  abstract Replica.Type getReplicaType(CloudDescriptor cloudDescriptor);
 
   /** Specification of AtomicUpdateDocumentMerger is currently experimental.
    * @lucene.experimental
    */
   public DistributedUpdateProcessor(SolrQueryRequest req,
-      SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
+      SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger,
+      UpdateRequestProcessor next) {
     super(next);
     this.rsp = rsp;
     this.next = next;
     this.docMerger = docMerger;
     this.idField = req.getSchema().getUniqueKeyField();
+    CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
+    this.collection = getCollectionName(cloudDesc);
+    this.replicaType = getReplicaType(cloudDesc);
     // version init
 
     this.ulog = req.getCore().getUpdateHandler().getUpdateLog();
@@ -242,15 +251,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
-    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-
-    if (cloudDesc != null) {
-      collection = cloudDesc.getCollectionName();
-      replicaType = cloudDesc.getReplicaType();
-    } else {
-      collection = null;
-      replicaType = Replica.Type.NRT;
-    }
+    this.cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor(); // TODO move this to DistributedZkUpdateProc
 
     boolean shouldClone = false;
     UpdateRequestProcessor nextInChain = next;

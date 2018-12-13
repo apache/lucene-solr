@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -50,8 +52,20 @@ public class DistributedUpdateProcessorFactory
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
+
     CoreContainer cc = req.getCore().getCoreContainer();
-    DistributedUpdateProcessor distribUpdateProcessor = cc.isZooKeeperAware()? new DistributedZkUpdateProcessor(req, rsp, next):
+    final boolean isZkAware = cc.isZooKeeperAware();
+//    DistributedUpdateProcessor distribUpdateProcessor;
+
+//    if (isZkAware) {
+//      CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
+//      distribUpdateProcessor =
+//    } else {
+//      collection = null;
+//      replicaType = Replica.Type.NRT;
+//    }
+
+    DistributedUpdateProcessor distribUpdateProcessor = isZkAware ? new DistributedZkUpdateProcessor(req, rsp, next):
         new DistributedStandaloneUpdateProcessor(req, rsp, next);
     // note: will sometimes return DURP (no overhead) instead of wrapping
     return TimeRoutedAliasUpdateProcessor.wrap(req,

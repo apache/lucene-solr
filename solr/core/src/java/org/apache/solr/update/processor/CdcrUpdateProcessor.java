@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * by the target cluster.
  * </p>
  */
-public class CdcrUpdateProcessor extends DistributedUpdateProcessor {
+public class CdcrUpdateProcessor extends DistributedZkUpdateProcessor {
 
   public static final String CDCR_UPDATE = "cdcr.update";
 
