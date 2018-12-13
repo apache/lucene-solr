@@ -45,14 +45,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
@@ -60,7 +56,6 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
@@ -128,19 +123,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private String confIdpConfigUrl;
   private Map<String, Object> pluginConfig;
   private Instant lastInitTime = Instant.now();
-  private CoreContainer coreContainer;
   private String authorizationEndpoint;
   private String adminUiScope;
   private List<String> redirectUris;
 
 
   /**
-   * Initialize plugin with core container, this method is chosen by reflection at create time
-   * @param coreContainer instance of core container
+   * Initialize plugin
    */
-  public JWTAuthPlugin(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
-  }
+  public JWTAuthPlugin() {}
 
   @Override
   public void init(Map<String, Object> pluginConfig) {
@@ -296,7 +287,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     HttpServletResponse response = (HttpServletResponse) servletResponse;
-
+    
+    // NOCOMMIT: increment metric counters
+    
     String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
     if (jwtConsumer == null) {

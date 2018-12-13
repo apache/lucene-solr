@@ -108,7 +108,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     // Create an auth plugin
-    plugin = new JWTAuthPlugin(null);
+    plugin = new JWTAuthPlugin();
 
     // Create a JWK config for security.json
     testJwk = new HashMap<>();
@@ -167,7 +167,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initWithJwk() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwk", testJwk);
-    plugin = new JWTAuthPlugin(null);
+    plugin = new JWTAuthPlugin();
     plugin.init(authConf);
   }
 
@@ -175,7 +175,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initWithJwkUrl() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
-    plugin = new JWTAuthPlugin(null);
+    plugin = new JWTAuthPlugin();
     plugin.init(authConf);
   }
 
