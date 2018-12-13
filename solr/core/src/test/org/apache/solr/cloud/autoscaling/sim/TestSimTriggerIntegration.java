@@ -68,9 +68,8 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,14 +102,9 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
 
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(2, TimeSource.get("simTime:" + SPEED));
-  }
-  
-  @AfterClass
-  public static void teardownCluster() {
-    cluster.simClearSystemCollection();
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -131,6 +125,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
+    configureCluster(2, TimeSource.get("simTime:" + SPEED));
+    
     // disable .scheduled_maintenance
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
@@ -157,14 +153,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     triggerFinishedCount = new AtomicInteger();
     events.clear();
     listenerEvents.clear();
-    cluster.getLiveNodesSet().removeAllLiveNodesListeners();
-    while (cluster.getClusterStateProvider().getLiveNodes().size() < 2) {
-      // perhaps a test stopped a node but didn't start it back
-      // lets start a node
-      cluster.simAddNode();
-      cluster.getTimeSource().sleep(1000);
-    }
-    cluster.getTimeSource().sleep(10000);
   }
 
   @Test
