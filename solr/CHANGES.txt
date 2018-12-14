@@ -177,6 +177,8 @@ Bug Fixes
 
 * SOLR-11296: Spellcheck parameters not working in new UI (Matt Pearce via janhoy)
 
+* SOLR-10975: New Admin UI Query does not URL-encode the query produced in the URL box (janhoy)
+
 Improvements
 ----------------------
 
