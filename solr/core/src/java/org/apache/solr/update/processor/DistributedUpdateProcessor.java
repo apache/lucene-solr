@@ -148,8 +148,8 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
   // used to assert we don't call finish more than once, see finish()
   private boolean finished = false;
-
-  private final SolrQueryRequest req;
+  
+  protected final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
   private final UpdateRequestProcessor next;
   private final AtomicUpdateDocumentMerger docMerger;
@@ -170,16 +170,16 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
   private final boolean zkEnabled;
 
-  private final CloudDescriptor cloudDesc;
-  private final String collection;
+  protected final String collection;
+  private final CloudDescriptor cloudDesc; // TODO: move these 2 variables to ZkProc
   private final ZkController zkController;
 
   // these are setup at the start of each request processing
   // method in this update processor
-  private boolean isLeader = true;
+  protected boolean isLeader = true;
   private boolean forwardToLeader = false;
   private boolean isSubShardLeader = false;
-  private List<Node> nodes;
+  protected List<Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
 
@@ -268,7 +268,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     cloneRequiredOnLeader = shouldClone;
   }
 
-  private List<Node> setupRequest(String id, SolrInputDocument doc) {
+  protected List<Node> setupRequest(String id, SolrInputDocument doc) {
     return setupRequest(id, doc, null);
   }
 
@@ -1762,26 +1762,17 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
   // internal helper method to tell if we are the leader for an add or deleteById update
   // NOTE: not called by this class!
-  boolean isLeader(UpdateCommand cmd) {
-    updateCommand = cmd;
+  abstract boolean isLeader(UpdateCommand cmd);
 
-    if (zkEnabled) {
-      zkCheck();
-      if (cmd instanceof AddUpdateCommand) {
-        AddUpdateCommand acmd = (AddUpdateCommand)cmd;
-        nodes = setupRequest(acmd.getHashableId(), acmd.getSolrInputDocument());
-      } else if (cmd instanceof DeleteUpdateCommand) {
-        DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
-        nodes = setupRequest(dcmd.getId(), null);
-      }
-    } else {
-      isLeader = getNonZkLeaderAssumption(req);
-    }
+  /**
+   *
+   * @param id id of doc
+   * @return url of leader, or null if not found.
+   */
+  abstract protected String getLeaderUrl(String id);
 
-    return isLeader;
-  }
-
-  private void zkCheck() {
+  // TODO: move to DistribuedZkProc
+  protected void zkCheck() {
 
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.

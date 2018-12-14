@@ -53,17 +53,7 @@ public class DistributedUpdateProcessorFactory
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
 
-    CoreContainer cc = req.getCore().getCoreContainer();
-    final boolean isZkAware = cc.isZooKeeperAware();
-//    DistributedUpdateProcessor distribUpdateProcessor;
-
-//    if (isZkAware) {
-//      CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-//      distribUpdateProcessor =
-//    } else {
-//      collection = null;
-//      replicaType = Replica.Type.NRT;
-//    }
+    final boolean isZkAware = req.getCore().getCoreContainer().isZooKeeperAware();
 
     DistributedUpdateProcessor distribUpdateProcessor = isZkAware ? new DistributedZkUpdateProcessor(req, rsp, next):
         new DistributedStandaloneUpdateProcessor(req, rsp, next);
