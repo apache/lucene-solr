@@ -411,15 +411,15 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     lock.lockInterruptibly();
     try {
       setReplicaStates(nodeId, Replica.State.ACTIVE, collections);
+      if (!collections.isEmpty()) {
+        collectionsStatesRef.set(null);
+        simRunLeaderElection(collections, true);
+        return true;
+      } else {
+        return false;
+      }
     } finally {
       lock.unlock();
-    }
-    if (!collections.isEmpty()) {
-      collectionsStatesRef.set(null);
-      simRunLeaderElection(collections, true);
-      return true;
-    } else {
-      return false;
     }
   }
 
@@ -657,7 +657,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   private void simRunLeaderElection(Collection<String> collections, boolean saveClusterState) throws Exception {
     ensureNotClosed();
     if (saveClusterState) {
-      collectionsStatesRef.set(null);
+      lock.lockInterruptibly();
+      try {
+        collectionsStatesRef.set(null);
+      } finally {
+        lock.unlock();
+      }
     }
     ClusterState state = getClusterState();
     state.forEachCollection(dc -> {
@@ -798,7 +803,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     CreateCollectionCmd.checkReplicaTypes(props);
 
     // always force getting fresh state
-    collectionsStatesRef.set(null);
+    lock.lockInterruptibly();
+    try {
+      collectionsStatesRef.set(null);
+    } finally {
+      lock.unlock();
+    }
     final ClusterState clusterState = getClusterState();
 
     String withCollection = props.getStr(CollectionAdminParams.WITH_COLLECTION);
@@ -928,7 +938,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     });
 
     // force recreation of collection states
-    collectionsStatesRef.set(null);
+    lock.lockInterruptibly();
+    try {
+      collectionsStatesRef.set(null);
+    } finally {
+      lock.unlock();
+    }
     //simRunLeaderElection(Collections.singleton(collectionName), true);
     if (waitForFinalState) {
       boolean finished = finalStateLatch.await(cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, 60, TimeUnit.MILLISECONDS),
