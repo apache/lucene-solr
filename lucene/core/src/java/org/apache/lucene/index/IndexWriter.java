@@ -1131,18 +1131,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return analyzer;
   }
 
-  /** Returns total number of docs in this index, including
-   *  docs not yet flushed (still in the RAM buffer),
-   *  not counting deletions.
-   *  @see #numDocs
-   *  @deprecated use {@link #getDocStats()} instead
-   *  */
-  @Deprecated
-  public synchronized int maxDoc() {
-    ensureOpen();
-    return docWriter.getNumDocs() + segmentInfos.totalMaxDoc();
-  }
-
   /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value.
    *
    * @lucene.internal */
@@ -1152,24 +1140,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       segmentInfos.setVersion(newVersion);
     }
     changed();
-  }
-
-  /** Returns total number of docs in this index, including
-   *  docs not yet flushed (still in the RAM buffer), and
-   *  including deletions.  <b>NOTE:</b> buffered deletions
-   *  are not counted.  If you really need these to be
-   *  counted you should call {@link #commit()} first.
-   *  @see #maxDoc
-   *  @deprecated use {@link #getDocStats()} instead
-   *  */
-  @Deprecated
-  public synchronized int numDocs() {
-    ensureOpen();
-    int count = docWriter.getNumDocs();
-    for (final SegmentCommitInfo info : segmentInfos) {
-      count += info.info.maxDoc() - numDeletedDocs(info);
-    }
-    return count;
   }
 
   /**
@@ -5297,9 +5267,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /**
-   * Returns accurate {@link DocStats} form this writer. This is equivalent to calling {@link #numDocs()} and {@link #maxDoc()}
-   * but is not subject to race-conditions. The numDoc for instance can change after maxDoc is fetched that causes numDocs to be
-   * greater than maxDoc which makes it hard to get accurate document stats from IndexWriter.
+   * Returns accurate {@link DocStats} form this writer. The numDoc for instance can change after maxDoc is fetched
+   * that causes numDocs to be greater than maxDoc which makes it hard to get accurate document stats from IndexWriter.
    */
   public synchronized DocStats getDocStats() {
     ensureOpen();

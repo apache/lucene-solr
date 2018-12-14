@@ -102,6 +102,9 @@ API Changes
   number of gaps between its component sub-intervals.  This can be used in a 
   new filter available via Intervals.maxgaps().  (Alan Woodward)
 
+* LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
+  of IndexWriter#getDocStats(). (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
