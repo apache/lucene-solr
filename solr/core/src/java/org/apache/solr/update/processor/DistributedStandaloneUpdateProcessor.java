@@ -17,10 +17,14 @@
 
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.util.Collections;
+
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
 
 public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProcessor {
@@ -44,6 +48,12 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
   @Override
   Replica.Type getReplicaType(CloudDescriptor cloudDesc) {
     return Replica.Type.NRT;
+  }
+
+  @Override
+  public void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    isLeader = getNonZkLeaderAssumption(req);
+    super.doDeleteByQuery(cmd, Collections.emptyList(), null);
   }
 
   @Override
