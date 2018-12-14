@@ -57,6 +57,8 @@ Bug Fixes
 
 * SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
 
+* SOLR-11296: Spellcheck parameters not working in new UI (Matt Pearce via janhoy)
+
 Improvements
 ----------------------
 
