@@ -177,6 +177,10 @@ Bug Fixes
 
 * SOLR-13066: A failure while reloading a SolrCore can result in the SolrCore not being closed. (Mark Miller)
 
+* SOLR-11296: Spellcheck parameters not working in new UI (Matt Pearce via janhoy)
+
+* SOLR-10975: New Admin UI Query does not URL-encode the query produced in the URL box (janhoy)
+
 Improvements
 ----------------------
 
