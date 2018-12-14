@@ -141,7 +141,7 @@ public class CloudTestUtils {
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        log.info("-- wrong number of slices, expected={}, found={}: {}", expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
+        log.info("-- wrong number of slices for collection {}, expected={}, found={}: {}", collectionState.getName(), expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
         return false;
       }
       Set<String> leaderless = new HashSet<>();
@@ -160,7 +160,7 @@ public class CloudTestUtils {
             activeReplicas++;
         }
         if (activeReplicas != expectedReplicas) {
-          log.info("-- wrong number of active replicas in slice {}, expected={}, found={}", slice.getName(), expectedReplicas, activeReplicas);
+          log.info("-- wrong number of active replicas for collection {} in slice {}, expected={}, found={}", collectionState.getName(), slice.getName(), expectedReplicas, activeReplicas);
           return false;
         }
       }
