@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
   private static final List<String> NULL_STR_LIST = null;

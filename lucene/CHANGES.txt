@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 Build
 
+* LUCENE-8611: Update randomizedtesting to 2.7.2, JUnit to 4.12, add hamcrest-core 
+  dependency. (Dawid Weiss)
+
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
 Bug fixes:
