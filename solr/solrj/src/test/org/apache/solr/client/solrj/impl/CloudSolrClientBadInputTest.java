@@ -27,7 +27,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
   private static final List<String> NULL_STR_LIST = null;
