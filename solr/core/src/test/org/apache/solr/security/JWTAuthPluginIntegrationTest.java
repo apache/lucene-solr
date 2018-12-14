@@ -99,7 +99,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    System.clearProperty("java.security.auth.login.config");
     shutdownCluster();
   }
 
