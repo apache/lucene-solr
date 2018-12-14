@@ -63,7 +63,7 @@ public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedU
   public String toString() {
     return "JWTPrincipalWithUserRoles{" +
         "username='" + username + '\'' +
-        ", token='" + token + '\'' +
+        ", token='" + "*****" + '\'' +
         ", claims=" + claims +
         ", roles=" + roles +
         '}';

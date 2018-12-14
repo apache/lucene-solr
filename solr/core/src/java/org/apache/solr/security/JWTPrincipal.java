@@ -81,7 +81,7 @@ public class JWTPrincipal implements Principal, Serializable {
   public String toString() {
     return "JWTPrincipal{" +
         "username='" + username + '\'' +
-        ", token='" + token + '\'' +
+        ", token='" + "*****" + '\'' +
         ", claims=" + claims +
         '}';
   }
