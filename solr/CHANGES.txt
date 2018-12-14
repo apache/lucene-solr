@@ -175,6 +175,8 @@ Bug Fixes
 
 * SOLR-13066: A failure while reloading a SolrCore can result in the SolrCore not being closed. (Mark Miller)
 
+* SOLR-11296: Spellcheck parameters not working in new UI (Matt Pearce via janhoy)
+
 Improvements
 ----------------------
 
