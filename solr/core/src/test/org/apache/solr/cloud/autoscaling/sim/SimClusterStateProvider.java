@@ -1998,7 +1998,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           if (buffered != null) {
             bufferedDocs += buffered.get();
           }
-          activeReplicas += s.getReplicas().size();
+
+          for (Replica r : s.getReplicas()) {
+            if (r.getState() == Replica.State.ACTIVE) {
+              activeReplicas++;
+            }
+          }
           Replica leader = s.getLeader();
           if (leader == null) {
             noLeader++;
