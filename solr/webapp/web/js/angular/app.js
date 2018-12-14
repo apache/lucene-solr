@@ -76,7 +76,7 @@ solrAdminApp.config([
         templateUrl: 'partials/cluster_suggestions.html',
         controller: 'ClusterSuggestionsController'
       }).
-      when('/:core', {
+      when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
       }).
