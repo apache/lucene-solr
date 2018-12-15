@@ -1498,15 +1498,16 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     }
   }
 
-  public abstract void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException;
+  protected abstract void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException;
 
   /**
-   * This runs after versionDeleteByQuery is invoked, should be used to tamper or forward DeleteCommand
+   * should be called by implementing class after
    * @param cmd delete command
-   * @param replicas list of Nodes that are replicas
-   * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection}.
+   * @param replicas list of Nodes replicas to pass to {@link DistributedUpdateProcessor#postProcessDeleteByQuery(DeleteUpdateCommand, List, DocCollection)}
+   * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection},
+   *             passed to {@link DistributedUpdateProcessor#postProcessDeleteByQuery(DeleteUpdateCommand, List, DocCollection)}
    */
-  public void doDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas, DocCollection coll) throws IOException {
+  protected void doDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas, DocCollection coll) throws IOException {
     if (vinfo == null) {
       super.processDelete(cmd);
       return;
@@ -1586,7 +1587,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   /**
    * This runs after versionDeleteByQuery is invoked, should be used to tamper or forward DeleteCommand
    * @param cmd delete command
-   * @param replicas list of Nodes that are replicas
+   * @param replicas list of Nodes replicas
    * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection}.
    */
   abstract void postProcessDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas, DocCollection coll) throws IOException;

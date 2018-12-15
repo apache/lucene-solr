@@ -77,7 +77,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  public void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+  protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // even in non zk mode, tests simulate updates from a leader
     zkCheck();
 
