@@ -176,7 +176,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   // method in this update processor
   protected boolean isLeader = true;
   protected boolean forwardToLeader = false;
-  private boolean isSubShardLeader = false;
+  protected boolean isSubShardLeader = false;
   protected List<Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
@@ -270,7 +270,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     return setupRequest(id, doc, null);
   }
 
-  private List<Node> setupRequest(String id, SolrInputDocument doc, String route) {
+  protected List<Node> setupRequest(String id, SolrInputDocument doc, String route) {
     // if we are in zk mode...
     if (!zkEnabled) {
       return null;
@@ -1400,17 +1400,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   // have any documents specified by those IDs, the request is not forwarded to any other replicas on that shard. Thus
   // we have to spoof the replicationTracker and set the achieved rf to the number of active replicas.
   //
-  private void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
-    if (zkEnabled) {
-      zkCheck();
-      nodes = setupRequest(cmd.getId(), null, cmd.getRoute());
-    } else {
-      isLeader = getNonZkLeaderAssumption(req);
-    }
-
-    // check if client has requested minimum replication factor information. will set replicationTracker to null if
-    // we aren't the leader or subShardLeader
-    checkReplicationTracker(cmd);
+  protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
 
     boolean dropCmd = false;
     if (!forwardToLeader) {
@@ -1422,45 +1412,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       return;
     }
 
-    if (zkEnabled && isLeader && !isSubShardLeader)  {
-      DocCollection coll = zkController.getClusterState().getCollection(collection);
-      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getId(), null);
-      // the list<node> will actually have only one element for an add request
-      if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
-        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
-        params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
-        cmdDistrib.distribDelete(cmd, subShardLeaders, params, true, null, null);
-      }
-
-      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
-      if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
-        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
-        params.set(DISTRIB_FROM_COLLECTION, collection);
-        params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
-        cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, null, null);
-      }
-    }
-
-    if (nodes != null) {
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(DISTRIB_UPDATE_PARAM,
-          (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString()
-              : DistribPhase.TOLEADER.toString()));
-      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-          zkController.getBaseUrl(), req.getCore().getName()));
-
-      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // TODO: Kept for rolling upgrades only. Remove in Solr 9
-        params.add(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
-      }
-      cmdDistrib.distribDelete(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
-    }
+    postProcessDeleteById(cmd);
 
     // cmd.getIndexId == null when delete by query
     // TODO: what to do when no idField?
@@ -1473,6 +1425,15 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
     }
+  }
+
+  /**
+   * This method can be overridden to tamper with the cmd after the localDeleteById operation
+   * @param cmd the delete command
+   * @throws IOException in case post processing failed
+   */
+  protected void postProcessDeleteById(DeleteUpdateCommand cmd) throws IOException {
+    // no-op for derived classes to implement
   }
 
   /** @see DistributedUpdateProcessorFactory#addParamToDistributedRequestWhitelist */
@@ -1498,6 +1459,11 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     }
   }
 
+  /**
+   * for implementing classes to setup request data(nodes, replicas)
+   * @param cmd the delete command being processed
+   * @throws IOException
+   */
   protected abstract void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException;
 
   /**
@@ -1528,6 +1494,17 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       }
       deleteByQueryResponse.add(cmd.getQuery(), cmd.getVersion());
     }
+  }
+
+  /**
+   * This runs after versionDeleteByQuery is invoked, should be used to tamper or forward DeleteCommand
+   * @param cmd delete command
+   * @param replicas list of Nodes replicas
+   * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection}.
+   * @throws IOException in case post processing failed
+   */
+  protected void postProcessDeleteByQuery(DeleteUpdateCommand cmd, List<Node> replicas, DocCollection coll) throws IOException {
+    // no-op for derived classes to implement
   }
 
   protected void versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
@@ -1583,14 +1560,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       vinfo.unblockUpdates();
     }
   }
-
-  /**
-   * This runs after versionDeleteByQuery is invoked, should be used to tamper or forward DeleteCommand
-   * @param cmd delete command
-   * @param replicas list of Nodes replicas
-   * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection}.
-   */
-  abstract void postProcessDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas, DocCollection coll) throws IOException;
 
   // internal helper method to tell if we are the leader for an add or deleteById update
   // NOTE: not called by this class!

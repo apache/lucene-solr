@@ -77,6 +77,61 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
+  protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
+    zkCheck();
+    nodes = setupRequest(cmd.getId(), null, cmd.getRoute());
+
+    // check if client has requested minimum replication factor information. will set replicationTracker to null if
+    // we aren't the leader or subShardLeader
+    checkReplicationTracker(cmd);
+
+    super.doDeleteById(cmd);
+  }
+
+  @Override
+  protected void postProcessDeleteById(DeleteUpdateCommand cmd) throws IOException {
+    if (isLeader && !isSubShardLeader)  {
+      DocCollection coll = zkController.getClusterState().getCollection(collection);
+      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getId(), null);
+      // the list<node> will actually have only one element for an add request
+      if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
+        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
+        cmdDistrib.distribDelete(cmd, subShardLeaders, params, true, null, null);
+      }
+
+      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
+      if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
+        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM_COLLECTION, collection);
+        params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
+        cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, null, null);
+      }
+    }
+
+    if (nodes != null) {
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+      params.set(DISTRIB_UPDATE_PARAM,
+          (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString()
+              : DistribPhase.TOLEADER.toString()));
+      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+          zkController.getBaseUrl(), req.getCore().getName()));
+
+      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
+        // TODO: Kept for rolling upgrades only. Remove in Solr 9
+        params.add(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
+      }
+      cmdDistrib.distribDelete(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
+    }
+  }
+
+  @Override
   protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // even in non zk mode, tests simulate updates from a leader
     zkCheck();
