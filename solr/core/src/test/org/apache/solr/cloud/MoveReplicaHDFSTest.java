@@ -21,6 +21,7 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -38,6 +39,7 @@ import org.junit.Test;
 })
 @Nightly // test is too long for non nightly
 @TimeoutSuite(millis = TimeUnits.HOUR)
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13060")
 public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   private static MiniDFSCluster dfsCluster;
