@@ -19,12 +19,15 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.UpdateCommand;
 
 public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProcessor {
@@ -57,7 +60,14 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
   }
 
   @Override
+  protected void postProcessDeleteByQuery(DeleteUpdateCommand cmd,
+                                          List<SolrCmdDistributor.Node> replicas, DocCollection coll) throws IOException {
+    // no op
+  }
+
+  @Override
   boolean isLeader(UpdateCommand cmd) {
+    updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
     return isLeader;
   }

@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -168,6 +169,71 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     super.doDeleteByQuery(cmd, replicas, coll);
   }
 
+  @Override
+  protected void postProcessDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas,
+                                          DocCollection coll) throws IOException {
+
+    boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+
+    // forward to all replicas
+    ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+    params.set(CommonParams.VERSION_FIELD, Long.toString(cmd.getVersion()));
+    params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+    params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+        zkController.getBaseUrl(), req.getCore().getName()));
+
+    boolean someReplicas = false;
+    boolean subShardLeader = false;
+    try {
+      subShardLeader = amISubShardLeader(coll, null, null, null);
+      if (subShardLeader) {
+        String myShardId = cloudDesc.getShardId();
+        Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+            collection, myShardId);
+        // DBQ forwarded to NRT and TLOG replicas
+        List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
+            .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
+        if (replicaProps != null) {
+          final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(replicaProps.size());
+          for (ZkCoreNodeProps replicaProp : replicaProps) {
+            myReplicas.add(new SolrCmdDistributor.StdNode(replicaProp, collection, myShardId));
+          }
+          cmdDistrib.distribDelete(cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
+          someReplicas = true;
+        }
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    }
+    if (leaderLogic) {
+      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
+      if (subShardLeaders != null) {
+        cmdDistrib.distribDelete(cmd, subShardLeaders, params, true, rollupReplicationTracker, leaderReplicationTracker);
+      }
+      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, null, null);
+      if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty()) {
+        params = new ModifiableSolrParams(filterParams(req.getParams()));
+        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM_COLLECTION, collection);
+        params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
+
+        cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, rollupReplicationTracker, leaderReplicationTracker);
+      }
+      if (replicas != null) {
+        cmdDistrib.distribDelete(cmd, replicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
+        someReplicas = true;
+      }
+    }
+
+    if (someReplicas) {
+      cmdDistrib.blockAndDoRetries();
+    }
+  }
+
   // used for deleteByQuery to get the list of nodes this leader should forward to
   private List<SolrCmdDistributor.Node> setupRequestForDBQ() {
     List<SolrCmdDistributor.Node> nodes = null;
@@ -223,6 +289,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   boolean isLeader(UpdateCommand cmd) {
+    updateCommand = cmd;
     zkCheck();
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand)cmd;
