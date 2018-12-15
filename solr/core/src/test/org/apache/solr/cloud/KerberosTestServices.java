@@ -87,7 +87,7 @@ public class KerberosTestServices {
     } while (bindException);
 
     log.info("KDC host:{}", kdc.getHost());
-    log.info("krb5.conf file:", FileUtils.readFileToString(kdc.getKrb5conf(), "UTF-8"));
+    log.info("krb5.conf file:{}", FileUtils.readFileToString(kdc.getKrb5conf(), "UTF-8"));
 
     Configuration.setConfiguration(jaasConfiguration);
     Krb5HttpClientBuilder.regenerateJaasConfiguration();
