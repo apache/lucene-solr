@@ -76,7 +76,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.hamcrest.CoreMatchers.is;
 
 /**
  * This should include tests against the example solr config
