@@ -259,6 +259,24 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
     };
     authFilter.doFilter(request, rspCloseShield, filterChain);
 
+    switch (frsp.getStatus()) {
+      case HttpServletResponse.SC_UNAUTHORIZED:
+        // Cannot tell whether the 401 is due to wrong or missing credentials
+        numWrongCredentials.inc();
+        break;
+
+      case HttpServletResponse.SC_FORBIDDEN:
+        // Are there other status codes which should also translate to error?
+        numErrors.mark();
+        break;
+      default:
+        if (frsp.getStatus() >= 200 && frsp.getStatus() <= 299) {
+          numAuthenticated.inc();
+        } else {
+          numErrors.mark();
+        }
+    }
+     
     if (TRACE_HTTP) {
       log.info("----------HTTP Response---------");
       log.info("Status : {}", frsp.getStatus());

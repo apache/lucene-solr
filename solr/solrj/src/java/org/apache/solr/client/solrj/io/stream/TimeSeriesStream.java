@@ -89,6 +89,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
+
+    if(collectionName.indexOf('"') > -1) {
+      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+    }
+
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter startExpression = factory.getNamedOperand(expression, "start");
     StreamExpressionNamedParameter endExpression = factory.getNamedOperand(expression, "end");
@@ -212,7 +217,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
 
     // parameters
     ModifiableSolrParams tmpParams = new ModifiableSolrParams(params);

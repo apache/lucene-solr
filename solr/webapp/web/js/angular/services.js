@@ -235,7 +235,7 @@ solrAdminServices.factory('System',
            for (key in params) {
                if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
-                       qs.push(key + "=" + params[key][i]);
+                       qs.push(key + "=" + encodeURIComponent(params[key][i]));
                    }
                }
            }

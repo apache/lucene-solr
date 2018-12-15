@@ -16,13 +16,10 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
@@ -34,14 +31,10 @@ import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,38 +79,6 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-  }
-
-  @Before
-  public void checkClusterConfiguration() throws Exception {
-    if (cluster == null)
-      throw new RuntimeException("SimCloudManager not configured - have you called configureCluster()?");
-    // clear any persisted configuration
-    cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
-    cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
-    cluster.getSimNodeStateProvider().simRemoveDeadNodes();
-    cluster.getSimClusterStateProvider().simRemoveDeadNodes();
-    // restore the expected number of nodes
-    int currentSize = cluster.getLiveNodesSet().size();
-    if (currentSize < clusterNodeCount) {
-      int addCnt = clusterNodeCount - currentSize;
-      while (addCnt-- > 0) {
-        cluster.simAddNode();
-      }
-    } else if (currentSize > clusterNodeCount) {
-      cluster.simRemoveRandomNodes(currentSize - clusterNodeCount, true, random());
-    }
-    // clean any persisted trigger state or events
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-    cluster.getSimClusterStateProvider().simResetLeaderThrottles();
-    cluster.simRestartOverseer(null);
-    cluster.getSimClusterStateProvider().simDeleteAllCollections();
-    cluster.simClearSystemCollection();
-    cluster.getTimeSource().sleep(10000);
-    cluster.simResetOpCounts();
   }
 
   protected void removeChildren(String path) throws Exception {

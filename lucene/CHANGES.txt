@@ -102,6 +102,9 @@ API Changes
   number of gaps between its component sub-intervals.  This can be used in a 
   new filter available via Intervals.maxgaps().  (Alan Woodward)
 
+* LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
+  of IndexWriter#getDocStats(). (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -220,6 +223,9 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
+* LUCENE-8607: MatchAllDocsQuery can shortcut when total hit count is not
+  required (Alan Woodward, Adrien Grand)
+
 ======================= Lucene 7.7.0 =======================
 
 Build
@@ -275,6 +281,13 @@ Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
   (Christoph Büscher via Adrien Grand)
+
+* LUCENE-8605: Separate bounding box spatial logic from query logic on LatLonShapeBoundingBoxQuery.
+  (Ignacio Vera)
+
+* LUCENE-8609: Deprecated IndexWriter#numDocs() and IndexWriter#maxDoc() in favor of IndexWriter#getDocStats()
+  that allows to get consistent numDocs and maxDoc stats that are not subject to concurrent changes.
+  (Simon Willnauer, Nhat Nguyen)
 
 ======================= Lucene 7.6.0 =======================
 

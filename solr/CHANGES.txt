@@ -79,6 +79,12 @@ New Features
 
 * SOLR-12593: The default configSet now includes an "ignored_*" dynamic field.  (David Smiley)
 
+* SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis.
+  The BasicAuth plugin now supports a new parameter 'forwardCredentials', and when set to 'true',
+  user's BasicAuth credentials will be used instead of PKI for client initiated internode requests. (janhoy, noble) 
+
+* SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
+
 Bug Fixes
 ----------------------
 
@@ -165,7 +171,13 @@ Bug Fixes
   
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
-* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy) 
+* SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy)
+
+* SOLR-13066: A failure while reloading a SolrCore can result in the SolrCore not being closed. (Mark Miller)
+
+* SOLR-11296: Spellcheck parameters not working in new UI (Matt Pearce via janhoy)
+
+* SOLR-10975: New Admin UI Query does not URL-encode the query produced in the URL box (janhoy)
 
 Improvements
 ----------------------

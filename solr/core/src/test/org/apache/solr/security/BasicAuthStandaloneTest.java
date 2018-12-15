@@ -29,6 +29,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -41,8 +42,6 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -84,7 +83,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @LogLevel("org.apache.solr=DEBUG")
   public void testBasicAuth() throws Exception {
 
     String authcPrefix = "/admin/authentication";

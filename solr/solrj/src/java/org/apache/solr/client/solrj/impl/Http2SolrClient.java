@@ -100,6 +100,8 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * @lucene.experimental
  */
 public class Http2SolrClient extends SolrClient {
+  public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
+
   private static volatile SSLConfig defaultSSLConfig;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -445,6 +447,9 @@ public class Http2SolrClient extends SolrClient {
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
     setListeners(solrRequest, req);
+    if (solrRequest.getUserPrincipal() != null) {
+      req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
+    }
 
     return req;
   }

@@ -170,7 +170,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     StreamExpression expression = new StreamExpression("search");
     
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
     
     for (Entry<String, String[]> param : params.getMap().entrySet()) {
       for (String val : param.getValue()) {
@@ -334,11 +338,18 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     //  which is something already supported in other parts of Solr
 
     // check for alias or collection
-    List<String> collections = checkAlias
-        ? zkStateReader.getAliases().resolveAliases(collectionName)  // if not an alias, returns collectionName
-        : Collections.singletonList(collectionName);
+
+    List<String> allCollections = new ArrayList();
+    String[] collectionNames = collectionName.split(",");
+    for(String col : collectionNames) {
+      List<String> collections = checkAlias
+          ? zkStateReader.getAliases().resolveAliases(col)  // if not an alias, returns collectionName
+          : Collections.singletonList(collectionName);
+      allCollections.addAll(collections);
+    }
+
     // Lookup all actives slices for these collections
-    List<Slice> slices = collections.stream()
+    List<Slice> slices = allCollections.stream()
         .map(collectionsMap::get)
         .filter(Objects::nonNull)
         .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))

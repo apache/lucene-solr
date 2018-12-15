@@ -64,7 +64,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
       doc.add(newStringField("content", English.intToEnglish(i).trim(), Field.Store.YES));
       writer.addDocument(doc);
     }
-    assertEquals(DOCS_TO_ADD, writer.maxDoc());
+    assertEquals(DOCS_TO_ADD, writer.getDocStats().maxDoc);
     writer.close();
     dir.close();
 

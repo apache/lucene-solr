@@ -110,8 +110,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       doc.add(newTextField("content", "aaa " + (i%4), Field.Store.NO));
       w.addDocument(doc);
     }
-    assertEquals(80, w.maxDoc());
-    assertEquals(80, w.numDocs());
+    assertEquals(80, w.getDocStats().maxDoc);
+    assertEquals(80, w.getDocStats().numDocs);
 
     if (VERBOSE) {
       System.out.println("\nTEST: delete docs");
@@ -119,16 +119,16 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     w.deleteDocuments(new Term("content", "0"));
     w.forceMergeDeletes();
 
-    assertEquals(80, w.maxDoc());
-    assertEquals(60, w.numDocs());
+    assertEquals(80, w.getDocStats().maxDoc);
+    assertEquals(60, w.getDocStats().numDocs);
 
     if (VERBOSE) {
       System.out.println("\nTEST: forceMergeDeletes2");
     }
     ((TieredMergePolicy) w.getConfig().getMergePolicy()).setForceMergeDeletesPctAllowed(10.0);
     w.forceMergeDeletes();
-    assertEquals(60, w.maxDoc());
-    assertEquals(60, w.numDocs());
+    assertEquals(60, w.getDocStats().maxDoc);
+    assertEquals(60, w.getDocStats().numDocs);
     w.close();
     dir.close();
   }
@@ -169,7 +169,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       }
       w.forceMerge(targetCount);
 
-      final long max125Pct = (long) ((tmp.getMaxMergedSegmentMB() * 1024.0 * 1024.0) * 1.25);
+      final double maxSegmentSize = Math.max(tmp.getMaxMergedSegmentMB(), tmp.getFloorSegmentMB());
+      final long max125Pct = (long) ((maxSegmentSize * 1024.0 * 1024.0) * 1.25);
       // Other than in the case where the target count is 1 we can't say much except no segment should be > 125% of max seg size.
       if (targetCount == 1) {
         assertEquals("Should have merged down to one segment", targetCount, w.getSegmentCount());
@@ -295,8 +296,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     w.forceMergeDeletes();
     remainingDocs -= deletedThisPass;
     checkSegmentsInExpectations(w, segNamesBefore, false); // There should have been no merges
-    assertEquals("NumDocs should reflect removed documents ", remainingDocs, w.numDocs());
-    assertTrue("Should still be deleted docs in the index", w.numDocs() < w.maxDoc());
+    assertEquals("NumDocs should reflect removed documents ", remainingDocs, w.getDocStats().numDocs);
+    assertTrue("Should still be deleted docs in the index", w.getDocStats().numDocs < w.getDocStats().maxDoc);
 
     // This time, forceMerge. By default this should respect max segment size.
     // Will change for LUCENE-8236
@@ -306,8 +307,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     // Now forceMerge down to one segment, there should be exactly remainingDocs in exactly one segment.
     w.forceMerge(1);
     assertEquals("There should be exaclty one segment now", 1, w.getSegmentCount());
-    assertEquals("maxDoc and numDocs should be identical", w.numDocs(), w.maxDoc());
-    assertEquals("There should be an exact number of documents in that one segment", remainingDocs, w.numDocs());
+    assertEquals("maxDoc and numDocs should be identical", w.getDocStats().numDocs, w.getDocStats().maxDoc);
+    assertEquals("There should be an exact number of documents in that one segment", remainingDocs, w.getDocStats().numDocs);
 
     // Delete 5% and expunge, should be no change.
     segNamesBefore = getSegmentNames(w);
@@ -315,7 +316,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     w.forceMergeDeletes();
     checkSegmentsInExpectations(w, segNamesBefore, false);
     assertEquals("There should still be only one segment. ", 1, w.getSegmentCount());
-    assertTrue("The segment should have deleted documents", w.numDocs() < w.maxDoc());
+    assertTrue("The segment should have deleted documents", w.getDocStats().numDocs < w.getDocStats().maxDoc);
 
     w.forceMerge(1); // back to one segment so deletePctDocsFromEachSeg still works
 
@@ -324,17 +325,17 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     w.forceMergeDeletes();
 
     assertEquals("There should still be only one segment. ", 1, w.getSegmentCount());
-    assertEquals("The segment should have no deleted documents", w.numDocs(), w.maxDoc());
+    assertEquals("The segment should have no deleted documents", w.getDocStats().numDocs, w.getDocStats().maxDoc);
 
 
     // sanity check, at this point we should have an over`-large segment, we know we have exactly one.
-    assertTrue("Our single segment should have quite a few docs", w.numDocs() > 1_000);
+    assertTrue("Our single segment should have quite a few docs", w.getDocStats().numDocs > 1_000);
 
     // Delete 60% of the documents and then add a few more docs and commit. This should "singleton merge" the large segment
     // created above. 60% leaves some wriggle room, LUCENE-8263 will change this assumption and should be tested
     // when we deal with that JIRA.
 
-    deletedThisPass = deletePctDocsFromEachSeg(w, (w.numDocs() * 60) / 100, true);
+    deletedThisPass = deletePctDocsFromEachSeg(w, (w.getDocStats().numDocs * 60) / 100, true);
     remainingDocs -= deletedThisPass;
 
     for (int i = 0; i < 50; i++) {
