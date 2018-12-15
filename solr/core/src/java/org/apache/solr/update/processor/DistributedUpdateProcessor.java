@@ -639,19 +639,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
     assert TestInjection.injectFailUpdateRequests();
 
-    updateCommand = cmd;
-
-    if (zkEnabled) {
-      zkCheck();
-      nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
-    } else {
-      isLeader = getNonZkLeaderAssumption(req);
-    }
-
-    // check if client has requested minimum replication factor information. will set replicationTracker to null if
-    // we aren't the leader or subShardLeader
-    checkReplicationTracker(cmd);
-
     // If we were sent a previous version, set this to the AddUpdateCommand (if not already set)
     if (!cmd.isInPlaceUpdate()) {
       cmd.prevVersion = cmd.getReq().getParams().getLong(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, -1);
@@ -670,58 +657,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       return;
     }
 
-    if (zkEnabled && isLeader && !isSubShardLeader)  {
-      DocCollection coll = zkController.getClusterState().getCollection(collection);
-      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getHashableId(), cmd.getSolrInputDocument());
-      // the list<node> will actually have only one element for an add request
-      if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
-        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
-        params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
-        cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
-      }
-      final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getHashableId(), cmd.getSolrInputDocument());
-      if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
-        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
-        params.set(DISTRIB_FROM_COLLECTION, collection);
-        params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
-        cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
-      }
-    }
-
-    if (nodes != null) {
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(DISTRIB_UPDATE_PARAM,
-          (isLeader || isSubShardLeader ?
-              DistribPhase.FROMLEADER.toString() :
-              DistribPhase.TOLEADER.toString()));
-      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-          zkController.getBaseUrl(), req.getCore().getName()));
-
-      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // TODO: Kept for rolling upgrades only. Should be removed in Solr 9
-        params.set(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
-      }
-
-      if (cmd.isInPlaceUpdate()) {
-        params.set(DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
-
-        // Use synchronous=true so that a new connection is used, instead
-        // of the update being streamed through an existing streaming client.
-        // When using a streaming client, the previous update
-        // and the current in-place update (that depends on the previous update), if reordered
-        // in the stream, can result in the current update being bottled up behind the previous
-        // update in the stream and can lead to degraded performance.
-        cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
-      } else {
-        cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
-      }
-    }
+    postProcessAdd(cmd);
 
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
@@ -739,6 +675,15 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     // Given that, it may also make sense to move the version reporting out of this
     // processor too.
 
+  }
+
+  /**
+   * This method can be overridden to tamper with the cmd after the localAdd operation(e.g. send to replicas)
+   * @param cmd the update command
+   * @throws IOException in case post processing failed
+   */
+  protected void postProcessAdd(AddUpdateCommand cmd) throws IOException {
+    // no-op for derived classes to implement
   }
 
   // helper method, processAdd was getting a bit large.
@@ -1462,7 +1407,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   /**
    * for implementing classes to setup request data(nodes, replicas)
    * @param cmd the delete command being processed
-   * @throws IOException
    */
   protected abstract void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException;
 

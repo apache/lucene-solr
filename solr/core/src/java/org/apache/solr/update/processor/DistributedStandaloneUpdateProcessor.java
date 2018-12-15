@@ -23,8 +23,10 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.util.TestInjection;
 
 public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProcessor {
 
@@ -47,6 +49,16 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
   @Override
   Replica.Type getReplicaType(CloudDescriptor cloudDesc) {
     return Replica.Type.NRT;
+  }
+
+  @Override
+  public void processAdd(AddUpdateCommand cmd) throws IOException {
+    assert TestInjection.injectFailUpdateRequests();
+
+    updateCommand = cmd;
+    isLeader = getNonZkLeaderAssumption(req);
+
+    super.processAdd(cmd);
   }
 
   @Override

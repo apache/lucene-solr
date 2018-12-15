@@ -20,9 +20,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
