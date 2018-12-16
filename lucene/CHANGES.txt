@@ -237,9 +237,8 @@ Build
 
 Bug fixes:
 
-* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
-  detects script boundaries more accurately with Character#UnicodeScript#of.
-  (Christophe Bismuth, Jim Ferenczi)
+* LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
+  (Yoo Jeongin via Jim Ferenczi)
 
 New Features
 
@@ -264,6 +263,10 @@ Improvements
 
 * LUCENE-8575: SegmentInfos#toString now includes attributes and diagnostics.
   (Namgyu Kim via Adrien Grand)
+
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
 
 Optimizations
 
