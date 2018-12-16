@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
@@ -80,7 +80,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       }
 
       // create LBHttpSolrClient request
-      final LBHttpSolrClient.Req req = httpShardHandlerFactory.newLBHttpSolrClientReq(queryRequest, urls);
+      final LBSolrClient.Req req = httpShardHandlerFactory.newLBHttpSolrClientReq(queryRequest, urls);
 
       // actual vs. expected test
       final int actualNumServersToTry = req.getNumServersToTry().intValue();

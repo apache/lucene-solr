@@ -96,9 +96,6 @@ The amount of time in ms that is accepted for binding / connecting a socket. The
 `maxConnectionsPerHost`::
 The maximum number of concurrent connections that is made to each individual shard in a distributed search. The default is `100000`.
 
-`maxConnections`::
-The total maximum number of concurrent connections in distributed searches. The default is `100000`
-
 `corePoolSize`::
 The retained lowest limit on the number of threads used in coordinating distributed search. The default is `0`.
 
