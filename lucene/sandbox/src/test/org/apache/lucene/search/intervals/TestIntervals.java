@@ -153,6 +153,7 @@ public class TestIntervals extends LuceneTestCase {
     int ord = ReaderUtil.subIndex(doc, searcher.getIndexReader().leaves());
     LeafReaderContext ctx = searcher.getIndexReader().leaves().get(ord);
     IntervalIterator it = source.intervals(field, ctx);
+    doc = doc - ctx.docBase;
     assertEquals(doc, it.advance(doc));
     for (int expectedGap : expectedGaps) {
       if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
