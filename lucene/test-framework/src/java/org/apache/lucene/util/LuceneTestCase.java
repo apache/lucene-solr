@@ -212,7 +212,9 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
-@TestRuleLimitSysouts.Limit(bytes = TestRuleLimitSysouts.DEFAULT_SYSOUT_BYTES_THRESHOLD)
+@TestRuleLimitSysouts.Limit(
+    bytes = TestRuleLimitSysouts.DEFAULT_LIMIT,
+    hardLimit = TestRuleLimitSysouts.DEFAULT_HARD_LIMIT)
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------

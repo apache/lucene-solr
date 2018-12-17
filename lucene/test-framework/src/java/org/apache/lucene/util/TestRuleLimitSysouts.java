@@ -31,6 +31,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
@@ -39,16 +40,37 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 
 /**
- * Fails the suite if it prints over the given limit of bytes to either
- * {@link System#out} or {@link System#err},
- * unless the condition is not enforced (see {@link #isEnforced()}).
+ * This test rule serves two purposes:
+ *  <ul>
+ *    <li>it fails the test if it prints too much to stdout and stderr (tests that chatter too much
+ *    are discouraged)</li>
+ *    <li>the rule ensures an absolute hard limit of stuff written to stdout and stderr to prevent
+ *    accidental infinite loops from filling all available disk space with persisted output.</li>
+ *  </ul>
+ *
+ * The rule is not enforced for certain test types (see {@link #isEnforced()}).
  */
 public class TestRuleLimitSysouts extends TestRuleAdapter {
+  private static final long KB = 1024;
+  private static final long MB = KB * 1024;
+  private static final long GB = MB * 1024;
+
   /**
    * Max limit of bytes printed to either {@link System#out} or {@link System#err}. 
    * This limit is enforced per-class (suite).
    */
-  public final static int DEFAULT_SYSOUT_BYTES_THRESHOLD = 8 * 1024;
+  public final static long DEFAULT_LIMIT = 8 * KB;
+
+  /**
+   * Max hard limit of sysout bytes.
+   */
+  public final static long DEFAULT_HARD_LIMIT = 2 * GB;
+
+  /**
+   * Maximum limit allowed for {@link Limit#bytes()} before sysout check suppression
+   * is suggested.
+   */
+  public final static int MAX_LIMIT = 1 * 1024 * 1024;
 
   /**
    * An annotation specifying the limit of bytes per class.
@@ -57,17 +79,27 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.TYPE)
-  public static @interface Limit {
-    public int bytes();
-    public int hardLimit() default Integer.MAX_VALUE;
+  public @interface Limit {
+    /**
+     * The maximum number of bytes written to stdout or stderr. If exceeded, a suite failure will be
+     * triggered.
+     */
+    long bytes();
+
+    /**
+     * Maximum number of bytes passed to actual stdout or stderr. Any writes beyond this limit will be
+     * ignored (will actually cause an IOException on the underlying output, but this is silently ignored
+     * by PrintStreams).
+     */
+    long hardLimit() default DEFAULT_HARD_LIMIT;
   }
 
-  private final static AtomicInteger bytesWritten = new AtomicInteger();
+  private final static AtomicLong bytesWritten = new AtomicLong();
 
   private final static PrintStream capturedSystemOut;
   private final static PrintStream capturedSystemErr;
 
-  private final static AtomicInteger hardLimit;
+  private final static AtomicLong hardLimit;
 
   /**
    * We capture system output and error streams as early as possible because
@@ -84,9 +116,9 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     sout.flush();
     serr.flush();
 
-    hardLimit = new AtomicInteger(Integer.MAX_VALUE);
+    hardLimit = new AtomicLong(Integer.MAX_VALUE);
     LimitPredicate limitCheck = (before, after) -> {
-      int limit = hardLimit.get();
+      long limit = hardLimit.get();
       if (after > limit) {
         if (before < limit) {
           // Crossing the boundary. Write directly to stderr.
@@ -115,7 +147,7 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   private final TestRuleMarkFailure failureMarker;
 
   static interface LimitPredicate {
-    void check(int before, int after) throws IOException;
+    void check(long before, long after) throws IOException;
   }
 
   /**
@@ -125,9 +157,9 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   final static class DelegateStream extends OutputStream {
     private final OutputStream delegate;
     private final LimitPredicate limitPredicate;
-    private final AtomicInteger bytesCounter;
+    private final AtomicLong bytesCounter;
 
-    public DelegateStream(OutputStream delegate, AtomicInteger bytesCounter, LimitPredicate limitPredicate) {
+    public DelegateStream(OutputStream delegate, AtomicLong bytesCounter, LimitPredicate limitPredicate) {
       this.delegate = delegate;
       this.bytesCounter = bytesCounter;
       this.limitPredicate = limitPredicate;
@@ -163,8 +195,8 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     }
 
     private void checkLimit(int bytes) throws IOException {
-      int after = bytesCounter.addAndGet(bytes);
-      int before = after - bytes;
+      long after = bytesCounter.addAndGet(bytes);
+      long before = after - bytes;
       limitPredicate.check(before, after);
     }
   }
@@ -187,11 +219,11 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     Class<?> target = RandomizedTest.getContext().getTargetClass();
     if (target.isAnnotationPresent(Limit.class)) {
       Limit limitAnn = target.getAnnotation(Limit.class);
-      int bytes = limitAnn.bytes();
-      if (bytes < 0 || bytes > 1 * 1024 * 1024) {
-        throw new AssertionError("The sysout limit is insane. Did you want to use "
+      long bytes = limitAnn.bytes();
+      if (bytes < 0 || bytes > MAX_LIMIT) {
+        throw new AssertionError("This sysout limit is very high: " + bytes + ". Did you want to use "
             + "@" + LuceneTestCase.SuppressSysoutChecks.class.getName() + " annotation to "
-            + "avoid sysout checks entirely?");
+            + "avoid sysout checks entirely (this is discouraged)?");
       }
 
       hardLimit.set(limitAnn.hardLimit());
@@ -243,9 +275,9 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   
       // Check for offenders, but only if everything was successful so far.
       Limit ann = RandomizedTest.getContext().getTargetClass().getAnnotation(Limit.class);
-      int limit = ann.bytes();
-      int hardLimit = ann.hardLimit();
-      int written = bytesWritten.get();
+      long limit = ann.bytes();
+      long hardLimit = ann.hardLimit();
+      long written = bytesWritten.get();
       if (written >= limit && failureMarker.wasSuccessful()) {
         throw new AssertionError(String.format(Locale.ENGLISH, 
             "The test or suite printed %d bytes to stdout and stderr," +
