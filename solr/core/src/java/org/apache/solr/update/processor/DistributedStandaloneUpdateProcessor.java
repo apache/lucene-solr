@@ -69,15 +69,15 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
 
   @Override
   protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    // even in non zk mode, tests simulate updates from a leader
     isLeader = getNonZkLeaderAssumption(req);
     super.doDeleteByQuery(cmd, null, null);
   }
 
   @Override
-  boolean isLeader(UpdateCommand cmd) {
+  void setupRequest(UpdateCommand cmd) {
     updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
-    return isLeader;
   }
 
   @Override

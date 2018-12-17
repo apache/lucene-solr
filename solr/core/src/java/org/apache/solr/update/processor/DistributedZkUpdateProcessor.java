@@ -206,9 +206,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
-    // even in non zk mode, tests simulate updates from a leader
     zkCheck();
-
 
     // NONE: we are the first to receive this deleteByQuery
     //       - it must be forwarded to the leader of every shard
@@ -416,7 +414,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  boolean isLeader(UpdateCommand cmd) {
+  void setupRequest(UpdateCommand cmd) {
     updateCommand = cmd;
     zkCheck();
     if (cmd instanceof AddUpdateCommand) {
@@ -426,6 +424,5 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
       nodes = setupRequest(dcmd.getId(), null);
     }
-    return isLeader;
   }
 }

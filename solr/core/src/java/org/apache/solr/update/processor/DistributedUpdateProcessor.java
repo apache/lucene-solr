@@ -118,6 +118,10 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
    */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT = Integer.getInteger("solr.retries.to.followers", 3);
 
+  boolean isLeader() {
+    return isLeader;
+  }
+
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
    * This is an implementation detail exposed solely for tests.
@@ -1505,9 +1509,9 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     }
   }
 
-  // internal helper method to tell if we are the leader for an add or deleteById update
+  // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
-  abstract boolean isLeader(UpdateCommand cmd);
+  abstract void setupRequest(UpdateCommand cmd);
 
   /**
    *
