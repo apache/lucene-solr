@@ -198,27 +198,29 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     assert blockMinMax.spaceInBits <= minMax.spaceInBits;
 
     if (numDocsWithValue == 0) {              // meta[-2, 0]: No documents with values
-      meta.writeLong(-2);
-      meta.writeLong(0L);
+      meta.writeLong(-2); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else if (numDocsWithValue == maxDoc) {  // meta[-1, 0]: All documents has values
-      meta.writeLong(-1);
-      meta.writeLong(0L);
-    } else {
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
+    } else {                                  // meta[data.offset, data.length]: IndexedDISI structure for documents with values
       long offset = data.getFilePointer();
-      meta.writeLong(offset);                 // meta[data.offset, data.length]: IndexedDISI structure for documents with values
+      meta.writeLong(offset);// docsWithFieldOffset
       values = valuesProducer.getSortedNumeric(field);
-      IndexedDISI.writeBitSet(values, data);
-
-      meta.writeLong(data.getFilePointer() - offset);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableEntryCount);
     }
 
-    meta.writeLong(numValues);                // meta[numValues]
+    meta.writeLong(numValues);
     final int numBitsPerValue;
     boolean doBlocks = false;
     Map<Long, Integer> encode = null;
     if (min >= max) {                         // meta[-1]: All values are 0
       numBitsPerValue = 0;
-      meta.writeInt(-1);
+      meta.writeInt(-1); // tablesize
     } else {
       if (uniqueValues != null
           && uniqueValues.size() > 1
@@ -226,9 +228,9 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         numBitsPerValue = DirectWriter.unsignedBitsRequired(uniqueValues.size() - 1);
         final Long[] sortedUniqueValues = uniqueValues.toArray(new Long[0]);
         Arrays.sort(sortedUniqueValues);
-        meta.writeInt(sortedUniqueValues.length);
+        meta.writeInt(sortedUniqueValues.length); // tablesize
         for (Long v : sortedUniqueValues) {
-          meta.writeLong(v);
+          meta.writeLong(v); // table[] entry
         }
         encode = new HashMap<>();
         for (int i = 0; i < sortedUniqueValues.length; ++i) {
@@ -242,14 +244,14 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         doBlocks = minMax.spaceInBits > 0 && (double) blockMinMax.spaceInBits / minMax.spaceInBits <= 0.9;
         if (doBlocks) {
           numBitsPerValue = 0xFF;
-          meta.writeInt(-2 - NUMERIC_BLOCK_SHIFT);
+          meta.writeInt(-2 - NUMERIC_BLOCK_SHIFT); // tablesize
         } else {
           numBitsPerValue = DirectWriter.unsignedBitsRequired((max - min) / gcd);
           if (gcd == 1 && min > 0
               && DirectWriter.unsignedBitsRequired(max) == DirectWriter.unsignedBitsRequired(max - min)) {
             min = 0;
           }
-          meta.writeInt(-1);
+          meta.writeInt(-1); // tablesize
         }
       }
     }
@@ -258,14 +260,14 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeLong(min);
     meta.writeLong(gcd);
     long startOffset = data.getFilePointer();
-    meta.writeLong(startOffset);
+    meta.writeLong(startOffset); // valueOffset
     long jumpTableOffset = -1;
     if (doBlocks) {
       jumpTableOffset = writeValuesMultipleBlocks(valuesProducer.getSortedNumeric(field), gcd);
     } else if (numBitsPerValue != 0) {
       writeValuesSingleBlock(valuesProducer.getSortedNumeric(field), numValues, numBitsPerValue, min, gcd, encode);
     }
-    meta.writeLong(data.getFilePointer() - startOffset);
+    meta.writeLong(data.getFilePointer() - startOffset); // valuesLength
     meta.writeLong(jumpTableOffset);
     return new long[] {numDocsWithValue, numValues};
   }
@@ -286,7 +288,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     writer.finish();
   }
 
-  // Returns the offset to the jump-table
+  // Returns the offset to the jump-table for vBPV
   private long writeValuesMultipleBlocks(SortedNumericDocValues values, long gcd) throws IOException {
     long[] offsets = new long[ArrayUtil.oversize(100, Long.BYTES)]; // 100 blocks = 1.6M values
     int offsetsIndex = 0;
@@ -355,7 +357,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
     BinaryDocValues values = valuesProducer.getBinary(field);
     long start = data.getFilePointer();
-    meta.writeLong(start);
+    meta.writeLong(start); // dataOffset
     int numDocsWithField = 0;
     int minLength = Integer.MAX_VALUE;
     int maxLength = 0;
@@ -368,20 +370,23 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       maxLength = Math.max(length, maxLength);
     }
     assert numDocsWithField <= maxDoc;
-    meta.writeLong(data.getFilePointer() - start);
+    meta.writeLong(data.getFilePointer() - start); // dataLength
 
     if (numDocsWithField == 0) {
-      meta.writeLong(-2);
-      meta.writeLong(0L);
+      meta.writeLong(-2); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else if (numDocsWithField == maxDoc) {
-      meta.writeLong(-1);
-      meta.writeLong(0L);
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else {
       long offset = data.getFilePointer();
-      meta.writeLong(offset);
+      meta.writeLong(offset); // docsWithFieldOffset
       values = valuesProducer.getBinary(field);
-      IndexedDISI.writeBitSet(values, data);
-      meta.writeLong(data.getFilePointer() - offset);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableEntryCount);
     }
 
     meta.writeInt(numDocsWithField);
@@ -420,36 +425,39 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
 
     if (numDocsWithField == 0) {
-      meta.writeLong(-2);
-      meta.writeLong(0L);
+      meta.writeLong(-2); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else if (numDocsWithField == maxDoc) {
-      meta.writeLong(-1);
-      meta.writeLong(0L);
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else {
       long offset = data.getFilePointer();
-      meta.writeLong(offset);
+      meta.writeLong(offset); // docsWithFieldOffset
       values = valuesProducer.getSorted(field);
-      IndexedDISI.writeBitSet(values, data);
-      meta.writeLong(data.getFilePointer() - offset);
+      final short jumpTableentryCount = IndexedDISI.writeBitSet(values, data);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableentryCount);
     }
 
     meta.writeInt(numDocsWithField);
     if (values.getValueCount() <= 1) {
-      meta.writeByte((byte) 0);
-      meta.writeLong(0L);
-      meta.writeLong(0L);
+      meta.writeByte((byte) 0); // bitsPerValue
+      meta.writeLong(0L); // ordsOffset
+      meta.writeLong(0L); // ordsLength
     } else {
       int numberOfBitsPerOrd = DirectWriter.unsignedBitsRequired(values.getValueCount() - 1);
-      meta.writeByte((byte) numberOfBitsPerOrd);
+      meta.writeByte((byte) numberOfBitsPerOrd); // bitsPerValue
       long start = data.getFilePointer();
-      meta.writeLong(start);
+      meta.writeLong(start); // ordsOffset
       DirectWriter writer = DirectWriter.getInstance(data, numDocsWithField, numberOfBitsPerOrd);
       values = valuesProducer.getSorted(field);
       for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
         writer.add(values.ordValue());
       }
       writer.finish();
-      meta.writeLong(data.getFilePointer() - start);
+      meta.writeLong(data.getFilePointer() - start); // ordsLength
     }
 
     addTermsDict(DocValues.singleton(valuesProducer.getSorted(field)));
@@ -591,7 +599,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
 
     if (numDocsWithField == numOrds) {
-      meta.writeByte((byte) 0);
+      meta.writeByte((byte) 0); // multiValued (0 = singleValued)
       doAddSortedField(field, new EmptyDocValuesProducer() {
         @Override
         public SortedDocValues getSorted(FieldInfo field) throws IOException {
@@ -600,24 +608,26 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       });
       return;
     }
-    meta.writeByte((byte) 1);
+    meta.writeByte((byte) 1);  // multiValued (1 = multiValued)
 
     assert numDocsWithField != 0;
     if (numDocsWithField == maxDoc) {
-      meta.writeLong(-1);
-      meta.writeLong(0L);
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else {
       long offset = data.getFilePointer();
-      meta.writeLong(offset);
+      meta.writeLong(offset);  // docsWithFieldOffset
       values = valuesProducer.getSortedSet(field);
-      IndexedDISI.writeBitSet(values, data);
-      meta.writeLong(data.getFilePointer() - offset);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableEntryCount);
     }
 
     int numberOfBitsPerOrd = DirectWriter.unsignedBitsRequired(values.getValueCount() - 1);
-    meta.writeByte((byte) numberOfBitsPerOrd);
+    meta.writeByte((byte) numberOfBitsPerOrd); // bitsPerValue
     long start = data.getFilePointer();
-    meta.writeLong(start);
+    meta.writeLong(start); // ordsOffset
     DirectWriter writer = DirectWriter.getInstance(data, numOrds, numberOfBitsPerOrd);
     values = valuesProducer.getSortedSet(field);
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
@@ -626,11 +636,11 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       }
     }
     writer.finish();
-    meta.writeLong(data.getFilePointer() - start);
+    meta.writeLong(data.getFilePointer() - start); // ordsLength
 
     meta.writeInt(numDocsWithField);
     start = data.getFilePointer();
-    meta.writeLong(start);
+    meta.writeLong(start); // addressesOffset
     meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
 
     final DirectMonotonicWriter addressesWriter = DirectMonotonicWriter.getInstance(meta, data, numDocsWithField + 1, DIRECT_MONOTONIC_BLOCK_SHIFT);
@@ -646,7 +656,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       addressesWriter.add(addr);
     }
     addressesWriter.finish();
-    meta.writeLong(data.getFilePointer() - start);
+    meta.writeLong(data.getFilePointer() - start); // addressesLength
 
     addTermsDict(values);
   }

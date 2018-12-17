@@ -95,17 +95,20 @@ final class Lucene80NormsConsumer extends NormsConsumer {
     meta.writeInt(field.number);
 
     if (numDocsWithValue == 0) {
-      meta.writeLong(-2);
-      meta.writeLong(0L);
+      meta.writeLong(-2); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else if (numDocsWithValue == maxDoc) {
-      meta.writeLong(-1);
-      meta.writeLong(0L);
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
     } else {
       long offset = data.getFilePointer();
-      meta.writeLong(offset);
+      meta.writeLong(offset); // docsWithFieldOffset
       values = normsProducer.getNorms(field);
-      IndexedDISI.writeBitSet(values, data);
-      meta.writeLong(data.getFilePointer() - offset);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableEntryCount);
     }
 
     meta.writeInt(numDocsWithValue);
@@ -115,7 +118,7 @@ final class Lucene80NormsConsumer extends NormsConsumer {
     if (numBytesPerValue == 0) {
       meta.writeLong(min);
     } else {
-      meta.writeLong(data.getFilePointer());
+      meta.writeLong(data.getFilePointer()); // normsOffset
       values = normsProducer.getNorms(field);
       writeValues(values, numBytesPerValue, data);
     }

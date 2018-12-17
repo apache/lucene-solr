@@ -143,6 +143,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   private void readNumeric(ChecksumIndexInput meta, NumericEntry entry) throws IOException {
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
+    entry.jumpTableEntryCount = meta.readShort();
     entry.numValues = meta.readLong();
     int tableSize = meta.readInt();
     if (tableSize > 256) {
@@ -165,7 +166,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.gcd = meta.readLong();
     entry.valuesOffset = meta.readLong();
     entry.valuesLength = meta.readLong();
-    entry.jumpTableOffset = meta.readLong();
+    entry.valueJumpTableOffset = meta.readLong();
   }
 
   private BinaryEntry readBinary(ChecksumIndexInput meta) throws IOException {
@@ -174,6 +175,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.dataLength = meta.readLong();
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
+    entry.jumpTableEntryCount = meta.readShort();
     entry.numDocsWithField = meta.readInt();
     entry.minLength = meta.readInt();
     entry.maxLength = meta.readInt();
@@ -191,6 +193,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     SortedEntry entry = new SortedEntry();
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
+    entry.jumpTableEntryCount = meta.readShort();
     entry.numDocsWithField = meta.readInt();
     entry.bitsPerValue = meta.readByte();
     entry.ordsOffset = meta.readLong();
@@ -213,6 +216,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
+    entry.jumpTableEntryCount = meta.readShort();
     entry.bitsPerValue = meta.readByte();
     entry.ordsOffset = meta.readLong();
     entry.ordsLength = meta.readLong();
@@ -271,12 +275,13 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     byte bitsPerValue;
     long docsWithFieldOffset;
     long docsWithFieldLength;
+    short jumpTableEntryCount;
     long numValues;
     long minValue;
     long gcd;
     long valuesOffset;
     long valuesLength;
-    long jumpTableOffset; // -1 if no jump-table
+    long valueJumpTableOffset; // -1 if no jump-table
   }
 
   private static class BinaryEntry {
@@ -284,6 +289,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long dataLength;
     long docsWithFieldOffset;
     long docsWithFieldLength;
+    short jumpTableEntryCount;
     int numDocsWithField;
     int minLength;
     int maxLength;
@@ -312,6 +318,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   private static class SortedEntry extends TermsDictEntry {
     long docsWithFieldOffset;
     long docsWithFieldLength;
+    short jumpTableEntryCount;
     int numDocsWithField;
     byte bitsPerValue;
     long ordsOffset;
@@ -322,6 +329,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     SortedEntry singleValueEntry;
     long docsWithFieldOffset;
     long docsWithFieldLength;
+    short jumpTableEntryCount;
     int numDocsWithField;
     byte bitsPerValue;
     long ordsOffset;
@@ -441,7 +449,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         if (entry.blockShift >= 0) {
           // dense but split into blocks of different bits per value
           return new DenseNumericDocValues(maxDoc) {
-            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
+            // It is quite ugly to construct two slices with the same offset & length, but slices cannot be cloned
+            final RandomAccessInput rankSlice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice, rankSlice);
 
             @Override
             public long longValue() throws IOException {
@@ -472,7 +482,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       }
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numValues);
+      final IndexedDISI disi = new IndexedDISI(
+          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numValues);
       if (entry.bitsPerValue == 0) {
         return new SparseNumericDocValues(disi) {
           @Override
@@ -485,7 +496,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         if (entry.blockShift >= 0) {
           // sparse and split into blocks of different bits per value
           return new SparseNumericDocValues(disi) {
-            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
+            // It is quite ugly to construct two slices with the same offset & length, but slices cannot be cloned
+            final RandomAccessInput rankSlice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice, rankSlice);
 
             @Override
             public long longValue() throws IOException {
@@ -530,7 +543,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
       if (entry.blockShift >= 0) {
         return new LongValues() {
-          final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
+          // It is quite ugly to construct two slices with the same offset & length, but slices cannot be cloned
+          final RandomAccessInput rankSlice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+          final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice, rankSlice);
           @Override
           public long get(long index) {
             try {
@@ -690,7 +705,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       }
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(
+          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
       if (entry.minLength == entry.maxLength) {
         // fixed length
         final int length = entry.maxLength;
@@ -791,7 +807,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(
+          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
       return new BaseSortedDocValues(entry, data) {
 
         @Override
@@ -1159,7 +1176,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(
+          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
       return new SortedNumericDocValues() {
 
         boolean set;
@@ -1285,7 +1303,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(
+          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
       return new BaseSortedSetDocValues(entry, data) {
 
         boolean set;
@@ -1349,9 +1368,11 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
    * Reader for longs split into blocks of different bits per values.
    * The longs are requested by index and must be accessed in monotonically increasing order.
    */
-  // Note: The order requirement could be removed as the jump-tables allow for backwards iteration.
+  // Note: The order requirement could be removed as the jump-tables allow for backwards iteration
+  // Note 2: The rankSlice is only used if an advance of > 1 block is called. Its construction could be lazy
   private class VaryingBPVReader {
-    final RandomAccessInput slice;
+    final RandomAccessInput slice; // 2 slices to avoid cache thrashing when using rank
+    final RandomAccessInput rankSlice;
     final NumericEntry entry;
     final int shift;
     final long mul;
@@ -1364,11 +1385,14 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     LongValues values;
 
     VaryingBPVReader(NumericEntry entry) throws IOException {
-      this(entry, data.randomAccessSlice(entry.valuesOffset, entry.valuesLength));
+      this(entry,
+          data.randomAccessSlice(entry.valuesOffset, entry.valuesLength),
+          data.randomAccessSlice(entry.valuesOffset, entry.valuesLength));
     }
-    VaryingBPVReader(NumericEntry entry, RandomAccessInput slice) throws IOException {
+    VaryingBPVReader(NumericEntry entry, RandomAccessInput slice, RandomAccessInput rankSlice) throws IOException {
       this.entry = entry;
       this.slice = slice;
+      this.rankSlice = rankSlice;
       shift = entry.blockShift;
       mul = entry.gcd;
       mask = (1 << shift) - 1;
@@ -1380,8 +1404,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         int bitsPerValue;
         do {
           // If the needed block is the one directly following the current block, it is cheaper to avoid the cache
-          if (entry.jumpTableOffset != -1 && block != this.block+1) {
-            blockEndOffset = slice.readLong(entry.jumpTableOffset+block*Long.BYTES-entry.valuesOffset)-entry.valuesOffset;
+          if (entry.valueJumpTableOffset != -1 && block != this.block+1) {
+            blockEndOffset = rankSlice.readLong(entry.valueJumpTableOffset +block*Long.BYTES-entry.valuesOffset)-
+                entry.valuesOffset;
             this.block = block-1;
           }
           offset = blockEndOffset;

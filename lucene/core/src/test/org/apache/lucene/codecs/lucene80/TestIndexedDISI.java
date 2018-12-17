@@ -73,14 +73,15 @@ public class TestIndexedDISI extends LuceneTestCase {
   private void doTestAllSingleJump(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
     long length;
+    int jumpTableentryCount;
     try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-      IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
       length = out.getFilePointer();
     }
 
     try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
       for (int i = 0; i < set.length(); i++) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
         assertEquals("The bit at " + i + " should be correct", set.get(i), disi.advanceExact(i));
       }
     }
@@ -146,12 +147,13 @@ public class TestIndexedDISI extends LuceneTestCase {
       // we set MAX_ARRAY_LENGTH bits so the encoding will be sparse
       set.set(start, start + IndexedDISI.MAX_ARRAY_LENGTH);
       long length;
+      int jumpTableentryCount;
       try (IndexOutput out = dir.createOutput("sparse", IOContext.DEFAULT)) {
-        IndexedDISI.writeBitSet(new BitSetIterator(set, IndexedDISI.MAX_ARRAY_LENGTH), out);
+        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, IndexedDISI.MAX_ARRAY_LENGTH), out);
         length = out.getFilePointer();
       }
       try (IndexInput in = dir.openInput("sparse", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, IndexedDISI.MAX_ARRAY_LENGTH);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, IndexedDISI.MAX_ARRAY_LENGTH);
         assertEquals(start, disi.nextDoc());
         assertEquals(IndexedDISI.Method.SPARSE, disi.method);
       }
@@ -164,7 +166,7 @@ public class TestIndexedDISI extends LuceneTestCase {
         length = out.getFilePointer();
       }
       try (IndexInput in = dir.openInput("bar", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, IndexedDISI.MAX_ARRAY_LENGTH + 1);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, IndexedDISI.MAX_ARRAY_LENGTH + 1);
         assertEquals(start, disi.nextDoc());
         assertEquals(IndexedDISI.Method.DENSE, disi.method);
       }
@@ -216,14 +218,15 @@ public class TestIndexedDISI extends LuceneTestCase {
 
       final int cardinality = set.cardinality();
       long length;
+      int jumpTableentryCount;
       try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-        IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
         length = out.getFilePointer();
       }
 
       int step = 16000;
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
         assertAdvanceEquality(disi, disi2, step);
       }
@@ -259,20 +262,21 @@ public class TestIndexedDISI extends LuceneTestCase {
   private void doTest(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
     long length;
+    int jumpTableentryCount;
     try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-      IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
       length = out.getFilePointer();
     }
 
     try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-      IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
+      IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
       BitSetIterator disi2 = new BitSetIterator(set, cardinality);
       assertSingleStepEquality(disi, disi2);
     }
 
     for (int step : new int[] {1, 10, 100, 1000, 10000, 100000}) {
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
         assertAdvanceEquality(disi, disi2, step);
       }
@@ -280,7 +284,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
     for (int step : new int[] {10, 100, 1000, 10000, 100000}) {
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
         int disi2length = set.length();
         assertAdvanceExactRandomized(disi, disi2, disi2length, step);

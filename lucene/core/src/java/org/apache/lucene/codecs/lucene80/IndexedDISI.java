@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
@@ -109,9 +110,6 @@ final class IndexedDISI extends DocIdSetIterator {
 
   static final int MAX_ARRAY_LENGTH = (1 << 12) - 1;
 
-  private final long jumpTableOffset; // If -1, the use of jump-table is disabled
-  private final long jumpTableEntryCount;
-
   private static void flush(int block, FixedBitSet buffer, int cardinality, IndexOutput out) throws IOException {
     assert block >= 0 && block < 65536;
     out.writeShort((short) block);
@@ -156,8 +154,9 @@ final class IndexedDISI extends DocIdSetIterator {
    * @param it  the document IDs.
    * @param out destination for the blocks.
    * @throws IOException if there was an error writing to out.
+   * @return the number of jump-table entries following the blocks, -1 for no entries. This should be stored in meta.
    */
-  static void writeBitSet(DocIdSetIterator it, IndexOutput out) throws IOException {
+  static short writeBitSet(DocIdSetIterator it, IndexOutput out) throws IOException {
     final long origo = out.getFilePointer(); // All jumps are relative to the origo
     int totalCardinality = 0;
     int blockCardinality = 0;
@@ -195,7 +194,7 @@ final class IndexedDISI extends DocIdSetIterator {
     buffer.set(DocIdSetIterator.NO_MORE_DOCS & 0xFFFF);
     flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, out);
     // offset+index jump-table stored at the end
-    flushBlockJumps(jumps, lastBlock, out, origo);
+    return flushBlockJumps(jumps, lastBlock, out, origo);
   }
 
   // Adds entries to the offset & index jump-table for blocks
@@ -209,51 +208,66 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   // Flushes the offet & index jump-table for blocks. This should be the last data written to out
-  private static void flushBlockJumps(long[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
+  // This method returns the blockCount for the blocks reachable for the jump_table or -1 for no jump-table
+  private static short flushBlockJumps(long[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
     if (blockCount == 1) { // A single jump is just wasted space so we ignore that
       blockCount = 0;
     }
     for (int i = 0 ; i < blockCount ; i++) {
       out.writeLong(jumps[i]);
     }
-    // The number of blocks are written as the last data in the IndexedDISI structure.
-    // This makes it possible to infer the jumpTableOffset: lastPos - #blocks * Long.BYTES
-    // As there are at most 32k blocks, the count is stored as a short
-    out.writeShort((short) blockCount);
+    // As there are at most 32k blocks, the count is a short
+    // The jumpTableOffset will be at lastPos - (blockCount * Long.BYTES)
+    return (short)blockCount;
   }
 
   /** The slice that stores the {@link DocIdSetIterator}. */
   private final IndexInput slice;
+  private final int jumpTableEntryCount;
+  private final RandomAccessInput jumpTable; // Skip blocks of 64K bits
+  private final RandomAccessInput rankTable; // Skip bits within DENSE blocks. Separate from slice to avoid cache thrashing
   private final long cost;
 
   /**
    * @param in backing data.
    * @param offset starting offset for blocks in backing data.
    * @param length the number of bytes in the backing data.
+   * @param jumpTableEntryCount the number of blocks convered by the jump-table.
    * @param cost normally the number of logical docIDs.
    */
-  IndexedDISI(IndexInput in, long offset, long length, long cost) throws IOException {
-    this(in.slice("docs", offset, length), cost);
+  IndexedDISI(IndexInput in, long offset, long length, int jumpTableEntryCount, long cost) throws IOException {
+    this(in.slice("docs", offset, length), jumpTableEntryCount, cost);
   }
 
   /**
    * This constructor allows to pass the slice directly in case it helps reuse.
    * see eg. Lucene80 norms producer's merge instance.
    * @param slice backing data.
+   * @param jumpTableEntryCount the number of blocks convered by the jump-table.
    * @param cost normally the number of logical docIDs.
    */
-  IndexedDISI(IndexInput slice, long cost) throws IOException {
+  IndexedDISI(IndexInput slice, int jumpTableEntryCount, long cost) throws IOException {
     this.slice = slice;
     this.cost = cost;
+
     origo = slice.getFilePointer();
-    slice.seek(slice.length()-Short.BYTES);
-    jumpTableEntryCount = slice.readShort();
-    jumpTableOffset = jumpTableEntryCount <= 1 ? -1 :
-        slice.getFilePointer()-Short.BYTES-jumpTableEntryCount*Long.BYTES;
-    slice.seek(origo);
+    this.jumpTableEntryCount = jumpTableEntryCount;
+    //slice.seek(slice.length()-Short.BYTES);
+    if (jumpTableEntryCount <= 0) {
+      jumpTable = null;
+    } else {
+      long jumpTableOffset = slice.length()-jumpTableEntryCount*Long.BYTES;
+      jumpTable = slice.randomAccessSlice(jumpTableOffset, slice.length()-jumpTableOffset);
+    }
+    rankTable = slice.randomAccessSlice(0, slice.length());
+    // TODO LUCENE-8585: Remove the out-commented lines when unit tests passes
+    //jumpTableEntryCount = slice.readShort();
+    //jumpTableOffset = jumpTableEntryCount <= 1 ? -1 :
+    //    slice.getFilePointer()-Short.BYTES-jumpTableEntryCount*Long.BYTES;
+    //slice.seek(origo);
   }
 
-  private final long origo;
+  private final long origo; // Needed by jump-tables to compensate for different starting offsets
   private int block = -1;
   private long blockEnd;
   private long rankOrigoOffset = -1; // Only used for DENSE blocks
@@ -312,10 +326,12 @@ final class IndexedDISI extends DocIdSetIterator {
   private void advanceBlock(int targetBlock) throws IOException {
     final int blockIndex = targetBlock >> 16;
     // If the destination block is 2 blocks or more ahead, we use the jump-table.
-    if (jumpTableOffset != -1L && blockIndex >= (block >> 16)+2 && blockIndex < jumpTableEntryCount) {
+    if (jumpTable != null && blockIndex >= (block >> 16)+2 && blockIndex < jumpTableEntryCount) {
+      // TODO LUCENE-8585: Remove out-commented lines when unit test passes
       // jumpTableOffset is calculated based on the given slice, so origo should not be added when seeking
-      slice.seek(jumpTableOffset + Long.BYTES * blockIndex);
-      final long jumpEntry = slice.readLong();
+      //slice.seek(jumpTableOffset + Long.BYTES * blockIndex);
+      final long jumpEntry = jumpTable.readLong(blockIndex*Long.BYTES);
+      //slice.readLong();
 
       // Entries in the jumpTableOffset are calculated upon build, so origo should be added to get the correct offset
       final long offset = origo+jumpEntry & BLOCK_LOOKUP_MASK;
@@ -520,8 +536,14 @@ final class IndexedDISI extends DocIdSetIterator {
     // Resolve the rank as close to targetInBlock as possible (maximum distance is 8 longs)
     // Note: rankOrigoOffset is tracked on block open, so it is absolute (e.g. don't add origo)
     final int rankIndex = targetInBlock >> RANK_BLOCK_BITS; // 8 longs: 2^3 * 2^6 = 512
-    disi.slice.seek(disi.rankOrigoOffset + rankIndex*Short.BYTES);
-    final int rank = disi.denseOrigoIndex + (disi.slice.readShort() & 0xFFFF);
+    // TODO LUCENE-8585: Remove when unit tests passes
+
+    // disi.slice.seek(disi.rankOrigoOffset + rankIndex*Short.BYTES);
+    // final int rank = disi.denseOrigoIndex + (disi.slice.readShort() & 0xFFFF);
+
+    final int rank = disi.denseOrigoIndex + (
+        disi.rankTable.readShort(disi.rankOrigoOffset + rankIndex*Short.BYTES)
+            & 0xFFFF);
 
     // Position the counting logic just after the rank point
     final int rankAlignedWordIndex = rankIndex << RANK_BLOCK_BITS >> 6;
