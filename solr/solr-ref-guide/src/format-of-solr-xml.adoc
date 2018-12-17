@@ -174,9 +174,6 @@ The URL scheme to be used in distributed search.
 `maxConnectionsPerHost`::
 Maximum connections allowed per host. Defaults to `100000`.
 
-`maxConnections`::
-Maximum total connections allowed. Defaults to `100000`.
-
 `corePoolSize`::
 The initial core size of the threadpool servicing requests. Default is `0`.
 

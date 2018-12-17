@@ -35,7 +35,7 @@ public final class BytesRefArray implements SortableBytesRefArray {
   private int lastElement = 0;
   private int currentOffset = 0;
   private final Counter bytesUsed;
-  
+
   /**
    * Creates a new {@link BytesRefArray} with a counter to track allocated bytes
    */
@@ -190,7 +190,6 @@ public final class BytesRefArray implements SortableBytesRefArray {
     final int[] indices = comp == null ? null : sort(comp);
     return new BytesRefIterator() {
       int pos = 0;
-      
       @Override
       public BytesRef next() {
         if (pos < size) {

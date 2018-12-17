@@ -456,7 +456,7 @@ public class ZkTestServer {
   }
 
   public String getZkHost() {
-    return "localhost:" + zkServer.getLocalPort();
+    return "127.0.0.1:" + zkServer.getLocalPort();
   }
 
   public String getZkAddress() {
@@ -471,7 +471,7 @@ public class ZkTestServer {
   public String getZkAddress(String chroot) {
     if (!chroot.startsWith("/"))
       chroot = "/" + chroot;
-    return "localhost:" + zkServer.getLocalPort() + chroot;
+    return "127.0.0.1:" + zkServer.getLocalPort() + chroot;
   }
 
   /**

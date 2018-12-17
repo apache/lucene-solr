@@ -235,7 +235,7 @@ solrAdminServices.factory('System',
            for (key in params) {
                if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
-                       qs.push(key + "=" + params[key][i]);
+                       qs.push(key + "=" + encodeURIComponent(params[key][i]));
                    }
                }
            }
@@ -262,4 +262,26 @@ solrAdminServices.factory('System',
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"}
      })
-}]);
+}])
+.factory('AuthenticationService',
+    ['base64', function (base64) {
+        var service = {};
+
+        service.SetCredentials = function (username, password) {
+          var authdata = base64.encode(username + ':' + password);
+
+          sessionStorage.setItem("auth.header", "Basic " + authdata);
+          sessionStorage.setItem("auth.username", username);
+        };
+
+        service.ClearCredentials = function () {
+          sessionStorage.removeItem("auth.header");
+          sessionStorage.removeItem("auth.scheme");
+          sessionStorage.removeItem("auth.realm");
+          sessionStorage.removeItem("auth.username");
+          sessionStorage.removeItem("auth.wwwAuthHeader");
+          sessionStorage.removeItem("auth.statusText");
+        };
+
+        return service;
+      }]);

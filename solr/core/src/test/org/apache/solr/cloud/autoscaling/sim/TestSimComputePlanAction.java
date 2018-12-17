@@ -52,7 +52,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,14 +72,9 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(1, TimeSource.get("simTime:50"));
-  }
-
   @Before
   public void init() throws Exception {
-
+    configureCluster(1, TimeSource.get("simTime:50"));
     fired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     actionContextPropsRef.set(null);
@@ -118,7 +112,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     for (String coll: cluster.getSimClusterStateProvider().simListCollections()) {
       log.info("* Collection " + coll + " state: " + state.getCollection(coll));
     }
-
+    shutdownCluster();
   }
 
   @Test

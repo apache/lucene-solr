@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSource;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
@@ -89,7 +88,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
         @Override
         public void run() {
           log.info("Running {} in {}", this.getName(), Thread.currentThread().getName());
-          timestamps.offer(timeSource.getTimeNs());
+          timestamps.offer(solrCloudManager.getTimeSource().getTimeNs());
         }
       };
 

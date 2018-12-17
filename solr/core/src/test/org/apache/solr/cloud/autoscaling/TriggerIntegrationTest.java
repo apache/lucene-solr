@@ -78,9 +78,6 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   public static volatile long eventQueueActionWait = 5000;
   private static SolrCloudManager cloudManager;
 
-  // use the same time source as triggers use
-  static final TimeSource timeSource = TimeSource.CURRENT_TIME;
-
   static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
 
   @BeforeClass
@@ -292,7 +289,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         return;
       }
       try {
-        long currentTime = timeSource.getTimeNs();
+        long currentTime = actionContext.getCloudManager().getTimeSource().getTimeNs();
         if (lastActionExecutedAt.get() != 0)  {
           long minDiff = TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS);
           log.info("last action at " + lastActionExecutedAt.get() + " current time = " + currentTime +
@@ -378,7 +375,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -501,10 +498,12 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   static boolean failDummyAction = false;
 
   public static class TestTriggerListener extends TriggerListenerBase {
+    private TimeSource timeSource;
     @Override
     public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
       super.configure(loader, cloudManager, config);
       listenerCreated.countDown();
+      timeSource = cloudManager.getTimeSource();
     }
 
     @Override
@@ -512,6 +511,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
+                                           
       lst.add(ev);
       allListenerEvents.add(ev);
     }

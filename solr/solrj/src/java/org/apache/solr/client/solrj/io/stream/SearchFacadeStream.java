@@ -48,6 +48,12 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
   public SearchFacadeStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
+
+    //Handle comma delimited list of collections.
+    if(collectionName.indexOf('"') > -1) {
+      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+    }
+
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 

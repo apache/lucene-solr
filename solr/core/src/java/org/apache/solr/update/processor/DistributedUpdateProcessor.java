@@ -43,7 +43,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -119,7 +118,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * Request forwarded to a leader of a different shard will be retried up to this amount of times by default
    */
   static final int MAX_RETRIES_ON_FORWARD_DEAULT = Integer.getInteger("solr.retries.on.forward",  25);
-  
   /**
    * Requests from leader to it's followers will be retried this amount of times by default
    */
@@ -153,7 +151,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   // used to assert we don't call finish more than once, see finish()
   private boolean finished = false;
-  
+
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
   private final UpdateRequestProcessor next;
@@ -168,9 +166,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private NamedList<Object> deleteResponse = null;
   private NamedList<Object> deleteByQueryResponse = null;
   private CharsRefBuilder scratch;
-  
+
   private final SchemaField idField;
-  
+
   private SolrCmdDistributor cmdDistrib;
 
   private final boolean zkEnabled;
@@ -178,7 +176,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final CloudDescriptor cloudDesc;
   private final String collection;
   private final ZkController zkController;
-  
+
   // these are setup at the start of each request processing
   // method in this update processor
   private boolean isLeader = true;
@@ -187,7 +185,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
-  
+
   /**
    * Number of times requests forwarded to some other shard's leader can be retried
    */
@@ -198,7 +196,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
-    
+
   //used for keeping track of replicas that have processed an add/update from the leader
   private RollupRequestReplicationTracker rollupReplicationTracker = null;
   private LeaderRequestReplicationTracker leaderReplicationTracker = null;
@@ -234,7 +232,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
     this.req = req;
-    
+
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
@@ -248,7 +246,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    
+
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
       replicaType = cloudDesc.getReplicaType();
@@ -617,6 +615,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           solrExc.setMetadata("cause", "LeaderChanged");
           throw solrExc;
         }
+      }
+    }
+
+    int count = 0;
+    while (((isLeader && !localIsLeader) || (isSubShardLeader && !localIsLeader)) && count < 5) {
+      count++;
+      // re-getting localIsLeader since we published to ZK first before setting localIsLeader value
+      localIsLeader = cloudDesc.isLeader();
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
 
@@ -1343,10 +1353,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       leaderUrl = leader.getCoreUrl();
     }
 
-    NamedList<Object> rsp = null;
-    try (HttpSolrClient hsc = new HttpSolrClient.Builder(leaderUrl).
-        withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build()) {
-      rsp = hsc.request(ur);
+    NamedList<Object> rsp;
+    try {
+      ur.setBasePath(leaderUrl);
+      rsp = updateShardHandler.getUpdateOnlyHttpClient().request(ur);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error during fetching [" + id +
           "] from leader (" + leaderUrl + "): ", e);

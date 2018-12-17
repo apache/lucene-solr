@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -44,6 +45,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -52,6 +54,10 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -271,16 +277,43 @@ public class JettySolrRunner {
       // talking to that server, but for the purposes of testing that should 
       // be good enough
       final SslContextFactory sslcontext = SSLConfig.createContextFactory(config.sslConfig);
-      
+
+      HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector;
       if (sslcontext != null) {
-        HttpConfiguration configuration = new HttpConfiguration();
         configuration.setSecureScheme("https");
         configuration.addCustomizer(new SecureRequestCustomizer());
-        connector = new ServerConnector(server, new SslConnectionFactory(sslcontext, "http/1.1"),
-            new HttpConnectionFactory(configuration));
+        HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
+
+        if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
+          connector = new ServerConnector(server, new SslConnectionFactory(sslcontext,
+              http1ConnectionFactory.getProtocol()),
+              http1ConnectionFactory);
+        } else {
+          sslcontext.setCipherComparator(HTTP2Cipher.COMPARATOR);
+
+          connector = new ServerConnector(server);
+          SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslcontext, "alpn");
+          connector.addConnectionFactory(sslConnectionFactory);
+          connector.setDefaultProtocol(sslConnectionFactory.getProtocol());
+
+          HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
+
+          ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
+              http2ConnectionFactory.getProtocol(),
+              http1ConnectionFactory.getProtocol());
+          alpn.setDefaultProtocol(http1ConnectionFactory.getProtocol());
+          connector.addConnectionFactory(alpn);
+          connector.addConnectionFactory(http1ConnectionFactory);
+          connector.addConnectionFactory(http2ConnectionFactory);
+        }
       } else {
-        connector = new ServerConnector(server, new HttpConnectionFactory());
+        if (config.onlyHttp1) {
+          connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
+        } else {
+          connector = new ServerConnector(server, new HttpConnectionFactory(configuration),
+              new HTTP2CServerConnectionFactory(configuration));
+        }
       }
 
       connector.setReuseAddress(true);
@@ -292,7 +325,8 @@ public class JettySolrRunner {
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
-      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
+      HttpConfiguration configuration = new HttpConfiguration();
+      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
       connector.setPort(port);
       connector.setSoLingerTime(-1);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
@@ -495,7 +529,7 @@ public class JettySolrRunner {
     }
     ServerConnector c = (ServerConnector) conns[0];
 
-    protocol = c.getDefaultProtocol().startsWith("SSL") ? "https" : "http";
+    protocol = c.getDefaultProtocol().toLowerCase(Locale.ROOT).startsWith("ssl") ? "https" : "http";
 
     this.protocol = protocol;
     this.host = c.getHost();

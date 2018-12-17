@@ -171,7 +171,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     cluster.waitForNode(j1, 30);
     cluster.waitForNode(j2, 30);
     
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       Replica newLeader = getCollectionState(collection).getSlice("shard1").getLeader();
       if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
@@ -213,7 +213,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState)
         -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       Replica newLeader = getCollectionState(collection).getLeader("shard1");
       if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {

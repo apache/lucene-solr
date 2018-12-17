@@ -100,6 +100,11 @@ public class FacetStream extends TupleStream implements Expressible  {
   public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException{   
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
+
+    if(collectionName.indexOf('"') > -1) {
+      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+    }
+
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter bucketExpression = factory.getNamedOperand(expression, "buckets");
     StreamExpressionNamedParameter bucketSortExpression = factory.getNamedOperand(expression, "bucketSorts");
@@ -378,7 +383,11 @@ public class FacetStream extends TupleStream implements Expressible  {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
     
     // parameters
 

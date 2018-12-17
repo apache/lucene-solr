@@ -241,16 +241,16 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     DirectoryReader reader = writer.getReader();
     assertEquals(0, reader.numDocs());
     assertEquals(3, reader.maxDoc());
-    assertEquals(0, writer.numDocs());
-    assertEquals(3, writer.maxDoc());
+    assertEquals(0, writer.getDocStats().numDocs);
+    assertEquals(3, writer.getDocStats().maxDoc);
     assertEquals(3, reader.leaves().size());
     reader.close();
     writer.forceMerge(1);
     reader = writer.getReader();
     assertEquals(0, reader.numDocs());
     assertEquals(3, reader.maxDoc());
-    assertEquals(0, writer.numDocs());
-    assertEquals(3, writer.maxDoc());
+    assertEquals(0, writer.getDocStats().numDocs);
+    assertEquals(3, writer.getDocStats().maxDoc);
     assertEquals(1, reader.leaves().size());
     IOUtils.close(reader, writer, dir);
   }
@@ -395,8 +395,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     // when calling forceMergeDeletes.
     writer.forceMergeDeletes(true);
     assertEquals(1, writer.listOfSegmentCommitInfos().size());
-    assertEquals(1, writer.numDocs());
-    assertEquals(1, writer.maxDoc());
+    assertEquals(1, writer.getDocStats().numDocs);
+    assertEquals(1, writer.getDocStats().maxDoc);
     writer.close();
     dir.close();
   }
@@ -538,8 +538,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       }
     });
     writer.forceMerge(1);
-    assertEquals(2, writer.numDocs());
-    assertEquals(2, writer.maxDoc());
+    assertEquals(2, writer.getDocStats().numDocs);
+    assertEquals(2, writer.getDocStats().maxDoc);
     assertFalse(delete.get());
     IOUtils.close(reader, writer, dir);
   }
@@ -700,8 +700,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     writer.softUpdateDocument(new Term("id", "bar-1"), d, new NumericDocValuesField("soft_deletes", 1));
 
     writer.forceMerge(1);
-    assertEquals(2, writer.numDocs()); // foo-2, bar-2
-    assertEquals(3, writer.maxDoc());  // foo-1, foo-2, bar-2
+    assertEquals(2, writer.getDocStats().numDocs); // foo-2, bar-2
+    assertEquals(3, writer.getDocStats().maxDoc);  // foo-1, foo-2, bar-2
     IOUtils.close(writer, dir);
   }
 
