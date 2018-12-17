@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.BooleanQuery;
 
 /**
@@ -164,7 +164,7 @@ public final class MoreLikeThisParameters {
   public String[] getFieldNamesOrInit(IndexReader ir) {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
+      Collection<String> fields = FieldInfos.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
     return fieldNames;
