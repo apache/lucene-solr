@@ -18,6 +18,7 @@ package org.apache.solr.common.params;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
+import org.junit.Test;
 
 /**
  * This class tests backwards compatibility of {@link ShardParams} parameter constants.
@@ -49,7 +50,8 @@ public class ShardParamsTest extends LuceneTestCase
   public void testRoute() { assertEquals(ShardParams._ROUTE_, "_route_"); }
   
   public void testDistribSinglePass() { assertEquals(ShardParams.DISTRIB_SINGLE_PASS, "distrib.singlePass"); }
-  
+
+  @Test
   public void testGetShardsTolerantAsBool() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     // shards.tolerant param is not set; default should be false
@@ -74,6 +76,6 @@ public class ShardParamsTest extends LuceneTestCase
     // values that aren't "requireZkConnected" or boolean should throw an exception
     params.set(ShardParams.SHARDS_TOLERANT, "bogusValue");
     Exception exception = expectThrows(SolrException.class, () -> ShardParams.getShardsTolerantAsBool(params));
-    assertTrue(exception.getMessage().startsWith("invalid boolean value: "));
+    assertTrue(exception.getMessage(), exception.getMessage().startsWith("invalid boolean value: "));
   }
 }

@@ -20,7 +20,6 @@
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/phonetic/phonetic.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/smartcn/smartcn.iml" />
       <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/stempel/stempel.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/uima/analysis-uima.iml" />
 
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/src/benchmark.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/conf/benchmark-conf.iml" />
@@ -59,7 +58,6 @@
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/langid/langid.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/ltr/ltr.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/prometheus-exporter/prometheus-exporter.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
     </modules>
   </component>

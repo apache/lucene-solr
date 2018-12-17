@@ -105,7 +105,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
     System.setProperty("authenticationPlugin", "org.apache.solr.security.KerberosPlugin");
     boolean enableDt = random().nextBoolean();
     log.info("Enable delegation token: " + enableDt);
-    System.setProperty("solr.kerberos.delegation.token.enabled", new Boolean(enableDt).toString());
+    System.setProperty("solr.kerberos.delegation.token.enabled", Boolean.toString(enableDt));
     // Extracts 127.0.0.1 from HTTP/127.0.0.1@EXAMPLE.COM
     System.setProperty("solr.kerberos.name.rules", "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
         + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
@@ -120,7 +120,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //2018-06-18 (commented)  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBasics() throws Exception {
     testCollectionCreateSearchDelete();
     // sometimes run a second test e.g. to test collection create-delete-create scenario

@@ -81,6 +81,8 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testMetricTrigger() throws Exception {
     cluster.waitForAllNodes(5);
 
@@ -177,11 +179,11 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
         "'event' : 'metric'," +
         "'waitFor' : '" + waitForSeconds + "s'," +
         "'enabled' : true," +
-        "'metric': '" + tag + "'" +
+        "'metric': '" + tag + "'," +
         "'above' : 100.0," +
-        "'collection': '" + collectionName + "'" +
-        "'shard':'" + shardId + "'" +
-        "'preferredOperation':'addreplica'" +
+        "'collection': '" + collectionName + "'," +
+        "'shard':'" + shardId + "'," +
+        "'preferredOperation':'addreplica'," +
         "'actions' : [" +
         "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +

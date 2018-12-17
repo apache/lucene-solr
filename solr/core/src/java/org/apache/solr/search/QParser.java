@@ -16,6 +16,12 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -23,8 +29,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
-
-import java.util.*;
 
 /**
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
@@ -244,16 +248,16 @@ public abstract class QParser {
     getQuery(); // ensure query is parsed first
 
     String sortStr = null;
-    String startS = null;
-    String rowsS = null;
+    Integer start = null;
+    Integer rows = null;
 
     if (localParams != null) {
       sortStr = localParams.get(CommonParams.SORT);
-      startS = localParams.get(CommonParams.START);
-      rowsS = localParams.get(CommonParams.ROWS);
+      start = localParams.getInt(CommonParams.START);
+      rows = localParams.getInt(CommonParams.ROWS);
 
       // if any of these parameters are present, don't go back to the global params
-      if (sortStr != null || startS != null || rowsS != null) {
+      if (sortStr != null || start != null || rows != null) {
         useGlobalParams = false;
       }
     }
@@ -262,16 +266,16 @@ public abstract class QParser {
       if (sortStr ==null) {
           sortStr = params.get(CommonParams.SORT);
       }
-      if (startS==null) {
-        startS = params.get(CommonParams.START);
+      if (start == null) {
+        start = params.getInt(CommonParams.START);
       }
-      if (rowsS==null) {
-        rowsS = params.get(CommonParams.ROWS);
+      if (rows == null) {
+        rows = params.getInt(CommonParams.ROWS);
       }
     }
 
-    int start = startS != null ? Integer.parseInt(startS) : CommonParams.START_DEFAULT;
-    int rows = rowsS != null ? Integer.parseInt(rowsS) : CommonParams.ROWS_DEFAULT;
+    start = start != null ? start : CommonParams.START_DEFAULT;
+    rows = rows != null ? rows : CommonParams.ROWS_DEFAULT;
 
     SortSpec sort = SortSpecParsing.parseSortSpec(sortStr, req);
 

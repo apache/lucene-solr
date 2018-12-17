@@ -28,8 +28,6 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LegacySortedSetDocValues;
-import org.apache.lucene.index.LegacySortedSetDocValuesWrapper;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -756,24 +754,27 @@ public class DocTermOrds implements Accountable {
     if (isEmpty()) {
       return DocValues.emptySortedSet();
     } else {
-      return new LegacySortedSetDocValuesWrapper(new Iterator(reader), reader.maxDoc());
+      return new Iterator(reader);
     }
   }
   
-  private class Iterator extends LegacySortedSetDocValues {
+  private class Iterator extends SortedSetDocValues {
     final LeafReader reader;
     final TermsEnum te;  // used internally for lookupOrd() and lookupTerm()
+    final int maxDoc;
     // currently we read 5 at a time (using the logic of the old iterator)
     final int buffer[] = new int[5];
     int bufferUpto;
     int bufferLength;
     
+    private int doc = -1;
     private int tnum;
     private int upto;
     private byte[] arr;
     
     Iterator(LeafReader reader) throws IOException {
       this.reader = reader;
+      this.maxDoc = reader.maxDoc();
       this.te = termsEnum();
     }
     
@@ -835,8 +836,8 @@ public class DocTermOrds implements Accountable {
       return bufferUpto;
     }
 
-    @Override
-    public void setDocument(int docID) {
+    private void setDocument(int docID) {
+      this.doc = docID;
       tnum = 0;
       final int code = index[docID];
       if ((code & 0x80000000) != 0) {
@@ -852,6 +853,37 @@ public class DocTermOrds implements Accountable {
       }
       bufferUpto = 0;
       bufferLength = read(buffer);
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      setDocument(target);
+      return bufferLength > 0;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(docID() + 1);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      for (int d = target; d < maxDoc; ++d) {
+        if (advanceExact(d)) {
+          return d;
+        }
+      }
+      return doc = NO_MORE_DOCS;
+    }
+
+    @Override
+    public long cost() {
+      return maxDoc;
     }
 
     @Override

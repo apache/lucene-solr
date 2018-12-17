@@ -46,8 +46,8 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -369,7 +369,7 @@ public class UnifiedHighlighter {
       synchronized (this) {
         fieldInfos = this.fieldInfos;
         if (fieldInfos == null) {
-          fieldInfos = MultiFields.getMergedFieldInfos(searcher.getIndexReader());
+          fieldInfos = FieldInfos.getMergedFieldInfos(searcher.getIndexReader());
           this.fieldInfos = fieldInfos;
         }
 
@@ -623,11 +623,20 @@ public class UnifiedHighlighter {
                   && indexReaderWithTermVecCache != null)
                   ? indexReaderWithTermVecCache
                   : searcher.getIndexReader();
+          final LeafReader leafReader;
+          if (indexReader instanceof LeafReader) {
+            leafReader = (LeafReader) indexReader;
+          } else {
+            List<LeafReaderContext> leaves = indexReader.leaves();
+            LeafReaderContext leafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
+            leafReader = leafReaderContext.reader();
+            docId -= leafReaderContext.docBase; // adjust 'doc' to be within this leaf reader
+          }
           int docInIndex = docInIndexes[docIdx];//original input order
           assert resultByDocIn[docInIndex] == null;
           resultByDocIn[docInIndex] =
               fieldHighlighter
-                  .highlightFieldForDoc(indexReader, docId, content.toString());
+                  .highlightFieldForDoc(leafReader, docId, content.toString());
         }
 
       }
@@ -742,13 +751,15 @@ public class UnifiedHighlighter {
   }
 
   protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
-    BytesRef[] terms = filterExtractedTerms(getFieldMatcher(field), allTerms);
+    Predicate<String> fieldMatcher = getFieldMatcher(field);
+    BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
     Set<HighlightFlag> highlightFlags = getFlags(field);
     PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
     CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
     OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
+    UHComponents components = new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, highlightFlags);
     return new FieldHighlighter(field,
-        getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags),
+        getOffsetStrategy(offsetSource, components),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
         getScorer(field),
         maxPassages,
@@ -782,16 +793,30 @@ public class UnifiedHighlighter {
   }
 
   protected PhraseHelper getPhraseHelper(String field, Query query, Set<HighlightFlag> highlightFlags) {
+    boolean useWeightMatchesIter = highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES);
+    if (useWeightMatchesIter) {
+      return PhraseHelper.NONE; // will be handled by Weight.matches which always considers phrases
+    }
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
     return highlightPhrasesStrictly ?
         new PhraseHelper(query, field, getFieldMatcher(field),
-            this::requiresRewrite, this::preSpanQueryRewrite, !handleMultiTermQuery) : PhraseHelper.NONE;
+            this::requiresRewrite,
+            this::preSpanQueryRewrite,
+            !handleMultiTermQuery
+        )
+        : PhraseHelper.NONE;
   }
 
   protected CharacterRunAutomaton[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
+    // do we "eagerly" look in span queries for automata here, or do we not and let PhraseHelper handle those?
+    // if don't highlight phrases strictly,
+    final boolean lookInSpan =
+        !highlightFlags.contains(HighlightFlag.PHRASES) // no PhraseHelper
+        || highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES); // Weight.Matches will find all
+
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), !highlightFlags.contains(HighlightFlag.PHRASES), this::preMultiTermQueryRewrite)
+        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan, this::preMultiTermQueryRewrite)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
@@ -829,27 +854,25 @@ public class UnifiedHighlighter {
     return offsetSource;
   }
 
-  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms,
-                                                  PhraseHelper phraseHelper, CharacterRunAutomaton[] automata,
-                                                  Set<HighlightFlag> highlightFlags) {
+  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, UHComponents components) {
     switch (offsetSource) {
       case ANALYSIS:
-        if (!phraseHelper.hasPositionSensitivity() &&
-            !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED)) {
+        if (!components.getPhraseHelper().hasPositionSensitivity() &&
+            !components.getHighlightFlags().contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED) &&
+            !components.getHighlightFlags().contains(HighlightFlag.WEIGHT_MATCHES)) {
           //skip using a memory index since it's pure term filtering
-          return new TokenStreamOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+          return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {
-          return new MemoryIndexOffsetStrategy(field, getFieldMatcher(field), terms, phraseHelper, automata, getIndexAnalyzer(),
-              this::preMultiTermQueryRewrite);
+          return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer(), this::preMultiTermQueryRewrite);
         }
       case NONE_NEEDED:
         return NoOpOffsetStrategy.INSTANCE;
       case TERM_VECTORS:
-        return new TermVectorOffsetStrategy(field, terms, phraseHelper, automata);
+        return new TermVectorOffsetStrategy(components);
       case POSTINGS:
-        return new PostingsOffsetStrategy(field, terms, phraseHelper, automata);
+        return new PostingsOffsetStrategy(components);
       case POSTINGS_WITH_TERM_VECTORS:
-        return new PostingsWithTermVectorsOffsetStrategy(field, terms, phraseHelper, automata);
+        return new PostingsWithTermVectorsOffsetStrategy(components);
       default:
         throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
     }
@@ -1088,10 +1111,23 @@ public class UnifiedHighlighter {
    * Flags for controlling highlighting behavior.
    */
   public enum HighlightFlag {
+    /** @see UnifiedHighlighter#setHighlightPhrasesStrictly(boolean) */
     PHRASES,
+
+    /** @see UnifiedHighlighter#setHandleMultiTermQuery(boolean) */
     MULTI_TERM_QUERY,
-    PASSAGE_RELEVANCY_OVER_SPEED
-    // TODO: ignoreQueryFields
+
+    /** Passage relevancy is more important than speed.  True by default. */
+    PASSAGE_RELEVANCY_OVER_SPEED,
+
+    /**
+     * Internally use the {@link Weight#matches(LeafReaderContext, int)} API for highlighting.
+     * It's more accurate to the query, though might not calculate passage relevancy as well.
+     * Use of this flag requires {@link #MULTI_TERM_QUERY} and {@link #PHRASES}.
+     * {@link #PASSAGE_RELEVANCY_OVER_SPEED} will be ignored.  False by default.
+     */
+    WEIGHT_MATCHES
+
     // TODO: useQueryBoosts
   }
 }

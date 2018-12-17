@@ -53,7 +53,7 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
 
     @Override
     public void sleep(long ms) throws InterruptedException {
-      throw new UnsupportedOperationException();
+      TimeSource.NANO_TIME.sleep(ms);
     }
 
     @Override

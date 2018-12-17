@@ -932,6 +932,10 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   private static boolean isPunctuation(char ch) {
+    // special case for Hangul Letter Araea (interpunct)
+    if (ch == 0x318D) {
+      return true;
+    }
     switch(Character.getType(ch)) {
       case Character.SPACE_SEPARATOR:
       case Character.LINE_SEPARATOR:

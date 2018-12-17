@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.icu.tokenattributes.ScriptAttribute;
 
 import com.ibm.icu.lang.UScript;
+import com.ibm.icu.text.UnicodeSet;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -316,6 +317,20 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
         new String[] { "<EMOJI>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<EMOJI>" });
   }
   
+  public void testEmojiFromTheFuture() throws Exception {
+    // pick an unassigned character with extended_pictographic
+    int ch = new UnicodeSet("[[:Extended_Pictographic:]&[:Unassigned:]]").getRangeStart(0);
+    String value = new String(Character.toChars(ch));
+    // should analyze to emoji type
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, value,
+        new String[] { value },
+        new String[] { "<EMOJI>" });
+    // shouldn't break in a sequence
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, value + '\u200D' + value,
+        new String[] { value + '\u200D' + value  },
+        new String[] { "<EMOJI>" });
+  }
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);

@@ -146,7 +146,7 @@ public class TestSortRandom extends LuceneTestCase {
       }
       final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
       final RandomQuery f = new RandomQuery(random.nextLong(), random.nextFloat(), docValues);
-      hits = s.search(f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+      hits = s.search(f, hitCount, sort, false);
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
@@ -247,7 +247,7 @@ public class TestSortRandom extends LuceneTestCase {
             }
           }
 
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override

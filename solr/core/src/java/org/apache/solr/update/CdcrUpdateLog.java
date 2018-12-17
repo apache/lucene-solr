@@ -608,7 +608,7 @@ public class CdcrUpdateLog extends UpdateLog {
         tlogs.removeLast();
         currentTlog = tlogs.peekLast();
       }
-      assert this.tlogs.peekLast().id == subReader.tlogs.peekLast().id;
+      assert this.tlogs.peekLast().id == subReader.tlogs.peekLast().id : this.tlogs.peekLast().id+" != "+subReader.tlogs.peekLast().id;
       this.pointer.set(currentTlog.tlogFile);
       this.lastPositionInTLog = subReader.lastPositionInTLog;
       this.numRecordsReadInCurrentTlog = subReader.numRecordsReadInCurrentTlog;

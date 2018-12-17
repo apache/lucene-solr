@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -167,7 +167,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
     
     // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
+    StreamExpression expression = new StreamExpression("search");
     
     // collection
     expression.addParameter(collection);
@@ -206,7 +206,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
     
-    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setFunctionName("search");
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
     explanation.setExpression(toExpression(factory).toString());
@@ -226,7 +226,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return explanation;
   }
 
-  protected void init(String collectionName, String zkHost, SolrParams params) throws IOException {
+  void init(String collectionName, String zkHost, SolrParams params) throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
@@ -325,7 +325,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  public static Collection<Slice> getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
+  public static Slice[] getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
     ClusterState clusterState = zkStateReader.getClusterState();
 
     Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
@@ -341,16 +341,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     List<Slice> slices = collections.stream()
         .map(collectionsMap::get)
         .filter(Objects::nonNull)
-        .flatMap(docCol -> docCol.getActiveSlices().stream())
+        .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
         .collect(Collectors.toList());
     if (!slices.isEmpty()) {
-      return slices;
+      return slices.toArray(new Slice[slices.size()]);
     }
 
     // Check collection case insensitive
     for(String collectionMapKey : collectionsMap.keySet()) {
       if(collectionMapKey.equalsIgnoreCase(collectionName)) {
-        return collectionsMap.get(collectionMapKey).getActiveSlices();
+        return collectionsMap.get(collectionMapKey).getActiveSlicesArr();
       }
     }
 

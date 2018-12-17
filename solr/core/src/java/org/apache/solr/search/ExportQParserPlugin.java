@@ -25,11 +25,12 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
@@ -146,7 +147,7 @@ public class ExportQParserPlugin extends QParserPlugin {
       return new LeafCollector() {
         
         @Override
-        public void setScorer(Scorer scorer) throws IOException {}
+        public void setScorer(Scorable scorer) throws IOException {}
         
         @Override
         public void collect(int docId) throws IOException{
@@ -180,7 +181,7 @@ public class ExportQParserPlugin extends QParserPlugin {
 
       ScoreDoc[] scoreDocs = getScoreDocs(howMany);
       assert scoreDocs.length <= totalHits;
-      return new TopDocs(totalHits, scoreDocs, 0.0f);
+      return new TopDocs(new TotalHits(totalHits, totalHitsRelation), scoreDocs);
     }
 
     @Override

@@ -57,6 +57,7 @@ import org.junit.Test;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+//Commented  4-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   private static final String SOLR_HDFS_HOME = "solr.hdfs.home";
   private static final String SOLR_HDFS_BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";

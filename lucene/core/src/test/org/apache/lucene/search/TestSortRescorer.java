@@ -84,7 +84,7 @@ public class TestSortRescorer extends LuceneTestCase {
 
     // Just first pass query
     TopDocs hits = searcher.search(query, 10);
-    assertEquals(3, hits.totalHits);
+    assertEquals(3, hits.totalHits.value);
     assertEquals("3", r.document(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
     assertEquals("2", r.document(hits.scoreDocs[2].doc).get("id"));
@@ -93,7 +93,7 @@ public class TestSortRescorer extends LuceneTestCase {
     Sort sort = new Sort(new SortField("popularity", SortField.Type.INT, true));
     Rescorer rescorer = new SortRescorer(sort);
     hits = rescorer.rescore(searcher, hits, 10);
-    assertEquals(3, hits.totalHits);
+    assertEquals(3, hits.totalHits.value);
     assertEquals("2", r.document(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
     assertEquals("3", r.document(hits.scoreDocs[2].doc).get("id"));
@@ -119,7 +119,7 @@ public class TestSortRescorer extends LuceneTestCase {
 
     // Just first pass query
     TopDocs hits = searcher.search(query, 10);
-    assertEquals(3, hits.totalHits);
+    assertEquals(3, hits.totalHits.value);
     assertEquals("3", r.document(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
     assertEquals("2", r.document(hits.scoreDocs[2].doc).get("id"));
@@ -130,7 +130,7 @@ public class TestSortRescorer extends LuceneTestCase {
     Sort sort = new Sort(source.getSortField(true));
     Rescorer rescorer = new SortRescorer(sort);
     hits = rescorer.rescore(searcher, hits, 10);
-    assertEquals(3, hits.totalHits);
+    assertEquals(3, hits.totalHits.value);
     assertEquals("2", r.document(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
     assertEquals("3", r.document(hits.scoreDocs[2].doc).get("id"));

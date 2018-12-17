@@ -168,13 +168,13 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
       int queryType = random.nextInt(2);
       if (queryType == 0) {
         hits = s.search(new ConstantScoreQuery(f),
-                        hitCount, sort, random.nextBoolean(), random.nextBoolean());
+                        hitCount, sort, false);
       } else {
-        hits = s.search(f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(f, hitCount, sort, false);
       }
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
+        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " ; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
       }
 
       // Compute expected results:
@@ -287,7 +287,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
             }
           }
 
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override

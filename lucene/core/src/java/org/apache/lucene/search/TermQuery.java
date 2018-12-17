@@ -89,12 +89,12 @@ public class TermQuery extends Query {
       if (context.reader().terms(term.field()).hasPositions() == false) {
         return super.matches(context, doc);
       }
-      return Matches.forField(term.field(), () -> {
+      return MatchesUtils.forField(term.field(), () -> {
         PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
         if (pe.advance(doc) != doc) {
           return null;
         }
-        return new TermMatchesIterator(pe);
+        return new TermMatchesIterator(getQuery(), pe);
       });
     }
 
@@ -114,7 +114,7 @@ public class TermQuery extends Query {
       if (scoreMode == ScoreMode.TOP_SCORES) {
         return new TermScorer(this, termsEnum.impacts(PostingsEnum.FREQS), scorer);
       } else {
-        return new TermScorer(this, termsEnum.postings(null, PostingsEnum.FREQS), scorer);
+        return new TermScorer(this, termsEnum.postings(null, scoreMode.needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE), scorer);
       }
     }
 
@@ -217,7 +217,14 @@ public class TermQuery extends Query {
     return buffer.toString();
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns the {@link TermStates} passed to the constructor, or null if it was not passed.
+   *
+   * @lucene.experimental */
+  public TermStates getTermStates() {
+    return perReaderTermState;
+  }
+
+  /** Returns true iff <code>other</code> is equal to <code>this</code>. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&

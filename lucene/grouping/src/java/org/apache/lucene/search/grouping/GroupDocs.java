@@ -17,6 +17,7 @@
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TotalHits;
 
 /** Represents one group in the results.
  * 
@@ -39,7 +40,7 @@ public class GroupDocs<T> {
   public final ScoreDoc[] scoreDocs;
 
   /** Total hits within this group */
-  public final long totalHits;
+  public final TotalHits totalHits;
 
   /** Matches the groupSort passed to {@link
    *  FirstPassGroupingCollector}. */
@@ -47,7 +48,7 @@ public class GroupDocs<T> {
 
   public GroupDocs(float score,
                    float maxScore,
-                   long totalHits,
+                   TotalHits totalHits,
                    ScoreDoc[] scoreDocs,
                    T groupValue,
                    Object[] groupSortValues) {

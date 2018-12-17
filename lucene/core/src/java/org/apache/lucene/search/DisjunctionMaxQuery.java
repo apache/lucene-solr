@@ -127,7 +127,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
           mis.add(mi);
         }
       }
-      return Matches.fromSubMatches(mis);
+      return MatchesUtils.fromSubMatches(mis);
     }
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
@@ -148,7 +148,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
         // only one sub-scorer in this segment
         return scorers.get(0);
       } else {
-        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode.needsScores());
+        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode);
       }
     }
 

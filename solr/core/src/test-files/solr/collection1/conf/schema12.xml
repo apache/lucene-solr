@@ -234,18 +234,13 @@
 
   <fieldType name="teststop" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
     </analyzer>
   </fieldType>
 
   <!-- fieldTypes in this section isolate tokenizers and tokenfilters for testing -->
-  <fieldType name="lowertok" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-    </analyzer>
-  </fieldType>
   <fieldType name="keywordtok" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
@@ -292,13 +287,11 @@
   <fieldType name="standardtokfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="standardfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="lowerfilt" class="solr.TextField">
@@ -594,7 +587,6 @@
 
   <!-- fields to test individual tokenizers and tokenfilters -->
   <field name="teststop" type="teststop" indexed="true" stored="true"/>
-  <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
   <field name="keywordtok" type="keywordtok" indexed="true" stored="true"/>
   <field name="standardtok" type="standardtok" indexed="true" stored="true"/>
   <field name="HTMLstandardtok" type="HTMLstandardtok" indexed="true" stored="true"/>
@@ -722,6 +714,10 @@
   <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
+
+  <dynamicField name="*_ii" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
+  <dynamicField name="*_iis" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
+  <dynamicField name="*_ff" type="pfloat" indexed="false" stored="false" useDocValuesAsStored="false"/>
 
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>

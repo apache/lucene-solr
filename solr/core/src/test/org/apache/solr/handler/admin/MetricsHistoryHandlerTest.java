@@ -30,6 +30,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -109,13 +110,14 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testBasic() throws Exception {
     timeSource.sleep(10000);
-    List<String> list = handler.getFactory().list(100);
+    List<Pair<String, Long>> list = handler.getFactory().list(100);
     // solr.jvm, solr.node, solr.collection..system
     assertEquals(list.toString(), 3, list.size());
-    for (String path : list) {
-      RrdDb db = new RrdDb(MetricsHistoryHandler.URI_PREFIX + path, true, handler.getFactory());
+    for (Pair<String, Long> p : list) {
+      RrdDb db = new RrdDb(MetricsHistoryHandler.URI_PREFIX + p.first(), true, handler.getFactory());
       int dsCount = db.getDsCount();
       int arcCount = db.getArcCount();
       assertTrue("dsCount should be > 0, was " + dsCount, dsCount > 0);

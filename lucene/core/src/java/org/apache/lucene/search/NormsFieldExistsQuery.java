@@ -73,7 +73,7 @@ public final class NormsFieldExistsQuery extends Query {
         }
         LeafReader reader = context.reader();
         DocIdSetIterator iterator = reader.getNormValues(field);
-        return new ConstantScoreScorer(this, score(), iterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
 
       @Override

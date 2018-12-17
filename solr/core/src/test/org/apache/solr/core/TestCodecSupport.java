@@ -153,7 +153,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         "//*[@numFound='3']");
     assertQ(req("q", "text:foo"), 
         "//*[@numFound='3']");
-    assertU(optimize());
+    assertU(optimize("maxSegments", "1"));
     assertCompressionMode("BEST_SPEED", h.getCore());
     System.clearProperty("tests.COMPRESSION_MODE");
   }

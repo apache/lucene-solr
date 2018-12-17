@@ -20,9 +20,6 @@ package org.apache.lucene.analysis.tr;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -36,7 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
  */
-public class TurkishLowerCaseFilterFactory extends TokenFilterFactory  implements MultiTermAwareComponent {
+public class TurkishLowerCaseFilterFactory extends TokenFilterFactory {
   
   /** Creates a new TurkishLowerCaseFilterFactory */
   public TurkishLowerCaseFilterFactory(Map<String,String> args) {
@@ -52,7 +49,7 @@ public class TurkishLowerCaseFilterFactory extends TokenFilterFactory  implement
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

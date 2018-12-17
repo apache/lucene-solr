@@ -15,11 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XML;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,12 +22,16 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 abstract public class BaseTestHarness {
   private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
@@ -200,15 +199,9 @@ abstract public class BaseTestHarness {
 
   public static String simpleTag(String tag, String... args) {
     try {
-      StringWriter r = new StringWriter();
-
-      // this is annoying
-      if (null == args || 0 == args.length) {
-        XML.writeXML(r, tag, null);
-      } else {
-        XML.writeXML(r, tag, null, (Object[])args);
-      }
-      return r.getBuffer().toString();
+      StringWriter writer = new StringWriter();
+      XML.writeXML(writer, tag, (String) null, (Object[])args);
+      return writer.getBuffer().toString();
     } catch (IOException e) {
       throw new RuntimeException
           ("this should never happen with a StringWriter", e);

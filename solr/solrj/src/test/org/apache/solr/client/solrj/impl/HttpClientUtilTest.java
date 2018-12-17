@@ -44,7 +44,9 @@ public class HttpClientUtilTest extends LuceneTestCase {
   public void resetHttpClientBuilder() {
     HttpClientUtil.resetHttpClientBuilder();
   }
-    
+
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSSLSystemProperties() throws IOException {
     
     assertNotNull("HTTPS scheme could not be created using system defaults",
@@ -83,6 +85,7 @@ public class HttpClientUtilTest extends LuceneTestCase {
   }
   
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testToBooleanDefaultIfNull() throws Exception {
     assertFalse(HttpClientUtil.toBooleanDefaultIfNull(Boolean.FALSE, true));
     assertTrue(HttpClientUtil.toBooleanDefaultIfNull(Boolean.TRUE, false));
@@ -91,6 +94,7 @@ public class HttpClientUtilTest extends LuceneTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testToBooleanObject() throws Exception {
     assertEquals(Boolean.TRUE, HttpClientUtil.toBooleanObject("true"));
     assertEquals(Boolean.TRUE, HttpClientUtil.toBooleanObject("TRUE"));

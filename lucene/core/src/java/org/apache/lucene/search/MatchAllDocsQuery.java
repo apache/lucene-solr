@@ -37,7 +37,7 @@ public final class MatchAllDocsQuery extends Query {
       }
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
+        return new ConstantScoreScorer(this, score(), scoreMode, DocIdSetIterator.all(context.reader().maxDoc()));
       }
 
       @Override
@@ -53,7 +53,7 @@ public final class MatchAllDocsQuery extends Query {
           @Override
           public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
             max = Math.min(max, maxDoc);
-            FakeScorer scorer = new FakeScorer();
+            ScoreAndDoc scorer = new ScoreAndDoc();
             scorer.score = score;
             collector.setScorer(scorer);
             for (int doc = min; doc < max; ++doc) {

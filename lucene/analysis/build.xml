@@ -28,7 +28,6 @@
       - nori: Korean Morphological Analyzer
       - smartcn: Smart Analyzer for Simplified Chinese Text
       - stempel: Algorithmic Stemmer for Polish
-      - uima: UIMA Analysis module
   </description>
 
   <dirname file="${ant.file.analyzers}" property="analyzers.dir"/>
@@ -86,12 +85,8 @@
     <ant dir="stempel" />
   </target>
 
-  <target name="uima">
-    <ant dir="uima" />
-  </target>
-
   <target name="default" depends="compile"/>
-  <target name="compile" depends="common,icu,kuromoji,morfologik,nori,opennlp,phonetic,smartcn,stempel,uima" />
+  <target name="compile" depends="common,icu,kuromoji,morfologik,nori,opennlp,phonetic,smartcn,stempel" />
 
   <target name="clean">
     <forall-analyzers target="clean"/>

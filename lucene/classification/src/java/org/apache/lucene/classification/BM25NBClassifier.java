@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -128,7 +128,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
 
-    Terms classes = MultiFields.getTerms(indexReader, classFieldName);
+    Terms classes = MultiTerms.getTerms(indexReader, classFieldName);
     TermsEnum classesEnum = classes.iterator();
     BytesRef next;
     String[] tokenizedText = tokenize(inputDocument);
@@ -217,7 +217,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
       builder.add(query, BooleanClause.Occur.MUST);
     }
     TopDocs search = indexSearcher.search(builder.build(), 1);
-    return search.totalHits > 0 ? search.getMaxScore() : 1;
+    return search.totalHits.value > 0 ? search.scoreDocs[0].score : 1;
   }
 
   private double calculateLogPrior(Term term) throws IOException {
@@ -228,7 +228,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
       bq.add(query, BooleanClause.Occur.MUST);
     }
     TopDocs topDocs = indexSearcher.search(bq.build(), 1);
-    return topDocs.totalHits > 0 ? Math.log(topDocs.getMaxScore()) : 0;
+    return topDocs.totalHits.value > 0 ? Math.log(topDocs.scoreDocs[0].score) : 0;
   }
 
 }

@@ -66,11 +66,11 @@ public class TestSynonymQuery extends LuceneTestCase {
   }
 
   public void testScores() throws IOException {
-    doTestScores(false);
-    doTestScores(true);
+    doTestScores(2);
+    doTestScores(Integer.MAX_VALUE);
   }
 
-  private void doTestScores(boolean trackTotalHits) throws IOException {
+  private void doTestScores(int totalHitsThreshold) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
@@ -88,11 +88,14 @@ public class TestSynonymQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     SynonymQuery query = new SynonymQuery(new Term("f", "a"), new Term("f", "b"));
 
-    TopScoreDocCollector collector = TopScoreDocCollector.create(20, null, trackTotalHits);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(Math.min(reader.numDocs(), totalHitsThreshold), null, totalHitsThreshold);
     searcher.search(query, collector);
     TopDocs topDocs = collector.topDocs();
-    if (trackTotalHits) {
-      assertEquals(11, topDocs.totalHits);
+    if (topDocs.totalHits.value < totalHitsThreshold) {
+      assertEquals(TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
+      assertEquals(11, topDocs.totalHits.value);
+    } else {
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, topDocs.totalHits.relation);
     }
     // All docs must have the same score
     for (int i = 0; i < topDocs.scoreDocs.length; ++i) {
@@ -284,8 +287,8 @@ public class TestSynonymQuery extends LuceneTestCase {
               new Term("foo", Integer.toString(term1)),
               new Term("foo", Integer.toString(term2))});
 
-      TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, true); // COMPLETE
-      TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
+      TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE); // COMPLETE
+      TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, 1); // TOP_SCORES
 
       searcher.search(query, collector1);
       searcher.search(query, collector2);
@@ -297,8 +300,8 @@ public class TestSynonymQuery extends LuceneTestCase {
           .add(new TermQuery(new Term("foo", Integer.toString(filterTerm))), Occur.FILTER)
           .build();
 
-      collector1 = TopScoreDocCollector.create(10, null, true); // COMPLETE
-      collector2 = TopScoreDocCollector.create(10, null, false); // TOP_SCORES
+      collector1 = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE); // COMPLETE
+      collector2 = TopScoreDocCollector.create(10, null, 1); // TOP_SCORES
       searcher.search(filteredQuery, collector1);
       searcher.search(filteredQuery, collector2);
       CheckHits.checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);

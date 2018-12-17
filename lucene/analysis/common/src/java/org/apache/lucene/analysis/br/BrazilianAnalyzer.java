@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 
@@ -45,6 +44,8 @@ import org.apache.lucene.util.IOUtils;
  *
  * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
+ *
+ * @since 3.1
  */
 public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Brazilian Portuguese stopwords. */
@@ -114,14 +115,13 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}
+   *         {@link LowerCaseFilter}, {@link StopFilter}
    *         , and {@link BrazilianStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     Tokenizer source = new StandardTokenizer();
     TokenStream result = new LowerCaseFilter(source);
-    result = new StandardFilter(result);
     result = new StopFilter(result, stopwords);
     if(excltable != null && !excltable.isEmpty())
       result = new SetKeywordMarkerFilter(result, excltable);
@@ -130,9 +130,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
-    return result;
+    return new LowerCaseFilter(in);
   }
 }
 

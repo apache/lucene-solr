@@ -50,6 +50,7 @@ import com.codahale.metrics.ObjectNameFactory;
 import com.codahale.metrics.Reporter;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public class JmxMetricsReporter implements Reporter, Closeable {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String INSTANCE_TAG = "_instanceTag";
 
@@ -520,11 +521,11 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     private void registerMBean(Object mBean, ObjectName objectName) throws InstanceAlreadyExistsException, JMException {
       // remove previous bean if exists
       if (mBeanServer.isRegistered(objectName)) {
-        if (LOG.isDebugEnabled()) {
+        if (log.isDebugEnabled()) {
           Set<ObjectInstance> objects = mBeanServer.queryMBeans(objectName, null);
-          LOG.debug("## removing existing " + objects.size() + " bean(s) for " + objectName.getCanonicalName() + ", current tag=" + tag + ":");
+          log.debug("## removing existing " + objects.size() + " bean(s) for " + objectName.getCanonicalName() + ", current tag=" + tag + ":");
           for (ObjectInstance inst : objects) {
-            LOG.debug("## - tag=" + mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
+            log.debug("## - tag=" + mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
           }
         }
         mBeanServer.unregisterMBean(objectName);
@@ -538,7 +539,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       } else {
         registered.put(objectName, objectName);
       }
-      LOG.debug("## registered " + objectInstance.getObjectName().getCanonicalName() + ", tag=" + tag);
+      log.debug("## registered " + objectInstance.getObjectName().getCanonicalName() + ", tag=" + tag);
     }
 
     private void unregisterMBean(ObjectName originalObjectName) throws InstanceNotFoundException, MBeanRegistrationException {
@@ -548,7 +549,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       }
       Set<ObjectInstance> objects = mBeanServer.queryMBeans(objectName, exp);
       for (ObjectInstance o : objects) {
-        LOG.debug("## Unregistered " + o.getObjectName().getCanonicalName() + ", tag=" + tag);
+        log.debug("## Unregistered " + o.getObjectName().getCanonicalName() + ", tag=" + tag);
         mBeanServer.unregisterMBean(o.getObjectName());
       }
     }
@@ -558,17 +559,20 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       try {
         if (filter.matches(name, gauge)) {
           final ObjectName objectName = createName("gauges", name);
-          if (gauge instanceof MetricsMap) {
-            ((MetricsMap)gauge).setAttribute(new Attribute(INSTANCE_TAG, tag));
-            registerMBean(gauge, objectName);
+          if (gauge instanceof SolrMetricManager.GaugeWrapper &&
+              ((SolrMetricManager.GaugeWrapper)gauge).getGauge() instanceof MetricsMap) {
+            MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)gauge).getGauge();
+            mm.setAttribute(new Attribute(INSTANCE_TAG, tag));
+            // don't wrap it in a JmxGauge, it already supports all necessary JMX attributes
+            registerMBean(mm, objectName);
           } else {
             registerMBean(new JmxGauge(gauge, objectName, tag), objectName);
           }
         }
       } catch (InstanceAlreadyExistsException e) {
-        LOG.debug("Unable to register gauge", e);
+        log.debug("Unable to register gauge", e);
       } catch (JMException e) {
-        LOG.warn("Unable to register gauge", e);
+        log.warn("Unable to register gauge", e);
       }
     }
 
@@ -578,9 +582,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         final ObjectName objectName = createName("gauges", name);
         unregisterMBean(objectName);
       } catch (InstanceNotFoundException e) {
-        LOG.debug("Unable to unregister gauge", e);
+        log.debug("Unable to unregister gauge", e);
       } catch (MBeanRegistrationException e) {
-        LOG.warn("Unable to unregister gauge", e);
+        log.warn("Unable to unregister gauge", e);
       }
     }
 
@@ -592,9 +596,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
           registerMBean(new JmxCounter(counter, objectName, tag), objectName);
         }
       } catch (InstanceAlreadyExistsException e) {
-        LOG.debug("Unable to register counter", e);
+        log.debug("Unable to register counter", e);
       } catch (JMException e) {
-        LOG.warn("Unable to register counter", e);
+        log.warn("Unable to register counter", e);
       }
     }
 
@@ -604,9 +608,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         final ObjectName objectName = createName("counters", name);
         unregisterMBean(objectName);
       } catch (InstanceNotFoundException e) {
-        LOG.debug("Unable to unregister counter", e);
+        log.debug("Unable to unregister counter", e);
       } catch (MBeanRegistrationException e) {
-        LOG.warn("Unable to unregister counter", e);
+        log.warn("Unable to unregister counter", e);
       }
     }
 
@@ -618,9 +622,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
           registerMBean(new JmxHistogram(histogram, objectName, tag), objectName);
         }
       } catch (InstanceAlreadyExistsException e) {
-        LOG.debug("Unable to register histogram", e);
+        log.debug("Unable to register histogram", e);
       } catch (JMException e) {
-        LOG.warn("Unable to register histogram", e);
+        log.warn("Unable to register histogram", e);
       }
     }
 
@@ -630,9 +634,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         final ObjectName objectName = createName("histograms", name);
         unregisterMBean(objectName);
       } catch (InstanceNotFoundException e) {
-        LOG.debug("Unable to unregister histogram", e);
+        log.debug("Unable to unregister histogram", e);
       } catch (MBeanRegistrationException e) {
-        LOG.warn("Unable to unregister histogram", e);
+        log.warn("Unable to unregister histogram", e);
       }
     }
 
@@ -644,9 +648,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
           registerMBean(new JmxMeter(meter, objectName, rateUnit, tag), objectName);
         }
       } catch (InstanceAlreadyExistsException e) {
-        LOG.debug("Unable to register meter", e);
+        log.debug("Unable to register meter", e);
       } catch (JMException e) {
-        LOG.warn("Unable to register meter", e);
+        log.warn("Unable to register meter", e);
       }
     }
 
@@ -656,9 +660,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         final ObjectName objectName = createName("meters", name);
         unregisterMBean(objectName);
       } catch (InstanceNotFoundException e) {
-        LOG.debug("Unable to unregister meter", e);
+        log.debug("Unable to unregister meter", e);
       } catch (MBeanRegistrationException e) {
-        LOG.warn("Unable to unregister meter", e);
+        log.warn("Unable to unregister meter", e);
       }
     }
 
@@ -670,9 +674,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
           registerMBean(new JmxTimer(timer, objectName, rateUnit, durationUnit, tag), objectName);
         }
       } catch (InstanceAlreadyExistsException e) {
-        LOG.debug("Unable to register timer", e);
+        log.debug("Unable to register timer", e);
       } catch (JMException e) {
-        LOG.warn("Unable to register timer", e);
+        log.warn("Unable to register timer", e);
       }
     }
 
@@ -682,9 +686,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         final ObjectName objectName = createName("timers", name);
         unregisterMBean(objectName);
       } catch (InstanceNotFoundException e) {
-        LOG.debug("Unable to unregister timer", e);
+        log.debug("Unable to unregister timer", e);
       } catch (MBeanRegistrationException e) {
-        LOG.warn("Unable to unregister timer", e);
+        log.warn("Unable to unregister timer", e);
       }
     }
 
@@ -697,9 +701,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         try {
           unregisterMBean(name);
         } catch (InstanceNotFoundException e) {
-          LOG.debug("Unable to unregister metric", e);
+          log.debug("Unable to unregister metric", e);
         } catch (MBeanRegistrationException e) {
-          LOG.warn("Unable to unregister metric", e);
+          log.warn("Unable to unregister metric", e);
         }
       }
       registered.clear();
@@ -737,7 +741,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       } else if (v instanceof Gauge) {
         listener.onGaugeAdded(k, (Gauge)v);
       } else {
-        LOG.warn("Unknown metric type " + v.getClass().getName() + " for metric '" + k + "', ignoring");
+        log.warn("Unknown metric type " + v.getClass().getName() + " for metric '" + k + "', ignoring");
       }
     });
   }

@@ -18,10 +18,10 @@ package org.apache.lucene.queryparser.surround.query;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.BytesRef;
 
  
@@ -51,7 +51,7 @@ public class SrndTermQuery extends SimpleTerm {
     MatchingTermVisitor mtv) throws IOException
   {
     /* check term presence in index here for symmetry with other SimpleTerm's */
-    Terms terms = MultiFields.getTerms(reader, fieldName);
+    Terms terms = MultiTerms.getTerms(reader, fieldName);
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator();
 

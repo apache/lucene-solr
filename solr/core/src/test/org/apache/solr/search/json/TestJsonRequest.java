@@ -232,7 +232,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
             "  'query': {" +
             "    'bool' : {" +
             "      'should' : [" +
-            "        'id:1'," +
+            "        {'#MYTAG' : 'id:1'}," +  // tagged query (the tag should do nothing here)
             "        'id:2'" +
             "      ]" +
             "    }" +
@@ -267,7 +267,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
             "     query : A" +
             "    }" +
             "   }" +
-            "   must_not : {lucene : {query:'id: 1'}}" +
+            "   must_not : {'#NOT':{lucene : {query:'id: 1'}}}" +  // testing tagging syntax at the same time (the tag should do nothing here)
             "  }" +
             " }" +
             "}")
@@ -377,10 +377,10 @@ public class TestJsonRequest extends SolrTestCaseHS {
     );
 
     try {
-      client.testJQ(params("json", "{query:{'lucene':'id:1'}}"));
+      client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));  // TODO: this seems like a reasonable capability that we would want to support in the future.  It should be OK to make this pass.
       fail();
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("id:1"));
+      assertTrue(e.getMessage().contains("foo_s"));
     }
 
     try {
@@ -401,7 +401,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     try {
       client.testJQ( params("json","{" +
           " query : '*:*'," +
-          " filter : { \"RCAT\" : \"cat_s:A\" }" +
+          " filter : { \"RCAT\" : \"cat_s:A OR ignore_exception\" }" + // without the pound, the tag would be interpreted as a query type
           "}", "json.facet", "{" +
           "categories:{ type:terms, field:cat_s, domain:{excludeTags:\"RCAT\"} }  " +
           "}"), "facets=={ count:2, " +
@@ -410,6 +410,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
       );
       fail("no # no tag");
     } catch (Exception e) {
+      // This is just the current mode of failure.  It's fine if it fails a different way (with a 400 error) in the future.
       assertTrue(e.getMessage().contains("expect a json object"));
     }
 

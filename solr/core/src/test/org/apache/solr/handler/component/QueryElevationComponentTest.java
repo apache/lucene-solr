@@ -16,37 +16,63 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.GroupParams;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.QueryElevationParams;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.junit.Before;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.QueryElevationParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.FileUtils;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
+  @Rule
+  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    switch (random().nextInt(3)) {
+      case 0:
+        System.setProperty("solr.tests.id.stored", "true");
+        System.setProperty("solr.tests.id.docValues", "true");
+        break;
+      case 1:
+        System.setProperty("solr.tests.id.stored", "true");
+        System.setProperty("solr.tests.id.docValues", "false");
+        break;
+      case 2:
+        System.setProperty("solr.tests.id.stored", "false");
+        System.setProperty("solr.tests.id.docValues", "true");
+        break;
+      default:
+        fail("Bad random number generatged not between 0-2 iunclusive");
+        break;
+    }
+  }
 
   @Before
   @Override
@@ -71,6 +97,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  //TODO should be @After ?
   private void delete() throws Exception {
     deleteCore();
   }
@@ -123,22 +150,22 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "7", "text", "AAAA AAAA ZZZZ", "str_s", "g"));
       assertU(adoc("id", "8", "text", "XXXX", "str_s", "h"));
       assertU(adoc("id", "9", "text", "YYYY ZZZZ", "str_s", "i"));
-      
+
       assertU(adoc("id", "22", "text", "XXXX ZZZZ AAAA", "str_s", "b"));
       assertU(adoc("id", "66", "text", "XXXX ZZZZ AAAA", "str_s", "f"));
       assertU(adoc("id", "77", "text", "XXXX ZZZZ AAAA", "str_s", "g"));
-     
+
       assertU(commit());
 
       final String groups = "//arr[@name='groups']";
 
-      assertQ("non-elevated group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("non-elevated group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   QueryElevationParams.ENABLE, "false",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
@@ -160,13 +187,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
-      assertQ("elevated group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("elevated group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
                   GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -187,14 +214,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
-      assertQ("non-elevated because sorted group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("non-elevated because sorted group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -215,15 +242,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
-      assertQ("force-elevated sorted group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("force-elevated sorted group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  QueryElevationParams.FORCE_ELEVATION, "true", 
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  QueryElevationParams.FORCE_ELEVATION, "true",
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -245,15 +272,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               );
 
 
-      assertQ("non-elevated because of sort within group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("non-elevated because of sort within group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_SORT, "id desc", 
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_SORT, "id desc",
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -275,16 +302,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               );
 
 
-      assertQ("force elevated sort within sorted group query", 
-              req(CommonParams.Q, "AAAA", 
+      assertQ("force elevated sort within sorted group query",
+              req(CommonParams.Q, "AAAA",
                   CommonParams.QT, "/elevate",
                   CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_SORT, "id desc", 
-                  QueryElevationParams.FORCE_ELEVATION, "true", 
-                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP_SORT, "id desc",
+                  QueryElevationParams.FORCE_ELEVATION, "true",
+                  GroupParams.GROUP_FIELD, "str_s",
                   GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true", 
-                  GroupParams.GROUP_LIMIT, "100", 
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100",
                   CommonParams.FL, "id, score, [elevated]")
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
@@ -360,17 +387,17 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       SolrQueryRequest req = req();
       IndexReader reader = req.getSearcher().getIndexReader();
-      Map<String, ElevationObj> map = comp.getElevationMap(reader, core);
+      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
       req.close();
 
       // Make sure the boosts loaded properly
-      assertEquals(7, map.size());
-      assertEquals(1, map.get("XXXX").priority.size());
-      assertEquals(2, map.get("YYYY").priority.size());
-      assertEquals(3, map.get("ZZZZ").priority.size());
-      assertEquals(null, map.get("xxxx"));
-      assertEquals(null, map.get("yyyy"));
-      assertEquals(null, map.get("zzzz"));
+      assertEquals(7, elevationProvider.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+      assertEquals(null, elevationProvider.getElevationForQuery("xxxx"));
+      assertEquals(null, elevationProvider.getElevationForQuery("yyyy"));
+      assertEquals(null, elevationProvider.getElevationForQuery("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<>();
@@ -380,17 +407,17 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp = new QueryElevationComponent();
       comp.init(args);
       comp.inform(core);
-      map = comp.getElevationMap(reader, core);
-      assertEquals(7, map.size());
-      assertEquals(null, map.get("XXXX"));
-      assertEquals(null, map.get("YYYY"));
-      assertEquals(null, map.get("ZZZZ"));
-      assertEquals(1, map.get("xxxx").priority.size());
-      assertEquals(2, map.get("yyyy").priority.size());
-      assertEquals(3, map.get("zzzz").priority.size());
+      elevationProvider = comp.getElevationProvider(reader, core);
+      assertEquals(7, elevationProvider.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("xxxx").elevatedIds.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("yyyy").elevatedIds.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("zzzz").elevatedIds.size());
 
-      assertEquals("xxxx", comp.getAnalyzedQuery("XXXX"));
-      assertEquals("xxxxyyyy", comp.getAnalyzedQuery("XXXX YYYY"));
+      assertEquals("xxxx", comp.analyzeQuery("XXXX"));
+      assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
 
       assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
           "//*[@numFound='0']");
@@ -456,11 +483,11 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
       assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
       assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
-      
+
       assertU(adoc("id", "8", "title", " QQQQ trash trash", "str_s1", "q"));
       assertU(adoc("id", "9", "title", " QQQQ QQQQ  trash", "str_s1", "r"));
       assertU(adoc("id", "10", "title", "QQQQ QQQQ  QQQQ ", "str_s1", "s"));
-      
+
       assertU(commit());
 
       assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
@@ -477,7 +504,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[3]/bool[@name='[excluded]'][.='false']",
           "//result/doc[4]/bool[@name='[excluded]'][.='true']"
       );
-      
+
       //ask for excluded as a field, but don't actually request the MARK_EXCLUDES
       //thus, number 6 should not be returned, b/c it is excluded
       assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
@@ -491,7 +518,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[excluded]'][.='false']",
           "//result/doc[3]/bool[@name='[excluded]'][.='false']"
       );
-      
+
       // test that excluded results are on the same positions in the result list
       // as when elevation component is disabled
       // (i.e. test that elevation component with MARK_EXCLUDES does not boost
@@ -526,28 +553,27 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public void testSorting() throws Exception {
     try {
       init("schema12.xml");
-      assertU(adoc("id", "a", "title", "ipod trash trash", "str_s1", "a"));
-      assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "b"));
-      assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "c"));
+      assertU(adoc("id", "a", "title", "ipod trash trash", "str_s1", "group1"));
+      assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "group2"));
+      assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "group2"));
 
-      assertU(adoc("id", "x", "title", "boosted", "str_s1", "x"));
-      assertU(adoc("id", "y", "title", "boosted boosted", "str_s1", "y"));
-      assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "z"));
+      assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "group1"));
+      assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "group2"));
+      assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "group2"));
       assertU(commit());
 
-      String query = "title:ipod";
+      final String query = "title:ipod";
 
-      Map<String, String> args = new HashMap<>();  // reusing args & requests this way is a solr-test-antipattern.  PLEASE DO NOT COPY THIS CODE
-      args.put(CommonParams.Q, query);
-      args.put(CommonParams.QT, "/elevate");
-      args.put(CommonParams.FL, "id,score");
-      args.put("indent", "true");
-      //args.put( CommonParams.FL, "id,title,score" );
-      SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      IndexReader reader = req.getSearcher().getIndexReader();
-      QueryElevationComponent booster = (QueryElevationComponent) req.getCore().getSearchComponent("elevate");
+      final SolrParams baseParams = params(
+          "qt", "/elevate",
+          "q", query,
+          "fl", "id,score",
+          "indent", "true");
 
-      assertQ("Make sure standard sort works as expected", req
+      QueryElevationComponent booster = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
+      IndexReader reader = h.getCore().withSearcher(SolrIndexSearcher::getIndexReader);
+
+      assertQ("Make sure standard sort works as expected", req(baseParams)
           , "//*[@numFound='3']"
           , "//result/doc[1]/str[@name='id'][.='c']"
           , "//result/doc[2]/str[@name='id'][.='b']"
@@ -555,12 +581,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       );
 
       // Explicitly set what gets boosted
-      booster.elevationCache.clear();
-      booster.setTopQueryResults(reader, query, new String[]{"x", "y", "z"}, null);
+      booster.setTopQueryResults(reader, query, false, new String[]{"x", "y", "z"}, null);
 
-
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ("All six should make it", req
+      assertQ("All six should make it", req(baseParams)
           , "//*[@numFound='6']"
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='y']"
@@ -570,12 +593,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[6]/str[@name='id'][.='a']"
       );
 
-      booster.elevationCache.clear();
-
       // now switch the order:
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      booster.setTopQueryResults(reader, query, new String[]{"a", "x"}, null);
-      assertQ("All four should make it", req
+      booster.setTopQueryResults(reader, query, false, new String[]{"a", "x"}, null);
+      assertQ(req(baseParams)
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='a']"
           , "//result/doc[2]/str[@name='id'][.='x']"
@@ -583,33 +603,10 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[4]/str[@name='id'][.='b']"
       );
 
-      // Test reverse sort
-      args.put(CommonParams.SORT, "score asc");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ("All four should make it", req
-          , "//*[@numFound='4']"
-          // NOTE REVERSED doc[X] indices
-          , "//result/doc[4]/str[@name='id'][.='a']"
-          , "//result/doc[3]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='c']"
-          , "//result/doc[1]/str[@name='id'][.='b']"
-      );
-
       // Try normal sort by 'id'
       // default 'forceBoost' should be false
       assertEquals(false, booster.forceElevation);
-      args.put(CommonParams.SORT, "str_s1 asc");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ(null, req
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='x']"
-      );
-      args.put(CommonParams.SORT, "id asc");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ(null, req
+      assertQ(req(baseParams, "sort", "id asc")
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='a']"
           , "//result/doc[2]/str[@name='id'][.='b']"
@@ -617,10 +614,17 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[4]/str[@name='id'][.='x']"
       );
 
+      assertQ("useConfiguredElevatedOrder=false",
+          req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false")
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='x']"//group1
+          , "//result/doc[2]/str[@name='id'][.='a']"//group1
+          , "//result/doc[3]/str[@name='id'][.='c']"
+          , "//result/doc[4]/str[@name='id'][.='b']"
+      );
+
       booster.forceElevation = true;
-      args.put(CommonParams.SORT, "id asc");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ(null, req
+      assertQ(req(baseParams, "sort", "id asc")
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='a']"
           , "//result/doc[2]/str[@name='id'][.='x']"
@@ -628,23 +632,27 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[4]/str[@name='id'][.='c']"
       );
 
+      booster.forceElevation = true;
+      assertQ("useConfiguredElevatedOrder=false and forceElevation",
+          req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false")
+          , "//*[@numFound='4']"
+          , "//result/doc[1]/str[@name='id'][.='x']" // force elevated
+          , "//result/doc[2]/str[@name='id'][.='a']" // force elevated
+          , "//result/doc[3]/str[@name='id'][.='c']"
+          , "//result/doc[4]/str[@name='id'][.='b']"
+      );
+
       //Test exclusive (not to be confused with exclusion)
-      args.put(QueryElevationParams.EXCLUSIVE, "true");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      booster.setTopQueryResults(reader, query, new String[]{"x", "a"}, new String[]{});
-      assertQ(null, req
+      booster.setTopQueryResults(reader, query, false, new String[]{"x", "a"}, new String[]{});
+      assertQ(req(baseParams, "exclusive", "true")
           , "//*[@numFound='2']"
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='a']"
       );
 
       // Test exclusion
-      booster.elevationCache.clear();
-      args.remove(CommonParams.SORT);
-      args.remove(QueryElevationParams.EXCLUSIVE);
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      booster.setTopQueryResults(reader, query, new String[]{"x"}, new String[]{"a"});
-      assertQ(null, req
+      booster.setTopQueryResults(reader, query, false, new String[]{"x"}, new String[]{"a"});
+      assertQ(req(baseParams)
           , "//*[@numFound='3']"
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='c']"
@@ -654,11 +662,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       // Test setting ids and excludes from http parameters
 
-      booster.elevationCache.clear();
-      args.put(QueryElevationParams.IDS, "x,y,z");
-      args.put(QueryElevationParams.EXCLUDE, "b");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ("All five should make it", req
+      booster.clearElevationProviderCache();
+      assertQ("All five should make it", req(baseParams, "elevateIds", "x,y,z", "excludeIds", "b")
           , "//*[@numFound='5']"
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='y']"
@@ -667,10 +672,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[5]/str[@name='id'][.='a']"
       );
 
-      args.put(QueryElevationParams.IDS, "x,z,y");
-      args.put(QueryElevationParams.EXCLUDE, "b,c");
-      req.close(); req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args));
-      assertQ("All four should make it", req
+      assertQ("All four should make it", req(baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c")
           , "//*[@numFound='4']"
           , "//result/doc[1]/str[@name='id'][.='x']"
           , "//result/doc[2]/str[@name='id'][.='z']"
@@ -678,7 +680,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           , "//result/doc[4]/str[@name='id'][.='a']"
       );
 
-      req.close();
     } finally {
       delete();
     }
@@ -706,8 +707,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     try {
       init("schema12.xml");
       String testfile = "data-elevation.xml";
-      File f = new File(h.getCore().getDataDir(), testfile);
-      writeFile(f, "aaa", "A");
+      File configFile = new File(h.getCore().getDataDir(), testfile);
+      writeFile(configFile, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
@@ -715,24 +716,47 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       comp.init(args);
       comp.inform(h.getCore());
 
-      SolrQueryRequest req = req();
-      IndexReader reader = req.getSearcher().getIndexReader();
-      Map<String, ElevationObj> map = comp.getElevationMap(reader, h.getCore());
-      assertTrue(map.get("aaa").priority.containsKey(new BytesRef("A")));
-      assertNull(map.get("bbb"));
-      req.close();
+      QueryElevationComponent.ElevationProvider elevationProvider = null;
+
+      try (SolrQueryRequest req = req()) {
+        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        assertTrue(elevationProvider.getElevationForQuery("aaa").elevatedIds.contains(new BytesRef("A")));
+        assertNull(elevationProvider.getElevationForQuery("bbb"));
+      }
 
       // now change the file
-      writeFile(f, "bbb", "B");
-      assertU(adoc("id", "10000")); // will get same reader if no index change
+      writeFile(configFile, "bbb", "B");
+
+      // With no index change, we get the same index reader, so the elevationProviderCache returns the previous ElevationProvider without the change.
+      try (SolrQueryRequest req = req()) {
+        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        assertTrue(elevationProvider.getElevationForQuery("aaa").elevatedIds.contains(new BytesRef("A")));
+        assertNull(elevationProvider.getElevationForQuery("bbb"));
+      }
+
+      // Index a new doc to get a new index reader.
+      assertU(adoc("id", "10000"));
       assertU(commit());
 
-      req = req();
-      reader = req.getSearcher().getIndexReader();
-      map = comp.getElevationMap(reader, h.getCore());
-      assertNull(map.get("aaa"));
-      assertTrue(map.get("bbb").priority.containsKey(new BytesRef("B")));
-      req.close();
+      // Check that we effectively reload a new ElevationProvider for a different index reader (so two entries in elevationProviderCache).
+      try (SolrQueryRequest req = req()) {
+        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        assertNull(elevationProvider.getElevationForQuery("aaa"));
+        assertTrue(elevationProvider.getElevationForQuery("bbb").elevatedIds.contains(new BytesRef("B")));
+      }
+
+      // Now change the config file again.
+      writeFile(configFile, "ccc", "C");
+
+      // Without index change, but calling a different method that clears the elevationProviderCache, so we should load a new ElevationProvider.
+      int elevationRuleNumber = comp.loadElevationConfiguration(h.getCore());
+      assertEquals(1, elevationRuleNumber);
+      try (SolrQueryRequest req = req()) {
+        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        assertNull(elevationProvider.getElevationForQuery("aaa"));
+        assertNull(elevationProvider.getElevationForQuery("bbb"));
+        assertTrue(elevationProvider.getElevationForQuery("ccc").elevatedIds.contains(new BytesRef("C")));
+      }
     } finally {
       delete();
     }
@@ -769,4 +793,5 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       delete();
     }
   }
+
 }

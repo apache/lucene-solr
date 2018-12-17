@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestCloudConsistency extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static Map<JettySolrRunner, SocketProxy> proxies;
   private static Map<URI, JettySolrRunner> jettys;
@@ -69,7 +70,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      LOG.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
@@ -88,11 +89,14 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   @Test
+  //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testOutOfSyncReplicasCannotBecomeLeader() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(false);
   }
 
   @Test
+  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testOutOfSyncReplicasCannotBecomeLeaderAfterRestart() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(true);
   }

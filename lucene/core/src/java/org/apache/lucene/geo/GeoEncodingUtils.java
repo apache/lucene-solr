@@ -43,6 +43,10 @@ public final class GeoEncodingUtils {
   private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
   private static final double LON_DECODE = 1/LON_SCALE;
 
+  public static final int MIN_LON_ENCODED = encodeLongitude(MIN_LON_INCL);
+  public static final int MAX_LON_ENCODED = encodeLongitude(MAX_LON_INCL);
+
+
   // No instance:
   private GeoEncodingUtils() {
   }

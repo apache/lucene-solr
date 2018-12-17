@@ -86,6 +86,7 @@ public class Tagger2Test extends TaggerTestCase {
 
   /** Support for stopwords (posInc &gt; 1);
    * discussion: https://github.com/OpenSextant/SolrTextTagger/issues/13 */
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8344")
   @Test
   public void testStopWords() throws Exception {
     baseParams.set("field", "name_tagStop");//stop filter (pos inc enabled) index & query

@@ -31,8 +31,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.index.LogByteSizeMergePolicyFactory;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactory;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.SolrIndexConfigTest;
+import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 
@@ -123,7 +126,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertNumSegments(h.getCore(), 2);
     assertCompoundSegments(h.getCore(), expectCFS);
 
-    assertU(optimize());
+    assertU(optimize("maxSegments", "1"));
     assertNumSegments(h.getCore(), 1);
     // we've now forced a merge, and the MP ratio should be in play
     assertCompoundSegments(h.getCore(), false);
@@ -146,6 +149,15 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     initCore("solrconfig-nomergepolicyfactory.xml","schema-minimal.xml");
     iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(mergePolicy, iwc.getMergePolicy());
+
+    UpdateHandler updater = h.getCore().getUpdateHandler();
+    SolrQueryRequest req = req();
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, true);
+    cmtCmd.maxOptimizeSegments = -1;
+    expectThrows(IllegalArgumentException.class, () -> {
+      updater.commit(cmtCmd);
+    });
+
   }
 
   public void testLogMergePolicyFactoryConfig() throws Exception {
@@ -180,7 +192,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
     assertEquals(11, logMP.getMergeFactor());
     assertEquals(456, logMP.getMaxMergeDocs());
-
   }
 
   /**
@@ -256,5 +267,4 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
                    ((SegmentReader)atomic.reader()).getSegmentInfo().info.getUseCompoundFile());
     }
   }
-
 }

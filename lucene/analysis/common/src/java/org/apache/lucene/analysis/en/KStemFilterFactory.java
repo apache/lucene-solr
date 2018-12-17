@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.en.KStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**

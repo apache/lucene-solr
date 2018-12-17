@@ -502,6 +502,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     });
     conf.setMaxBufferedDocs(Math.max(3, conf.getMaxBufferedDocs()));
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
 
     IndexWriter writer = new IndexWriter(dir, conf);
 
@@ -535,7 +536,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         null,
         0);
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = MultiBits.getLiveDocs(reader);
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       if (liveDocs == null || liveDocs.get(tdocs.docID())) {
@@ -670,7 +671,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         assertEquals(expected, reader.docFreq(new Term("contents", "here")));
         assertEquals(expected, reader.maxDoc());
         int numDel = 0;
-        final Bits liveDocs = MultiFields.getLiveDocs(reader);
+        final Bits liveDocs = MultiBits.getLiveDocs(reader);
         assertNotNull(liveDocs);
         for(int j=0;j<reader.maxDoc();j++) {
           if (!liveDocs.get(j))
@@ -698,7 +699,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      assertNull(MultiFields.getLiveDocs(reader));
+      assertNull(MultiBits.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermVectors(j);
@@ -826,7 +827,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      final Bits liveDocs = MultiFields.getLiveDocs(reader);
+      final Bits liveDocs = MultiBits.getLiveDocs(reader);
       assertNotNull(liveDocs);
       for(int j=0;j<reader.maxDoc();j++) {
         if (!liveDocs.get(j))
@@ -853,7 +854,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      assertNull(MultiFields.getLiveDocs(reader));
+      assertNull(MultiBits.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermVectors(j);
@@ -1441,10 +1442,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final IndexSearcher s = newSearcher(r);
     PhraseQuery pq = new PhraseQuery("content", "silly", "good");
-    assertEquals(0, s.search(pq, 1).totalHits);
+    assertEquals(0, s.count(pq));
 
     pq = new PhraseQuery("content", "good", "content");
-    assertEquals(numDocs1+numDocs2, s.search(pq, 1).totalHits);
+    assertEquals(numDocs1+numDocs2, s.count(pq));
     r.close();
     dir.close();
   }
@@ -1514,10 +1515,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final IndexSearcher s = newSearcher(r);
     PhraseQuery pq = new PhraseQuery("content", "silly", "content");
-    assertEquals(numDocs2, s.search(pq, 1).totalHits);
+    assertEquals(numDocs2, s.count(pq));
 
     pq = new PhraseQuery("content", "good", "content");
-    assertEquals(numDocs1+numDocs3+numDocs4, s.search(pq, 1).totalHits);
+    assertEquals(numDocs1+numDocs3+numDocs4, s.count(pq));
     r.close();
     dir.close();
   }

@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.hi;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.hi.HindiStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 

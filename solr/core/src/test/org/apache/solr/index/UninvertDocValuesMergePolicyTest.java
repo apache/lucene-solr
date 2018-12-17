@@ -25,7 +25,6 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
@@ -82,7 +81,7 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
     withNewRawReader(h, topReader -> {
       assertEquals(100, topReader.numDocs());
 
-      final FieldInfos infos = MultiFields.getMergedFieldInfos(topReader);
+      final FieldInfos infos = FieldInfos.getMergedFieldInfos(topReader);
 
       // The global field type should not have docValues yet
       assertEquals(DocValuesType.NONE, infos.fieldInfo(TEST_FIELD).getDocValuesType());
@@ -106,7 +105,7 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
     withNewRawReader(h, topReader -> {
       assertEquals(110, topReader.numDocs());
 
-      final FieldInfos infos = MultiFields.getMergedFieldInfos(topReader);
+      final FieldInfos infos = FieldInfos.getMergedFieldInfos(topReader);
       // The global field type should have docValues because a document with dvs was added
       assertEquals(DocValuesType.SORTED, infos.fieldInfo(TEST_FIELD).getDocValuesType());
     });
@@ -122,7 +121,7 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
       assertEquals(optimizeSegments, topReader.leaves().size());
       
 
-      final FieldInfos infos = MultiFields.getMergedFieldInfos(topReader);
+      final FieldInfos infos = FieldInfos.getMergedFieldInfos(topReader);
       // The global field type should have docValues because a document with dvs was added
       assertEquals(DocValuesType.SORTED, infos.fieldInfo(TEST_FIELD).getDocValuesType());
       
@@ -170,7 +169,7 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
       assertEquals(1, topReader.leaves().size());
       
 
-      final FieldInfos infos = MultiFields.getMergedFieldInfos(topReader);
+      final FieldInfos infos = FieldInfos.getMergedFieldInfos(topReader);
       // The global field type should have docValues because a document with dvs was added
       assertEquals(DocValuesType.SORTED, infos.fieldInfo(TEST_FIELD).getDocValuesType());
       

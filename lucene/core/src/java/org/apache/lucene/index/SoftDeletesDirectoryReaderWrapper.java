@@ -19,8 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -86,6 +88,18 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       this.field = field;
     }
 
+    protected LeafReader[] wrap(List<? extends LeafReader> readers) {
+      List<LeafReader> wrapped = new ArrayList<>(readers.size());
+      for (LeafReader reader : readers) {
+        LeafReader wrap = wrap(reader);
+        assert wrap != null;
+        if (wrap.numDocs() != 0) {
+          wrapped.add(wrap);
+        }
+      }
+      return wrapped.toArray(new LeafReader[0]);
+    }
+
     @Override
     public LeafReader wrap(LeafReader reader) {
       CacheHelper readerCacheHelper = reader.getReaderCacheHelper();
@@ -109,7 +123,7 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       Bits liveDocs = reader.getLiveDocs();
       final FixedBitSet bits;
       if (liveDocs != null) {
-        bits = SoftDeletesRetentionMergePolicy.cloneLiveDocs(liveDocs);
+        bits = FixedBitSet.copyOf(liveDocs);
       } else {
         bits = new FixedBitSet(reader.maxDoc());
         bits.set(0, reader.maxDoc());

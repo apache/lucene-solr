@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,7 +36,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected Query mainQuery;
   final protected int reRankDocs;
   final protected Rescorer reRankQueryRescorer;
-  protected Map<BytesRef, Integer> boostedPriority;
+  protected Set<BytesRef> boostedPriority;
 
   public AbstractReRankQuery(Query mainQuery, int reRankDocs, Rescorer reRankQueryRescorer) {
     this.mainQuery = mainQuery;
@@ -54,13 +55,13 @@ public abstract class AbstractReRankQuery extends RankQuery {
     return null;
   }
 
+  @SuppressWarnings("unchecked")
   public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
-
     if(this.boostedPriority == null) {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if(info != null) {
         Map context = info.getReq().getContext();
-        this.boostedPriority = (Map<BytesRef, Integer>)context.get(QueryElevationComponent.BOOSTED_PRIORITY);
+        this.boostedPriority = (Set<BytesRef>)context.get(QueryElevationComponent.BOOSTED);
       }
     }
 

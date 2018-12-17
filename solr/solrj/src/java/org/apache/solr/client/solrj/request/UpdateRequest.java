@@ -54,6 +54,10 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 public class UpdateRequest extends AbstractUpdateRequest {
 
   public static final String REPFACT = "rf";
+  /**
+   *   @deprecated Solr now always includes in the response the {@link #REPFACT}, this parameter
+   *   doesn't need to be explicitly set
+   */
   public static final String MIN_REPFACT = "min_rf";
   public static final String VER = "ver";
   public static final String OVERWRITE = "ow";

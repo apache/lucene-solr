@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -675,7 +676,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testReadApi() throws Exception  {
     CloudSolrClient solrClient = cluster.getSolrClient();
     // first trigger
@@ -693,9 +694,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]" +
+        "      {'replica':'<3', 'shard': '#EACH', 'node': '#ANY'}]" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
@@ -713,17 +712,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     String setPolicyCommand =  "{'set-policy': {" +
-        "    'xyz':[" +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]," +
-        "    'policy1':[" +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
-        "    ]," +
-        "    'policy2':[" +
-        "      {'replica':'<7', 'shard': '#EACH', 'node': '#ANY'}" +
-        "    ]" +
-        "}}";
+        "    'xyz':[{'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}]," +
+        "    'policy1':[{'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}]," +
+        "    'policy2':[{'replica':'<7', 'shard': '#EACH', 'node': '#ANY'}]}}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -747,7 +738,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     List<Map> clusterPolicy = (List<Map>) response.get("cluster-policy");
     assertNotNull(clusterPolicy);
-    assertEquals(3, clusterPolicy.size());
+    assertEquals(2, clusterPolicy.size());
 
     Map policies = (Map) response.get("policies");
     assertNotNull(policies);
@@ -766,11 +757,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (int i = 0; i < 2; i++) {
       Map node = (Map) sortedNodes.get(i);
       assertNotNull(node);
-      assertEquals(6, node.size());
       assertNotNull(node.get("node"));
       assertNotNull(node.get("cores"));
-      assertEquals(0L, node.get("cores"));
+      assertEquals(0d, node.get("cores"));
       assertNotNull(node.get("freedisk"));
+      assertNotNull(node.get("replicas"));
       assertTrue(node.get("freedisk") instanceof Double);
       assertNotNull(node.get("sysLoadAvg"));
       assertTrue(node.get("sysLoadAvg") instanceof Double);
@@ -786,22 +777,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(violations);
     assertEquals(0, violations.size());
 
-    // assert that when a cluster policy is in effect, using maxShardsPerNode throws an exception
-    try {
-      CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
-      create.setMaxShardsPerNode(10);
-      create.process(solrClient);
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("'maxShardsPerNode>0' is not supported when autoScaling policies are used"));
-    }
-
     // temporarily increase replica limit in cluster policy so that we can create a collection with 6 replicas
     String tempClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<4', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
+        "      {'replica':'<4', 'shard': '#EACH', 'node': '#ANY'}"+
         "    ]" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, tempClusterPolicyCommand);
@@ -809,7 +789,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     // lets create a collection which violates the rule replicas < 2
-    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6)
+        .setMaxShardsPerNode(3);
     CollectionAdminResponse adminResponse = create.process(solrClient);
     assertTrue(adminResponse.isSuccess());
 
@@ -831,18 +812,32 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (Map<String, Object> violation : violations) {
       assertEquals("readApiTestViolations", violation.get("collection"));
       assertEquals("shard1", violation.get("shard"));
-      assertEquals(2l, getObjectByPath(violation, true, "violation/delta"));
+      assertEquals(1.0d, getObjectByPath(violation, true, "violation/delta"));
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
+    log.info("Before starting new jetty ,{}", cluster.getJettySolrRunners()
+        .stream()
+        .map(jettySolrRunner -> jettySolrRunner.getNodeName()).collect(Collectors.toList()));
     JettySolrRunner runner1 = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
+    log.info("started new jetty {}", runner1.getNodeName());
+
+    response = waitForResponse(namedList -> {
+          List l = (List) Utils.getObjectByPath(namedList, false, "diagnostics/liveNodes");
+          if (l != null && l.contains(runner1.getNodeName())) return true;
+          return false;
+        },
+        createAutoScalingRequest(SolrRequest.METHOD.GET, "/diagnostics", null),
+        200,
+        20,
+        runner1.getNodeName() + " could not come up ");
 
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/suggestions", null);
     response = solrClient.request(req);
     List l = (List) response.get("suggestions");
     assertNotNull(l);
-    assertEquals(1, l.size());
+    assertEquals(2, l.size());
     for (int i = 0; i < l.size(); i++) {
       Object suggestion = l.get(i);
       assertEquals("violation", Utils.getObjectByPath(suggestion, true, "type"));

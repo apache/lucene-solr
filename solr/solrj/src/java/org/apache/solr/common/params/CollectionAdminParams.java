@@ -36,42 +36,77 @@ public interface CollectionAdminParams {
   /**
    * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore operation).
    */
-  public static final String CREATE_NODE_SET_PARAM = "createNodeSet";
+  String CREATE_NODE_SET_PARAM = "createNodeSet";
 
   /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain #CREATE_NODE_SET_PARAM})
    * should be shuffled before being used.
    */
-  public static final String CREATE_NODE_SET_SHUFFLE_PARAM = "createNodeSet.shuffle";
+  String CREATE_NODE_SET_SHUFFLE_PARAM = "createNodeSet.shuffle";
 
   /**
    * A parameter to specify the name of the index backup strategy to be used.
    */
-  public static final String INDEX_BACKUP_STRATEGY = "indexBackup";
+  String INDEX_BACKUP_STRATEGY = "indexBackup";
 
   /**
    * This constant defines the index backup strategy based on copying index files to desired location.
    */
-  public static final String COPY_FILES_STRATEGY = "copy-files";
+  String COPY_FILES_STRATEGY = "copy-files";
 
   /**
    * This constant defines the strategy to not copy index files (useful for meta-data only backup).
    */
-  public static final String NO_INDEX_BACKUP_STRATEGY = "none";
+  String NO_INDEX_BACKUP_STRATEGY = "none";
 
   /**
    * This constant defines a list of valid index backup strategies.
    */
-  public static final Collection<String> INDEX_BACKUP_STRATEGIES =
+  Collection<String> INDEX_BACKUP_STRATEGIES =
       Arrays.asList(COPY_FILES_STRATEGY, NO_INDEX_BACKUP_STRATEGY);
 
   /**
    * Name of collection property to set
    */
-  public static final String PROPERTY_NAME = "propertyName";
+  String PROPERTY_NAME = "propertyName";
 
   /**
    * Value of collection property to set
    */
-  public static final String PROPERTY_VALUE = "propertyValue";
+  String PROPERTY_VALUE = "propertyValue";
+
+  /**
+   * The name of the config set to be used for a collection
+   */
+  String COLL_CONF = "collection.configName";
+
+  /**
+   * The name of the collection with which a collection is to be co-located
+   */
+  String WITH_COLLECTION = "withCollection";
+
+  /**
+   * The reverse-link to WITH_COLLECTION flag. It is stored in the cluster state of the `withCollection`
+   * and points to the collection on which the `withCollection` was specified.
+   */
+  String COLOCATED_WITH = "COLOCATED_WITH";
+
+  /**
+   * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
+   *
+   * e.g. {defaults:{collection:{replicationFactor:2}}}
+   */
+  String DEFAULTS = "defaults";
+
+  /**
+   * Cluster wide defaults can be nested under this key e.g.
+   * {defaults: {cluster:{useLegacyReplicaAssignment:false}}}
+   */
+  String CLUSTER = "cluster";
+
+  /**
+   * This cluster property decides whether Solr should use the legacy round-robin replica placement strategy
+   * or the autoscaling policy based strategy to assign replicas to nodes. The default is false.
+   */
+  String USE_LEGACY_REPLICA_ASSIGNMENT = "useLegacyReplicaAssignment";
 }

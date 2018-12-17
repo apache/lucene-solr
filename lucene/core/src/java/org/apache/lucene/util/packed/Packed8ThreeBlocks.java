@@ -110,7 +110,7 @@ final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 2 * RamUsageEstimator.NUM_BYTES_INT     // valueCount,bitsPerValue
+        + 2 * Integer.BYTES                       // valueCount,bitsPerValue
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
         + RamUsageEstimator.sizeOf(blocks);
   }

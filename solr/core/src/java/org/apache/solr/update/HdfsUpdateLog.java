@@ -304,6 +304,7 @@ public class HdfsUpdateLog extends UpdateLog {
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
     bufferTlog = new HdfsTransactionLog(fs, new Path(tlogDir, newLogName),
         globalStrings, tlogDfsReplication);
+    bufferTlog.isBuffer = true;
   }
 
   @Override

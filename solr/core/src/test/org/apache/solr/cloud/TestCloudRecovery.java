@@ -87,7 +87,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // Removed BadApple on 18-May-2018
+  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     DirectUpdateHandler2.commitOnClose = false;
@@ -145,6 +145,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void corruptedLogTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     DirectUpdateHandler2.commitOnClose = false;

@@ -1,5 +1,5 @@
 = Indexing and Basic Data Operations
-:page-children: introduction-to-solr-indexing, post-tool, uploading-data-with-index-handlers, uploading-data-with-solr-cell-using-apache-tika, uploading-structured-data-store-data-with-the-data-import-handler, updating-parts-of-documents, detecting-languages-during-indexing, de-duplication, content-streams, uima-integration
+:page-children: introduction-to-solr-indexing, post-tool, uploading-data-with-index-handlers, uploading-data-with-solr-cell-using-apache-tika, uploading-structured-data-store-data-with-the-data-import-handler, updating-parts-of-documents, detecting-languages-during-indexing, de-duplication, content-streams
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,8 +38,6 @@ This section describes how Solr adds data to its index. It covers the following 
 * *<<de-duplication.adoc#de-duplication,De-Duplication>>*: Information about configuring Solr to mark duplicate documents as they are indexed.
 
 * *<<content-streams.adoc#content-streams,Content Streams>>*: Information about streaming content to Solr Request Handlers.
-
-* *<<uima-integration.adoc#uima-integration,UIMA Integration>>*: Information about integrating Solr with Apache's Unstructured Information Management Architecture (UIMA). UIMA lets you define custom pipelines of Analysis Engines that incrementally add metadata to your documents as annotations.
 
 == Indexing Using Client APIs
 

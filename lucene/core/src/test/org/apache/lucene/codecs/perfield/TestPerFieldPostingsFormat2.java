@@ -209,7 +209,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
-    assertEquals(num, search.totalHits);
+    assertEquals(num, search.totalHits.value);
     reader.close();
 
   }

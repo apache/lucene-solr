@@ -48,6 +48,8 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
         chars[i] = (char)input.ints[input.offset+i];
       }
       String surfaceForm = new String(chars);
+      assertFalse(surfaceForm.isEmpty());
+      assertEquals(surfaceForm.trim(), surfaceForm);
       assertTrue(UnicodeUtil.validUTF16String(surfaceForm));
       
       Long output = mapping.output;
@@ -96,6 +98,8 @@ public class TestTokenInfoDictionary extends LuceneTestCase {
             int offset = 0;
             for (Dictionary.Morpheme morph : decompound) {
               assertTrue(UnicodeUtil.validUTF16String(morph.surfaceForm));
+              assertFalse(morph.surfaceForm.isEmpty());
+              assertEquals(morph.surfaceForm.trim(), morph.surfaceForm);
               if (type != POS.Type.INFLECT) {
                 assertEquals(morph.surfaceForm, surfaceForm.substring(offset, offset + morph.surfaceForm.length()));
                 offset += morph.surfaceForm.length();

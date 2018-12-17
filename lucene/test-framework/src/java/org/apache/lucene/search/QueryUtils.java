@@ -22,7 +22,6 @@ import java.util.Random;
 
 import junit.framework.Assert;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -207,7 +206,7 @@ public class QueryUtils {
 
       @Override
       public FieldInfos getFieldInfos() {
-        return new FieldInfos(new FieldInfo[0]);
+        return FieldInfos.EMPTY;
       }
 
       final Bits liveDocs = new Bits.MatchNoBits(maxDoc);
@@ -295,13 +294,13 @@ public class QueryUtils {
         final LeafReader lastReader[] = {null};
 
         s.search(q, new SimpleCollector() {
-          private Scorer sc;
+          private Scorable sc;
           private Scorer scorer;
           private DocIdSetIterator iterator;
           private int leafPtr;
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.sc = scorer;
           }
 
@@ -437,10 +436,10 @@ public class QueryUtils {
     final List<LeafReaderContext> context = s.getTopReaderContext().leaves();
     Query rewritten = s.rewrite(q);
     s.search(q,new SimpleCollector() {
-      private Scorer scorer;
+      private Scorable scorer;
       private int leafPtr;
       @Override
-      public void setScorer(Scorer scorer) {
+      public void setScorer(Scorable scorer) {
         this.scorer = scorer;
       }
       @Override
@@ -550,9 +549,9 @@ public class QueryUtils {
           iterator.advance(min);
         }
         final int next = bulkScorer.score(new LeafCollector() {
-          Scorer scorer2;
+          Scorable scorer2;
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             this.scorer2 = scorer;
           }
           @Override
@@ -571,7 +570,7 @@ public class QueryUtils {
         if (scorer.docID() == DocIdSetIterator.NO_MORE_DOCS) {
           bulkScorer.score(new LeafCollector() {
             @Override
-            public void setScorer(Scorer scorer) throws IOException {}
+            public void setScorer(Scorable scorer) throws IOException {}
 
             @Override
             public void collect(int doc) throws IOException {

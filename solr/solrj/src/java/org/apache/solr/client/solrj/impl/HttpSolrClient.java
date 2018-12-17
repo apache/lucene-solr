@@ -926,6 +926,12 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
       return this;
     }
 
+    /**
+     * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
+     *
+     * @param params a set of parameters to add to the invariant-params list.  These params must be unique and may not
+     *               duplicate a param already in the invariant list.
+     */
     public Builder withInvariantParams(ModifiableSolrParams params) {
       Objects.requireNonNull(params, "params must be non null!");
 

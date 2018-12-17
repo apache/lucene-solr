@@ -342,7 +342,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     response = client.query(query);
     assertNull(response.getDebugMap());
   }
-  
+
+  @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testCompareWithNonDistributedRequest() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("id:1 OR id:2");

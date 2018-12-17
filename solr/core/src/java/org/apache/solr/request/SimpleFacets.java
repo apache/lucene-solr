@@ -40,8 +40,8 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -90,7 +90,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
-import org.apache.solr.search.facet.FacetProcessor;
+import org.apache.solr.search.facet.FacetRequest;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -107,7 +107,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * to leverage any of its functionality.
  */
 public class SimpleFacets {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
@@ -518,7 +518,7 @@ public class SimpleFacets {
             if (ft.isPointField() && mincount <= 0) { // default is mincount=0.  See SOLR-10033 & SOLR-11174.
               String warningMessage 
                   = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
-              LOG.warn(warningMessage);
+              log.warn(warningMessage);
               List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
               if (null == warnings) {
                 warnings = new ArrayList<>();
@@ -565,29 +565,20 @@ public class SimpleFacets {
             }
             jsonFacet.put(SORT, sortVal );
 
-            Map<String, Object> topLevel = new HashMap<>();
-            topLevel.put(field, jsonFacet);
-              
-            topLevel.put("processEmpty", true);
-
-            FacetProcessor fproc = FacetProcessor.createProcessor(rb.req, topLevel, // rb.getResults().docSet
-                                                                    docs );
             //TODO do we handle debug?  Should probably already be handled by the legacy code
-            fproc.process();
 
+            Object resObj = FacetRequest.parseOneFacetReq(req, jsonFacet).process(req, docs);
             //Go through the response to build the expected output for SimpleFacets
-            Object res = fproc.getResponse();
-            counts = new NamedList<Integer>();
-            if(res != null) {
-              SimpleOrderedMap<Object> som = (SimpleOrderedMap<Object>)res;
-              SimpleOrderedMap<Object> asdf = (SimpleOrderedMap<Object>) som.get(field);
+            counts = new NamedList<>();
+            if(resObj != null) {
+              NamedList<Object> res = (NamedList<Object>) resObj;
 
-              List<SimpleOrderedMap<Object>> buckets = (List<SimpleOrderedMap<Object>>)asdf.get("buckets");
-              for(SimpleOrderedMap<Object> b : buckets) {
+              List<NamedList<Object>> buckets = (List<NamedList<Object>>)res.get("buckets");
+              for(NamedList<Object> b : buckets) {
                 counts.add(b.get("val").toString(), (Integer)b.get("count"));
               }
               if(missing) {
-                SimpleOrderedMap<Object> missingCounts = (SimpleOrderedMap<Object>) asdf.get("missing");
+                NamedList<Object> missingCounts = (NamedList<Object>) res.get("missing");
                 counts.add(null, (Integer)missingCounts.get("count"));
               }
             }
@@ -679,6 +670,13 @@ public class SimpleFacets {
        method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
      }
 
+     /* Unless isUninvertible() is true, we prohibit any use of UIF...
+        Here we just force FC(S) instead, and trust that the DocValues faceting logic will
+        do the right thing either way (with or w/o docvalues) */
+     if (FacetMethod.UIF == method && ! field.isUninvertible()) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+     
      /* ENUM can't deal with trie fields that index several terms per value */
      if (method == FacetMethod.ENUM
          && TrieField.getMainValuePrefix(type) != null) {
@@ -963,7 +961,7 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), field);
+    Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;

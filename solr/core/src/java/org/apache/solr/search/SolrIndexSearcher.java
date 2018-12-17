@@ -126,8 +126,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // list of all caches associated with this searcher.
   private final SolrCache[] cacheList;
 
-  private final FieldInfos fieldInfos;
-
   private DirectoryFactory directoryFactory;
 
   private final LeafReader leafReader;
@@ -157,24 +155,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        wrapUninvertingReaderPerSegment(core, reader),
+        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
         SolrQueryTimeoutImpl.getInstance());
   }
-
-  /**
-   * If docvalues are enabled or disabled after data has already been indexed for a field, such that
-   * only some segments have docvalues, uninverting on the top level reader will cause 
-   * IllegalStateException to be thrown when trying to use a field with such mixed data. This is because
-   * the {@link IndexSchema#getUninversionMap(IndexReader)} method decides to put a field 
-   * into the uninverteding map only if *NO* segment in the index contains docvalues for that field.
-   * 
-   * Therefore, this class provides a uninverting map per segment such that for any field, 
-   * DocValues are used from segments if they exist and uninversion of the field is performed on the rest
-   * of the segments.
-   */
-   private static DirectoryReader wrapUninvertingReaderPerSegment(SolrCore core, DirectoryReader reader) throws IOException {
-     return UninvertingReader.wrap(reader, r -> core.getLatestSchema().getUninversionMap(r));
-   }
 
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
@@ -278,7 +261,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     this.useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
 
-    this.fieldInfos = leafReader.getFieldInfos();
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
     this.cachingEnabled = enableCache;
@@ -334,7 +316,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public FieldInfos getFieldInfos() {
-    return fieldInfos;
+    return leafReader.getFieldInfos();
   }
 
   /*
@@ -509,7 +491,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns a collection of all field names the index reader knows about.
    */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(fieldInfos, fieldInfo -> fieldInfo.name);
+    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
   }
 
   public SolrCache<Query,DocSet> getFilterCache() {
@@ -1529,18 +1511,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return TopScoreDocCollector.create(len);
+      return TopScoreDocCollector.create(len, Integer.MAX_VALUE);
     } else {
       // we have a sort
-      final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
-      // :TODO: make fillFields its own QueryCommand flag? ...
-      // ... see comments in populateNextCursorMarkFromTopDocs for cache issues (SOLR-5595)
-      final boolean fillFields = (null != cursor);
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, needScores, true);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, Integer.MAX_VALUE);
     }
   }
 
@@ -1585,10 +1563,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         };
       } else {
         collector = new SimpleCollector() {
-          Scorer scorer;
+          Scorable scorer;
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1617,14 +1595,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
+      if ((cmd.getFlags() & GET_SCORES) != 0) {
+        maxScoreCollector = new MaxScoreCollector();
+        collector = MultiCollector.wrap(topCollector, maxScoreCollector);
+      }
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
+      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+        TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+      }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
-      maxScore = totalHits > 0 ? topDocs.getMaxScore() : 0.0f;
+      maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
       ids = new int[nDocsReturned];
       scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
@@ -1675,10 +1661,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         final Collector topScoreCollector = new SimpleCollector() {
 
-          Scorer scorer;
+          Scorable scorer;
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             this.scorer = scorer;
           }
 
@@ -1712,7 +1698,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
-      Collector collector = MultiCollector.wrap(topCollector, setCollector);
+      MaxScoreCollector maxScoreCollector = null;
+      List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
+
+      if ((cmd.getFlags() & GET_SCORES) != 0) {
+        maxScoreCollector = new MaxScoreCollector();
+        collectors.add(maxScoreCollector);
+      }
+
+      Collector collector = MultiCollector.wrap(collectors);
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
@@ -1722,8 +1716,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       assert (totalHits == set.size());
 
       TopDocs topDocs = topCollector.topDocs(0, len);
+      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+        TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+      }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-      maxScore = totalHits > 0 ? topDocs.getMaxScore() : 0.0f;
+      maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
 
       ids = new int[nDocsReturned];
@@ -2049,7 +2046,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ids[i] = scoreDoc.doc;
     }
 
-    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits, 0.0f);
+    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f);
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 

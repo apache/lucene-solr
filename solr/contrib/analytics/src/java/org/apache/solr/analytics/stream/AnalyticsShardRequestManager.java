@@ -107,7 +107,7 @@ public class AnalyticsShardRequestManager {
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
-      Collection<Slice> slices = clusterState.getCollection(collection).getActiveSlices();
+      Slice[] slices = clusterState.getCollection(collection).getActiveSlicesArr();
 
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();

@@ -176,8 +176,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       if (hasOffsets) {
         if (offStart + totalPositions == startOffsetsBuf.length) {
           final int newLength = ArrayUtil.oversize(offStart + totalPositions, 4);
-          startOffsetsBuf = Arrays.copyOf(startOffsetsBuf, newLength);
-          lengthsBuf = Arrays.copyOf(lengthsBuf, newLength);
+          startOffsetsBuf = ArrayUtil.growExact(startOffsetsBuf, newLength);
+          lengthsBuf = ArrayUtil.growExact(lengthsBuf, newLength);
         }
         startOffsetsBuf[offStart + totalPositions] = startOffset;
         lengthsBuf[offStart + totalPositions] = length;
@@ -705,8 +705,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       final int offStart = curField.offStart + curField.totalPositions;
       if (offStart + numProx > startOffsetsBuf.length) {
         final int newLength = ArrayUtil.oversize(offStart + numProx, 4);
-        startOffsetsBuf = Arrays.copyOf(startOffsetsBuf, newLength);
-        lengthsBuf = Arrays.copyOf(lengthsBuf, newLength);
+        startOffsetsBuf = ArrayUtil.growExact(startOffsetsBuf, newLength);
+        lengthsBuf = ArrayUtil.growExact(lengthsBuf, newLength);
       }
       int lastOffset = 0, startOffset, endOffset;
       for (int i = 0; i < numProx; ++i) {

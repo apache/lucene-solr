@@ -34,9 +34,9 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
       assertEquals(info.getRawText(), token.get("raw_text"));
     }
     assertEquals(info.getType(), token.get("type"));
-    assertEquals(new Integer(info.getStart()), token.get("start"));
-    assertEquals(new Integer(info.getEnd()), token.get("end"));
-    assertEquals(new Integer(info.getPosition()), token.get("position"));
+    assertEquals(info.getStart(), token.get("start"));
+    assertEquals(info.getEnd(), token.get("end"));
+    assertEquals(info.getPosition(), token.get("position"));
     assertArrayEquals(info.getPositionHistory(), ArrayUtils.toPrimitive((Integer[]) token.get("positionHistory")));
     if (info.isMatch()) {
       assertEquals(Boolean.TRUE, token.get("match"));

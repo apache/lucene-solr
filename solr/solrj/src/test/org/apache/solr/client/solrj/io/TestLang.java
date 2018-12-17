@@ -52,7 +52,7 @@ public class TestLang extends LuceneTestCase {
       "poissonDistribution", "enumeratedDistribution", "probability", "sumDifference", "meanDifference",
       "primes", "factorial", "movingMedian", "binomialCoefficient", "expMovingAvg", "monteCarlo", "constantDistribution",
       "weibullDistribution", "mean", "mode", "logNormalDistribution", "zipFDistribution", "gammaDistribution",
-      "betaDistribution", "polyfit", "harmonicFit", "loess", "matrix", "transpose", "unitize",
+      "betaDistribution", "polyfit", "harmonicFit", "harmfit", "loess", "matrix", "transpose", "unitize",
       "triangularDistribution", "precision", "minMaxScale", "markovChain", "grandSum",
       "scalarAdd", "scalarSubtract", "scalarMultiply", "scalarDivide", "sumRows",
       "sumColumns", "diff", "corrPValues", "normalizeSum", "geometricDistribution", "olsRegress",
@@ -69,7 +69,11 @@ public class TestLang extends LuceneTestCase {
        TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, "abs", "add", "div", "mult", "sub", "log", "pow",
       "mod", "ceil", "floor", "sin", "asin", "sinh", "cos", "acos", "cosh", "tan", "atan", "tanh", "round", "sqrt",
       "cbrt", "coalesce", "uuid", "if", "convert", "valueAt", "memset", "fft", "ifft", "euclidean","manhattan",
-      "earthMovers", "canberra", "chebyshev", "ones", "zeros", "setValue", "getValue"};
+      "earthMovers", "canberra", "chebyshev", "ones", "zeros", "setValue", "getValue", "knnRegress", "gaussfit",
+      "outliers", "stream", "getCache", "putCache", "listCache", "removeCache", "zscores", "latlonVectors",
+      "convexHull", "getVertices", "getBaryCenter", "getArea", "getBoundarySize","oscillate",
+      "getAmplitude", "getPhase", "getAngularFrequency", "enclosingDisk", "getCenter", "getRadius",
+      "getSupportPoints", "pairSort", "log10", "plist", "recip", "pivot", "ltrim", "rtrim", "export"};
 
   @Test
   public void testLang() {

@@ -269,4 +269,14 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       tk.close();
     }
   }
+
+  public void testEndPositionIncrement() throws IOException {
+    TokenStream source = whitespaceMockTokenizer("seventeen one two three four");
+    TokenStream input = new EdgeNGramTokenFilter(source, 8, 8, false);
+    PositionIncrementAttribute posIncAtt = input.addAttribute(PositionIncrementAttribute.class);
+    input.reset();
+    while (input.incrementToken()) {}
+    input.end();
+    assertEquals(4, posIncAtt.getPositionIncrement());
+  }
 }
