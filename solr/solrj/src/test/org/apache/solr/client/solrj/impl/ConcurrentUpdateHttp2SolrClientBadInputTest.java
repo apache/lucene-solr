@@ -28,8 +28,6 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.internal.matchers.StringContains.containsString;
-
 public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBase {
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
@@ -93,7 +91,8 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        assertThat(thrown.getMessage(), containsString(expectedString));
+        assertTrue("[" + thrown.getMessage() + "] doesn't contain [" + expectedString + "]",
+            thrown.getMessage().contains(expectedString));
       }
     }
   }
