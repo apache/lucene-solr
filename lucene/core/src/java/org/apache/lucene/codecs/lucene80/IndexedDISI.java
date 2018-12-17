@@ -49,7 +49,7 @@ import org.apache.lucene.util.RoaringDocIdSet;
  *
  * 
  * To avoid O(n) lookup time complexity, with n being the number of documents, two lookup
- * tables are used:  * A lookup table for block blockCache and index, and a rank structure
+ * tables are used: A lookup table for block blockCache and index, and a rank structure
  * for DENSE block lookups.
  *
  * The lookup table is an array of {@code long}s with an entry for each block. It allows for
@@ -58,11 +58,11 @@ import org.apache.lucene.util.RoaringDocIdSet;
  *
  * Each long entry consists of 2 logical parts:
  *
- * The first 31 bits holds the index (number of set bits in the blocks) up to just before the
- * wanted block. The next 33 bits holds the offset into the underlying slice.
+ * The first 31 bits hold the index (number of set bits in the blocks) up to just before the
+ * wanted block. The next 33 bits holds the offset in bytes into the underlying slice.
  * As there is a maximum of 2^16 blocks, it follows that the maximum size of any block must
  * not exceed 2^17 bits to avoid overflow. This is currently the case, with the largest
- * block being DENSE and using 2^16 + 32 bits, and is likely to continue to hold as using
+ * block being DENSE and using 2^16 + 288 bits, and is likely to continue to hold as using
  * more than double the amount of bits is unlikely to be an efficient representation.
  * The cache overhead is numDocs/1024 bytes.
  *
@@ -101,10 +101,11 @@ final class IndexedDISI extends DocIdSetIterator {
   private static final long BLOCK_INDEX_MASK = ~0L << BLOCK_INDEX_SHIFT; // The index bits in a lookup entry
   private static final long BLOCK_LOOKUP_MASK = ~BLOCK_INDEX_MASK; // The offset bits in a lookup entry
 
+  private static final int DENSE_BLOCK_LONGS = BLOCK_SIZE/Long.SIZE; // 1024
   private static final int RANK_BLOCK_SIZE = 512; // The number of docIDs/bits in each rank-sub-block within a DENSE block
-  private static final int RANK_BLOCK_LONGS = 512/Long.SIZE; // The number of longs making up a rank-block (8)
+  private static final int RANK_BLOCK_LONGS = RANK_BLOCK_SIZE/Long.SIZE; // The number of longs making up a rank-block (8)
   private static final int RANK_BLOCK_BITS = 9;
-  private static final int RANKS_PER_BLOCK = BLOCK_SIZE / RANK_BLOCK_SIZE;
+  private static final int RANKS_PER_BLOCK = BLOCK_SIZE / RANK_BLOCK_SIZE; // 128
 
   static final int MAX_ARRAY_LENGTH = (1 << 12) - 1;
 
@@ -137,11 +138,11 @@ final class IndexedDISI extends DocIdSetIterator {
   // Creates a DENSE rank-entry (the number of set bits up to a given point) for the buffer.
   // One rank-entry for every 512 bits/8 longs for a total of 128 shorts.
   private static short[] createRank(FixedBitSet buffer) {
-    final short[] rank = new short[128];
+    final short[] rank = new short[RANKS_PER_BLOCK];
     final long[] bits = buffer.getBits();
     int bitCount = 0;
-    for (int word = 0 ; word < 1024 ; word++) {
-      if (word >> 3 << 3 == word) { // Every 8 longs
+    for (int word = 0 ; word < DENSE_BLOCK_LONGS ; word++) {
+      if ((word & 0x07) == 0) { // Every 8 longs
         rank[word >> 3] = (short)bitCount;
       }
       bitCount += Long.bitCount(bits[word]);
@@ -161,7 +162,7 @@ final class IndexedDISI extends DocIdSetIterator {
     int totalCardinality = 0;
     int blockCardinality = 0;
     final FixedBitSet buffer = new FixedBitSet(1<<16);
-    long[] jumps = new long[ArrayUtil.oversize(100, Long.BYTES)];
+    long[] jumps = new long[ArrayUtil.oversize(1, Long.BYTES)];
     jumps[0] = out.getFilePointer()-origo; // First block starts at index 0
     int prevBlock = -1;
     int jumpBlockIndex = 0;
@@ -190,7 +191,6 @@ final class IndexedDISI extends DocIdSetIterator {
       prevBlock++;
     }
     final int lastBlock = prevBlock == -1 ? 0 : prevBlock;
-//    jumps = addJumps(jumps, out.getFilePointer(), totalCardinality, lastBlock, lastBlock+1);
     // NO_MORE_DOCS is stored explicitly
     buffer.set(DocIdSetIterator.NO_MORE_DOCS & 0xFFFF);
     flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, out);
