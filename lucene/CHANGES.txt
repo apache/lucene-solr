@@ -286,6 +286,10 @@ Optimizations
 * LUCENE-8599: Use sparse bitset to store docs in SingleValueDocValuesFieldUpdates. 
   (Simon Willnauer, Adrien Grand)
 
+* LUCENE-8600: Doc-value updates get applied faster by sorting with quicksort,
+  rather than an in-place mergesort, which needs to perform fewer swaps.
+  (Adrien Grand)
+
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
