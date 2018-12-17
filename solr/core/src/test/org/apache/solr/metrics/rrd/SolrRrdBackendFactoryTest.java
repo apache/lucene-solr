@@ -87,13 +87,13 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     List<Pair<String, Long>> list = factory.list(100);
     assertEquals(list.toString(), 1, list.size());
     assertEquals(list.toString(), "foo", list.get(0).first());
-    timeSource.sleep(2000);
+    timeSource.sleep(4000);
     // there should be one sync data
     assertEquals(solrClient.docs.toString(), 1, solrClient.docs.size());
     String id = SolrRrdBackendFactory.ID_PREFIX + SolrRrdBackendFactory.ID_SEP + "foo";
     SolrInputDocument doc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     long timestamp = (Long)doc.getFieldValue("timestamp_l");
-    timeSource.sleep(2000);
+    timeSource.sleep(4000);
     SolrInputDocument newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertEquals(newDoc.toString(), newDoc, doc);
     // make sure the update doesn't race with the sampling boundaries
@@ -157,15 +157,15 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     rowCount = fd.getRowCount();
     one = fd.getValues("one");
     assertEquals("one: " + dump, 102, one.length);
-    assertEquals(dump, Double.NaN, one[0], 0.00001);
-    assertEquals(dump, Double.NaN, one[101], 0.00001);
+    assertEquals(dump, Double.NaN, one[0], 0.01);
+    assertEquals(dump, Double.NaN, one[101], 0.01);
     for (int i = 1; i < 101; i++) {
-      assertEquals(dump, 1.0, one[i], 0.00001);
+      assertEquals(dump, 1.0, one[i], 0.01);
     }
     two = fd.getValues("two");
-    assertEquals("two: " + dump, Double.NaN, two[101], 0.00001);
+    assertEquals("two: " + dump, Double.NaN, two[101], 0.001);
     for (int i = 1; i < 101; i++) {
-      assertEquals(dump, 100.0, two[i], 0.00001);
+      assertEquals(dump, 100.0, two[i], 0.001);
     }
 
     db.close();

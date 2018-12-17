@@ -47,9 +47,9 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriter w2 = new IndexWriter(dir, iwc);
     r.close();
 
-    assertEquals(1, w2.maxDoc());
+    assertEquals(1, w2.getDocStats().maxDoc);
     w2.addDocument(new Document());
-    assertEquals(2, w2.maxDoc());
+    assertEquals(2, w2.getDocStats().maxDoc);
     w2.close();
     
     IndexReader r2 = DirectoryReader.open(dir);
@@ -74,9 +74,9 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     assertEquals(1, r.maxDoc());
     r.close();
 
-    assertEquals(1, w2.maxDoc());
+    assertEquals(1, w2.getDocStats().maxDoc);
     w2.addDocument(new Document());
-    assertEquals(2, w2.maxDoc());
+    assertEquals(2, w2.getDocStats().maxDoc);
     w2.close();
     
     IndexReader r2 = DirectoryReader.open(dir);
@@ -141,7 +141,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     // Add another doc
     w.addDocument(new Document());
-    assertEquals(2, w.maxDoc());
+    assertEquals(2, w.getDocStats().maxDoc);
     w.close();
 
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -249,7 +249,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
           // rollback writer to last nrt reader
           if (random().nextBoolean()) {
             if (VERBOSE) {
-              System.out.println("  close writer and open new writer from non-NRT reader numDocs=" + w.numDocs());
+              System.out.println("  close writer and open new writer from non-NRT reader numDocs=" + w.getDocStats().numDocs);
             }
             w.close();
             r.close();
@@ -259,7 +259,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
             nrtLiveIDs = new HashSet<>(liveIDs);
           } else {
             if (VERBOSE) {
-              System.out.println("  rollback writer and open new writer from NRT reader numDocs=" + w.numDocs());
+              System.out.println("  rollback writer and open new writer from NRT reader numDocs=" + w.getDocStats().numDocs);
             }
             w.rollback();
           }
@@ -383,7 +383,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
     w = new IndexWriter(dir, iwc);
-    assertEquals(1, w.numDocs());
+    assertEquals(1, w.getDocStats().numDocs);
 
     r.close();
     DirectoryReader r3 = DirectoryReader.open(w);
@@ -413,7 +413,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
     w = new IndexWriter(dir, iwc);
-    assertEquals(2, w.numDocs());
+    assertEquals(2, w.getDocStats().numDocs);
 
     r.close();
     w.close();
@@ -456,7 +456,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
     IndexWriter w2 = new IndexWriter(dir, iwc);
-    assertEquals(2, w2.maxDoc());
+    assertEquals(2, w2.getDocStats().maxDoc);
     IOUtils.close(r, w2, dir);
   }
 }

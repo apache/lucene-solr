@@ -64,7 +64,6 @@ public class KerberosTestServices {
       Locale.setDefault(Locale.US);
     }
 
-    File dir = null;
     // There is time lag between selecting a port and trying to bind with it. It's possible that
     // another service captures the port in between which'll result in BindException.
     boolean bindException;
@@ -76,7 +75,7 @@ public class KerberosTestServices {
         kdc = getKdc(workDir);
         kdc.start();
       } catch (BindException e) {
-        FileUtils.deleteDirectory(dir); // clean directory
+        FileUtils.deleteDirectory(workDir); // clean directory
         numTries++;
         if (numTries == 3) {
           log.error("Failed setting up MiniKDC. Tried " + numTries + " times.");

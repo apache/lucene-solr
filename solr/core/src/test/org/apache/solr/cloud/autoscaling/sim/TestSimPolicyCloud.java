@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -47,12 +49,11 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 public class TestSimPolicyCloud extends SimSolrCloudTestCase {
@@ -61,9 +62,14 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
   @org.junit.Rule
   public ExpectedException expectedException = ExpectedException.none();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(5, TimeSource.get("simTime:50"));
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   public void testDataProviderPerReplicaDetails() throws Exception {
@@ -108,7 +114,6 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCreateCollectionAddReplica() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();
@@ -134,8 +139,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
   }
-  
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+
   public void testCreateCollectionSplitShard() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
     String firstNode = cluster.getSimClusterStateProvider().simGetRandomNode();
@@ -294,7 +298,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     assertEquals(3, coll.getSlice("s3").getReplicas().size());
     coll.forEachReplica(verifyReplicas);
   }
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();

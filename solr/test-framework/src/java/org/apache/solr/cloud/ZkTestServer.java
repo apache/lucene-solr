@@ -104,6 +104,8 @@ public class ZkTestServer {
   protected volatile SolrZkClient rootClient;
   protected volatile SolrZkClient chRootClient;
 
+  private volatile ZKDatabase zkDb;
+
   static public enum LimitViolationAction {
     IGNORE,
     REPORT,
@@ -514,6 +516,7 @@ public class ZkTestServer {
   }
 
   public void setZKDatabase(ZKDatabase zkDb) {
+    this.zkDb = zkDb;
     zkServer.zooKeeperServer.setZKDatabase(zkDb);
   }
   
@@ -611,6 +614,11 @@ public class ZkTestServer {
       } catch (Exception e) {
         log.error("Exception shutting down ZooKeeper Test Server",e);
       }
+      
+      if (zkDb != null) {
+        zkDb.close();
+      }
+      
       while (true) {
         try {
           zooThread.join();

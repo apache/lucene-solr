@@ -34,7 +34,7 @@ public interface SolrInfoBean {
    * Category of Solr component.
    */
   enum Category { CONTAINER, ADMIN, CORE, QUERY, UPDATE, CACHE, HIGHLIGHTER, QUERYPARSER, SPELLCHECKER,
-    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, OTHER }
+    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, SECURITY, OTHER }
 
   /**
    * Top-level group of beans or metrics for a subsystem.

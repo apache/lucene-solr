@@ -91,6 +91,16 @@ public class TestIntervalQuery extends LuceneTestCase {
         new int[]{0, 1, 2, 3, 5});
   }
 
+  public void testOrderedNearQueryGaps1() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.maxgaps(1, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
+        new int[]{0, 1, 2, 5});
+  }
+
+  public void testOrderedNearQueryGaps2() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.maxgaps(2, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
+        new int[]{0, 1, 2, 3, 5});
+  }
+
   public void testNestedOrderedNearQuery() throws IOException {
     // onear/1(w1, onear/2(w2, w3))
     Query q = new IntervalQuery(field,

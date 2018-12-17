@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -50,7 +51,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_DELTA_NANOS;
-import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSource;
 
 /**
  * Integration test for {@link MetricTrigger}
@@ -58,6 +58,9 @@ import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSourc
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final TimeSource timeSource = TimeSource.NANO_TIME;
+  
   static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
   static CountDownLatch listenerCreated = new CountDownLatch(1);
   private static CountDownLatch triggerFiredLatch;
@@ -212,7 +215,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
         events.add(event);
-        long currentTimeNanos = timeSource.getTimeNs();
+        long currentTimeNanos = context.getCloudManager().getTimeSource().getTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -227,10 +230,12 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   public static class TestTriggerListener extends TriggerListenerBase {
+    private TimeSource timeSource;
     @Override
     public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
       super.configure(loader, cloudManager, config);
       listenerCreated.countDown();
+      timeSource = cloudManager.getTimeSource();
     }
 
     @Override
@@ -238,6 +243,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       lst.add(new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message));
+                                
     }
   }
 }

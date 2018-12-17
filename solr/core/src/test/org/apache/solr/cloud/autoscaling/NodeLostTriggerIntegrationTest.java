@@ -283,7 +283,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true)) {
           events.add(event);
-          long currentTimeNanos = TriggerIntegrationTest.timeSource.getTimeNs();
+          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {

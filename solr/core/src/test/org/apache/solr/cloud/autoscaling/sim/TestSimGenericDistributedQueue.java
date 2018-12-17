@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 /**
  *
  */
-// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-02-26
 public class TestSimGenericDistributedQueue extends TestSimDistributedQueue {
   DistribStateManager stateManager = new SimDistribStateManager();
 

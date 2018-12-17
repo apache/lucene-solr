@@ -458,7 +458,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
             .stopAtShutdown(true)
             .setContext("/solr")
             .setPort(port)
-            .withSSLConfig(sslConfig)
+            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
         Properties nodeProperties = new Properties();
         nodeProperties.setProperty("solrconfig", solrconfigFile);

@@ -68,6 +68,12 @@ public class StrField extends PrimitiveFieldType {
     return Collections.singletonList(fval);
   }
 
+
+  @Override
+  public boolean isUtf8Field() {
+    return true;
+  }
+
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);

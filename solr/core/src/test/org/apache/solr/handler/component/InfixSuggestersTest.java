@@ -122,7 +122,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
     try {
       LinkedHashMap<Class<? extends Throwable>, List<Class<? extends Throwable>>> expected = new LinkedHashMap<>();
       expected.put(RuntimeException.class, Arrays.asList
-          (SolrCoreState.CoreIsClosedException.class, SolrException.class, IllegalStateException.class));
+          (SolrCoreState.CoreIsClosedException.class, SolrException.class, IllegalStateException.class, NullPointerException.class));
       final Throwable[] outerException = new Throwable[1];
       // Build the suggester in the background with a long dictionary
       Future job = executor.submit(() -> outerException[0] = expectThrowsAnyOf(expected,

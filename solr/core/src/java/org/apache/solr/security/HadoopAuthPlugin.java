@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import javax.servlet.FilterChain;
@@ -120,6 +121,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   private static final boolean TRACE_HTTP = Boolean.getBoolean("hadoopauth.tracehttp");
 
   private AuthenticationFilter authFilter;
+  private final Locale defaultLocale = Locale.getDefault();
   protected final CoreContainer coreContainer;
 
   public HadoopAuthPlugin(CoreContainer coreContainer) {
@@ -130,7 +132,20 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   public void init(Map<String,Object> pluginConfig) {
     try {
       String delegationTokenEnabled = (String)pluginConfig.getOrDefault(DELEGATION_TOKEN_ENABLED_PROPERTY, "false");
-      authFilter = (Boolean.parseBoolean(delegationTokenEnabled)) ? new HadoopAuthFilter() : new AuthenticationFilter();
+      authFilter = (Boolean.parseBoolean(delegationTokenEnabled)) ? new HadoopAuthFilter() : new AuthenticationFilter() {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+          // A hack until HADOOP-15681 get committed
+          Locale.setDefault(Locale.US);
+          super.doFilter(request, response, filterChain);
+        }
+
+        @Override
+        protected void doFilter(FilterChain filterChain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+          Locale.setDefault(defaultLocale);
+          super.doFilter(filterChain, request, response);
+        }
+      };
 
       // Initialize kerberos before initializing curator instance.
       boolean initKerberosZk = Boolean.parseBoolean((String)pluginConfig.getOrDefault(INIT_KERBEROS_ZK, "false"));
@@ -244,6 +259,24 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
     };
     authFilter.doFilter(request, rspCloseShield, filterChain);
 
+    switch (frsp.getStatus()) {
+      case HttpServletResponse.SC_UNAUTHORIZED:
+        // Cannot tell whether the 401 is due to wrong or missing credentials
+        numWrongCredentials.inc();
+        break;
+
+      case HttpServletResponse.SC_FORBIDDEN:
+        // Are there other status codes which should also translate to error?
+        numErrors.mark();
+        break;
+      default:
+        if (frsp.getStatus() >= 200 && frsp.getStatus() <= 299) {
+          numAuthenticated.inc();
+        } else {
+          numErrors.mark();
+        }
+    }
+     
     if (TRACE_HTTP) {
       log.info("----------HTTP Response---------");
       log.info("Status : {}", frsp.getStatus());

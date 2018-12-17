@@ -99,4 +99,27 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     iw.addDocument(doc);
   }
 
+  public void testEarlyTermination() throws IOException {
+
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    for (int i = 0; i < 500; i++) {
+      addDoc("doc" + i, iw);
+    }
+    IndexReader ir = DirectoryReader.open(iw);
+
+    IndexSearcher is = newSearcher(ir);
+
+    final int totalHitsThreshold = 200;
+    TopScoreDocCollector c = TopScoreDocCollector.create(10, null, totalHitsThreshold);
+
+    is.search(new MatchAllDocsQuery(), c);
+    assertEquals(totalHitsThreshold, c.totalHits);
+
+    iw.close();
+    ir.close();
+    dir.close();
+
+  }
+
 }

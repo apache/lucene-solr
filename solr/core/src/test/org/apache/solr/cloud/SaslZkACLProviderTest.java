@@ -115,6 +115,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13075")
   public void testSaslZkACLProvider() throws Exception {
     // Test with Sasl enabled
     SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
@@ -196,7 +197,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
         File keytabFile = new File(kdcDir, "keytabs");
         String zkClientPrincipal = "solr";
-        String zkServerPrincipal = "zookeeper/127.0.0.1";
+        String zkServerPrincipal = "zookeeper/localhost";
 
         kerberosTestServices = KerberosTestServices.builder()
             .withKdc(new File(kdcDir))

@@ -39,23 +39,27 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
+import org.apache.solr.client.solrj.util.Constants;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * An {@link SSLConfig} that supports reading key/trust store information directly from resource 
- * files provided with the Solr test-framework classes
+ * An SSLConfig that provides {@link SSLConfig} and {@link SchemaRegistryProvider} for both clients and servers
+ * that supports reading key/trust store information directly from resource files provided with the
+ * Solr test-framework classes
  */
-public class SSLTestConfig extends SSLConfig {
+public class SSLTestConfig {
 
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
   private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
-  private static final String TEST_KEYSTORE_PASSWORD = "secret";
+  private static final String TEST_PASSWORD = "secret";
 
   private final boolean checkPeerName;
   private final Resource keyStore;
   private final Resource trustStore;
+  private boolean useSsl;
+  private boolean clientAuth;
   
   /** Creates an SSLTestConfig that does not use SSL or client authentication */
   public SSLTestConfig() {
@@ -97,9 +101,15 @@ public class SSLTestConfig extends SSLConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    super(useSSL, clientAuth, null, TEST_KEYSTORE_PASSWORD, null, TEST_KEYSTORE_PASSWORD);
+    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
+    if (Constants.JRE_IS_MINIMUM_JAVA11) {
+      this.useSsl = false;
+    } else {
+      this.useSsl = useSSL;
+    }
+    this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
-    
+
     final String resourceName = checkPeerName
       ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
     trustStore = keyStore = Resource.newClassPathResource(resourceName);
@@ -113,22 +123,14 @@ public class SSLTestConfig extends SSLConfig {
   public boolean getCheckPeerName() {
     return checkPeerName;
   }
-  
-  /** 
-   * NOTE: This method is meaningless in SSLTestConfig.
-   * @return null
-   */
-  @Override
-  public String getKeyStore() {
-    return null;
+
+  /** All other settings on this object are ignored unless this is true */
+  public boolean isSSLMode() {
+    return useSsl;
   }
-  /** 
-   * NOTE: This method is meaningless in SSLTestConfig.
-   * @return null
-   */
-  @Override
-  public String getTrustStore() {
-    return null;
+
+  public boolean isClientAuthMode() {
+    return clientAuth;
   }
   
   /**
@@ -166,16 +168,35 @@ public class SSLTestConfig extends SSLConfig {
     
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
-    builder.loadTrustMaterial(buildKeyStore(keyStore, getKeyStorePassword()), new TrustSelfSignedStrategy()).build();
+    builder.loadTrustMaterial(buildKeyStore(keyStore, TEST_PASSWORD), new TrustSelfSignedStrategy()).build();
 
     if (isClientAuthMode()) {
-      builder.loadKeyMaterial(buildKeyStore(trustStore, getTrustStorePassword()), getTrustStorePassword().toCharArray());
-      
+      builder.loadKeyMaterial(buildKeyStore(trustStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
     }
 
     return builder.build();
   }
-  
+
+  public SSLConfig buildClientSSLConfig() {
+    if (!isSSLMode()) {
+      return null;
+    }
+
+    return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
+      @Override
+      public SslContextFactory createContextFactory() {
+        SslContextFactory factory = new SslContextFactory(false);
+        try {
+          factory.setSslContext(buildClientSSLContext());
+          factory.setNeedClientAuth(checkPeerName);
+        } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
+          throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);
+        }
+        return factory;
+      }
+    };
+  }
+
   /**
    * Builds a new SSLContext for jetty servers which have been configured based on the settings of 
    * this object.
@@ -185,49 +206,39 @@ public class SSLTestConfig extends SSLConfig {
    * certificates (since that's what is almost always used during testing).
    * almost always used during testing). 
    */
-  public SSLContext buildServerSSLContext() throws KeyManagementException, 
-    UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
-
-    assert isSSLMode();
-    
-    SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
-
-    builder.loadKeyMaterial(buildKeyStore(keyStore, getKeyStorePassword()), getKeyStorePassword().toCharArray());
-
-    if (isClientAuthMode()) {
-      builder.loadTrustMaterial(buildKeyStore(trustStore, getTrustStorePassword()), new TrustSelfSignedStrategy()).build();
-      
-    }
-
-    return builder.build();
-  }
-
-  /**
-   * Returns an SslContextFactory using {@link #buildServerSSLContext} if SSL should be used, else returns null.
-   */
-  @Override
-  public SslContextFactory createContextFactory() {
+  public SSLConfig buildServerSSLConfig() {
     if (!isSSLMode()) {
       return null;
     }
-    // else...
 
-    
-    SslContextFactory factory = new SslContextFactory(false);
-    try {
-      factory.setSslContext(buildServerSSLContext());
-    } catch (Exception e) { 
-      throw new RuntimeException("ssl context init failure: " + e.getMessage(), e); 
-    }
-    factory.setNeedClientAuth(isClientAuthMode());
-    return factory;
+    return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
+      @Override
+      public SslContextFactory createContextFactory() {
+        SslContextFactory factory = new SslContextFactory(false);
+        try {
+          SSLContextBuilder builder = SSLContexts.custom();
+          builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
+
+          builder.loadKeyMaterial(buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
+
+          if (isClientAuthMode()) {
+            builder.loadTrustMaterial(buildKeyStore(trustStore, TEST_PASSWORD), new TrustSelfSignedStrategy()).build();
+
+          }
+          factory.setSslContext(builder.build());
+        } catch (Exception e) {
+          throw new RuntimeException("ssl context init failure: " + e.getMessage(), e);
+        }
+        factory.setNeedClientAuth(isClientAuthMode());
+        return factory;
+      }
+    };
   }
-  
+
   /**
    * Constructs a KeyStore using the specified filename and password
    */
-  protected static KeyStore buildKeyStore(Resource resource, String password) {
+  private static KeyStore buildKeyStore(Resource resource, String password) {
     try {
       return CertificateUtils.getKeyStore(resource, "JKS", null, password);
     } catch (Exception ex) {
@@ -279,23 +290,6 @@ public class SSLTestConfig extends SSLConfig {
         .register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
     }
   };
-  
-  public static boolean toBooleanDefaultIfNull(Boolean bool, boolean valueIfNull) {
-    if (bool == null) {
-      return valueIfNull;
-    }
-    return bool.booleanValue() ? true : false;
-  }
-  
-  public static Boolean toBooleanObject(String str) {
-    if ("true".equalsIgnoreCase(str)) {
-      return Boolean.TRUE;
-    } else if ("false".equalsIgnoreCase(str)) {
-      return Boolean.FALSE;
-    }
-    // no match
-    return null;
-  }
 
   /**
    * A mocked up instance of SecureRandom that just uses {@link Random} under the covers.

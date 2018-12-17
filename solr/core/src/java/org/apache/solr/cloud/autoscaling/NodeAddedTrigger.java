@@ -69,7 +69,8 @@ public class NodeAddedTrigger extends TriggerBase {
       List<String> added = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       added.forEach(n -> {
         // don't add nodes that have since gone away
-        if (lastLiveNodes.contains(n)) {
+        if (lastLiveNodes.contains(n) && !nodeNameVsTimeAdded.containsKey(n)) {
+          // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeAdded for a node may also be restored
           log.debug("Adding node from marker path: {}", n);
           nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTimeNs());
         }

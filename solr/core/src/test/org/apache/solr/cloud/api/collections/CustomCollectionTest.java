@@ -161,6 +161,8 @@ public class CustomCollectionTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * replicationFactor);
 
     new UpdateRequest()
         .add("id", "6", shard_fld, "a")

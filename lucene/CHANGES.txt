@@ -98,6 +98,13 @@ API Changes
   methods.  This decouples normalization from tokenization entirely.
   (Mayya Sharipova, Alan Woodward)
 
+* LUCENE-8597: IntervalIterator now exposes a gaps() method that reports the
+  number of gaps between its component sub-intervals.  This can be used in a 
+  new filter available via Intervals.maxgaps().  (Alan Woodward)
+
+* LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
+  of IndexWriter#getDocStats(). (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -216,20 +223,22 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
-* LUCENE-8374: Reduce reads for sparse DocValues and whole number numeric DocValues.
-  (Toke Eskildsen)
+* LUCENE-8607: MatchAllDocsQuery can shortcut when total hit count is not
+  required (Alan Woodward, Adrien Grand)
 
 ======================= Lucene 7.7.0 =======================
 
 Build
 
+* LUCENE-8611: Update randomizedtesting to 2.7.2, JUnit to 4.12, add hamcrest-core 
+  dependency. (Dawid Weiss)
+
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
 Bug fixes:
 
-* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
-  detects script boundaries more accurately with Character#UnicodeScript#of.
-  (Christophe Bismuth, Jim Ferenczi)
+* LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
+  (Yoo Jeongin via Jim Ferenczi)
 
 New Features
 
@@ -255,6 +264,10 @@ Improvements
 * LUCENE-8575: SegmentInfos#toString now includes attributes and diagnostics.
   (Namgyu Kim via Adrien Grand)
 
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
+
 Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
@@ -262,12 +275,25 @@ Optimizations
 
 * LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
   can safe up to 80% of the heap used compared to the previous implementation and uses non-object
-  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grant)
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grand)
+
+* LUCENE-8598: Moved to the default accepted overhead ratio for packet ints in DocValuesFieldUpdats
+  yields an up-to 4x performance improvement when applying doc values updates. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8599: Use sparse bitset to store docs in SingleValueDocValuesFieldUpdates. 
+  (Simon Willnauer, Adrien Grand)
 
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
   (Christoph Büscher via Adrien Grand)
+
+* LUCENE-8605: Separate bounding box spatial logic from query logic on LatLonShapeBoundingBoxQuery.
+  (Ignacio Vera)
+
+* LUCENE-8609: Deprecated IndexWriter#numDocs() and IndexWriter#maxDoc() in favor of IndexWriter#getDocStats()
+  that allows to get consistent numDocs and maxDoc stats that are not subject to concurrent changes.
+  (Simon Willnauer, Nhat Nguyen)
 
 ======================= Lucene 7.6.0 =======================
 
@@ -314,7 +340,14 @@ Bug fixes
 
 * LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
   to the same doc in the same updates package looses an update if the reset comes before
-  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grant)
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8592: Fix index sorting corruption due to numeric overflow. The merge of sorted segments
+  can produce an invalid sort if the sort field is an Integer/Long that uses reverse order and contains
+  values equal to Integer/Long#MIN_VALUE. These values are always sorted first during a merge
+  (instead of last because of the reverse order) due to this bug. Indices affected by the bug can be
+  detected by running the CheckIndex command on a distribution that contains the fix (7.6+).
+  (Jim Ferenczi, Adrien Grand, Mike McCandless, Simon Willnauer)
 
 New Features
 

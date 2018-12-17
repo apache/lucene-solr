@@ -126,6 +126,11 @@ abstract class DifferenceIntervalFunction {
     }
 
     @Override
+    public int gaps() {
+      return a.gaps();
+    }
+
+    @Override
     public float matchCost() {
       return a.matchCost() + b.matchCost();
     }
@@ -230,6 +235,11 @@ abstract class DifferenceIntervalFunction {
           if (newEnd < 0) // check for overflow
             return Integer.MAX_VALUE;
           return newEnd;
+        }
+
+        @Override
+        public int gaps() {
+          throw new UnsupportedOperationException();
         }
 
         @Override
