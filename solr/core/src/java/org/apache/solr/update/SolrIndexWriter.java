@@ -18,8 +18,10 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -85,6 +87,8 @@ public class SolrIndexWriter extends IndexWriter {
   private final AtomicInteger runningMinorMergesSegments = new AtomicInteger();
   private final AtomicLong runningMajorMergesDocs = new AtomicLong();
   private final AtomicLong runningMinorMergesDocs = new AtomicLong();
+  // merge diagnostics
+  private final Map<String, Long> runningMerges = new ConcurrentHashMap<>();
 
   private final SolrMetricManager metricManager;
   private final String registryName;
@@ -192,12 +196,18 @@ public class SolrIndexWriter extends IndexWriter {
   // we override this method to collect metrics for merges.
   @Override
   public void merge(MergePolicy.OneMerge merge) throws IOException {
+    String segString = merge.segString();
+    long totalNumDocs = merge.totalNumDocs();
     if (!mergeTotals) {
-      super.merge(merge);
+      try {
+        runningMerges.put(segString, totalNumDocs);
+        super.merge(merge);
+      } finally {
+        runningMerges.remove(segString);
+      }
       return;
     }
     long deletedDocs = 0;
-    long totalNumDocs = merge.totalNumDocs();
     for (SegmentCommitInfo info : merge.segments) {
       totalNumDocs -= info.getDelCount();
       deletedDocs += info.getDelCount();
@@ -221,12 +231,14 @@ public class SolrIndexWriter extends IndexWriter {
       context = minorMerge.time();
     }
     try {
+      runningMerges.put(segString, totalNumDocs);
       super.merge(merge);
     } catch (Throwable t) {
       mergeErrors.inc();
       throw t;
     } finally {
       context.stop();
+      runningMerges.remove(segString);
       if (major) {
         runningMajorMerges.decrementAndGet();
         runningMajorMergesDocs.addAndGet(-totalNumDocs);
@@ -237,6 +249,10 @@ public class SolrIndexWriter extends IndexWriter {
         runningMinorMergesSegments.addAndGet(-segmentsCount);
       }
     }
+  }
+
+  public Map<String, Object> getRunningMerges() {
+    return Collections.unmodifiableMap(runningMerges);
   }
 
   @Override

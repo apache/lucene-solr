@@ -52,7 +52,7 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     final double testMaxMergedSegmentMB = defaultTMP.getMaxMergedSegmentMB() * 10;
 
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
-    args.add(WrapperMergePolicyFactory.WRAPPED_PREFIX, "code/test");
+    args.add(WrapperMergePolicyFactory.WRAPPED_PREFIX, "test");
     args.add("test.class", TieredMergePolicyFactory.class.getName());
     args.add("test.maxMergeAtOnce", testMaxMergeAtOnce);
     args.add("test.maxMergedSegmentMB", testMaxMergedSegmentMB);

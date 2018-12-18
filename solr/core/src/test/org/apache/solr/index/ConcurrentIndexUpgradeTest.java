@@ -28,6 +28,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -133,8 +134,7 @@ public class ConcurrentIndexUpgradeTest extends AbstractFullDistribZkTestBase {
     // make sure we've indexed some documents
     Thread.sleep(5000);
 
-    CollectionAdminRequest<CollectionAdminRequest.ColStatus> status = new CollectionAdminRequest.ColStatus()
-        .setCollectionName(collectionName)
+    CollectionAdminRequest.ColStatus status = CollectionAdminRequest.colStatus(collectionName)
         .setWithFieldInfos(true)
         .setWithSegments(true);
     CollectionAdminResponse rsp = status.process(cloudClient);
@@ -149,9 +149,8 @@ public class ConcurrentIndexUpgradeTest extends AbstractFullDistribZkTestBase {
     // prevent merging
     pluginProps.put(AddDocValuesMergePolicyFactory.NO_MERGE_PROP, true);
     String propValue = Utils.toJSONString(pluginProps);
-    CollectionAdminRequest.ClusterProp clusterProp = new CollectionAdminRequest.ClusterProp()
-        .setPropertyName(PluggableMergePolicyFactory.MERGE_POLICY_PROP + collectionName)
-        .setPropertyValue(propValue);
+    CollectionAdminRequest.ClusterProp clusterProp = CollectionAdminRequest
+        .setClusterProperty(PluggableMergePolicyFactory.MERGE_POLICY_PROP + collectionName, propValue);
     clusterProp.process(cloudClient);
 
     log.info("-- completed set cluster props");
@@ -174,8 +173,7 @@ public class ConcurrentIndexUpgradeTest extends AbstractFullDistribZkTestBase {
     // bounce the collection
     Map<String, Long> urlToTimeBefore = new HashMap<>();
     collectStartTimes(collectionName, cloudClient, urlToTimeBefore);
-    CollectionAdminRequest<CollectionAdminRequest.Reload> reload = new CollectionAdminRequest.Reload()
-        .setCollectionName(collectionName);
+    CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(collectionName);
     rsp = reload.process(cloudClient);
 
     boolean reloaded = waitForReloads(collectionName, cloudClient, urlToTimeBefore);
@@ -195,9 +193,7 @@ public class ConcurrentIndexUpgradeTest extends AbstractFullDistribZkTestBase {
     // update plugin props to allow merging
     pluginProps.put(AddDocValuesMergePolicyFactory.NO_MERGE_PROP, false);
     propValue = Utils.toJSONString(pluginProps);
-    clusterProp = new CollectionAdminRequest.ClusterProp()
-        .setPropertyName(PluggableMergePolicyFactory.MERGE_POLICY_PROP + collectionName)
-        .setPropertyValue(propValue);
+    clusterProp = CollectionAdminRequest.setClusterProperty(PluggableMergePolicyFactory.MERGE_POLICY_PROP + collectionName, propValue);
     clusterProp.process(cloudClient);
 
     log.info("-- completed set cluster props 2");
@@ -232,21 +228,11 @@ public class ConcurrentIndexUpgradeTest extends AbstractFullDistribZkTestBase {
 
     // verify that all docs have docValues
     for (JettySolrRunner jetty : jettys) {
-      CoreContainer cores = ((SolrDispatchFilter)jetty.getDispatchFilter().getFilter()).getCores();
+      CoreContainer cores = jetty.getCoreContainer();
       for (SolrCore core : cores.getCores()) {
         RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
         SolrIndexSearcher searcher = searcherRef.get();
         try {
-          LeafReader reader = searcher.getLeafReader();
-          int maxDoc = reader.maxDoc();
-          SortedDocValues dvs = reader.getSortedDocValues(TEST_FIELD);
-          for (int i = 0; i < maxDoc; i++) {
-            Document d = reader.document(i);
-            BytesRef bytes = dvs.get(i);
-            assertNotNull(bytes);
-            String dvString = bytes.utf8ToString();
-            assertEquals(d.get("id"), dvString);
-          }
           DirectoryReader directoryReader = searcher.getIndexReader();
           for (LeafReaderContext leafCtx : directoryReader.leaves()) {
             LeafReader leaf = leafCtx.reader();
@@ -260,6 +246,18 @@ public class ConcurrentIndexUpgradeTest extends AbstractFullDistribZkTestBase {
             // the marker because they were not wrapped
             if (marker != null) {
               assertEquals(AddDocValuesMergePolicyFactory.DEFAULT_MARKER, marker);
+            }
+            // use the wrapped reader here
+            SortedDocValues dvs = leaf.getSortedDocValues(TEST_FIELD);
+            int expected = leaf.numDocs();
+            int actual = 0;
+            while (dvs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              Document d = leaf.document(dvs.docID());
+              BytesRef bytes = dvs.binaryValue();
+              assertNotNull(bytes);
+              assertTrue(bytes.toString(), bytes.length > 0);
+              String dvString = bytes.utf8ToString();
+              assertEquals(d.get("id"), dvString);
             }
           }
         } finally {

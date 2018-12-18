@@ -239,7 +239,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     String[] vals = new String[100];
     for (int i=0; i<100; i++) {
-      vals[i] = "code/test " + i;
+      vals[i] = "test " + i;
     }
     indexr(id, 17, "SubjectTerms_mfacet", vals);
 

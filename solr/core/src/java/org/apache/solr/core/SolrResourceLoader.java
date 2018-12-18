@@ -66,6 +66,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -834,7 +835,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         ShardHandlerFactory.class,
         SimilarityFactory.class,
         SolrRequestHandler.class,
-        UpdateRequestProcessorFactory.class
+        UpdateRequestProcessorFactory.class,
+        MergePolicyFactory.class
       }
     );
 

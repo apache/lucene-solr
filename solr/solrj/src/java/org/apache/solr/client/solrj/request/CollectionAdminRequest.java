@@ -1089,6 +1089,50 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  public static ColStatus colStatus(String collection) {
+    return new ColStatus(collection);
+  }
+
+  public static class ColStatus extends AsyncCollectionSpecificAdminRequest {
+    protected Boolean withSegments = null;
+    protected Boolean withFieldInfos = null;
+    protected Boolean withDVStats = null;
+
+    public ColStatus(String collection) {
+      super(CollectionAction.COLSTATUS, checkNotNull(CoreAdminParams.COLLECTION, collection));
+    }
+
+    public ColStatus setWithSegments(boolean withSegments) {
+      this.withSegments = withSegments;
+      return this;
+    }
+
+    public ColStatus setWithFieldInfos(boolean withFieldInfos) {
+      this.withFieldInfos = withFieldInfos;
+      return this;
+    }
+
+    public ColStatus setWithDVStats(boolean withDVStats) {
+      this.withDVStats = withDVStats;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
+      if (withSegments != null) {
+        params.add("segments", withSegments.toString());
+      }
+      if (withFieldInfos != null) {
+        params.add("fieldInfos", withFieldInfos.toString());
+      }
+      if (withDVStats != null) {
+        params.add("dvStats", withDVStats.toString());
+      }
+      return params;
+    }
+  }
+
   /**
    * Returns a SolrRequest to create a new shard in a collection
    */

@@ -853,6 +853,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       rsp.getValues().addAll(response.getResponse());
       return null;
     }),
+    COLSTATUS_OP(COLSTATUS, (req, rsp, h) -> {
+      Map<String, Object> all = copy(req.getParams(), null,
+          CoreAdminParams.NAME, COLLECTION_PROP,
+          ColStatus.FIELD_INFOS_PROP, ColStatus.SEGMENTS_PROP, ColStatus.DV_STATS_PROP);
+      // make sure we can get the name if there's "name" but not "collection"
+      if (all.containsKey(CoreAdminParams.NAME) && !all.containsKey(COLLECTION_PROP)) {
+        all.put(COLLECTION_PROP, all.get(CoreAdminParams.NAME));
+      }
+      new ColStatus(h.coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+          h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
+          .getColStatus(rsp.getValues());
+      return null;
+    }),
     /**
      * Handle cluster status request.
      * Can return status per specific collection/shard or per all collections.

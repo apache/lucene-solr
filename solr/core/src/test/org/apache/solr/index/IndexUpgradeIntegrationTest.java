@@ -65,9 +65,8 @@ public class IndexUpgradeIntegrationTest extends AbstractFullDistribZkTestBase {
     Map<String, Object> pluginProps = new HashMap<>();
     pluginProps.put(FieldType.CLASS_NAME, AddDocValuesMergePolicyFactory.class.getName());
     String propValue = Utils.toJSONString(pluginProps);
-    CollectionAdminRequest.ClusterProp clusterProp = new CollectionAdminRequest.ClusterProp()
-        .setPropertyName(PluggableMergePolicyFactory.MERGE_POLICY_PROP + collectionName)
-        .setPropertyValue(propValue);
+    CollectionAdminRequest.ClusterProp clusterProp = CollectionAdminRequest
+        .setClusterProperty(PluggableMergePolicyFactory.MERGE_POLICY_PROP + collectionName, propValue);
     clusterProp.process(cloudClient);
 
     log.info("-- completed set cluster props");
@@ -115,8 +114,7 @@ public class IndexUpgradeIntegrationTest extends AbstractFullDistribZkTestBase {
     log.info("-- completed collection reload");
 
     // verify that schema doesn't match the actual fields anymore
-    CollectionAdminRequest<CollectionAdminRequest.ColStatus> status = new CollectionAdminRequest.ColStatus()
-        .setCollectionName(collectionName)
+    CollectionAdminRequest.ColStatus status = CollectionAdminRequest.colStatus(collectionName)
         .setWithFieldInfos(true)
         .setWithSegments(true);
     CollectionAdminResponse rsp = status.process(cloudClient);
