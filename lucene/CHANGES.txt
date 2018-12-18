@@ -290,6 +290,12 @@ Optimizations
   rather than an in-place mergesort, which needs to perform fewer swaps.
   (Adrien Grand)
 
+Test Framework
+
+* LUCENE-8604: TestRuleLimitSysouts now has an optional "hard limit" of bytes that can be written
+  to stderr and stdout (anything beyond the hard limit is ignored). The default hard limit is 2 GB of 
+  logs per test class. (Dawid Weiss)
+
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
