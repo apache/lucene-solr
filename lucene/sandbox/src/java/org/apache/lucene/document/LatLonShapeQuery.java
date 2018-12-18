@@ -73,7 +73,7 @@ abstract class LatLonShapeQuery extends Query {
                                                      int maxXOffset, int maxYOffset, byte[] maxTriangle);
 
   /** returns true if the provided triangle matches the query */
-  protected abstract boolean queryMatches(byte[] triangle);
+  protected abstract boolean queryMatches(byte[] triangle, int[] scratchTriangle);
 
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle) {
@@ -93,6 +93,7 @@ abstract class LatLonShapeQuery extends Query {
       /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
       protected IntersectVisitor getSparseIntersectVisitor(DocIdSetBuilder result) {
         return new IntersectVisitor() {
+          final int[] scratchTriangle = new int[6];
           DocIdSetBuilder.BulkAdder adder;
 
           @Override
@@ -107,7 +108,7 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t)) {
+            if (queryMatches(t, scratchTriangle)) {
               adder.add(docID);
             }
           }
@@ -122,7 +123,7 @@ abstract class LatLonShapeQuery extends Query {
       /** create a visitor that adds documents that match the query using a dense bitset. (Used by WITHIN, DISJOINT) */
       protected IntersectVisitor getDenseIntersectVisitor(FixedBitSet intersect, FixedBitSet disjoint) {
         return new IntersectVisitor() {
-
+          final int[] scratchTriangle = new int[6];
           @Override
           public void visit(int docID) throws IOException {
             if (queryRelation == QueryRelation.DISJOINT) {
@@ -136,7 +137,7 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t)) {
+            if (queryMatches(t, scratchTriangle)) {
               intersect.set(docID);
             } else {
               disjoint.set(docID);
@@ -284,7 +285,7 @@ abstract class LatLonShapeQuery extends Query {
     /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
     private IntersectVisitor getInverseIntersectVisitor(LatLonShapeQuery query, FixedBitSet result, int[] cost) {
       return new IntersectVisitor() {
-
+        int[] scratchTriangle = new int[6];
         @Override
         public void visit(int docID) {
           result.clear(docID);
@@ -293,7 +294,7 @@ abstract class LatLonShapeQuery extends Query {
 
         @Override
         public void visit(int docID, byte[] packedTriangle) {
-          if (query.queryMatches(packedTriangle) == false) {
+          if (query.queryMatches(packedTriangle, scratchTriangle) == false) {
             result.clear(docID);
             cost[0]--;
           }

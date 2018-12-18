@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
@@ -54,7 +55,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * @lucene.experimental
  */
 public class LatLonShape {
-  public static final int BYTES = 2 * LatLonPoint.BYTES;
+  public static final int BYTES = LatLonPoint.BYTES;
 
   protected static final FieldType TYPE = new FieldType();
   static {
@@ -80,35 +81,12 @@ public class LatLonShape {
   /** create indexable fields for line geometry */
   public static Field[] createIndexableFields(String fieldName, Line line) {
     int numPoints = line.numPoints();
-    List<LatLonTriangle> fields = new ArrayList<>(numPoints - 1);
-
+    Field[] fields = new Field[numPoints - 1];
     // create "flat" triangles
-    double aLat, bLat, aLon, bLon, temp;
     for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
-      aLat = line.getLat(i);
-      aLon = line.getLon(i);
-      bLat = line.getLat(j);
-      bLon = line.getLon(j);
-      if (aLat > bLat) {
-        temp = aLat;
-        aLat = bLat;
-        bLat = temp;
-        temp = aLon;
-        aLon = bLon;
-        bLon = temp;
-      } else if (aLat == bLat) {
-        if (aLon > bLon) {
-          temp = aLat;
-          aLat = bLat;
-          bLat = temp;
-          temp = aLon;
-          aLon = bLon;
-          bLon = temp;
-        }
-      }
-      fields.add(new LatLonTriangle(fieldName, aLat, aLon, bLat, bLon, aLat, aLon));
+      fields[i] = new LatLonTriangle(fieldName, line.getLat(i), line.getLon(i), line.getLat(j), line.getLon(j), line.getLat(i), line.getLon(i));
     }
-    return fields.toArray(new Field[fields.size()]);
+    return fields;
   }
 
   /** create indexable fields for point geometry */
@@ -151,6 +129,7 @@ public class LatLonShape {
       setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2));
     }
 
+
     public void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {
       final byte[] bytes;
 
@@ -160,49 +139,231 @@ public class LatLonShape {
       } else {
         bytes = ((BytesRef) fieldsData).bytes;
       }
-
-      int minX = StrictMath.min(aX, StrictMath.min(bX, cX));
-      int minY = StrictMath.min(aY, StrictMath.min(bY, cY));
-      int maxX = StrictMath.max(aX, StrictMath.max(bX, cX));
-      int maxY = StrictMath.max(aY, StrictMath.max(bY, cY));
-
-      encodeTriangle(bytes, minY, minX, maxY, maxX, aX, aY, bX, bY, cX, cY);
+      encodeTriangle(bytes, aY, aX, bY, bX, cY, cX);
     }
-
-    private void encodeTriangle(byte[] bytes, int minY, int minX, int maxY, int maxX, int aX, int aY, int bX, int bY, int cX, int cY) {
-      encodeTriangleBoxVal(minY, bytes, 0);
-      encodeTriangleBoxVal(minX, bytes, BYTES);
-      encodeTriangleBoxVal(maxY, bytes, 2 * BYTES);
-      encodeTriangleBoxVal(maxX, bytes, 3 * BYTES);
-
-      long a = (((long)aX) << 32) | (((long)aY) & 0x00000000FFFFFFFFL);
-      long b = (((long)bX) << 32) | (((long)bY) & 0x00000000FFFFFFFFL);
-      long c = (((long)cX) << 32) | (((long)cY) & 0x00000000FFFFFFFFL);
-      NumericUtils.longToSortableBytes(a, bytes, 4 * BYTES);
-      NumericUtils.longToSortableBytes(b, bytes, 5 * BYTES);
-      NumericUtils.longToSortableBytes(c, bytes, 6 * BYTES);
-    }
-  }
-
-  /** encodes bounding box value of triangle. Note the encoding uses 64bit encoding, but the bounding box only needs
-   * 32bits, so we pad w/ zeros to take advantage of prefix compression.
-   */
-  public static void encodeTriangleBoxVal(int encodedVal, byte[] bytes, int offset) {
-    long val = (long)(encodedVal ^ 0x80000000);
-    val &= 0x00000000FFFFFFFFL;
-    val ^= 0x8000000000000000L;
-    NumericUtils.longToSortableBytes(val, bytes, offset);
-  }
-
-  /** counterpart to {@link #encodeTriangleBoxVal}; decodes encoded triangle bounding box values */
-  public static int decodeTriangleBoxVal(byte[] encoded, int offset) {
-    long val = NumericUtils.sortableBytesToLong(encoded, offset);
-    int result = (int)(val & 0x00000000FFFFFFFF);
-    return result ^ 0x80000000;
   }
 
   /** Query Relation Types **/
   public enum QueryRelation {
     INTERSECTS, WITHIN, DISJOINT
+  }
+
+  private static final int MINY_MINX_MAXY_MAXX_Y_X = 0;
+  private static final int MINY_MINX_Y_X_MAXY_MAXX = 1;
+  private static final int MAXY_MINX_Y_X_MINY_MAXX = 2;
+  private static final int MAXY_MINX_MINY_MAXX_Y_X = 3;
+  private static final int Y_MINX_MINY_X_MAXY_MAXX = 4;
+  private static final int Y_MINX_MINY_MAXX_MAXY_X = 5;
+  private static final int MAXY_MINX_MINY_X_Y_MAXX = 6;
+  private static final int MINY_MINX_Y_MAXX_MAXY_X = 7;
+
+  /**
+   * A triangle is encoded using 6 points and an extra point with encoded information in three bits of how to reconstruct it.
+   * Triangles are encoded with CCW orientation and might be rotated to limit the number of possible reconstructions to 2^3.
+   * Reconstruction always happens from west to east.
+   */
+  public static void encodeTriangle(byte[] bytes, int aLat, int aLon, int bLat, int bLon, int cLat, int cLon) {
+    assert bytes.length == 7 * BYTES;
+    int aX;
+    int bX;
+    int cX;
+    int aY;
+    int bY;
+    int cY;
+    //change orientation if CW
+    if (GeoUtils.orient(aLon, aLat, bLon, bLat, cLon, cLat) == -1) {
+      aX = cLon;
+      bX = bLon;
+      cX = aLon;
+      aY = cLat;
+      bY = bLat;
+      cY = aLat;
+    } else {
+      aX = aLon;
+      bX = bLon;
+      cX = cLon;
+      aY = aLat;
+      bY = bLat;
+      cY = cLat;
+    }
+    //rotate edges and place minX at the beginning
+    if (bX < aX || cX < aX) {
+      if (bX < cX) {
+        int tempX = aX;
+        int tempY = aY;
+        aX = bX;
+        aY = bY;
+        bX = cX;
+        bY = cY;
+        cX = tempX;
+        cY = tempY;
+      } else if (cX < aX) {
+        int tempX = aX;
+        int tempY = aY;
+        aX = cX;
+        aY = cY;
+        cX = bX;
+        cY = bY;
+        bX = tempX;
+        bY = tempY;
+      }
+    } else if (aX == bX && aX == cX) {
+      //degenerated case, all points with same longitude
+      //we need to prevent that aX is in the middle (not part of the MBS)
+      if (bY < aY || cY < aY) {
+        if (bY < cY) {
+          int tempX = aX;
+          int tempY = aY;
+          aX = bX;
+          aY = bY;
+          bX = cX;
+          bY = cY;
+          cX = tempX;
+          cY = tempY;
+        } else if (cY < aY) {
+          int tempX = aX;
+          int tempY = aY;
+          aX = cX;
+          aY = cY;
+          cX = bX;
+          cY = bY;
+          bX = tempX;
+          bY = tempY;
+        }
+      }
+    }
+
+    int minX = aX;
+    int minY = StrictMath.min(aY, StrictMath.min(bY, cY));
+    int maxX = StrictMath.max(aX, StrictMath.max(bX, cX));
+    int maxY = StrictMath.max(aY, StrictMath.max(bY, cY));
+
+    int bits, x, y;
+    if (minY == aY) {
+      if (maxY == bY && maxX == bX) {
+        y = cY;
+        x = cX;
+        bits = MINY_MINX_MAXY_MAXX_Y_X;
+      } else if (maxY == cY && maxX == cX) {
+        y = bY;
+        x = bX;
+        bits = MINY_MINX_Y_X_MAXY_MAXX;
+      } else {
+        y = bY;
+        x = cX;
+        bits = MINY_MINX_Y_MAXX_MAXY_X;
+      }
+    } else if (maxY == aY) {
+      if (minY == bY && maxX == bX) {
+        y = cY;
+        x = cX;
+        bits = MAXY_MINX_MINY_MAXX_Y_X;
+      } else if (minY == cY && maxX == cX) {
+        y = bY;
+        x = bX;
+        bits = MAXY_MINX_Y_X_MINY_MAXX;
+      } else {
+        y = cY;
+        x = bX;
+        bits = MAXY_MINX_MINY_X_Y_MAXX;
+      }
+    }  else if (maxX == bX && minY == bY) {
+      y = aY;
+      x = cX;
+      bits = Y_MINX_MINY_MAXX_MAXY_X;
+    } else if (maxX == cX && maxY == cY) {
+      y = aY;
+      x = bX;
+      bits = Y_MINX_MINY_X_MAXY_MAXX;
+    } else {
+      throw new IllegalArgumentException("Could not encode the provided triangle");
+    }
+    NumericUtils.intToSortableBytes(minY, bytes, 0);
+    NumericUtils.intToSortableBytes(minX, bytes, BYTES);
+    NumericUtils.intToSortableBytes(maxY, bytes, 2 * BYTES);
+    NumericUtils.intToSortableBytes(maxX, bytes, 3 * BYTES);
+    NumericUtils.intToSortableBytes(y, bytes, 4 * BYTES);
+    NumericUtils.intToSortableBytes(x, bytes, 5 * BYTES);
+    NumericUtils.intToSortableBytes(bits, bytes, 6 * BYTES);
+  }
+
+  /**
+   * Decode a triangle encoded by {@link LatLonShape#encodeTriangle(byte[], int, int, int, int, int, int)}.
+   */
+  public static void decodeTriangle(byte[] t, int[] triangle) {
+    assert triangle.length == 6;
+    int bits = NumericUtils.sortableBytesToInt(t, 6 * LatLonShape.BYTES);
+    //extract the first three bits
+    int tCode = (((1 << 3) - 1) & (bits >> 0));
+    switch (tCode) {
+      case MINY_MINX_MAXY_MAXX_Y_X:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        break;
+      case MINY_MINX_Y_X_MAXY_MAXX:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        break;
+      case MAXY_MINX_Y_X_MINY_MAXX:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        break;
+      case MAXY_MINX_MINY_MAXX_Y_X:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        break;
+      case Y_MINX_MINY_X_MAXY_MAXX:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        break;
+      case Y_MINX_MINY_MAXX_MAXY_X:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        break;
+      case MAXY_MINX_MINY_X_Y_MAXX:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        break;
+      case MINY_MINX_Y_MAXX_MAXY_X:
+        triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        break;
+      default:
+        throw new IllegalArgumentException("Could not decode the provided triangle");
+    }
+    //Points of the decoded triangle must be co-planar or CCW oriented
+    assert GeoUtils.orient(triangle[1], triangle[0], triangle[3], triangle[2], triangle[5], triangle[4]) >= 0;
   }
 }
