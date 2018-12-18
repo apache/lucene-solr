@@ -2369,7 +2369,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testGCDCompression() throws Exception {
     doTestGCDCompression(1);
   }
-
+  // TODO LUCENE-8585: Fails with doTestNumericsVsStoredFields set to 200,000 (possibly also 20,000) and ant test  -Dtestcase=TestLucene80DocValuesFormat -Dtests.method=testSparseGCDCompression -Dtests.seed=C9EA19AC8E2F901 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=ms-MY -Dtests.timezone=Etc/GMT-10 -Dtests.asserts=true -Dtests.file.encoding=UTF-8
   public void testSparseGCDCompression() throws Exception {
     doTestGCDCompression(random().nextDouble());
   }
