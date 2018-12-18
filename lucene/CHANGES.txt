@@ -45,6 +45,9 @@ Improvements
   detects script boundaries more accurately with Character#UnicodeScript#of.
   (Christophe Bismuth, Jim Ferenczi)
 
+* LUCENE-8581: Change LatLonShape encoding to use 4 bytes Per Dimension.
+  (Ignacio Vera, Nick Knize, Adrien Grand)
+
 Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.

@@ -17,7 +17,6 @@
 package org.apache.lucene.geo;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.geo.GeoUtils.WindingOrder;
@@ -820,24 +819,6 @@ final public class Tessellator {
       return polygon.getPolyLat(vrtxIdx);
     }
 
-    /** compare nodes by y then x */
-    public int compareLat(Node other) {
-      return compare(this.getLat(), this.getLon(), other.getLat(), other.getLon());
-    }
-
-    public int compare(double aX, double aY, double bX, double bY) {
-      if (aX > bX) {
-        return 1;
-      } else if (aX == bX) {
-        if (aY > bY) {
-          return 1;
-        } else if (aY == bY) {
-          return 0;
-        }
-      }
-      return -1;
-    }
-
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
@@ -860,8 +841,6 @@ final public class Tessellator {
 
     protected Triangle(Node a, Node b, Node c) {
       this.vertex = new Node[] {a, b, c};
-      // sort nodes by morton value
-      Arrays.sort(this.vertex, (x, y) -> x.compareLat(y));
     }
 
     /** get quantized x value for the given vertex */
