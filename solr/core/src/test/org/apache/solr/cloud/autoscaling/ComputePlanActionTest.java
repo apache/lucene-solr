@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -62,7 +63,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 /**
@@ -121,7 +121,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -130,7 +130,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "{'minimize': 'cores'}," +
         "{'maximize': 'freedisk','precision': 100}]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -186,7 +186,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -271,7 +271,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -340,7 +340,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -352,7 +352,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -371,7 +371,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -449,7 +449,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction', 'collections' : 'testSelected1,testSelected2'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -546,7 +546,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -557,7 +557,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -641,7 +641,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}" +
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -652,7 +652,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 import java.io.IOException;
@@ -36,6 +35,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
@@ -133,7 +133,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'cores':'<10', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -252,7 +252,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -293,7 +293,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -343,7 +343,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -405,7 +405,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -431,7 +431,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "{'name' : 'compute', 'class' : '" + CapturingAction.class.getName() + "'}" +
         "]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     solrClient.request(req);
 
     Optional<JettySolrRunner> other = cluster.getJettySolrRunners()
@@ -522,7 +522,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getJettySolrRunner(0).getNodeName();

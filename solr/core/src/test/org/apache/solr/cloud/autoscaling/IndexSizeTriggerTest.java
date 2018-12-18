@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.SolrInputDocument;
@@ -62,7 +63,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
@@ -275,7 +275,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -290,7 +290,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -303,7 +303,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -320,7 +320,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger2'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -404,7 +404,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -419,7 +419,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -432,7 +432,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -448,7 +448,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger3'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals("success", response.get("result").toString());
 
@@ -550,7 +550,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -565,7 +565,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -578,7 +578,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -588,7 +588,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -645,7 +645,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger4'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -668,7 +668,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     solrClient.request(ur, collectionName);
 
     // resume trigger
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -733,7 +733,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'enabled' : false," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -748,7 +748,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -761,7 +761,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -778,7 +778,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger5'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -793,7 +793,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger5'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -823,7 +823,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -836,7 +836,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         "'name' : 'index_size_trigger5'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
@@ -50,8 +51,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  *
@@ -90,7 +89,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
   @After
   public void restoreDefaults() throws Exception {
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST,
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST,
         "{'set-trigger' : " + AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_DSL + "}");
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -99,7 +98,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
       String cmd = "{" +
           "'remove-listener' : {'name' : 'foo'}" +
           "}";
-      response = solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, cmd));
+      response = solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, cmd));
       assertEquals(response.get("result").toString(), "success");
     }
   }
@@ -193,7 +192,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -208,7 +207,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}," +
         "{'name' : 'test', 'class' : '" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

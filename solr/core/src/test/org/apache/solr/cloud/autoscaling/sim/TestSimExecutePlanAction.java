@@ -33,8 +33,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.common.cloud.ClusterState;
@@ -170,7 +170,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
-    SolrRequest req = AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
