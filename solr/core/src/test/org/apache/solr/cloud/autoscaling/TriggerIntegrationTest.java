@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -39,6 +38,8 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -55,7 +56,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
@@ -85,14 +85,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -193,7 +189,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -206,7 +202,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -234,7 +230,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -246,7 +242,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -342,7 +338,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
@@ -453,7 +449,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         break;
       }
     }
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -542,7 +538,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -561,7 +557,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -576,7 +572,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand1);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -39,7 +37,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -121,7 +119,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     int port = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.PORT);
 
     String commands =  "{set-policy :{c1 : [{replica:0 , shard:'#EACH', port: '!" + port + "'}]}}";
-    solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
@@ -154,7 +152,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     }
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + firstNodePort + "'}, {replica:1, shard:'#EACH', port:'" + secondNodePort + "'}]}}";
-    NamedList<Object> response = solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    NamedList<Object> response = solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     assertEquals("success", response.get("result"));
 
     String collectionName = "testCreateCollectionSplitShard";
@@ -199,7 +197,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "      {'metrics:abc':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     try {
       solrClient.request(req);
       fail("expected exception");
@@ -214,7 +212,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "      {'metrics:solr.node:ADMIN./admin/authorization.clientErrors:count':'>58768765', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     //org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
@@ -255,7 +253,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "]}";
 
 
-    solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getDistribStateManager(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
         Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
@@ -305,7 +303,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     int port = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.PORT);
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
-    solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getDistribStateManager(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));

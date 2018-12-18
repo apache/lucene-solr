@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +39,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
@@ -92,6 +91,13 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   @Before
   public void setupTest() throws Exception {
     configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
+
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cluster, ".scheduled_maintenance");
+    // disable .auto_add_replicas (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".auto_add_replicas");
+    CloudTestUtils.suspendTrigger(cluster, ".auto_add_replicas");
     
     waitForSeconds = 5;
     triggerStartedCount.set(0);
@@ -99,34 +105,6 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     triggerStartedLatch = new CountDownLatch(1);
     triggerFinishedLatch = new CountDownLatch(1);
     listenerEvents.clear();
-    // disable .scheduled_maintenance and .auto_add_replicas
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.simGetSolrClient();
-    NamedList<Object> response;
-    try {
-      response = solrClient.request(req);
-      assertEquals(response.get("result").toString(), "success");
-    } catch (Exception e) {
-      if (!e.toString().contains("No trigger exists")) {
-        throw e;
-      }
-    }
-    suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.auto_add_replicas'}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    try {
-      response = solrClient.request(req);
-      assertEquals(response.get("result").toString(), "success");
-    } catch (Exception e) {
-      if (!e.toString().contains("No trigger exists")) {
-        throw e;
-      }
-    }
-
   }
 
   public static class TestTriggerListener extends TriggerListenerBase {
@@ -176,7 +154,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -191,7 +169,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -286,7 +264,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -476,7 +454,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -489,7 +467,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -676,7 +654,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     String setListenerCommand1 = "{" +
@@ -688,7 +666,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand1);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

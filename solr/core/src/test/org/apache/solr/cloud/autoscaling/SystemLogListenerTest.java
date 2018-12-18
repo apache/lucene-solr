@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -35,6 +33,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -112,7 +111,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}," +
         "{'name':'error','class':'" + ErrorTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -122,7 +121,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"node_lost_trigger.system\"\n" +
         "\t}\n" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -145,7 +144,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "'class' : '" + SystemLogListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

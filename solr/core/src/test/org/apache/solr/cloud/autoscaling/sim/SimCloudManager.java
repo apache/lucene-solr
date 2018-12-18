@@ -693,11 +693,13 @@ public class SimCloudManager implements SolrCloudManager {
         LocalSolrQueryRequest queryRequest = new LocalSolrQueryRequest(null, params);
         if (autoscaling) {
           RequestWriter.ContentWriter cw = req.getContentWriter("application/json");
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          cw.write(baos);
-          String payload = baos.toString("UTF-8");
-          log.trace("-- payload: {}", payload);
-          queryRequest.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(payload)));
+          if (null != cw) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            cw.write(baos);
+            String payload = baos.toString("UTF-8");
+            log.trace("-- payload: {}", payload);
+            queryRequest.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(payload)));
+          }
         }
         queryRequest.getContext().put("httpMethod", req.getMethod().toString());
         SolrQueryResponse queryResponse = new SolrQueryResponse();

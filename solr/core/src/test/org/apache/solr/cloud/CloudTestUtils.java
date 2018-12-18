@@ -21,20 +21,37 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
+
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.TimeOut;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.junit.Assert;
+
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+
 
 /**
  * Some useful methods for SolrCloud tests.
@@ -171,5 +188,120 @@ public class CloudTestUtils {
         return false;
       }
     };
+  }
+  
+  /**
+   * Wait for a particular named trigger to be scheduled.
+   * <p>
+   * This is a convenience method that polls the autoscaling API looking for a trigger with the 
+   * specified name using the {@link #DEFAULT_TIMEOUT}.  It is particularly useful for tests 
+   * that want to know when the Overseer has finished scheduling the automatic triggers on startup.
+   * </p>
+   *
+   * @param cloudManager current instance of {@link SolrCloudManager}
+   * @param triggerName the name of the trigger we need to see sheduled in order to return successfully
+   */
+  public static long waitForTriggerToBeScheduled(final SolrCloudManager cloudManager,
+                                                 final String triggerName)
+    throws InterruptedException, TimeoutException, IOException {
+
+    TimeOut timeout = new TimeOut(DEFAULT_TIMEOUT, TimeUnit.SECONDS, cloudManager.getTimeSource());
+    while (!timeout.hasTimedOut()) {
+      final SolrResponse response = cloudManager.request(AutoScalingRequest.create(SolrRequest.METHOD.GET, null));
+      final Map<String,?> triggers = (Map<String,?>) response.getResponse().get("triggers");
+      Assert.assertNotNull("null triggers in response from autoscaling request", triggers);
+      
+      if ( triggers.containsKey(triggerName) ) {
+        return timeout.timeElapsed(TimeUnit.MILLISECONDS);
+      }
+      timeout.sleep(100);
+    }
+    throw new TimeoutException("Never saw trigger with name: " + triggerName);
+  }
+
+  /**
+   * Suspends the trigger with the specified name
+   * <p>
+   * This is a convenience method that sends a <code>suspend-trigger</code> command to the autoscaling
+   * API for the specified trigger.  It is particularly useful for tests that may need to disable automatic
+   * triggers such as <code>.scheduled_maintenance</code> in order to test their own
+   * triggers.
+   * </p>
+   *
+   * @param cloudManager current instance of {@link SolrCloudManager}
+   * @param triggerName the name of the trigger to suspend.  This must already be scheduled.
+   */
+  public static void suspendTrigger(final SolrCloudManager cloudManager,
+                                    final String triggerName) throws IOException {
+    
+    final SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST,
+                                                      "{'suspend-trigger' : {'name' : '"+triggerName+"'} }");
+    final SolrResponse rsp = cloudManager.request(req);
+    final String result = rsp.getResponse().get("result").toString();
+    Assert.assertEquals("Unexpected 'result' in response: " + rsp,
+                        "success", result);
+  }
+  
+  /**
+   * Helper class for sending (JSON) autoscaling requests that can randomize between V1 and V2 requests
+   */
+  public static class AutoScalingRequest extends SolrRequest {
+
+    /**
+     * Creates a request using a randomized root path (V1 vs V2)
+     *
+     * @param m HTTP Method to use
+     * @aram message JSON payload, may be null
+     */
+    public static SolrRequest create(SolrRequest.METHOD m, String message) {
+      return create(m, null, message);
+    }
+    /**
+     * Creates a request using a randomized root path (V1 vs V2)
+     *
+     * @param m HTTP Method to use
+     * @param subPath optional sub-path under <code>"$ROOT/autoscaling"</code>. may be null, 
+     *        otherwise must start with "/"
+     * @param message JSON payload, may be null
+     */
+    public static SolrRequest create(SolrRequest.METHOD m, String subPath, String message) {
+      final boolean useV1 = LuceneTestCase.random().nextBoolean();
+      String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
+      if (null != subPath) {
+        assert subPath.startsWith("/");
+        path += subPath;
+      }
+      return useV1
+        ? new AutoScalingRequest(m, path, message)
+        : new V2Request.Builder(path).withMethod(m).withPayload(message).build();
+    }
+    
+    protected final String message;
+
+    /**
+     * Simple request
+     * @param m HTTP Method to use
+     * @param path path to send request to
+     * @param message JSON payload, may be null
+     */
+    private AutoScalingRequest(METHOD m, String path, String message) {
+      super(m, path);
+      this.message = message;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      return null;
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      return message == null ? null : new StringPayloadContentWriter(message, JSON_MIME);
+    }
+
+    @Override
+    protected SolrResponse createResponse(SolrClient client) {
+      return new SolrResponseBase();
+    }
   }
 }
