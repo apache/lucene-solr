@@ -212,7 +212,7 @@ Other Changes
 
 * SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
 
-* SOLR-12727: Upgrade ZooKeeper dependency to 3.4.13 (Kevin Risden, Erick Erickson)
+* SOLR-12727: Upgrade ZooKeeper dependency to 3.4.13 (Kevin Risden, Erick Erickson, Cao Manh Dat)
 
 ==================  7.6.0 ==================
 
