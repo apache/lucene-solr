@@ -1205,7 +1205,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs) throws Exception {
     doTestNumericsVsStoredFields(density, longs, 256);
-    // TODO: 200000 docs are needed to test jumps (see LUCENE-8585), but that is quite slow. Maybe it can be nightly?
+    // TODO: 200000 docs are needed to test jumps properly (see LUCENE-8585), but that is quite slow (few minutes).
+    // Maybe it can be nightly?
     //doTestNumericsVsStoredFields(density, longs, 200000);
   }
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs, int minDocs) throws Exception {
@@ -1254,9 +1255,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     writer.close();
     // compare
     assertDVIterate(dir);
-    if (numDocs > 8192) { // Only spend time testing for jumps if there is room for jumping
-      assertDVAdvance(dir, 8191); // Smallest jump-table block (vBPV) has 16384 entries
-    }
+    // Consider enabling assertDVAdvance(dir, 1) for nightly
+    //assertDVAdvance(dir, 1); // Tests all jump-lengths from 1 to maxDoc (quite slow ~= 1 minute for 200K docs)
+    assertDVAdvance(dir, 8191); // Smallest jump-table block (vBPV) has 16384 entries
     dir.close();
   }
 
@@ -1295,14 +1296,15 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
         // Create a new instance each time to ensure jumps from the beginning
         NumericDocValues docValues = DocValues.getNumeric(r, "dv");
         for (int docID = 0; docID < r.maxDoc(); docID += jump) {
+          String base = "document #" + docID + "/" + r.maxDoc() + ", jumping " + jump + " from #" + (docID-jump);
           String storedValue = r.document(docID).get("stored");
           if (storedValue == null) {
-            assertFalse("advanceExact: There should be no DocValue for document #" + jump,
+            assertFalse("There should be no DocValue for " + base,
                 docValues.advanceExact(docID));
           } else {
-            assertTrue("advanceExact: There should be a DocValue for document #" + jump,
+            assertTrue("There should be a DocValue for " + base,
                 docValues.advanceExact(docID));
-            assertEquals("advanceExact: The value for document #" + jump + " should be correct",
+            assertEquals("The doc value should be correct for " + base,
                 Long.parseLong(storedValue), docValues.longValue());
           }
         }
@@ -2369,7 +2371,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testGCDCompression() throws Exception {
     doTestGCDCompression(1);
   }
-  // TODO LUCENE-8585: Fails with doTestNumericsVsStoredFields set to 200,000 (possibly also 20,000) and ant test  -Dtestcase=TestLucene80DocValuesFormat -Dtests.method=testSparseGCDCompression -Dtests.seed=C9EA19AC8E2F901 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=ms-MY -Dtests.timezone=Etc/GMT-10 -Dtests.asserts=true -Dtests.file.encoding=UTF-8
+
   public void testSparseGCDCompression() throws Exception {
     doTestGCDCompression(random().nextDouble());
   }
