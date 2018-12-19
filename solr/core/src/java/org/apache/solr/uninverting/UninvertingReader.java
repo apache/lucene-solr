@@ -243,7 +243,7 @@ public class UninvertingReader extends FilterLeafReader {
     ArrayList<FieldInfo> newFieldInfos = new ArrayList<>(in.getFieldInfos().size());
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = shouldWrap(fi, mapping);
-      if (type != fi.getDocValuesType()) { // we changed it
+      if (type != null) { // always wrap if the mapping says to, potentially discarding existing DVs
         wrap = true;
         newFieldInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
             fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
@@ -326,10 +326,6 @@ public class UninvertingReader extends FilterLeafReader {
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
-    NumericDocValues values = super.getNumericDocValues(field);
-    if (values != null) {
-      return values;
-    }
     Type v = getType(field);
     if (v != null) {
       switch (v) {
@@ -351,43 +347,31 @@ public class UninvertingReader extends FilterLeafReader {
           break;
       }
     }
-    return null;
+    return super.getNumericDocValues(field);
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-    BinaryDocValues values = in.getBinaryDocValues(field);
-    if (values != null) {
-      return values;
-    }
     Type v = getType(field);
     if (v == Type.BINARY) {
       return FieldCache.DEFAULT.getTerms(in, field);
     } else {
-      return null;
+      return in.getBinaryDocValues(field);
     }
   }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
-    SortedDocValues values = in.getSortedDocValues(field);
-    if (values != null) {
-      return values;
-    }
     Type v = getType(field);
     if (v == Type.SORTED) {
       return FieldCache.DEFAULT.getTermsIndex(in, field);
     } else {
-      return null;
+      return in.getSortedDocValues(field);
     }
   }
   
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    SortedSetDocValues values = in.getSortedSetDocValues(field);
-    if (values != null) {
-      return values;
-    }
     Type v = getType(field);
     if (v != null) {
       switch (v) {
@@ -412,7 +396,7 @@ public class UninvertingReader extends FilterLeafReader {
           break;
       }
     }
-    return null;
+    return in.getSortedSetDocValues(field);
   }
 
   /** 
