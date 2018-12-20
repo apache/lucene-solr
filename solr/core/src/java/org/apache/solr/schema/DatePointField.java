@@ -116,13 +116,13 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
-  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minimumInclusive, boolean maximumInclusive) {
     long actualMin, actualMax;
     if (min == null) {
       actualMin = Long.MIN_VALUE;
     } else {
       actualMin = DateMathParser.parseMath(null, min).getTime();
-      if (!minInclusive) {
+      if (!minimumInclusive) {
         if (actualMin == Long.MAX_VALUE) return new MatchNoDocsQuery();
         actualMin++;
       }
@@ -131,7 +131,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
       actualMax = Long.MAX_VALUE;
     } else {
       actualMax = DateMathParser.parseMath(null, max).getTime();
-      if (!maxInclusive) {
+      if (!maximumInclusive) {
         if (actualMax == Long.MIN_VALUE) return new MatchNoDocsQuery();
         actualMax--;
       }
