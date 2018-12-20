@@ -342,6 +342,35 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNewlyCreatedPathsStartWithVersionZero() throws Exception {
+    stateManager.makePath("/createdWithoutData");
+    VersionedData vd = stateManager.getData("/createdWithoutData", null);
+    assertEquals(0, vd.getVersion());
+
+    stateManager.createData("/createdWithData", new String("helloworld").getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+    vd = stateManager.getData("/createdWithData");
+    assertEquals(0, vd.getVersion());
+  }
+
+  @Test
+  public void testModifiedDataNodesGetUpdatedVersion() throws Exception {
+    stateManager.createData("/createdWithData", new String("foo").getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+    VersionedData vd = stateManager.getData("/createdWithData");
+    assertEquals(0, vd.getVersion());
+
+    stateManager.setData("/createdWithData", new String("bar").getBytes(StandardCharsets.UTF_8), 0);
+    vd = stateManager.getData("/createdWithData");
+    assertEquals(1, vd.getVersion());
+  }
+
+  // This is a little counterintuitive, so probably worth its own testcase so we don't break it accidentally.
+  @Test
+  public void testHasDataReturnsTrueForExistingButEmptyNodes() throws Exception {
+    stateManager.makePath("/nodeWithoutData");
+    assertTrue(stateManager.hasData("/nodeWithoutData"));
+  }
+
+  @Test
   public void testMulti() throws Exception {
 
   }

@@ -311,7 +311,7 @@ public class AutoScalingConfig implements MapWriter {
    */
   public AutoScalingConfig(Map<String, Object> jsonMap) {
     this.jsonMap = jsonMap;
-    int version = -1;
+    int version = 0;
     if (jsonMap.containsKey(AutoScalingParams.ZK_VERSION)) {
       try {
         version = (Integer)jsonMap.get(AutoScalingParams.ZK_VERSION);
