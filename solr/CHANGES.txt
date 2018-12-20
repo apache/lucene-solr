@@ -179,6 +179,9 @@ Bug Fixes
 
 * SOLR-10975: New Admin UI Query does not URL-encode the query produced in the URL box (janhoy)
 
+* SOLR-13072: Management of markers for nodeLost / nodeAdded events is broken. This bug could have caused
+  some events to be lost if they coincided with an Overseer leader crash. (ab)
+
 Improvements
 ----------------------
 

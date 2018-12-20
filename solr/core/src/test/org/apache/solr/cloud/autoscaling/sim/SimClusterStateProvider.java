@@ -285,10 +285,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     if (liveNodes.contains(nodeId)) {
       throw new Exception("Node " + nodeId + " already exists");
     }
-    liveNodes.add(nodeId);
     createEphemeralLiveNode(nodeId);
-    updateOverseerLeader();
     nodeReplicaMap.putIfAbsent(nodeId, new ArrayList<>());
+    liveNodes.add(nodeId);
+    updateOverseerLeader();
   }
 
   /**
@@ -310,12 +310,16 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
       // remove ephemeral nodes
       stateManager.getRoot().removeEphemeralChildren(nodeId);
-      updateOverseerLeader();
       // create a nodeLost marker if needed
       AutoScalingConfig cfg = stateManager.getAutoScalingConfig(null);
       if (cfg.hasTriggerForEvents(TriggerEventType.NODELOST)) {
-        stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + nodeId);
+        String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + nodeId;
+        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", cloudManager.getTimeSource().getEpochTimeNs()));
+        stateManager.makePath(path,
+            json, CreateMode.PERSISTENT, false);
+        log.debug(" -- created marker: {}", path);
       }
+      updateOverseerLeader();
       if (!collections.isEmpty()) {
         simRunLeaderElection(collections, true);
       }
@@ -388,7 +392,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     mgr.makePath(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeId, null, CreateMode.EPHEMERAL, true);
     AutoScalingConfig cfg = stateManager.getAutoScalingConfig(null);
     if (cfg.hasTriggerForEvents(TriggerEventType.NODEADDED)) {
-      mgr.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeId, null, CreateMode.EPHEMERAL, true);
+      byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", cloudManager.getTimeSource().getEpochTimeNs()));
+      String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeId;
+      log.debug("-- creating marker: {}", path);
+      mgr.makePath(path, json, CreateMode.EPHEMERAL, true);
     }
   }
 
