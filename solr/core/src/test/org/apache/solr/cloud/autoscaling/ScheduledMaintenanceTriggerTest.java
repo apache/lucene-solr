@@ -91,7 +91,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     String suspendTriggerCommand = "{" +
         "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     String setPropertiesCommand = "{" +
@@ -99,7 +99,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'" + AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS + "': 1" +
         "}" +
         "}";
-    response = solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    response = solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, setPropertiesCommand));
     assertEquals(response.get("result").toString(), "success");
     triggerFired = new CountDownLatch(1);
   }
@@ -337,7 +337,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'actions' : [" +
         "{'name' : 'test', 'class' : '" + TestTriggerAction2.class.getName() + "'}]" +
     "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -352,7 +352,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "{'name' : 'test', 'class' : '" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
 
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
