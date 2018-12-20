@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -260,6 +261,12 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
     assertTrue(stateManager.hasData("/createMode/ephemeral_seq"));
     kids = stateManager.listData("/createMode/ephemeral_seq");
     assertEquals(0, kids.size());
+  }
+
+  @Test
+  public void testCanCreateNodesWithDataAtTopLevel() throws Exception {
+    final String path = stateManager.createData("/topLevelNodeWithData", new String("helloworld").getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+    assertEquals("/topLevelNodeWithData", path);
   }
 
   static class OnceWatcher implements Watcher {
