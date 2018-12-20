@@ -446,27 +446,34 @@ public class SimDistribStateManager implements DistribStateManager {
     }
     // check if parent exists
     String relPath = path.charAt(0) == '/' ? path.substring(1) : path;
-    if (relPath.length() > 0) { // non-root path - check if parent exists
-      String[] elements = relPath.split("/");
-      StringBuilder sb = new StringBuilder();
+    if (relPath.length() == 0) { //Trying to create root-node, return null.
+      // TODO should trying to create a root node throw an exception since its always init'd in the ctor?
+      return null;
+    }
+
+    String[] elements = relPath.split("/");
+    StringBuilder parentStringBuilder = new StringBuilder();
+    Node parentNode = null;
+    if (elements.length == 1) { // Direct descendant of '/'.
+      parentNode = getRoot();
+    } else { // Indirect descendant of '/', lookup parent node
       for (int i = 0; i < elements.length - 1; i++) {
-        sb.append('/');
-        sb.append(elements[i]);
+        parentStringBuilder.append('/');
+        parentStringBuilder.append(elements[i]);
       }
-      if (!hasData(sb.toString())) {
-        throw new NoSuchElementException(sb.toString());
+      if (!hasData(parentStringBuilder.toString())) {
+        throw new NoSuchElementException(parentStringBuilder.toString());
       }
+      parentNode = traverse(parentStringBuilder.toString(), false, mode);
     }
     Node n = null;
     multiLock.lock();
     try {
-      n = traverse(path, true, mode);
-    } finally {
-      multiLock.unlock();
-    }
-    try {
-      n.setData(data, -1);
-      return n.path;
+      String nodeName = elements[elements.length-1];
+      Node childNode = createNode(parentNode, mode, parentStringBuilder.append("/"), nodeName, false);
+      childNode.setData(data, -1);
+      parentNode.setChild(childNode.name, childNode);
+      return childNode.path;
     } catch (BadVersionException e) {
       // not happening
       return null;
