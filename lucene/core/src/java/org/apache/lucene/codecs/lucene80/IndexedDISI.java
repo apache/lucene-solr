@@ -242,7 +242,7 @@ final class IndexedDISI extends DocIdSetIterator {
   /**
    * This constructor allows to pass the slice directly in case it helps reuse.
    * see eg. Lucene80 norms producer's merge instance.
-   * @param slice backing data.
+   * @param slice backing data, starting from position 0 to slice.length
    * @param jumpTableEntryCount the number of blocks convered by the jump-table.
    * @param cost normally the number of logical docIDs.
    */
@@ -250,7 +250,6 @@ final class IndexedDISI extends DocIdSetIterator {
     this.slice = slice;
     this.cost = cost;
 
-    origo = slice.getFilePointer();
     this.jumpTableEntryCount = jumpTableEntryCount;
     //slice.seek(slice.length()-Short.BYTES);
     if (jumpTableEntryCount <= 0) {
@@ -261,7 +260,6 @@ final class IndexedDISI extends DocIdSetIterator {
     }
   }
 
-  private final long origo; // Needed by jump-tables to compensate for different starting offsets
   private int block = -1;
   private long blockEnd;
   private long denseBitmapOffset = -1; // Only used for DENSE blocks
@@ -272,7 +270,7 @@ final class IndexedDISI extends DocIdSetIterator {
   private int index = -1;
 
   // SPARSE variables
-  boolean exists;
+  private boolean exists;
 
   // DENSE variables
   private long word;
@@ -323,8 +321,7 @@ final class IndexedDISI extends DocIdSetIterator {
     if (jumpTable != null && blockIndex >= (block >> 16)+2 && blockIndex < jumpTableEntryCount) {
       final long jumpEntry = jumpTable.readLong(blockIndex*Long.BYTES);
 
-      // Entries in the jumpTableOffset are calculated upon build, so origo should be added to get the correct offset
-      final long offset = origo + (jumpEntry & BLOCK_LOOKUP_MASK);
+      final long offset = jumpEntry & BLOCK_LOOKUP_MASK;
       final long index = jumpEntry >>> BLOCK_INDEX_SHIFT;
       this.nextBlockIndex = (int) (index - 1); // -1 to compensate for the always-added 1 in readBlockHeader
       slice.seek(offset);
@@ -484,13 +481,13 @@ final class IndexedDISI extends DocIdSetIterator {
     },
     ALL {
       @Override
-      boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
+      boolean advanceWithinBlock(IndexedDISI disi, int target) {
         disi.doc = target;
         disi.index = target - disi.gap;
         return true;
       }
       @Override
-      boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException {
+      boolean advanceExactWithinBlock(IndexedDISI disi, int target) {
         disi.index = target - disi.gap;
         return true;
       }

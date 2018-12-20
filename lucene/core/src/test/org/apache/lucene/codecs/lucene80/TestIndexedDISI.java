@@ -70,6 +70,59 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  // When doing merges in Lucene80NormsProducer, IndexedDISI are created from slices where the offset is not 0
+  public void testPositionNotZero() throws IOException {
+    final int BLOCKS = 10;
+
+    FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
+    try (Directory dir = newDirectory()) {
+      final int cardinality = set.cardinality();
+      int jumpTableentryCount;
+      try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
+        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+      }
+      try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
+        in.seek(random().nextInt((int) in.length()));
+        IndexedDISI disi = new IndexedDISI(in, jumpTableentryCount, cardinality);
+        // This failed at some point during LUCENE-8585 development as it did not reset the slice position
+        disi.advanceExact(BLOCKS*65536-1);
+      }
+    }
+  }
+
+  private FixedBitSet createSetWithRandomBlocks(int blockCount) {
+    final int B = 65536;
+    FixedBitSet set = new FixedBitSet(blockCount * B);
+    for (int block = 0; block < blockCount; block++) {
+      switch (random().nextInt(4)) {
+        case 0: { // EMPTY
+          break;
+        }
+        case 1: { // ALL
+          for (int docID = block* B; docID < (block+1)* B; docID++) {
+            set.set(docID);
+          }
+          break;
+        }
+        case 2: { // SPARSE ( < 4096 )
+          for (int docID = block* B; docID < (block+1)* B; docID += 101) {
+            set.set(docID);
+          }
+          break;
+        }
+        case 3: { // DENSE ( >= 4096 )
+          for (int docID = block* B; docID < (block+1)* B; docID += 3) {
+            set.set(docID);
+          }
+          break;
+        }
+        default: throw new IllegalStateException("Modulo logic error: there should only be 4 possibilities");
+      }
+    }
+    return set;
+  }
+
+
   private void doTestAllSingleJump(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
     long length;
