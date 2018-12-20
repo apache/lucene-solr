@@ -35,14 +35,8 @@ public interface BytesRefIterator {
    *         the end of the iterator is reached.
    * @throws IOException If there is a low-level I/O error.
    */
-  public BytesRef next() throws IOException;
+  BytesRef next() throws IOException;
   
   /** Singleton BytesRefIterator that iterates over 0 BytesRefs. */
-  public static final BytesRefIterator EMPTY = new BytesRefIterator() {
-
-    @Override
-    public BytesRef next() {
-      return null;
-    }
-  };
+  BytesRefIterator EMPTY = () -> null;
 }

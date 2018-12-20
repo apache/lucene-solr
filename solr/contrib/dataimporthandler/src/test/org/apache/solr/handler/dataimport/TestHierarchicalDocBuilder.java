@@ -108,6 +108,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12801") // this test fails easily under beasting
   public void testThreeLevelHierarchy() throws Exception {
     int parentsNum = 3; //fixed for simplicity of test
     int childrenNum = 0;

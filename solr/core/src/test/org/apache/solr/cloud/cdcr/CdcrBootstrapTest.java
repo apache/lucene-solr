@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -58,19 +57,18 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
    * call returns the same version as the last update indexed on the source.
    */
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testConvertClusterToCdcrAndBootstrap() throws Exception {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
     try {
-      target.waitForAllNodes(30);
       log.info("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       // start a cluster with no cdcr
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
       try {
-        source.waitForAllNodes(30);
         source.uploadConfigSet(configset("cdcr-source-disabled"), "cdcr-source");
 
         // create a collection with the cdcr-source-disabled configset
@@ -78,7 +76,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             // todo investigate why this is necessary??? because by default it selects a ram directory which deletes the tlogs on reloads?
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
-
+        source.waitForActiveCollection("cdcr-source", 1, 1);
         CloudSolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
@@ -98,7 +96,10 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
 //       upload the cdcr-enabled config and restart source cluster
         source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
         JettySolrRunner runner = source.stopJettySolrRunner(0);
+        source.waitForJettyToStop(runner);
+        
         source.startJettySolrRunner(runner);
+        source.waitForAllNodes(30);
         assertTrue(runner.isRunning());
         AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-source", source.getSolrClient().getZkStateReader(), true, true, 330);
 
@@ -110,9 +111,10 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 2)
             .setMaxShardsPerNode(2)
             .process(target.getSolrClient());
+        target.waitForActiveCollection("cdcr-target", 1, 2);
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
-        Thread.sleep(1000);
+        Thread.sleep(6000);
 
         CdcrTestsUtil.cdcrStart(targetSolrClient);
         CdcrTestsUtil.cdcrStart(sourceSolrClient);
@@ -164,18 +166,17 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
     try {
-      target.waitForAllNodes(30);
       System.out.println("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
       try {
-        source.waitForAllNodes(30);
         source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
 
         CollectionAdminRequest.createCollection("cdcr-source", "cdcr-source", 1, 1)
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
+        source.waitForActiveCollection("cdcr-source", 1, 1);
 
         CloudSolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
@@ -188,6 +189,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
             .process(target.getSolrClient());
+        target.waitForActiveCollection("cdcr-target", 1, 1);
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
 
@@ -240,24 +242,24 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
   }
 
   // 29-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028")
   public void testBootstrapWithContinousIndexingOnSourceCluster() throws Exception {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
-    target.waitForAllNodes(30);
     try {
       log.info("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
       try {
-        source.waitForAllNodes(30);
         source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
 
         CollectionAdminRequest.createCollection("cdcr-source", "cdcr-source", 1, 1)
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
-
+        source.waitForActiveCollection("cdcr-source", 1, 1);
         CloudSolrClient sourceSolrClient = source.getSolrClient();
         int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
@@ -269,6 +271,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
         CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
             .process(target.getSolrClient());
+        target.waitForActiveCollection("cdcr-target", 1, 1);
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);

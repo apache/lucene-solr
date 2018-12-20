@@ -67,6 +67,13 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
       args.remove(PARAM_PRECISION_STEP);
     }
 
+    // NOTE: because we're not using the PluginLoader to register these field types, they aren't "real"
+    // field types and never get Schema default properties (based on schema.xml's version attribute)
+    // so only the properties explicitly set here (or on the SchemaField's we create from them) are used.
+    //
+    // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
+    // to simplify the risk of back-compat break for existing users.
+    
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();
     fieldTypeAmountRaw.setTypeName(FIELD_TYPE_AMOUNT_RAW);
@@ -91,6 +98,7 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
     props.put("stored", "false");
     props.put("multiValued", "false");
     props.put("omitNorms", "true");
+    props.put("uninvertible", "true");
     int p = SchemaField.calcProps(name, type, props);
     schema.registerDynamicFields(SchemaField.create(name, type, p, null));
   }

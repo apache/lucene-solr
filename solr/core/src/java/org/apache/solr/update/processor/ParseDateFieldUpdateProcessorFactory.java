@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.lang.invoke.MethodHandles;
+import java.text.ParsePosition;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -81,8 +82,10 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * The locale to use when parsing field values using the specified formats may
- * optionally be specified.  If no locale is configured, then {@link Locale#ROOT}
- * will be used. The following configuration specifies the French/France locale and
+ * optionally be specified.  If no locale is configured, then {@code en_US}
+ * will be used since it's implied by some well-known formats.  Recent versions of Java
+ * have become sensitive to this.
+ * The following configuration specifies the French/France locale and
  * two date formats that will parse the strings "le mardi 8 janvier 2013" and 
  * "le 28 déc. 2010 à 15 h 30", respectively.  Note that either individual &lt;str&gt;
  * elements or &lt;arr&gt;-s of &lt;str&gt; elements may be used to specify the
@@ -103,6 +106,11 @@ import org.slf4j.LoggerFactory;
  * See {@link Locale} for a description of acceptable language, country (optional)
  * and variant (optional) values, joined with underscore(s).
  * </p>
+ *
+ * <p>
+ * Tip: you can use multiple instances of this URP in your chain with different locales or
+ * default time zones if you wish to vary those settings for different format patterns.
+ * </p>
  * @since 4.4.0
  */
 public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
@@ -112,13 +120,15 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   private static final String DEFAULT_TIME_ZONE_PARAM = "defaultTimeZone";
   private static final String LOCALE_PARAM = "locale";
 
-  private Map<String,DateTimeFormatter> formats = new LinkedHashMap<>();
+  private Map<String, DateTimeFormatter> formats = new LinkedHashMap<>();
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new AllValuesOrNoneFieldMutatingUpdateProcessor(getSelector(), next) {
+      final ParsePosition parsePosition = new ParsePosition(0);
+
       @Override
       protected Object mutateValue(Object srcVal) {
         if (srcVal instanceof CharSequence) {
@@ -136,7 +146,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
           for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
             DateTimeFormatter parser = format.getValue();
             try {
-              return Date.from(parseInstant(parser, srcStringVal));
+              return Date.from(parseInstant(parser, srcStringVal, parsePosition));
             } catch (DateTimeParseException e) {
               log.debug("value '{}' is not parseable with format '{}'",
                         new Object[] { srcStringVal, format.getKey() });
@@ -156,11 +166,12 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   @Override
   public void init(NamedList args) {
     
-    Locale locale = Locale.ROOT;
-    
+    Locale locale;
     String localeParam = (String)args.remove(LOCALE_PARAM);
     if (null != localeParam) {
       locale = LocaleUtils.toLocale(localeParam);
+    } else {
+      locale = LocaleUtils.toLocale("en_US"); // because well-known patterns assume this
     }
 
     Object defaultTimeZoneParam = args.remove(DEFAULT_TIME_ZONE_PARAM);
@@ -200,7 +211,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   public static void validateFormatter(DateTimeFormatter formatter) {
     // check it's valid via round-trip
     try {
-      parseInstant(formatter, formatter.format(Instant.now()));
+      parseInstant(formatter, formatter.format(Instant.now()), new ParsePosition(0));
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Bad or unsupported pattern: " + formatter.toFormat().toString(), e);
@@ -212,8 +223,23 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   //  the input string contains a timezone/offset that differs from the "override zone"
   //  (which we configure in DEFAULT_TIME_ZONE).  Besides, we need the code below which handles
   //  the optionality of time.  Were it not for that, we truly could do formatter.parse(Instant::from).
-  private static Instant parseInstant(DateTimeFormatter formatter, String dateStr) {
-    final TemporalAccessor temporal = formatter.parse(dateStr);
+  private static Instant parseInstant(DateTimeFormatter formatter, String dateStr, ParsePosition parsePosition) {
+    // prepare for reuse
+    parsePosition.setIndex(0);
+    parsePosition.setErrorIndex(-1);
+    final TemporalAccessor temporal = formatter.parse(dateStr, parsePosition);
+    // check that all content has been parsed
+    if (parsePosition.getIndex() < dateStr.length()) {
+      final String abbr;
+      if (dateStr.length() > 64) {
+        abbr = dateStr.subSequence(0, 64).toString() + "...";
+      } else {
+        abbr = dateStr;
+      }
+      throw new DateTimeParseException("Text '" + abbr + "' could not be parsed, unparsed text found at index " +
+          parsePosition.getIndex(), dateStr, parsePosition.getIndex());
+    }
+
     // Get Date; mandatory
     LocalDate date = temporal.query(TemporalQueries.localDate());//mandatory
     if (date == null) {

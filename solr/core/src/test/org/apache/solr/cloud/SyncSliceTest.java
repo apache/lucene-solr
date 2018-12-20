@@ -136,7 +136,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     jetties.remove(leaderJetty);
     assertEquals(getShardCount() - 1, jetties.size());
     
-    chaosMonkey.killJetty(leaderJetty);
+    leaderJetty.jetty.stop();
     
     Thread.sleep(3000);
     
@@ -158,7 +158,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     }
     
     // bring back dead node
-    ChaosMonkey.start(deadJetty.jetty); // he is not the leader anymore
+    deadJetty.jetty.start(); // he is not the leader anymore
     
     waitTillAllNodesActive();
     
@@ -202,7 +202,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     
     // kill the current leader
-    chaosMonkey.killJetty(leaderJetty);
+    leaderJetty.jetty.stop();
     
     waitForNoShardInconsistency();
 

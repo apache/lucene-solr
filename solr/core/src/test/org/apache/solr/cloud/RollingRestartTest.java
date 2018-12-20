@@ -101,7 +101,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
             fail("No overseer designate as leader found after restart #" + (i + 1) + ": " + leader);
           }
         }
-        assertTrue("Unable to restart (#" + i + "): " + cloudJetty, ChaosMonkey.start(cloudJetty.jetty));
+        cloudJetty.jetty.start();
         boolean success = waitUntilOverseerDesignateIsLeader(cloudClient.getZkStateReader().getZkClient(), designates, MAX_WAIT_TIME);
         if (!success) {
           leader = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());

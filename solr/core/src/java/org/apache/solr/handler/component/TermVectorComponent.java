@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -44,8 +43,6 @@ import org.apache.solr.common.params.TermVectorParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.response.DocsStreamer;
-import org.apache.solr.response.RetrieveFieldsOptimizer;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
@@ -267,41 +264,27 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     //field
     SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     SolrReturnFields srf = new SolrReturnFields(uniqFieldName, rb.req);
-    RetrieveFieldsOptimizer retrieveFieldsOptimizer = RetrieveFieldsOptimizer.create(docFetcher, srf);
 
     while (iter.hasNext()) {
       Integer docId = iter.next();
       NamedList<Object> docNL = new NamedList<>();
 
       if (keyField != null) {
-        SolrDocument sdoc = null;
-        try {
-          if (retrieveFieldsOptimizer.returnStoredFields()) {
-            Document doc = docFetcher.doc(docId, retrieveFieldsOptimizer.getStoredFields());
-            // make sure to use the schema from the searcher and not the request (cross-core)
-            sdoc = DocsStreamer.convertLuceneDocToSolrDoc(doc, searcher.getSchema(), srf);
+        // guaranteed to be one and only one since this is uniqueKey!
+        SolrDocument solrDoc = docFetcher.solrDoc(docId, srf);
+
+        String uKey = null;
+        Object val = solrDoc.getFieldValue(uniqFieldName);
+        if (val != null) {
+          if (val instanceof StoredField) {
+            uKey = ((StoredField) val).stringValue();
           } else {
-            // no need to get stored fields of the document, see SOLR-5968
-            sdoc = new SolrDocument();
+            uKey = val.toString();
           }
-
-          // decorate the document with non-stored docValues fields
-          if (retrieveFieldsOptimizer.returnDVFields()) {
-            docFetcher.decorateDocValueFields(sdoc, docId, retrieveFieldsOptimizer.getDvFields());
-          }
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + docId, e);
         }
-        Object val = sdoc.getFieldValue(uniqFieldName);
-        String uniqVal = "";
-        if (val instanceof StoredField) {
-          uniqVal = ((StoredField) val).stringValue();
-        } else {
-          uniqVal = val.toString();
-        }
-
-        docNL.add("uniqueKey", uniqVal);
-        termVectors.add(uniqVal, docNL);
+        assert null != uKey;
+        docNL.add("uniqueKey", uKey);
+        termVectors.add(uKey, docNL);
       } else {
         // support for schemas w/o a unique key,
         termVectors.add("doc-" + docId, docNL);

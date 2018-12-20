@@ -25,9 +25,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
@@ -44,7 +42,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * @since Solr 1.4
  */
 public class MappingCharFilterFactory extends CharFilterFactory implements
-    ResourceLoaderAware, MultiTermAwareComponent {
+    ResourceLoaderAware {
 
   protected NormalizeCharMap normMap;
   private final String mapping;
@@ -84,6 +82,11 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     // if the map is null, it means there's actually no mappings... just return the original stream
     // as there is nothing to do here.
     return normMap == null ? input : new MappingCharFilter(normMap,input);
+  }
+
+  @Override
+  public Reader normalize(Reader input) {
+    return create(input);
   }
 
   // "source" => "target"
@@ -131,8 +134,4 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     return new String( out, 0, writePos );
   }
 
-  @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
-  }
 }

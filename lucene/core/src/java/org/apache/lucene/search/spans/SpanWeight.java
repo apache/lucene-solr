@@ -32,6 +32,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
@@ -177,7 +178,7 @@ public abstract class SpanWeight extends Weight {
 
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    return Matches.forField(field, () -> {
+    return MatchesUtils.forField(field, () -> {
       Spans spans = getSpans(context, Postings.OFFSETS);
       if (spans == null || spans.advance(doc) != doc) {
         return null;

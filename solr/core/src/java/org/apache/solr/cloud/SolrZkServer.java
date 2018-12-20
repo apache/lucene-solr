@@ -150,7 +150,7 @@ public class SolrZkServer {
 // Allows us to set a default for the data dir before parsing
 // zoo.cfg (which validates that there is a dataDir)
 class SolrZkServerProps extends QuorumPeerConfig {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Pattern MISSING_MYID_FILE_PATTERN = Pattern.compile(".*myid file is missing$");
 
   String solrPort; // port that Solr is listening on
@@ -164,7 +164,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
   public static Properties getProperties(String path) throws ConfigException {
     File configFile = new File(path);
 
-    LOG.info("Reading configuration from: " + configFile);
+    log.info("Reading configuration from: " + configFile);
 
     try {
       if (!configFile.exists()) {

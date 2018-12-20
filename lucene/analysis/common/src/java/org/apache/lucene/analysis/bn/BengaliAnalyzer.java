@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Analyzer for Bengali.
+ *
+ * @since 7.1.0
  */
 public final class BengaliAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

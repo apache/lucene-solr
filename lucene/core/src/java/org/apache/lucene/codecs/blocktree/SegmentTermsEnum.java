@@ -34,8 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 
-/** Iterates through terms in this field.  This implementation skips
- *  any auto-prefix terms it encounters. */
+/** Iterates through terms in this field. */
 
 final class SegmentTermsEnum extends TermsEnum {
 
@@ -120,8 +119,6 @@ final class SegmentTermsEnum extends TermsEnum {
   /** Runs next() through the entire terms dict,
    *  computing aggregate statistics. */
   public Stats computeBlockStats() throws IOException {
-
-    // TODO: add total auto-prefix term count
 
     Stats stats = new Stats(fr.parent.segment, fr.fieldInfo.name);
     if (fr.index != null) {

@@ -23,8 +23,6 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Provides a base class for analysis based offset strategies to extend from.
@@ -37,12 +35,12 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
 
   protected final Analyzer analyzer;
 
-  public AnalysisOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
-    super(field, queryTerms, phraseHelper, automata);
+  public AnalysisOffsetStrategy(UHComponents components, Analyzer analyzer) {
+    super(components);
     this.analyzer = analyzer;
-    if (analyzer.getOffsetGap(field) != 1) { // note: 1 is the default. It is RARELY changed.
+    if (analyzer.getOffsetGap(getField()) != 1) { // note: 1 is the default. It is RARELY changed.
       throw new IllegalArgumentException(
-          "offset gap of the provided analyzer should be 1 (field " + field + ")");
+          "offset gap of the provided analyzer should be 1 (field " + getField() + ")");
     }
   }
 
@@ -55,12 +53,12 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
     // If there is no splitChar in content then we needn't wrap:
     int splitCharIdx = content.indexOf(UnifiedHighlighter.MULTIVAL_SEP_CHAR);
     if (splitCharIdx == -1) {
-      return analyzer.tokenStream(field, content);
+      return analyzer.tokenStream(getField(), content);
     }
 
-    TokenStream subTokenStream = analyzer.tokenStream(field, content.substring(0, splitCharIdx));
+    TokenStream subTokenStream = analyzer.tokenStream(getField(), content.substring(0, splitCharIdx));
 
-    return new MultiValueTokenStream(subTokenStream, field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR, splitCharIdx);
+    return new MultiValueTokenStream(subTokenStream, getField(), analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR, splitCharIdx);
   }
 
   /**

@@ -143,7 +143,7 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
             }
           };
         }
-        return new ConstantScoreScorer(this, score(), iterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
 
     };

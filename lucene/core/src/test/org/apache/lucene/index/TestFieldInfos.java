@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -25,6 +26,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.sameInstance;
 
 public class TestFieldInfos extends LuceneTestCase {
 
@@ -89,4 +93,46 @@ public class TestFieldInfos extends LuceneTestCase {
     dir.close();
   }
 
+  public void testMergedFieldInfos_empty() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    IndexReader reader = writer.getReader();
+    FieldInfos actual = FieldInfos.getMergedFieldInfos(reader);
+    FieldInfos expected = FieldInfos.EMPTY;
+
+    assertThat(actual, sameInstance(expected));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  public void testMergedFieldInfos_singleLeaf() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    Document d1 = new Document();
+    d1.add(new StringField("f1", "v1", Field.Store.YES));
+    writer.addDocument(d1);
+    writer.commit();
+
+    Document d2 = new Document();
+    d2.add(new StringField("f2", "v2", Field.Store.YES));
+    writer.addDocument(d2);
+    writer.commit();
+
+    writer.forceMerge(1);
+
+    IndexReader reader = writer.getReader();
+    FieldInfos actual = FieldInfos.getMergedFieldInfos(reader);
+    FieldInfos expected = reader.leaves().get(0).reader().getFieldInfos();
+
+    assertThat(reader.leaves().size(), equalTo(1));
+    assertThat(actual, sameInstance(expected));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
 }

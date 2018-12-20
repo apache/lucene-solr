@@ -34,7 +34,7 @@ public class TestTerms extends LuceneTestCase {
     doc.add(newTextField("field", "a b c cc ddd", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    Terms terms = MultiFields.getTerms(r, "field");
+    Terms terms = MultiTerms.getTerms(r, "field");
     assertEquals(new BytesRef("a"), terms.getMin());
     assertEquals(new BytesRef("ddd"), terms.getMax());
     r.close();
@@ -74,7 +74,7 @@ public class TestTerms extends LuceneTestCase {
     }
 
     IndexReader r = w.getReader();
-    Terms terms = MultiFields.getTerms(r, "field");
+    Terms terms = MultiTerms.getTerms(r, "field");
     assertEquals(minTerm, terms.getMin());
     assertEquals(maxTerm, terms.getMax());
     

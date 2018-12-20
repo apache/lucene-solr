@@ -55,7 +55,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
@@ -1426,7 +1426,7 @@ public class TestJoinUtil extends LuceneTestCase {
       if (multipleValuesPerDocument) {
         searcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
-          private Scorer scorer;
+          private Scorable scorer;
           private SortedSetDocValues docTermOrds;
 
           @Override
@@ -1453,7 +1453,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1465,7 +1465,7 @@ public class TestJoinUtil extends LuceneTestCase {
       } else {
         searcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new SimpleCollector() {
 
-          private Scorer scorer;
+          private Scorable scorer;
           private BinaryDocValues terms;
 
           @Override
@@ -1494,7 +1494,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1507,7 +1507,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        Terms terms = MultiFields.getTerms(topLevelReader, toField);
+        Terms terms = MultiTerms.getTerms(topLevelReader, toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>();
@@ -1557,7 +1557,7 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
           }
 
           @Override
@@ -1674,7 +1674,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         for (RandomDoc otherSideDoc : otherMatchingDocs) {
-          PostingsEnum postingsEnum = MultiFields.getTermDocsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
+          PostingsEnum postingsEnum = MultiTerms.getTermPostingsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
           assert postingsEnum != null;
           int doc = postingsEnum.nextDoc();
           expectedResult.set(doc);

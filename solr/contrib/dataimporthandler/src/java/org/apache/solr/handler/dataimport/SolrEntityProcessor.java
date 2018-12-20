@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrEntityProcessor extends EntityProcessorBase {
   
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String SOLR_SERVER = "url";
   public static final String QUERY = "query";
@@ -118,13 +118,13 @@ public class SolrEntityProcessor extends EntityProcessorBase {
             .withHttpClient(client)
             .withResponseParser(new XMLResponseParser())
             .build();
-        LOG.info("using XMLResponseParser");
+        log.info("using XMLResponseParser");
       } else {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
         solrClient = new Builder(url.toExternalForm())
             .withHttpClient(client)
             .build();
-        LOG.info("using BinaryResponseParser");
+        log.info("using BinaryResponseParser");
       }
     } catch (MalformedURLException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);

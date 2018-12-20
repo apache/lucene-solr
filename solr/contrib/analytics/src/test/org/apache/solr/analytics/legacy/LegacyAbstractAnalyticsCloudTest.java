@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
@@ -29,11 +30,11 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
   
@@ -41,19 +42,23 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
   protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
 
-  @BeforeClass
-  public static void setupCollection() throws Exception {
+  @Before
+  public void setupCollection() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-analytics"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTIONORALIAS, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
-    cleanIndex();
+    cluster.waitForActiveCollection(COLLECTIONORALIAS, 2, 2);
+  }
+  
+  @After
+  public void teardownCollection() throws Exception {
+    cluster.deleteAllCollections();
+    shutdownCluster();
   }
 
-  public static void cleanIndex() throws Exception {
+  public void cleanIndex() throws Exception {
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
@@ -81,7 +86,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     }
   }
 
-  protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams) throws SolrServerException, IOException, InterruptedException {
+  protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams) throws SolrServerException, IOException, InterruptedException, TimeoutException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
     params.set("indent", "true");

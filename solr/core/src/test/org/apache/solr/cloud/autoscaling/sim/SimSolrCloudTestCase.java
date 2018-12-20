@@ -20,24 +20,23 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
  * Base class for simulated test cases. Tests that use this class should configure the simulated cluster
@@ -82,43 +81,28 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     super.setUp();
   }
 
-  @Before
-  public void checkClusterConfiguration() throws Exception {
-    if (cluster == null)
-      throw new RuntimeException("SimCloudManager not configured - have you called configureCluster()?");
-    // clear any persisted configuration
-    cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
-    cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
-    cluster.getSimClusterStateProvider().simDeleteAllCollections();
-    cluster.simClearSystemCollection();
-    cluster.getSimNodeStateProvider().simRemoveDeadNodes();
-    cluster.getSimClusterStateProvider().simRemoveDeadNodes();
-    // restore the expected number of nodes
-    int currentSize = cluster.getLiveNodesSet().size();
-    if (currentSize < clusterNodeCount) {
-      int addCnt = clusterNodeCount - currentSize;
-      while (addCnt-- > 0) {
-        cluster.simAddNode();
-      }
-    } else if (currentSize > clusterNodeCount) {
-      cluster.simRemoveRandomNodes(currentSize - clusterNodeCount, true, random());
-    }
-    // clean any persisted trigger state or events
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-    removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-    cluster.getSimClusterStateProvider().simResetLeaderThrottles();
-    cluster.simRestartOverseer(null);
-    cluster.getTimeSource().sleep(5000);
-    cluster.simResetOpCounts();
-  }
-
   protected void removeChildren(String path) throws Exception {
-    if (!cluster.getDistribStateManager().hasData(path)) {
-      return;
+    
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeOut.waitFor("Timed out waiting to see core4 as leader", () -> {    try {
+      cluster.getDistribStateManager().removeRecursively(path, true, false);
+      return true;
+    } catch (NotEmptyException e) {
+
+    } catch (NoSuchElementException e) {
+
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (KeeperException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    } catch (BadVersionException e) {
+      throw new RuntimeException(e);
     }
-    cluster.getDistribStateManager().removeRecursively(path, true, false);
+    return false;
+    });
+
   }
 
   /* Cluster helper methods ************************************/

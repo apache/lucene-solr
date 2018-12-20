@@ -210,7 +210,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.v = rewritten.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }
 
@@ -238,7 +238,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     searcher.search(q, new SimpleCollector() {
 
       DoubleValues v;
-      Scorer scorer;
+      Scorable scorer;
       LeafReaderContext ctx;
 
       @Override
@@ -247,7 +247,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
         this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }

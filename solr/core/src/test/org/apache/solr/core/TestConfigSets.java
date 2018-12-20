@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestConfigSets extends SolrTestCaseJ4 {
 
@@ -88,19 +88,16 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testNonExistentConfigSetThrowsException() {
-    CoreContainer container = null;
+    final CoreContainer container = setupContainer(getFile("solr/configsets").getAbsolutePath());
     try {
-      container = setupContainer(getFile("solr/configsets").getAbsolutePath());
       Path testDirectory = container.getResourceLoader().getInstancePath();
 
-      container.create("core1", ImmutableMap.of("configSet", "nonexistent"));
-      fail("Expected core creation to fail");
-    }
-    catch (Exception e) {
-      Throwable wrappedException = getWrappedException(e);
+      Exception thrown = expectThrows(Exception.class, "Expected core creation to fail", () -> {
+        container.create("core1", ImmutableMap.of("configSet", "nonexistent"));
+      });
+      Throwable wrappedException = getWrappedException(thrown);
       assertThat(wrappedException.getMessage(), containsString("nonexistent"));
-    }
-    finally {
+    } finally {
       if (container != null)
         container.shutdown();
     }

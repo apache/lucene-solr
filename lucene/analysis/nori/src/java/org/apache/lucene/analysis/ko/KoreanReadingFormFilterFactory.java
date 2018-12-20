@@ -32,6 +32,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;
  * </pre>
  * @lucene.experimental
+ *
+ * @since 7.4.0
  */
 public class KoreanReadingFormFilterFactory extends TokenFilterFactory {
 

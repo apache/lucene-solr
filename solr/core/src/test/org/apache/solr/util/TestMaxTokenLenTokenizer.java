@@ -22,7 +22,6 @@ import org.junit.BeforeClass;
 
 /**
  * Tests for:
- * {@link org.apache.lucene.analysis.core.LowerCaseTokenizerFactory}
  * {@link org.apache.lucene.analysis.core.LetterTokenizerFactory}
  * {@link org.apache.lucene.analysis.core.KeywordTokenizerFactory}
  * {@link org.apache.lucene.analysis.core.WhitespaceTokenizerFactory}
@@ -44,24 +43,17 @@ public class TestMaxTokenLenTokenizer extends SolrTestCaseJ4 {
     // using fields with definitions, different tokenizer factories respectively at index time and standard tokenizer at query time.
 
     updateJ("{\"add\":{\"doc\": {\"id\":1,\"letter\":\"letter\"}},\"commit\":{}}",null);
-    updateJ("{\"add\":{\"doc\": {\"id\":2,\"lowerCase\":\"lowerCase\"}},\"commit\":{}}",null);
     updateJ("{\"add\":{\"doc\": {\"id\":3,\"whiteSpace\":\"whiteSpace in\"}},\"commit\":{}}",null);
     updateJ("{\"add\":{\"doc\": {\"id\":4,\"unicodeWhiteSpace\":\"unicode in\"}},\"commit\":{}}",null);
     updateJ("{\"add\":{\"doc\": {\"id\":5,\"keyword\":\"keyword\"}},\"commit\":{}}",null);
 
     assertU(commit());
 
-    assertQ("Check the total number of docs", req("q","*:*"), "//result[@numFound=5]");
+    assertQ("Check the total number of docs", req("q","*:*"), "//result[@numFound=4]");
 
     //Tokens generated for "letter": "let" "ter" "letter" , maxTokenLen=3
     assertQ("Check the total number of docs", req("q","letter:let"), "//result[@numFound=1]");
     assertQ("Check the total number of docs", req("q","letter:lett"), "//result[@numFound=0]");
-
-    //Tokens generated for "lowerCase": "low" "erC" "ase" "lowerCase" , maxTokenLen=3
-    assertQ("Check the total number of docs", req("q","lowerCase:low"), "//result[@numFound=1]");
-    assertQ("Check the total number of docs", req("q","lowerCase:l"), "//result[@numFound=0]");
-    assertQ("Check the total number of docs", req("q","lowerCase:lo"), "//result[@numFound=0]");
-    assertQ("Check the total number of docs", req("q","lowerCase:lower"), "//result[@numFound=0]");
 
     //Tokens generated for "whiteSpace in": "whi" "teS" "pac" "e" "in" "whiteSpace" , maxTokenLen=3
     assertQ("Check the total number of docs", req("q","whiteSpace:whi"), "//result[@numFound=1]");
@@ -88,14 +80,13 @@ public class TestMaxTokenLenTokenizer extends SolrTestCaseJ4 {
     // using fields with definitions, same tokenizers both at index and query time.
 
     updateJ("{\"add\":{\"doc\": {\"id\":1,\"letter0\":\"letter\"}},\"commit\":{}}",null);
-    updateJ("{\"add\":{\"doc\": {\"id\":2,\"lowerCase0\":\"lowerCase\"}},\"commit\":{}}",null);
     updateJ("{\"add\":{\"doc\": {\"id\":3,\"whiteSpace0\":\"whiteSpace in\"}},\"commit\":{}}",null);
     updateJ("{\"add\":{\"doc\": {\"id\":4,\"unicodeWhiteSpace0\":\"unicode in\"}},\"commit\":{}}",null);
     updateJ("{\"add\":{\"doc\": {\"id\":5,\"keyword0\":\"keyword\"}},\"commit\":{}}",null);
 
     assertU(commit());
 
-    assertQ("Check the total number of docs", req("q","*:*"), "//result[@numFound=5]");
+    assertQ("Check the total number of docs", req("q","*:*"), "//result[@numFound=4]");
 
     //Tokens generated for "letter": "let" "ter" "letter" , maxTokenLen=3
     // Anything that matches the first three letters should be found when maxLen=3
@@ -103,13 +94,6 @@ public class TestMaxTokenLenTokenizer extends SolrTestCaseJ4 {
     assertQ("Check the total number of docs", req("q","letter0:let"), "//result[@numFound=1]");
     assertQ("Check the total number of docs", req("q","letter0:lett"), "//result[@numFound=1]");
     assertQ("Check the total number of docs", req("q","letter0:letXYZ"), "//result[@numFound=1]");
-
-    //Tokens generated for "lowerCase": "low" "erC" "ase" "lowerCase" , maxTokenLen=3
-    // Anything that matches the first three letters should be found when maxLen=3
-    assertQ("Check the total number of docs", req("q","lowerCase0:low"), "//result[@numFound=1]");
-    assertQ("Check the total number of docs", req("q","lowerCase0:l"), "//result[@numFound=0]");
-    assertQ("Check the total number of docs", req("q","lowerCase0:lo"), "//result[@numFound=0]");
-    assertQ("Check the total number of docs", req("q","lowerCase0:lowerXYZ"), "//result[@numFound=1]");
 
     //Tokens generated for "whiteSpace in": "whi" "teS" "pac" "e" "in" "whiteSpace" , maxTokenLen=3
     // Anything that matches the first three letters should be found when maxLen=3

@@ -247,6 +247,8 @@ limitations under the License.
 
 #menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
 
+#menu #login.global p a { background-image: url( ../../img/ico/users.png ); }
+
 #menu #logging.global p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
 #menu #logging.global .level a { background-image: url( ../../img/ico/gear.png ); }
 
@@ -263,7 +265,6 @@ limitations under the License.
 #menu #cloud.global .nodes a { background-image: url( ../../img/solr-ico.png ); }
 #menu #cloud.global .zkstatus a { background-image: url( ../../img/ico/node-master.png ); }
 #menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
-#menu #cloud.global .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
 
 .sub-menu .ping.error a
 {

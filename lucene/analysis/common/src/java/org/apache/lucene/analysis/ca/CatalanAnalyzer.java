@@ -36,6 +36,8 @@ import org.tartarus.snowball.ext.CatalanStemmer;
 
 /**
  * {@link Analyzer} for Catalan.
+ *
+ * @since 3.1
  */
 public final class CatalanAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

@@ -21,8 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pl.PolishAnalyzer;
-import org.apache.lucene.analysis.stempel.StempelFilter;
-import org.apache.lucene.analysis.stempel.StempelStemmer;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**

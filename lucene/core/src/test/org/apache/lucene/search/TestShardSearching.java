@@ -24,8 +24,8 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -174,7 +174,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
           if (terms == null && docCount > minDocsToMakeTerms) {
             // TODO: try to "focus" on high freq terms sometimes too
             // TODO: maybe also periodically reset the terms...?
-            final TermsEnum termsEnum = MultiFields.getTerms(mockReader, "body").iterator();
+            final TermsEnum termsEnum = MultiTerms.getTerms(mockReader, "body").iterator();
             terms = new ArrayList<>();
             while(termsEnum.next() != null) {
               terms.add(BytesRef.deepCopyOf(termsEnum.term()));

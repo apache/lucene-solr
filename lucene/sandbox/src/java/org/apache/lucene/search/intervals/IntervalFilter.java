@@ -25,7 +25,7 @@ import java.util.Objects;
  */
 public abstract class IntervalFilter extends IntervalIterator {
 
-  private final IntervalIterator in;
+  protected final IntervalIterator in;
 
   /**
    * Create a new filter
@@ -62,6 +62,11 @@ public abstract class IntervalFilter extends IntervalIterator {
   @Override
   public int end() {
     return in.end();
+  }
+
+  @Override
+  public int gaps() {
+    return in.gaps();
   }
 
   @Override

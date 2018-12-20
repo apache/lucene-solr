@@ -77,11 +77,30 @@ public final class Intervals {
 
   /**
    * Create an {@link IntervalsSource} that filters a sub-source by the width of its intervals
-   * @param width       the maximum width of intervals in the sub-source ot return
+   * @param width       the maximum width of intervals in the sub-source to filter
    * @param subSource   the sub-source to filter
    */
   public static IntervalsSource maxwidth(int width, IntervalsSource subSource) {
-    return new LowpassIntervalsSource(subSource, width);
+    return new FilteredIntervalsSource("MAXWIDTH/" + width, subSource) {
+      @Override
+      protected boolean accept(IntervalIterator it) {
+        return (it.end() - it.start()) + 1 <= width;
+      }
+    };
+  }
+
+  /**
+   * Create an {@link IntervalsSource} that filters a sub-source by its gaps
+   * @param gaps        the maximum number of gaps in the sub-source to filter
+   * @param subSource   the sub-source to filter
+   */
+  public static IntervalsSource maxgaps(int gaps, IntervalsSource subSource) {
+    return new FilteredIntervalsSource("MAXGAPS/" + gaps, subSource) {
+      @Override
+      protected boolean accept(IntervalIterator it) {
+        return it.gaps() <= gaps;
+      }
+    };
   }
 
   /**
@@ -92,7 +111,7 @@ public final class Intervals {
    * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
   public static IntervalsSource ordered(IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
+    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
   }
 
   /**
@@ -115,7 +134,7 @@ public final class Intervals {
    * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
    */
   public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources),
+    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources),
         allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
   }
 

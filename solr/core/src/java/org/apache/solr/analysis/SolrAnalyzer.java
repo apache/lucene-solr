@@ -22,6 +22,7 @@ import java.io.Reader;
 
 /**
  *
+ * @since 3.1
  */
 public abstract class SolrAnalyzer extends Analyzer {
   int posIncGap = 0;

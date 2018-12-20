@@ -24,7 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -65,8 +65,7 @@ public class FieldHighlighter {
   /**
    * The primary method -- highlight this doc, assuming a specific field and given this content.
    */
-  public Object highlightFieldForDoc(IndexReader reader, int docId, String content) throws IOException {
-    // TODO accept LeafReader instead?
+  public Object highlightFieldForDoc(LeafReader reader, int docId, String content) throws IOException {
     // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
     if (content.length() == 0) {
       return null; // nothing to do

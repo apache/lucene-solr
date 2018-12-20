@@ -592,11 +592,11 @@ public class FieldCacheImpl implements FieldCache {
       if (parser instanceof PointParser) {
         // points case
         // no points in this segment
-        if (info.getPointDimensionCount() == 0) {
+        if (info.getPointDataDimensionCount() == 0) {
           return DocValues.emptyNumeric();
         }
-        if (info.getPointDimensionCount() != 1) {
-          throw new IllegalStateException("Type mismatch: " + field + " was indexed with dimensions=" + info.getPointDimensionCount());
+        if (info.getPointDataDimensionCount() != 1) {
+          throw new IllegalStateException("Type mismatch: " + field + " was indexed with dimensions=" + info.getPointDataDimensionCount());
         }
         PointValues values = reader.getPointValues(field);
         // no actual points for this field (e.g. all points deleted)

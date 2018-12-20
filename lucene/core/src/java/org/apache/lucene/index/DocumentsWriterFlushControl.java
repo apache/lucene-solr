@@ -47,7 +47,7 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
-  private long flushBytes = 0;
+  private volatile long flushBytes = 0;
   private volatile int numPending = 0;
   private int numDocsSinceStalled = 0; // only with assert
   final AtomicBoolean flushDeletes = new AtomicBoolean(false);
@@ -86,7 +86,7 @@ final class DocumentsWriterFlushControl implements Accountable {
     return activeBytes;
   }
 
-  public synchronized long flushBytes() {
+  public long getFlushingBytes() {
     return flushBytes;
   }
 
@@ -257,11 +257,11 @@ final class DocumentsWriterFlushControl implements Accountable {
       if (stall != stallControl.anyStalledThreads()) {
         if (stall) {
           infoStream.message("DW", String.format(Locale.ROOT, "now stalling flushes: netBytes: %.1f MB flushBytes: %.1f MB fullFlush: %b",
-                                                 netBytes()/1024./1024., flushBytes()/1024./1024., fullFlush));
+                                                 netBytes()/1024./1024., getFlushingBytes()/1024./1024., fullFlush));
           stallStartNS = System.nanoTime();
         } else {
           infoStream.message("DW", String.format(Locale.ROOT, "done stalling flushes for %.1f msec: netBytes: %.1f MB flushBytes: %.1f MB fullFlush: %b",
-                                                 (System.nanoTime()-stallStartNS)/1000000., netBytes()/1024./1024., flushBytes()/1024./1024., fullFlush));
+                                                 (System.nanoTime()-stallStartNS)/1000000., netBytes()/1024./1024., getFlushingBytes()/1024./1024., fullFlush));
         }
       }
     }

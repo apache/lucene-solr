@@ -135,6 +135,7 @@ REM * javax.net.ssl.keyStorePassword
 REM * javax.net.ssl.trustStorePassword
 REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
 REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+REM set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters

@@ -257,7 +257,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             allRegistries = true;
             break;
           }
-          initialPrefixes.add(SolrMetricManager.overridableRegistryName(s.trim()));
+          initialPrefixes.add(SolrMetricManager.enforcePrefix(s.trim()));
         }
         if (allRegistries) {
           return metricManager.registryNames();
@@ -276,7 +276,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             allRegistries = true;
             break;
           }
-          initialPrefixes.add(SolrMetricManager.overridableRegistryName(s.trim()));
+          initialPrefixes.add(SolrMetricManager.enforcePrefix(s.trim()));
         }
         if (allRegistries) {
           return metricManager.registryNames();

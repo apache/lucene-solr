@@ -20,7 +20,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -44,11 +43,11 @@ public final class UserDictionary implements Dictionary {
   public static final short LEFT_ID = 1781;
 
   // NNG right
-  public static final short RIGHT_ID = 3534;
+  public static final short RIGHT_ID = 3533;
   // NNG right with hangul and a coda on the last char
-  public static final short RIGHT_ID_T = 3534;
+  public static final short RIGHT_ID_T = 3535;
   // NNG right with hangul and no coda on the last char
-  public static final short RIGHT_ID_F = 3535;
+  public static final short RIGHT_ID_F = 3534;
 
   // length, length... indexed by compound ID or null for simple noun
   private final int segmentations[][];
@@ -81,8 +80,7 @@ public final class UserDictionary implements Dictionary {
 
   private UserDictionary(List<String> entries) throws IOException {
     final CharacterDefinition charDef = CharacterDefinition.getInstance();
-    Collections.sort(entries,
-        Comparator.comparing(e -> e.split("\\s+")[0]));
+    entries.sort(Comparator.comparing(e -> e.split("\\s+")[0]));
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
     Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
@@ -95,7 +93,7 @@ public final class UserDictionary implements Dictionary {
     for (String entry : entries) {
       String[] splits = entry.split("\\s+");
       String token = splits[0];
-      if (lastToken != null && token.equals(lastToken)) {
+      if (token.equals(lastToken)) {
         continue;
       }
       char lastChar = entry.charAt(entry.length()-1);

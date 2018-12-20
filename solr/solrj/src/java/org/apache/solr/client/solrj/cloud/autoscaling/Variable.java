@@ -22,13 +22,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 
 /**
@@ -50,17 +53,28 @@ public interface Variable {
   default void projectAddReplica(Cell cell, ReplicaInfo ri, Consumer<Row.OperationInfo> opCollector, boolean strictMode) {
   }
 
-  default void addViolatingReplicas(Violation.Ctx ctx) {
-    for (Row row : ctx.allRows) {
-      if (ctx.clause.tag.varType.meta.isNodeSpecificVal() && !row.node.equals(ctx.tagKey)) continue;
-      Violation.collectViolatingReplicas(ctx, row);
-    }
+  default boolean addViolatingReplicas(Violation.Ctx ctx) {
+    return false;
   }
 
   void getSuggestions(Suggestion.Ctx ctx);
 
+  /**When a non constant value is used in a variable, the actual value needs to be computed at the runtime
+   *
+   */
   default Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
     return condition.val;
+  }
+
+  default void computeDeviation(Policy.Session session, double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+    if (deviations != null) {
+      Number actualCount = replicaCount.getVal(sealedClause.type);
+      if(sealedClause.replica.val instanceof RangeVal) {
+        Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
+        realDelta = sealedClause.isReplicaZero() ? -1 * realDelta : realDelta;
+        deviations[0] += Math.abs(realDelta);
+      }
+    }
   }
 
   int compareViolation(Violation v1, Violation v2);
@@ -82,7 +96,10 @@ public interface Variable {
    * Type details of each variable in policies
    */
   public enum Type implements Variable {
-    @Meta(name = "withCollection", type = String.class, isNodeSpecificVal = true, implementation = WithCollectionVariable.class)
+    @Meta(name = "withCollection",
+        type = String.class,
+        isNodeSpecificVal = true,
+        implementation = WithCollectionVariable.class)
     WITH_COLLECTION(),
 
     @Meta(name = "collection",
@@ -188,6 +205,12 @@ public interface Variable {
         min = 0)
     NUMBER,
 
+    @Meta(name = "host",
+        type = String.class,
+        wildCards = Policy.EACH,
+        supportArrayVals = true)
+    HOST,
+
     @Meta(name = "STRING",
         type = String.class,
         wildCards = Policy.EACH,
@@ -282,8 +305,8 @@ public interface Variable {
     }
 
     @Override
-    public void addViolatingReplicas(Violation.Ctx ctx) {
-      impl.addViolatingReplicas(ctx);
+    public boolean addViolatingReplicas(Violation.Ctx ctx) {
+      return impl.addViolatingReplicas(ctx);
     }
 
     public Operand getOperand(Operand expected, Object val, ComputedType computedType) {
@@ -325,8 +348,26 @@ public interface Variable {
     }
 
     @Override
+    public void computeDeviation(Policy.Session session, double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+      impl.computeDeviation(session, deviations, replicaCount, sealedClause);
+    }
+
+
+    @Override
     public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {
       return impl.match(inputVal, op, val, name, row);
+    }
+
+    private static final Map<String, Type> typeByNameMap;
+    static {
+      HashMap<String, Type> m = new HashMap<>();
+      for (Type t : Type.values()) {
+        m.put(t.tagName, t);
+      }
+      typeByNameMap = unmodifiableMap(m);
+    }
+    static Type get(String name) {
+      return typeByNameMap.get(name);
     }
   }
 

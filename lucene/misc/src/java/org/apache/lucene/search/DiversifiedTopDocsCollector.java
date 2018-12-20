@@ -175,10 +175,10 @@ public abstract class DiversifiedTopDocsCollector extends
     final NumericDocValues keySource = getKeys(context);
 
     return new LeafCollector() {
-      Scorer scorer;
+      Scorable scorer;
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
       }
 

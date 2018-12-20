@@ -25,15 +25,32 @@ import java.util.HashMap;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 
 public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
+  private boolean robust=false;
+  private boolean scale=false;
+
   public KnnRegressionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
+
+    List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+
+    for(StreamExpressionNamedParameter namedParam : namedParams){
+      if(namedParam.getName().equals("scale")){
+        this.scale = Boolean.parseBoolean(namedParam.getParameter().toString().trim());
+      } else if(namedParam.getName().equals("robust")) {
+        this.robust = Boolean.parseBoolean(namedParam.getParameter().toString().trim());
+      } else {
+        throw new IOException("Unexpected named parameter:"+namedParam.getName());
+      }
+    }
   }
 
   @Override
@@ -69,6 +86,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     if(values.length == 4) {
       if(values[3] instanceof DistanceMeasure) {
         distanceMeasure = (DistanceMeasure) values[3];
+      } else {
         throw new IOException("The fourth parameter for knnRegress should be a distance measure. ");
       }
     }
@@ -83,8 +101,10 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     map.put("observations", observations.getRowCount());
     map.put("features", observations.getColumnCount());
     map.put("distance", distanceMeasure.getClass().getSimpleName());
+    map.put("robust", robust);
+    map.put("scale", scale);
 
-    return new KnnRegressionTuple(observations, outcomeData, k, distanceMeasure, map);
+    return new KnnRegressionTuple(observations, outcomeData, k, distanceMeasure, map, scale, robust);
   }
 
 
@@ -95,17 +115,27 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     private double[] outcomes;
     private int k;
     private DistanceMeasure distanceMeasure;
+    private boolean scale;
+    private boolean robust;
 
     public KnnRegressionTuple(Matrix observations,
                               double[] outcomes,
                               int k,
                               DistanceMeasure distanceMeasure,
-                              Map<?,?> map) {
+                              Map<?,?> map,
+                              boolean scale,
+                              boolean robust) {
       super(map);
       this.observations = observations;
       this.outcomes = outcomes;
       this.k = k;
       this.distanceMeasure = distanceMeasure;
+      this.scale = scale;
+      this.robust = robust;
+    }
+
+    public boolean getScale() {
+      return this.scale;
     }
 
     //MinMax Scale both the observations and the predictors
@@ -175,19 +205,33 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
 
     public double predict(double[] values) {
 
-      Matrix knn = KnnEvaluator.search(scaledObservations, values, k, distanceMeasure);
+      Matrix obs = scaledObservations != null ? scaledObservations : observations;
+      Matrix knn = KnnEvaluator.search(obs, values, k, distanceMeasure);
       List<Number> indexes = (List<Number>)knn.getAttribute("indexes");
 
-      double sum = 0;
+      if(robust) {
+        //Get the median of the results.
+        double[] vals = new double[indexes.size()];
+        Percentile percentile = new Percentile();
+        int i=0;
+        for (Number n : indexes) {
+           vals[i++]=outcomes[n.intValue()];
+        }
 
-      //Collect the outcomes for the nearest neighbors
-      for(Number n : indexes) {
-        sum += outcomes[n.intValue()];
+        //Return 50 percentile.
+        return percentile.evaluate(vals, 50);
+      } else {
+        //Get the average of the results
+        double sum = 0;
+
+        //Collect the outcomes for the nearest neighbors
+        for (Number n : indexes) {
+          sum += outcomes[n.intValue()];
+        }
+
+        //Return the average of the outcomes as the prediction.
+        return sum / ((double) indexes.size());
       }
-
-      //Return the average of the outcomes as the prediction.
-
-      return sum/((double)indexes.size());
     }
   }
 }

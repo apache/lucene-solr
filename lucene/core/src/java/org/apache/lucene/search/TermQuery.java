@@ -89,7 +89,7 @@ public class TermQuery extends Query {
       if (context.reader().terms(term.field()).hasPositions() == false) {
         return super.matches(context, doc);
       }
-      return Matches.forField(term.field(), () -> {
+      return MatchesUtils.forField(term.field(), () -> {
         PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
         if (pe.advance(doc) != doc) {
           return null;
@@ -224,7 +224,7 @@ public class TermQuery extends Query {
     return perReaderTermState;
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns true iff <code>other</code> is equal to <code>this</code>. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&

@@ -29,6 +29,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 
 /**
  * Holds all the configuration used by {@link IndexWriter} with few setters for
@@ -56,6 +57,9 @@ public class LiveIndexWriterConfig {
   /** {@link OpenMode} that {@link IndexWriter} is opened
    *  with. */
   protected volatile OpenMode openMode;
+
+  /** Compatibility version to use for this index. */
+  protected int createdVersionMajor = Version.LATEST.major;
 
   /** {@link Similarity} to use when encoding norms. */
   protected volatile Similarity similarity;
@@ -285,7 +289,15 @@ public class LiveIndexWriterConfig {
   public OpenMode getOpenMode() {
     return openMode;
   }
-  
+
+  /**
+   * Return the compatibility version to use for this index.
+   * @see IndexWriterConfig#setIndexCreatedVersionMajor
+   */
+  public int getIndexCreatedVersionMajor() {
+    return createdVersionMajor;
+  }
+
   /**
    * Returns the {@link IndexDeletionPolicy} specified in
    * {@link IndexWriterConfig#setIndexDeletionPolicy(IndexDeletionPolicy)} or

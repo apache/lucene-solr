@@ -26,9 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -37,7 +37,9 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -45,6 +47,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
@@ -55,9 +58,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_DELTA_NANOS;
-import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.timeSource;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
@@ -65,9 +66,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  */
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 @LuceneTestCase.Slow
+@Nightly // this test is too long for non nightly right now
 public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final TimeSource timeSource = TimeSource.NANO_TIME;
   private static CountDownLatch listenerCreated = new CountDownLatch(1);
   private static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
   private static CountDownLatch finished = new CountDownLatch(1);
@@ -81,15 +84,13 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     configureCluster(5)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    
+    cloudManager = cluster.getOpenOverseer().getSolrCloudManager();
+    
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cloudManager, ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cloudManager, ".scheduled_maintenance");
+
   }
 
   @Before
@@ -141,7 +142,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -154,7 +155,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + StartedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -168,7 +169,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -181,7 +182,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -196,7 +197,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'search_rate_trigger1'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -214,7 +215,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'search_rate_trigger1'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -264,16 +265,17 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
 
     // check operations
-    List<Map<String, Object>> ops = (List<Map<String, Object>>) ev.context.get("properties.operations");
+    List<MapWriter> ops = (List<MapWriter>) ev.context.get("properties.operations");
     assertNotNull(ops);
     assertTrue(ops.size() > 1);
-    for (Map<String, Object> m : ops) {
-      assertEquals("ADDREPLICA", m.get("params.action"));
+    for (MapWriter m : ops) {
+      assertEquals("ADDREPLICA", m._get("params.action",null));
     }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //17-Aug-2018 commented  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testBelowSearchRate() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String COLL1 = "belowRate_collection";
@@ -313,7 +315,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -326,7 +328,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + StartedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -340,7 +342,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -353,7 +355,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -365,7 +367,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'search_rate_trigger2'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -382,7 +384,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'search_rate_trigger2'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -419,7 +421,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     started = new CountDownLatch(1);
 
     // resume trigger
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -432,7 +434,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue("The trigger did not finish processing", await);
 
     // suspend trigger
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -477,7 +479,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
         "]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -489,7 +491,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue("The trigger did not finish processing", await);
 
     // suspend trigger
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -567,7 +569,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -580,7 +582,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + StartedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -594,7 +596,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -607,7 +609,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + FinishedProcessingListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -619,7 +621,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'search_rate_trigger3'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -636,7 +638,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "'name' : 'search_rate_trigger3'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -676,8 +678,16 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
       if (m.get("success") != null) {
         replicas.incrementAndGet();
       } else if (m.get("status") != null) {
-        NamedList<Object> status = (NamedList<Object>)m.get("status");
-        if ("completed".equals(status.get("state"))) {
+        Object status = m.get("status");
+        String state;
+        if (status instanceof Map) {
+          state = (String)((Map)status).get("state");
+        } else if (status instanceof NamedList) {
+          state = (String)((NamedList)status).get("state");
+        } else {
+          throw new IllegalArgumentException("unsupported status format: " + status.getClass().getName() + ", " + status);
+        }
+        if ("completed".equals(state)) {
           nodes.incrementAndGet();
         } else {
           fail("unexpected DELETENODE status: " + m);

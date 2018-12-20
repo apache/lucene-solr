@@ -33,7 +33,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -73,7 +72,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
     });
-    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
     w.close();
     dir.close();
   }
@@ -91,7 +90,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc2);
     });
-    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
 
     w.close();
     dir.close();
@@ -111,7 +110,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc2);
     });
-    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
 
     w.close();
     dir.close();
@@ -133,7 +132,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w2.addDocument(doc2);
     });
-    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
 
     w2.close();
     dir.close();
@@ -156,7 +155,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w2.addIndexes(new Directory[] {dir});
     });
-    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
     IOUtils.close(w2, dir, dir2);
   }
@@ -179,7 +178,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)});
     });
-    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
     IOUtils.close(r, w2, dir, dir2);
   }
@@ -203,7 +202,7 @@ public class TestPointValues extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       TestUtil.addIndexesSlowly(w2, r);
     });
-    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+    assertEquals("cannot change point data dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
     IOUtils.close(r, w2, dir, dir2);
   }
@@ -393,11 +392,11 @@ public class TestPointValues extends LuceneTestCase {
     dir.close();
   }
 
-  // Write point values, one segment with Lucene70, another with SimpleText, then forceMerge with SimpleText
+  // Write point values, one segment with Lucene80, another with SimpleText, then forceMerge with SimpleText
   public void testDifferentCodecs1() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(Codec.forName("Lucene70"));
+    iwc.setCodec(Codec.forName("Lucene80"));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new IntPoint("int", 1));
@@ -416,7 +415,7 @@ public class TestPointValues extends LuceneTestCase {
     dir.close();
   }
 
-  // Write point values, one segment with Lucene70, another with SimpleText, then forceMerge with Lucene70
+  // Write point values, one segment with Lucene80, another with SimpleText, then forceMerge with Lucene80
   public void testDifferentCodecs2() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
@@ -428,7 +427,7 @@ public class TestPointValues extends LuceneTestCase {
     w.close();
     
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(Codec.forName("Lucene70"));
+    iwc.setCodec(Codec.forName("Lucene80"));
     w = new IndexWriter(dir, iwc);
     doc = new Document();
     doc.add(new IntPoint("int", 1));

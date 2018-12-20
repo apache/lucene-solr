@@ -36,6 +36,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * ClassicAnalyzer was named StandardAnalyzer in Lucene versions prior to 3.1. 
  * As of 3.1, {@link StandardAnalyzer} implements Unicode text segmentation,
  * as specified by UAX#29.
+ *
+ * @since 3.1
  */
 public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
@@ -92,13 +94,10 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
     TokenStream tok = new ClassicFilter(src);
     tok = new LowerCaseFilter(tok);
     tok = new StopFilter(tok, stopwords);
-    return new TokenStreamComponents(src, tok) {
-      @Override
-      protected void setReader(final Reader reader) {
-        src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
-        super.setReader(reader);
-      }
-    };
+    return new TokenStreamComponents(r -> {
+      src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
+      src.setReader(r);
+    }, tok);
   }
 
   @Override

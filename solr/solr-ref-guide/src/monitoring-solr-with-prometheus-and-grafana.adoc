@@ -83,7 +83,7 @@ $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-con
 
 === Command Line Parameters
 
-The parameters in the example start commands shown above
+The parameters in the example start commands shown above:
 
 `h`, `--help`::
 Displays command line help and usage.

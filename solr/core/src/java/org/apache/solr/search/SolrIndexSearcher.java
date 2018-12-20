@@ -126,8 +126,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // list of all caches associated with this searcher.
   private final SolrCache[] cacheList;
 
-  private final FieldInfos fieldInfos;
-
   private DirectoryFactory directoryFactory;
 
   private final LeafReader leafReader;
@@ -157,24 +155,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        wrapUninvertingReaderPerSegment(core, reader),
+        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
         SolrQueryTimeoutImpl.getInstance());
   }
-
-  /**
-   * If docvalues are enabled or disabled after data has already been indexed for a field, such that
-   * only some segments have docvalues, uninverting on the top level reader will cause 
-   * IllegalStateException to be thrown when trying to use a field with such mixed data. This is because
-   * the {@link IndexSchema#getUninversionMap(IndexReader)} method decides to put a field 
-   * into the uninverteding map only if *NO* segment in the index contains docvalues for that field.
-   * 
-   * Therefore, this class provides a uninverting map per segment such that for any field, 
-   * DocValues are used from segments if they exist and uninversion of the field is performed on the rest
-   * of the segments.
-   */
-   private static DirectoryReader wrapUninvertingReaderPerSegment(SolrCore core, DirectoryReader reader) throws IOException {
-     return UninvertingReader.wrap(reader, r -> core.getLatestSchema().getUninversionMap(r));
-   }
 
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
@@ -278,7 +261,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     this.useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
 
-    this.fieldInfos = leafReader.getFieldInfos();
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
     this.cachingEnabled = enableCache;
@@ -334,7 +316,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public FieldInfos getFieldInfos() {
-    return fieldInfos;
+    return leafReader.getFieldInfos();
   }
 
   /*
@@ -509,7 +491,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns a collection of all field names the index reader knows about.
    */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(fieldInfos, fieldInfo -> fieldInfo.name);
+    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
   }
 
   public SolrCache<Query,DocSet> getFilterCache() {
@@ -1581,10 +1563,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         };
       } else {
         collector = new SimpleCollector() {
-          Scorer scorer;
+          Scorable scorer;
 
           @Override
-          public void setScorer(Scorer scorer) {
+          public void setScorer(Scorable scorer) {
             this.scorer = scorer;
           }
 
@@ -1679,10 +1661,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         final Collector topScoreCollector = new SimpleCollector() {
 
-          Scorer scorer;
+          Scorable scorer;
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
             this.scorer = scorer;
           }
 

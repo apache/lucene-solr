@@ -81,7 +81,7 @@ public class TestMultiCollector extends LuceneTestCase {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       return new FilterLeafCollector(super.getLeafCollector(context)) {
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           setScorerCalled.set(true);
         }
@@ -134,7 +134,7 @@ public class TestMultiCollector extends LuceneTestCase {
     collector1 = new TerminateAfterCollector(collector1, 1);
     collector2 = new TerminateAfterCollector(collector2, 2);
 
-    Scorer scorer = new FakeScorer();
+    Scorable scorer = new ScoreAndDoc();
 
     List<Collector> collectors = Arrays.asList(collector1, collector2);
     Collections.shuffle(collectors, random());
@@ -172,25 +172,15 @@ public class TestMultiCollector extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(w);
     w.close();
 
-    Scorer scorer = new Scorer(null) {
+    Scorable scorer = new Scorable() {
       @Override
       public int docID() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public float score() throws IOException {
+      public float score() {
         return 0;
-      }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public float getMaxScore(int upTo) throws IOException {
-        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -200,7 +190,7 @@ public class TestMultiCollector extends LuceneTestCase {
     };
 
     Collector collector = new SimpleCollector() {
-      private Scorer scorer;
+      private Scorable scorer;
       float minScore = 0;
 
       @Override
@@ -209,7 +199,7 @@ public class TestMultiCollector extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
       }
 

@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -64,6 +66,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   static SolrClientCache clientCache = new SolrClientCache();
   static ModelCache modelCache = null;
+  static ConcurrentMap objectCache = new ConcurrentHashMap();
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
@@ -164,6 +167,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
     context.setModelCache(modelCache);
+    context.setObjectCache(objectCache);
     context.put("core", this.coreName);
     context.put("solr-core", req.getCore());
     tupleStream.setStreamContext(context);

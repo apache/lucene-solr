@@ -21,8 +21,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.security.PublicKey;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.Header;
@@ -45,15 +45,10 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   static class MockPKIAuthenticationPlugin extends PKIAuthenticationPlugin {
     SolrRequestInfo solrRequestInfo;
 
-    Map<String, PublicKey> remoteKeys = new HashMap<>();
+    Map<String, PublicKey> remoteKeys = new ConcurrentHashMap<>();
 
     public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
       super(cores, node, new PublicKeyHandler());
-    }
-
-    @Override
-    boolean disabled() {
-      return false;
     }
 
     @Override
@@ -99,8 +94,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
     HttpServletRequest mockReq = createMockRequest(header);
     FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
-    mock.doAuthenticate(mockReq, null, filterChain);
+    mock.authenticate(mockReq, null, filterChain);
 
+    assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("solr", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 
@@ -111,7 +107,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     request = new BasicHttpRequest("GET", "http://localhost:56565");
     mock.setHeader(request);
     assertNull(request.getFirstHeader(PKIAuthenticationPlugin.HEADER));
-    mock.doAuthenticate(mockReq, null, filterChain);
+    mock.authenticate(mockReq, null, filterChain);
     assertNotNull(wrappedRequestByFilter.get());
     assertNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
 
@@ -128,7 +124,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
 
-    mock.doAuthenticate(mockReq, null, filterChain);
+    mock.authenticate(mockReq, null, filterChain);
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 
@@ -145,7 +141,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
       }
     };
 
-    mock1.doAuthenticate(mockReq, null,filterChain );
+    mock1.authenticate(mockReq, null,filterChain );
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
     mock1.close();

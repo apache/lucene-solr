@@ -290,7 +290,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
     for (FieldWriter fieldWriter : fieldWriters) {
-      if (fieldWriter.write(sortDoc.docId, context.reader(), ew, fieldIndex)) {
+      if (fieldWriter.write(sortDoc, context.reader(), ew, fieldIndex)) {
         ++fieldIndex;
       }
     }
@@ -310,7 +310,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
 
       if (!schemaField.hasDocValues()) {
-        throw new IOException(field + " must have DocValues to use this feature.");
+        throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
 
       boolean multiValued = schemaField.multiValued();

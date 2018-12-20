@@ -53,7 +53,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 
 /**

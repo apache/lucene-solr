@@ -20,14 +20,11 @@ package org.apache.lucene.analysis.util;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.IntPredicate;
-import java.util.function.IntUnaryOperator;
 
-import org.apache.lucene.analysis.CharacterUtils.CharacterBuffer;
 import org.apache.lucene.analysis.CharacterUtils;
-import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.CharacterUtils.CharacterBuffer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
-import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -107,47 +104,11 @@ public abstract class CharTokenizer extends Tokenizer {
    * </pre>
    */
   public static CharTokenizer fromTokenCharPredicate(AttributeFactory factory, final IntPredicate tokenCharPredicate) {
-    return fromTokenCharPredicate(factory, tokenCharPredicate, IntUnaryOperator.identity());
-  }
-  
-  /**
-   * Creates a new instance of CharTokenizer using a custom predicate, supplied as method reference or lambda expression.
-   * The predicate should return {@code true} for all valid token characters.
-   * This factory also takes a function to normalize chars, e.g., lowercasing them, supplied as method reference or lambda expression.
-   * <p>
-   * This factory is intended to be used with lambdas or method references. E.g., an elegant way
-   * to create an instance which behaves exactly as {@link LowerCaseTokenizer} is:
-   * <pre class="prettyprint lang-java">
-   * Tokenizer tok = CharTokenizer.fromTokenCharPredicate(Character::isLetter, Character::toLowerCase);
-   * </pre>
-   */
-  public static CharTokenizer fromTokenCharPredicate(final IntPredicate tokenCharPredicate, final IntUnaryOperator normalizer) {
-    return fromTokenCharPredicate(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, tokenCharPredicate, normalizer);
-  }
-  
-  /**
-   * Creates a new instance of CharTokenizer with the supplied attribute factory using a custom predicate, supplied as method reference or lambda expression.
-   * The predicate should return {@code true} for all valid token characters.
-   * This factory also takes a function to normalize chars, e.g., lowercasing them, supplied as method reference or lambda expression.
-   * <p>
-   * This factory is intended to be used with lambdas or method references. E.g., an elegant way
-   * to create an instance which behaves exactly as {@link LowerCaseTokenizer} is:
-   * <pre class="prettyprint lang-java">
-   * Tokenizer tok = CharTokenizer.fromTokenCharPredicate(factory, Character::isLetter, Character::toLowerCase);
-   * </pre>
-   */
-  public static CharTokenizer fromTokenCharPredicate(AttributeFactory factory, final IntPredicate tokenCharPredicate, final IntUnaryOperator normalizer) {
     Objects.requireNonNull(tokenCharPredicate, "predicate must not be null.");
-    Objects.requireNonNull(normalizer, "normalizer must not be null");
     return new CharTokenizer(factory) {
       @Override
       protected boolean isTokenChar(int c) {
         return tokenCharPredicate.test(c);
-      }
-
-      @Override
-      protected int normalize(int c) {
-        return normalizer.applyAsInt(c);
       }
     };
   }
@@ -167,7 +128,7 @@ public abstract class CharTokenizer extends Tokenizer {
   public static CharTokenizer fromSeparatorCharPredicate(final IntPredicate separatorCharPredicate) {
     return fromSeparatorCharPredicate(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, separatorCharPredicate);
   }
-  
+
   /**
    * Creates a new instance of CharTokenizer with the supplied attribute factory using a custom predicate, supplied as method reference or lambda expression.
    * The predicate should return {@code true} for all valid token separator characters.
@@ -179,37 +140,7 @@ public abstract class CharTokenizer extends Tokenizer {
    * </pre>
    */
   public static CharTokenizer fromSeparatorCharPredicate(AttributeFactory factory, final IntPredicate separatorCharPredicate) {
-    return fromSeparatorCharPredicate(factory, separatorCharPredicate, IntUnaryOperator.identity());
-  }
-  
-  /**
-   * Creates a new instance of CharTokenizer using a custom predicate, supplied as method reference or lambda expression.
-   * The predicate should return {@code true} for all valid token separator characters.
-   * This factory also takes a function to normalize chars, e.g., lowercasing them, supplied as method reference or lambda expression.
-   * <p>
-   * This factory is intended to be used with lambdas or method references. E.g., an elegant way
-   * to create an instance which behaves exactly as the combination {@link WhitespaceTokenizer} and {@link LowerCaseFilter} is:
-   * <pre class="prettyprint lang-java">
-   * Tokenizer tok = CharTokenizer.fromSeparatorCharPredicate(Character::isWhitespace, Character::toLowerCase);
-   * </pre>
-   */
-  public static CharTokenizer fromSeparatorCharPredicate(final IntPredicate separatorCharPredicate, final IntUnaryOperator normalizer) {
-    return fromSeparatorCharPredicate(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, separatorCharPredicate, normalizer);
-  }
-  
-  /**
-   * Creates a new instance of CharTokenizer with the supplied attribute factory using a custom predicate.
-   * The predicate should return {@code true} for all valid token separator characters.
-   * This factory also takes a function to normalize chars, e.g., lowercasing them, supplied as method reference or lambda expression.
-   * <p>
-   * This factory is intended to be used with lambdas or method references. E.g., an elegant way
-   * to create an instance which behaves exactly as {@link WhitespaceTokenizer} and {@link LowerCaseFilter} is:
-   * <pre class="prettyprint lang-java">
-   * Tokenizer tok = CharTokenizer.fromSeparatorCharPredicate(factory, Character::isWhitespace, Character::toLowerCase);
-   * </pre>
-   */
-  public static CharTokenizer fromSeparatorCharPredicate(AttributeFactory factory, final IntPredicate separatorCharPredicate, final IntUnaryOperator normalizer) {
-    return fromTokenCharPredicate(factory, separatorCharPredicate.negate(), normalizer);
+    return fromTokenCharPredicate(factory, separatorCharPredicate.negate());
   }
   
   private int offset = 0, bufferIndex = 0, dataLen = 0, finalOffset = 0;
@@ -229,15 +160,6 @@ public abstract class CharTokenizer extends Tokenizer {
    * boundaries and are not included in tokens.
    */
   protected abstract boolean isTokenChar(int c);
-
-  /**
-   * Called on each token character to normalize it before it is added to the
-   * token. The default implementation does nothing. Subclasses may use this to,
-   * e.g., lowercase tokens.
-   */
-  protected int normalize(int c) {
-    return c;
-  }
 
   @Override
   public final boolean incrementToken() throws IOException {
@@ -276,7 +198,7 @@ public abstract class CharTokenizer extends Tokenizer {
           buffer = termAtt.resizeBuffer(2+length); // make sure a supplementary fits in the buffer
         }
         end += charCount;
-        length += Character.toChars(normalize(c), buffer, length); // buffer it, normalized
+        length += Character.toChars(c, buffer, length); // buffer it, normalized
         if (length >= maxTokenLen) { // buffer overflow! make sure to check for >= surrogate pair could break == test
           break;
         }

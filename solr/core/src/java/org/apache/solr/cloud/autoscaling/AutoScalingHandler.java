@@ -124,8 +124,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           autoScalingConf.writeMap(new MapWriter.EntryWriter() {
 
             @Override
-            public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-              rsp.getValues().add(k, v);
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              rsp.getValues().add(k.toString(), v);
               return this;
             }
           });
@@ -315,18 +315,17 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         return currentConfig;
       }
     }
-    List<String> params = new ArrayList<>(currentConfig.getPolicy().getParams());
-    Map<String, List<Clause>> mergedPolicies = new HashMap<>(currentConfig.getPolicy().getPolicies());
-    Map<String, List<Clause>> newPolicies = null;
+    Map<String, List<Clause>> currentClauses = new HashMap<>(currentConfig.getPolicy().getPolicies());
+    Map<String, List<Clause>> newClauses = null;
     try {
-      newPolicies = Policy.policiesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
-          params);
+      newClauses = Policy.clausesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
+          new ArrayList<>() );
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;
     }
-    mergedPolicies.putAll(newPolicies);
-    Policy p = currentConfig.getPolicy().withPolicies(mergedPolicies).withParams(params);
+    currentClauses.putAll(newClauses);
+    Policy p = currentConfig.getPolicy().withPolicies(currentClauses);
     currentConfig = currentConfig.withPolicy(p);
     return currentConfig;
   }

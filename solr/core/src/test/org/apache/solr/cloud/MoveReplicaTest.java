@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,6 +47,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.IdUtils;
 import org.apache.solr.util.LogLevel;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -63,6 +63,16 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+
+  }
+
+  protected String getSolrXml() {
+    return "solr.xml";
+  }
+
+  @Before
+  public void beforeTest() throws Exception {
+    inPlaceMove = true;
     configureCluster(4)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
@@ -80,20 +90,10 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       fail("no overseer leader!");
     }
   }
-
-  protected String getSolrXml() {
-    return "solr.xml";
-  }
-
-  @Before
-  public void beforeTest() throws Exception {
-    cluster.deleteAllCollections();
-    // restart any shut down nodes
-    for (int i = cluster.getJettySolrRunners().size(); i < 5; i++) {
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(5000);
-    inPlaceMove = true;
+  
+  @After
+  public void afterTest() throws Exception {
+    cluster.shutdown();
   }
 
   @Test
@@ -238,7 +238,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testFailedMove() throws Exception {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
@@ -251,13 +251,22 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     addDocs(coll, 100);
 
-    Replica replica = getRandomReplica(coll, cloudClient);
+    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    String overseerLeader = (String) overSeerStatus.get("leader");
+
+    // don't kill overseer in this test
+    Replica replica;
+    int count = 10;
+    do {
+      replica = getRandomReplica(coll, cloudClient);
+    } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
+    assertNotNull("could not find non-overseer replica???", replica);
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node)) {
+      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
         targetNode = node;
         break;
       }
@@ -271,7 +280,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // shut down target node
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(targetNode)) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
+        break;
       }
     }
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);

@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,11 +41,13 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +64,8 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String BELOW_DOCS_PROP = "belowDocs";
   public static final String BELOW_OP_PROP = "belowOp";
   public static final String COLLECTIONS_PROP = "collections";
+  public static final String MAX_OPS_PROP = "maxOps";
+  public static final String SPLIT_METHOD_PROP = CommonAdminParams.SPLIT_METHOD;
 
   public static final String BYTES_SIZE_PROP = "__bytes__";
   public static final String DOCS_SIZE_PROP = "__docs__";
@@ -68,9 +73,13 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String BELOW_SIZE_PROP = "belowSize";
   public static final String VIOLATION_PROP = "violationType";
 
+  public static final int DEFAULT_MAX_OPS = 10;
+
   public enum Unit { bytes, docs }
 
   private long aboveBytes, aboveDocs, belowBytes, belowDocs;
+  private int maxOps;
+  private SolrIndexSplitter.SplitMethod splitMethod;
   private CollectionParams.CollectionAction aboveOp, belowOp;
   private final Set<String> collections = new HashSet<>();
   private final Map<String, Long> lastAboveEventMap = new ConcurrentHashMap<>();
@@ -79,7 +88,8 @@ public class IndexSizeTrigger extends TriggerBase {
   public IndexSizeTrigger(String name) {
     super(TriggerEventType.INDEXSIZE, name);
     TriggerUtils.validProperties(validProperties,
-        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP, COLLECTIONS_PROP);
+        ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP,
+        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP);
   }
 
   @Override
@@ -150,6 +160,21 @@ public class IndexSizeTrigger extends TriggerBase {
     if (belowOp == null) {
       throw new TriggerValidationException(getName(), BELOW_OP_PROP, "unrecognized value of: '" + belowOpStr + "'");
     }
+    String maxOpsStr = String.valueOf(properties.getOrDefault(MAX_OPS_PROP, DEFAULT_MAX_OPS));
+    try {
+      maxOps = Integer.parseInt(maxOpsStr);
+      if (maxOps < 1) {
+        throw new Exception("must be > 1");
+      }
+    } catch (Exception e) {
+      throw new TriggerValidationException(getName(), MAX_OPS_PROP, "invalid value: '" + maxOpsStr + "': " + e.getMessage());
+    }
+    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
+    if (splitMethod == null) {
+      throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
+          ": " + methodStr);
+    }
   }
 
   @Override
@@ -219,7 +244,7 @@ public class IndexSizeTrigger extends TriggerBase {
           DocCollection docCollection = clusterState.getCollection(coll);
 
           shards.forEach((sh, replicas) -> {
-            // check only the leader of a replica in active shard
+            // check only the leader replica in an active shard
             Slice s = docCollection.getSlice(sh);
             if (s.getState() != Slice.State.ACTIVE) {
               return;
@@ -227,6 +252,10 @@ public class IndexSizeTrigger extends TriggerBase {
             Replica r = s.getLeader();
             // no leader - don't do anything
             if (r == null) {
+              return;
+            }
+            // not on this node
+            if (!r.getNodeName().equals(node)) {
               return;
             }
             // find ReplicaInfo
@@ -264,14 +293,14 @@ public class IndexSizeTrigger extends TriggerBase {
           } else {
             // verify that it's a Number
             if (!(size instanceof Number)) {
-              log.warn("invalid size value - not a number: '" + size + "' is " + size.getClass().getName());
+              log.warn("invalid size value for tag " + tag + " - not a number: '" + size + "' is " + size.getClass().getName());
               return;
             }
 
             ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
             if (tag.contains("INDEX")) {
               currentInfo.getVariables().put(BYTES_SIZE_PROP, ((Number) size).longValue());
-            } else {
+            } else if (tag.contains("SEARCHER")) {
               currentInfo.getVariables().put(DOCS_SIZE_PROP, ((Number) size).longValue());
             }
           }
@@ -350,9 +379,27 @@ public class IndexSizeTrigger extends TriggerBase {
     // calculate ops
     final List<TriggerEvent.Op> ops = new ArrayList<>();
     aboveSize.forEach((coll, replicas) -> {
+      // sort by decreasing size to first split the largest ones
+      // XXX see the comment below about using DOCS_SIZE_PROP in lieu of BYTES_SIZE_PROP
+      replicas.sort((r1, r2) -> {
+        long delta = (Long) r1.getVariable(DOCS_SIZE_PROP) - (Long) r2.getVariable(DOCS_SIZE_PROP);
+        if (delta > 0) {
+          return -1;
+        } else if (delta < 0) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
       replicas.forEach(r -> {
+        if (ops.size() >= maxOps) {
+          return;
+        }
         TriggerEvent.Op op = new TriggerEvent.Op(aboveOp);
         op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(coll, r.getShard()));
+        Map<String, Object> params = new HashMap<>();
+        params.put(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
+        op.addHint(Suggester.Hint.PARAMS, params);
         ops.add(op);
         Long time = lastAboveEventMap.get(r.getCore());
         if (time != null && eventTime.get() > time) {
@@ -362,6 +409,9 @@ public class IndexSizeTrigger extends TriggerBase {
     });
     belowSize.forEach((coll, replicas) -> {
       if (replicas.size() < 2) {
+        return;
+      }
+      if (ops.size() >= maxOps) {
         return;
       }
       // sort by increasing size
@@ -431,8 +481,15 @@ public class IndexSizeTrigger extends TriggerBase {
                           Map<String, List<ReplicaInfo>> belowSize) {
       super(TriggerEventType.INDEXSIZE, source, eventTime, null);
       properties.put(TriggerEvent.REQUESTED_OPS, ops);
-      properties.put(ABOVE_SIZE_PROP, aboveSize);
-      properties.put(BELOW_SIZE_PROP, belowSize);
+      // avoid passing very large amounts of data here - just use replica names
+      TreeMap<String, String> above = new TreeMap<>();
+      aboveSize.forEach((coll, replicas) ->
+          replicas.forEach(r -> above.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_PROP) + ", bytes=" + r.getVariable(BYTES_SIZE_PROP))));
+      properties.put(ABOVE_SIZE_PROP, above);
+      TreeMap<String, String> below = new TreeMap<>();
+      belowSize.forEach((coll, replicas) ->
+          replicas.forEach(r -> below.put(r.getCore(), "docs=" + r.getVariable(DOCS_SIZE_PROP) + ", bytes=" + r.getVariable(BYTES_SIZE_PROP))));
+      properties.put(BELOW_SIZE_PROP, below);
     }
   }
 

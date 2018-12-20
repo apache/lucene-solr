@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -542,16 +541,37 @@ public class QueryBuilder {
   }
 
   /**
-   * Creates a span near (phrase) query from a graph token stream. The articulation points of the graph are visited in
-   * order and the queries created at each point are merged in the returned near query.
+   * Creates graph phrase query from the tokenstream contents
    */
-  protected SpanQuery analyzeGraphPhrase(TokenStream source, String field, int phraseSlop)
+  protected Query analyzeGraphPhrase(TokenStream source, String field, int phraseSlop)
       throws IOException {
     source.reset();
     GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(source);
+    if (phraseSlop > 0) {
+      /**
+       * Creates a boolean query from the graph token stream by extracting all the finite strings from the graph
+       * and using them to create phrase queries with the appropriate slop.
+       */
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      Iterator<TokenStream> it = graph.getFiniteStrings();
+      while (it.hasNext()) {
+        Query query = createFieldQuery(it.next(), BooleanClause.Occur.MUST, field, true, phraseSlop);
+        if (query != null) {
+          builder.add(query, BooleanClause.Occur.SHOULD);
+        }
+      }
+      return builder.build();
+    }
+
+    /**
+     * Creates a span near (phrase) query from a graph token stream.
+     * The articulation points of the graph are visited in order and the queries
+     * created at each point are merged in the returned near query.
+     */
     List<SpanQuery> clauses = new ArrayList<>();
     int[] articulationPoints = graph.articulationPoints();
     int lastState = 0;
+    int maxClauseCount = BooleanQuery.getMaxClauseCount();
     for (int i = 0; i <= articulationPoints.length; i++) {
       int start = lastState;
       int end = -1;
@@ -567,6 +587,9 @@ public class QueryBuilder {
           TokenStream ts = it.next();
           SpanQuery q = createSpanQuery(ts, field);
           if (q != null) {
+            if (queries.size() >= maxClauseCount) {
+              throw new BooleanQuery.TooManyClauses();
+            }
             queries.add(q);
           }
         }
@@ -581,6 +604,9 @@ public class QueryBuilder {
         if (terms.length == 1) {
           queryPos = new SpanTermQuery(terms[0]);
         } else {
+          if (terms.length >= maxClauseCount) {
+            throw new BooleanQuery.TooManyClauses();
+          }
           SpanTermQuery[] orClauses = new SpanTermQuery[terms.length];
           for (int idx = 0; idx < terms.length; idx++) {
             orClauses[idx] = new SpanTermQuery(terms[idx]);
@@ -591,6 +617,9 @@ public class QueryBuilder {
       }
 
       if (queryPos != null) {
+        if (clauses.size() >= maxClauseCount) {
+          throw new BooleanQuery.TooManyClauses();
+        }
         clauses.add(queryPos);
       }
     }
@@ -600,7 +629,7 @@ public class QueryBuilder {
     } else if (clauses.size() == 1) {
       return clauses.get(0);
     } else {
-      return new SpanNearQuery(clauses.toArray(new SpanQuery[0]), phraseSlop, true);
+      return new SpanNearQuery(clauses.toArray(new SpanQuery[0]), 0, true);
     }
   }
 

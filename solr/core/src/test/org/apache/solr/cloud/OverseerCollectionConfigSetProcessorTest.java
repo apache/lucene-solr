@@ -32,17 +32,19 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -59,11 +61,13 @@ import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -71,11 +75,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CLUSTER;
+import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
+import static org.apache.solr.common.params.CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -98,6 +106,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static final String CONFIG_NAME = "myconfig";
   
   private static OverseerTaskQueue workQueueMock;
+  private static OverseerTaskQueue stateUpdateQueueMock;
   private static Overseer overseerMock;
   private static ZkController zkControllerMock;
   private static SolrCloudManager cloudDataProviderMock;
@@ -105,15 +114,21 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
-  private static ShardHandlerFactory shardHandlerFactoryMock;
-  private static ShardHandler shardHandlerMock;
+  private static HttpShardHandlerFactory shardHandlerFactoryMock;
+  private static HttpShardHandler shardHandlerMock;
   private static ZkStateReader zkStateReaderMock;
   private static ClusterState clusterStateMock;
   private static SolrZkClient solrZkClientMock;
   private static DistribStateManager stateManagerMock;
+  private static SolrCloudManager cloudManagerMock;
+  private static DistribStateManager distribStateManagerMock;
+  private static CoreContainer coreContainerMock;
+  private static UpdateShardHandler updateShardHandlerMock;
+  private static HttpClient httpClientMock;
+  
   private static ObjectCache objectCache;
   private static AutoScalingConfig autoScalingConfig = new AutoScalingConfig(Collections.emptyMap());
-  private final Map zkMap = new HashMap();
+  private Map<String, byte[]> zkClientData = new HashMap<>();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
   private final List<ZkNodeProps> replicas = new ArrayList<>();
   private SolrResponse lastProcessMessageResult;
@@ -129,13 +144,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     
 
     public OverseerCollectionConfigSetProcessorToBeTested(ZkStateReader zkStateReader,
-        String myId, ShardHandlerFactory shardHandlerFactory,
+        String myId, HttpShardHandlerFactory shardHandlerFactory,
         String adminPath,
         OverseerTaskQueue workQueue, DistributedMap runningMap,
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory, null), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -150,11 +165,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     assumeWorkingMockito();
     
     workQueueMock = mock(OverseerTaskQueue.class);
+    stateUpdateQueueMock = mock(OverseerTaskQueue.class);
     runningMapMock = mock(DistributedMap.class);
     completedMapMock = mock(DistributedMap.class);
     failureMapMock = mock(DistributedMap.class);
-    shardHandlerFactoryMock = mock(ShardHandlerFactory.class);
-    shardHandlerMock = mock(ShardHandler.class);
+    shardHandlerFactoryMock = mock(HttpShardHandlerFactory.class);
+    shardHandlerMock = mock(HttpShardHandler.class);
     zkStateReaderMock = mock(ZkStateReader.class);
     clusterStateMock = mock(ClusterState.class);
     solrZkClientMock = mock(SolrZkClient.class);
@@ -164,11 +180,17 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     objectCache = new ObjectCache();
     clusterStateProviderMock = mock(ClusterStateProvider.class);
     stateManagerMock = mock(DistribStateManager.class);
+    cloudManagerMock = mock(SolrCloudManager.class);
+    distribStateManagerMock = mock(DistribStateManager.class);
+    coreContainerMock = mock(CoreContainer.class);
+    updateShardHandlerMock = mock(UpdateShardHandler.class);
+    httpClientMock = mock(HttpClient.class);
   }
   
   @AfterClass
   public static void tearDownOnce() {
     workQueueMock = null;
+    stateUpdateQueueMock = null;
     runningMapMock = null;
     completedMapMock = null;
     failureMapMock = null;
@@ -181,6 +203,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkControllerMock = null;
     cloudDataProviderMock = null;
     clusterStateProviderMock = null;
+    cloudManagerMock = null;
+    distribStateManagerMock = null;
+    coreContainerMock = null;
+    updateShardHandlerMock = null;
+    httpClientMock = null;
   }
   
   @Before
@@ -188,6 +215,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     super.setUp();
     queue.clear();
     reset(workQueueMock);
+    reset(stateUpdateQueueMock);
     reset(runningMapMock);
     reset(completedMapMock);
     reset(failureMapMock);
@@ -204,8 +232,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(cloudDataProviderMock.getTimeSource()).thenReturn(TimeSource.NANO_TIME);
     reset(clusterStateProviderMock);
     reset(stateManagerMock);
+    reset(cloudManagerMock);
+    reset(distribStateManagerMock);
+    reset(coreContainerMock);
+    reset(updateShardHandlerMock);
+    reset(httpClientMock);
 
-    zkMap.clear();
+    zkClientData.clear();
     collectionsSet.clear();
     replicas.clear();
   }
@@ -218,6 +251,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
+    when(shardHandlerFactoryMock.getShardHandler(any(Http2SolrClient.class))).thenReturn(shardHandlerMock);
+    when(shardHandlerFactoryMock.getShardHandler(any(HttpClient.class))).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {
       Object result;
       int count = 0;
@@ -260,6 +295,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
     when(zkStateReaderMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
+    when(zkStateReaderMock.getAliases()).thenReturn(Aliases.EMPTY);
 
     when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
@@ -300,91 +336,191 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     });
 
     when(clusterStateMock.getLiveNodes()).thenReturn(liveNodes);
-    Map<String, byte[]> zkClientData = new HashMap<>();
+
     when(solrZkClientMock.setData(anyString(), any(), anyInt(), anyBoolean())).then(invocation -> {
-          zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+      System.out.println("set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+      if (invocation.getArgument(1) == null) {
+        zkClientData.put(invocation.getArgument(0), new byte[0]);
+      } else {
+        zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+      }
+      return null;
+    });
+ 
+    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean())).thenAnswer(invocation -> {
+        byte[] data = zkClientData.get(invocation.getArgument(0));
+        if (data == null || data.length == 0) {
           return null;
         }
-    );
-    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean())).then(invocation ->
-        zkClientData.get(invocation.getArgument(0)));
+        return data;
+    });
+    
     when(solrZkClientMock.create(any(), any(), any(), anyBoolean())).thenAnswer(invocation -> {
-      String key = invocation.getArgument(0);
-      zkMap.put(key, null);
-      handleCreateCollMessage(invocation.getArgument(1));
-      return key;
+      zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+      return invocation.getArgument(0);
     });
 
     when(solrZkClientMock.exists(any(String.class), anyBoolean())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
-      return zkMap.containsKey(key);
+      return zkClientData.containsKey(key);
     });
 
     when(overseerMock.getZkController()).thenReturn(zkControllerMock);
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
+    when(overseerMock.getCoreContainer()).thenReturn(coreContainerMock);
+    when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
+    when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
+    
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
     when(clusterStateProviderMock.getClusterState()).thenReturn(clusterStateMock);
+    when(clusterStateProviderMock.getLiveNodes()).thenReturn(liveNodes);
+    when(clusterStateProviderMock.getClusterProperties()).thenReturn(Utils.makeMap(DEFAULTS, Utils.makeMap(CLUSTER, Utils.makeMap(USE_LEGACY_REPLICA_ASSIGNMENT, true))));
     when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
-    when(stateManagerMock.hasData(anyString())).thenAnswer(invocation -> zkMap.containsKey(invocation.getArgument(0)));
-    when(stateManagerMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        if (!zkMap.containsKey(invocation.getArgument(0))) {
-          zkMap.put(invocation.getArgument(0), "");
-        }
+    when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
+    when(distribStateManagerMock.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
+
+    Mockito.doAnswer(
+      new Answer<Void>() {
+        public Void answer(InvocationOnMock invocation) {
+          System.out.println("set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+          if (invocation.getArgument(1) == null) {
+            zkClientData.put(invocation.getArgument(0), new byte[0]);
+          } else {
+            zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+          }
+       
+          return null;
+        }}).when(distribStateManagerMock).setData(anyString(), any(), anyInt());
+    
+    when(distribStateManagerMock.getData(anyString(), any())).thenAnswer(invocation -> {
+      byte[] data = zkClientData.get(invocation.getArgument(0));
+      if (data == null || data.length == 0) {
         return null;
       }
-    }).when(stateManagerMock).makePath(anyString());
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        VersionedData d = new VersionedData(0, invocation.getArgument(1), "test");
-        zkMap.put(invocation.getArgument(0), d);
-        return null;
+      return new VersionedData(-1, data, "");
+        
+    });
+    
+    when(distribStateManagerMock.createData(any(), any(), any())).thenAnswer(invocation -> {
+      System.out.println("set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+      if (invocation.getArgument(1) == null) {
+        zkClientData.put(invocation.getArgument(0), new byte[0]);
+      } else {
+        zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
       }
-    }).when(stateManagerMock).createData(anyString(), any(byte[].class), any(CreateMode.class));
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        VersionedData d = (VersionedData)zkMap.get(invocation.getArgument(0));
-        if (d != null && d.getVersion() != (Integer)invocation.getArgument(2)) {
-          throw new BadVersionException(invocation.getArgument(2), invocation.getArgument(0));
-        }
-        int version = (Integer)invocation.getArgument(2) + 1;
-        zkMap.put(invocation.getArgument(0), new VersionedData(version, invocation.getArgument(1), "test"));
-        return null;
-      }
-    }).when(stateManagerMock).setData(anyString(), any(byte[].class), anyInt());
-    when(stateManagerMock.getData(anyString(), any())).thenAnswer(invocation -> zkMap.get(invocation.getArgument(0)));
+      return null;
+    });
+    
+    when(distribStateManagerMock.hasData(anyString()))
+    .then(invocation -> zkClientData.containsKey(invocation.getArgument(0)) && zkClientData.get(invocation.getArgument(0)).length > 0);
+    
+    Mockito.doAnswer(
+        new Answer<Void>() {
+          public Void answer(InvocationOnMock invocation) {
+            System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+            zkClientData.put(invocation.getArgument(0), new byte[0]);
+            return null;
+          }}).when(distribStateManagerMock).makePath(anyString());
 
     when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
-      if (zkMap.containsKey(key)) {
+      if (zkClientData.containsKey(key)) {
         return new Stat();
       } else {
         return null;
       }
     });
+    
+    when(cloudManagerMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
+    when(cloudManagerMock.getTimeSource()).thenReturn(new TimeSource.NanoTimeSource());
+    when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
+    
+    when(overseerMock.getSolrCloudManager()).thenReturn(cloudManagerMock);
+    
+    when(overseerMock.getStateUpdateQueue(any())).thenReturn(stateUpdateQueueMock);
+    when(overseerMock.getStateUpdateQueue()).thenReturn(stateUpdateQueueMock);
+    
+    Mockito.doAnswer(
+        new Answer<Void>() {
+          public Void answer(InvocationOnMock invocation) {
+            try {
+              handleCreateCollMessage(invocation.getArgument(0));
+              stateUpdateQueueMock.offer(invocation.getArgument(0));
+            } catch (KeeperException e) {
+              throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+            return null;
+          }}).when(overseerMock).offerStateUpdate(any());
+    
+    when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);
+    
+    when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
+    when(distribStateManagerMock.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
 
-    zkMap.put("/configs/myconfig", null);
+    Mockito.doAnswer(
+      new Answer<Void>() {
+        public Void answer(InvocationOnMock invocation) {
+          System.out.println("set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+          if (invocation.getArgument(1) == null) {
+            zkClientData.put(invocation.getArgument(0), new byte[0]);
+          } else {
+            zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+          }
+       
+          return null;
+        }}).when(distribStateManagerMock).setData(anyString(), any(), anyInt());
+    
+    when(distribStateManagerMock.getData(anyString(), any())).thenAnswer(invocation -> {
+      byte[] data = zkClientData.get(invocation.getArgument(0));
+      if (data == null || data.length == 0) {
+        return null;
+      }
+      return new VersionedData(-1, data, "");
+        
+    });
+    
+    when(distribStateManagerMock.createData(any(), any(), any())).thenAnswer(invocation -> {
+      System.out.println("set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
+      if (invocation.getArgument(1) == null) {
+        zkClientData.put(invocation.getArgument(0), new byte[0]);
+      } else {
+        zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+      }
+      return null;
+    });
+    
+    when(distribStateManagerMock.hasData(anyString()))
+    .then(invocation -> zkClientData.containsKey(invocation.getArgument(0)) && zkClientData.get(invocation.getArgument(0)).length > 0);
+    
+    Mockito.doAnswer(
+        new Answer<Void>() {
+          public Void answer(InvocationOnMock invocation) {
+            System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+            zkClientData.put(invocation.getArgument(0), new byte[0]);
+            return null;
+          }}).when(distribStateManagerMock).makePath(anyString());
+
+    zkClientData.put("/configs/myconfig", new byte[1]);
     
     return liveNodes;
   }
 
   private void handleCreateCollMessage(byte[] bytes) {
+    log.info("track created replicas / collections");
     try {
       ZkNodeProps props = ZkNodeProps.load(bytes);
-      if(CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))){
-        String collName = props.getStr("name") ;
-        if(collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
+      if (CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))) {
+        String collName = props.getStr("name");
+        if (collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
             new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
         replicas.add(props);
       }
-    } catch (Exception e) { }
+    } catch (Exception e) {}
   }
 
   protected void startComponentUnderTest() {

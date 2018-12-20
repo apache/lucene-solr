@@ -146,7 +146,7 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
 }
 ----
 
-The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a json object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
+The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a JSON object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
 
 == Invocation Examples
 

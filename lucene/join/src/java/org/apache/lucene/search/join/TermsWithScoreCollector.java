@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -34,7 +34,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
   final BytesRefHash collectedTerms = new BytesRefHash();
   final ScoreMode scoreMode;
 
-  Scorer scorer;
+  Scorable scorer;
   float[] scoreSums = new float[INITIAL_ARRAY_SIZE];
 
   TermsWithScoreCollector(Function<DV> docValuesCall, ScoreMode scoreMode) {
@@ -58,7 +58,7 @@ abstract class TermsWithScoreCollector<DV> extends DocValuesTermsCollector<DV>
   }
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
+  public void setScorer(Scorable scorer) throws IOException {
     this.scorer = scorer;
   }
 

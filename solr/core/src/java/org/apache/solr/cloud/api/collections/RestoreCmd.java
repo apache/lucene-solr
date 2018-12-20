@@ -18,6 +18,20 @@
 package org.apache.solr.cloud.api.collections;
 
 
+import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -33,7 +47,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -60,20 +73,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -89,7 +88,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
     String backupName = message.getStr(NAME); // of backup
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     Map<String, String> requestMap = new HashMap<>();
@@ -209,8 +208,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     DocCollection restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
-    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
-
     //Mark all shards in CONSTRUCTION STATE while we restore the data
     {
       //TODO might instead createCollection accept an initial state?  Is there a race?
@@ -220,7 +217,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
       }
       propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
-      inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
     }
 
     // TODO how do we leverage the RULE / SNITCH logic in createCollection?
@@ -232,11 +229,17 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     PolicyHelper.SessionWrapper sessionWrapper = null;
 
     try {
-      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(
-          ocmh.cloudManager, clusterState,
-          nodeList, restoreCollectionName,
-          message, sliceNames,
-          numNrtReplicas, numTlogReplicas, numPullReplicas);
+      Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+          .forCollection(restoreCollectionName)
+          .forShard(sliceNames)
+          .assignNrtReplicas(numNrtReplicas)
+          .assignTlogReplicas(numTlogReplicas)
+          .assignPullReplicas(numPullReplicas)
+          .onNodes(nodeList)
+          .build();
+      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
+      List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
       //Create one replica per shard and copy backed up data to it
       for (Slice slice : restoreCollection.getSlices()) {
@@ -317,7 +320,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         for (Slice shard : restoreCollection.getSlices()) {
           propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
         }
-        inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
+        ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
       }
 
         if (totalReplicasPerShard > 1) {

@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.Arrays.asList;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-import static org.noggit.ObjectBuilder.getVal;
-
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +32,8 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -45,9 +43,11 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
 import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
+import static org.noggit.ObjectBuilder.getVal;
 
 
 public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBase {
@@ -65,21 +65,20 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     for (Object o : caches.entrySet()) {
       final Map.Entry e = (Map.Entry) o;
-      Thread t = new Thread() {
-        @Override
-        public void run() {
+      if (e.getValue() instanceof Map) {
+        List<String> errs = new ArrayList<>();
+        collectErrors.add(errs);
+        Map value = (Map) e.getValue();
+        Thread t = new Thread(() -> {
           try {
-            ArrayList errs = new ArrayList();
-            collectErrors.add(errs);
-            invokeBulkCall((String)e.getKey() , errs, (Map) e.getValue());
-          } catch (Exception e) {
-            e.printStackTrace();
+            invokeBulkCall((String)e.getKey() , errs, value);
+          } catch (Exception e1) {
+            e1.printStackTrace();
           }
-
-        }
-      };
-      threads.add(t);
-      t.start();
+        });
+        threads.add(t);
+        t.start();
+      }
     }
 
 
@@ -146,30 +145,29 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
 
       //get another node
-      String url = urls.get(urls.size());
+      String url = urls.get(urls.size() - 1);
 
       long startTime = System.nanoTime();
       long maxTimeoutSeconds = 20;
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        Map respMap = getAsMap(url+"/config/overlay", cloudClient);
-        Map m = (Map) respMap.get("overlay");
-        if(m!= null) m = (Map) m.get("props");
+        MapWriter respMap = getAsMap(url + "/config/overlay", cloudClient);
+        MapWriter m = (MapWriter) respMap._get("overlay/props", null);
         if(m == null) {
           errmessages.add(StrUtils.formatString("overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
           continue;
         }
 
 
-        Object o = getObjectByPath(m, true, asList("query", cacheName, "size"));
-        if(!val1.equals(o)) errmessages.add(StrUtils.formatString("'size' property not set, expected = {0}, actual {1}", val1, o));
+        Object o = m._get(asList("query", cacheName, "size"), null);
+        if(!val1.equals(o.toString())) errmessages.add(StrUtils.formatString("'size' property not set, expected = {0}, actual {1}", val1, o));
 
-        o = getObjectByPath(m, true, asList("query", cacheName, "initialSize"));
-        if(!val2.equals(o)) errmessages.add(StrUtils.formatString("'initialSize' property not set, expected = {0}, actual {1}", val2, o));
+        o = m._get(asList("query", cacheName, "initialSize"), null);
+        if(!val2.equals(o.toString())) errmessages.add(StrUtils.formatString("'initialSize' property not set, expected = {0}, actual {1}", val2, o));
 
-        o = getObjectByPath(m, true, asList("query", cacheName, "autowarmCount"));
-        if(!val3.equals(o)) errmessages.add(StrUtils.formatString("'autowarmCount' property not set, expected = {0}, actual {1}", val3, o));
+        o = m._get(asList("query", cacheName, "autowarmCount"), null);
+        if(!val3.equals(o.toString())) errmessages.add(StrUtils.formatString("'autowarmCount' property not set, expected = {0}, actual {1}", val3, o));
         if(errmessages.isEmpty()) break;
       }
       if(!errmessages.isEmpty()) {
@@ -180,14 +178,14 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   }
 
-  public static Map getAsMap(String uri, CloudSolrClient cloudClient) throws Exception {
+  public static LinkedHashMapWriter getAsMap(String uri, CloudSolrClient cloudClient) throws Exception {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;
     try {
       entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
       try {
-        return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+        return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
       } catch (JSONParser.ParseException e) {
         log.error(response,e);
         throw e;

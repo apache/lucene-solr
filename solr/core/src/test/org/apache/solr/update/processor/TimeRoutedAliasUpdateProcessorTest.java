@@ -17,7 +17,10 @@
 
 package org.apache.solr.update.processor;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -33,7 +36,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -54,6 +57,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -67,40 +71,38 @@ import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+// This feature has a leak
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12801")
 public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String configName = "timeConfig";
-  static final String alias = "myalias";
-  static final String timeField = "timestamp_dt";
-  static final String intField = "integer_i";
+  private static final String configName = "timeConfig";
+  private static final String alias = "myalias";
+  private static final String timeField = "timestamp_dt";
+  private static final String intField = "integer_i";
 
-  static SolrClient solrClient;
+  private static CloudSolrClient solrClient;
 
   private int lastDocId = 0;
   private int numDocsDeletedOrFailed = 0;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(4).configure();
-  }
-
   @Before
   public void doBefore() throws Exception {
+    configureCluster(4).configure();
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
-    System.out.println("SolrClient: " + solrClient);
-    if (solrClient instanceof CloudSolrClient) {
-      System.out.println(((CloudSolrClient) solrClient).getClusterStateProvider());
-    }
+    log.info("SolrClient: {}", solrClient);
+    log.info("ClusterStateProvider {}",solrClient.getClusterStateProvider());
   }
 
   @After
   public void doAfter() throws Exception {
-    cluster.deleteAllCollections(); // deletes aliases too
     solrClient.close();
+    shutdownCluster();
   }
 
   @AfterClass
@@ -111,8 +113,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
-    String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
+    String configName = getSaferTestName();
     createConfigSet(configName);
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
@@ -122,6 +125,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(2)
         .withProperty(TimeRoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
+    
+    cluster.waitForActiveCollection(col23rd, 2, 4);
 
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
@@ -231,10 +236,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
             "  'add-updateprocessor' : {" +
             "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
             "  }," +
-            // if other tracking tests are written, add another TUPF with a unique group name, don't re-use this one!
             // See TrackingUpdateProcessorFactory javadocs for details...
             "  'add-updateprocessor' : {" +
-            "    'name':'tracking-testSliceRouting', 'class':'solr.TrackingUpdateProcessorFactory', 'group':'testSliceRouting'" +
+            "    'name':'tracking-testSliceRouting', 'class':'solr.TrackingUpdateProcessorFactory', 'group':'" + getTrackUpdatesGroupName() + "'" +
             "  }," +
             "  'add-updateprocessor' : {" + // for testing
             "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
@@ -265,10 +269,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
    * @throws Exception when it blows up unexpectedly :)
    */
   @Slow
-  @Nightly
   @Test
+  @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
   public void testSliceRouting() throws Exception {
-    String configName = TimeRoutedAliasUpdateProcessorTest.configName + getTestName();
+    String configName = getSaferTestName();
     createConfigSet(configName);
 
     // each collection has 4 shards with 3 replicas for 12 possible destinations
@@ -294,19 +298,21 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // leader randomly and not causing a failure if the code is broken, but as a whole this test will therefore only have
     // about a 3.6% false positive rate (0.33^3). If that's not good enough, add more docs or more replicas per shard :).
 
+    final String trackGroupName = getTrackUpdatesGroupName();
+    final List<UpdateCommand> updateCommands;
     try {
-      TrackingUpdateProcessorFactory.startRecording(getTestName());
+      TrackingUpdateProcessorFactory.startRecording(trackGroupName);
 
       // cause some collections to be created
 
-      ModifiableSolrParams params = params("post-processor", "tracking-" + getTestName());
+      ModifiableSolrParams params = params("post-processor", "tracking-" + trackGroupName);
       assertUpdateResponse(add(alias, Arrays.asList(
           sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
           sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
           sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z")),
           params));
     } finally {
-      TrackingUpdateProcessorFactory.stopRecording(getTestName());
+      updateCommands = TrackingUpdateProcessorFactory.stopRecording(trackGroupName);
     }
 
     try (CloudSolrClient cloudSolrClient = getCloudSolrClient(cluster)) {
@@ -315,13 +321,235 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
       assertEquals("should have " + 3 * numShards + " leaders, " + numShards + " per collection", 3 * numShards, leaders.size());
 
-      List<UpdateCommand> updateCommands = TrackingUpdateProcessorFactory.commandsForGroup(getTestName());
       assertEquals(3, updateCommands.size());
       for (UpdateCommand updateCommand : updateCommands) {
         String node = (String) updateCommand.getReq().getContext().get(TrackingUpdateProcessorFactory.REQUEST_NODE);
         assertTrue("Update was not routed to a leader (" + node + " not in list of leaders" + leaders, leaders.contains(node));
       }
     }
+  }
+
+  /** @see TrackingUpdateProcessorFactory */
+  private String getTrackUpdatesGroupName() {
+    return getSaferTestName();
+  }
+
+  @Test
+  @Slow
+  public void testPreemptiveCreation() throws Exception {
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    final int numShards = 1 ;
+    final int numReplicas = 1 ;
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", timeField,
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
+            .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR")
+        .process(solrClient);
+
+    // cause some collections to be created
+    assertUpdateResponse(solrClient.add(alias,
+        sdoc("id","1","timestamp_dt", "2017-10-25T00:00:00Z")
+    ));
+    assertUpdateResponse(solrClient.commit(alias));
+
+    // wait for all the collections to exist...
+    waitCol("2017-10-23", numShards); // This one should have already existed from the alias creation
+    waitCol("2017-10-24", numShards); // Create 1
+    waitCol("2017-10-25", numShards); // Create 2nd synchronously (ensure this is not broken)
+
+    // normal update, nothing special, no collection creation required.
+    List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(3,cols.size());
+
+    assertNumDocs("2017-10-23", 0);
+    assertNumDocs("2017-10-24", 0);
+    assertNumDocs("2017-10-25", 1);
+
+    // cause some collections to be created
+
+    ModifiableSolrParams params = params();
+
+    // TIME SENSITIVE SECTION BEGINS
+
+    // In this section we intentionally rely on timing of a race condition but the gap in collection creation time vs
+    // requesting the list of aliases and adding a single doc should be very large (1-2 seconds vs a few ms so we
+    // should always win the race) This is necessary  because we are testing that we can guard against specific race
+    // conditions that happen while a collection is being created. To test this without timing sensitivity we would
+    // need a means to pass a semaphore to the server that it can use to delay collection creation
+    //
+    // This section must NOT gain any Thread.sleep() statements, nor should it gain any long running operations
+
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
+        sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
+        sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z"),
+        sdoc("id", "5", "timestamp_dt", "2017-10-25T23:00:00Z")), // should cause preemptive creation
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(3, cols.size());
+    assertTrue("Preemptive creation appears to not be asynchronous anymore",!cols.contains("myalias_2017-10-26"));
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 3);
+
+    // Here we quickly add another doc in a separate request, before the collection creation has completed.
+    // This has the potential to incorrectly cause preemptive collection creation to run twice and create a
+    // second collection. TimeRoutedAliasUpdateProcessor is meant to guard against this race condition.
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "6", "timestamp_dt", "2017-10-25T23:01:00Z")), // might cause duplicate preemptive creation
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+
+    // TIME SENSITIVE SECTION ENDS
+
+    waitCol("2017-10-26", numShards);
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertTrue("Preemptive creation happened twice and created a collection " +
+        "further in the future than the configured time slice!",!cols.contains("myalias_2017-10-27"));
+
+    assertEquals(4, cols.size());
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 4);
+    assertNumDocs("2017-10-26", 0);
+
+    // now test with pre-create window longer than time slice, and forcing multiple creations.
+    CollectionAdminRequest.setAliasProperty(alias)
+        .addProperty(TimeRoutedAlias.ROUTER_PREEMPTIVE_CREATE_MATH, "3DAY").process(solrClient);
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "7", "timestamp_dt", "2017-10-25T23:01:00Z")), // should cause preemptive creation of 10-27 now
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+    waitCol("2017-10-27", numShards);
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(5,cols.size()); // only one created in async case
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 5);
+    assertNumDocs("2017-10-26", 0);
+    assertNumDocs("2017-10-27", 0);
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "8", "timestamp_dt", "2017-10-25T23:01:00Z")), // should cause preemptive creation of 10-28 now
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+    waitCol("2017-10-27", numShards);
+    waitCol("2017-10-28", numShards);
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(6,cols.size()); // Subsequent documents continue to create up to limit
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 6);
+    assertNumDocs("2017-10-26", 0);
+    assertNumDocs("2017-10-27", 0);
+    assertNumDocs("2017-10-28", 0);
+
+    QueryResponse resp;
+    resp = solrClient.query(alias, params(
+        "q", "*:*",
+        "rows", "10"));
+    assertEquals(8, resp.getResults().getNumFound());
+
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "9", "timestamp_dt", "2017-10-27T23:01:00Z"), // should cause preemptive creation
+
+        // If these are not ignored properly this test will fail during cleanup with a message about router.name being
+        // required. This happens because the test finishes while overseer threads are still trying to invoke maintain
+        // after the @After method has deleted collections and emptied out the aliases.... this leaves the maintain
+        // command cloning alias properties Aliases.EMPTY and thus not getting a value from router.name
+        // (normally router.name == 'time') The check for non-blank router.name  happens to be the first validation.
+        // There is a small chance this could slip through without a fail occasionally, but it was 100% with just one
+        // of these.
+        sdoc("id", "10", "timestamp_dt", "2017-10-28T23:01:00Z"),  // should be ignored due to in progress creation
+        sdoc("id", "11", "timestamp_dt", "2017-10-28T23:02:00Z"),  // should be ignored due to in progress creation
+        sdoc("id", "12", "timestamp_dt", "2017-10-28T23:03:00Z")), // should be ignored due to in progress creation
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+    waitCol("2017-10-29", numShards);
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(7,cols.size());
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 6);
+    assertNumDocs("2017-10-26", 0);
+    assertNumDocs("2017-10-27", 1);
+    assertNumDocs("2017-10-28", 3); // should get through even though preemptive creation ignored it.
+    assertNumDocs("2017-10-29", 0);
+
+    resp = solrClient.query(alias, params(
+        "q", "*:*",
+        "rows", "0"));
+    assertEquals(12, resp.getResults().getNumFound());
+
+    // Sych creation with an interval longer than the time slice for the alias..
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
+        params));
+    assertUpdateResponse(solrClient.commit(alias));
+    waitCol("2017-10-30", numShards);
+    waitCol("2017-10-31", numShards); // spooky! async case arising in middle of sync creation!!
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertEquals(9,cols.size());
+    assertNumDocs("2017-10-23", 1);
+    assertNumDocs("2017-10-24", 1);
+    assertNumDocs("2017-10-25", 6);
+    assertNumDocs("2017-10-26", 0);
+    assertNumDocs("2017-10-27", 1);
+    assertNumDocs("2017-10-28", 3); // should get through even though preemptive creation ignored it.
+    assertNumDocs("2017-10-29", 0);
+    assertNumDocs("2017-10-30", 1);
+    assertNumDocs("2017-10-31", 0);
+
+    resp = solrClient.query(alias, params(
+        "q", "*:*",
+        "rows", "0"));
+    assertEquals(13, resp.getResults().getNumFound());
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "14", "timestamp_dt", "2017-10-31T23:01:00Z")), // should cause preemptive creation 11-01
+        params));
+    waitCol("2017-11-01", numShards);
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "15", "timestamp_dt", "2017-10-31T23:01:00Z")), // should cause preemptive creation 11-02
+        params));
+    waitCol("2017-11-02", numShards);
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "16", "timestamp_dt", "2017-10-31T23:01:00Z")), // should cause preemptive creation 11-03
+        params));
+    waitCol("2017-11-03", numShards);
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "17", "timestamp_dt", "2017-10-31T23:01:00Z")), // should NOT cause preemptive creation 11-04
+        params));
+
+    cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertTrue("Preemptive creation beyond ROUTER_PREEMPTIVE_CREATE_MATH setting of 3DAY!",!cols.contains("myalias_2017-11-04"));
+
+    assertUpdateResponse(add(alias, Collections.singletonList(
+        sdoc("id", "18", "timestamp_dt", "2017-11-01T23:01:00Z")), // should cause preemptive creation 11-04
+        params));
+    waitCol("2017-11-04",numShards);
+
+    Thread.sleep(2000); // allow the executor used in preemptive creation time to shut down.
+
+  }
+
+  private void assertNumDocs(final String datePart, int expected) throws SolrServerException, IOException {
+    QueryResponse resp = solrClient.query(alias + "_" + datePart, params(
+        "q", "*:*",
+        "rows", "10"));
+    assertEquals(expected, resp.getResults().getNumFound());
   }
 
   private Set<String> getLeaderCoreNames(ClusterState clusterState) {
@@ -344,9 +572,28 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     return leaders;
   }
 
-  private void waitCol(final String datePart, int slices) {
-    waitForState("waiting for collections to be created",alias + "_" + datePart,
-        (liveNodes, collectionState) -> collectionState.getActiveSlices().size() == slices);
+  private void waitCol(final String datePart, int slices) throws InterruptedException {
+    // collection to exist
+    String collection = alias + "_" + datePart;
+    waitForState("waiting for collections to be created", collection,
+        (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            // per predicate javadoc, this is what we get if the collection doesn't exist at all.
+            return false;
+          }
+          Collection<Slice> activeSlices = collectionState.getActiveSlices();
+          int size = activeSlices.size();
+          return size == slices;
+        });
+    // and alias to be aware of collection
+    long start = System.nanoTime(); // mumble mumble precommit mumble mumble...
+    while (!cluster.getSolrClient().getZkStateReader().getAliases().getCollectionAliasListMap().get(alias).contains(collection)) {
+      if (NANOSECONDS.toSeconds(System.nanoTime() - start) > 10) {
+        fail("took over 10 seconds after collection creation to update aliases");
+      } else {
+        Thread.sleep(500);
+      }
+    }
   }
 
   private void testFailedDocument(Instant timestamp, String errorMsg) throws SolrServerException, IOException {
@@ -386,7 +633,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       // Send in separate threads. Choose random collection & solrClient
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
         ExecutorService exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-            new DefaultSolrThreadFactory(getTestName()));
+            new DefaultSolrThreadFactory(getSaferTestName()));
         List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
         for (SolrInputDocument solrInputDocument : solrInputDocuments) {
           String col = collections.get(random().nextInt(collections.size()));
@@ -484,6 +731,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   /** Adds the docs to Solr via {@link #solrClient} with the params */
+  @SuppressWarnings("SameParameterValue")
   private static UpdateResponse add(String collection, Collection<SolrInputDocument> docs, SolrParams params) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     if (params != null) {

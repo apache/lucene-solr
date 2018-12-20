@@ -86,7 +86,7 @@ public interface CollectionParams {
     CREATESHARD(true, LockLevel.COLLECTION),
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
-    MIGRATE(true, LockLevel.SHARD),
+    MIGRATE(true, LockLevel.COLLECTION),
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),

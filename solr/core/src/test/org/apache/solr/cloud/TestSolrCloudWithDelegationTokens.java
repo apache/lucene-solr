@@ -182,6 +182,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
         .build();
     else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(miniCluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
+            .withSocketTimeout(30000).withConnectionTimeout(15000)
             .withResponseParser(client.getParser())
             .withHttpSolrClientBuilder(
                 new HttpSolrClient.Builder()
@@ -327,6 +328,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   }
 
   @Test
+  //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testDelegationTokenRenew() throws Exception {
     // test with specifying renewer
     verifyDelegationTokenRenew("bar", "bar");

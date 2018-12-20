@@ -313,7 +313,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-field-type` command adds a new field type to your schema.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a json mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
+All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
@@ -426,7 +426,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `replace-field-type` command replaces a field type in your schema. Note that you must supply the full definition for a field type - this command will *not* partially modify a field type's definition. If the field type does not exist in the schema an error is thrown.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a json mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
+All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
@@ -1187,7 +1187,7 @@ The output will simply be the schema version in use.
 
 ==== Show Schema Version Example
 
-Get the schema version
+Get the schema version:
 
 [source,bash]
 ----

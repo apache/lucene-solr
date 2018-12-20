@@ -36,7 +36,7 @@ public class Lang {
   public static void register(StreamFactory streamFactory) {
     streamFactory
         // source streams
-        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("search", SearchFacadeStream.class)
         .withFunctionName("facet", FacetStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
@@ -80,6 +80,7 @@ public class Lang {
         .withFunctionName("significantTerms", SignificantTermsStream.class)
         .withFunctionName("cartesianProduct", CartesianProductStream.class)
         .withFunctionName("shuffle", ShuffleStream.class)
+        .withFunctionName("export", ShuffleStream.class)
         .withFunctionName("calc", CalculatorStream.class)
         .withFunctionName("eval", EvalStream.class)
         .withFunctionName("echo", EchoStream.class)
@@ -90,6 +91,7 @@ public class Lang {
         .withFunctionName("timeseries", TimeSeriesStream.class)
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
+        .withFunctionName("plist", ParallelListStream.class)
 
             // metrics
         .withFunctionName("min", MinMetric.class)
@@ -174,6 +176,7 @@ public class Lang {
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
         .withFunctionName("polyfit", PolyFitEvaluator.class)
         .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
+        .withFunctionName("harmfit", HarmonicFitEvaluator.class)
         .withFunctionName("loess", LoessEvaluator.class)
         .withFunctionName("matrix", MatrixEvaluator.class)
         .withFunctionName("transpose", TransposeEvaluator.class)
@@ -250,6 +253,30 @@ public class Lang {
         .withFunctionName("gaussfit", GaussFitEvaluator.class)
         .withFunctionName("outliers", OutliersEvaluator.class)
         .withFunctionName("stream", GetStream.class)
+        .withFunctionName("putCache", PutCacheEvaluator.class)
+        .withFunctionName("getCache", GetCacheEvaluator.class)
+        .withFunctionName("removeCache", RemoveCacheEvaluator.class)
+        .withFunctionName("listCache", ListCacheEvaluator.class)
+        .withFunctionName("zscores", NormalizeEvaluator.class)
+        .withFunctionName("latlonVectors", LatLonVectorsEvaluator.class)
+        .withFunctionName("convexHull", ConvexHullEvaluator.class)
+        .withFunctionName("getVertices", GetVerticesEvaluator.class)
+        .withFunctionName("getBaryCenter", GetBaryCenterEvaluator.class)
+        .withFunctionName("getArea", GetAreaEvaluator.class)
+        .withFunctionName("getBoundarySize", GetBoundarySizeEvaluator.class)
+        .withFunctionName("oscillate", OscillateEvaluator.class)
+        .withFunctionName("getAmplitude", GetAmplitudeEvaluator.class)
+        .withFunctionName("getPhase", GetPhaseEvaluator.class)
+        .withFunctionName("getAngularFrequency", GetAngularFrequencyEvaluator.class)
+        .withFunctionName("enclosingDisk", EnclosingDiskEvaluator.class)
+        .withFunctionName("getCenter", GetCenterEvaluator.class)
+        .withFunctionName("getRadius", GetRadiusEvaluator.class)
+        .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
+        .withFunctionName("pairSort", PairSortEvaluator.class)
+        .withFunctionName("recip", RecipEvaluator.class)
+        .withFunctionName("pivot", PivotEvaluator.class)
+        .withFunctionName("ltrim", LeftShiftEvaluator.class)
+        .withFunctionName("rtrim", RightShiftEvaluator.class)
 
         // Boolean Stream Evaluators
 
@@ -283,6 +310,7 @@ public class Lang {
         .withFunctionName("mult", MultiplyEvaluator.class)
         .withFunctionName("sub", SubtractEvaluator.class)
         .withFunctionName("log", NaturalLogEvaluator.class)
+        .withFunctionName("log10", Log10Evaluator.class)
         .withFunctionName("pow", PowerEvaluator.class)
         .withFunctionName("mod", ModuloEvaluator.class)
         .withFunctionName("ceil", CeilingEvaluator.class)
