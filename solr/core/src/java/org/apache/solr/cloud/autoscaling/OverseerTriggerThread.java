@@ -70,7 +70,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   /*
   Following variables are only accessed or modified when updateLock is held
    */
-  private int znodeVersion = -1;
+  private int znodeVersion = 0;
 
   private Map<String, AutoScaling.Trigger> activeTriggers = new HashMap<>();
 

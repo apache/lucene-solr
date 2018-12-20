@@ -72,7 +72,7 @@ public class SimDistribStateManager implements DistribStateManager {
 
   public static final class Node {
     ReentrantLock dataLock = new ReentrantLock();
-    private int version = -1;
+    private int version = 0;
     private int seq = 0;
     private final CreateMode mode;
     private final String clientId;
@@ -90,7 +90,11 @@ public class SimDistribStateManager implements DistribStateManager {
       this.path = path;
       this.mode = mode;
       this.clientId = clientId;
+    }
 
+    Node(Node parent, String name, String path, byte[] data, CreateMode mode, String clientId) {
+      this(parent, name, path, mode, clientId);
+      this.data = data;
     }
 
     public void clear() {
@@ -311,7 +315,7 @@ public class SimDistribStateManager implements DistribStateManager {
       n = parentNode.children != null ? parentNode.children.get(currentName) : null;
       if (n == null) {
         if (create) {
-          n = createNode(parentNode, mode, currentPath, currentName,true);
+          n = createNode(parentNode, mode, currentPath, currentName,null, true);
         } else {
           break;
         }
@@ -323,7 +327,7 @@ public class SimDistribStateManager implements DistribStateManager {
     return n;
   }
 
-  private Node createNode(Node parentNode, CreateMode mode, StringBuilder fullChildPath, String baseChildName, boolean attachToParent) throws IOException {
+  private Node createNode(Node parentNode, CreateMode mode, StringBuilder fullChildPath, String baseChildName, byte[] data, boolean attachToParent) throws IOException {
     String nodeName = baseChildName;
     if ((parentNode.mode == CreateMode.EPHEMERAL || parentNode.mode == CreateMode.EPHEMERAL_SEQUENTIAL) &&
         (mode == CreateMode.EPHEMERAL || mode == CreateMode.EPHEMERAL_SEQUENTIAL)) {
@@ -335,7 +339,7 @@ public class SimDistribStateManager implements DistribStateManager {
     }
 
     fullChildPath.append(nodeName);
-    Node child = new Node(parentNode, nodeName, fullChildPath.toString(), mode, id);
+    Node child = new Node(parentNode, nodeName, fullChildPath.toString(), data, mode, id);
 
     if (attachToParent) {
       parentNode.setChild(nodeName, child);
@@ -480,13 +484,9 @@ public class SimDistribStateManager implements DistribStateManager {
     multiLock.lock();
     try {
       String nodeName = elements[elements.length-1];
-      Node childNode = createNode(parentNode, mode, parentStringBuilder.append("/"), nodeName, false);
-      childNode.setData(data, -1);
+      Node childNode = createNode(parentNode, mode, parentStringBuilder.append("/"), nodeName, data,false);
       parentNode.setChild(childNode.name, childNode);
       return childNode.path;
-    } catch (BadVersionException e) {
-      // not happening
-      return null;
     } finally {
       multiLock.unlock();
     }
@@ -586,7 +586,7 @@ public class SimDistribStateManager implements DistribStateManager {
   @Override
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
     Map<String, Object> map = new HashMap<>();
-    int version = -1;
+    int version = 0;
     try {
       VersionedData data = getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, watcher);
       if (data != null && data.getData() != null && data.getData().length > 0) {
