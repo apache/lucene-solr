@@ -631,10 +631,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     byte[] data = Utils.toJSON(state);
     try {
       VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_STATE);
-      int version = oldData != null ? oldData.getVersion() : -1;
-      Assert.assertEquals(clusterStateVersion, version + 1);
+      int version = oldData != null ? oldData.getVersion() : 0;
+      Assert.assertEquals(clusterStateVersion, version);
       stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
-      log.debug("** saved cluster state version " + (version + 1));
+      log.debug("** saved cluster state version " + (version));
       clusterStateVersion++;
     } catch (Exception e) {
       throw new IOException(e);
