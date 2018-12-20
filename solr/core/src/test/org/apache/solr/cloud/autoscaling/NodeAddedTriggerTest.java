@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.After;
@@ -78,7 +79,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     long waitForSeconds = 1 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
-    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger1")) {
       final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
       trigger.configure(container.getResourceLoader(), cloudManager, props);
       trigger.init();
@@ -122,9 +123,13 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       assertTrue(nodeNames.contains(newNode2.getNodeName()));
     }
 
+    // clean nodeAdded markers - normally done by OverseerTriggerThread
+    container.getZkController().getSolrCloudManager().getDistribStateManager()
+        .removeRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, true, false);
+
     // add a new node but remove it before the waitFor period expires
     // and assert that the trigger doesn't fire at all
-    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger2")) {
       final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
       trigger.configure(container.getResourceLoader(), cloudManager, props);
       trigger.init();

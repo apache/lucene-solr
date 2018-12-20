@@ -100,18 +100,19 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         break;
       }
     }
-    // add a node
+    // add a nodes
     JettySolrRunner node = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
     assertEquals(1, listener.addedNodes.size());
-    assertEquals(node.getNodeName(), listener.addedNodes.iterator().next());
+    assertTrue(listener.addedNodes.toString(), listener.addedNodes.contains(node.getNodeName()));
     // verify that a znode doesn't exist (no trigger)
     String pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node.getNodeName();
     assertFalse("Path " + pathAdded + " was created but there are no nodeAdded triggers", zkClient().exists(pathAdded, true));
     listener.reset();
+
     // stop overseer
     log.info("====== KILL OVERSEER 1");
     JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
@@ -145,8 +146,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
       // okay
     }
 
-    // verify that a znode does NOT exist - there's no nodeLost trigger,
-    // so the new overseer cleaned up existing nodeLost markers
+    // verify that a znode does NOT exist - the new overseer cleaned up existing nodeLost markers
     assertFalse("Path " + pathLost + " exists", zkClient().exists(pathLost, true));
 
     listener.reset();
@@ -218,9 +218,29 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     listenerEventLatch.countDown(); // let the trigger thread continue
 
     assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
-    Thread.sleep(5000);
-    // nodeAdded marker should be consumed now by nodeAdded trigger
-    assertFalse("Path " + pathAdded + " should have been deleted", zkClient().exists(pathAdded, true));
+
+    // kill this node
+    listener.reset();
+    events.clear();
+    triggerFiredLatch = new CountDownLatch(1);
+
+    String node1Name = node1.getNodeName();
+    cluster.stopJettySolrRunner(node1);
+    if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
+      fail("onChange listener didn't execute on cluster change");
+    }
+    assertEquals(1, listener.lostNodes.size());
+    assertEquals(node1Name, listener.lostNodes.iterator().next());
+    // verify that a znode exists
+    String pathLost2 = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + node1Name;
+    assertTrue("Path " + pathLost2 + " wasn't created", zkClient().exists(pathLost2, true));
+
+    listenerEventLatch.countDown(); // let the trigger thread continue
+
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
+
+    // triggers don't remove markers
+    assertTrue("Path " + pathLost2 + " should still exist", zkClient().exists(pathLost2, true));
 
     listener.reset();
     events.clear();

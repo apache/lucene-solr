@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
@@ -78,7 +79,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     long waitForSeconds = 1 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger")) {
+    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger1")) {
       final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
       trigger.configure(container.getResourceLoader(), cloudManager, props);
       trigger.init();
@@ -125,9 +126,13 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
 
     }
 
+    // clean nodeLost markers - normally done by OverseerTriggerThread
+    container.getZkController().getSolrCloudManager().getDistribStateManager()
+        .removeRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, true, false);
+
     // remove a node but add it back before the waitFor period expires
     // and assert that the trigger doesn't fire at all
-    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger")) {
+    try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger2")) {
       final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
       trigger.configure(container.getResourceLoader(), cloudManager, props);
       final long waitTime = 2;
@@ -140,8 +145,10 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       String lostNodeName = lostNode.getNodeName();
       lostNode.stop();
       AtomicBoolean fired = new AtomicBoolean(false);
+      AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
+          eventRef.set(event);
           long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
@@ -175,7 +182,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       } while (true);
 
       // ensure the event was not fired
-      assertFalse(fired.get());
+      assertFalse("event was fired: " + eventRef.get(), fired.get());
     }
   }
 
