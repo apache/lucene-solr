@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -193,13 +194,21 @@ public abstract class FSDirectory extends BaseDirectory {
   /** Just like {@link #open(Path)}, but allows you to
    *  also specify a custom {@link LockFactory}. */
   public static FSDirectory open(Path path, LockFactory lockFactory) throws IOException {
-    if (Constants.JRE_IS_64BIT && MMapDirectory.UNMAP_SUPPORTED) {
-      return new MMapDirectory(path, lockFactory);
-    } else if (Constants.WINDOWS) {
-      return new SimpleFSDirectory(path, lockFactory);
+    if (isDefaultFileSystem(path)) {
+      if (Constants.JRE_IS_64BIT && MMapDirectory.UNMAP_SUPPORTED) {
+        return new MMapDirectory(path, lockFactory);
+      } else if (Constants.WINDOWS) {
+        return new SimpleFSDirectory(path, lockFactory);
+      } else {
+        return new NIOFSDirectory(path, lockFactory);
+      }
     } else {
-      return new NIOFSDirectory(path, lockFactory);
+      return new SimpleFSDirectory(path, lockFactory);
     }
+  }
+  
+  private static boolean isDefaultFileSystem(Path path) {
+    return path.getFileSystem() == FileSystems.getDefault();
   }
 
   /** Lists all files (including subdirectories) in the directory.
