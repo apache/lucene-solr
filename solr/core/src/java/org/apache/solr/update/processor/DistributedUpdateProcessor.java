@@ -200,15 +200,26 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   protected RollupRequestReplicationTracker rollupReplicationTracker = null;
   protected LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
-  private final Replica.Type replicaType;
+  protected final Replica.Type replicaType;
 
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
     UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
 
-  abstract String getCollectionName(CloudDescriptor cloudDescriptor);
-  abstract Replica.Type getReplicaType(CloudDescriptor cloudDescriptor);
+  /**
+   *
+   * @param cloudDescriptor
+   * @return the collection name to be set by this instance.
+   */
+  abstract String computeCollectionName(CloudDescriptor cloudDescriptor);
+
+  /**
+   *
+   * @param cloudDescriptor
+   * @return the replica type of the collection.
+   */
+  abstract Replica.Type computeReplicaType(CloudDescriptor cloudDescriptor);
 
   /** Specification of AtomicUpdateDocumentMerger is currently experimental.
    * @lucene.experimental
@@ -222,8 +233,8 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     this.docMerger = docMerger;
     this.idField = req.getSchema().getUniqueKeyField();
     CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    this.collection = getCollectionName(cloudDesc);
-    this.replicaType = getReplicaType(cloudDesc);
+    this.collection = computeCollectionName(cloudDesc);
+    this.replicaType = computeReplicaType(cloudDesc);
     // version init
 
     this.ulog = req.getCore().getUpdateHandler().getUpdateLog();
@@ -416,7 +427,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     return false;
   }
   
-  private List<Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
+  protected List<Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
@@ -1657,93 +1668,13 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     assert TestInjection.injectFailUpdateRequests();
     
     updateCommand = cmd;
-    List<Node> nodes = null;
-    Replica leaderReplica = null;
-    if (zkEnabled) {
-      zkCheck();
-      try {
-        leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
-      }
-      isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
-      
-      nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
-      if (nodes == null) {
-        // This could happen if there are only pull replicas
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-            "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
-      }
 
-      nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
-          && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
+    if(vinfo != null) {
+      long commitVersion = vinfo.getNewClock();
+      cmd.setVersion(commitVersion);
     }
-    
-    if (!zkEnabled || (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas"))) {
-      if (replicaType == Replica.Type.TLOG) {
 
-        if (isLeader) {
-          long commitVersion = vinfo.getNewClock();
-          cmd.setVersion(commitVersion);
-          doLocalCommit(cmd);
-        } else {
-          assert TestInjection.waitForInSyncWithLeader(req.getCore(),
-              zkController, collection, cloudDesc.getShardId()) : "Core " + req.getCore() + " not in sync with leader";
-        }
-
-      } else if (replicaType == Replica.Type.PULL) {
-        log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
-      } else {
-        // NRT replicas will always commit
-        if (vinfo != null) {
-          long commitVersion = vinfo.getNewClock();
-          cmd.setVersion(commitVersion);
-        }
-  
-        doLocalCommit(cmd);
-      }
-    } else {
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-
-      List<Node> useNodes = null;
-      if (req.getParams().get(COMMIT_END_POINT) == null) {
-        useNodes = nodes;
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-        params.set(COMMIT_END_POINT, "leaders");
-        if (useNodes != null) {
-          params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-              zkController.getBaseUrl(), req.getCore().getName()));
-          cmdDistrib.distribCommit(cmd, useNodes, params);
-          cmdDistrib.blockAndDoRetries();
-        }
-      }
-
-      if (isLeader) {
-        params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-
-        params.set(COMMIT_END_POINT, "replicas");
-
-        useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
-
-        if (useNodes != null) {
-          params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-              zkController.getBaseUrl(), req.getCore().getName()));
-
-          cmdDistrib.distribCommit(cmd, useNodes, params);
-        }
-        // NRT replicas will always commit
-        if (vinfo != null) {
-          long commitVersion = vinfo.getNewClock();
-          cmd.setVersion(commitVersion);
-        }
-
-        doLocalCommit(cmd);
-        if (useNodes != null) {
-          cmdDistrib.blockAndDoRetries();
-        }
-      }
-    }
+    doLocalCommit(cmd);
 
   }
 
@@ -1774,43 +1705,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     if (zkEnabled) doFinish();
     
     if (next != null && nodes == null) next.finish();
-  }
-
-  private List<Node> getCollectionUrls(String collection, EnumSet<Replica.Type> types, boolean onlyLeaders) {
-    ClusterState clusterState = zkController.getClusterState();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (collection == null || docCollection.getSlicesMap() == null) {
-      throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
-          "Could not find collection in zk: " + clusterState);
-    }
-    Map<String,Slice> slices = docCollection.getSlicesMap();
-    final List<Node> urls = new ArrayList<>(slices.size());
-    for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
-      Slice replicas = slices.get(sliceEntry.getKey());
-      if (onlyLeaders) {
-        Replica replica = docCollection.getLeader(replicas.getName());
-        if (replica != null) {
-          ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(replica);
-          urls.add(new StdNode(nodeProps, collection, replicas.getName()));
-        }
-        continue;
-      }
-      Map<String,Replica> shardMap = replicas.getReplicasMap();
-      
-      for (Entry<String,Replica> entry : shardMap.entrySet()) {
-        if (!types.contains(entry.getValue().getType())) {
-          continue;
-        }
-        ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-        if (clusterState.liveNodesContain(nodeProps.getNodeName())) {
-          urls.add(new StdNode(nodeProps, collection, replicas.getName()));
-        }
-      }
-    }
-    if (urls.isEmpty()) {
-      return null;
-    }
-    return urls;
   }
 
   /**

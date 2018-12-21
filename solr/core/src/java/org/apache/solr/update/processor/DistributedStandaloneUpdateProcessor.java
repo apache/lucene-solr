@@ -18,17 +18,28 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.TestInjection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProcessor {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DistributedStandaloneUpdateProcessor(SolrQueryRequest req,
                                               SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -42,13 +53,34 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
   }
 
   @Override
-  String getCollectionName(CloudDescriptor cloudDesc) {
+  String computeCollectionName(CloudDescriptor cloudDesc) {
     return null;
   }
 
   @Override
-  Replica.Type getReplicaType(CloudDescriptor cloudDesc) {
+  Replica.Type computeReplicaType(CloudDescriptor cloudDesc) {
     return Replica.Type.NRT;
+  }
+
+  @Override
+  public void processCommit(CommitUpdateCommand cmd) throws IOException {
+
+    assert TestInjection.injectFailUpdateRequests();
+
+    updateCommand = cmd;
+
+    CompletionService<Exception> completionService = new ExecutorCompletionService<>(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+    Set<Future<Exception>> pending = new HashSet<>();
+    if (replicaType == Replica.Type.TLOG) {
+      if (isLeader) {
+        super.processCommit(cmd);
+      }
+    } else if (replicaType == Replica.Type.PULL) {
+      log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
+    } else {
+      // NRT replicas will always commit
+      super.processCommit(cmd);
+    }
   }
 
   @Override
