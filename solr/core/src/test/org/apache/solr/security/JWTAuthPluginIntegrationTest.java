@@ -140,7 +140,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     CloseableHttpClient cl = HttpClientUtil.createClient(null);
     
-    // NOCOMMIT: Metrics tests, with failing requests etc
     createCollection(COLLECTION);
     
     // Missing token
