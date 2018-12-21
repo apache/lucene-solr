@@ -88,7 +88,7 @@ The next example shows configuring using https://openid.net/specs/openid-connect
     "blockUnknown": true,
     "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration",
     "clientId": "xyz",
-    "redirectUri": "https://my.solr.server:8983/solr/#/login"
+    "redirectUri": "https://my.solr.server:8983/solr/"
   }
 }
 ---- 
@@ -153,7 +153,7 @@ Example:
 
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
 ----
 ====
 
@@ -163,10 +163,12 @@ curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'C
 
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d -d '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
 ----
 ====
 --
+
+Insert your JWT token in compact `xxx.yyy.zzz` format above to authenticate with Solr once the plugin is active.
 
 == Using clients with JWT Auth 
 
