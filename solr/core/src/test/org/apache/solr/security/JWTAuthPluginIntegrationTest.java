@@ -54,12 +54,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Validate that JWT token authentication works in a real cluster.
- * 
- * TODO: 
- * <ul>
- *   <li>Test also using SolrJ as client. But that requires a way to set Authorization header on request, see SOLR-13070</li>
- *   <li>This is also the reason we use {@link org.apache.solr.SolrTestCaseJ4.SuppressSSL} annotation, since we use HttpUrlConnection</li>
- * </ul>
+ * <p> 
+ * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request, see SOLR-13070<br>
+ * TODO: This is also the reason we use {@link org.apache.solr.SolrTestCaseJ4.SuppressSSL} annotation, since we use HttpUrlConnection
+ * </p>
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
