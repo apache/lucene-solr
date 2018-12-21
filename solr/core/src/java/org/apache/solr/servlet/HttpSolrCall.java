@@ -94,7 +94,6 @@ import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
-import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
@@ -695,7 +694,7 @@ public class HttpSolrCall {
           solrParams = SolrRequestParsers.parseQueryString(req.getQueryString());
         } else {
           // we have no params at all, use empty ones:
-          solrParams = new MapSolrParams(Collections.<String, String>emptyMap());
+          solrParams = new MapSolrParams(Collections.emptyMap());
         }
         solrReq = new SolrQueryRequestBase(core, solrParams) {
         };

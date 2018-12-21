@@ -35,9 +35,12 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
 
   private static final String PARAM_BLOCKASYNC = "blockAsync";
   private static final String PARAM_QUEUE_SIZE = "queueSize";
+  private static final String PARAM_NUM_THREADS = "numThreads";
   private static final int DEFAULT_QUEUE_SIZE = 4096;
+  private static final int DEFAULT_NUM_THREADS = 1;
   private BlockingQueue<AuditEvent> queue;
   private boolean blockAsync;
+  private int blockingQueueSize;
 
   /**
    * Enqueues an {@link AuditEvent} to a queue and returns immediately.
@@ -54,7 +57,7 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
       }
     } else {
       if (!queue.offer(event)) {
-        log.warn("Audit log async queue is full, not blocking since " + PARAM_BLOCKASYNC + "==false");
+        log.warn("Audit log async queue is full (size={}), not blocking since {}", blockingQueueSize, PARAM_BLOCKASYNC + "==false");
       }
     }
   }
@@ -74,11 +77,13 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
    */
   public void init(Map<String, Object> pluginConfig) {
     blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
-    int blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE)));
+    blockingQueueSize = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE)));
+    int numThreads = Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_NUM_THREADS, DEFAULT_NUM_THREADS)));;
     pluginConfig.remove(PARAM_BLOCKASYNC);
     pluginConfig.remove(PARAM_QUEUE_SIZE);
+    pluginConfig.remove(PARAM_NUM_THREADS);
     queue = new ArrayBlockingQueue<>(blockingQueueSize);
-    ExecutorService executorService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("audit"));
+    ExecutorService executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrjNamedThreadFactory("audit"));
     executorService.submit(this);
   }
 
@@ -93,6 +98,8 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
       } catch (InterruptedException e) {
         log.warn("Interrupted while waiting for next audit log event");
         Thread.currentThread().interrupt();
+      } catch (Exception ex) {
+        log.warn("Exception when attempting to audit log asynchronously", ex);
       }
     }
   }

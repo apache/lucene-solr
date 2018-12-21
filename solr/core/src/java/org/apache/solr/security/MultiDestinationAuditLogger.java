@@ -79,6 +79,11 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
     log.info("Initialized {} audit plugins", plugins.size());
   }
 
+  @Override
+  public boolean shouldLog(AuditEvent.EventType eventType) {
+    return plugins.stream().anyMatch(p -> p.shouldLog(eventType));
+  }
+
   private AuditLoggerPlugin createPlugin(Map<String, Object> auditConf) {
     if (auditConf != null) {
       String klas = (String) auditConf.get("class");

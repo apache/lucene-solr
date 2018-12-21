@@ -76,7 +76,7 @@ Using the `MultiDestinationAuditLogger` you can configure multiple audit logger 
 ----
 
 === Synchronous vs asynchronous audit logging
-AuditLoggerPlugin developers can choose to make audit logging asynchronous by subclassing the `AsyncAuditLoggerPlugin` base class intead of the normal `AuditLoggerPlugin`. This will cause the event to but put on a queue and consumed and logged by a background thread. For Audit loggers with async support, you can also configure queue size and whether it should block when the queue is full:
+AuditLoggerPlugin developers can choose to make audit logging asynchronous by subclassing the `AsyncAuditLoggerPlugin` base class intead of the normal `AuditLoggerPlugin`. This will cause the event to but put on a queue and consumed and logged by a background thread. For Audit loggers with async support, you can also configure queue size, number of threads and whether it should block when the queue is full:
 
 [source,json]
 ----
@@ -84,6 +84,7 @@ AuditLoggerPlugin developers can choose to make audit logging asynchronous by su
   "auditlogging":{
      "class" : "solr.MyAsyncAuditLogger",
      "blockAsync" : false,
+     "numThreads" : 2,
      "queueSize" : 4096
   }
 }

@@ -73,7 +73,6 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.security.AuditEvent;
-import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
