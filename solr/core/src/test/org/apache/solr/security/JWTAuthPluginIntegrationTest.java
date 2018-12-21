@@ -24,47 +24,58 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.apache.http.Header;
-import org.apache.http.HttpException;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
-import org.apache.http.protocol.HttpContext;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.junit.AfterClass;
+import org.jose4j.lang.JoseException;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Validate that JWT token authentication works in a real cluster.
- * TODO: Test also using SolrJ as client. But that requires a way to set Authorization header on request, see SOLR-13070
+ * <p>
+ * TODO: 
+ * <ul>
+ *   <li>Test also using SolrJ as client. But that requires a way to set Authorization header on request, see SOLR-13070</li>
+ *   <li>This is also the reason we use {@link org.apache.solr.SolrTestCaseJ4.SuppressSSL} annotation, since we use HttpUrlConnection</li>
+ * </ul>
+ * </p>
  */
+@SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
   protected static final int REPLICATION_FACTOR = 1;
-  private static final String COLLECTION = "jwtColl";
-  private static String jwtTestToken;
-  private static String baseUrl;
-  private static AtomicInteger jwtInterceptCount = new AtomicInteger();
-  private static AtomicInteger pkiInterceptCount = new AtomicInteger();
-  private static final CountInterceptor interceptor = new CountInterceptor();
+  private final String COLLECTION = "jwtColl";
+  private String jwtTestToken;
+  private String baseUrl;
+  private JsonWebSignature jws;
 
-  @BeforeClass
-  public static void setupClass() throws Exception {
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -83,7 +94,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
     PublicJsonWebKey jwk = RsaJsonWebKey.Factory.newPublicJwk(jwkJSON);
     JwtClaims claims = JWTAuthPluginTest.generateClaims();
-    JsonWebSignature jws = new JsonWebSignature();
+    jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
     jws.setKey(jwk.getPrivateKey());
     jws.setKeyIdHeaderValue(jwk.getKeyId());
@@ -91,22 +102,14 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
     jwtTestToken = jws.getCompactSerialization();
 
-    HttpClientUtil.removeRequestInterceptor(interceptor);
-    HttpClientUtil.addRequestInterceptor(interceptor);
-    
     cluster.waitForAllNodes(10);
   }
 
-  @AfterClass
-  public static void tearDownClass() throws Exception {
+  @Override
+  @After
+  public void tearDown() throws Exception {
     shutdownCluster();
-  }
-
-  @Before
-  public void before() throws IOException, InterruptedException, TimeoutException {
-    jwtInterceptCount.set(0);
-    pkiInterceptCount.set(0);
-    cluster.waitForAllNodes(10);
+    super.tearDown();
   }
 
   @Test(expected = IOException.class)
@@ -118,50 +121,62 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   public void infoRequestWithToken() throws IOException {
     Pair<String,Integer> result = get(baseUrl + "/admin/info/system", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(0,0);
   }
 
   @Test
-  public void testMetrics() {
+  public void testMetrics() throws Exception {
+    boolean isUseV2Api = random().nextBoolean();
+    String authcPrefix = "/admin/authentication";
+    String authzPrefix = "/admin/authorization";
+    if(isUseV2Api){
+      authcPrefix = "/____v2/cluster/security/authentication";
+      authzPrefix = "/____v2/cluster/security/authorization";
+    }
+    String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    CloseableHttpClient cl = HttpClientUtil.createClient(null);
+    
     // NOCOMMIT: Metrics tests, with failing requests etc
-  }
-
-  @Test
-  public void createCollectionUpdateAndQueryDistributed() throws Exception {
-    // Admin request will use PKI inter-node auth from Overseer, and succeed
-    assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + COLLECTION + "&numShards=2", jwtTestToken).second().intValue());
-    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+    createCollection(COLLECTION);
+    
+    executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", jws);
+    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20, jws);
+    verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
+    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
     
     // Now update three documents
     assertPkiAuthMetricsMinimums(12, 12, 0, 0, 0, 0);
     Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(1,1);
     assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
+  }
+
+  @Test
+  public void createCollectionUpdateAndQueryDistributed() throws Exception {
+    // Admin request will use PKI inter-node auth from Overseer, and succeed
+    createCollection(COLLECTION);
+    
+    // Now update three documents
+    assertPkiAuthMetricsMinimums(12, 12, 0, 0, 0, 0);
+    Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+    assertAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
     
     // First a non distributed query
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(1,1);
-    assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
 
-    // Now do a distributed query, using JWTAUth for inter-node
+    // Now do a distributed query, using JWTAuth for inter-node
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    verifyInterRequestHeaderCounts(5,5);
-    assertAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
     
     // Delete
     assertEquals(200, get(baseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
-    verifyInterRequestHeaderCounts(5,5);
-    assertAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
-  }
-
-  private void verifyInterRequestHeaderCounts(int jwt, int pki) {
-    assertEquals(jwt, jwtInterceptCount.get());
-    assertEquals(pki, jwtInterceptCount.get());
+    assertAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(20, 20, 0, 0, 0, 0);
   }
 
   private Pair<String, Integer> get(String url, String token) throws IOException {
@@ -198,16 +213,22 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  private static class CountInterceptor implements HttpRequestInterceptor {
-    @Override
-    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
-      Header ah = request.getFirstHeader(HttpHeaders.AUTHORIZATION);
-      if (ah != null && ah.getValue().startsWith("Bearer"))
-        jwtInterceptCount.addAndGet(1);
+  private void createCollection(String collectionName) throws IOException {
+    assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=2", jwtTestToken).second().intValue());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
+  }
 
-      Header ph = request.getFirstHeader(PKIAuthenticationPlugin.HEADER);
-      if (ph != null)
-        pkiInterceptCount.addAndGet(1);
-    }
+  private void executeCommand(String url, HttpClient cl, String payload, JsonWebSignature jws) throws IOException, JoseException {
+    HttpPost httpPost;
+    HttpResponse r;
+    httpPost = new HttpPost(url);
+    setAuthorizationHeader(httpPost, "Bearer " + jws.getCompactSerialization());
+    httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
+    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+    r = cl.execute(httpPost);
+    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
+    assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
+    assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
+    Utils.consumeFully(r.getEntity());
   }
 }

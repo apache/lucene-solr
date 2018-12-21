@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,14 +25,29 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.message.AbstractHttpMessage;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Base test class for cloud tests wanting to track authentication metrics.
@@ -46,6 +62,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
   private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
   private static final String METRICS_PREFIX = "SECURITY./authentication.";
+  public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
   
   /**
    * Used to check metric counts for PKI auth
@@ -128,5 +145,70 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       return (long) ((long) 1000 * metrics.stream().mapToDouble(l -> ((Timer)l.get(prefix + key)).getMeanRate()).average().orElse(0.0d));
     else
       return metrics.stream().mapToLong(l -> ((Counter)l.get(prefix + key)).getCount()).sum();
+  }
+  
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                            Object expected, int count) throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, (String)null);
+  }
+
+
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                          Object expected, int count, String user, String pwd)
+      throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, makeBasicAuthHeader(user, pwd));
+  }
+
+  protected void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                      Object expected, int count, JsonWebSignature jws) throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, getBearerAuthHeader(jws));
+  }
+
+
+  private static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                            Object expected, int count, String authHeader) throws IOException, InterruptedException {
+    boolean success = false;
+    String s = null;
+    List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
+    for (int i = 0; i < count; i++) {
+      HttpGet get = new HttpGet(url);
+      if (authHeader != null) setAuthorizationHeader(get, authHeader);
+      HttpResponse rsp = cl.execute(get);
+      s = EntityUtils.toString(rsp.getEntity());
+      Map m = null;
+      try {
+        m = (Map) Utils.fromJSONString(s);
+      } catch (Exception e) {
+        fail("Invalid json " + s);
+      }
+      Utils.consumeFully(rsp.getEntity());
+      Object actual = Utils.getObjectByPath(m, true, hierarchy);
+      if (expected instanceof Predicate) {
+        Predicate predicate = (Predicate) expected;
+        if (predicate.test(actual)) {
+          success = true;
+          break;
+        }
+      } else if (Objects.equals(actual == null ? null : String.valueOf(actual), expected)) {
+        success = true;
+        break;
+      }
+      Thread.sleep(50);
+    }
+    assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
+  }
+
+  protected static String makeBasicAuthHeader(String user, String pwd) {
+    String userPass = user + ":" + pwd;
+    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+  }
+
+  static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
+    return "Bearer " + jws.getCompactSerialization();
+  }
+  
+  public static void setAuthorizationHeader(AbstractHttpMessage httpMsg, String headerString) {
+    httpMsg.setHeader(new BasicHeader("Authorization", headerString));
+    log.info("Added Authorization Header {}", headerString);
   }
 }
