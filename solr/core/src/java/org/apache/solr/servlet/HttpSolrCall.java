@@ -92,14 +92,14 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
-import org.apache.solr.security.AuditEvent;
-import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
@@ -465,7 +465,9 @@ public class HttpSolrCall {
 
     if (solrDispatchFilter.abortErrorMessage != null) {
       sendError(500, solrDispatchFilter.abortErrorMessage);
-      auditIfConfigured(new AuditEvent(EventType.ERROR, getReq()));
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ERROR, getReq()));
+      }
       return RETURN;
     }
 
@@ -485,16 +487,22 @@ public class HttpSolrCall {
             for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
-          auditIfConfigured(new AuditEvent(EventType.REJECTED, req, context));
+          if (shouldAudit(EventType.REJECTED)) {
+            cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.REJECTED, req, context));
+          }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
-          auditIfConfigured(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+          if (shouldAudit(EventType.UNAUTHORIZED)) {
+            cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+          }
           return RETURN;
         }
-        auditIfConfigured(new AuditEvent(EventType.AUTHORIZED, req, context));
+        if (shouldAudit(EventType.AUTHORIZED)) {
+          cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.AUTHORIZED, req, context));
+        }
       }
 
       HttpServletResponse resp = response;
@@ -520,7 +528,9 @@ public class HttpSolrCall {
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
             execute(solrRsp);
-            auditIfConfigured(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+            if (shouldAudit(EventType.COMPLETED)) {
+              cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+            }
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
             while (headers.hasNext()) {
@@ -535,7 +545,9 @@ public class HttpSolrCall {
         default: return action;
       }
     } catch (Throwable ex) {
-      auditIfConfigured(new AuditEvent(EventType.ERROR, ex, req));
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ERROR, ex, req));
+      }
       sendError(ex);
       // walk the the entire cause chain to search for an Error
       Throwable t = ex;
@@ -555,12 +567,8 @@ public class HttpSolrCall {
 
   }
 
-  /**
-   * Calls audit logging API if enabled and if the event type is configured for logging
-   * @param auditEvent the audit event
-   */
-  private void auditIfConfigured(AuditEvent auditEvent) {
-    AuditLoggerPlugin.auditIfConfigured(cores.getAuditLoggerPlugin(), auditEvent);
+  private boolean shouldAudit(AuditEvent.EventType eventType) {
+    return cores.getAuditLoggerPlugin() != null && AuditLoggerPlugin.shouldLog(eventType);
   }
 
   private boolean shouldAuthorize() {
@@ -593,7 +601,7 @@ public class HttpSolrCall {
 
   //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
-    HttpRequestBase method = null;
+    HttpRequestBase method;
     HttpEntity httpEntity = null;
     try {
       String urlstr = coreUrl + queryParams.toQueryString();
@@ -738,7 +746,9 @@ public class HttpSolrCall {
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
-    auditIfConfigured(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+    if (shouldAudit(EventType.COMPLETED)) {
+      cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+    }
   }
 
   protected QueryResponseWriter getResponseWriter() {

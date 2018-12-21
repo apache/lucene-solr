@@ -85,20 +85,20 @@ public class AuditLoggerPluginTest {
     config = new HashMap<>();
     config.put("eventTypes", Arrays.asList("REJECTED"));
     plugin.init(config);
-    assertTrue(plugin.shouldLog(EVENT_REJECTED));
-    assertFalse(plugin.shouldLog(EVENT_UNAUTHORIZED));
+    assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
+    assertFalse(plugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
   }
 
   @Test
   public void shouldLog() {
     // Default types
-    assertTrue(plugin.shouldLog(EVENT_ANONYMOUS_REJECTED));
-    assertTrue(plugin.shouldLog(EVENT_REJECTED));
-    assertTrue(plugin.shouldLog(EVENT_UNAUTHORIZED));
-    assertTrue(plugin.shouldLog(EVENT_ERROR));
-    assertFalse(plugin.shouldLog(EVENT_ANONYMOUS));    
-    assertFalse(plugin.shouldLog(EVENT_AUTHENTICATED));    
-    assertFalse(plugin.shouldLog(EVENT_AUTHORIZED));
+    assertTrue(plugin.shouldLog(EVENT_ANONYMOUS_REJECTED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_ERROR.getEventType()));
+    assertFalse(plugin.shouldLog(EVENT_ANONYMOUS.getEventType()));    
+    assertFalse(plugin.shouldLog(EVENT_AUTHENTICATED.getEventType()));    
+    assertFalse(plugin.shouldLog(EVENT_AUTHORIZED.getEventType()));
   }
   
   @Test

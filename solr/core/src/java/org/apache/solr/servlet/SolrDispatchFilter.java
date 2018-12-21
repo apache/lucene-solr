@@ -457,7 +457,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
-      auditIfConfigured(new AuditEvent(EventType.ANONYMOUS, request));
+      if (shouldAudit(EventType.ANONYMOUS)) {
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ANONYMOUS, request));
+      }
       return true;
     } else {
       // /admin/info/key must be always open. see SOLR-9188
@@ -500,10 +502,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // multiple code paths.
     if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
-      auditIfConfigured(new AuditEvent(EventType.REJECTED, request));
+      if (shouldAudit(EventType.REJECTED)) {
+        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.REJECTED, request));
+      }
       return false;
     }
-    auditIfConfigured(new AuditEvent(EventType.AUTHENTICATED, request));
+    if (shouldAudit(EventType.AUTHENTICATED)) {
+      cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.AUTHENTICATED, request));
+    }
     return true;
   }
   
@@ -563,13 +569,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
  
 
   /**
-   * Calls audit logging API if enabled and if the event type is configured for logging
-   * @param auditEvent the audit event
+   * Check if audit logging is enabled and should happen for given event type
+   * @param eventType the audit event
    */
-  private void auditIfConfigured(AuditEvent auditEvent) {
-    AuditLoggerPlugin.auditIfConfigured(cores.getAuditLoggerPlugin(), auditEvent);
+  private boolean shouldAudit(AuditEvent.EventType eventType) {
+    return cores.getAuditLoggerPlugin() != null && AuditLoggerPlugin.shouldLog(eventType);
   }
-
+  
   /**
    * Wrap the request's input stream with a close shield. If this is a
    * retry, we will assume that the stream has already been wrapped and do nothing.

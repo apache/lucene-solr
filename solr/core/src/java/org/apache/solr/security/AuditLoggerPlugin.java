@@ -42,30 +42,12 @@ public abstract class AuditLoggerPlugin implements Closeable {
   protected AuditEventFormatter formatter;
 
   // Event types to be logged by default
-  protected List<String> eventTypes = Arrays.asList(
+  protected static List<String> eventTypes = Arrays.asList(
       EventType.COMPLETED.name(), 
       EventType.ERROR.name(),
       EventType.REJECTED.name(),
       EventType.UNAUTHORIZED.name(),
       EventType.ANONYMOUS_REJECTED.name());
-
-  /**
-   * Static method that can be called to audit log if logging is configured and event type is supported
-   * @param auditLoggerPlugin reference to the configured logger or null if not configured (will simply return)
-   * @param auditEvent the event to log if logging is configured
-   */
-  public static void auditIfConfigured(AuditLoggerPlugin auditLoggerPlugin, AuditEvent auditEvent) {
-    if (auditLoggerPlugin != null) {
-      if (auditLoggerPlugin.shouldLog(auditEvent)) {
-        auditLoggerPlugin.audit(auditEvent);
-      } else {
-        log.debug("Not logging audit event of type {}, method {}, path {}", 
-            auditEvent.getEventType().name(),
-            auditEvent.getHttpMethod(),
-            auditEvent.getResource());
-      }
-    }
-  }
 
   /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
@@ -88,6 +70,20 @@ public abstract class AuditLoggerPlugin implements Closeable {
     log.debug("AuditLogger initialized with event types {}", eventTypes);
   }
 
+  /**
+   * Checks whether this event type should be logged based on "eventTypes" config parameter.
+   *
+   * @param eventType the event type to consider
+   * @return true if this event type should be logged 
+   */
+  public static boolean shouldLog(EventType eventType) {
+    boolean shouldLog = eventTypes.contains(eventType.name()); 
+    if (!shouldLog) {
+      log.debug("Event type {} is not configured for audit logging", eventType.name());
+    }
+    return shouldLog;
+  }
+  
   public void setFormatter(AuditEventFormatter formatter) {
     this.formatter = formatter;
   }
@@ -99,20 +95,6 @@ public abstract class AuditLoggerPlugin implements Closeable {
     String formatEvent(AuditEvent event);
   }
 
-  /**
-   * Checks whether this event should be logged based on "eventTypes" config parameter.
-   * The framework will call this method and avoid logging if false.
-   * @param event the event to consider
-   * @return true if this event should be logged 
-   */
-  public boolean shouldLog(AuditEvent event) {
-    boolean shouldLog = eventTypes.contains(event.getEventType().name()); 
-    if (!shouldLog) {
-      log.debug("Event type {} is not configured for audit logging", event.getEventType().name());
-    }
-    return shouldLog;
-  }
-  
   /**
    * Event formatter that returns event as JSON string
    */
