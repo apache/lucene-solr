@@ -72,6 +72,7 @@ public class AuditLoggerPluginTest extends LuceneTestCase {
   
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     plugin = new MockAuditLoggerPlugin();
     config = new HashMap<>();
     plugin.init(config);
@@ -82,20 +83,20 @@ public class AuditLoggerPluginTest extends LuceneTestCase {
     config = new HashMap<>();
     config.put("eventTypes", Arrays.asList("REJECTED"));
     plugin.init(config);
-    assertTrue(AuditLoggerPlugin.shouldLog(EVENT_REJECTED.getEventType()));
-    assertFalse(AuditLoggerPlugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
+    assertFalse(plugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
   }
 
   @Test
   public void shouldLog() {
     // Default types
-    assertTrue(AuditLoggerPlugin.shouldLog(EVENT_ANONYMOUS_REJECTED.getEventType()));
-    assertTrue(AuditLoggerPlugin.shouldLog(EVENT_REJECTED.getEventType()));
-    assertTrue(AuditLoggerPlugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
-    assertTrue(AuditLoggerPlugin.shouldLog(EVENT_ERROR.getEventType()));
-    assertFalse(AuditLoggerPlugin.shouldLog(EVENT_ANONYMOUS.getEventType()));    
-    assertFalse(AuditLoggerPlugin.shouldLog(EVENT_AUTHENTICATED.getEventType()));    
-    assertFalse(AuditLoggerPlugin.shouldLog(EVENT_AUTHORIZED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_ANONYMOUS_REJECTED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
+    assertTrue(plugin.shouldLog(EVENT_ERROR.getEventType()));
+    assertFalse(plugin.shouldLog(EVENT_ANONYMOUS.getEventType()));    
+    assertFalse(plugin.shouldLog(EVENT_AUTHENTICATED.getEventType()));    
+    assertFalse(plugin.shouldLog(EVENT_AUTHORIZED.getEventType()));
   }
   
   @Test

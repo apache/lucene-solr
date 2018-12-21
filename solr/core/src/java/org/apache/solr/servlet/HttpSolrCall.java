@@ -568,7 +568,7 @@ public class HttpSolrCall {
   }
 
   private boolean shouldAudit(AuditEvent.EventType eventType) {
-    return cores.getAuditLoggerPlugin() != null && AuditLoggerPlugin.shouldLog(eventType);
+    return cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(eventType);
   }
 
   private boolean shouldAuthorize() {

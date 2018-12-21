@@ -42,7 +42,7 @@ public abstract class AuditLoggerPlugin implements Closeable {
   protected AuditEventFormatter formatter;
 
   // Event types to be logged by default
-  protected static List<String> eventTypes = Arrays.asList(
+  protected List<String> eventTypes = Arrays.asList(
       EventType.COMPLETED.name(), 
       EventType.ERROR.name(),
       EventType.REJECTED.name(),
@@ -76,7 +76,7 @@ public abstract class AuditLoggerPlugin implements Closeable {
    * @param eventType the event type to consider
    * @return true if this event type should be logged 
    */
-  public static boolean shouldLog(EventType eventType) {
+  public boolean shouldLog(EventType eventType) {
     boolean shouldLog = eventTypes.contains(eventType.name()); 
     if (!shouldLog) {
       log.debug("Event type {} is not configured for audit logging", eventType.name());

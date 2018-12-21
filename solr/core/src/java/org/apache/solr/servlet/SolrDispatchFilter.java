@@ -572,7 +572,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * @param eventType the audit event
    */
   private boolean shouldAudit(AuditEvent.EventType eventType) {
-    return cores.getAuditLoggerPlugin() != null && AuditLoggerPlugin.shouldLog(eventType);
+    return cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(eventType);
   }
   
   /**
