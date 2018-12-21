@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.List;
@@ -32,13 +30,14 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -70,14 +69,10 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     zkStateReader = cluster.getSolrClient().getZkStateReader();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
   }
   
   @After
@@ -105,18 +100,19 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         break;
       }
     }
-    // add a node
+    // add a nodes
     JettySolrRunner node = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
     assertEquals(1, listener.addedNodes.size());
-    assertEquals(node.getNodeName(), listener.addedNodes.iterator().next());
+    assertTrue(listener.addedNodes.toString(), listener.addedNodes.contains(node.getNodeName()));
     // verify that a znode doesn't exist (no trigger)
     String pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node.getNodeName();
     assertFalse("Path " + pathAdded + " was created but there are no nodeAdded triggers", zkClient().exists(pathAdded, true));
     listener.reset();
+
     // stop overseer
     log.info("====== KILL OVERSEER 1");
     JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
@@ -150,8 +146,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
       // okay
     }
 
-    // verify that a znode does NOT exist - there's no nodeLost trigger,
-    // so the new overseer cleaned up existing nodeLost markers
+    // verify that a znode does NOT exist - the new overseer cleaned up existing nodeLost markers
     assertFalse("Path " + pathLost + " exists", zkClient().exists(pathLost, true));
 
     listener.reset();
@@ -168,7 +163,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -180,7 +175,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -192,7 +187,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "    \"class\" : \"" + AssertingListener.class.getName()  + "\"\n" +
         "  }\n" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListener);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListener);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -223,9 +218,29 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     listenerEventLatch.countDown(); // let the trigger thread continue
 
     assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
-    Thread.sleep(5000);
-    // nodeAdded marker should be consumed now by nodeAdded trigger
-    assertFalse("Path " + pathAdded + " should have been deleted", zkClient().exists(pathAdded, true));
+
+    // kill this node
+    listener.reset();
+    events.clear();
+    triggerFiredLatch = new CountDownLatch(1);
+
+    String node1Name = node1.getNodeName();
+    cluster.stopJettySolrRunner(node1);
+    if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
+      fail("onChange listener didn't execute on cluster change");
+    }
+    assertEquals(1, listener.lostNodes.size());
+    assertEquals(node1Name, listener.lostNodes.iterator().next());
+    // verify that a znode exists
+    String pathLost2 = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + node1Name;
+    assertTrue("Path " + pathLost2 + " wasn't created", zkClient().exists(pathLost2, true));
+
+    listenerEventLatch.countDown(); // let the trigger thread continue
+
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
+
+    // triggers don't remove markers
+    assertTrue("Path " + pathLost2 + " should still exist", zkClient().exists(pathLost2, true));
 
     listener.reset();
     events.clear();

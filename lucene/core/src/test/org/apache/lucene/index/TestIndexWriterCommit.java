@@ -445,7 +445,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
                                .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE)
                                .setIndexCommit(commit));
 
-    assertEquals(1, w.numDocs());
+    assertEquals(1, w.getDocStats().numDocs);
 
     // commit IndexWriter to "third"
     w.addDocument(doc);

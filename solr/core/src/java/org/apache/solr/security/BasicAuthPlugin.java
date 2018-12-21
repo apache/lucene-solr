@@ -46,11 +46,13 @@ import org.apache.http.annotation.ThreadingBehavior;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -228,6 +230,20 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
           httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
           return true;
         }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  protected boolean interceptInternodeRequest(Request request) {
+    if (forwardCredentials) {
+      Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
+      if (userToken instanceof BasicAuthUserPrincipal) {
+        BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) userToken;
+        String userPassBase64 = Base64.encodeBase64String((principal.getName() + ":" + principal.getPassword()).getBytes(StandardCharsets.UTF_8));
+        request.header(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
+        return true;
       }
     }
     return false;

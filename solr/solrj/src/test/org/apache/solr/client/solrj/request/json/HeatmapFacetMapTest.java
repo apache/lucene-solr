@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.request.json;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 
 public class HeatmapFacetMapTest extends SolrTestCaseJ4 {

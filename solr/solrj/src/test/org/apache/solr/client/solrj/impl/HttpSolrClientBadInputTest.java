@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Tests {@link HttpSolrClient}'s response to a variety of bad inputs.
@@ -40,7 +40,7 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig = JettyConfig.builder()
-        .withSSLConfig(sslConfig)
+        .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }

@@ -33,8 +33,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.common.cloud.ClusterState;
@@ -83,7 +83,6 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
 
   @Test
   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testExecute() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testExecute";
@@ -159,7 +158,6 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // this test can fail to elect a leader, seems to be common among sim tests
   public void testIntegration() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
 
@@ -172,7 +170,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
-    SolrRequest req = AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 

@@ -20,6 +20,7 @@ package org.apache.lucene.geo;
 import org.apache.lucene.document.LatLonShape;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.document.LatLonShape.BYTES;
 
@@ -82,10 +83,10 @@ public class TestRectangle2D extends LuceneTestCase {
       int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
 
       byte[] triangle = new byte[4 * LatLonShape.BYTES];
-      LatLonShape.encodeTriangleBoxVal(tMinY, triangle, 0);
-      LatLonShape.encodeTriangleBoxVal(tMinX, triangle, BYTES);
-      LatLonShape.encodeTriangleBoxVal(tMaxY, triangle, 2 * BYTES);
-      LatLonShape.encodeTriangleBoxVal(tMaxX, triangle, 3 * BYTES);
+      NumericUtils.intToSortableBytes(tMinY, triangle, 0);
+      NumericUtils.intToSortableBytes(tMinX, triangle, BYTES);
+      NumericUtils.intToSortableBytes(tMaxY, triangle, 2 * BYTES);
+      NumericUtils.intToSortableBytes(tMaxX, triangle, 3 * BYTES);
 
       PointValues.Relation r = rectangle2D.relateRangeBBox(LatLonShape.BYTES, 0, triangle, 3 * LatLonShape.BYTES, 2 * LatLonShape.BYTES, triangle);
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {

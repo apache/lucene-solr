@@ -86,7 +86,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestIndexSorting extends LuceneTestCase {
   static class AssertingNeedsIndexSortCodec extends FilterCodec {

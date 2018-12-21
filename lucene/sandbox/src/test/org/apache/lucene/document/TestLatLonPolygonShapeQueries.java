@@ -23,11 +23,10 @@ import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
-
-import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
-import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 
 /** random bounding box and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -69,38 +68,21 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Polygon p = (Polygon)shape;
-      if (queryRelation == QueryRelation.WITHIN) {
-        // within: bounding box of shape should be within query box
-        double pMinLat = quantizeLat(p.minLat);
-        double pMinLon = quantizeLon(p.minLon);
-        double pMaxLat = quantizeLat(p.maxLat);
-        double pMaxLon = quantizeLon(p.maxLon);
-
-        if (minLon > maxLon) {
-          // crosses dateline:
-          return minLat <= pMinLat && maxLat >= pMaxLat
-              && ((MIN_LON_INCL <= pMinLon && maxLon >= pMaxLon)
-              ||  (minLon <= pMinLon && MAX_LON_INCL >= pMaxLon));
+      Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
+      for (Tessellator.Triangle t : tessellation) {
+        int[] decoded = encodeDecodeTriangle(t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2));
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+            return false;
+          }
+        } else {
+          if (rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
         }
-        return minLat <= pMinLat && maxLat >= pMaxLat
-            && minLon <= pMinLon && maxLon >= pMaxLon;
       }
-
-      Polygon2D poly = Polygon2D.create(quantizePolygon(p));
-      Relation r;
-      if (minLon > maxLon) {
-        // crosses dateline:
-        r = poly.relate(minLat, maxLat, MIN_LON_INCL, maxLon);
-        if (r == Relation.CELL_OUTSIDE_QUERY) {
-          r = poly.relate(minLat, maxLat, minLon, MAX_LON_INCL);
-        }
-      } else {
-        r = poly.relate(minLat, maxLat, minLon, maxLon);
-      }
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
-      }
-      return r != Relation.CELL_OUTSIDE_QUERY;
+      return queryRelation != QueryRelation.INTERSECTS;
     }
 
     @Override
@@ -116,10 +98,8 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     private boolean testPolygon(EdgeTree tree, Polygon shape) {
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
-        // we quantize the triangle for consistency with the index
-        Relation r = tree.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
-            quantizeLon(t.getLon(1)), quantizeLat(t.getLat(1)),
-            quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2)));
+        double[] qTriangle = quantizeTriangle(t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2));
+        Relation r = tree.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
         } else if (queryRelation == QueryRelation.WITHIN) {

@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.core.CoreContainer;
@@ -50,6 +51,11 @@ public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin impl
     String httpClientBuilderFactory = (String)Objects.requireNonNull(pluginConfig.get(HTTPCLIENT_BUILDER_FACTORY),
         "Please specify clientBuilderFactory to be used for Solr internal communication.");
     factory = this.coreContainer.getResourceLoader().newInstance(httpClientBuilderFactory, HttpClientBuilderFactory.class);
+  }
+
+  @Override
+  public void setup(Http2SolrClient client) {
+    factory.setup(client);
   }
 
   @Override

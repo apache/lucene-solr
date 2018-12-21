@@ -502,6 +502,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
   private int addDoc(RandomIndexWriter writer, Document doc) throws IOException {
     writer.addDocument(doc);
-    return writer.numDocs() - 1;
+    return writer.getDocStats().numDocs - 1;
   }
 }

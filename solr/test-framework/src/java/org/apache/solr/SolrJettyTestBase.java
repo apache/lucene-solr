@@ -65,7 +65,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
         .setContext(context)
         .stopAtShutdown(stopAtShutdown)
         .withServlets(extraServlets)
-        .withSSLConfig(sslConfig)
+        .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
 
     Properties nodeProps = new Properties();
@@ -89,7 +89,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   public static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
-    return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig).build());
+    return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build());
   }
 
   public static JettySolrRunner createAndStartJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
@@ -118,7 +118,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   @After
-  public void afterClass() throws Exception {
+  public synchronized void afterClass() throws Exception {
     if (client != null) client.close();
     client = null;
   }
@@ -132,13 +132,11 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
 
-  public SolrClient getSolrClient() {
-    {
-      if (client == null) {
-        client = createNewSolrClient();
-      }
-      return client;
+  public synchronized SolrClient getSolrClient() {
+    if (client == null) {
+      client = createNewSolrClient();
     }
+    return client;
   }
 
   /**

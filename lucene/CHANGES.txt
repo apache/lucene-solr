@@ -102,6 +102,9 @@ API Changes
   number of gaps between its component sub-intervals.  This can be used in a 
   new filter available via Intervals.maxgaps().  (Alan Woodward)
 
+* LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
+  of IndexWriter#getDocStats(). (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -227,13 +230,15 @@ Optimizations
 
 Build
 
+* LUCENE-8611: Update randomizedtesting to 2.7.2, JUnit to 4.12, add hamcrest-core 
+  dependency. (Dawid Weiss)
+
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
 Bug fixes:
 
-* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
-  detects script boundaries more accurately with Character#UnicodeScript#of.
-  (Christophe Bismuth, Jim Ferenczi)
+* LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
+  (Yoo Jeongin via Jim Ferenczi)
 
 New Features
 
@@ -259,6 +264,13 @@ Improvements
 * LUCENE-8575: SegmentInfos#toString now includes attributes and diagnostics.
   (Namgyu Kim via Adrien Grand)
 
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
+
+* LUCENE-8581: Change LatLonShape encoding to use 4 bytes Per Dimension.
+  (Ignacio Vera, Nick Knize, Adrien Grand)
+
 Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
@@ -274,6 +286,16 @@ Optimizations
 * LUCENE-8599: Use sparse bitset to store docs in SingleValueDocValuesFieldUpdates. 
   (Simon Willnauer, Adrien Grand)
 
+* LUCENE-8600: Doc-value updates get applied faster by sorting with quicksort,
+  rather than an in-place mergesort, which needs to perform fewer swaps.
+  (Adrien Grand)
+
+Test Framework
+
+* LUCENE-8604: TestRuleLimitSysouts now has an optional "hard limit" of bytes that can be written
+  to stderr and stdout (anything beyond the hard limit is ignored). The default hard limit is 2 GB of 
+  logs per test class. (Dawid Weiss)
+
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
@@ -281,6 +303,10 @@ Other
 
 * LUCENE-8605: Separate bounding box spatial logic from query logic on LatLonShapeBoundingBoxQuery.
   (Ignacio Vera)
+
+* LUCENE-8609: Deprecated IndexWriter#numDocs() and IndexWriter#maxDoc() in favor of IndexWriter#getDocStats()
+  that allows to get consistent numDocs and maxDoc stats that are not subject to concurrent changes.
+  (Simon Willnauer, Nhat Nguyen)
 
 ======================= Lucene 7.6.0 =======================
 

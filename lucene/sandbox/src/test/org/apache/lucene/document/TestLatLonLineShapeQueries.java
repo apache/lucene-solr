@@ -16,18 +16,17 @@
  */
 package org.apache.lucene.document;
 
+
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
-
-import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
-import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 
 /** random bounding box and polygon query tests for random generated {@link Line} types */
 public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
@@ -79,40 +78,21 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
   protected class LineValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Line l = (Line)shape;
-      if (queryRelation == QueryRelation.WITHIN) {
-        // within: bounding box of shape should be within query box
-        double lMinLat = quantizeLat(l.minLat);
-        double lMinLon = quantizeLon(l.minLon);
-        double lMaxLat = quantizeLat(l.maxLat);
-        double lMaxLon = quantizeLon(l.maxLon);
-
-        if (minLon > maxLon) {
-          // crosses dateline:
-          return minLat <= lMinLat && maxLat >= lMaxLat
-              && ((GeoUtils.MIN_LON_INCL <= lMinLon && maxLon >= lMaxLon)
-              || (minLon <= lMinLon && GeoUtils.MAX_LON_INCL >= lMaxLon));
+      Line line = (Line)shape;
+      Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
+        int[] decoded = encodeDecodeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+            return false;
+          }
+        } else {
+          if (rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
         }
-        return minLat <= lMinLat && maxLat >= lMaxLat
-            && minLon <= lMinLon && maxLon >= lMaxLon;
       }
-
-      Line2D line = Line2D.create(quantizeLine(l));
-      Relation r;
-      if (minLon > maxLon) {
-        // crosses dateline:
-        r = line.relate(minLat, maxLat, MIN_LON_INCL, maxLon);
-        if (r == Relation.CELL_OUTSIDE_QUERY) {
-          r = line.relate(minLat, maxLat, minLon, MAX_LON_INCL);
-        }
-      } else {
-        r = line.relate(minLat, maxLat, minLon, maxLon);
-      }
-
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
-      }
-      return r != Relation.CELL_OUTSIDE_QUERY;
+      return queryRelation != QueryRelation.INTERSECTS;
     }
 
     @Override
@@ -126,31 +106,10 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     private boolean testLine(EdgeTree queryPoly, Line line) {
-      double ax, ay, bx, by, temp;
-      Relation r;
+
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ay = quantizeLat(line.getLat(i));
-        ax = quantizeLon(line.getLon(i));
-        by = quantizeLat(line.getLat(j));
-        bx = quantizeLon(line.getLon(j));
-        if (ay > by) {
-          temp = ay;
-          ay = by;
-          by = temp;
-          temp = ax;
-          ax = bx;
-          bx = temp;
-        } else if (ay == by) {
-          if (ax > bx) {
-            temp = ay;
-            ay = by;
-            by = temp;
-            temp = ax;
-            ax = bx;
-            bx = temp;
-          }
-        }
-        r = queryPoly.relateTriangle(ax, ay, bx, by, ax, ay);
+        double[] qTriangle = quantizeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
         } else if (queryRelation == QueryRelation.WITHIN) {
