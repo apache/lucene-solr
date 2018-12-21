@@ -182,6 +182,9 @@ Bug Fixes
 * SOLR-13072: Management of markers for nodeLost / nodeAdded events is broken. This bug could have caused
   some events to be lost if they coincided with an Overseer leader crash. (ab)
 
+* SOLR-13080: The "terms" QParser's "automaton" method semi-required that the input terms/IDs be sorted.  This
+  query parser now does this.  Unclear if this is a perf issue or actual bug.  (Daniel Lowe, David Smiley)
+
 Improvements
 ----------------------
 
