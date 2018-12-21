@@ -51,11 +51,17 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final CloudDescriptor cloudDesc;
   private final ZkController zkController;
 
+  // should we clone the document before sending it to replicas?
+  // this is set to true in the constructor if the next processors in the chain
+  // are custom and may modify the SolrInputDocument racing with its serialization for replication
+  private final boolean cloneRequiredOnLeader;
+
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = req.getCore().getCoreContainer().getZkController();
+    cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
   }
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
@@ -64,7 +70,24 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     super(req, rsp, docMerger, next);
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = req.getCore().getCoreContainer().getZkController();
+    cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
 
+  }
+
+  private boolean isCloneRequiredOnLeader(UpdateRequestProcessor next) {
+    boolean shouldClone = false;
+    UpdateRequestProcessor nextInChain = next;
+    while (nextInChain != null)  {
+      Class<? extends UpdateRequestProcessor> klass = nextInChain.getClass();
+      if (klass != LogUpdateProcessorFactory.LogUpdateProcessor.class
+          && klass != RunUpdateProcessor.class
+          && klass != TolerantUpdateProcessor.class)  {
+        shouldClone = true;
+        break;
+      }
+      nextInChain = nextInChain.next;
+    }
+    return shouldClone;
   }
 
   @Override
@@ -424,5 +447,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
       nodes = setupRequest(dcmd.getId(), null);
     }
+  }
+
+  @Override
+  protected boolean shouldCloneCmdDoc() {
+    boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
+    return willDistrib & cloneRequiredOnLeader;
   }
 }

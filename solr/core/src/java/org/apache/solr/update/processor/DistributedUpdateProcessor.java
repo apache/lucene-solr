@@ -200,10 +200,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   protected RollupRequestReplicationTracker rollupReplicationTracker = null;
   protected LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
-  // should we clone the document before sending it to replicas?
-  // this is set to true in the constructor if the next processors in the chain
-  // are custom and may modify the SolrInputDocument racing with its serialization for replication
-  private final boolean cloneRequiredOnLeader;
   private final Replica.Type replicaType;
 
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
@@ -254,20 +250,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
     this.cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor(); // TODO move this to DistributedZkUpdateProc
-
-    boolean shouldClone = false;
-    UpdateRequestProcessor nextInChain = next;
-    while (nextInChain != null)  {
-      Class<? extends UpdateRequestProcessor> klass = nextInChain.getClass();
-      if (klass != LogUpdateProcessorFactory.LogUpdateProcessor.class
-          && klass != RunUpdateProcessor.class
-          && klass != TolerantUpdateProcessor.class)  {
-        shouldClone = true;
-        break;
-      }
-      nextInChain = nextInChain.next;
-    }
-    cloneRequiredOnLeader = shouldClone;
   }
 
   protected List<Node> setupRequest(String id, SolrInputDocument doc) {
@@ -1119,17 +1101,16 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
           }
         }
 
-        boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-
         SolrInputDocument clonedDoc = null;
-        if (willDistrib && cloneRequiredOnLeader) {
+        final boolean shouldClone = shouldCloneCmdDoc();
+        if (shouldClone) {
           clonedDoc = cmd.solrDoc.deepCopy();
         }
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
 
-        if (willDistrib && cloneRequiredOnLeader) {
+        if (shouldClone) {
           cmd.solrDoc = clonedDoc;
         }
       } finally {
@@ -1144,6 +1125,14 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unable to get version bucket lock in " + bucket.getLockTimeoutMs() + " ms");
     }
+  }
+
+  /**
+   *
+   * @return whether cmd doc should be cloned before localAdd
+   */
+  protected boolean shouldCloneCmdDoc() {
+    return false;
   }
 
   @VisibleForTesting
