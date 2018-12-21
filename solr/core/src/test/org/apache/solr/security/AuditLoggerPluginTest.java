@@ -21,14 +21,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class AuditLoggerPluginTest {
+public class AuditLoggerPluginTest extends LuceneTestCase {
   protected static final Date SAMPLE_DATE = new Date(1234567890);
   protected static final AuditEvent EVENT_ANONYMOUS = new AuditEvent(AuditEvent.EventType.ANONYMOUS)
       .setHttpMethod("GET")
