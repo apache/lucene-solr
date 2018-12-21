@@ -49,6 +49,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
@@ -57,6 +58,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
@@ -70,6 +72,7 @@ import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
+import org.jose4j.lang.UnresolvableKeyException;
 import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,6 +140,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   public void init(Map<String, Object> pluginConfig) {
     List<String> unknownKeys = pluginConfig.keySet().stream().filter(k -> !PROPS.contains(k)).collect(Collectors.toList());
     unknownKeys.remove("class");
+    unknownKeys.remove("");
     if (!unknownKeys.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JwtAuth configuration parameter " + unknownKeys); 
     }
@@ -336,13 +340,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         return true;
 
       case AUTZ_HEADER_PROBLEM:
+      case JWT_PARSE_ERROR:
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         numErrors.mark();
         return false;
 
       case CLAIM_MISMATCH:
       case JWT_EXPIRED:
-      case JWT_PARSE_ERROR:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
         if (authResponse.getJwtException() != null) {
@@ -429,7 +433,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
               if (e.hasExpired()) {
                 return new JWTAuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
               }
-              return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
+              if (e.getCause() != null && e.getCause() instanceof UnresolvableKeyException) {
+                return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, "Unable to find a suitable verification key for the JWT");
+              }
+              return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, e);
             }
           } catch (MalformedClaimException e) {
             return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
@@ -685,6 +692,17 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
         return true;
       }
+    }
+    return false;
+  }
+
+  @Override
+  protected boolean interceptInternodeRequest(Request request) {
+    Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
+    if (userToken instanceof JWTPrincipal) {
+      JWTPrincipal jwtPrincipal = (JWTPrincipal) userToken;
+      request.header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
+      return true;
     }
     return false;
   }

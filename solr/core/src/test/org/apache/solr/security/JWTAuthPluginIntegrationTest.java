@@ -41,6 +41,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
+import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
@@ -70,6 +71,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private String jwtTestToken;
   private String baseUrl;
   private JsonWebSignature jws;
+  private String jwtTokenWrongSignature;
 
   @Override
   @Before
@@ -101,6 +103,15 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
     jwtTestToken = jws.getCompactSerialization();
+    
+    PublicJsonWebKey jwk2 = RsaJwkGenerator.generateJwk(2048);
+    jwk2.setKeyId("k2");
+    JsonWebSignature jws2 = new JsonWebSignature();
+    jws2.setPayload(claims.toJson());
+    jws2.setKey(jwk2.getPrivateKey());
+    jws2.setKeyIdHeaderValue(jwk2.getKeyId());
+    jws2.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+    jwtTokenWrongSignature = jws2.getCompactSerialization();
 
     cluster.waitForAllNodes(10);
   }
@@ -118,12 +129,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  public void infoRequestWithToken() throws IOException {
-    Pair<String,Integer> result = get(baseUrl + "/admin/info/system", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-  }
-
-  @Test
   public void testMetrics() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
@@ -138,17 +143,29 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     // NOCOMMIT: Metrics tests, with failing requests etc
     createCollection(COLLECTION);
     
+    // Missing token
+    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
+    assertAuthMetricsMinimums(2, 1, 0, 0, 1, 0);
     executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", jws);
     verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20, jws);
+    // Pass through
     verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
-    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
+    // Now succeeds since blockUnknown=false 
+    get(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
+    executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", null);
+    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, jws);
+
+    assertAuthMetricsMinimums(9, 4, 4, 0, 1, 0);
     
-    // Now update three documents
-    assertPkiAuthMetricsMinimums(12, 12, 0, 0, 0, 0);
-    Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
+    // Wrong Credentials
+    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTokenWrongSignature);
+    assertAuthMetricsMinimums(10, 4, 4, 1, 1, 0);
+
+    // JWT parse error
+    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", "foozzz");
+    assertAuthMetricsMinimums(11, 4, 4, 1, 1, 1);
+    
+    HttpClientUtil.close(cl);
   }
 
   @Test
@@ -157,28 +174,36 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     createCollection(COLLECTION);
     
     // Now update three documents
+    assertAuthMetricsMinimums(1, 1, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(12, 12, 0, 0, 0, 0);
     Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
     
     // First a non distributed query
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
 
     // Now do a distributed query, using JWTAuth for inter-node
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTestToken);
     assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(9, 9, 0, 0, 0, 0);
     
     // Delete
     assertEquals(200, get(baseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
-    assertAuthMetricsMinimums(5, 5, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(20, 20, 0, 0, 0, 0);
+    assertAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
+    assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
   }
 
+  private void getAndFail(String url, String token) throws IOException {
+    try {
+      get(url, token);
+      fail("Request to " + url + " with token " + token + " should have failed");
+    } catch(Exception e) {}
+  }
+  
   private Pair<String, Integer> get(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
@@ -222,7 +247,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
-    setAuthorizationHeader(httpPost, "Bearer " + jws.getCompactSerialization());
+    if (jws != null)
+      setAuthorizationHeader(httpPost, "Bearer " + jws.getCompactSerialization());
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
