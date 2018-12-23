@@ -1249,23 +1249,10 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     params.set("onlyIfActive", true);
     SolrRequest<SimpleSolrResponse> ur = new GenericSolrRequest(METHOD.GET, "/get", params);
 
-    String leaderUrl = req.getParams().get(DISTRIB_FROM);
-    
-    if (leaderUrl == null) {
-      // An update we're dependent upon didn't arrive! This is unexpected. Perhaps likely our leader is
-      // down or partitioned from us for some reason. Lets force refresh cluster state, and request the
-      // leader for the update.
-      if (zkController == null) { // we should be in cloud mode, but wtf? could be a unit test
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find document with id=" + id + ", but fetching from leader "
-            + "failed since we're not in cloud mode.");
-      }
-      Replica leader;
-      try {
-        leader = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
-      } catch (InterruptedException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
-      }
-      leaderUrl = leader.getCoreUrl();
+    String leaderUrl = getLeaderUrl(id);
+
+    if(leaderUrl == null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find document with id=" + id);
     }
 
     NamedList<Object> rsp;
