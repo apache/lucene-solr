@@ -107,6 +107,13 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
   }
 
   @Override
+  public void finish() throws IOException {
+    super.finish();
+
+    if (next != null) next.finish();
+  }
+
+  @Override
   void setupRequest(UpdateCommand cmd) {
     updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
