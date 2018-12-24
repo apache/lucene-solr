@@ -25,7 +25,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -53,12 +52,7 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
   }
 
   @Override
-  String computeCollectionName(CloudDescriptor cloudDesc) {
-    return null;
-  }
-
-  @Override
-  Replica.Type computeReplicaType(CloudDescriptor cloudDesc) {
+  Replica.Type computeReplicaType() {
     return Replica.Type.NRT;
   }
 

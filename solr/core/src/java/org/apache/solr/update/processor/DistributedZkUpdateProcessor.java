@@ -80,11 +80,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final SolrCmdDistributor cmdDistrib;
   protected List<SolrCmdDistributor.Node> nodes;
   private Set<String> skippedCoreNodeNames;
+  private final String collection;
 
   // should we clone the document before sending it to replicas?
   // this is set to true in the constructor if the next processors in the chain
   // are custom and may modify the SolrInputDocument racing with its serialization for replication
   private final boolean cloneRequiredOnLeader;
+
+  //used for keeping track of replicas that have processed an add/update from the leader
+  private RollupRequestReplicationTracker rollupReplicationTracker = null;
+  private LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -96,6 +101,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
+    collection = cloudDesc.getCollectionName();
   }
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
@@ -107,7 +113,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
-
+    collection = cloudDesc.getCollectionName();
   }
 
   private boolean isCloneRequiredOnLeader(UpdateRequestProcessor next) {
@@ -127,13 +133,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  String computeCollectionName(CloudDescriptor cloudDesc) {
-    return cloudDesc.getCollectionName();
-  }
-
-  @Override
-  Replica.Type computeReplicaType(CloudDescriptor cloudDesc) {
-    return cloudDesc.getReplicaType();
+  Replica.Type computeReplicaType() {
+    // can't use cloudDesc since this is called by super class, before the constructor instantiates cloudDesc.
+    return req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType();
   }
 
   @Override

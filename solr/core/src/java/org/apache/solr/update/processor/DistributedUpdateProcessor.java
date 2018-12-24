@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -47,7 +46,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -143,11 +141,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   private CharsRefBuilder scratch;
 
   private final SchemaField idField;
-  
-  protected SolrCmdDistributor cmdDistrib;
-
-  protected final String collection;
-  private final CloudDescriptor cloudDesc; // TODO: move these 2 variables to ZkProc
 
   // these are setup at the start of each request processing
   // method in this update processor
@@ -166,10 +159,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
   protected UpdateCommand updateCommand;  // the current command this processor is working on.
-    
-  //used for keeping track of replicas that have processed an add/update from the leader
-  protected RollupRequestReplicationTracker rollupReplicationTracker = null;
-  protected LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
   protected final Replica.Type replicaType;
 
@@ -180,17 +169,9 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
   /**
    *
-   * @param cloudDescriptor if none is available, should be null
-   * @return the collection name to be set by this instance.
-   */
-  abstract String computeCollectionName(CloudDescriptor cloudDescriptor);
-
-  /**
-   *
-   * @param cloudDescriptor if none is available, should be null
    * @return the replica type of the collection.
    */
-  abstract Replica.Type computeReplicaType(CloudDescriptor cloudDescriptor);
+  abstract Replica.Type computeReplicaType();
 
   /** Specification of AtomicUpdateDocumentMerger is currently experimental.
    * @lucene.experimental
@@ -203,9 +184,8 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     this.next = next;
     this.docMerger = docMerger;
     this.idField = req.getSchema().getUniqueKeyField();
-    CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    this.collection = computeCollectionName(cloudDesc);
-    this.replicaType = computeReplicaType(cloudDesc);
+    this.req = req;
+    this.replicaType = computeReplicaType();
     // version init
 
     this.ulog = req.getCore().getUpdateHandler().getUpdateLog();
@@ -216,16 +196,12 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     // TODO: better way to get the response, or pass back info to it?
     // SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
-    this.req = req;
-
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
           UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS);
 
-    CoreContainer cc = req.getCore().getCoreContainer();
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
-    this.cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor(); // TODO move this to DistributedZkUpdateProc
   }
 
   @Override
