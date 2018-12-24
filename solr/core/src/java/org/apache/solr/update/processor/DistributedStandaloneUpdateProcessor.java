@@ -19,11 +19,6 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,40 +58,30 @@ public class DistributedStandaloneUpdateProcessor extends DistributedUpdateProce
 
     updateCommand = cmd;
 
-    CompletionService<Exception> completionService = new ExecutorCompletionService<>(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
-    Set<Future<Exception>> pending = new HashSet<>();
-    if (replicaType == Replica.Type.TLOG) {
-      if (isLeader) {
-        super.processCommit(cmd);
-      }
-    } else if (replicaType == Replica.Type.PULL) {
-      log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
-    } else {
-      // NRT replicas will always commit
-      super.processCommit(cmd);
-    }
+    // replica type can only be nrt in standalone mode
+    // NRT replicas will always commit
+    super.processCommit(cmd);
   }
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     assert TestInjection.injectFailUpdateRequests();
 
-    updateCommand = cmd;
-    isLeader = getNonZkLeaderAssumption(req);
+    setupRequest(cmd);
 
     super.processAdd(cmd);
   }
 
   @Override
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
-    isLeader = getNonZkLeaderAssumption(req);
+    setupRequest(cmd);
     super.doDeleteById(cmd);
   }
 
   @Override
   protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // even in non zk mode, tests simulate updates from a leader
-    isLeader = getNonZkLeaderAssumption(req);
+    setupRequest(cmd);
     super.doDeleteByQuery(cmd, null, null);
   }
 
