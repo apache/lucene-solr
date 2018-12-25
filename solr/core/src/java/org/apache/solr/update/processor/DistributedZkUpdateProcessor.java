@@ -147,7 +147,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     List<SolrCmdDistributor.Node> nodes = null;
     Replica leaderReplica = null;
-    // only if zk
     zkCheck();
     try {
       leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
@@ -224,9 +223,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     assert TestInjection.injectFailUpdateRequests();
 
-    updateCommand = cmd;
-    zkCheck();
-    nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
+    setupRequest(cmd);
 
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
@@ -294,8 +291,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
-    zkCheck();
-    nodes = setupRequest(cmd.getId(), null, cmd.getRoute());
+    setupRequest(cmd);
 
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
