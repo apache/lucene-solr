@@ -65,6 +65,10 @@ Upgrade Notes
   SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
   See also explanation in Reference Guide chapter "Other Schema Elements".
 
+* SOLR-12535:  Solr no longer accepts index time boosts in JSON provided to Solr.  This used to be provided like so:
+  {'id':'1', 'val_s':{'value':'foo', 'boost':2.0}}  but will now produce an error.  A object/map structure will now only
+  be interpreted as a child document or an atomic update; nothing else.  A uniqueKey is currently required on all child
+  documents to be interpreted as such, though this may change in the future.  (David Smiley)
 
 New Features
 ----------------------
@@ -136,6 +140,8 @@ Other Changes
   LowerCaseFilter (Alan Woodward)
 
 * SOLR-13036: Fix retry logic in JettySolrRunner (Gus Heck)
+
+* SOLR-12535: Solr no longer accepts index time boosts in JSON provided to Solr. (David Smiley)
 
 ==================  7.7.0 ==================
 
