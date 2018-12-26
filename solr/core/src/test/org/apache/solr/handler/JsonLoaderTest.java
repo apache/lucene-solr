@@ -52,15 +52,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "  'doc': {\n" +
       "    'bool': true,\n" +
       "    'f0': 'v0',\n" +
-      "    'f2': {\n" +
-      "      'boost': 2.3,\n" +
-      "      'value': 'test'\n" +
-      "    },\n" +
-      "    'array': [ 'aaa', 'bbb' ],\n" +
-      "    'boosted': {\n" +
-      "      'boost': 6.7,\n" + // make sure we still accept boosts
-      "      'value': [ 'aaa', 'bbb' ]\n" +
-      "    }\n" +
+      "    'array': [ 'aaa', 'bbb' ]\n" +
       "  }\n" +
       "},\n" +
       "'add': {\n" +
@@ -98,18 +90,12 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( 2, p.addCommands.size() );
     
     AddUpdateCommand add = p.addCommands.get(0);
-    SolrInputDocument d = add.solrDoc;
-    SolrInputField f = d.getField( "boosted" );
-    assertEquals(2, f.getValues().size());
+    assertEquals("SolrInputDocument(fields: [bool=true, f0=v0, array=[aaa, bbb]])", add.solrDoc.toString());
 
     // 
     add = p.addCommands.get(1);
-    d = add.solrDoc;
-    f = d.getField( "f1" );
-    assertEquals(2, f.getValues().size());
+    assertEquals("SolrInputDocument(fields: [f1=[v1, v2], f2=null])", add.solrDoc.toString());
     assertEquals(false, add.overwrite);
-
-    assertEquals(0, d.getField("f2").getValueCount());
 
     // parse the commit commands
     assertEquals( 2, p.commitCommands.size() );
@@ -235,26 +221,14 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     // list
     checkFieldValueOrdering((pre+ "'f':[45,67,89]" +post)
-                            .replace('\'', '"'),
-                            1.0F);
+                            .replace('\'', '"')
+    );
     // dup fieldname keys
     checkFieldValueOrdering((pre+ "'f':45,'f':67,'f':89" +post)
-                            .replace('\'', '"'),
-                            1.0F);
-    // extended w/boost
-    checkFieldValueOrdering((pre+ "'f':{'boost':4.0,'value':[45,67,89]}" +post)
-                            .replace('\'', '"'),
-                            4.0F);
-    // dup keys extended w/ multiplicitive boost
-    checkFieldValueOrdering((pre+ 
-                             "'f':{'boost':2.0,'value':[45,67]}," +
-                             "'f':{'boost':2.0,'value':89}" 
-                             +post)
-                            .replace('\'', '"'),
-                            4.0F);
-
+                            .replace('\'', '"')
+    );
   }
-  private void checkFieldValueOrdering(String rawJson, float fBoost) throws Exception {
+  private void checkFieldValueOrdering(String rawJson) throws Exception {
     SolrQueryRequest req = req();
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
@@ -265,7 +239,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputDocument d = p.addCommands.get(0).solrDoc;
     assertEquals(2, d.getFieldNames().size());
     assertEquals("1", d.getFieldValue("id"));
-    assertEquals(new Object[] {45L, 67L, 89L} , d.getFieldValues("f").toArray());
+    assertArrayEquals(new Object[] {45L, 67L, 89L} , d.getFieldValues("f").toArray());
 
     d = p.addCommands.get(1).solrDoc;
     assertEquals(1, d.getFieldNames().size());
@@ -520,7 +494,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(Collections.singletonList(expected), doc.getFieldValues(field));
   }
 
-  public void testExtendedFieldValues() throws Exception {
+  public void testAtomicUpdateFieldValue() throws Exception {
     String str = "[{'id':'1', 'val_s':{'add':'foo'}}]".replace('\'', '"');
     SolrQueryRequest req = req();
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -533,14 +507,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(add.commitWithin, -1);
     assertEquals(add.overwrite, true);
-    SolrInputDocument d = add.solrDoc;
-
-    SolrInputField f = d.getField( "id" );
-    assertEquals("1", f.getValue());
-
-    f = d.getField( "val_s" );
-    Map<String,Object> map = (Map<String,Object>)f.getValue();
-    assertEquals("foo",map.get("add"));
+    assertEquals("SolrInputDocument(fields: [id=1, val_s={add=foo}])", add.solrDoc.toString());
 
     req.close();
   }
