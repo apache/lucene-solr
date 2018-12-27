@@ -201,17 +201,20 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeLong(-2); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
     } else if (numDocsWithValue == maxDoc) {  // meta[-1, 0]: All documents has values
       meta.writeLong(-1); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
     } else {                                  // meta[data.offset, data.length]: IndexedDISI structure for documents with values
       long offset = data.getFilePointer();
       meta.writeLong(offset);// docsWithFieldOffset
       values = valuesProducer.getSortedNumeric(field);
-      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
       meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
       meta.writeShort(jumpTableEntryCount);
+      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
     meta.writeLong(numValues);
@@ -376,17 +379,20 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeLong(-2); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
     } else if (numDocsWithField == maxDoc) {
       meta.writeLong(-1); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
     } else {
       long offset = data.getFilePointer();
       meta.writeLong(offset); // docsWithFieldOffset
       values = valuesProducer.getBinary(field);
-      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
       meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
       meta.writeShort(jumpTableEntryCount);
+      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
     meta.writeInt(numDocsWithField);
@@ -428,17 +434,20 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeLong(-2); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
     } else if (numDocsWithField == maxDoc) {
       meta.writeLong(-1); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
     } else {
       long offset = data.getFilePointer();
       meta.writeLong(offset); // docsWithFieldOffset
       values = valuesProducer.getSorted(field);
-      final short jumpTableentryCount = IndexedDISI.writeBitSet(values, data);
+      final short jumpTableentryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
       meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
       meta.writeShort(jumpTableentryCount);
+      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
     meta.writeInt(numDocsWithField);
@@ -615,13 +624,15 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeLong(-1); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1); // denseRankPower
     } else {
       long offset = data.getFilePointer();
       meta.writeLong(offset);  // docsWithFieldOffset
       values = valuesProducer.getSortedSet(field);
-      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
       meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
       meta.writeShort(jumpTableEntryCount);
+      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
     int numberOfBitsPerOrd = DirectWriter.unsignedBitsRequired(values.getValueCount() - 1);

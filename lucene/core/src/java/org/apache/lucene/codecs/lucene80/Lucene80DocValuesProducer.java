@@ -144,6 +144,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
     entry.jumpTableEntryCount = meta.readShort();
+    entry.denseRankPower = meta.readByte();
     entry.numValues = meta.readLong();
     int tableSize = meta.readInt();
     if (tableSize > 256) {
@@ -176,6 +177,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
     entry.jumpTableEntryCount = meta.readShort();
+    entry.denseRankPower = meta.readByte();
     entry.numDocsWithField = meta.readInt();
     entry.minLength = meta.readInt();
     entry.maxLength = meta.readInt();
@@ -194,6 +196,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
     entry.jumpTableEntryCount = meta.readShort();
+    entry.denseRankPower = meta.readByte();
     entry.numDocsWithField = meta.readInt();
     entry.bitsPerValue = meta.readByte();
     entry.ordsOffset = meta.readLong();
@@ -217,6 +220,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
     entry.jumpTableEntryCount = meta.readShort();
+    entry.denseRankPower = meta.readByte();
     entry.bitsPerValue = meta.readByte();
     entry.ordsOffset = meta.readLong();
     entry.ordsLength = meta.readLong();
@@ -276,6 +280,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long docsWithFieldOffset;
     long docsWithFieldLength;
     short jumpTableEntryCount;
+    byte denseRankPower;
     long numValues;
     long minValue;
     long gcd;
@@ -290,6 +295,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long docsWithFieldOffset;
     long docsWithFieldLength;
     short jumpTableEntryCount;
+    byte denseRankPower;
     int numDocsWithField;
     int minLength;
     int maxLength;
@@ -319,6 +325,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long docsWithFieldOffset;
     long docsWithFieldLength;
     short jumpTableEntryCount;
+    byte denseRankPower;
     int numDocsWithField;
     byte bitsPerValue;
     long ordsOffset;
@@ -330,6 +337,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long docsWithFieldOffset;
     long docsWithFieldLength;
     short jumpTableEntryCount;
+    byte denseRankPower;
     int numDocsWithField;
     byte bitsPerValue;
     long ordsOffset;
@@ -482,8 +490,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       }
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numValues);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength,
+          entry.jumpTableEntryCount, entry.denseRankPower, entry.numValues);
       if (entry.bitsPerValue == 0) {
         return new SparseNumericDocValues(disi) {
           @Override
@@ -705,8 +713,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       }
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength,
+          entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
       if (entry.minLength == entry.maxLength) {
         // fixed length
         final int length = entry.maxLength;
@@ -807,8 +815,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength,
+          entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
       return new BaseSortedDocValues(entry, data) {
 
         @Override
@@ -1176,8 +1184,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength,
+          entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
       return new SortedNumericDocValues() {
 
         boolean set;
@@ -1303,8 +1311,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       // sparse
-      final IndexedDISI disi = new IndexedDISI(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength,
+          entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
       return new BaseSortedSetDocValues(entry, data) {
 
         boolean set;

@@ -74,13 +74,13 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * The block lookup table is stored at the end of the total block structure.
  *
  *
- * The rank structure for DENSE blocks is an array of unsigned {@code short}s with an entry
- * for each sub-block of 512 bits out of the 65536 bits in the outer DENSE block.
+ * The rank structure for DENSE blocks is an array of byte-pairs with an entry for each
+ * sub-block (default 512 bits) out of the 65536 bits in the outer DENSE block.
  *
  * Each rank-entry states the number of set bits within the block up to the bit before the
  * bit positioned at the start of the sub-block.
  * Note that that the rank entry of the first sub-block is always 0 and that the last entry can
- * at most be 65536-512 = 65024 and thus will always fit into an unsigned short.
+ * at most be 65536-2 = 65634 and thus will always fit into an byte-pair of 16 bits.
  *
  * The rank structure for a given DENSE block is stored at the beginning of the DENSE block.
  * This ensures locality and keeps logistics simple.
@@ -92,9 +92,9 @@ final class IndexedDISI extends DocIdSetIterator {
   // jump-table time/space trade-offs to consider:
   // The block offsets and the block indexes could be stored in more compressed form with
   // two PackedInts or two MonotonicDirectReaders.
-  // The DENSE ranks (128 shorts = 256 bytes) could likewise be compressed. As there is at least
-  // 4096 set bits in DENSE blocks, there will be at least one rank with 2^12 bits, so it is
-  // doubtful if there is much to gain here.
+  // The DENSE ranks (default 128 shorts = 256 bytes) could likewise be compressed. But as there is
+  // at least 4096 set bits in DENSE blocks, there will be at least one rank with 2^12 bits, so it
+  // is doubtful if there is much to gain here.
   
   private static final int BLOCK_SIZE = 65536;   // The number of docIDs that a single block represents
   static final int BLOCK_BITS = 16;
@@ -103,22 +103,22 @@ final class IndexedDISI extends DocIdSetIterator {
   private static final long BLOCK_LOOKUP_MASK = ~BLOCK_INDEX_MASK; // The offset bits in a lookup entry
 
   private static final int DENSE_BLOCK_LONGS = BLOCK_SIZE/Long.SIZE; // 1024
-  private static final int RANK_BLOCK_SIZE = 512; // The number of docIDs/bits in each rank-sub-block within a DENSE block
-  private static final int RANK_BLOCK_LONGS = RANK_BLOCK_SIZE/Long.SIZE; // The number of longs making up a rank-block (8)
-  private static final int RANK_BLOCK_BITS = 9;
-  private static final int RANKS_PER_BLOCK = BLOCK_SIZE / RANK_BLOCK_SIZE; // 128
+  public static final byte DEFAULT_DENSE_RANK_POWER = 9; // Every 512 docIDs / 8 longs
 
   static final int MAX_ARRAY_LENGTH = (1 << 12) - 1;
 
-  private static void flush(int block, FixedBitSet buffer, int cardinality, IndexOutput out) throws IOException {
+  private static void flush(
+      int block, FixedBitSet buffer, int cardinality, byte denseRankPower, IndexOutput out) throws IOException {
     assert block >= 0 && block < 65536;
     out.writeShort((short) block);
     assert cardinality > 0 && cardinality <= 65536;
     out.writeShort((short) (cardinality - 1));
     if (cardinality > MAX_ARRAY_LENGTH) {
       if (cardinality != 65536) { // all docs are set
-        final byte[] rank = createRank(buffer);
-        out.writeBytes(rank, rank.length);
+        if (denseRankPower != -1) {
+          final byte[] rank = createRank(buffer, denseRankPower);
+          out.writeBytes(rank, rank.length);
+        }
         for (long word : buffer.getBits()) {
           out.writeLong(word);
         }
@@ -132,16 +132,19 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   // Creates a DENSE rank-entry (the number of set bits up to a given point) for the buffer.
-  // One rank-entry for every 512 bits/8 longs for a total of 128 * 16 bits.
+  // One rank-entry for every {@code 2^denseRankPower} bits, with each rank-entry using 2 bytes.
   // Represented as a byte[] for fast flushing and mirroring of the retrieval representation.
-  private static byte[] createRank(FixedBitSet buffer) {
-    final byte[] rank = new byte[RANKS_PER_BLOCK*2];
+  private static byte[] createRank(FixedBitSet buffer, byte denseRankPower) {
+    final int longsPerRank = 1 << (denseRankPower-6);
+    final int rankMark = longsPerRank-1;
+    final int rankIndexShift = denseRankPower-7; // 6 for the long (2^6) + 1 for 2 bytes/entry
+    final byte[] rank = new byte[DENSE_BLOCK_LONGS >> rankIndexShift];
     final long[] bits = buffer.getBits();
     int bitCount = 0;
     for (int word = 0 ; word < DENSE_BLOCK_LONGS ; word++) {
-      if ((word & 0x07) == 0) { // Every 8 longs
-        rank[word >> 2] = (byte)(bitCount>>8);
-        rank[(word >> 2)+1] = (byte)(bitCount & 0xFF);
+      if ((word & rankMark) == 0) { // Every longsPerRank longs
+        rank[word >> rankIndexShift] = (byte)(bitCount>>8);
+        rank[(word >> rankIndexShift)+1] = (byte)(bitCount & 0xFF);
       }
       bitCount += Long.bitCount(bits[word]);
     }
@@ -149,15 +152,41 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   /**
-   * Writes the docIDs from it to out, in logical blocks, one for each 65536 docIDs in monotonically
-   * increasing gap-less order.
+   * Writes the docIDs from it to out, in logical blocks, one for each 65536 docIDs in monotonically increasing
+   * gap-less order. DENSE blocks uses {@link #DEFAULT_DENSE_RANK_POWER} of 9 (every 512 docIDs / 8 longs).
+   * The caller must keep track of the number of jump-table entries (returned by this method) as well as the
+   * denseRankPower (9 for this method) and provide them when constructing an IndexedDISI for reading.
    * @param it  the document IDs.
    * @param out destination for the blocks.
    * @throws IOException if there was an error writing to out.
-   * @return the number of jump-table entries following the blocks, -1 for no entries. This should be stored in meta.
+   * @return the number of jump-table entries following the blocks, -1 for no entries.
+   *         This should be stored in meta and used when creating an instance of IndexedDISI.
    */
   static short writeBitSet(DocIdSetIterator it, IndexOutput out) throws IOException {
+    return writeBitSet(it, out, DEFAULT_DENSE_RANK_POWER);
+  }
+
+  /**
+   * Writes the docIDs from it to out, in logical blocks, one for each 65536 docIDs in monotonically
+   * increasing gap-less order.
+   * The caller must keep track of the number of jump-table entries (returned by this method) as well as the
+   * denseRankPower and provide them when constructing an IndexedDISI for reading.
+   * @param it  the document IDs.
+   * @param out destination for the blocks.
+   * @param denseRankPower for {@link Method#DENSE} blocks, a rank will be written every {@code 2^denseRankPower} docIDs.
+   *                       Values &lt; 7 (every 128 docIDs) or &gt; 15 (every 32768 docIDs) disables DENSE rank.
+   *                       Recommended values are 8-12: Every 256-4096 docIDs or 4-64 longs.
+   *                       {@link #DEFAULT_DENSE_RANK_POWER} is 9: Every 512 docIDs.
+   *                       This should be stored in meta and used when creating an instance of IndexedDISI.
+   * @throws IOException if there was an error writing to out.
+   * @return the number of jump-table entries following the blocks, -1 for no entries.
+   *         This should be stored in meta and used when creating an instance of IndexedDISI.
+   */
+  static short writeBitSet(DocIdSetIterator it, IndexOutput out, byte denseRankPower) throws IOException {
     final long origo = out.getFilePointer(); // All jumps are relative to the origo
+    if (denseRankPower < 7 || denseRankPower > 15) {
+      denseRankPower = -1; // Disabled
+    }
     int totalCardinality = 0;
     int blockCardinality = 0;
     final FixedBitSet buffer = new FixedBitSet(1<<16);
@@ -173,7 +202,7 @@ final class IndexedDISI extends DocIdSetIterator {
         jumps = addJumps(jumps, out.getFilePointer()-origo, totalCardinality, jumpBlockIndex, prevBlock+1);
         jumpBlockIndex = prevBlock+1;
         // Flush block
-        flush(prevBlock, buffer, blockCardinality, out);
+        flush(prevBlock, buffer, blockCardinality, denseRankPower, out);
         // Reset for next block
         buffer.clear(0, buffer.length());
         totalCardinality += blockCardinality;
@@ -185,14 +214,14 @@ final class IndexedDISI extends DocIdSetIterator {
     }
     if (blockCardinality > 0) {
       jumps = addJumps(jumps, out.getFilePointer()-origo, totalCardinality, jumpBlockIndex, prevBlock+1);
-      flush(prevBlock, buffer, blockCardinality, out);
+      flush(prevBlock, buffer, blockCardinality, denseRankPower, out);
       buffer.clear(0, buffer.length());
       prevBlock++;
     }
     final int lastBlock = prevBlock == -1 ? 0 : prevBlock;
     // NO_MORE_DOCS is stored explicitly
     buffer.set(DocIdSetIterator.NO_MORE_DOCS & 0xFFFF);
-    flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, out);
+    flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, denseRankPower, out);
     // offset+index jump-table stored at the end
     return flushBlockJumps(jumps, lastBlock, out, origo);
   }
@@ -224,8 +253,9 @@ final class IndexedDISI extends DocIdSetIterator {
   /** The slice that stores the {@link DocIdSetIterator}. */
   private final IndexInput slice;
   private final int jumpTableEntryCount;
+  private final byte denseRankPower;
   private final RandomAccessInput jumpTable; // Skip blocks of 64K bits
-  private final byte[] rankTable = new byte[256]; // rank-table (logically 128 * 16 bit) for DENSE blocks
+  private final byte[] denseRankTable;
   private final long cost;
 
   /**
@@ -235,8 +265,8 @@ final class IndexedDISI extends DocIdSetIterator {
    * @param jumpTableEntryCount the number of blocks convered by the jump-table.
    * @param cost normally the number of logical docIDs.
    */
-  IndexedDISI(IndexInput in, long offset, long length, int jumpTableEntryCount, long cost) throws IOException {
-    this(in.slice("docs", offset, length), jumpTableEntryCount, cost);
+  IndexedDISI(IndexInput in, long offset, long length, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
+    this(in.slice("docs", offset, length), jumpTableEntryCount, denseRankPower, cost);
   }
 
   /**
@@ -246,18 +276,22 @@ final class IndexedDISI extends DocIdSetIterator {
    * @param jumpTableEntryCount the number of blocks convered by the jump-table.
    * @param cost normally the number of logical docIDs.
    */
-  IndexedDISI(IndexInput slice, int jumpTableEntryCount, long cost) throws IOException {
+  IndexedDISI(IndexInput slice, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
     this.slice = slice;
     this.cost = cost;
 
     this.jumpTableEntryCount = jumpTableEntryCount;
-    //slice.seek(slice.length()-Short.BYTES);
     if (jumpTableEntryCount <= 0) {
       jumpTable = null;
     } else {
       long jumpTableOffset = slice.length()-jumpTableEntryCount*Long.BYTES;
       jumpTable = slice.randomAccessSlice(jumpTableOffset, slice.length()-jumpTableOffset);
     }
+    this.denseRankPower = denseRankPower < 7 || denseRankPower > 15 ? -1 : denseRankPower;
+
+    final int rankIndexShift = denseRankPower-7;
+    denseRankTable = denseRankPower == -1 ? null : new byte[DENSE_BLOCK_LONGS >> rankIndexShift];
+
   }
 
   private int block = -1;
@@ -351,15 +385,17 @@ final class IndexedDISI extends DocIdSetIterator {
       gap = block - index - 1;
     } else {
       method = Method.DENSE;
-      denseBitmapOffset = slice.getFilePointer() + rankTable.length;
+      denseBitmapOffset = slice.getFilePointer() + denseRankTable.length;
       blockEnd = denseBitmapOffset + (1 << 13);
-      // Performance consideration: All rank (128 * 16 bits) are loaded up front. This should be fast with the
-      // reusable byte[256] buffer, but it is still wasted if the DENSE block is iterated in steps less than 512 bits.
+      // Performance consideration: All rank (default 128 * 16 bits) are loaded up front. This should be fast with the
+      // reusable byte[] buffer, but it is still wasted if the DENSE block is iterated in small steps.
       // If this results in too great a performance regression, a heuristic strategy might work where the rank data
-      // are loaded on first in-block advance, if said advance is > 512 docIDs. The hope being that a small first
+      // are loaded on first in-block advance, if said advance is > X docIDs. The hope being that a small first
       // advance means that subsequent advances will be small too.
       // Another alternative is to maintain an extra slice for DENSE rank, but IndexedDISI is already slice-heavy.
-      slice.readBytes(rankTable, 0, rankTable.length);
+      if (denseRankPower != -1) {
+        slice.readBytes(denseRankTable, 0, denseRankTable.length);
+      }
       wordIndex = -1;
       numberOfOnes = index + 1;
       denseOrigoIndex = numberOfOnes;
@@ -512,25 +548,29 @@ final class IndexedDISI extends DocIdSetIterator {
    * @throws IOException if a DISI seek failed.
    */
   private static void rankSkip(IndexedDISI disi, int target) throws IOException {
+    if (disi.denseRankPower == -1) { // No rank for the current structure
+      return;
+    }
+
     final int targetInBlock = target & 0xFFFF;       // Lower 16 bits
     final int targetWordIndex = targetInBlock >>> 6; // long: 2^6 = 64
 
-    // If the distance between the current position and the target is < 8 longs
+    // If the distance between the current position and the target is < rank-longs
     // there is no sense in using rank
-    if (targetWordIndex - disi.wordIndex < RANK_BLOCK_LONGS) {
+    if (targetWordIndex - disi.wordIndex < (1 << (disi.denseRankPower-6) )) {
       return;
     }
 
     // Resolve the rank as close to targetInBlock as possible (maximum distance is 8 longs)
     // Note: rankOrigoOffset is tracked on block open, so it is absolute (e.g. don't add origo)
-    final int rankIndex = targetInBlock >> RANK_BLOCK_BITS; // 8 longs: 2^3 * 2^6 = 512
+    final int rankIndex = targetInBlock >> disi.denseRankPower; // Default is 9 (8 longs: 2^3 * 2^6 = 512 docIDs)
 
     final int rank =
-        (disi.rankTable[rankIndex<<1] & 0xFF) << 8 |
-        (disi.rankTable[(rankIndex<<1)+1] & 0xFF);
+        (disi.denseRankTable[rankIndex<<1] & 0xFF) << 8 |
+        (disi.denseRankTable[(rankIndex<<1)+1] & 0xFF);
 
     // Position the counting logic just after the rank point
-    final int rankAlignedWordIndex = rankIndex << RANK_BLOCK_BITS >> 6;
+    final int rankAlignedWordIndex = rankIndex << disi.denseRankPower >> 6;
     disi.slice.seek(disi.denseBitmapOffset + rankAlignedWordIndex*Long.BYTES);
     long rankWord = disi.slice.readLong();
     int denseNOO = rank + Long.bitCount(rankWord);

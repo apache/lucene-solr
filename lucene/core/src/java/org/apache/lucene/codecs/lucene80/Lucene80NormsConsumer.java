@@ -98,17 +98,20 @@ final class Lucene80NormsConsumer extends NormsConsumer {
       meta.writeLong(-2); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1); // denseRankPower
     } else if (numDocsWithValue == maxDoc) {
       meta.writeLong(-1); // docsWithFieldOffset
       meta.writeLong(0L); // docsWithFieldLength
       meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1); // denseRankPower
     } else {
       long offset = data.getFilePointer();
       meta.writeLong(offset); // docsWithFieldOffset
       values = normsProducer.getNorms(field);
-      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
       meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
       meta.writeShort(jumpTableEntryCount);
+      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
     meta.writeInt(numDocsWithValue);

@@ -73,17 +73,18 @@ public class TestIndexedDISI extends LuceneTestCase {
   // When doing merges in Lucene80NormsProducer, IndexedDISI are created from slices where the offset is not 0
   public void testPositionNotZero() throws IOException {
     final int BLOCKS = 10;
+    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
 
     FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
     try (Directory dir = newDirectory()) {
       final int cardinality = set.cardinality();
       int jumpTableentryCount;
       try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
       }
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         in.seek(random().nextInt((int) in.length()));
-        IndexedDISI disi = new IndexedDISI(in, jumpTableentryCount, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, jumpTableentryCount, denseRankPower, cardinality);
         // This failed at some point during LUCENE-8585 development as it did not reset the slice position
         disi.advanceExact(BLOCKS*65536-1);
       }
@@ -125,16 +126,17 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   private void doTestAllSingleJump(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
+    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
     long length;
     int jumpTableentryCount;
     try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
       length = out.getFilePointer();
     }
 
     try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
       for (int i = 0; i < set.length(); i++) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
         assertEquals("The bit at " + i + " should be correct", set.get(i), disi.advanceExact(i));
       }
     }
@@ -196,17 +198,18 @@ public class TestIndexedDISI extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       FixedBitSet set = new FixedBitSet(200000);
       int start = 65536 + random().nextInt(100);
+      final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
 
       // we set MAX_ARRAY_LENGTH bits so the encoding will be sparse
       set.set(start, start + IndexedDISI.MAX_ARRAY_LENGTH);
       long length;
-      int jumpTableentryCount;
+      int jumpTableEntryCount;
       try (IndexOutput out = dir.createOutput("sparse", IOContext.DEFAULT)) {
-        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, IndexedDISI.MAX_ARRAY_LENGTH), out);
+        jumpTableEntryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, IndexedDISI.MAX_ARRAY_LENGTH), out, denseRankPower);
         length = out.getFilePointer();
       }
       try (IndexInput in = dir.openInput("sparse", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, IndexedDISI.MAX_ARRAY_LENGTH);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableEntryCount, denseRankPower, IndexedDISI.MAX_ARRAY_LENGTH);
         assertEquals(start, disi.nextDoc());
         assertEquals(IndexedDISI.Method.SPARSE, disi.method);
       }
@@ -215,11 +218,11 @@ public class TestIndexedDISI extends LuceneTestCase {
       // now we set one more bit so the encoding will be dense
       set.set(start + IndexedDISI.MAX_ARRAY_LENGTH + random().nextInt(100));
       try (IndexOutput out = dir.createOutput("bar", IOContext.DEFAULT)) {
-        IndexedDISI.writeBitSet(new BitSetIterator(set, IndexedDISI.MAX_ARRAY_LENGTH + 1), out);
+        IndexedDISI.writeBitSet(new BitSetIterator(set, IndexedDISI.MAX_ARRAY_LENGTH + 1), out, denseRankPower);
         length = out.getFilePointer();
       }
       try (IndexInput in = dir.openInput("bar", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, IndexedDISI.MAX_ARRAY_LENGTH + 1);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableEntryCount, denseRankPower, IndexedDISI.MAX_ARRAY_LENGTH + 1);
         assertEquals(start, disi.nextDoc());
         assertEquals(IndexedDISI.Method.DENSE, disi.method);
       }
@@ -264,6 +267,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testOneDocMissingFixed() throws IOException {
     int maxDoc = 9699;
+    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
     FixedBitSet set = new FixedBitSet(maxDoc);
     set.set(0, maxDoc);
     set.clear(1345);
@@ -273,13 +277,13 @@ public class TestIndexedDISI extends LuceneTestCase {
       long length;
       int jumpTableentryCount;
       try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
         length = out.getFilePointer();
       }
 
       int step = 16000;
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
         assertAdvanceEquality(disi, disi2, step);
       }
@@ -314,22 +318,23 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   private void doTest(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
+    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
     long length;
     int jumpTableentryCount;
     try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out);
+      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
       length = out.getFilePointer();
     }
 
     try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-      IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
+      IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
       BitSetIterator disi2 = new BitSetIterator(set, cardinality);
       assertSingleStepEquality(disi, disi2);
     }
 
     for (int step : new int[] {1, 10, 100, 1000, 10000, 100000}) {
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
         assertAdvanceEquality(disi, disi2, step);
       }
@@ -337,7 +342,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
     for (int step : new int[] {10, 100, 1000, 10000, 100000}) {
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, cardinality);
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
         BitSetIterator disi2 = new BitSetIterator(set, cardinality);
         int disi2length = set.length();
         assertAdvanceExactRandomized(disi, disi2, disi2length, step);

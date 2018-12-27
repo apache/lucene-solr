@@ -107,6 +107,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
   }
 
   static class NormsEntry {
+    byte denseRankPower;
     byte bytesPerNorm;
     long docsWithFieldOffset;
     long docsWithFieldLength;
@@ -201,6 +202,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       entry.docsWithFieldOffset = meta.readLong();
       entry.docsWithFieldLength = meta.readLong();
       entry.jumpTableEntryCount = meta.readShort();
+      entry.denseRankPower = meta.readByte();
       entry.numDocsWithField = meta.readInt();
       entry.bytesPerNorm = meta.readByte();
       switch (entry.bytesPerNorm) {
@@ -295,7 +297,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
     } else {
       // sparse
       final IndexInput disiInput = getDisiInput(field, entry);
-      final IndexedDISI disi = new IndexedDISI(disiInput, entry.jumpTableEntryCount, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(disiInput, entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
 
       if (entry.bytesPerNorm == 0) {
         return new SparseNormsIterator(disi) {
