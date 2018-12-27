@@ -53,7 +53,7 @@ public class DistributedUpdateProcessorFactory
     final boolean isZkAware = req.getCore().getCoreContainer().isZooKeeperAware();
 
     DistributedUpdateProcessor distribUpdateProcessor = isZkAware ? new DistributedZkUpdateProcessor(req, rsp, next):
-        new DistributedStandaloneUpdateProcessor(req, rsp, next);
+        new DistributedUpdateProcessor(req, rsp, next);
     // note: will sometimes return DURP (no overhead) instead of wrapping
     return TimeRoutedAliasUpdateProcessor.wrap(req,
         distribUpdateProcessor);

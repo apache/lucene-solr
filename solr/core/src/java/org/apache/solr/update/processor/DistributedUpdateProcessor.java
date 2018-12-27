@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
-public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor {
+public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   final static String PARAM_WHITELIST_CTX_KEY = DistributedUpdateProcessor.class + "PARAM_WHITELIST_CTX_KEY";
   public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
@@ -87,14 +87,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
    * Requests from leader to it's followers will be retried this amount of times by default
    */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT = Integer.getInteger("solr.retries.to.followers", 3);
-
-  boolean isLeader() {
-    return isLeader;
-  }
-
-  protected boolean isIndexChanged() {
-    return isIndexChanged;
-  }
 
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
@@ -147,7 +139,7 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   protected boolean isLeader = true;
   protected boolean forwardToLeader = false;
   protected boolean isSubShardLeader = false;
-  private boolean isIndexChanged = false;
+  protected boolean isIndexChanged = false;
 
   /**
    * Number of times requests forwarded to some other shard's leader can be retried
@@ -166,12 +158,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
-
-  /**
-   *
-   * @return the replica type of the collection.
-   */
-  abstract Replica.Type computeReplicaType();
 
   /** Specification of AtomicUpdateDocumentMerger is currently experimental.
    * @lucene.experimental
@@ -204,10 +190,24 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
 
+  /**
+   *
+   * @return the replica type of the collection.
+   */
+  protected Replica.Type computeReplicaType() {
+    return Replica.Type.NRT;
+  }
+
+  boolean isLeader() {
+    return isLeader;
+  }
+
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
 
     assert TestInjection.injectFailUpdateRequests();
+
+    setupRequest(cmd);
 
     // If we were sent a previous version, set this to the AddUpdateCommand (if not already set)
     if (!cmd.isInPlaceUpdate()) {
@@ -247,11 +247,6 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
   }
 
-  /**
-   * This method can be overridden to tamper with the cmd after the localAdd operation(e.g. send to replicas)
-   * @param cmd the update command
-   * @throws IOException in case post processing failed
-   */
   protected void postProcessAdd(AddUpdateCommand cmd) throws IOException {
     // no-op for derived classes to implement
   }
@@ -697,6 +692,8 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   //
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
 
+    setupRequest(cmd);
+
     boolean dropCmd = false;
     if (!forwardToLeader) {
       dropCmd  = versionDelete(cmd);
@@ -758,7 +755,11 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
    * for implementing classes to setup request data(nodes, replicas)
    * @param cmd the delete command being processed
    */
-  protected abstract void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException;
+  protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    // even in non zk mode, tests simulate updates from a leader
+    setupRequest(cmd);
+    doDeleteByQuery(cmd, null, null);
+  }
 
   /**
    * should be called by implementing class after
@@ -857,14 +858,19 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
 
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
-  abstract void setupRequest(UpdateCommand cmd);
+  void setupRequest(UpdateCommand cmd) {
+    updateCommand = cmd;
+    isLeader = getNonZkLeaderAssumption(req);
+  }
 
   /**
    *
    * @param id id of doc
    * @return url of leader, or null if not found.
    */
-  abstract protected String getLeaderUrl(String id);
+  protected String getLeaderUrl(String id) {
+    return req.getParams().get(DISTRIB_FROM);
+  }
 
   protected boolean versionDelete(DeleteUpdateCommand cmd) throws IOException {
 
@@ -993,17 +999,16 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
     
     updateCommand = cmd;
 
-    if(vinfo != null) {
-      long commitVersion = vinfo.getNewClock();
-      cmd.setVersion(commitVersion);
-    }
-
+    // replica type can only be NRT in standalone mode
+    // NRT replicas will always commit
     doLocalCommit(cmd);
 
   }
 
-  private void doLocalCommit(CommitUpdateCommand cmd) throws IOException {
+  protected void doLocalCommit(CommitUpdateCommand cmd) throws IOException {
     if (vinfo != null) {
+      long commitVersion = vinfo.getNewClock();
+      cmd.setVersion(commitVersion);
       vinfo.lockForUpdate();
     }
     try {
@@ -1023,6 +1028,12 @@ public abstract class DistributedUpdateProcessor extends UpdateRequestProcessor 
   
   @Override
   public void finish() throws IOException {
+    assertNotFinished();
+
+    super.finish();
+  }
+
+  protected void assertNotFinished() {
     assert ! finished : "lifecycle sanity check";
     finished = true;
   }

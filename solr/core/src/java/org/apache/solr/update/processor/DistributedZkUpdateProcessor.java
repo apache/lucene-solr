@@ -104,18 +104,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     collection = cloudDesc.getCollectionName();
   }
 
-  public DistributedZkUpdateProcessor(SolrQueryRequest req,
-                                      SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger,
-                                      UpdateRequestProcessor next) {
-    super(req, rsp, docMerger, next);
-    CoreContainer cc = req.getCore().getCoreContainer();
-    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    zkController = cc.getZkController();
-    cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
-    cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
-    collection = cloudDesc.getCollectionName();
-  }
-
   private boolean isCloneRequiredOnLeader(UpdateRequestProcessor next) {
     boolean shouldClone = false;
     UpdateRequestProcessor nextInChain = next;
@@ -133,7 +121,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  Replica.Type computeReplicaType() {
+  protected Replica.Type computeReplicaType() {
     // can't use cloudDesc since this is called by super class, before the constructor instantiates cloudDesc.
     return req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType();
   }
@@ -177,7 +165,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else {
         // NRT replicas will always commit
-        super.processCommit(cmd);
+        doLocalCommit(cmd);
       }
     } else {
       // zk
@@ -210,7 +198,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           cmdDistrib.distribCommit(cmd, useNodes, params);
         }
 
-        super.processCommit(cmd);
+        doLocalCommit(cmd);
 
         if (useNodes != null) {
           cmdDistrib.blockAndDoRetries();
@@ -1007,14 +995,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void finish() throws IOException {
-    super.finish();
+    assertNotFinished();
 
     doFinish();
   }
 
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
-    boolean shouldUpdateTerms = isLeader && isIndexChanged();
+    boolean shouldUpdateTerms = isLeader && isIndexChanged;
     if (shouldUpdateTerms) {
       ZkShardTerms zkShardTerms = zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId());
       if (skippedCoreNodeNames != null) {

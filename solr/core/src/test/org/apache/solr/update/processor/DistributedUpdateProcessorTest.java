@@ -36,7 +36,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @Test
   public void testShouldBufferUpdateZk() {
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
-    DistributedUpdateProcessor processor = new DistributedStandaloneUpdateProcessor(
+    DistributedUpdateProcessor processor = new DistributedUpdateProcessor(
         req, null, null, null);
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     // applying buffer updates, isReplayOrPeerSync flag doesn't matter
