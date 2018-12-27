@@ -47,6 +47,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
   private IndexInput data;
   private boolean merging;
   private Map<Integer, IndexInput> disiInputs;
+  private Map<Integer, RandomAccessInput> disiJumpTables;
   private Map<Integer, RandomAccessInput> dataInputs;
 
   Lucene80NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
@@ -244,6 +245,22 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
     return slice;
   }
 
+  private RandomAccessInput getDisiJumpTable(FieldInfo field, NormsEntry entry) throws IOException {
+    RandomAccessInput jumpTable = null;
+    if (merging) {
+      jumpTable = disiJumpTables.get(field.number);
+    }
+    if (jumpTable == null) {
+      IndexInput slice = data.slice("docs", entry.docsWithFieldOffset, entry.docsWithFieldLength);
+      jumpTable = IndexedDISI.createJumpTable(slice, entry.jumpTableEntryCount);
+      if (merging) {
+        disiJumpTables.put(field.number, jumpTable);
+      }
+    }
+    return jumpTable;
+ }
+
+
   @Override
   public NumericDocValues getNorms(FieldInfo field) throws IOException {
     final NormsEntry entry = norms.get(field.number);
@@ -297,7 +314,8 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
     } else {
       // sparse
       final IndexInput disiInput = getDisiInput(field, entry);
-      final IndexedDISI disi = new IndexedDISI(disiInput, entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
+      final RandomAccessInput disiJumpTable = getDisiJumpTable(field, entry);
+      final IndexedDISI disi = new IndexedDISI(disiInput, disiJumpTable, entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
 
       if (entry.bytesPerNorm == 0) {
         return new SparseNormsIterator(disi) {

@@ -266,32 +266,48 @@ final class IndexedDISI extends DocIdSetIterator {
    * @param cost normally the number of logical docIDs.
    */
   IndexedDISI(IndexInput in, long offset, long length, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
-    this(in.slice("docs", offset, length), jumpTableEntryCount, denseRankPower, cost);
+    this(in.slice("docs", offset, length),
+        offset == 0 && length == in.length() ?
+            createJumpTable(in, jumpTableEntryCount) :
+            createJumpTable(in.slice("docs", offset, length), jumpTableEntryCount),
+        jumpTableEntryCount, denseRankPower, cost);
   }
 
   /**
    * This constructor allows to pass the slice directly in case it helps reuse.
    * see eg. Lucene80 norms producer's merge instance.
+   * Note: The jumpTable can be created using slice and jumpTableEntryCount with {@link #createJumpTable(IndexInput, int)}.
    * @param slice backing data, starting from position 0 to slice.length
-   * @param jumpTableEntryCount the number of blocks convered by the jump-table.
+   * @param jumpTable table holding jump-data for block-skips.
+   * @param jumpTableEntryCount the number of blocks covered by the jump-table.
    * @param cost normally the number of logical docIDs.
    */
-  IndexedDISI(IndexInput slice, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
+  IndexedDISI(IndexInput slice, RandomAccessInput jumpTable, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
     this.slice = slice;
     this.cost = cost;
 
     this.jumpTableEntryCount = jumpTableEntryCount;
-    if (jumpTableEntryCount <= 0) {
-      jumpTable = null;
-    } else {
-      long jumpTableOffset = slice.length()-jumpTableEntryCount*Long.BYTES;
-      jumpTable = slice.randomAccessSlice(jumpTableOffset, slice.length()-jumpTableOffset);
-    }
+    this.jumpTable = jumpTable;
     this.denseRankPower = denseRankPower < 7 || denseRankPower > 15 ? -1 : denseRankPower;
 
     final int rankIndexShift = denseRankPower-7;
     denseRankTable = denseRankPower == -1 ? null : new byte[DENSE_BLOCK_LONGS >> rankIndexShift];
+  }
 
+  /**
+   * Helper method for using {@link #IndexedDISI(IndexInput, RandomAccessInput, int, byte, long)}.
+   * @param slice backing data, starting from position 0 to slice.length
+   * @param jumpTableEntryCount the number of blocks covered by the jump-table.
+   * @return a jumpTable containing the block jump-data or null if no such table exists.
+   * @throws IOException if a RandomAccessInput could not be created from slice.
+   */
+  public static RandomAccessInput createJumpTable(IndexInput slice, int jumpTableEntryCount) throws IOException {
+    if (jumpTableEntryCount <= 0) {
+      return null;
+    } else {
+      long jumpTableOffset = slice.length()-jumpTableEntryCount*Long.BYTES;
+      return slice.randomAccessSlice(jumpTableOffset, slice.length()-jumpTableOffset);
+    }
   }
 
   private int block = -1;

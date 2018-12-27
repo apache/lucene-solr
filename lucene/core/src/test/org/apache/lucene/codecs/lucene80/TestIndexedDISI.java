@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -84,7 +85,8 @@ public class TestIndexedDISI extends LuceneTestCase {
       }
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         in.seek(random().nextInt((int) in.length()));
-        IndexedDISI disi = new IndexedDISI(in, jumpTableentryCount, denseRankPower, cardinality);
+        RandomAccessInput jumpTable = IndexedDISI.createJumpTable(in, jumpTableentryCount);
+        IndexedDISI disi = new IndexedDISI(in, jumpTable, jumpTableentryCount, denseRankPower, cardinality);
         // This failed at some point during LUCENE-8585 development as it did not reset the slice position
         disi.advanceExact(BLOCKS*65536-1);
       }
