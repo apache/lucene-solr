@@ -1356,6 +1356,83 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(0).getLong("i")== 2);
   }
 
+
+  @Test
+  public void testZplot() throws Exception {
+    String cexpr = "let(c=tuple(a=add(1,2), b=add(2,3))," +
+        "               zplot(table=c))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple out = tuples.get(0);
+
+    assertEquals(out.getDouble("a").doubleValue(), 3.0, 0.0);
+    assertEquals(out.getDouble("b").doubleValue(), 5.0, 0.0);
+
+    cexpr = "let(c=list(tuple(a=add(1,2), b=add(2,3)), tuple(a=add(1,3), b=add(2,4)))," +
+        "        zplot(table=c))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 2);
+    out = tuples.get(0);
+
+    assertEquals(out.getDouble("a").doubleValue(), 3.0, 0.0);
+    assertEquals(out.getDouble("b").doubleValue(), 5.0, 0.0);
+
+    out = tuples.get(1);
+
+    assertEquals(out.getDouble("a").doubleValue(), 4.0, 0.0);
+    assertEquals(out.getDouble("b").doubleValue(), 6.0, 0.0);
+
+
+    cexpr = "let(a=array(1,2,3,4)," +
+        "        b=array(10,11,12,13),"+
+        "        zplot(x=a, y=b))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+    out = tuples.get(0);
+
+    assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
+
+    out = tuples.get(1);
+
+    assertEquals(out.getDouble("x").doubleValue(), 2.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 11.0, 0.0);
+
+    out = tuples.get(2);
+
+    assertEquals(out.getDouble("x").doubleValue(), 3.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 12.0, 0.0);
+
+    out = tuples.get(3);
+
+    assertEquals(out.getDouble("x").doubleValue(), 4.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
+
+  }
+
+
   @Test
   public void testMatrixMath() throws Exception {
     String cexpr = "let(echo=true, a=matrix(array(1.5, 2.5, 3.5), array(4.5,5.5,6.5)), " +

@@ -92,8 +92,10 @@ public class Lang {
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
         .withFunctionName("plist", ParallelListStream.class)
+        .withFunctionName("zplot", ZplotStream.class)
 
-            // metrics
+
+        // metrics
         .withFunctionName("min", MinMetric.class)
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
