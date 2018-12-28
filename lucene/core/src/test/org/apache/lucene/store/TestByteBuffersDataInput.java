@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -202,5 +203,53 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
       ByteBuffersDataInput in = dst.toDataInput();
       in.readBytes(ByteBuffer.allocate(100), 100);
     });
+  }
+
+  // https://issues.apache.org/jira/browse/LUCENE-8625
+  @Test
+  public void testSlicingLargeBuffers() throws IOException {
+    // Simulate a "large" (> 4GB) input by duplicating
+    // buffers with the same content.
+    int MB = 1024 * 1024;
+    byte [] pageBytes = randomBytesOfLength(4 * MB);
+    ByteBuffer page = ByteBuffer.wrap(pageBytes);
+
+    // Add some head shift on the first buffer.
+    final int shift = randomIntBetween(0, pageBytes.length / 2);
+
+    final long simulatedLength =
+        randomLongBetween(0, 2018) + 4L * Integer.MAX_VALUE;
+
+    List<ByteBuffer> buffers = new ArrayList<>();
+    long remaining = simulatedLength + shift;
+    while (remaining > 0) {
+      ByteBuffer bb = page.duplicate();
+      if (bb.remaining() > remaining) {
+        bb.limit(Math.toIntExact(bb.position() + remaining));
+      }
+      buffers.add(bb);
+      remaining -= bb.remaining();
+    }
+    buffers.get(0).position(shift);
+
+    ByteBuffersDataInput dst = new ByteBuffersDataInput(buffers);
+    assertEquals(simulatedLength, dst.size());
+
+    final long max = dst.size();
+    long offset = 0;
+    for (; offset < max; offset += randomIntBetween(MB, 4 * MB)) {
+      assertEquals(0, dst.slice(offset, 0).size());
+      assertEquals(1, dst.slice(offset, 1).size());
+
+      long window = Math.min(max - offset, 1024);
+      ByteBuffersDataInput slice = dst.slice(offset, window);
+      assertEquals(window, slice.size());
+
+      // Sanity check of the content against original pages.
+      for (int i = 0; i < window; i++) {
+        byte expected = pageBytes[(int) ((shift + offset + i) % pageBytes.length)];
+        assertEquals(expected, slice.readByte(i));
+      }
+    }
   }
 }
