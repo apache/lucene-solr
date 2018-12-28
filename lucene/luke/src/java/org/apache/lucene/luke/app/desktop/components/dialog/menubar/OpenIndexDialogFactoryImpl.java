@@ -327,8 +327,8 @@ public final class OpenIndexDialogFactoryImpl implements OpenIndexDialogFactory 
         String selectedPath = (String) idxPathCombo.getSelectedItem();
         String dirImplClazz = (String) dirImplCombo.getSelectedItem();
         if (selectedPath == null || selectedPath.length() == 0) {
-          String msg = MessageUtils.getLocalizedMessage("openindex.message.index_path_not_selected");
-          log.error(msg);
+          String message = MessageUtils.getLocalizedMessage("openindex.message.index_path_not_selected");
+          JOptionPane.showMessageDialog(dialog, message, "Empty index path", JOptionPane.ERROR_MESSAGE);
         } else if (isNoReader()) {
           directoryHandler.open(selectedPath, dirImplClazz);
           addHistory(selectedPath);
