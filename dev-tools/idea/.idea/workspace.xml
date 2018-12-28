@@ -149,7 +149,7 @@
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
     <configuration default="false" name="Module luke" type="JUnit" factoryName="JUnit">
-      <module name="join" />
+      <module name="luke" />
       <option name="TEST_OBJECT" value="pattern" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/luke" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
