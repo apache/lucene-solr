@@ -57,6 +57,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     boolean testFinished = false;
     try {

@@ -112,6 +112,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   }
 
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testCreateCollectionAddReplica() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();

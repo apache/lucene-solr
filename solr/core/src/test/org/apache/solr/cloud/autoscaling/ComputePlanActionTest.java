@@ -252,7 +252,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   }
 
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testNodeWithMultipleReplicasLost() throws Exception {
     // start 3 more nodes
     cluster.startJettySolrRunner();
@@ -525,7 +525,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard() throws Exception {
     String collectionNamePrefix = "testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard";
     int numShards = 2;

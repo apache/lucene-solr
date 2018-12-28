@@ -37,7 +37,7 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   Collection<String> hosts;
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testZkConnectionStringSetterWithValidChroot() throws IOException {
     boolean setOrList = random().nextBoolean();
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
@@ -76,7 +76,7 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testZkConnectionStringConstructorWithValidChroot() throws IOException {
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
     boolean withChroot = random().nextBoolean();
@@ -104,7 +104,7 @@ public class CloudSolrClientMultiConstructorTest extends LuceneTestCase {
   }
   
   @Test(expected = IllegalArgumentException.class)
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testBadChroot() {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");

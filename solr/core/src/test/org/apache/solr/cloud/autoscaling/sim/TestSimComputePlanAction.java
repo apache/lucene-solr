@@ -256,7 +256,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
 
   @Test
   //17-Aug-2018 commented @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAdded() throws Exception {
     AssertingTriggerAction.expectedNode = null;
     SolrClient solrClient = cluster.simGetSolrClient();
