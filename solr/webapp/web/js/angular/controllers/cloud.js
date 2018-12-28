@@ -407,7 +407,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               if (cores) {
                 for (coreId in cores) {
                   var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica_?[ntp]?\d+)/, '\$1.\$2.\$4');
+                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
                   var nodeMetric = m.metrics[keyName];
                   var size = nodeMetric['INDEX.sizeInBytes'];
                   size = (typeof size !== 'undefined') ? size : 0;
