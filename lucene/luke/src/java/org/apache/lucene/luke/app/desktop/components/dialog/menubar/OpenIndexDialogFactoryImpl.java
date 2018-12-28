@@ -331,10 +331,11 @@ public final class OpenIndexDialogFactoryImpl implements OpenIndexDialogFactory 
           log.error(msg);
         } else if (isNoReader()) {
           directoryHandler.open(selectedPath, dirImplClazz);
+          addHistory(selectedPath);
         } else {
           indexHandler.open(selectedPath, dirImplClazz, isReadOnly(), useCompound(), keepAllCommits());
+          addHistory(selectedPath);
         }
-        addHistory(selectedPath);
         prefs.setIndexOpenerPrefs(
             isReadOnly(), dirImplClazz,
             isNoReader(), useCompound(), keepAllCommits());
