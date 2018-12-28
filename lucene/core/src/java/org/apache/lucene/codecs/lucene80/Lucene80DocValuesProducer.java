@@ -457,9 +457,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         if (entry.blockShift >= 0) {
           // dense but split into blocks of different bits per value
           return new DenseNumericDocValues(maxDoc) {
-            // It is quite ugly to construct two slices with the same offset & length, but slices cannot be cloned
-            final RandomAccessInput rankSlice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
-            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice, rankSlice);
+            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
 
             @Override
             public long longValue() throws IOException {
@@ -504,9 +502,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         if (entry.blockShift >= 0) {
           // sparse and split into blocks of different bits per value
           return new SparseNumericDocValues(disi) {
-            // It is quite ugly to construct two slices with the same offset & length, but slices cannot be cloned
-            final RandomAccessInput rankSlice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
-            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice, rankSlice);
+            final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
 
             @Override
             public long longValue() throws IOException {
@@ -551,9 +547,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
       if (entry.blockShift >= 0) {
         return new LongValues() {
-          // It is quite ugly to construct two slices with the same offset & length, but slices cannot be cloned
-          final RandomAccessInput rankSlice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
-          final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice, rankSlice);
+          final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
           @Override
           public long get(long index) {
             try {
@@ -1392,15 +1386,11 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long blockEndOffset;
     LongValues values;
 
-    VaryingBPVReader(NumericEntry entry) throws IOException {
-      this(entry,
-          data.randomAccessSlice(entry.valuesOffset, entry.valuesLength),
-          data.randomAccessSlice(entry.valuesOffset, entry.valuesLength));
-    }
-    VaryingBPVReader(NumericEntry entry, RandomAccessInput slice, RandomAccessInput rankSlice) throws IOException {
+    VaryingBPVReader(NumericEntry entry, RandomAccessInput slice) throws IOException {
       this.entry = entry;
       this.slice = slice;
-      this.rankSlice = rankSlice;
+      this.rankSlice = entry.valueJumpTableOffset == -1 ? null :
+          data.randomAccessSlice(entry.valueJumpTableOffset, data.length()-entry.valueJumpTableOffset);
       shift = entry.blockShift;
       mul = entry.gcd;
       mask = (1 << shift) - 1;
@@ -1413,8 +1403,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         do {
           // If the needed block is the one directly following the current block, it is cheaper to avoid the cache
           if (entry.valueJumpTableOffset != -1 && block != this.block+1) {
-            blockEndOffset = rankSlice.readLong(entry.valueJumpTableOffset +block*Long.BYTES-entry.valuesOffset)-
-                entry.valuesOffset;
+            blockEndOffset = rankSlice.readLong(block*Long.BYTES-entry.valuesOffset)-entry.valuesOffset;
             this.block = block-1;
           }
           offset = blockEndOffset;

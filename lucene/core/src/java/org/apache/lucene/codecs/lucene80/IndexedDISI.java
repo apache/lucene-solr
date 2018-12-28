@@ -50,21 +50,23 @@ import org.apache.lucene.util.RoaringDocIdSet;
  *
  * 
  * To avoid O(n) lookup time complexity, with n being the number of documents, two lookup
- * tables are used: A lookup table for block blockCache and index, and a rank structure
- * for DENSE block lookups.
+ * tables are used: A lookup table for block offset and index, and a rank structure
+ * for DENSE block index lookups.
  *
- * The lookup table is an array of {@code long}s with an entry for each block. It allows for
+ * The lookup table is an array of {@code int}-pairs, with a pair for each block. It allows for
  * direct jumping to the block, as opposed to iteration from the current position and forward
  * one block at a time.
  *
- * Each long entry consists of 2 logical parts:
+ * Each int-pair entry consists of 2 logical parts:
  *
- * The first 31 bits hold the index (number of set bits in the blocks) up to just before the
- * wanted block. The next 33 bits holds the offset in bytes into the underlying slice.
- * As there is a maximum of 2^16 blocks, it follows that the maximum size of any block must
- * not exceed 2^17 bits to avoid overflow. This is currently the case, with the largest
- * block being DENSE and using 2^16 + 288 bits, and is likely to continue to hold as using
- * more than double the amount of bits is unlikely to be an efficient representation.
+ * The first 32 bit int holds the index (number of set bits in the blocks) up to just before the
+ * wanted block. The maximum number of set bits is the maximum number of documents, which is < 2^31.
+ *
+ * The next int holds the offset in bytes into the underlying slice. As there is a maximum of 2^16
+ * blocks, it follows that the maximum size of any block must not exceed 2^15 bytes to avoid
+ * overflow (2^16 bytes if the int is treated as unsigned). This is currently the case, with the
+ * largest block being DENSE and using 2^13 + 36 bytes.
+ *
  * The cache overhead is numDocs/1024 bytes.
  *
  * Note: There are 4 types of blocks: ALL, DENSE, SPARSE and non-existing (0 set bits).
@@ -97,10 +99,6 @@ final class IndexedDISI extends DocIdSetIterator {
   // is doubtful if there is much to gain here.
   
   private static final int BLOCK_SIZE = 65536;   // The number of docIDs that a single block represents
-  static final int BLOCK_BITS = 16;
-  private static final long BLOCK_INDEX_SHIFT = 33; // Number of bits to shift a lookup entry to get the index
-  private static final long BLOCK_INDEX_MASK = ~0L << BLOCK_INDEX_SHIFT; // The index bits in a lookup entry
-  private static final long BLOCK_LOOKUP_MASK = ~BLOCK_INDEX_MASK; // The offset bits in a lookup entry
 
   private static final int DENSE_BLOCK_LONGS = BLOCK_SIZE/Long.SIZE; // 1024
   public static final byte DEFAULT_DENSE_RANK_POWER = 9; // Every 512 docIDs / 8 longs
@@ -190,8 +188,7 @@ final class IndexedDISI extends DocIdSetIterator {
     int totalCardinality = 0;
     int blockCardinality = 0;
     final FixedBitSet buffer = new FixedBitSet(1<<16);
-    long[] jumps = new long[ArrayUtil.oversize(1, Long.BYTES)];
-    jumps[0] = out.getFilePointer()-origo; // First block starts at index 0
+    int[] jumps = new int[ArrayUtil.oversize(1, Integer.BYTES*2)];
     int prevBlock = -1;
     int jumpBlockIndex = 0;
 
@@ -227,23 +224,26 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   // Adds entries to the offset & index jump-table for blocks
-  private static long[] addJumps(long[] jumps, long offset, long index, int startBlock, int endBlock) {
-    jumps = ArrayUtil.grow(jumps, endBlock +1);
-    final long jump = (index << BLOCK_INDEX_SHIFT) | offset;
+  private static int[] addJumps(int[] jumps, long offset, int index, int startBlock, int endBlock) {
+    assert offset < Integer.MAX_VALUE : "Logically the offset should not exceed 2^30 but was >= Integer.MAX_VALUE";
+    jumps = ArrayUtil.grow(jumps, (endBlock+1)*2);
     for (int b = startBlock; b < endBlock; b++) {
-      jumps[b] = jump;
+      jumps[b*2] = index;
+      jumps[b*2+1] = (int) offset;
+      System.out.println("Write b=" + b + ", i=" + index + ", o=" + offset);
     }
     return jumps;
   }
 
   // Flushes the offet & index jump-table for blocks. This should be the last data written to out
   // This method returns the blockCount for the blocks reachable for the jump_table or -1 for no jump-table
-  private static short flushBlockJumps(long[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
+  private static short flushBlockJumps(int[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
     if (blockCount == 1) { // A single jump is just wasted space so we ignore that
       blockCount = 0;
     }
     for (int i = 0 ; i < blockCount ; i++) {
-      out.writeLong(jumps[i]);
+      out.writeInt(jumps[i*2]); // index
+      out.writeInt(jumps[i*2+1]); // offset
     }
     // As there are at most 32k blocks, the count is a short
     // The jumpTableOffset will be at lastPos - (blockCount * Long.BYTES)
@@ -305,7 +305,7 @@ final class IndexedDISI extends DocIdSetIterator {
     if (jumpTableEntryCount <= 0) {
       return null;
     } else {
-      long jumpTableOffset = slice.length()-jumpTableEntryCount*Long.BYTES;
+      long jumpTableOffset = slice.length()-jumpTableEntryCount*Integer.BYTES*2;
       return slice.randomAccessSlice(jumpTableOffset, slice.length()-jumpTableOffset);
     }
   }
@@ -368,12 +368,11 @@ final class IndexedDISI extends DocIdSetIterator {
   private void advanceBlock(int targetBlock) throws IOException {
     final int blockIndex = targetBlock >> 16;
     // If the destination block is 2 blocks or more ahead, we use the jump-table.
+    // TODO LUCENE-8585: If blockIndex >= jumpTableEntryCount, it should mean that all subsequent blocks are EMPTY
     if (jumpTable != null && blockIndex >= (block >> 16)+2 && blockIndex < jumpTableEntryCount) {
-      final long jumpEntry = jumpTable.readLong(blockIndex*Long.BYTES);
-
-      final long offset = jumpEntry & BLOCK_LOOKUP_MASK;
-      final long index = jumpEntry >>> BLOCK_INDEX_SHIFT;
-      this.nextBlockIndex = (int) (index - 1); // -1 to compensate for the always-added 1 in readBlockHeader
+      final int index = jumpTable.readInt(blockIndex*Integer.BYTES*2);
+      final int offset = jumpTable.readInt(blockIndex*Integer.BYTES*2+Integer.BYTES);
+      this.nextBlockIndex = index-1; // -1 to compensate for the always-added 1 in readBlockHeader
       slice.seek(offset);
       readBlockHeader();
       return;

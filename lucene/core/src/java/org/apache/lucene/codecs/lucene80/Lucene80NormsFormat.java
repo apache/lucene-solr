@@ -24,9 +24,7 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.IndexOutput;
 
 /**
  * Lucene 8.0 Score normalization format.

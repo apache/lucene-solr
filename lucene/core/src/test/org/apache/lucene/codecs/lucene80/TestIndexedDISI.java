@@ -43,9 +43,9 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
   // EMPTY blocks are special with regard to jumps as they have size 0
-  public void testSpecificMixedBlockTypes() throws IOException {
+  public void testEmptyBlocks() throws IOException {
     final int B = 65536;
-    int maxDoc = B*10;
+    int maxDoc = B*11;
     FixedBitSet set = new FixedBitSet(maxDoc);
     // block 0: EMPTY
     set.set(B+5); // block 1: SPARSE
@@ -64,8 +64,14 @@ public class TestIndexedDISI extends LuceneTestCase {
         set.set(B*8 + i); // block 8: DENSE (all-1)
       }
     }
-    // block 9: EMPTY
+    // block 9-11: EMPTY
   
+    try (Directory dir = newDirectory()) {
+      doTestAllSingleJump(set, dir);
+    }
+
+    // Change the first block to DENSE to see if jump-tables sets to position 0
+    set.set(0);
     try (Directory dir = newDirectory()) {
       doTestAllSingleJump(set, dir);
     }
