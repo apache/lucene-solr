@@ -243,6 +243,9 @@ Bug fixes:
 * LUCENE-8624: int overflow in ByteBuffersDataOutput.size(). (Mulugeta Mammo, 
   Dawid Weiss)
 
+* LUCENE-8625: int overflow in ByteBuffersDataInput.sliceBufferList. (Mulugeta Mammo,
+  Dawid Weiss)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
