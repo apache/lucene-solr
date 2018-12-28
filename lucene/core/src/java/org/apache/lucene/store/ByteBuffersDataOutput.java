@@ -248,6 +248,9 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   /**
    * Return a contiguous array with the current content written to the output. The returned
    * array is always a copy (can be mutated).
+   *
+   * If the {@link #size()} of the underlying buffers exceeds maximum size of Java array, an
+   * {@link RuntimeException} will be thrown.
    */
   public byte[] toArrayCopy() {
     if (blocks.size() == 0) {
@@ -257,6 +260,10 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     // We could try to detect single-block, array-based ByteBuffer here
     // and use Arrays.copyOfRange, but I don't think it's worth the extra
     // instance checks.
+    long size = size();
+    if (size > Integer.MAX_VALUE) {
+      throw new RuntimeException("Data exceeds maximum size of a single byte array: " + size);
+    }
 
     byte [] arr = new byte[Math.toIntExact(size())];
     int offset = 0;
@@ -288,8 +295,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     long size = 0;
     int blockCount = blocks.size();
     if (blockCount >= 1) {
-      int fullBlockSize = (blockCount - 1) * blockSize();
-      int lastBlockSize = blocks.getLast().position();
+      long fullBlockSize = (blockCount - 1L) * blockSize();
+      long lastBlockSize = blocks.getLast().position();
       size = fullBlockSize + lastBlockSize;
     }
     return size;
@@ -486,10 +493,10 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * A consumer-based UTF16-UTF8 encoder (writes the input string in smaller buffers.).
    */
   private static int UTF16toUTF8(final CharSequence s, 
-                                final int offset, 
-                                final int length, 
-                                byte[] buf, 
-                                IntConsumer bufferFlusher) {
+                                 final int offset,
+                                 final int length,
+                                 byte[] buf,
+                                 IntConsumer bufferFlusher) {
     int utf8Len = 0;
     int j = 0;    
     for (int i = offset, end = offset + length; i < end; i++) {

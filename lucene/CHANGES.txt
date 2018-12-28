@@ -240,6 +240,9 @@ Bug fixes:
 * LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
   (Yoo Jeongin via Jim Ferenczi)
 
+* LUCENE-8624: int overflow in ByteBuffersDataOutput.size(). (Mulugeta Mammo, 
+  Dawid Weiss)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
