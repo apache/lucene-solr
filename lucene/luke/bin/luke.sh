@@ -20,4 +20,9 @@ for dir in `ls ../analysis`; do
   CLASSPATHS="${CLASSPATHS}:../analysis/${dir}/*:../analysis/${dir}/lib/*"
 done
 
-nohup java -cp ${CLASSPATHS} ${JAVA_OPTIONS} org.apache.lucene.luke.app.desktop.LukeMain > ${HOME}/.luke.d/luke_out.log 2>&1 &
+LOG_DIR=${HOME}/.luke.d/
+ if [[ ! -d ${LOG_DIR} ]]; then
+   mkdir ${LOG_DIR}
+ fi
+
+nohup java -cp ${CLASSPATHS} ${JAVA_OPTIONS} org.apache.lucene.luke.app.desktop.LukeMain > ${LOG_DIR}/luke_out.log 2>&1 &
