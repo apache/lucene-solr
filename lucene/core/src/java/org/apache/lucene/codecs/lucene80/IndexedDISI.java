@@ -230,7 +230,6 @@ final class IndexedDISI extends DocIdSetIterator {
     for (int b = startBlock; b < endBlock; b++) {
       jumps[b*2] = index;
       jumps[b*2+1] = (int) offset;
-      System.out.println("Write b=" + b + ", i=" + index + ", o=" + offset);
     }
     return jumps;
   }
