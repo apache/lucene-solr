@@ -41,7 +41,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -66,7 +65,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 // TODO: longer term this should be combined with TestRecovery somehow ??
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)

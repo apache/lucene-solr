@@ -22,6 +22,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
 
 public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testAutoCreate() throws Exception {
     TestBlobHandler.checkBlobPost(cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);
     DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");

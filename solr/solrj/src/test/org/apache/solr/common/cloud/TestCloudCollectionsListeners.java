@@ -69,7 +69,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testSimpleCloudCollectionsListener() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -130,7 +130,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testCollectionDeletion() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -195,7 +195,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testWatchesWorkForBothStateFormats() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
 
