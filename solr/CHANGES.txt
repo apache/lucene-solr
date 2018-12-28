@@ -211,6 +211,8 @@ Improvements
 
 * SOLR-12885: BinaryResponseWriter (javabin format) should directly copy from BytesRef to output (noble)
 
+* SOLR-12973: Admin UI "Nodes" view support for replica* replica names. (Daniel Collins, Christine Poerschke, janhoy)
+
 Other Changes
 ----------------------
 
