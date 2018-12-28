@@ -15,7 +15,7 @@ cd ${LUKE_HOME}
 
 JAVA_OPTIONS="${JAVA_OPTIONS} -Xmx1024m -Xms512m -XX:MaxMetaspaceSize=256m"
 
-CLASSPATHS="./*:./lib/*:../core/*:../codecs/*:../backward-codecs/*:../queries/*:../queryparser/*:../misc/*"
+CLASSPATHS="./*:./lib/*:../core/*:../codecs/*:../backward-codecs/*:../queries/*:../queryparser/*:../suggest/*:../misc/*"
 for dir in `ls ../analysis`; do
   CLASSPATHS="${CLASSPATHS}:../analysis/${dir}/*:../analysis/${dir}/lib/*"
 done

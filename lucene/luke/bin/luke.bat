@@ -10,7 +10,7 @@ if %errorlevel% equ 0 (
 
 set JAVA_OPTIONS=%JAVA_OPTIONS% -Xmx1024m -Xms512m -XX:MaxMetaspaceSize=256m
 
-set CLASSPATHS=.\*;.\lib\*;..\core\*;..\codecs\*;..\backward-codecs\*;..\queries\*;..\queryparser\*;..\misc\*
+set CLASSPATHS=.\*;.\lib\*;..\core\*;..\codecs\*;..\backward-codecs\*;..\queries\*;..\queryparser\*;..\suggest\*;..\misc\*
 for /d %%A in (..\analysis\*) do (
     set "CLASSPATHS=!CLASSPATHS!;%%A\*;%%A\lib\*"
 )
