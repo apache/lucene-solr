@@ -422,7 +422,10 @@ public final class OverviewPanelProvider implements Provider<JPanel> {
   }
 
   private String getSelectedField() {
-    int row = termCountsTable.getSelectedRow();
+    int selected = termCountsTable.getSelectedRow();
+    // need to convert selected row index to underlying model index
+    // https://docs.oracle.com/javase/8/docs/api/javax/swing/table/TableRowSorter.html
+    int row = termCountsTable.convertRowIndexToModel(selected);
     if (row < 0 || row >= termCountsTable.getRowCount()) {
       throw new IllegalStateException("Field is not selected.");
     }
