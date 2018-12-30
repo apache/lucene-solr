@@ -221,7 +221,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  protected void postProcessAdd(AddUpdateCommand cmd) throws IOException {
+  protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
 
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = zkController.getClusterState().getCollection(collection);

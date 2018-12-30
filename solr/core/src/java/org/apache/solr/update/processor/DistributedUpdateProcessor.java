@@ -119,7 +119,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   protected final SolrQueryRequest req;
   protected final SolrQueryResponse rsp;
-  protected final UpdateRequestProcessor next;
   private final AtomicUpdateDocumentMerger docMerger;
 
   private final UpdateLog ulog;
@@ -167,7 +166,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       UpdateRequestProcessor next) {
     super(next);
     this.rsp = rsp;
-    this.next = next;
     this.docMerger = docMerger;
     this.idField = req.getSchema().getUniqueKeyField();
     this.req = req;
@@ -227,7 +225,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    postProcessAdd(cmd);
+    doDistribAdd(cmd);
 
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
@@ -247,7 +245,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   }
 
-  protected void postProcessAdd(AddUpdateCommand cmd) throws IOException {
+  protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
     // no-op for derived classes to implement
   }
 
@@ -466,16 +464,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
         }
 
-        SolrInputDocument clonedDoc = null;
-        final boolean shouldClone = shouldCloneCmdDoc();
-        if (shouldClone) {
-          clonedDoc = cmd.solrDoc.deepCopy();
-        }
+        SolrInputDocument clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy(): null;
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
 
-        if (shouldClone) {
+        if (clonedDoc != null) {
           cmd.solrDoc = clonedDoc;
         }
       } finally {
