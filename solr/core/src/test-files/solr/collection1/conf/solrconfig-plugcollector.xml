@@ -457,7 +457,7 @@ based HashBitset. -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
-  <queryParser name="rank" class="org.apache.solr.search.TestRankQueryPlugin"/>
+  <queryParser name="rank" class="org.apache.solr.search.RankQueryTestPlugin"/>
 
   <updateRequestProcessorChain name="dedupe">
     <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">

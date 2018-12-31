@@ -64,11 +64,9 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.junit.Ignore;
 
 
-@Ignore
-public class TestRankQueryPlugin extends QParserPlugin {
+public class RankQueryTestPlugin extends QParserPlugin {
 
 
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
