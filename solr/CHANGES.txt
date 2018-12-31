@@ -107,6 +107,9 @@ Other Changes
 
 * SOLR-12727: Upgrade ZooKeeper dependency to 3.4.13 (Kevin Risden, Erick Erickson)
 
+* SOLR-13086: Improve the error message reported by DocumentObjectBinder when a setter is not found (Gus Heck)
+
+
 ==================  7.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

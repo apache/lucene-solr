@@ -232,7 +232,8 @@ public class DocumentObjectBinder {
       } else {
         Class[] params = setter.getParameterTypes();
         if (params.length != 1) {
-          throw new BindingException("Invalid setter method. Must have one and only one parameter");
+          throw new BindingException("Invalid setter method (" + setter +
+              "). A setter must have one and only one parameter but we found " + params.length + " parameters.");
         }
         type = params[0];
       }
