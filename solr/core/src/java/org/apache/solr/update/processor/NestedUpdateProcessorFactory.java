@@ -19,13 +19,20 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.pattern.PatternReplaceFilterFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.update.AddUpdateCommand;
 
 /**
@@ -38,6 +45,31 @@ import org.apache.solr.update.AddUpdateCommand;
  * @since 7.5.0
  */
 public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+
+  /** Called by the schema if referenced. */
+  public static FieldType createNestPathFieldType(IndexSchema indexSchema) {
+    FieldType ft = new SortableTextField();
+    try {
+      ft.setIndexAnalyzer(
+          CustomAnalyzer.builder(indexSchema.getResourceLoader())
+              .withDefaultMatchVersion(indexSchema.getDefaultLuceneMatchVersion())
+              .withTokenizer(KeywordTokenizerFactory.class)
+              .addTokenFilter(PatternReplaceFilterFactory.class,
+                  "pattern", NestedUpdateProcessor.NUM_SEP_CHAR + "\\d*",
+                  "replace", "all")
+              .build());
+      // the default query analyzer is verbatim, which is fine.
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e); // impossible?
+    }
+    Map<String, String> args = new HashMap<>();
+    args.put("stored", "false");
+    args.put("omitTermFreqAndPositions", "true");
+    args.put("omitNorms", "true");
+    args.put("maxCharsForDocValues", "-1");
+    ft.setArgs(indexSchema, args);
+    return ft;
+  }
 
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next ) {
     boolean storeParent = shouldStoreDocParent(req.getSchema());

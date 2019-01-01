@@ -67,6 +67,7 @@ import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -643,8 +644,12 @@ public class IndexSchema {
 
       FieldType ft = fieldTypes.get(type);
       if (ft==null) {
-        throw new SolrException
-            (ErrorCode.BAD_REQUEST, "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name);
+        ft = createImplicitFieldType(type);
+        if (ft == null) {
+          throw new SolrException
+              (ErrorCode.BAD_REQUEST, "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name);
+        }
+        fieldTypes.put(type, ft);
       }
 
       Map<String,String> args = DOMUtil.toMapExcept(attrs, NAME, TYPE);
@@ -689,7 +694,21 @@ public class IndexSchema {
                                                                    
     return explicitRequiredProp;
   }
-  
+
+  /**
+   * If the type refers to an implicit field type, this method creates it or returns null if not known.
+   * It is not added to the schema; the caller should do so.
+   */
+  protected FieldType createImplicitFieldType(String type) {
+    switch (type) {
+      //TODO add more for primitives here
+      case IndexSchema.NEST_PATH_FIELD_NAME: // name & type has same name here
+        return NestedUpdateProcessorFactory.createNestPathFieldType(this);
+      default:
+        return null;
+    }
+  }
+
   /**
    * Sort the dynamic fields and stuff them in a normal array for faster access.
    */

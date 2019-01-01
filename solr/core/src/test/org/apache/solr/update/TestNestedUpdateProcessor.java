@@ -95,7 +95,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws Exception {
-    assertU(delQ("*:*"));
+    clearIndex();
     assertU(commit());
   }
 
@@ -115,6 +115,21 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNumberInName() throws Exception {
+    // child named "grandChild99"  (has a number in it)
+    indexSampleData(jDoc.replace("grandChild", "grandChild99"));
+    //assertQ(req("qt", "/terms", "terms", "true", "terms.fl", IndexSchema.NEST_PATH_FIELD_NAME), "false"); // for debugging
+
+    // find it
+    assertJQ(req("q", "{!field f=" + IndexSchema.NEST_PATH_FIELD_NAME + "}children/grandChild99"),
+        "/response/numFound==1");
+    // should *NOT* find it; different number
+    assertJQ(req("q", "{!field f=" + IndexSchema.NEST_PATH_FIELD_NAME + "}children/grandChild22"),
+        "/response/numFound==0");
+
+  }
+
+  @Test
   public void testDeeplyNestedURPChildren() throws Exception {
     final String[] childrenTests = {
         "/response/docs/[0]/id=='2'",
@@ -124,13 +139,13 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children/",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children",
         "fl","*, _nest_path_",
         "sort","id asc",
         "wt","json"),
         childrenTests);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":anotherChildList/",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":anotherChildList",
         "fl","*, _nest_path_",
         "sort","id asc",
         "wt","json"),

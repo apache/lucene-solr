@@ -164,8 +164,11 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
-  // Handle additional arguments...
-  protected void setArgs(IndexSchema schema, Map<String,String> args) {
+  /**
+   * Initializes the field type.  Subclasses should generally override {@link #init(IndexSchema, Map)}
+   * which is called by this method.
+   */
+  public void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
