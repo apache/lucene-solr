@@ -159,10 +159,11 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     if (indexOfLastPathSepChar < 0) {
       return queryString;
     }
-    String path = queryString.substring(0, indexOfLastPathSepChar);
+    final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
+    String path = ClientUtils.escapeQueryChars(queryString.substring(isAbsolutePath ? 1: 0, indexOfLastPathSepChar));
     String remaining = queryString.substring(indexOfLastPathSepChar + 1);
     return
-        "+" + NEST_PATH_FIELD_NAME + ":" + ClientUtils.escapeQueryChars(path)
+        "+" + NEST_PATH_FIELD_NAME + (isAbsolutePath? ":": ":*") + path
         + " +(" + remaining + ")";
   }
 }

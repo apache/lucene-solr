@@ -219,11 +219,24 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
       }
     }
 
-
-
+    // test full path
     assertJQ(req("q", "type_s:donut",
         "sort", "id asc",
         "fl", "*,[child childFilter='toppings/ingredients/name_s:cocoa']",
+        "fq", fqToExcludeNonTestedDocs),
+        tests);
+
+    // test partial path
+    assertJQ(req("q", "type_s:donut",
+        "sort", "id asc",
+        "fl", "*,[child childFilter='ingredients/name_s:cocoa']",
+        "fq", fqToExcludeNonTestedDocs),
+        tests);
+
+    // test absolute path
+    assertJQ(req("q", "type_s:donut",
+        "sort", "id asc",
+        "fl", "*,[child childFilter='/toppings/ingredients/name_s:cocoa']",
         "fq", fqToExcludeNonTestedDocs),
         tests);
   }
