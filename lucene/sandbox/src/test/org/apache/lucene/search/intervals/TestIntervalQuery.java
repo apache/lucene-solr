@@ -188,4 +188,10 @@ public class TestIntervalQuery extends LuceneTestCase {
     );
     checkHits(q, new int[]{3});
   }
+
+  public void testDefinedGaps() throws IOException {
+    Query q = new IntervalQuery(field,
+        Intervals.phrase(Intervals.term("w1"), Intervals.extend(Intervals.term("w2"), 1, 0)));
+    checkHits(q, new int[]{ 1, 2, 5 });
+  }
 }

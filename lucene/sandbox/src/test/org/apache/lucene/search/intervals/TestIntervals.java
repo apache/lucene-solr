@@ -124,6 +124,8 @@ public class TestIntervals extends LuceneTestCase {
             i += 2;
           }
           assertEquals("Wrong number of endpoints in doc " + id, expected[id].length, i);
+          assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.start());
+          assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.end());
           if (i > 0)
             matchedDocs++;
         }
@@ -502,6 +504,36 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 0, 3, 0, 11);
     assertMatch(mi, 3, 6, 9, 20);
     assertMatch(mi, 4, 8, 12, 26);
+  }
+
+  public void testDefinedGaps() throws IOException {
+    IntervalsSource source = Intervals.phrase(
+        Intervals.term("pease"),
+        Intervals.extend(Intervals.term("cold"), 1, 1),
+        Intervals.term("porridge")
+    );
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 3, 7 },
+        { 0, 4 },
+        {},
+        { 3, 7 },
+        {}
+    });
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 3, 7, 20, 55);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 3, 3, 20, 25);
+    assertMatch(sub, 4, 6, 35, 39);
+    assertMatch(sub, 7, 7, 47, 55);
+
+    source = Intervals.extend(Intervals.term("w1"), 5, Integer.MAX_VALUE);
+    checkIntervals(source, "field2", 1, new int[][]{
+        {}, {}, {}, {}, {},
+        { 0, Integer.MAX_VALUE - 1, 0, Integer.MAX_VALUE - 1, 5, Integer.MAX_VALUE - 1 }
+    });
   }
 
 }
