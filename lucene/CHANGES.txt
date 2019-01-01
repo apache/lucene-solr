@@ -105,6 +105,10 @@ API Changes
 * LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
   of IndexWriter#getDocStats(). (Simon Willnauer)
 
+* LUCENE-8612: Intervals.extend() treats an interval as if it covered a wider
+  span than it actually does, allowing users to force minimum gaps between
+  intervals in a phrase. (Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of

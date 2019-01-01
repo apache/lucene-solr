@@ -75,19 +75,19 @@ abstract class IntervalFunction {
     @Override
     public int nextInterval() throws IOException {
       if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-        return IntervalIterator.NO_MORE_INTERVALS;
+        return start = end = IntervalIterator.NO_MORE_INTERVALS;
       int i = 1;
       while (i < subIterators.size()) {
         while (subIterators.get(i).start() <= subIterators.get(i - 1).end()) {
           if (subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-            return IntervalIterator.NO_MORE_INTERVALS;
+            return start = end = IntervalIterator.NO_MORE_INTERVALS;
         }
         if (subIterators.get(i).start() == subIterators.get(i - 1).end() + 1) {
           i = i + 1;
         }
         else {
           if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-            return IntervalIterator.NO_MORE_INTERVALS;
+            return start = end = IntervalIterator.NO_MORE_INTERVALS;
           i = 1;
         }
       }
@@ -150,6 +150,9 @@ abstract class IntervalFunction {
           i++;
         }
         start = subIterators.get(0).start();
+        if (start == NO_MORE_INTERVALS) {
+          return end = NO_MORE_INTERVALS;
+        }
         firstEnd = subIterators.get(0).end();
         end = subIterators.get(subIterators.size() - 1).end();
         b = subIterators.get(subIterators.size() - 1).start();
@@ -248,7 +251,7 @@ abstract class IntervalFunction {
           if (allowOverlaps == false) {
             while (hasOverlaps(it)) {
               if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-                return IntervalIterator.NO_MORE_INTERVALS;
+                return start = end = IntervalIterator.NO_MORE_INTERVALS;
             }
           }
           queue.add(it);
@@ -256,7 +259,7 @@ abstract class IntervalFunction {
         }
       }
       if (this.queue.size() < subIterators.length)
-        return IntervalIterator.NO_MORE_INTERVALS;
+        return start = end = IntervalIterator.NO_MORE_INTERVALS;
       // then, minimize it
       do {
         start = queue.top().start();
@@ -408,11 +411,17 @@ abstract class IntervalFunction {
 
         @Override
         public int start() {
+          if (bpos == false) {
+            return NO_MORE_INTERVALS;
+          }
           return a.start();
         }
 
         @Override
         public int end() {
+          if (bpos == false) {
+            return NO_MORE_INTERVALS;
+          }
           return a.end();
         }
 
@@ -427,12 +436,15 @@ abstract class IntervalFunction {
             return IntervalIterator.NO_MORE_INTERVALS;
           while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
             while (b.end() < a.end()) {
-              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+                bpos = false;
                 return IntervalIterator.NO_MORE_INTERVALS;
+              }
             }
             if (b.start() <= a.start())
               return a.start();
           }
+          bpos = false;
           return IntervalIterator.NO_MORE_INTERVALS;
         }
 

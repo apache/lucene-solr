@@ -48,14 +48,16 @@ public abstract class IntervalIterator extends DocIdSetIterator {
   /**
    * The start of the current interval
    *
-   * Returns -1 if {@link #nextInterval()} has not yet been called
+   * Returns -1 if {@link #nextInterval()} has not yet been called and {@link #NO_MORE_INTERVALS}
+   * once the iterator is exhausted.
    */
   public abstract int start();
 
   /**
    * The end of the current interval
    *
-   * Returns -1 if {@link #nextInterval()} has not yet been called
+   * Returns -1 if {@link #nextInterval()} has not yet been called and {@link #NO_MORE_INTERVALS}
+   * once the iterator is exhausted.
    */
   public abstract int end();
 

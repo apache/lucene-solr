@@ -104,6 +104,27 @@ public final class Intervals {
   }
 
   /**
+   * Create an {@link IntervalsSource} that wraps another source, extending its
+   * intervals by a number of positions before and after.
+   *
+   * This can be useful for adding defined gaps in a block query; for example,
+   * to find 'a b [2 arbitrary terms] c', you can call:
+   * <pre>
+   *   Intervals.phrase(Intervals.term("a"), Intervals.extend(Intervals.term("b"), 0, 2), Intervals.term("c"));
+   * </pre>
+   *
+   * Note that calling {@link IntervalIterator#gaps()} on iterators returned by this source
+   * delegates directly to the wrapped iterator, and does not include the extensions.
+   *
+   * @param source the source to extend
+   * @param before how many positions to extend before the delegated interval
+   * @param after  how many positions to extend after the delegated interval
+   */
+  public static IntervalsSource extend(IntervalsSource source, int before, int after) {
+    return new ExtendedIntervalsSource(source, before, after);
+  }
+
+  /**
    * Create an ordered {@link IntervalsSource}
    *
    * Returns intervals in which the subsources all appear in the given order
@@ -162,7 +183,8 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notWithin(IntervalsSource minuend, int positions, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, new DifferenceIntervalFunction.NotWithinFunction(positions));
+    return new DifferenceIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions),
+        DifferenceIntervalFunction.NON_OVERLAPPING);
   }
 
   /**

@@ -49,12 +49,12 @@ final class IntervalMatches {
 
       @Override
       public int startPosition() {
-        return source.startPosition();
+        return iterator.start();
       }
 
       @Override
       public int endPosition() {
-        return source.endPosition();
+        return iterator.end();
       }
 
       @Override
