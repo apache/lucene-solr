@@ -159,7 +159,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     if (indexOfLastPathSepChar < 0) {
       return queryString;
     }
-    String path = queryString.substring(0, indexOfLastPathSepChar + 1);
+    String path = queryString.substring(0, indexOfLastPathSepChar);
     String remaining = queryString.substring(indexOfLastPathSepChar + 1);
     return
         "+" + NEST_PATH_FIELD_NAME + ":" + ClientUtils.escapeQueryChars(path)
