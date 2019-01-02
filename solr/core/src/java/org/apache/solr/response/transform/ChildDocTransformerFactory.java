@@ -150,7 +150,8 @@ public class ChildDocTransformerFactory extends TransformerFactory {
   // NOTE: THIS FEATURE IS PRESENTLY EXPERIMENTAL; WAIT TO SEE IT IN THE REF GUIDE.  FINAL SYNTAX IS TBD.
   protected static String processPathHierarchyQueryString(String queryString) {
     // if the filter includes a path string, build a lucene query string to match those specific child documents.
-    // e.g. toppings/ingredients/name_s:cocoa -> +_nest_path_:"toppings/ingredients/" +(name_s:cocoa)
+    // e.g. /toppings/ingredients/name_s:cocoa -> +_nest_path_:"/toppings/ingredients" +(name_s:cocoa)
+    // ingredients/name_s:cocoa -> +(_nest_path_:"*/ingredients" OR _nest_path_:"ingredients") +(name_s:cocoa)
     int indexOfFirstColon = queryString.indexOf(':');
     if (indexOfFirstColon <= 0) {
       return queryString;// give up
@@ -159,12 +160,17 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     if (indexOfLastPathSepChar < 0) {
       return queryString;
     }
+    String remaining = queryString.substring(indexOfLastPathSepChar + 1); // last part of path hierarchy
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
-    String path = ClientUtils.escapeQueryChars(queryString.substring(isAbsolutePath ? 1: 0, indexOfLastPathSepChar));
-    String remaining = queryString.substring(indexOfLastPathSepChar + 1);
+    if(isAbsolutePath) {
+      return
+          "+" + NEST_PATH_FIELD_NAME + ":" + ClientUtils.escapeQueryChars(queryString.substring(1, indexOfLastPathSepChar))
+          + " +(" + remaining + ")";
+    }
+    String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));
     return
-        "+" + NEST_PATH_FIELD_NAME + (isAbsolutePath? ":": ":*") + path
-        + " +(" + remaining + ")";
+        "+(" + NEST_PATH_FIELD_NAME + ":" + path + " OR " + NEST_PATH_FIELD_NAME + ":*/" + path
+        + ") +(" + remaining + ")";
   }
 }
 
