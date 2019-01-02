@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -86,6 +87,18 @@ public class ScheduledTriggers implements Closeable {
     DEFAULT_PROPERTIES.put(TRIGGER_COOLDOWN_PERIOD_SECONDS, DEFAULT_COOLDOWN_PERIOD_SECONDS);
     DEFAULT_PROPERTIES.put(TRIGGER_CORE_POOL_SIZE, DEFAULT_TRIGGER_CORE_POOL_SIZE);
     DEFAULT_PROPERTIES.put(ACTION_THROTTLE_PERIOD_SECONDS, DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS);
+  }
+
+  protected static final Random RANDOM;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
   }
 
   private final Map<String, TriggerWrapper> scheduledTriggerWrappers = new ConcurrentHashMap<>();
@@ -381,9 +394,13 @@ public class ScheduledTriggers implements Closeable {
    * @lucene.internal
    */
   public synchronized void resumeTriggers(long afterDelayMillis) {
-    scheduledTriggerWrappers.forEach((s, triggerWrapper) ->  {
+    List<Map.Entry<String, TriggerWrapper>> entries = new ArrayList<>(scheduledTriggerWrappers.entrySet());
+    Collections.shuffle(entries, RANDOM);
+    entries.forEach(e ->  {
+      String key = e.getKey();
+      TriggerWrapper triggerWrapper = e.getValue();
       if (triggerWrapper.scheduledFuture.isCancelled()) {
-        log.debug("Resuming trigger: {} after {}ms", s, afterDelayMillis);
+        log.debug("Resuming trigger: {} after {}ms", key, afterDelayMillis);
         triggerWrapper.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(triggerWrapper, afterDelayMillis,
             cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
       }
