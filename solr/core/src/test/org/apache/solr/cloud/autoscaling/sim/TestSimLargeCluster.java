@@ -98,7 +98,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     // disable .auto_add_replicas (once it exists)
     CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".auto_add_replicas");
     CloudTestUtils.suspendTrigger(cluster, ".auto_add_replicas");
-    
+    cluster.getSimClusterStateProvider().createSystemCollection();
+
     waitForSeconds = 5;
     triggerStartedCount.set(0);
     triggerFinishedCount.set(0);
