@@ -312,6 +312,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13098")
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
     miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
