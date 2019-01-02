@@ -193,6 +193,11 @@ Bug Fixes
 * SOLR-13080: The "terms" QParser's "automaton" method semi-required that the input terms/IDs be sorted.  This
   query parser now does this.  Unclear if this is a perf issue or actual bug.  (Daniel Lowe, David Smiley)
 
+* SOLR-13082: A trigger that creates trigger events more frequently than the cool down period can starve other triggers.
+  This is mitigated to some extent by randomly choosing the trigger to resume after cool down. It is recommended that
+  scheduled triggers not be used for very frequent operations to avoid this problem.
+  (ab, shalin)
+
 Improvements
 ----------------------
 

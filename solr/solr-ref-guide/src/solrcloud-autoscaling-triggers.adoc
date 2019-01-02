@@ -527,3 +527,15 @@ This trigger applies the `every` date math expression on the `startTime` or the 
 Apart from the common event properties described in the <<Event Types>> section, the trigger adds an additional `actualEventTime` event property which has the actual event time as opposed to the scheduled time.
 
 For example, if the scheduled time was `2018-01-31T15:30:00Z` and grace time was `+15MINUTES` then an event may be fired at `2018-01-31T15:45:00Z`. Such an event will have `eventTime` as `2018-01-31T15:30:00Z`, the scheduled time, but the `actualEventTime` property will have a value of `2018-01-31T15:45:00Z`, the actual time.
+
+.Frequently scheduled events and trigger starvation
+[CAUTION]
+====
+Be cautious with scheduled triggers that are set to run as or more frequently than the trigger cooldown period (defaults to 5 seconds).
+
+Solr pauses all triggers for a cooldown period after a trigger fires so that the system has some time to stabilize. An aggressive scheduled trigger can starve all other triggers from
+ever executing if a new scheduled event is ready as soon as the cooldown period is over. The same starvation scenario can happen to the scheduled trigger as well.
+
+Solr randomizes the order in which the triggers are resumed after the cooldown period to mitigate this problem. However, it is recommended that scheduled triggers
+are not used with low `every` values and an external scheduling process such as cron be used for such cases instead.
+====
