@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -336,10 +337,24 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     String overseerLeader = (String) overSeerStatus.get("leader");
     ClusterState state = cluster.getSolrClient().getZkStateReader().getClusterState();
     DocCollection coll = state.getCollection(COLL_NAME);
+    DocCollection system = state.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
+    Set<String> systemLeaderNodes;
+    if (system != null) {
+      systemLeaderNodes = system.getReplicas().stream()
+          .filter(r -> r.getBool("leader", false))
+          .map(r -> r.getNodeName())
+          .collect(Collectors.toSet());
+    } else {
+      systemLeaderNodes = Collections.emptySet();
+    }
     String nodeToKill = null;
     for (Replica r : coll.getReplicas()) {
       if (r.isActive(state.getLiveNodes()) &&
           !r.getNodeName().equals(overseerLeader)) {
+        if (systemLeaderNodes.contains(r.getNodeName())) {
+          log.info("--skipping .system leader replica {}", r);
+          continue;
+        }
         nodeToKill = r.getNodeName();
         break;
       }
