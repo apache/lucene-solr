@@ -94,6 +94,10 @@ Improvements
 
 * SOLR-12973: Admin UI "Nodes" view support for replica* replica names. (Daniel Collins, Christine Poerschke, janhoy)
 
+* SOLR-13090: All shipped configurations still have `maxBooleanClauses` default to 1024.  But if the
+  `solr.max.booleanClauses` sysprop is specified, that will override the 1024 default.  This enables users to
+  update this property across the board more easily. (Jason Gerlowski)
+
 Other Changes
 ----------------------
 

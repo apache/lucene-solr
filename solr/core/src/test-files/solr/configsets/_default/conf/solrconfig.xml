@@ -372,7 +372,7 @@
          since it is purely an arbitrary limit to try and catch user errors where
          large boolean queries may not be the best implementation choice.
       -->
-    <maxBooleanClauses>1024</maxBooleanClauses>
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
     <!-- Solr Internal Query Caches
 
