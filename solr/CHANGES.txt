@@ -198,6 +198,8 @@ Bug Fixes
   scheduled triggers not be used for very frequent operations to avoid this problem.
   (ab, shalin)
 
+* SOLR-12514: Rule-base Authorization plugin skips authorization if querying node does not have collection replica (noble)
+
 Improvements
 ----------------------
 

@@ -100,7 +100,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+//  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testBasicAuth() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
@@ -238,6 +238,19 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       del.setBasicAuthCredentials("harry","HarryIsUberCool");
       del.setCommitWithin(10);
       del.process(cluster.getSolrClient(), COLLECTION);
+
+      //Test for SOLR-12514. Create a new jetty . This jetty does not have the collection.
+      //Make a request to that jetty and it should fail
+      JettySolrRunner aNewJetty = cluster.startJettySolrRunner();
+      try {
+        del = new UpdateRequest().deleteByQuery("*:*");
+        del.process(aNewJetty.newClient(), COLLECTION);
+        fail("This should not have succeeded without credentials");
+      } catch (HttpSolrClient.RemoteSolrException e) {
+        assertTrue(e.getMessage().contains("Unauthorized request"));
+      } finally {
+        cluster.stopJettySolrRunner(aNewJetty);
+      }
 
       addDocument("harry","HarryIsUberCool","id", "4");
 
