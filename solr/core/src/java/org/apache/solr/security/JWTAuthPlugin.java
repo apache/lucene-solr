@@ -65,12 +65,14 @@ import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.noggit.JSONUtil;
@@ -430,13 +432,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
               }
             } catch (InvalidJwtException e) {
               // Whether or not the JWT has expired being one common reason for invalidity
+              System.out.println("Exception is " + e.getClass().getName() + ", " + e.getMessage() + ", code=" + e.getErrorDetails().get(0).getErrorCode());
               if (e.hasExpired()) {
                 return new JWTAuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
               }
-              if (e.getCause() != null && e.getCause() instanceof UnresolvableKeyException) {
-                return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, "Unable to find a suitable verification key for the JWT");
+              if (e.getCause() != null && e.getCause() instanceof JoseException && e.getCause().getMessage().contains("Invalid JOSE Compact Serialization")) {
+                return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, e.getCause().getMessage());
               }
-              return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, e);
+              return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
             }
           } catch (MalformedClaimException e) {
             return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
