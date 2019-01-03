@@ -698,7 +698,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    postProcessDeleteById(cmd);
+    doDistribDeleteById(cmd);
 
     // cmd.getIndexId == null when delete by query
     // TODO: what to do when no idField?
@@ -718,7 +718,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @param cmd the delete command
    * @throws IOException in case post processing failed
    */
-  protected void postProcessDeleteById(DeleteUpdateCommand cmd) throws IOException {
+  protected void doDistribDeleteById(DeleteUpdateCommand cmd) throws IOException {
     // no-op for derived classes to implement
   }
 
@@ -756,11 +756,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   /**
-   * should be called by implementing class after
+   * should be called by implementing class after setting up replicas
    * @param cmd delete command
-   * @param replicas list of Nodes replicas to pass to {@link DistributedUpdateProcessor#postProcessDeleteByQuery(DeleteUpdateCommand, List, DocCollection)}
+   * @param replicas list of Nodes replicas to pass to {@link DistributedUpdateProcessor#doDistribDeleteByQuery(DeleteUpdateCommand, List, DocCollection)}
    * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection},
-   *             passed to {@link DistributedUpdateProcessor#postProcessDeleteByQuery(DeleteUpdateCommand, List, DocCollection)}
+   *             passed to {@link DistributedUpdateProcessor#doDistribDeleteByQuery(DeleteUpdateCommand, List, DocCollection)}
    */
   protected void doDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas, DocCollection coll) throws IOException {
     if (vinfo == null) {
@@ -773,7 +773,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     versionDeleteByQuery(cmd);
 
-    postProcessDeleteByQuery(cmd, replicas, coll);
+    doDistribDeleteByQuery(cmd, replicas, coll);
 
 
     if (returnVersions && rsp != null) {
@@ -792,7 +792,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @param coll the collection in zookeeper {@link org.apache.solr.common.cloud.DocCollection}.
    * @throws IOException in case post processing failed
    */
-  protected void postProcessDeleteByQuery(DeleteUpdateCommand cmd, List<Node> replicas, DocCollection coll) throws IOException {
+  protected void doDistribDeleteByQuery(DeleteUpdateCommand cmd, List<Node> replicas, DocCollection coll) throws IOException {
     // no-op for derived classes to implement
   }
 
