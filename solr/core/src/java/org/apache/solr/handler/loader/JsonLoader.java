@@ -93,16 +93,11 @@ public class JsonLoader extends ContentStreamLoader {
     protected JSONParser parser;
     protected final int commitWithin;
     protected final boolean overwrite;
-    protected final boolean anonChildDoc;
 
-    /**
-     * {@link CommonParams#ANONYMOUS_CHILD_DOCS} Defaults to true.
-     */
-    public SingleThreadedJsonLoader(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
+    SingleThreadedJsonLoader(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
       this.processor = processor;
       this.req = req;
       this.rsp = rsp;
-      this.anonChildDoc = req.getParams().getBool(CommonParams.ANONYMOUS_CHILD_DOCS, true);
 
       commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
       overwrite = req.getParams().getBool(UpdateParams.OVERWRITE, true);
@@ -258,23 +253,15 @@ public class JsonLoader extends ContentStreamLoader {
             List value = (List) e.getValue();
             for (Object o : value) {
               if (o instanceof Map) {
-                if (anonChildDoc) {
-                  result.addChildDocument(buildDoc((Map) o));
-                } else {
-                  // retain the value as a list, even if the list contains a single value.
-                  if(!result.containsKey(e.getKey())) {
-                    result.setField(e.getKey(), new ArrayList<>(1));
-                  }
-                  result.addField(e.getKey(), buildDoc((Map) o));
+                // retain the value as a list, even if the list contains a single value.
+                if(!result.containsKey(e.getKey())) {
+                  result.setField(e.getKey(), new ArrayList<>(1));
                 }
+                result.addField(e.getKey(), buildDoc((Map) o));
               }
             }
           } else if (e.getValue() instanceof Map) {
-            if (anonChildDoc) {
-              result.addChildDocument(buildDoc((Map) e.getValue()));
-            } else {
-              result.addField(e.getKey(), buildDoc((Map) e.getValue()));
-            }
+            result.addField(e.getKey(), buildDoc((Map) e.getValue()));
           }
         } else {
           result.setField(e.getKey(), e.getValue());
@@ -549,7 +536,7 @@ public class JsonLoader extends ContentStreamLoader {
         }
         String fieldName = parser.getString();
 
-        if (anonChildDoc && fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
+        if (fieldName.equals(JsonLoader.CHILD_DOC_KEY)) { // somewhat legacy
           ev = parser.nextEvent();
           assertEvent(ev, JSONParser.ARRAY_START);
           while ((ev = parser.nextEvent()) != JSONParser.ARRAY_END) {

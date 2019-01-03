@@ -65,10 +65,16 @@ Upgrade Notes
   SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
   See also explanation in Reference Guide chapter "Other Schema Elements".
 
-* SOLR-12535:  Solr no longer accepts index time boosts in JSON provided to Solr.  This used to be provided like so:
+* SOLR-12535: Solr no longer accepts index time boosts in JSON provided to Solr.  This used to be provided like so:
   {'id':'1', 'val_s':{'value':'foo', 'boost':2.0}}  but will now produce an error.  A object/map structure will now only
   be interpreted as a child document or an atomic update; nothing else.  A uniqueKey is currently required on all child
   documents to be interpreted as such, though this may change in the future.  (David Smiley)
+
+* SOLR-12633: When JSON data is sent to Solr with nested child documents split using the "split" parameter, the child
+  docs will now be associated to their parents by the field/label string used in the JSON instead of anonymously.  Most
+  users probably won't notice the distinction since the label is lost any way unless special fields are in the schema.
+  This choice used to be toggleable with an internal/expert "anonChildDocs" parameter flag which is now gone.
+  (David Smiley)
 
 New Features
 ----------------------
