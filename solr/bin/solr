@@ -220,7 +220,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
     fi
     if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEY_STORE_TYPE"
     fi
   fi
 
