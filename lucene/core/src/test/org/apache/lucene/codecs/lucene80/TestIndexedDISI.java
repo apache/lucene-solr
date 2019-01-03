@@ -77,6 +77,29 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  // EMPTY blocks are special with regard to jumps as they have size 0
+  public void testLastEmptyBlocks() throws IOException {
+    final int B = 65536;
+    int maxDoc = B*3;
+    FixedBitSet set = new FixedBitSet(maxDoc);
+    for (int docID = 0 ; docID < B*2 ; docID++) { // first 2 blocks are ALL
+      set.set(docID);
+    }
+    // Last block is EMPTY
+
+    try (Directory dir = newDirectory()) {
+      doTestAllSingleJump(set, dir);
+    }
+  }
+
+  public void testRandomBlocks() throws IOException {
+    final int BLOCKS = 5;
+    FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
+    try (Directory dir = newDirectory()) {
+      doTestAllSingleJump(set, dir);
+    }
+  }
+
   // When doing merges in Lucene80NormsProducer, IndexedDISI are created from slices where the offset is not 0
   public void testPositionNotZero() throws IOException {
     final int BLOCKS = 10;
@@ -145,7 +168,18 @@ public class TestIndexedDISI extends LuceneTestCase {
     try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
       for (int i = 0; i < set.length(); i++) {
         IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
-        assertEquals("The bit at " + i + " should be correct", set.get(i), disi.advanceExact(i));
+        assertEquals("The bit at " + i + " should be correct with advanceExact", set.get(i), disi.advanceExact(i));
+
+        IndexedDISI disi2 = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
+        disi2.advance(i);
+        // Proper sanity check with jump tables as an error could make them seek backwards
+        assertTrue("The docID should at least be " + i + " after advance(" + i + ") but was " + disi2.docID(),
+            i <= disi2.docID());
+        if (set.get(i)) {
+          assertEquals("The docID should be present with advance", i, disi2.docID());
+        } else {
+          assertNotSame("The docID should not be present with advance", i, disi2.docID());
+        }
       }
     }
   }

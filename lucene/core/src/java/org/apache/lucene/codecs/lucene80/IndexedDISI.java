@@ -215,12 +215,16 @@ final class IndexedDISI extends DocIdSetIterator {
       buffer.clear(0, buffer.length());
       prevBlock++;
     }
-    final int lastBlock = prevBlock == -1 ? 0 : prevBlock;
-    // NO_MORE_DOCS is stored explicitly
+    final int lastBlock = prevBlock == -1 ? 0 : prevBlock; // There will always be at least 1 block (NO_MORE_DOCS)
+    // Last entry is a SPARSE with blockIndex == 32767 and the single entry 65535, which becomes the docID NO_MORE_DOCS
+    // To avoid creating 65K jump-table entries, only a single entry is created pointing to the offset of the
+    // NO_MORE_DOCS block, but with the jumpBlockIndex set to the logical EMPTY block after all real blocks.
+    jumps = addJumps(jumps, out.getFilePointer()-origo, DocIdSetIterator.NO_MORE_DOCS & 0xFFFF0000,
+        lastBlock, lastBlock+1);
     buffer.set(DocIdSetIterator.NO_MORE_DOCS & 0xFFFF);
     flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, denseRankPower, out);
     // offset+index jump-table stored at the end
-    return flushBlockJumps(jumps, lastBlock, out, origo);
+    return flushBlockJumps(jumps, lastBlock+1, out, origo);
   }
 
   // Adds entries to the offset & index jump-table for blocks
@@ -237,7 +241,7 @@ final class IndexedDISI extends DocIdSetIterator {
   // Flushes the offet & index jump-table for blocks. This should be the last data written to out
   // This method returns the blockCount for the blocks reachable for the jump_table or -1 for no jump-table
   private static short flushBlockJumps(int[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
-    if (blockCount == 1) { // A single jump is just wasted space so we ignore that
+    if (blockCount == 2) { // Jumps with a single real entry + NO_MORE_DOCS is just wasted space so we ignore that
       blockCount = 0;
     }
     for (int i = 0 ; i < blockCount ; i++) {
@@ -367,10 +371,11 @@ final class IndexedDISI extends DocIdSetIterator {
   private void advanceBlock(int targetBlock) throws IOException {
     final int blockIndex = targetBlock >> 16;
     // If the destination block is 2 blocks or more ahead, we use the jump-table.
-    // TODO LUCENE-8585: If blockIndex >= jumpTableEntryCount, it should mean that all subsequent blocks are EMPTY
-    if (jumpTable != null && blockIndex >= (block >> 16)+2 && blockIndex < jumpTableEntryCount) {
-      final int index = jumpTable.readInt(blockIndex*Integer.BYTES*2);
-      final int offset = jumpTable.readInt(blockIndex*Integer.BYTES*2+Integer.BYTES);
+    if (jumpTable != null && blockIndex >= (block >> 16)+2) {
+      // If the jumpTableEntryCount is exceeded, there are no further bits. Last entry is always NO_MORE_DOCS
+      final int inRangeBlockIndex = blockIndex < jumpTableEntryCount ? blockIndex : jumpTableEntryCount-1;
+      final int index = jumpTable.readInt(inRangeBlockIndex*Integer.BYTES*2);
+      final int offset = jumpTable.readInt(inRangeBlockIndex*Integer.BYTES*2+Integer.BYTES);
       this.nextBlockIndex = index-1; // -1 to compensate for the always-added 1 in readBlockHeader
       slice.seek(offset);
       readBlockHeader();

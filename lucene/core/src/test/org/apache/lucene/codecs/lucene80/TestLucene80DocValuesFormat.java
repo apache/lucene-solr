@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.lucene80;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -561,14 +560,11 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
   // and numeric multi blocks. This test focuses on testing these jumps.
   @Slow
   public void testNumericFieldJumpTables() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
-    conf.setRAMBufferSizeMB(-1);
-    conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
-    IndexWriter iw = new IndexWriter(dir, conf);
-
     final int maxDoc = atLeast(3*65536); // Must be above 3*65536 to trigger IndexedDISI block skips
+
+    Directory dir = newDirectory();
+    IndexWriter iw = createFastIndexWriter(dir, maxDoc);
+
     for (int i = 0 ; i < maxDoc ; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
@@ -624,6 +620,14 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
 
     iw.close();
     dir.close();
+  }
+
+  private IndexWriter createFastIndexWriter(Directory dir, int maxBufferedDocs) throws IOException {
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMaxBufferedDocs(maxBufferedDocs);
+    conf.setRAMBufferSizeMB(-1);
+    conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    return new IndexWriter(dir, conf);
   }
 
   private static LongSupplier blocksOfVariousBPV() {
