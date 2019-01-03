@@ -242,6 +242,19 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testPartialKeyNoMatches() throws Exception {
+    indexSampleData(numberOfDocsPerNestedTest);
+
+    // test partial path, shoul
+    assertQ(req("q", "type_s:donut",
+        "sort", "id asc",
+        "fl", "*,[child childFilter='redients/name_s:cocoa']",
+        "fq", fqToExcludeNonTestedDocs),
+        "//result/doc/str[@name='type_s'][.='donut']", "not(//result/doc/arr[@name='toppings'])"
+        );
+  }
+
+  @Test
   public void testSingularChildFilterJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
     String[] tests = new String[] {
