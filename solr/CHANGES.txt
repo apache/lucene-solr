@@ -214,6 +214,8 @@ Bug Fixes
 
 * SOLR-11853: Solr installer fails on SuSE linux (Markus Mandalka via janhoy)
 
+* SOLR-12237: Fix incorrect SOLR_SSL_KEYSTORE_TYPE variable in solr start script (janhoy, Joel Bernstein)
+
 Improvements
 ----------------------
 
