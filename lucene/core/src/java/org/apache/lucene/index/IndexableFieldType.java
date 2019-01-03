@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer; // javadocs
 
 /** 
@@ -111,4 +113,14 @@ public interface IndexableFieldType {
    * The number of bytes in each dimension's values.
    */
   public int pointNumBytes();
+
+  /**
+   * Attributes for the field type.
+   *
+   * Attributes are not thread-safe, user must not add attributes while other threads are indexing documents
+   * with this field type.
+   *
+   * @return Map
+   */
+  public Map<String, String> getAttributes();
 }
