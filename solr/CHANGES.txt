@@ -76,6 +76,9 @@ Upgrade Notes
   This choice used to be toggleable with an internal/expert "anonChildDocs" parameter flag which is now gone.
   (David Smiley)
 
+* SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. 
+  If you have a custom language identifier implementation you will need to adapt your code.
+  
 New Features
 ----------------------
 
@@ -101,6 +104,9 @@ Bug Fixes
 ----------------------
 
 * SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
+
+* SOLR-11774: langid.map.individual now works together with langid.map.keepOrig. Also the detectLanguage() API 
+  is changed to accept a Reader allowing for more memory efficient implementations (janhoy)
 
 Improvements
 ----------------------
