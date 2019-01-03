@@ -94,18 +94,19 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Map<String,Float> originalValues = getOriginalValues();
     
     MoreLikeThis mlt = new MoreLikeThis(reader);
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     mlt.setAnalyzer(analyzer);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
-    mlt.setFieldNames(new String[] {"text"});
-    mlt.setBoost(true);
+    mlt.setFieldNames(new String[]{"text"});
+    boostConfiguration.setBoost(true);
     
     // this mean that every term boost factor will be multiplied by this
     // number
     float boostFactor = 5;
-    mlt.setBoostFactor(boostFactor);
+    boostConfiguration.setBoostFactor(boostFactor);
     
     BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
         "lucene release"));
@@ -131,13 +132,14 @@ public class TestMoreLikeThis extends LuceneTestCase {
   private Map<String,Float> getOriginalValues() throws IOException {
     Map<String,Float> originalValues = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(reader);
+    MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     mlt.setAnalyzer(analyzer);
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
-    mlt.setFieldNames(new String[] {"text"});
-    mlt.setBoost(true);
+    mlt.setFieldNames(new String[]{"text"});
+    boostConfiguration.setBoost(true);
     BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
         "lucene release"));
     Collection<BooleanClause> clauses = query.clauses();
@@ -159,7 +161,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
-    mlt.setFieldNames(new String[] {"text", "foobar"});
+    mlt.setFieldNames(new String[]{"text", "foobar"});
     mlt.like("foobar", new StringReader("this is a test"));
     analyzer.close();
   }
@@ -172,7 +174,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
-    mlt.setFieldNames(new String[] {"text"});
+    mlt.setFieldNames(new String[]{"text"});
 
     BooleanQuery query = (BooleanQuery) mlt.like("text",
         new StringReader("lucene"), new StringReader("lucene release"),

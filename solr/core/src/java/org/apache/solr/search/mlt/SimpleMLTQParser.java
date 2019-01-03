@@ -18,9 +18,9 @@ package org.apache.solr.search.mlt;
 import org.apache.lucene.index.Term;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.queries.mlt.MoreLikeThisParameters;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -33,7 +33,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -69,16 +68,16 @@ public class SimpleMLTQParser extends QParser {
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-      
-      mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
-      mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
-      mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
-      mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
-      mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
-      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
-      mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
-      Boolean boost = localParams.getBool("boost", false);
-      mlt.setBoost(boost);
+      MoreLikeThisParameters.BoostProperties boostConfiguration = mlt.getBoostConfiguration();
+
+      mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThisParameters.DEFAULT_MIN_TERM_FREQ));
+      mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThisParameters.DEFAULT_MIN_DOC_FREQ));
+      mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThisParameters.DEFAULT_MIN_WORD_LENGTH));
+      mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThisParameters.DEFAULT_MAX_WORD_LENGTH));
+      mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThisParameters.DEFAULT_MAX_QUERY_TERMS));
+      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThisParameters.DEFAULT_MAX_NUM_TOKENS_PARSED));
+      mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThisParameters.DEFAULT_MAX_DOC_FREQ));
+      boostConfiguration.setBoost(localParams.getBool("boost", MoreLikeThisParameters.BoostProperties.DEFAULT_BOOST));
 
       String[] fieldNames;
       
@@ -96,6 +95,7 @@ public class SimpleMLTQParser extends QParser {
         }
         // Parse field names and boosts from the fields
         boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
+        boostConfiguration.setFieldToBoostFactor(boostFields);
         fieldNames = boostFields.keySet().toArray(new String[0]);
       } else {
         Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
@@ -115,29 +115,7 @@ public class SimpleMLTQParser extends QParser {
       mlt.setFieldNames(fieldNames);
       mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
-      Query rawMLTQuery = mlt.like(scoreDocs[0].doc);
-      BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
-
-      if (boost && boostFields.size() > 0) {
-        BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
-
-        for (BooleanClause clause : boostedMLTQuery) {
-          Query q = clause.getQuery();
-          float originalBoost = 1f;
-          if (q instanceof BoostQuery) {
-            BoostQuery bq = (BoostQuery) q;
-            q = bq.getQuery();
-            originalBoost = bq.getBoost();
-          }
-          Float fieldBoost = boostFields.get(((TermQuery) q).getTerm().field());
-          q = ((fieldBoost != null) ? new BoostQuery(q, fieldBoost * originalBoost) : clause.getQuery());
-          newQ.add(q, clause.getOccur());
-        }
-
-        boostedMLTQuery = QueryUtils.build(newQ, this);
-      }
-
+      Query boostedMLTQuery = mlt.like(scoreDocs[0].doc);
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
