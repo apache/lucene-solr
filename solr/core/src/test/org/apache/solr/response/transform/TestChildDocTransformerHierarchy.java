@@ -111,7 +111,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   public void testParentFilterLimitJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
 
-    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:\"toppings\"' limit=1]",
+    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
@@ -165,10 +165,10 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     indexSampleData(2);
     String[] tests = {
         "/response/numFound==4",
-        "/response/docs/[0]/_nest_path_=='toppings#0'",
-        "/response/docs/[1]/_nest_path_=='toppings#0'",
-        "/response/docs/[2]/_nest_path_=='toppings#1'",
-        "/response/docs/[3]/_nest_path_=='toppings#1'",
+        "/response/docs/[0]/_nest_path_=='/toppings#0'",
+        "/response/docs/[1]/_nest_path_=='/toppings#0'",
+        "/response/docs/[2]/_nest_path_=='/toppings#1'",
+        "/response/docs/[3]/_nest_path_=='/toppings#1'",
     };
 
     assertJQ(req("q", "_nest_path_:*toppings",
@@ -177,7 +177,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
         "fq", fqToExcludeNonTestedDocs),
         tests);
 
-    assertJQ(req("q", "+_nest_path_:\"toppings\"",
+    assertJQ(req("q", "+_nest_path_:\"/toppings\"",
         "sort", "_nest_path_ asc",
         "fl", "*, _nest_path_",
         "fq", fqToExcludeNonTestedDocs),
@@ -242,10 +242,11 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPartialKeyNoMatches() throws Exception {
+  public void testNestPathTransformerMatches() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
 
-    // test partial path, shoul
+    // test partial path
+    // should not match any child docs
     assertQ(req("q", "type_s:donut",
         "sort", "id asc",
         "fl", "*,[child childFilter='redients/name_s:cocoa']",

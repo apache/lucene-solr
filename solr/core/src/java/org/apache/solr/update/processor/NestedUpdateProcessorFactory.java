@@ -132,10 +132,10 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
             String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
             cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
           }
-          final String lastKeyPath = fieldName + NUM_SEP_CHAR + sChildNum;
-          // concat of all paths children.grandChild => children#1/grandChild#
-          final String childDocPath = fullPath == null ? lastKeyPath : fullPath + PATH_SEP_CHAR + lastKeyPath;
-          processChildDoc((SolrInputDocument) val, doc, childDocPath);
+          final String lastKeyPath = PATH_SEP_CHAR + fieldName + NUM_SEP_CHAR + sChildNum;
+          // concat of all paths children.grandChild => /children#1/grandChild#
+          final String childDocPath = fullPath == null ? lastKeyPath : fullPath + lastKeyPath;
+          processChildDoc(cDoc, doc, childDocPath);
           ++childNum;
         }
       }
