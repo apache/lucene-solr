@@ -110,10 +110,12 @@ Supported configuration properties:
 `collection`::
 (string, optional) Specifies the target collection where documents are sent.
 Default value is `.system`. If the target collection is missing the listener will
-silently discard events. _Note: in rare situations when the target collection is in
-an unstable state (eg. when some leader replicas were just lost and the leader election haven't
-finished running yet) the listener may not be able to index some events. In such cases a
-WARN message with the details of the event(s) will be added to the regular logs._
+silently discard events.
++
+NOTE: In rare situations when the target collection is in
+an unstable state (e.g., when some leader replicas were just lost and the leader election hasn't
+finished running yet), the listener may not be able to index some events. In such cases a
+WARN message with the details of the event(s) will be added to the regular logs.
 
 `enabled`::
 (boolean, optional) Enables the listener when true. Default value is true.
