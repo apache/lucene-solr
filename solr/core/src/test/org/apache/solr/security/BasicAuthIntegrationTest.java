@@ -245,8 +245,13 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       JettySolrRunner aNewJetty = cluster.startJettySolrRunner();
       SolrClient aNewClient = aNewJetty.newClient();
       try {
-        del = new UpdateRequest().deleteByQuery("*:*");
-        del.process(aNewClient, COLLECTION);
+        UpdateRequest delQuery = null;
+        delQuery = new UpdateRequest().deleteByQuery("*:*");
+        del.setBasicAuthCredentials("harry","HarryIsUberCool");
+        delQuery.process(aNewClient, COLLECTION);//this should succeed
+
+        delQuery = new UpdateRequest().deleteByQuery("*:*");
+        delQuery.process(aNewClient, COLLECTION);
         fail("This should not have succeeded without credentials");
       } catch (HttpSolrClient.RemoteSolrException e) {
         assertTrue(e.getMessage().contains("Unauthorized request"));
