@@ -247,7 +247,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       try {
         UpdateRequest delQuery = null;
         delQuery = new UpdateRequest().deleteByQuery("*:*");
-        del.setBasicAuthCredentials("harry","HarryIsUberCool");
+        delQuery.setBasicAuthCredentials("harry","HarryIsUberCool");
         delQuery.process(aNewClient, COLLECTION);//this should succeed
 
         delQuery = new UpdateRequest().deleteByQuery("*:*");
