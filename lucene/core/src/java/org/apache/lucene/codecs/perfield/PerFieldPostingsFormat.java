@@ -183,14 +183,14 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // Assign field -> PostingsFormat
       for(String field : fields) {
         FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(field);
-
+        // TODO: This should check current format from the field attribute?
         final PostingsFormat format = getPostingsFormatForField(field);
-  
+
         if (format == null) {
           throw new IllegalStateException("invalid null PostingsFormat for field=\"" + field + "\"");
         }
         String formatName = format.getName();
-      
+
         FieldsGroup group = formatToGroups.get(format);
         if (group == null) {
           // First time we are seeing this format; create a
@@ -221,17 +221,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
         group.fields.add(field);
 
-        String previousValue = fieldInfo.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-        if (previousValue != null) {
-          throw new IllegalStateException("found existing value for " + PER_FIELD_FORMAT_KEY + 
-                                          ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + formatName);
-        }
-
-        previousValue = fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(group.suffix));
-        if (previousValue != null) {
-          throw new IllegalStateException("found existing value for " + PER_FIELD_SUFFIX_KEY + 
-                                          ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + group.suffix);
-        }
+        fieldInfo.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
+        fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(group.suffix));
       }
       return formatToGroups;
     }

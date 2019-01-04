@@ -654,6 +654,11 @@ final class DefaultIndexingChain extends DocConsumer {
       // PerField.invert to allow for later downgrading of the index options:
       fi.setIndexOptions(fieldType.indexOptions());
       
+      Map<String, String> attributes = fieldType.getAttributes();
+      if (attributes != null) {
+        attributes.forEach((k, v) -> fi.putAttribute(k, v));
+      }
+
       fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert);
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;

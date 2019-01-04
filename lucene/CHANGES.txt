@@ -33,6 +33,10 @@ New Features
   IndexWriterConfig#setIndexCreatedVersionMajor. This is an expert feature.
   (Adrien Grand)
 
+* LUCENE-8601: Attributes set in the IndexableFieldType for each field during indexing will
+  now be recorded into the corresponding FieldInfo's attributes, accessible at search
+  time (Murali Krishna P)
+
 Improvements
 
 * LUCENE-8463: TopFieldCollector can now early-terminates queries when sorting by SortField.DOC.
