@@ -76,7 +76,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
       SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
       String usr;
       if (reqInfo != null) {
-        Principal principal = reqInfo.getReq().getUserPrincipal();
+        Principal principal = reqInfo.getUserPrincipal();
         if (principal == null) {
           //this had a request but not authenticated
           //so we don't not need to set a principal
