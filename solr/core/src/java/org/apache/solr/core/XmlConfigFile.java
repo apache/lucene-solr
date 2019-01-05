@@ -64,7 +64,7 @@ import org.xml.sax.SAXException;
 /**
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
-public class Config { // formerly simply "Config"
+public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
@@ -80,12 +80,12 @@ public class Config { // formerly simply "Config"
   /**
    * Builds a config from a resource name with no xpath prefix.
    */
-  public Config(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException 
+  public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
   {
     this( loader, name, null, null );
   }
 
-  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
   {
     this(loader, name, is, prefix, true);
   }
@@ -105,7 +105,7 @@ public class Config { // formerly simply "Config"
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    */
-  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
     if( loader == null ) {
       loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
@@ -174,7 +174,7 @@ public class Config { // formerly simply "Config"
     return loader.getCoreProperties();
   }
 
-  public Config(SolrResourceLoader loader, String name, Document doc) {
+  public XmlConfigFile(SolrResourceLoader loader, String name, Document doc) {
     this.prefix = null;
     this.doc = doc;
     try {
@@ -489,8 +489,8 @@ public class Config { // formerly simply "Config"
     return zkVersion;
   }
 
-  public Config getOriginalConfig() {
-    return new Config(loader, null, origDoc);
+  public XmlConfigFile getOriginalConfig() {
+    return new XmlConfigFile(loader, null, origDoc);
   }
 
 }

@@ -17,17 +17,8 @@
 package org.apache.solr.core;
 
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
-import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
-import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
-
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,9 +42,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
@@ -93,7 +82,16 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import com.google.common.collect.ImmutableList;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
+import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
+import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
+import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 
 
 /**
@@ -101,7 +99,7 @@ import com.google.common.collect.ImmutableList;
  * configuration data for a a Solr instance -- typically found in
  * "solrconfig.xml".
  */
-public class SolrConfig extends Config implements MapSerializable {
+public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
