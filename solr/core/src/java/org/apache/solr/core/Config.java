@@ -62,9 +62,9 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
-public class Config {
+public class Config { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
@@ -447,18 +447,21 @@ public class Config {
      String val = getVal(path, false);
      return val!=null ? Double.parseDouble(val) : def;
    }
-   
+
+  //TODO belongs on SolrXmlConfig?
    public Version getLuceneVersion(String path) {
      return parseLuceneVersionString(getVal(path, true));
    }
-   
+
+  //TODO belongs on SolrXmlConfig?
    public Version getLuceneVersion(String path, Version def) {
      String val = getVal(path, false);
      return val!=null ? parseLuceneVersionString(val) : def;
    }
   
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
-  
+
+  //TODO belongs on SolrXmlConfig?
   public static final Version parseLuceneVersionString(final String matchVersion) {
     final Version version;
     try {

@@ -157,6 +157,8 @@ Other Changes
 
 * SOLR-13086: Improve the error message reported by DocumentObjectBinder when a setter is not found (Gus Heck)
 
+* SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
+
 ==================  7.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
