@@ -496,7 +496,7 @@ public class HttpSolrCall {
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq,  new SolrQueryResponse()));
+          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
