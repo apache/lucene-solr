@@ -280,7 +280,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
     if (reqInfo != null) {
-      Principal principal = reqInfo.getReq().getUserPrincipal();
+      Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
         log.debug("principal is null");
         //this had a request but not authenticated
