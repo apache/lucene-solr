@@ -32,7 +32,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,10 +41,8 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -438,49 +435,13 @@ public class XmlConfigFile { // formerly simply "Config"
     return val!=null ? Float.parseFloat(val) : def;
   }
 
-
   public double getDouble(String path){
      return Double.parseDouble(getVal(path, true));
    }
 
-   public double getDouble(String path, double def) {
-     String val = getVal(path, false);
-     return val!=null ? Double.parseDouble(val) : def;
-   }
-
-  //TODO belongs on SolrXmlConfig?
-   public Version getLuceneVersion(String path) {
-     return parseLuceneVersionString(getVal(path, true));
-   }
-
-  //TODO belongs on SolrXmlConfig?
-   public Version getLuceneVersion(String path, Version def) {
-     String val = getVal(path, false);
-     return val!=null ? parseLuceneVersionString(val) : def;
-   }
-  
-  private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
-
-  //TODO belongs on SolrXmlConfig?
-  public static final Version parseLuceneVersionString(final String matchVersion) {
-    final Version version;
-    try {
-      version = Version.parseLeniently(matchVersion);
-    } catch (ParseException pe) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-        "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", pe);
-    }
-    
-    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn(
-        "You should not use LATEST as luceneMatchVersion property: "+
-        "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
-        "sizable changes may happen. If precise back compatibility is important "+
-        "then you should instead explicitly specify an actual Lucene version."
-      );
-    }
-    
-    return version;
+  public double getDouble(String path, double def) {
+    String val = getVal(path, false);
+    return val != null ? Double.parseDouble(val) : def;
   }
 
   /**If this config is loaded from zk the version is relevant other wise -1 is returned

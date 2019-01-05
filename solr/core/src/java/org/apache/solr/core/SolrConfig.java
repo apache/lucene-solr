@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -39,6 +40,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -104,6 +106,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+
   private RequestParams requestParams;
 
   public enum PluginOpts {
@@ -204,7 +207,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs();
-    luceneMatchVersion = getLuceneVersion("luceneMatchVersion");
+    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal("luceneMatchVersion", true));
     String indexConfigPrefix;
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
@@ -330,6 +333,29 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     solrRequestParsers = new SolrRequestParsers(this);
     log.debug("Loaded SolrConfig: {}", name);
+  }
+
+  private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
+
+  public static final Version parseLuceneVersionString(final String matchVersion) {
+    final Version version;
+    try {
+      version = Version.parseLeniently(matchVersion);
+    } catch (ParseException pe) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", pe);
+    }
+
+    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
+      log.warn(
+          "You should not use LATEST as luceneMatchVersion property: "+
+              "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
+              "sizable changes may happen. If precise back compatibility is important "+
+              "then you should instead explicitly specify an actual Lucene version."
+      );
+    }
+
+    return version;
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
