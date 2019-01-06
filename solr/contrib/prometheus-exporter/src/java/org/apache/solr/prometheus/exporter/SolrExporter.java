@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.prometheus.collector.SolrCollector;
 import org.slf4j.Logger;
@@ -84,7 +84,7 @@ public class SolrExporter {
 
   private int port;
   private SolrClient solrClient;
-  private Config config;
+  private XmlConfigFile config;
   private int numThreads;
 
   CollectorRegistry registry = new CollectorRegistry();
@@ -115,7 +115,7 @@ public class SolrExporter {
 
     this.port = port;
     this.solrClient = solrClient;
-    this.config = new Config(this.loader, configPath.getFileName().toString());
+    this.config = new XmlConfigFile(this.loader, configPath.getFileName().toString());
     this.numThreads = numThreads;
   }
 
