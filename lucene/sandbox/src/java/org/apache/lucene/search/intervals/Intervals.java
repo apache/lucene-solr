@@ -259,6 +259,13 @@ public final class Intervals {
   }
 
   /**
+   * Return intervals that span combinations of intervals from {@code minShouldMatch} of the sources
+   */
+  public static IntervalsSource atLeast(int minShouldMatch, IntervalsSource... sources) {
+    return new MinimumShouldMatchIntervalsSource(sources, minShouldMatch);
+  }
+
+  /**
    * Returns intervals from the source that appear before intervals from the reference
    */
   public static IntervalsSource before(IntervalsSource source, IntervalsSource reference) {
