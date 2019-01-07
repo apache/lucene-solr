@@ -32,7 +32,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,10 +41,8 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -62,9 +59,9 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
-public class Config {
+public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
@@ -80,12 +77,12 @@ public class Config {
   /**
    * Builds a config from a resource name with no xpath prefix.
    */
-  public Config(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException 
+  public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
   {
     this( loader, name, null, null );
   }
 
-  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
   {
     this(loader, name, is, prefix, true);
   }
@@ -105,7 +102,7 @@ public class Config {
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    */
-  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
     if( loader == null ) {
       loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
@@ -174,7 +171,7 @@ public class Config {
     return loader.getCoreProperties();
   }
 
-  public Config(SolrResourceLoader loader, String name, Document doc) {
+  public XmlConfigFile(SolrResourceLoader loader, String name, Document doc) {
     this.prefix = null;
     this.doc = doc;
     try {
@@ -438,46 +435,13 @@ public class Config {
     return val!=null ? Float.parseFloat(val) : def;
   }
 
-
   public double getDouble(String path){
      return Double.parseDouble(getVal(path, true));
    }
 
-   public double getDouble(String path, double def) {
-     String val = getVal(path, false);
-     return val!=null ? Double.parseDouble(val) : def;
-   }
-   
-   public Version getLuceneVersion(String path) {
-     return parseLuceneVersionString(getVal(path, true));
-   }
-   
-   public Version getLuceneVersion(String path, Version def) {
-     String val = getVal(path, false);
-     return val!=null ? parseLuceneVersionString(val) : def;
-   }
-  
-  private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
-  
-  public static final Version parseLuceneVersionString(final String matchVersion) {
-    final Version version;
-    try {
-      version = Version.parseLeniently(matchVersion);
-    } catch (ParseException pe) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-        "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", pe);
-    }
-    
-    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
-      log.warn(
-        "You should not use LATEST as luceneMatchVersion property: "+
-        "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
-        "sizable changes may happen. If precise back compatibility is important "+
-        "then you should instead explicitly specify an actual Lucene version."
-      );
-    }
-    
-    return version;
+  public double getDouble(String path, double def) {
+    String val = getVal(path, false);
+    return val != null ? Double.parseDouble(val) : def;
   }
 
   /**If this config is loaded from zk the version is relevant other wise -1 is returned
@@ -486,8 +450,8 @@ public class Config {
     return zkVersion;
   }
 
-  public Config getOriginalConfig() {
-    return new Config(loader, null, origDoc);
+  public XmlConfigFile getOriginalConfig() {
+    return new XmlConfigFile(loader, null, origDoc);
   }
 
 }

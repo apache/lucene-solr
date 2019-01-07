@@ -110,7 +110,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.Config.assertWarnOrFail;
+import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>

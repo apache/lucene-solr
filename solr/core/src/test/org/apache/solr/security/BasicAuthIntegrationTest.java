@@ -35,6 +35,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -235,12 +236,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       //Make a request to that jetty and it should fail
       JettySolrRunner aNewJetty = cluster.startJettySolrRunner();
       SolrClient aNewClient = aNewJetty.newClient();
+      UpdateRequest delQuery = null;
+      delQuery = new UpdateRequest().deleteByQuery("*:*");
+      delQuery.setBasicAuthCredentials("harry","HarryIsUberCool");
+      delQuery.process(aNewClient, COLLECTION);//this should succeed
       try {
-        UpdateRequest delQuery = null;
-        delQuery = new UpdateRequest().deleteByQuery("*:*");
-        delQuery.setBasicAuthCredentials("harry","HarryIsUberCool");
-        delQuery.process(aNewClient, COLLECTION);//this should succeed
-
         delQuery = new UpdateRequest().deleteByQuery("*:*");
         delQuery.process(aNewClient, COLLECTION);
         fail("This should not have succeeded without credentials");
