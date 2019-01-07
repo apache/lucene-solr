@@ -262,54 +262,79 @@ final class IndexedDISI extends DocIdSetIterator {
   private final long cost;
 
   /**
+   * This constructor always creates a new blockSlice and a new jumpTable from in, to ensure that operations are
+   * independent from the caller.
+   * See {@link #IndexedDISI(IndexInput, RandomAccessInput, int, byte, long)} for re-use of blockSlice and jumpTable.
    * @param in backing data.
-   * @param offset starting offset for blocks in backing data.
-   * @param length the number of bytes in the backing data.
-   * @param jumpTableEntryCount the number of blocks convered by the jump-table.
+   * @param offset starting offset for blocks in the backing data.
+   * @param length the number of bytes holding blocks and jump-table in the backing data.
+   * @param jumpTableEntryCount the number of blocks covered by the jump-table.
+   *                            This must match the number returned by {@link #writeBitSet(DocIdSetIterator, IndexOutput, byte)}.
+   * @param denseRankPower the number of docIDs covered by each rank entry in DENSE blocks, expressed as {@code 2^denseRankPower}.
+   *                       This must match the power given in {@link #writeBitSet(DocIdSetIterator, IndexOutput, byte)}
    * @param cost normally the number of logical docIDs.
    */
   IndexedDISI(IndexInput in, long offset, long length, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
-    this(in.slice("docs", offset, length),
-        offset == 0 && length == in.length() ?
-            createJumpTable(in, jumpTableEntryCount) :
-            createJumpTable(in.slice("docs", offset, length), jumpTableEntryCount),
+    this(createBlockSlice(in,"docs", offset, length, jumpTableEntryCount),
+        createJumpTable(in, offset, length, jumpTableEntryCount),
         jumpTableEntryCount, denseRankPower, cost);
   }
 
   /**
-   * This constructor allows to pass the slice directly in case it helps reuse.
+   * This constructor allows to pass the slice and jumpTable directly in case it helps reuse.
    * see eg. Lucene80 norms producer's merge instance.
-   * Note: The jumpTable can be created using slice and jumpTableEntryCount with {@link #createJumpTable(IndexInput, int)}.
-   * @param slice backing data, starting from position 0 to slice.length
-   * @param jumpTable table holding jump-data for block-skips.
+   * @param blockSlice data blocks, normally created by {@link #createBlockSlice}.
+   * @param jumpTable table holding jump-data for block-skips, normally created by {@link #createJumpTable}.
    * @param jumpTableEntryCount the number of blocks covered by the jump-table.
+   *                            This must match the number returned by {@link #writeBitSet(DocIdSetIterator, IndexOutput, byte)}.
+   * @param denseRankPower the number of docIDs covered by each rank entry in DENSE blocks, expressed as {@code 2^denseRankPower}.
+   *                       This must match the power given in {@link #writeBitSet(DocIdSetIterator, IndexOutput, byte)}
    * @param cost normally the number of logical docIDs.
    */
-  IndexedDISI(IndexInput slice, RandomAccessInput jumpTable, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
-    this.slice = slice;
-    this.cost = cost;
-
-    this.jumpTableEntryCount = jumpTableEntryCount;
+  IndexedDISI(IndexInput blockSlice, RandomAccessInput jumpTable, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
+    this.slice = blockSlice;
     this.jumpTable = jumpTable;
+    this.jumpTableEntryCount = jumpTableEntryCount;
     this.denseRankPower = denseRankPower < 7 || denseRankPower > 15 ? -1 : denseRankPower;
-
     final int rankIndexShift = denseRankPower-7;
-    denseRankTable = denseRankPower == -1 ? null : new byte[DENSE_BLOCK_LONGS >> rankIndexShift];
+    this.denseRankTable = denseRankPower == -1 ? null : new byte[DENSE_BLOCK_LONGS >> rankIndexShift];
+    this.cost = cost;
   }
 
   /**
    * Helper method for using {@link #IndexedDISI(IndexInput, RandomAccessInput, int, byte, long)}.
-   * @param slice backing data, starting from position 0 to slice.length
+   * Creates a disiSlice for the IndexedDISI data blocks, without the jump-table.
+   * @param slice backing data, holding both blocks and jump-table.
+   * @param sliceDescription human readable slice designation.
+   * @param offset relative to the backing data.
+   * @param length full length of the IndexedDISI, including blocks and jump-table data.
    * @param jumpTableEntryCount the number of blocks covered by the jump-table.
    * @return a jumpTable containing the block jump-data or null if no such table exists.
    * @throws IOException if a RandomAccessInput could not be created from slice.
    */
-  public static RandomAccessInput createJumpTable(IndexInput slice, int jumpTableEntryCount) throws IOException {
+  public static IndexInput createBlockSlice(
+      IndexInput slice, String sliceDescription, long offset, long length, int jumpTableEntryCount) throws IOException {
+    long jumpTableBytes = jumpTableEntryCount < 0 ? 0 : jumpTableEntryCount*Integer.BYTES*2;
+    return slice.slice(sliceDescription, offset, length - jumpTableBytes);
+  }
+
+  /**
+   * Helper method for using {@link #IndexedDISI(IndexInput, RandomAccessInput, int, byte, long)}.
+   * Creates a RandomAccessInput covering only the jump-table data or null.
+   * @param slice backing data, holding both blocks and jump-table.
+   * @param offset relative to the backing data.
+   * @param length full length of the IndexedDISI, including blocks and jump-table data.
+   * @param jumpTableEntryCount the number of blocks covered by the jump-table.
+   * @return a jumpTable containing the block jump-data or null if no such table exists.
+   * @throws IOException if a RandomAccessInput could not be created from slice.
+   */
+  public static RandomAccessInput createJumpTable(
+      IndexInput slice, long offset, long length, int jumpTableEntryCount) throws IOException {
     if (jumpTableEntryCount <= 0) {
       return null;
     } else {
-      long jumpTableOffset = slice.length()-jumpTableEntryCount*Integer.BYTES*2;
-      return slice.randomAccessSlice(jumpTableOffset, slice.length()-jumpTableOffset);
+      int jumpTableBytes = jumpTableEntryCount*Integer.BYTES*2;
+      return slice.randomAccessSlice(offset + length - jumpTableBytes, jumpTableBytes);
     }
   }
 

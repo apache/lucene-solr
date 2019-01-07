@@ -108,14 +108,17 @@ public class TestIndexedDISI extends LuceneTestCase {
     FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
     try (Directory dir = newDirectory()) {
       final int cardinality = set.cardinality();
-      int jumpTableentryCount;
+      int jumpTableEntryCount;
       try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-        jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
+        jumpTableEntryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
       }
-      try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        in.seek(random().nextInt((int) in.length()));
-        RandomAccessInput jumpTable = IndexedDISI.createJumpTable(in, jumpTableentryCount);
-        IndexedDISI disi = new IndexedDISI(in, jumpTable, jumpTableentryCount, denseRankPower, cardinality);
+      try (IndexInput fullInput = dir.openInput("foo", IOContext.DEFAULT)) {
+        IndexInput blockData =
+            IndexedDISI.createBlockSlice(fullInput, "blocks", 0, fullInput.length(), jumpTableEntryCount);
+        blockData.seek(random().nextInt((int) blockData.length()));
+
+        RandomAccessInput jumpTable = IndexedDISI.createJumpTable(fullInput, 0, fullInput.length(), jumpTableEntryCount);
+        IndexedDISI disi = new IndexedDISI(blockData, jumpTable, jumpTableEntryCount, denseRankPower, cardinality);
         // This failed at some point during LUCENE-8585 development as it did not reset the slice position
         disi.advanceExact(BLOCKS*65536-1);
       }
@@ -282,6 +285,7 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  // TODO LUCENE-8585: Fails with -Dtests.seed=7FDDD930E591A662
   public void testFewMissingDocs() throws IOException {
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < 100; ++iter) {

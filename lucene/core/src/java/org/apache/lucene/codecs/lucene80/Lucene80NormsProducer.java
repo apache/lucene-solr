@@ -237,7 +237,8 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       slice = disiInputs.get(field.number);
     }
     if (slice == null) {
-      slice = data.slice("docs", entry.docsWithFieldOffset, entry.docsWithFieldLength);
+      slice = IndexedDISI.createBlockSlice(
+          data, "docs", entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount);
       if (merging) {
         disiInputs.put(field.number, slice);
       }
@@ -251,8 +252,8 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       jumpTable = disiJumpTables.get(field.number);
     }
     if (jumpTable == null) {
-      IndexInput slice = data.slice("docs", entry.docsWithFieldOffset, entry.docsWithFieldLength);
-      jumpTable = IndexedDISI.createJumpTable(slice, entry.jumpTableEntryCount);
+      jumpTable = IndexedDISI.createJumpTable(
+          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount);
       if (merging) {
         disiJumpTables.put(field.number, jumpTable);
       }
