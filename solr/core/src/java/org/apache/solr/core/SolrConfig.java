@@ -315,7 +315,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         "requestDispatcher/requestParsers/@enableStreamBody", false);
 
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
+        "requestDispatcher/@handleSelect", false);
 
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);

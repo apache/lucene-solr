@@ -287,26 +287,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   final static String[] oldNames = {
-    "7.0.0-cfs",
-    "7.0.0-nocfs",
-    "7.0.1-cfs",
-    "7.0.1-nocfs",
-    "7.1.0-cfs",
-    "7.1.0-nocfs",
-    "7.2.0-cfs",
-    "7.2.0-nocfs",
-    "7.2.1-cfs",
-    "7.2.1-nocfs",
-    "7.3.0-cfs",
-    "7.3.0-nocfs",
-    "7.3.1-cfs",
-    "7.3.1-nocfs",
-    "7.4.0-cfs",
-    "7.4.0-nocfs",
-    "7.5.0-cfs",
-    "7.5.0-nocfs",
-    "7.6.0-cfs",
-    "7.6.0-nocfs"
+
   };
 
   public static String[] getOldNames() {
@@ -314,16 +295,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   final static String[] oldSortedNames = {
-    "sorted.7.0.0",
-    "sorted.7.0.1",
-    "sorted.7.1.0",
-    "sorted.7.2.0",
-    "sorted.7.2.1",
-    "sorted.7.3.0",
-    "sorted.7.3.1",
-    "sorted.7.4.0",
-    "sorted.7.5.0",
-    "sorted.7.6.0"
+
   };
 
   public static String[] getOldSortedNames() {
@@ -496,7 +468,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "6.6.4-cfs",
       "6.6.4-nocfs",
       "6.6.5-cfs",
-      "6.6.5-nocfs"
+      "6.6.5-nocfs",
+      "7.0.0-cfs",
+      "7.0.0-nocfs",
+      "7.0.1-cfs",
+      "7.0.1-nocfs",
+      "7.1.0-cfs",
+      "7.1.0-nocfs",
+      "7.2.0-cfs",
+      "7.2.0-nocfs",
+      "7.2.1-cfs",
+      "7.2.1-nocfs",
+      "7.3.0-cfs",
+      "7.3.0-nocfs",
+      "7.3.1-cfs",
+      "7.3.1-nocfs",
+      "7.4.0-cfs",
+      "7.4.0-nocfs",
+      "7.5.0-cfs",
+      "7.5.0-nocfs",
+      "7.6.0-cfs",
+      "7.6.0-nocfs"
   };
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
@@ -1504,9 +1496,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String emptyIndex = "empty.7.0.0.zip";
+  public static final String emptyIndex = "empty.8.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
+    assumeTrue("Reenable when 8.0 is released", false);
     Path oldIndexDir = createTempDir("emptyIndex");
     TestUtil.unzip(getDataInputStream(emptyIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1518,9 +1511,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String moreTermsIndex = "moreterms.7.0.0.zip";
+  public static final String moreTermsIndex = "moreterms.8.0.0.zip";
 
   public void testMoreTerms() throws Exception {
+    assumeTrue("Reenable when 8.0 is released", false);
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1530,7 +1524,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.7.0.0.zip";
+  public static final String dvUpdatesIndex = "dvupdates.8.0.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
@@ -1565,6 +1559,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testDocValuesUpdates() throws Exception {
+    assumeTrue("Reenable when 8.0 is released", false);
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1593,6 +1588,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testSoftDeletes() throws Exception {
+    assumeTrue("Reenable when 8.0 is released", false);
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1613,6 +1609,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testDocValuesUpdatesWithNewField() throws Exception {
+    assumeTrue("Reenable when 8.0 is released", false);
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1726,8 +1723,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
    * before https://issues.apache.org/jira/browse/LUCENE-8592.
    */
   public void testSortedIndexWithInvalidSort() throws Exception {
+    assumeTrue("Reenable when 8.0 is released", false);
     Path path = createTempDir("sorted");
-    String name = "sorted-invalid.7.5.0.zip";
+    String name = "sorted-invalid.8.0.0.zip";
     InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream(name);
     assertNotNull("Sorted index index " + name + " not found", resource);
     TestUtil.unzip(resource, path);
