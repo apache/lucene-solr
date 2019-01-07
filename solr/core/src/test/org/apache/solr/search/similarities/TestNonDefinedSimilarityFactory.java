@@ -17,8 +17,6 @@
 package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarity.LegacyBM25Similarity;
-import org.apache.lucene.util.Version;
 import org.junit.After;
 
 /**
@@ -44,23 +42,4 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
     assertEquals(0.75F, sim.getB(), 0.0F);
   }
 
-  public void testLegacyBM25BeforeV8() throws Exception {
-    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_7_0_0.toString());
-    initCore("solrconfig-basic.xml","schema-tiny.xml");
-    System.clearProperty("tests.luceneMatchVersion");
-    LegacyBM25Similarity sim = getSimilarity("text", LegacyBM25Similarity.class);
-    assertEquals(0.75F, sim.getB(), 0.0F);
-    deleteCore();
-
-    System.setProperty("tests.luceneMatchVersion", "5.0.0");
-    initCore("solrconfig-basic.xml","schema-tiny.xml");
-    System.clearProperty("tests.luceneMatchVersion");
-    getSimilarity("text", LegacyBM25Similarity.class);
-    deleteCore();
-
-    System.setProperty("tests.luceneMatchVersion", "6.0.0");
-    initCore("solrconfig-basic.xml","schema-tiny.xml");
-    System.clearProperty("tests.luceneMatchVersion");
-    getSimilarity("text", LegacyBM25Similarity.class);
-  }
 }

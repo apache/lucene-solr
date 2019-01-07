@@ -61,7 +61,7 @@ public class TestSegmentInfos extends LuceneTestCase {
     Codec codec = Codec.getDefault();
 
     SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-    SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_8_0_0, Version.LUCENE_8_0_0, "_0", 1, false, Codec.getDefault(),
+    SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_0", 1, false, Codec.getDefault(),
                                        Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -70,7 +70,7 @@ public class TestSegmentInfos extends LuceneTestCase {
     sis.add(commitInfo);
     sis.commit(dir);
     sis = SegmentInfos.readLatestCommit(dir);
-    assertEquals(Version.LUCENE_8_0_0, sis.getMinSegmentLuceneVersion());
+    assertEquals(Version.LUCENE_9_0_0, sis.getMinSegmentLuceneVersion());
     assertEquals(Version.LATEST, sis.getCommitLuceneVersion());
     dir.close();
   }
@@ -83,14 +83,14 @@ public class TestSegmentInfos extends LuceneTestCase {
     Codec codec = Codec.getDefault();
 
     SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-    SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_8_0_0, Version.LUCENE_8_0_0, "_0", 1, false, Codec.getDefault(),
+    SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_0", 1, false, Codec.getDefault(),
                                        Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1);
     sis.add(commitInfo);
 
-    info = new SegmentInfo(dir, Version.LUCENE_8_0_0, Version.LUCENE_8_0_0, "_1", 1, false, Codec.getDefault(),
+    info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_1", 1, false, Codec.getDefault(),
                            Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
@@ -99,7 +99,7 @@ public class TestSegmentInfos extends LuceneTestCase {
 
     sis.commit(dir);
     sis = SegmentInfos.readLatestCommit(dir);
-    assertEquals(Version.LUCENE_8_0_0, sis.getMinSegmentLuceneVersion());
+    assertEquals(Version.LUCENE_9_0_0, sis.getMinSegmentLuceneVersion());
     assertEquals(Version.LATEST, sis.getCommitLuceneVersion());
     dir.close();
   }
