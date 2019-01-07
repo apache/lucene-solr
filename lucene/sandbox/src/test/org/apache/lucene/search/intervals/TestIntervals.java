@@ -533,6 +533,39 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 4, 8, 12, 26);
   }
 
+  public void testMinimumShouldMatch() throws IOException {
+    IntervalsSource source = Intervals.atLeast(3,
+        Intervals.term("porridge"), Intervals.term("hot"), Intervals.term("twelve"),
+        Intervals.term("nine"), Intervals.term("pease"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        {0, 2, 1, 3, 2, 4, 6, 11, 7, 17},
+        {3, 5, 4, 6, 5, 7, 6, 11, 7, 21},
+        {},
+        {0, 2, 1, 3, 2, 4, 6, 11, 7, 17, 11, 21},
+        {}
+    });
+
+    assertGaps(source, 1, "field1", new int[]{0, 0, 0, 3, 8});
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 0, 2, 0, 18);
+    MatchesIterator subs = mi.getSubMatches();
+    assertNotNull(subs);
+    assertMatch(subs, 0, 0, 0, 5);
+    assertMatch(subs, 1, 1, 6, 14);
+    assertMatch(subs, 2, 2, 15, 18);
+    assertFalse(subs.next());
+    assertTrue(mi.next());
+    assertTrue(mi.next());
+    assertMatch(mi, 6, 11, 41, 71);
+    subs = mi.getSubMatches();
+    assertMatch(subs, 6, 6, 41, 46);
+    assertMatch(subs, 7, 7, 47, 55);
+    assertMatch(subs, 11, 11, 67, 71);
+
+  }
+
   public void testDefinedGaps() throws IOException {
     IntervalsSource source = Intervals.phrase(
         Intervals.term("pease"),
