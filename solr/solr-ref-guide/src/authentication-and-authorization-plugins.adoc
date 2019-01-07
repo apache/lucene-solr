@@ -165,7 +165,7 @@ When authentication is required the Admin UI will presented you with a login dia
 
 * `BasicAuthPlugin`
  
-If your plugin of choice is not supported, you will have to interact with Solr sending HTTP requests instead of through the graphical user interface of the Admin UI. All operations supported by Admin UI can be performed through Solr's RESTful APIs.
+If your plugin of choice is not supported, the Admin UI will still let you perform unrestricted operations, while for restricted operations you will need to interact with Solr by sending HTTP requests instead of through the graphical user interface of the Admin UI. All operations supported by Admin UI can be performed through Solr's RESTful APIs.
 
 == Securing Inter-Node Requests
 
