@@ -172,19 +172,40 @@ public final class Intervals {
   }
 
   /**
+   * Returns intervals from a source that overlap with intervals from another source
+   * @param source      the source to filter
+   * @param reference   the source to filter by
+   */
+  public static IntervalsSource overlapping(IntervalsSource source, IntervalsSource reference) {
+    return new ConjunctionIntervalsSource(Arrays.asList(source, reference), IntervalFunction.OVERLAPPING);
+  }
+
+  /**
    * Create a not-within {@link IntervalsSource}
    *
    * Returns intervals of the minuend that do not appear within a set number of positions of
    * intervals from the subtrahend query
    *
    * @param minuend     the {@link IntervalsSource} to filter
-   * @param positions   the maximum distance that intervals from the minuend may occur from intervals
+   * @param positions   the minimum distance that intervals from the minuend may occur from intervals
    *                    of the subtrahend
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notWithin(IntervalsSource minuend, int positions, IntervalsSource subtrahend) {
     return new DifferenceIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions),
         DifferenceIntervalFunction.NON_OVERLAPPING);
+  }
+
+  /**
+   * Returns intervals of the source that appear within a set number of positions of intervals from
+   * the reference
+   *
+   * @param source    the {@link IntervalsSource} to filter
+   * @param positions the maximum distance that intervals of the source may occur from intervals of the reference
+   * @param reference the {@link IntervalsSource} to filter by
+   */
+  public static IntervalsSource within(IntervalsSource source, int positions, IntervalsSource reference) {
+    return containedBy(source, Intervals.extend(reference, positions, positions));
   }
 
   /**
@@ -237,6 +258,22 @@ public final class Intervals {
     return new ConjunctionIntervalsSource(Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
   }
 
-  // TODO: beforeQuery, afterQuery, arbitrary IntervalFunctions
+  /**
+   * Returns intervals from the source that appear before intervals from the reference
+   */
+  public static IntervalsSource before(IntervalsSource source, IntervalsSource reference) {
+    return new ConjunctionIntervalsSource(Arrays.asList(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0)),
+        IntervalFunction.CONTAINED_BY);
+  }
+
+  /**
+   * Returns intervals from the source that appear after intervals from the reference
+   */
+  public static IntervalsSource after(IntervalsSource source, IntervalsSource reference) {
+    return new ConjunctionIntervalsSource(Arrays.asList(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE)),
+        IntervalFunction.CONTAINED_BY);
+  }
 
 }
