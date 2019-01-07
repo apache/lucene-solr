@@ -21,19 +21,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,30 +73,6 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-  }
-
-  protected void removeChildren(String path) throws Exception {
-    
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Timed out waiting to see core4 as leader", () -> {    try {
-      cluster.getDistribStateManager().removeRecursively(path, true, false);
-      return true;
-    } catch (NotEmptyException e) {
-
-    } catch (NoSuchElementException e) {
-
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } catch (KeeperException e) {
-      throw new RuntimeException(e);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    } catch (BadVersionException e) {
-      throw new RuntimeException(e);
-    }
-    return false;
-    });
-
   }
 
   /* Cluster helper methods ************************************/

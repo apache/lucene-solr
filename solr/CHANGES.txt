@@ -114,6 +114,8 @@ New Features
 
 * SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
 
+* SOLR-12730: Implement staggered SPLITSHARD requests in IndexSizeTrigger. (ab)
+
 Bug Fixes
 ----------------------
 
