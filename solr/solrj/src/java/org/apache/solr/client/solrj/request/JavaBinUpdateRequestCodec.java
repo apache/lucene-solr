@@ -51,6 +51,13 @@ import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharS
  * @since solr 1.4
  */
 public class JavaBinUpdateRequestCodec {
+  private boolean readStringAsCharSeq = false;
+
+  public JavaBinUpdateRequestCodec setReadStringAsCharSeq(boolean flag) {
+    this.readStringAsCharSeq = flag;
+    return this;
+
+  }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
@@ -274,16 +281,6 @@ public class JavaBinUpdateRequestCodec {
     }
 
 
-   /* @Override
-    protected Object readDocumentFieldVal(String fieldName, DataInputInputStream dis) throws IOException {
-      super.readStringAsCharSeq = utf8FieldPredicate != null && utf8FieldPredicate.test(fieldName);
-      try {
-        return super.readDocumentFieldVal(fieldName, dis);
-      } finally {
-        super.readStringAsCharSeq = false;
-      }
-    }*/
-
     private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
       NamedList params = (NamedList) namedList[0].get("params");
       updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
@@ -291,7 +288,7 @@ public class JavaBinUpdateRequestCodec {
       Integer commitWithin = null;
       Boolean overwrite = null;
       Object o = null;
-      super.readStringAsCharSeq = true;
+      super.readStringAsCharSeq = JavaBinUpdateRequestCodec.this.readStringAsCharSeq;
       try {
         while (true) {
           if (o == null) {
