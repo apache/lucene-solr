@@ -116,6 +116,8 @@ New Features
 
 * SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
 
+* SOLR-12730: Implement staggered SPLITSHARD requests in IndexSizeTrigger. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -264,6 +266,8 @@ Improvements
 * SOLR-13090: All shipped configurations still have `maxBooleanClauses` default to 1024.  But if the
   `solr.max.booleanClauses` sysprop is specified, that will override the 1024 default.  This enables users to
   update this property across the board more easily. (Jason Gerlowski)
+
+* SOLR-12983: JavabinLoader should avoid creating String Objects and create UTF8CharSequence fields from byte[] (noble)
 
 Other Changes
 ----------------------

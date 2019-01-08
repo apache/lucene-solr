@@ -58,4 +58,45 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     utf81 = (ByteArrayUtf8CharSequence) m1.get("str");
     assertTrue(utf81.equals(utf8));
   }
+
+  public void testUnMarshal() throws IOException {
+    NamedList nl = new NamedList();
+    String str = " The value!";
+    for (int i = 0; i < 5; i++) {
+      StringBuffer sb = new StringBuffer();
+      sb.append(i);
+      for (int j = 0; j < i; j++) {
+        sb.append(str);
+      }
+      nl.add("key" + i, sb.toString());
+    }
+    StringBuffer sb = new StringBuffer();
+    for (; ; ) {
+      sb.append(str);
+      if (sb.length() > 1024 * 4) break;
+    }
+    nl.add("key_long", sb.toString());
+    nl.add("key5", "5" + str);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    new JavaBinCodec().marshal(nl, baos);
+    byte[] bytes = baos.toByteArray();
+
+    NamedList nl1 = (NamedList) new JavaBinCodec()
+        .setReadStringAsCharSeq(true)
+        .unmarshal(new FastInputStream(null, bytes, 0, bytes.length));
+    byte[] buf = ((ByteArrayUtf8CharSequence) nl1.getVal(0)).getBuf();
+    ByteArrayUtf8CharSequence valLong = (ByteArrayUtf8CharSequence) nl1.get("key_long");
+    assertFalse(valLong.getBuf() == buf);
+
+    for (int i = 1; i < 6; i++) {
+      ByteArrayUtf8CharSequence val = (ByteArrayUtf8CharSequence) nl1.get("key" + i);
+      assertEquals(buf, val.getBuf());
+      String s = val.toString();
+      assertTrue(s.startsWith("" + i));
+      assertTrue(s, s.endsWith(str));
+    }
+
+  }
+
+
 }

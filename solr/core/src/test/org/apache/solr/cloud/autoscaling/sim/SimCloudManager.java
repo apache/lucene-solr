@@ -532,10 +532,12 @@ public class SimCloudManager implements SolrCloudManager {
   }
 
   /**
-   * Simulate the effect of restarting Overseer leader - in this case this means restarting the
-   * OverseerTriggerThread and optionally killing a node. All background tasks currently in progress
-   * will be interrupted.
+   * Simulate the effect of restarting Overseer leader - in this case this means closing the current
+   * {@link OverseerTriggerThread} (and optionally killing a node) then starting a new 
+   * {@link OverseerTriggerThread}.
+   * All background tasks currently in progress will be interrupted.
    * @param killNodeId optional nodeId to kill. If null then don't kill any node, just restart the thread
+   * @see #getOverseerTriggerThread
    */
   public void simRestartOverseer(String killNodeId) throws Exception {
     log.info("=== Restarting OverseerTriggerThread and clearing object cache...");
@@ -899,5 +901,13 @@ public class SimCloudManager implements SolrCloudManager {
     }
     IOUtils.closeQuietly(objectCache);
     simCloudManagerPool.shutdownNow();
+  }
+
+  /**
+   * Direct access to the current {@link OverseerTriggerThread}
+   * @see #simRestartOverseer
+   */
+  public OverseerTriggerThread getOverseerTriggerThread() {
+    return ((OverseerTriggerThread) triggerThread.getThread());
   }
 }

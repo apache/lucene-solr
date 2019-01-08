@@ -330,6 +330,33 @@ public class TestIntervals extends LuceneTestCase {
 
   }
 
+  public void testOffsetIntervals() throws IOException {
+    IntervalsSource source = Intervals.unordered(
+        Intervals.term("pease"),
+        Intervals.term("porridge"),
+        Intervals.or(Intervals.term("hot"), Intervals.term("cold")));
+
+    IntervalsSource before = new OffsetIntervalsSource(source, true);
+    checkIntervals(before, "field1", 3, new int[][]{
+        {},
+        { 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 },
+        { 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 },
+        {},
+        { 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 },
+        {}
+    });
+
+    IntervalsSource after = new OffsetIntervalsSource(source, false);
+    checkIntervals(after, "field1", 3, new int[][]{
+        {},
+        { 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 18, 18 },
+        { 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 18, 18 },
+        {},
+        { 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 18, 18 },
+        {}
+    });
+  }
+
   public void testNesting2() throws IOException {
     IntervalsSource source = Intervals.unordered(
         Intervals.ordered(
@@ -506,6 +533,39 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 4, 8, 12, 26);
   }
 
+  public void testMinimumShouldMatch() throws IOException {
+    IntervalsSource source = Intervals.atLeast(3,
+        Intervals.term("porridge"), Intervals.term("hot"), Intervals.term("twelve"),
+        Intervals.term("nine"), Intervals.term("pease"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        {0, 2, 1, 3, 2, 4, 6, 11, 7, 17},
+        {3, 5, 4, 6, 5, 7, 6, 11, 7, 21},
+        {},
+        {0, 2, 1, 3, 2, 4, 6, 11, 7, 17, 11, 21},
+        {}
+    });
+
+    assertGaps(source, 1, "field1", new int[]{0, 0, 0, 3, 8});
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 0, 2, 0, 18);
+    MatchesIterator subs = mi.getSubMatches();
+    assertNotNull(subs);
+    assertMatch(subs, 0, 0, 0, 5);
+    assertMatch(subs, 1, 1, 6, 14);
+    assertMatch(subs, 2, 2, 15, 18);
+    assertFalse(subs.next());
+    assertTrue(mi.next());
+    assertTrue(mi.next());
+    assertMatch(mi, 6, 11, 41, 71);
+    subs = mi.getSubMatches();
+    assertMatch(subs, 6, 6, 41, 46);
+    assertMatch(subs, 7, 7, 47, 55);
+    assertMatch(subs, 11, 11, 67, 71);
+
+  }
+
   public void testDefinedGaps() throws IOException {
     IntervalsSource source = Intervals.phrase(
         Intervals.term("pease"),
@@ -534,6 +594,82 @@ public class TestIntervals extends LuceneTestCase {
         {}, {}, {}, {}, {},
         { 0, Integer.MAX_VALUE - 1, 0, Integer.MAX_VALUE - 1, 5, Integer.MAX_VALUE - 1 }
     });
+  }
+
+  public void testAfter() throws IOException {
+    IntervalsSource source = Intervals.after(Intervals.term("porridge"),
+        Intervals.ordered(Intervals.term("pease"), Intervals.term("cold")));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 7, 7 },
+        { 4, 4, 7, 7 },
+        {},
+        { 7, 7 },
+        {}
+    });
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 7, 7, 20, 55);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 3, 3, 20, 25);
+    assertMatch(sub, 5, 5, 35, 39);
+    assertMatch(sub, 7, 7, 47, 55);
+    assertFalse(sub.next());
+  }
+
+  public void testBefore() throws IOException {
+    IntervalsSource source = Intervals.before(Intervals.term("cold"), Intervals.term("twelve"));
+    checkIntervals(source, "field1", 2, new int[][]{
+        {},
+        {},
+        { 2, 2 },
+        {},
+        { 5, 5 },
+        {}
+    });
+  }
+
+  public void testWithin() throws IOException {
+    IntervalsSource source = Intervals.within(Intervals.term("hot"), 6,
+        Intervals.or(Intervals.term("porridge"), Intervals.term("fraggle")));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 2, 2 },
+        { 5, 5, 21, 21 },
+        {},
+        { 2, 2 },
+        {}
+    });
+  }
+
+  public void testOverlapping() throws IOException {
+    IntervalsSource source = Intervals.overlapping(
+        Intervals.unordered(Intervals.term("hot"), Intervals.term("porridge")),
+        Intervals.unordered(Intervals.term("cold"), Intervals.term("pease"))
+    );
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 2, 4, 7, 17 },
+        { 5, 7, 7, 21 },
+        {},
+        { 2, 4 },
+        {}
+    });
+
+    assertGaps(source, 2, "field1", new int[]{ 1, 13 });
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertNotNull(mi);
+    assertMatch(mi, 2, 4, 15, 39);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 2, 2, 15, 18);
+    assertMatch(sub, 3, 3, 20, 25);
+    assertMatch(sub, 4, 4, 26, 34);
+    assertMatch(sub, 5, 5, 35, 39);
+    assertFalse(sub.next());
+    assertMatch(mi, 7, 17, 41, 118);
   }
 
 }

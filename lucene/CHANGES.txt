@@ -108,10 +108,6 @@ API Changes
 * LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
   of IndexWriter#getDocStats(). (Simon Willnauer)
 
-* LUCENE-8612: Intervals.extend() treats an interval as if it covered a wider
-  span than it actually does, allowing users to force minimum gaps between
-  intervals in a phrase. (Alan Woodward)
-
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -176,6 +172,16 @@ New Features
 * LUCENE-8564: GraphTokenFilter is an abstract class useful for token filters that need
   to read-ahead in the token stream and take into account graph structures.  This
   also changes FixedShingleFilter to extend GraphTokenFilter (Alan Woodward)
+
+* LUCENE-8612: Intervals.extend() treats an interval as if it covered a wider
+  span than it actually does, allowing users to force minimum gaps between
+  intervals in a phrase. (Alan Woodward)
+
+* LUCENE-8629: New interval functions: Intervals.before(), Intervals.after(),
+  Intervals.within() and Intervals.overlapping(). (Alan Woodward)
+
+* LUCENE-8622: Adds a minimum-should-match interval function that produces intervals
+  spanning a subset of a set of sources. (Alan Woodward)
 
 Improvements
 
