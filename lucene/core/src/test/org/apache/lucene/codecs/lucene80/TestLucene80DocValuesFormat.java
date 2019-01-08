@@ -474,20 +474,21 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertEquals(maxDoc, sr.maxDoc());
       SortedSetDocValues values = sr.getSortedSetDocValues("sset");
       assertNotNull(values);
-      RAMInputStream in = new RAMInputStream("", buffer);
-      BytesRefBuilder b = new BytesRefBuilder();
-      for (int i = 0; i < maxDoc; ++i) {
-        assertEquals(i, values.nextDoc());
-        final int numValues = in.readVInt();
+      try (RAMInputStream in = new RAMInputStream("", buffer)) {
+        BytesRefBuilder b = new BytesRefBuilder();
+        for (int i = 0; i < maxDoc; ++i) {
+          assertEquals(i, values.nextDoc());
+          final int numValues = in.readVInt();
 
-        for (int j = 0; j < numValues; ++j) {
-          b.setLength(in.readVInt());
-          b.grow(b.length());
-          in.readBytes(b.bytes(), 0, b.length());
-          assertEquals(b.get(), values.lookupOrd(values.nextOrd()));
+          for (int j = 0; j < numValues; ++j) {
+            b.setLength(in.readVInt());
+            b.grow(b.length());
+            in.readBytes(b.bytes(), 0, b.length());
+            assertEquals(b.get(), values.lookupOrd(values.nextOrd()));
+          }
+
+          assertEquals(SortedSetDocValues.NO_MORE_ORDS, values.nextOrd());
         }
-
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, values.nextOrd());
       }
       r.close();
       dir.close();
@@ -524,12 +525,13 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertEquals(maxDoc, sr.maxDoc());
       SortedNumericDocValues values = sr.getSortedNumericDocValues("snum");
       assertNotNull(values);
-      RAMInputStream in = new RAMInputStream("", buffer);
-      for (int i = 0; i < maxDoc; ++i) {
-        assertEquals(i, values.nextDoc());
-        assertEquals(2, values.docValueCount());
-        assertEquals(in.readVLong(), values.nextValue());
-        assertEquals(in.readVLong(), values.nextValue());
+      try (RAMInputStream in = new RAMInputStream("", buffer)) {
+        for (int i = 0; i < maxDoc; ++i) {
+          assertEquals(i, values.nextDoc());
+          assertEquals(2, values.docValueCount());
+          assertEquals(in.readVLong(), values.nextValue());
+          assertEquals(in.readVLong(), values.nextValue());
+        }
       }
       r.close();
       dir.close();
