@@ -2388,7 +2388,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- JFlex task -->
   <target name="-install-jflex" unless="jflex.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.6.0"
+    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.7.0"
                    inline="true" conf="default" transitive="true" pathid="jflex.classpath"/>
     <taskdef name="jflex" classname="jflex.anttask.JFlexTask" classpathref="jflex.classpath"/>
     <property name="jflex.loaded" value="true"/>
@@ -2645,7 +2645,11 @@ The following arguments can be provided to ant to alter its behaviour and target
     <attribute name="dir"/>
     <attribute name="name"/>
     <sequential>
-      <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
+      <!-- The default skeleton is specified here to work around a JFlex ant task bug:    -->
+      <!-- invocations with a non-default skeleton will cause following invocations to    -->
+      <!-- use the same skeleton, though not specified, unless the default is configured. -->
+      <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on"
+             skeleton="${common.dir}/core/src/data/jflex/skeleton.default"/>
     </sequential>
   </macrodef>
 
@@ -2653,20 +2657,13 @@ The following arguments can be provided to ant to alter its behaviour and target
     <attribute name="dir"/>
     <attribute name="name"/>
     <sequential>
-      <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on" inputstreamctor="false"/>
       <!-- LUCENE-5897: Disallow scanner buffer expansion -->
-      <replaceregexp file="@{dir}/@{name}.java"
-                     match="[ \t]*/\* is the buffer big enough\? \*/\s+if \(zzCurrentPos >= zzBuffer\.length.*?\}[ \t]*\r?\n"
-                     replace="" flags="s" />
+      <jflex file="@{dir}/@{name}.jflex" outdir="@{dir}" nobak="on"
+             skeleton="${common.dir}/core/src/data/jflex/skeleton.disable.buffer.expansion.txt"/>
+      <!-- Since the ZZ_BUFFERSIZE declaration is generated rather than in the skeleton, we have to transform it here. -->
       <replaceregexp file="@{dir}/@{name}.java"
                      match="private static final int ZZ_BUFFERSIZE ="
                      replace="private int ZZ_BUFFERSIZE ="/>
-      <replaceregexp file="@{dir}/@{name}.java"
-                     match="int requested = zzBuffer.length - zzEndRead;"
-                     replace="int requested = zzBuffer.length - zzEndRead - zzFinalHighSurrogate;"/>
-      <replaceregexp file="@{dir}/@{name}.java"
-                     match="(zzFinalHighSurrogate = 1;)(\r?\n)"
-                     replace="\1\2          if (totalRead == 1) { return true; }\2"/>
     </sequential>
   </macrodef>
 
