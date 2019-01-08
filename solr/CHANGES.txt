@@ -239,6 +239,9 @@ Bug Fixes
 
 * SOLR-12237: Fix incorrect SOLR_SSL_KEYSTORE_TYPE variable in solr start script (janhoy, Joel Bernstein)
 
+* SOLR-13053: NodeAddedTrigger and NodeLostTrigger do not reserve added/removed time populated by restoreState
+  (Cao Manh Dat)
+
 Improvements
 ----------------------
 
