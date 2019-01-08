@@ -222,9 +222,20 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
    */
   protected abstract void setState(Map<String,Object> state);
 
+  /**
+   * Returns an immutable deep copy of this trigger's state, suitible for saving.
+   * This method is public only for tests that wish to do grey-box introspection
+   *
+   * @see #getState
+   * @lucene.internal
+   */
+  public Map<String,Object> deepCopyState() {
+    return Utils.getDeepCopy(getState(), 10, false, true);
+  }
+  
   @Override
   public void saveState() {
-    Map<String,Object> state = Utils.getDeepCopy(getState(), 10, false, true);
+    Map<String,Object> state = deepCopyState();
     if (lastState != null && lastState.equals(state)) {
       // skip saving if identical
       return;
