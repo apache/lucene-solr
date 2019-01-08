@@ -120,6 +120,8 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
+
     long batchSize = BATCH_SIZE;
     for (long i = 0; i < NUM_BATCHES; i++) {
       addDocs(collectionName, i * batchSize, batchSize);

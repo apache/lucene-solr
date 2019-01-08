@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -67,6 +68,18 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
       cluster.close();
     }
     cluster = null;
+  }
+
+  protected static void assertAutoscalingUpdateComplete() throws Exception {
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+        .waitFor("OverseerTriggerThread never caught up to the latest znodeVersion", () -> {
+          try {
+            AutoScalingConfig autoscalingConfig = cluster.getDistribStateManager().getAutoScalingConfig();
+            return autoscalingConfig.getZkVersion() == cluster.getOverseerTriggerThread().getProcessedZnodeVersion();
+          } catch (Exception e) {
+            throw new RuntimeException("FAILED", e);
+          }
+        });
   }
 
   @Override
