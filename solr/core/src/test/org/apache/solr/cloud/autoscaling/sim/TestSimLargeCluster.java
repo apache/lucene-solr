@@ -174,6 +174,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
+
     cluster.getTimeSource().sleep(5000);
 
     // pick a few random nodes
@@ -268,6 +270,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     // create a collection with more than 1 replica per node
     String collectionName = "testNodeAdded";
@@ -472,6 +476,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
 
     // create a collection with 1 replica per node
     String collectionName = "testNodeLost";
@@ -671,6 +676,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
 
     boolean await = triggerFinishedLatch.await(waitForSeconds * 45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);

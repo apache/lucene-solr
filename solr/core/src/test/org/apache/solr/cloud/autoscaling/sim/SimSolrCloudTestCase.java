@@ -21,14 +21,17 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +64,18 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
       cluster.close();
     }
     cluster = null;
+  }
+
+  protected static void assertAutoscalingUpdateComplete() throws Exception {
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+        .waitFor("OverseerTriggerThread never caught up to the latest znodeVersion", () -> {
+          try {
+            AutoScalingConfig autoscalingConfig = cluster.getDistribStateManager().getAutoScalingConfig();
+            return autoscalingConfig.getZkVersion() == cluster.getOverseerTriggerThread().getProcessedZnodeVersion();
+          } catch (Exception e) {
+            throw new RuntimeException("FAILED", e);
+          }
+        });
   }
 
   @Override

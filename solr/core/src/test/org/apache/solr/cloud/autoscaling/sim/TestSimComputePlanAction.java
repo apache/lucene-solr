@@ -100,6 +100,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     rsp = cluster.request(req);
     response = rsp.getResponse();
     assertEquals(response.get("result").toString(), "success");
+    assertAutoscalingUpdateComplete();
     cluster.getTimeSource().sleep(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS));
   }
 
@@ -137,6 +138,8 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeLost",
         "conf",1, 2);
@@ -200,6 +203,8 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf",2, 3);
@@ -285,6 +290,8 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
+
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
         "conf",1, 4).setMaxShardsPerNode(-1);
     create.process(solrClient);
@@ -303,6 +310,8 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     // start a node so that the 'violation' created by the previous policy update is fixed
     String newNode = cluster.simAddNode();

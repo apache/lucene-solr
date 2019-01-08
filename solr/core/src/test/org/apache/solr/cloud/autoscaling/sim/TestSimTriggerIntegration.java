@@ -1424,16 +1424,4 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     return event;
   }
 
-  private static void assertAutoscalingUpdateComplete() throws Exception {
-    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
-        .waitFor("OverseerTriggerThread never caught up to the latest znodeVersion", () -> {
-          try {
-            AutoScalingConfig autoscalingConfig = cluster.getDistribStateManager().getAutoScalingConfig();
-            return autoscalingConfig.getZkVersion() == cluster.getOverseerTriggerThread().getProcessedZnodeVersion();
-          } catch (Exception e) {
-            throw new RuntimeException("FAILED", e);
-          }
-        });
-  }
-  
 }
