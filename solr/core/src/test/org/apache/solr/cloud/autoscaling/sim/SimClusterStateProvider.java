@@ -372,6 +372,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  public synchronized String simGetOverseerLeader() {
+    return overseerLeader;
+  }
+
   // this method needs to be called under a lock
   private void setReplicaStates(String nodeId, Replica.State state, Set<String> changedCollections) {
     List<ReplicaInfo> replicas = nodeReplicaMap.get(nodeId);
