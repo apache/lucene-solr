@@ -28,9 +28,13 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
+Upgrade Notes
+----------------------
 
-(No Changes)
+New Features
+----------------------
 
+* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
 ==================  8.0.0 ==================
 
@@ -111,8 +115,6 @@ New Features
 * SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis.
   The BasicAuth plugin now supports a new parameter 'forwardCredentials', and when set to 'true',
   user's BasicAuth credentials will be used instead of PKI for client initiated internode requests. (janhoy, noble) 
-
-* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
 * SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
 
