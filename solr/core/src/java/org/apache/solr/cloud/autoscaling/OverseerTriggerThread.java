@@ -74,6 +74,8 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private Map<String, AutoScaling.Trigger> activeTriggers = new HashMap<>();
 
+  private volatile int processedZnodeVersion = -1;
+
   private volatile boolean isClosed = false;
 
   private AutoScalingConfig autoScalingConfig;
@@ -107,6 +109,16 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
    */
   public ScheduledTriggers getScheduledTriggers() {
     return scheduledTriggers;
+  }
+
+  /**
+   * For tests, to ensure that all processing has been completed in response to an update of /autoscaling.json.
+   * @lucene.internal
+   * @return version of /autoscaling.json for which all configuration updates &amp; processing have been completed.
+   *  Until then this value will always be smaller than the current znodeVersion of /autoscaling.json.
+   */
+  public int getProcessedZnodeVersion() {
+    return processedZnodeVersion;
   }
 
   @Override
@@ -248,6 +260,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       log.debug("-- cleaning old nodeLost / nodeAdded markers");
       removeMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       removeMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+      processedZnodeVersion = znodeVersion;
     }
   }
 
