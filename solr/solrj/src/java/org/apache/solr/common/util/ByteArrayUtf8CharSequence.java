@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.noggit.CharArr;
 
@@ -38,6 +39,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   protected int hashCode = Integer.MIN_VALUE;
   protected int length;
   protected volatile String utf16;
+  public Function<ByteArrayUtf8CharSequence, String> stringProvider;
 
   public ByteArrayUtf8CharSequence(String utf16) {
     buf = new byte[Math.multiplyExact(utf16.length(), 3)];
@@ -51,21 +53,39 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     assert isValid();
   }
 
+  public byte[] getBuf() {
+    return buf;
+  }
+
+  public int offset() {
+    return offset;
+  }
+
   public ByteArrayUtf8CharSequence(byte[] buf, int offset, int length) {
     this.buf = buf;
     this.offset = offset;
     this.length = length;
   }
 
+  @Override
+  public byte byteAt(int idx) {
+    if (idx >= length || idx < 0) throw new ArrayIndexOutOfBoundsException("idx must be >=0 and < " + length);
+    return buf[offset + idx];
+  }
+
   public String getStringOrNull() {
     return utf16;
   }
+
   @Override
   public int write(int start, byte[] buffer, int pos) {
-    if (start == -1 || start >= length) return -1;
-    if (length == 0) return 0;
-    int writableBytes = Math.min(length - start, buffer.length - pos);
-    System.arraycopy(buf, offset + start, buffer, pos, writableBytes);
+    return _writeBytes(buf, offset, length, start, buffer, pos);
+  }
+
+  static int _writeBytes(byte[] src, int srcOffset, int srcLength, int start, byte[] buffer, int pos) {
+    if (srcOffset == -1 || start >= srcLength) return -1;
+    int writableBytes = Math.min(srcLength - start, buffer.length - pos);
+    System.arraycopy(src, srcOffset + start, buffer, pos, writableBytes);
     return writableBytes;
   }
 
@@ -97,15 +117,26 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
   @Override
   public boolean equals(Object other) {
-    if (other == null) {
+    if (other instanceof Utf8CharSequence) {
+      if (size() != ((Utf8CharSequence) other).size()) return false;
+      if (other instanceof ByteArrayUtf8CharSequence) {
+        if (this.length != ((ByteArrayUtf8CharSequence) other).length) return false;
+        ByteArrayUtf8CharSequence that = (ByteArrayUtf8CharSequence) other;
+        return _equals(this.buf, this.offset, this.offset + this.length,
+            that.buf, that.offset, that.offset + that.length);
+      }
+      return utf8Equals(this, (Utf8CharSequence) other);
+    } else {
       return false;
     }
-    if (other instanceof ByteArrayUtf8CharSequence) {
-      ByteArrayUtf8CharSequence that = (ByteArrayUtf8CharSequence) other;
-      return _equals(this.buf, this.offset, this.offset + this.length,
-          that.buf, that.offset, that.offset + that.length);
+  }
+
+  public static boolean utf8Equals(Utf8CharSequence utf8_1, Utf8CharSequence utf8_2) {
+    if (utf8_1.size() != utf8_2.size()) return false;
+    for (int i = 0; i < utf8_1.size(); i++) {
+      if (utf8_1.byteAt(i) != utf8_2.byteAt(i)) return false;
     }
-    return false;
+    return true;
   }
 
 
@@ -115,14 +146,16 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   }
 
   private String _getStr() {
+    String utf16 = this.utf16;
     if (utf16 == null) {
-      synchronized (this) {
-        if (utf16 == null) {
-          CharArr arr = new CharArr();
-          ByteUtils.UTF8toUTF16(buf, offset, length, arr);
-          utf16 = arr.toString();
-        }
+      if (stringProvider != null) {
+        this.utf16 = utf16 = stringProvider.apply(this);
+      } else {
+        CharArr arr = new CharArr();
+        ByteUtils.UTF8toUTF16(buf, offset, length, arr);
+        this.utf16 = utf16 = arr.toString();
       }
+
     }
     return utf16;
   }

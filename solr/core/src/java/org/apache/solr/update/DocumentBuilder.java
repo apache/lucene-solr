@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -165,6 +166,7 @@ public class DocumentBuilder {
           if( v == null ) {
             continue;
           }
+          v = ByteArrayUtf8CharSequence.convertCharSeq(v);
           hasField = true;
           if (sfield != null) {
             used = true;
