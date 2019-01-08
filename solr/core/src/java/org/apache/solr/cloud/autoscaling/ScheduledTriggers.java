@@ -512,6 +512,19 @@ public class ScheduledTriggers implements Closeable {
     return Collections.unmodifiableSet(new HashSet<>(scheduledTriggerWrappers.keySet())); // shallow copy
   }
 
+  /**
+   * For use in white/grey box testing: The Trigger returned may be inspected, 
+   * but should not be modified in any way.
+   *
+   * @param name the name of an existing trigger
+   * @return the current scheduled trigger with that name, or null if none exists
+   * @lucene.internal
+   */
+  public synchronized AutoScaling.Trigger getTrigger(String name) {
+    TriggerWrapper w = scheduledTriggerWrappers.get(name);
+    return (null == w) ? null : w.trigger;
+  }
+  
   @Override
   public void close() throws IOException {
     synchronized (this) {

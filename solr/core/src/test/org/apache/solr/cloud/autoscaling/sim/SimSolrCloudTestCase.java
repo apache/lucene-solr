@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -150,5 +151,16 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     }
     fail("Couldn't get random replica that matched conditions\n" + slice.toString());
     return null;  // just to keep the compiler happy - fail will always throw an Exception
+  }
+
+  /**
+   * Creates &amp; executes an autoscaling request against the current cluster, asserting that 
+   * the result is a success
+   * 
+   * @param json The request to send
+   * @see CloudTestUtils#assertAutoScalingRequest
+   */
+  public void assertAutoScalingRequest(final String json) throws IOException {
+    CloudTestUtils.assertAutoScalingRequest(cluster, json);
   }
 }

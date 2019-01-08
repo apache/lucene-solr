@@ -198,6 +198,7 @@ public class CloudTestUtils {
    *
    * @param cloudManager current instance of {@link SolrCloudManager}
    * @param triggerName the name of the trigger we need to see sheduled in order to return successfully
+   * @see #suspendTrigger
    */
   public static long waitForTriggerToBeScheduled(final SolrCloudManager cloudManager,
                                                  final String triggerName)
@@ -228,17 +229,33 @@ public class CloudTestUtils {
    *
    * @param cloudManager current instance of {@link SolrCloudManager}
    * @param triggerName the name of the trigger to suspend.  This must already be scheduled.
+   * @see #assertAutoScalingRequest
+   * @see #waitForTriggerToBeScheduled
    */
   public static void suspendTrigger(final SolrCloudManager cloudManager,
                                     final String triggerName) throws IOException {
+    assertAutoScalingRequest(cloudManager, "{'suspend-trigger' : {'name' : '"+triggerName+"'} }");
+  }
+
+  /**
+   * Creates &amp; executes an autoscaling request against the current cluster, asserting that 
+   * the result is a success.
+   * 
+   * @param cloudManager current instance of {@link SolrCloudManager}
+   * @param json The request to POST to the AutoScaling Handler
+   * @see AutoScalingRequest#create
+   */
+  public static void assertAutoScalingRequest(final SolrCloudManager cloudManager,
+                                              final String json) throws IOException {
+    // TODO: a lot of code that directly uses AutoScalingRequest.create should use this method
     
-    final SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST,
-                                                      "{'suspend-trigger' : {'name' : '"+triggerName+"'} }");
+    final SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, json);
     final SolrResponse rsp = cloudManager.request(req);
     final String result = rsp.getResponse().get("result").toString();
-    Assert.assertEquals("Unexpected 'result' in response: " + rsp,
+    Assert.assertEquals("Unexpected result from auto-scaling command: " + json + " -> " + rsp,
                         "success", result);
   }
+
   
   /**
    * Helper class for sending (JSON) autoscaling requests that can randomize between V1 and V2 requests
