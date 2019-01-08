@@ -89,6 +89,35 @@ public class TestIndexedDISI extends LuceneTestCase {
 
     try (Directory dir = newDirectory()) {
       doTestAllSingleJump(set, dir);
+      assertAdvanceBeyondEnd(set, dir);
+    }
+  }
+
+  // Checks that advance after the end of the blocks has been reached has the correct behaviour
+  private void assertAdvanceBeyondEnd(FixedBitSet set, Directory dir) throws IOException {
+    final int cardinality = set.cardinality();
+    final byte denseRankPower = 9; // Not tested here so fixed to isolate factors
+    long length;
+    int jumpTableentryCount;
+    try (IndexOutput out = dir.createOutput("bar", IOContext.DEFAULT)) {
+      jumpTableentryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, cardinality), out, denseRankPower);
+    }
+
+    try (IndexInput in = dir.openInput("bar", IOContext.DEFAULT)) {
+      BitSetIterator disi2 = new BitSetIterator(set, cardinality);
+      int doc = disi2.docID();
+      int index = 0;
+      while (doc < cardinality) {
+        doc = disi2.nextDoc();
+        index++;
+      }
+
+      IndexedDISI disi = new IndexedDISI(in, 0L, in.length(), jumpTableentryCount, denseRankPower, cardinality);
+      // Advance 1 docID beyond end
+      assertFalse("There should be no set bit beyond the valid docID range", disi.advanceExact(set.length()));
+      disi.advance(doc); // Should be the special docID signifyin NO_MORE_DOCS from the BitSetIterator
+      assertEquals("The index when advancing beyond the last defined docID should be correct",
+          index, disi.index()+1); // disi.index()+1 as the while-loop also counts the NO_MORE_DOCS
     }
   }
 
@@ -285,7 +314,6 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
-  // TODO LUCENE-8585: Fails with -Dtests.seed=7FDDD930E591A662
   public void testFewMissingDocs() throws IOException {
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < 100; ++iter) {
@@ -415,6 +443,7 @@ public class TestIndexedDISI extends LuceneTestCase {
         assertEquals(index, disi.index());
       } else if (random().nextBoolean()) {
         assertEquals(doc, disi.nextDoc());
+        // This is a bit strange when doc == NO_MORE_DOCS as the index overcounts in the disi2 while-loop
         assertEquals(index, disi.index());
         target = doc;
       }

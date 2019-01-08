@@ -211,6 +211,7 @@ final class IndexedDISI extends DocIdSetIterator {
     }
     if (blockCardinality > 0) {
       jumps = addJumps(jumps, out.getFilePointer()-origo, totalCardinality, jumpBlockIndex, prevBlock+1);
+      totalCardinality += blockCardinality;
       flush(prevBlock, buffer, blockCardinality, denseRankPower, out);
       buffer.clear(0, buffer.length());
       prevBlock++;
@@ -218,9 +219,8 @@ final class IndexedDISI extends DocIdSetIterator {
     final int lastBlock = prevBlock == -1 ? 0 : prevBlock; // There will always be at least 1 block (NO_MORE_DOCS)
     // Last entry is a SPARSE with blockIndex == 32767 and the single entry 65535, which becomes the docID NO_MORE_DOCS
     // To avoid creating 65K jump-table entries, only a single entry is created pointing to the offset of the
-    // NO_MORE_DOCS block, but with the jumpBlockIndex set to the logical EMPTY block after all real blocks.
-    jumps = addJumps(jumps, out.getFilePointer()-origo, DocIdSetIterator.NO_MORE_DOCS & 0xFFFF0000,
-        lastBlock, lastBlock+1);
+    // NO_MORE_DOCS block, with the jumpBlockIndex set to the logical EMPTY block after all real blocks.
+    jumps = addJumps(jumps, out.getFilePointer()-origo, totalCardinality, lastBlock, lastBlock+1);
     buffer.set(DocIdSetIterator.NO_MORE_DOCS & 0xFFFF);
     flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, denseRankPower, out);
     // offset+index jump-table stored at the end
