@@ -241,6 +241,11 @@ Optimizations
 
 ======================= Lucene 7.7.0 =======================
 
+Changes in Runtime Behavior
+
+* LUCENE-8527: StandardTokenizer and UAX29URLEmailTokenizer now support Unicode 9.0,
+  and provide Unicode UTS#51 v11.0 Emoji tokenization with the "<EMOJI>" token type. 
+
 Build
 
 * LUCENE-8611: Update randomizedtesting to 2.7.2, JUnit to 4.12, add hamcrest-core 
@@ -293,6 +298,9 @@ Improvements
 
 * LUCENE-8581: Change LatLonShape encoding to use 4 bytes Per Dimension.
   (Ignacio Vera, Nick Knize, Adrien Grand)
+  
+* LUCENE-8527: Upgrade JFlex dependency to 1.7.0; in StandardTokenizer and UAX29URLEmailTokenizer,
+  increase supported Unicode version from 6.3 to 9.0, and support Unicode UTS#51 v11.0 Emoji tokenization.
 
 Optimizations
 

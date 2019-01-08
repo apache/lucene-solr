@@ -361,14 +361,14 @@ public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
 
     StringBuilder bToken = new StringBuilder();
     // exact max length:
-    for(int i=0;i<StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;i++) {
+    for(int i=0;i<UAX29URLEmailAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;i++) {
       bToken.append('b');
     }
 
     String bString = bToken.toString();
     // first bString is exact max default length; next one is 1 too long
     String input = "x " + bString + " " + bString + "b";
-    assertAnalyzesTo(a, input.toString(), new String[] {"x", bString, bString, "b"});
+    assertAnalyzesTo(a, input, new String[] {"x", bString, bString, "b"});
     a.close();
   }
 
