@@ -20,10 +20,10 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**A byte[] backed String
- *
+/**
+ * A byte[] backed String
  */
-public interface Utf8CharSequence extends CharSequence {
+public interface Utf8CharSequence extends CharSequence , Comparable {
 
   /**
    * Write the bytes into a buffer. The objective is to avoid the local bytes being exposed to
@@ -31,20 +31,31 @@ public interface Utf8CharSequence extends CharSequence {
    * possible into the buffer and then return how many bytes were written. It's the responsibility
    * of the caller to call this method repeatedly and ensure that everything is completely written
    *
-   * @param start position from which to start writing
+   * @param start  position from which to start writing
    * @param buffer the buffer to which to write to
    * @param pos    position to start writing
    * @return no:of bytes written
    */
   int write(int start, byte[] buffer, int pos);
 
-  /** The size of utf8 bytes
+  /**
+   * The size of utf8 bytes
+   *
    * @return the size
    */
   int size();
 
+  byte byteAt(int idx);
+
+  @Override
+  default int compareTo(Object o) {
+    if(o == null) return 1;
+    return toString().compareTo(o.toString());
+  }
+
   /**
    * Creates  a byte[] and copy to it first before writing it out to the output
+   *
    * @param os The sink
    */
   default void write(OutputStream os) throws IOException {

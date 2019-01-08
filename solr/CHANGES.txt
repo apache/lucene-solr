@@ -105,6 +105,8 @@ Improvements
   `solr.max.booleanClauses` sysprop is specified, that will override the 1024 default.  This enables users to
   update this property across the board more easily. (Jason Gerlowski)
 
+* SOLR-12983: JavabinLoader should avoid creating String Objects and create UTF8CharSequence fields from byte[] (noble)
+
 Other Changes
 ----------------------
 
