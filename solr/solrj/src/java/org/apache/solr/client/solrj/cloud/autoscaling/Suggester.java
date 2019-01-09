@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -207,15 +206,13 @@ public abstract class Suggester implements MapWriter {
     for (Pair<String, String> shard : collectionShardPairs) {
       // if this is not a known collection from the existing clusterstate,
       // then add it
-      if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(shard.first()))) {
+      if (session.matrix.stream().noneMatch(row -> row.hasColl(shard.first()))) {
         session.addClausesForCollection(stateProvider, shard.first());
       }
-      for (Row row : session.matrix) {
-        Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.computeIfAbsent(shard.first(), it -> new HashMap<>());
-        if (shard.second() != null) shardInfo.computeIfAbsent(shard.second(), it -> new ArrayList<>());
-      }
+      for (Row row : session.matrix) row.createCollShard(shard);
     }
   }
+
 
   public Policy.Session getSession() {
     return session;
@@ -337,6 +334,7 @@ public abstract class Suggester implements MapWriter {
       if (!errs.isEmpty() &&
           (executeInStrictMode || clause.strict)) errors.addAll(errs);
     }
+    session.violations = errors;
     if (!errors.isEmpty()) deviations = null;
     return errors;
   }
