@@ -152,6 +152,7 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
@@ -1434,7 +1435,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Load the request processors
    */
-   private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+  private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
     if(def == null){
@@ -1452,6 +1453,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
     map.put(null, def);
     map.put("", def);
+
+    map.computeIfAbsent(RunUpdateProcessorFactory.PRE_RUN_CHAIN_NAME,
+        k -> new UpdateRequestProcessorChain(Collections.singletonList(new NestedUpdateProcessorFactory()), this));
+
     return map;
   }
 
