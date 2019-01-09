@@ -166,7 +166,6 @@ public class DocumentBuilder {
           if( v == null ) {
             continue;
           }
-          v = ByteArrayUtf8CharSequence.convertCharSeq(v);
           hasField = true;
           if (sfield != null) {
             used = true;
