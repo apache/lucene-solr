@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -277,6 +278,7 @@ public class Policy implements MapWriter {
   }
 
   static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
+    List<Row> matrixCopy = new ArrayList<>(matrix);
     List<Row> deadNodes = null;
     Iterator<Row> it =matrix.iterator();
     while (it.hasNext()){
@@ -300,16 +302,19 @@ public class Policy implements MapWriter {
             return p.compare(r1, r2, false);
           });
         } catch (Exception e) {
-//          log.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
-//              clusterPreferences,
-//              lastComparison[0],
-//              lastComparison[1],
-//              Utils.toJSONString(Utils.getDeepCopy(tmpMatrix, 6, false)));
-          log.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
-              clusterPreferences,
-              lastComparison[0].node,
-              lastComparison[1].node,
-              matrix.size());
+          try {
+            Map m = Collections.singletonMap("diagnostics", (MapWriter) ew -> {
+              PolicyHelper.writeNodes(ew, matrixCopy);
+              ew.put("config", matrix.get(0).session.getPolicy());
+            });
+            log.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
+                clusterPreferences,
+                lastComparison[0].node,
+                lastComparison[1].node,
+                Utils.writeJson(m, new StringWriter(), true).toString());
+          } catch (IOException e1) {
+            //
+          }
           throw new RuntimeException(e.getMessage());
         }
         p.setApproxVal(tmpMatrix);
@@ -602,12 +607,16 @@ public class Policy implements MapWriter {
      * Apply the preferences and conditions
      */
     void applyRules() {
-      setApproxValuesAndSortNodes(clusterPreferences, matrix);
+      sortNodes();
 
       for (Clause clause : expandedClauses) {
         List<Violation> errs = clause.test(this, null);
         violations.addAll(errs);
       }
+    }
+
+    void sortNodes() {
+      setApproxValuesAndSortNodes(clusterPreferences, matrix);
     }
 
 
