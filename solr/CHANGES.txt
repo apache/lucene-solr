@@ -120,6 +120,11 @@ Improvements
   'status' field, a 'message' field giving more details on the error, and an optional 'exception' field.  (Shalin Mangar,
   Jason Gerlowski)
 
+* SOLR-12888: The NestedUpdateProcessor (which populates internal fields for nested child docs) is now auto-registered
+  to run immediately prior to RunUpdateProcessor.  If the schema has no _nest_*_ fields then it's a no-op.
+  RunUpdateProcessorFactory looks up a special/internal URP chain "_preRun_" which is implicitly defined but could be
+  defined by an app for customization if desired.  (David Smiley)
+
 Optimizations
 ----------------------
 

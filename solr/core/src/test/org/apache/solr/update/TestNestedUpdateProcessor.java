@@ -90,7 +90,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml");
+    initCore("solrconfig-minimal.xml", "schema-nest.xml");
   }
 
   @Before
@@ -189,7 +189,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   private void indexSampleData(String cmd) throws Exception {
-    updateJ(cmd, params("update.chain", "nested"));
+    updateJ(cmd, null);
     assertU(commit());
   }
 }

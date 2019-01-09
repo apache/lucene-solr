@@ -48,14 +48,14 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml"); // use "nest" schema
+    initCore("solrconfig-minimal.xml", "schema-nest.xml"); // use "nest" schema
 
     if(random().nextBoolean()) {
       idCounter.set(-100); // start docIDs at -100 for these random docs we don't care about (all less than 0)
       // create random segments
       final int numOfDocs = 10;
       for(int i = 0; i < numOfDocs; ++i) {
-        updateJ(generateDocHierarchy(i), params("update.chain", "nested"));
+        updateJ(generateDocHierarchy(i), null);
         if(random().nextBoolean()) {
           assertU(commit());
         }
@@ -287,7 +287,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
             "}\n" +
           "}\n" +
         "}";
-    updateJ(addDocWoChildren, params("update.chain", "nested"));
+    updateJ(addDocWoChildren, null);
     assertU(commit());
 
     assertJQ(req("q", "type_s:cake",
@@ -299,7 +299,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   private void indexSampleData(int numDocs) throws Exception {
     for(int i = 0; i < numDocs; ++i) {
-      updateJ(generateDocHierarchy(i), params("update.chain", "nested"));
+      updateJ(generateDocHierarchy(i), null);
     }
     assertU(commit());
   }
