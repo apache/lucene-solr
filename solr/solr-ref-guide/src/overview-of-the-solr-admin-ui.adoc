@@ -17,7 +17,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr features a Web interface that makes it easy for Solr administrators and programmers to view <<files-screen.adoc#files-screen,Solr configuration>> details, run <<query-screen.adoc#query-screen,queries and analyze>> document fields in order to fine-tune a Solr configuration and access <<getting-assistance.adoc#getting-assistance,online documentation>> and other help.
+Solr features a Web interface that makes it easy for Solr administrators and programmers to view <<files-screen.adoc#files-screen,Solr configuration>> details, run <<query-screen.adoc#query-screen,queries and analyze>> document fields in order to fine-tune a Solr configuration and access <<Getting Assistance,online documentation>> and other help.
 
 == Dashboard
 
