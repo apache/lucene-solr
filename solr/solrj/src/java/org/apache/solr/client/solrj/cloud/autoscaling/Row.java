@@ -52,7 +52,7 @@ public class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
   //this holds the details of each replica in the node
-  Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
+  public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
 
   boolean anyValueMissing = false;
   boolean isLive = true;
