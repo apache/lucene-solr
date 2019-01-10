@@ -140,6 +140,7 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
     map.put(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class);
     map.put(ExpandComponent.COMPONENT_NAME, ExpandComponent.class);
     map.put(TermsComponent.COMPONENT_NAME, TermsComponent.class);
+    map.put(RoutedAliasOptimizeQueryComponent.COMPONENT_NAME, RoutedAliasOptimizeQueryComponent.class);
 
     standard_components = Collections.unmodifiableMap(map);
   }
