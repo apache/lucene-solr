@@ -260,6 +260,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
+  private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -1531,6 +1532,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return;
     }
     log.info("{} CLOSING SolrCore {}", logid, this);
+
+    ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
 
     // stop reporting metrics
     try {
@@ -3165,5 +3168,27 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     });
     return blobRef;
+  }
+
+  /**
+   * Run an arbitrary task in it's own thread. This is an expert option and is
+   * a method you should use with great care. It would be bad to run something that never stopped
+   * or run something that took a very long time. Typically this is intended for actions that take
+   * a few seconds, and therefore would be bad to wait for within a request, but but would not pose
+   * a significant hindrance to server shut down times. It is not intended for long running tasks
+   * and if you are using a Runnable with a loop in it, you are almost certainly doing it wrong.
+   * <p>
+   * WARNING: Solr wil not be able to shut down gracefully until this task completes!
+   * <p>
+   * A significant upside of using this method vs creating your own ExecutorService is that your code
+   * does not have to properly shutdown executors which typically is risky from a unit testing
+   * perspective since the test framework will complain if you don't carefully ensure the executor
+   * shuts down before the end of the test. Also the threads running this task are sure to have
+   * a proper MDC for logging.
+   *
+   * @param r the task to run
+   */
+  public void runAsync(Runnable r) {
+    coreAsyncTaskExecutor.submit(r);
   }
 }
