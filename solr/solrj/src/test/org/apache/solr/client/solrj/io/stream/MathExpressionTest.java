@@ -4136,9 +4136,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     //Test univariate regression with scaling off
 
     cexpr = "let(echo=true, a=sequence(10, 0, 1), " +
-        "b=transpose(matrix(a))," +
-        "c=knnRegress(b, a, 3)," +
-        "d=predict(c, array(3)))";
+        "c=knnRegress(a, a, 3)," +
+        "d=predict(c, 3))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -4151,6 +4150,22 @@ public class MathExpressionTest extends SolrCloudTestCase {
     prediction = (Number)tuples.get(0).get("d");
     assertEquals(prediction.doubleValue(), 3, 0);
 
+    cexpr = "let(echo=true, a=sequence(10, 0, 1), " +
+        "c=knnRegress(a, a, 3)," +
+        "d=predict(c, array(3,4)))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    predictions = (List<Number>)tuples.get(0).get("d");
+    assertEquals(predictions.size(), 2);
+    assertEquals(predictions.get(0).doubleValue(), 3, 0);
+    assertEquals(predictions.get(1).doubleValue(), 4, 0);
   }
 
   @Test
