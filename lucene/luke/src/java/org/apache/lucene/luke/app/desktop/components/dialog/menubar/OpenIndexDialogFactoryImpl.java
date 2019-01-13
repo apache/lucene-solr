@@ -294,6 +294,7 @@ public final class OpenIndexDialogFactoryImpl implements OpenIndexDialogFactory 
       }
     }
 
+    @SuppressForbidden(reason = "JFileChooser constructor takes java.io.File")
     private File getLastOpenedDirectory() {
       List<String> history = prefs.getHistory();
       if (!history.isEmpty()) {
