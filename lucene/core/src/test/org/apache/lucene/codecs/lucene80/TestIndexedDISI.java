@@ -132,7 +132,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   // When doing merges in Lucene80NormsProducer, IndexedDISI are created from slices where the offset is not 0
   public void testPositionNotZero() throws IOException {
     final int BLOCKS = 10;
-    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
+    final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
 
     FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
     try (Directory dir = newDirectory()) {
@@ -189,7 +189,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   private void doTestAllSingleJump(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
-    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
+    final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
     long length;
     int jumpTableentryCount;
     try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
@@ -272,7 +272,7 @@ public class TestIndexedDISI extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       FixedBitSet set = new FixedBitSet(200000);
       int start = 65536 + random().nextInt(100);
-      final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
+      final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
 
       // we set MAX_ARRAY_LENGTH bits so the encoding will be sparse
       set.set(start, start + IndexedDISI.MAX_ARRAY_LENGTH);
@@ -339,9 +339,52 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  public void testIllegalDenseRankPower() throws IOException {
+
+    // Legal values
+    for (byte denseRankPower: new byte[]{-1, 7, 8, 9, 10, 11, 12, 13, 14, 15}) {
+      createAndOpenDISI(denseRankPower, denseRankPower);
+    }
+
+    // Illegal values
+    for (byte denseRankPower: new byte[]{-2, 0, 1, 6, 16}) {
+      try {
+        createAndOpenDISI(denseRankPower, (byte) 8); // Illegal write, legal read (should not reach read)
+        fail("Trying to create an IndexedDISI data stream with denseRankPower-read " + denseRankPower +
+            " and denseRankPower-write 8 should fail");
+      } catch (IllegalArgumentException e) {
+        // Expected
+      }
+      try {
+        createAndOpenDISI((byte) 8, denseRankPower); // Legal write, illegal read (should reach read)
+        fail("Trying to create an IndexedDISI data stream with denseRankPower-write 8 and denseRankPower-read " +
+            denseRankPower + " should fail");
+      } catch (IllegalArgumentException e) {
+        // Expected
+      }
+    }
+  }
+
+  private void createAndOpenDISI(byte denseRankPowerWrite, byte denseRankPowerRead) throws IOException {
+    FixedBitSet set = new FixedBitSet(10);
+    set.set(set.length()-1);
+    try (Directory dir = newDirectory()) {
+      long length;
+      int jumpTableEntryCount = -1;
+      try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
+        jumpTableEntryCount = IndexedDISI.writeBitSet(new BitSetIterator(set, set.cardinality()), out, denseRankPowerWrite);
+        length = out.getFilePointer();
+      }
+      try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableEntryCount, denseRankPowerRead, set.cardinality());
+      }
+      // This tests the legality of the denseRankPower only, so we don't do anything with the disi
+    }
+  }
+
   public void testOneDocMissingFixed() throws IOException {
     int maxDoc = 9699;
-    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
+    final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
     FixedBitSet set = new FixedBitSet(maxDoc);
     set.set(0, maxDoc);
     set.clear(1345);
@@ -392,7 +435,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   private void doTest(FixedBitSet set, Directory dir) throws IOException {
     final int cardinality = set.cardinality();
-    final byte denseRankPower = (byte) (random().nextInt(7)+6); // sane + chance of disable
+    final byte denseRankPower = rarely() ? -1 : (byte) (random().nextInt(7)+7); // sane + chance of disable
     long length;
     int jumpTableentryCount;
     try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {

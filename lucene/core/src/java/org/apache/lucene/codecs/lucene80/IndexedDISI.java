@@ -182,8 +182,9 @@ final class IndexedDISI extends DocIdSetIterator {
    */
   static short writeBitSet(DocIdSetIterator it, IndexOutput out, byte denseRankPower) throws IOException {
     final long origo = out.getFilePointer(); // All jumps are relative to the origo
-    if (denseRankPower < 7 || denseRankPower > 15) {
-      denseRankPower = -1; // Disabled
+    if ((denseRankPower < 7 || denseRankPower > 15) && denseRankPower != -1) {
+      throw new IllegalArgumentException("Acceptable values for denseRankPower are 7-15 (every 128-32768 docIDs). " +
+          "The provided power was " + denseRankPower + " (every " + (int)Math.pow(2, denseRankPower) + " docIDs)");
     }
     int totalCardinality = 0;
     int blockCardinality = 0;
@@ -292,10 +293,15 @@ final class IndexedDISI extends DocIdSetIterator {
    * @param cost normally the number of logical docIDs.
    */
   IndexedDISI(IndexInput blockSlice, RandomAccessInput jumpTable, int jumpTableEntryCount, byte denseRankPower, long cost) throws IOException {
+    if ((denseRankPower < 7 || denseRankPower > 15) && denseRankPower != -1) {
+      throw new IllegalArgumentException("Acceptable values for denseRankPower are 7-15 (every 128-32768 docIDs). " +
+          "The provided power was " + denseRankPower + " (every " + (int)Math.pow(2, denseRankPower) + " docIDs). ");
+    }
+
     this.slice = blockSlice;
     this.jumpTable = jumpTable;
     this.jumpTableEntryCount = jumpTableEntryCount;
-    this.denseRankPower = denseRankPower < 7 || denseRankPower > 15 ? -1 : denseRankPower;
+    this.denseRankPower = denseRankPower;
     final int rankIndexShift = denseRankPower-7;
     this.denseRankTable = denseRankPower == -1 ? null : new byte[DENSE_BLOCK_LONGS >> rankIndexShift];
     this.cost = cost;
