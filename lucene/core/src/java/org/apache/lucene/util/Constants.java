@@ -88,19 +88,5 @@ public final class Constants {
   public static final boolean JRE_IS_MINIMUM_JAVA8 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 8);
   public static final boolean JRE_IS_MINIMUM_JAVA9 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
   public static final boolean JRE_IS_MINIMUM_JAVA11 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 11);
-
-  /**
-   * This is the internal Lucene version, including bugfix versions, recorded into each segment.
-   * @deprecated Use {@link Version#LATEST}
-   */
-  @Deprecated
-  public static final String LUCENE_MAIN_VERSION = Version.LATEST.toString();
-  
-  /**
-   * Don't use this constant because the name is not self-describing!
-   * @deprecated Use {@link Version#LATEST}
-   */
-  @Deprecated
-  public static final String LUCENE_VERSION = Version.LATEST.toString();
   
 }
