@@ -72,6 +72,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestPointQueries extends LuceneTestCase {
 
   // Controls what range of values we randomly generate, so we sometimes test narrow ranges:
@@ -355,7 +356,7 @@ public class TestPointQueries extends LuceneTestCase {
 
   @Nightly
   public void testRandomLongsBig() throws Exception {
-    doTestRandomLongs(100000);
+    doTestRandomLongs(50000);
   }
 
   private void doTestRandomLongs(int count) throws Exception {
@@ -613,7 +614,7 @@ public class TestPointQueries extends LuceneTestCase {
 
   @Nightly
   public void testRandomBinaryBig() throws Exception {
-    doTestRandomBinary(100000);
+    doTestRandomBinary(50000);
   }
 
   private void doTestRandomBinary(int count) throws Exception {
@@ -632,7 +633,10 @@ public class TestPointQueries extends LuceneTestCase {
     int[] ids = new int[numValues];
 
     int id = 0;
-    for(int ord=0;ord<numValues;ord++) {
+    if (VERBOSE) {
+      System.out.println("Picking values: " + numValues);
+    }
+    for (int ord = 0; ord < numValues; ord++) {
       if (ord > 0 && random().nextInt(100) < sameValuePct) {
         // Identical to old value
         docValues[ord] = docValues[random().nextInt(ord)];
@@ -695,7 +699,12 @@ public class TestPointQueries extends LuceneTestCase {
     Document doc = null;
     int lastID = -1;
 
-    for(int ord=0;ord<numValues;ord++) {
+    for (int ord = 0; ord < numValues; ord++) {
+      if (ord % 1000 == 0) {
+        if (VERBOSE) {
+          System.out.println("Adding docs: " + ord);
+        }
+      }
       int id = ids[ord];
       if (id != lastID) {
         if (random().nextInt(100) < missingPct) {
@@ -759,7 +768,7 @@ public class TestPointQueries extends LuceneTestCase {
     final CountDownLatch startingGun = new CountDownLatch(1);
     final AtomicBoolean failed = new AtomicBoolean();
 
-    for(int i=0;i<numThreads;i++) {
+    for (int i = 0; i < numThreads; i++) {
       Thread thread = new Thread() {
           @Override
           public void run() {
@@ -834,7 +843,7 @@ public class TestPointQueries extends LuceneTestCase {
               }
 
               BitSet expected = new BitSet();
-              for(int ord=0;ord<numValues;ord++) {
+              for (int ord = 0; ord < numValues; ord++) {
                 int id = ids[ord];
                 if (missing.get(id) == false && deleted.get(id) == false && matches(bytesPerDim, lower, upper, docValues[ord])) {
                   expected.set(id);
@@ -865,10 +874,12 @@ public class TestPointQueries extends LuceneTestCase {
       thread.start();
       threads.add(thread);
     }
+
     startingGun.countDown();
-    for(Thread thread : threads) {
+    for (Thread thread : threads) {
       thread.join();
     }
+
     IOUtils.close(r, dir);
   }
 
