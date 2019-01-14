@@ -414,39 +414,6 @@ public final class IOUtils {
 
     throw new RuntimeException(th);
   }
-
-  /**
-   * Rethrows the argument as {@code IOException} or {@code RuntimeException} 
-   * if it's not null.
-   * 
-   * @deprecated This method is deprecated in favor of {@link #rethrowAlways}. Code should
-   * be updated to {@link #rethrowAlways} and guarded with an additional null-argument check
-   * (because {@link #rethrowAlways} is not accepting null arguments). 
-   */
-  @Deprecated
-  public static void reThrow(Throwable th) throws IOException {
-    if (th != null) {
-      throw rethrowAlways(th);
-    }
-  }
-  
-  /**
-   * @deprecated This method is deprecated in favor of {@link #rethrowAlways}. Code should
-   * be updated to {@link #rethrowAlways} and guarded with an additional null-argument check
-   * (because {@link #rethrowAlways} is not accepting null arguments). 
-   */
-  @Deprecated
-  public static void reThrowUnchecked(Throwable th) {
-    if (th != null) {
-      if (th instanceof Error) {
-        throw (Error) th;
-      }
-      if (th instanceof RuntimeException) {
-        throw (RuntimeException) th;
-      }
-      throw new RuntimeException(th);
-    }    
-  }
   
   /**
    * Ensure that any writes to the given file is written to the storage device that contains it.
