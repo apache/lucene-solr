@@ -28,6 +28,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -118,7 +119,7 @@ public class ToParentBlockJoinSortField extends SortField {
         if (children == null) {
           return DocValues.emptySorted();
         }
-        return BlockJoinSelector.wrap(sortedSet, type, parents, children);
+        return BlockJoinSelector.wrap(sortedSet, type, parents, new BitSetIterator(children, 0));
       }
 
     };
@@ -137,7 +138,7 @@ public class ToParentBlockJoinSortField extends SortField {
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        return BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
+        return BlockJoinSelector.wrap(sortedNumeric, type, parents, new BitSetIterator(children, 0));
       }
     };
   }
@@ -155,7 +156,7 @@ public class ToParentBlockJoinSortField extends SortField {
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        return BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
+        return BlockJoinSelector.wrap(sortedNumeric, type, parents, new BitSetIterator(children, 0));
       }
     };
   }
@@ -173,7 +174,7 @@ public class ToParentBlockJoinSortField extends SortField {
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, children)) {
+        return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, new BitSetIterator(children, 0))) {
           @Override
           public long longValue() throws IOException {
             // undo the numericutils sortability
@@ -197,7 +198,7 @@ public class ToParentBlockJoinSortField extends SortField {
         if (children == null) {
           return DocValues.emptyNumeric();
         }
-        return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, children)) {
+        return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, new BitSetIterator(children, 0))) {
           @Override
           public long longValue() throws IOException {
             // undo the numericutils sortability

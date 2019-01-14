@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.search.join;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
@@ -27,10 +25,13 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public class TestBlockJoinSelector extends LuceneTestCase {
 
@@ -132,14 +133,16 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     ords[12] = 10;
     ords[18] = 10;
 
-    final SortedDocValues mins = BlockJoinSelector.wrap(DocValues.singleton(new CannedSortedDocValues(ords)), BlockJoinSelector.Type.MIN, parents, children);
+    final SortedDocValues mins = BlockJoinSelector.wrap(DocValues.singleton(new CannedSortedDocValues(ords)),
+        BlockJoinSelector.Type.MIN, parents, new BitSetIterator(children, 0));
     assertEquals(5, nextDoc(mins,5));
     assertEquals(3, mins.ordValue());
     assertEquals(15, nextDoc(mins,15));
     assertEquals(10, mins.ordValue());
     assertNoMoreDoc(mins, 20);
 
-    final SortedDocValues maxs = BlockJoinSelector.wrap(DocValues.singleton(new CannedSortedDocValues(ords)), BlockJoinSelector.Type.MAX, parents, children);
+    final SortedDocValues maxs = BlockJoinSelector.wrap(DocValues.singleton(new CannedSortedDocValues(ords)),
+        BlockJoinSelector.Type.MAX, parents, new BitSetIterator(children, 0));
     assertEquals(5, nextDoc(maxs,5));
     assertEquals(7, maxs.ordValue());
     assertEquals(15, nextDoc(maxs,15));
@@ -246,14 +249,16 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     docsWithValue.set(18);
     longs[18] = 10;
 
-    final NumericDocValues mins = BlockJoinSelector.wrap(DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)), BlockJoinSelector.Type.MIN, parents, children);
+    final NumericDocValues mins = BlockJoinSelector.wrap(DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)),
+        BlockJoinSelector.Type.MIN, parents, new BitSetIterator(children, 0));
     assertEquals(5, nextDoc(mins,5));
     assertEquals(3, mins.longValue());
     assertEquals(15, nextDoc(mins,15));
     assertEquals(10, mins.longValue());
     assertNoMoreDoc(mins, 20);
 
-    final NumericDocValues maxs = BlockJoinSelector.wrap(DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)), BlockJoinSelector.Type.MAX, parents, children);
+    final NumericDocValues maxs = BlockJoinSelector.wrap(DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)),
+        BlockJoinSelector.Type.MAX, parents, new BitSetIterator(children, 0));
     assertEquals(5, nextDoc(maxs, 5));
     assertEquals(7, maxs.longValue());
     assertEquals(15, nextDoc(maxs, 15));
