@@ -94,12 +94,6 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   //how many million years are there?
   private static final int NUM_MYEARS = 586;// we assert how this was computed in the constructor
 
-  /** An instanced based on {@link Calendar#getInstance(TimeZone, Locale)} with UTC and Locale.Root. This
-   * will (always?) be a {@link GregorianCalendar} with a so-called "Gregorian Change Date" of 1582.
-   */
-  @Deprecated
-  public static final DateRangePrefixTree INSTANCE = new DateRangePrefixTree(DEFAULT_CAL);
-
   // Instance fields: (all are final)
 
   private final Calendar CAL_TMP;//template

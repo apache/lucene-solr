@@ -55,7 +55,7 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    tree = DateRangePrefixTree.INSTANCE;
+    tree = new DateRangePrefixTree(DateRangePrefixTree.DEFAULT_CAL);
     strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
     Calendar tmpCal = tree.newCal();
     randomCalWindowField = randomIntBetween(1, Calendar.ZONE_OFFSET - 1);//we're not allowed to add zone offset

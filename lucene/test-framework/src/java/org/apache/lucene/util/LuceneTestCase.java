@@ -2806,16 +2806,6 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * This method is deprecated for a reason. Do not use it. Call {@link #createTempDir()}
-   * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
-   */
-  @Deprecated
-  public static Path getBaseTempDirForTestClass() {
-    return tempFilesCleanupRule.getPerTestClassTempDir();
-  }
-
-
-  /**
    * Creates an empty, temporary folder (when the name of the folder is of no importance).
    * 
    * @see #createTempDir(String)

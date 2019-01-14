@@ -150,7 +150,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
-    assertIDEquals(id, info2.getId());
+    assertArrayEquals(id, info2.getId());
     dir.close();
   }
   
@@ -473,7 +473,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     // assertSame(expected.getCodec(), actual.getCodec());
     assertEquals(expected.getDiagnostics(), actual.getDiagnostics());
     assertEquals(expected.maxDoc(), actual.maxDoc());
-    assertIDEquals(expected.getId(), actual.getId());
+    assertArrayEquals(expected.getId(), actual.getId());
     assertEquals(expected.getUseCompoundFile(), actual.getUseCompoundFile());
     assertEquals(expected.getVersion(), actual.getVersion());
     assertEquals(expected.getAttributes(), actual.getAttributes());
@@ -481,15 +481,6 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
   
   /** Returns the versions this SI should test */
   protected abstract Version[] getVersions();
-  
-  /** 
-   * assert that unique id is equal. 
-   * @deprecated only exists to be overridden by old codecs that didnt support this
-   */
-  @Deprecated
-  protected void assertIDEquals(byte expected[], byte actual[]) {
-    assertArrayEquals(expected, actual);
-  }
   
   @Override
   protected void addRandomFields(Document doc) {

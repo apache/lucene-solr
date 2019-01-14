@@ -1,0 +1,107 @@
+lucene/CHANGES.txt:13:* LUCENE-8469: Deprecated StringHelper.compare has been removed. (Dawid Weiss)
+lucene/CHANGES.txt:25:* LUCENE-8038: Deprecated PayloadScoreQuery constructors have been removed (Alan
+lucene/CHANGES.txt:46:* LUCENE-8242: Deprecated method IndexSearcher#createNormalizedWeight() has
+lucene/CHANGES.txt:79:* LUCENE-8475: Deprecated constants have been removed from RamUsageEstimator.
+lucene/CHANGES.txt:340:* LUCENE-8609: Deprecated IndexWriter#numDocs() and IndexWriter#maxDoc() in favor of IndexWriter#getDocStats()
+lucene/CHANGES.txt:4665:* LUCENE-5900: Deprecated more constructors taking Version in *InfixSuggester and
+lucene/CHANGES.txt:5220:* LUCENE-5850: Made Version handling more robust and extensible. Deprecated
+lucene/CHANGES.txt:8002:* LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
+lucene/CHANGES.txt:9199:* LUCENE-1768: Deprecated Parametric(Range)QueryNode, RangeQueryNode(Builder),
+lucene/CHANGES.txt:9202:* LUCENE-3820: Deprecated constructors accepting pattern matching bounds. The input
+lucene/CHANGES.txt:9205:* LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 
+lucene/CHANGES.txt:10004:* LUCENE-2599: Deprecated the spatial contrib module, which was buggy and not
+lucene/CHANGES.txt:10057:* LUCENE-3765: Deprecated StopFilter ctor that took ignoreCase, because
+lucene/CHANGES.txt:10059:  Deprecated StandardAnalyzer and ClassicAnalyzer ctors that take File,
+lucene/CHANGES.txt:10393:* LUCENE-3205: Deprecated MultiTermQuery.getTotalNumerOfTerms() [and
+lucene/CHANGES.txt:10920:* LUCENE-2854: Deprecated SimilarityDelegator and
+lucene/CHANGES.txt:10925:* LUCENE-2869: Deprecated Query.getSimilarity: instead of using
+lucene/CHANGES.txt:11066:* LUCENE-2302: Deprecated TermAttribute and replaced by a new
+lucene/CHANGES.txt:11112:* LUCENE-2846: Deprecated IndexReader.setNorm(int, String, float). This method
+lucene/CHANGES.txt:11138:* LUCENE-2876: Deprecated Scorer.getSimilarity(). If your Scorer uses a Similarity,
+lucene/CHANGES.txt:12497:   Lucene's indexing.  Deprecated Field.Store.COMPRESS.
+lucene/CHANGES.txt:12572: * LUCENE-1673: Deprecated NumberTools in favour of the new
+lucene/CHANGES.txt:12609: * LUCENE-1713: Deprecated RangeQuery and RangeFilter and renamed to
+lucene/CHANGES.txt:12839:    Deprecated ConstantScoreRangeQuery (Mark Miller via Mike
+lucene/CHANGES.txt:13277:    explicit parameter for maximum field size.  Deprecated all the
+lucene/CHANGES.txt:14118:    getAllowDocsOutOfOrder(). Deprecated the methods setUseScorer14() and 
+lucene/analysis/common/src/test/org/apache/lucene/analysis/core/TestAllAnalyzersHaveFactories.java:136:        || c.isAnnotationPresent(Deprecated.class) // deprecated ones are typically back compat hacks
+lucene/analysis/common/src/test/org/apache/lucene/analysis/core/TestRandomChains.java:225:        || c.isAnnotationPresent(Deprecated.class)
+lucene/analysis/common/src/test/org/apache/lucene/analysis/core/TestRandomChains.java:233:        if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class) || brokenConstructors.get(ctor) == ALWAYS) {
+lucene/analysis/common/src/java/org/apache/lucene/analysis/synonym/SynonymFilter.java:110:@Deprecated
+lucene/analysis/common/src/java/org/apache/lucene/analysis/synonym/SynonymFilterFactory.java:82:@Deprecated
+lucene/analysis/common/src/java/org/apache/lucene/analysis/util/FilesystemResourceLoader.java:55:  @Deprecated
+lucene/analysis/common/src/java/org/apache/lucene/analysis/util/ClasspathResourceLoader.java:44:  @Deprecated
+lucene/analysis/common/src/java/org/apache/lucene/analysis/util/ClasspathResourceLoader.java:45:  @SuppressForbidden(reason = "Deprecated method uses thread's context classloader, but there for backwards compatibility")
+lucene/analysis/common/src/java/org/apache/lucene/analysis/miscellaneous/FixBrokenOffsetsFilter.java:31:@Deprecated
+lucene/analysis/common/src/java/org/apache/lucene/analysis/miscellaneous/WordDelimiterFilter.java:95:@Deprecated
+lucene/analysis/common/src/java/org/apache/lucene/analysis/miscellaneous/WordDelimiterFilterFactory.java:58:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyBinaryDocValues.java:28:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacySortedSetDocValues.java:36:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyNumericDocValuesWrapper.java:30:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacySortedNumericDocValuesWrapper.java:29:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:47:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:76:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:105:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:152:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:207:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:271:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:319:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:383:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:438:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyDocValuesIterables.java:489:  @Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacySortedSetDocValuesWrapper.java:30:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacySortedNumericDocValues.java:27:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacySortedDocValues.java:34:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyBinaryDocValuesWrapper.java:31:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacySortedDocValuesWrapper.java:30:@Deprecated
+lucene/codecs/src/java/org/apache/lucene/codecs/memory/LegacyNumericDocValues.java:26:@Deprecated
+lucene/core/src/test/org/apache/lucene/analysis/TestToken.java:31:@Deprecated
+lucene/core/src/test/org/apache/lucene/util/TestVersion.java:179:        final boolean dep = field.isAnnotationPresent(Deprecated.class);
+lucene/core/src/java/org/apache/lucene/util/SloppyMath.java:75:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/IOUtils.java:426:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/IOUtils.java:438:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/VirtualMethod.java:45: *  final boolean isDeprecatedMethodOverridden =
+lucene/core/src/java/org/apache/lucene/util/VirtualMethod.java:49: *  final boolean isDeprecatedMethodOverridden =
+lucene/core/src/java/org/apache/lucene/util/CharsRef.java:145:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/CharsRef.java:149:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/CharsRef.java:155:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/Version.java:39:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/Version.java:75:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/Constants.java:96:  @Deprecated
+lucene/core/src/java/org/apache/lucene/util/Constants.java:103:  @Deprecated
+lucene/core/src/java/org/apache/lucene/search/FuzzyQuery.java:217:  @Deprecated
+lucene/core/src/java/org/apache/lucene/search/FuzzyQuery.java:229:  @Deprecated
+lucene/core/src/java/org/apache/lucene/store/RAMOutputStream.java:37:@Deprecated
+lucene/core/src/java/org/apache/lucene/store/RAMInputStream.java:33:@Deprecated
+lucene/core/src/java/org/apache/lucene/store/RAMDirectory.java:57:@Deprecated
+lucene/core/src/java/org/apache/lucene/store/RAMFile.java:33:@Deprecated
+lucene/expressions/src/java/org/apache/lucene/expressions/js/JavascriptParser.java:43:  @Deprecated
+lucene/expressions/src/java/org/apache/lucene/expressions/js/JavascriptParser.java:60:  @Deprecated
+lucene/expressions/src/java/org/apache/lucene/expressions/js/JavascriptLexer.java:50:  @Deprecated
+lucene/expressions/src/java/org/apache/lucene/expressions/js/JavascriptLexer.java:67:  @Deprecated
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:113:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:142:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:163:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:179:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:205:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:226:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:233:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenSources.java:244:  @Deprecated // maintenance reasons LUCENE-6445
+lucene/join/src/java/org/apache/lucene/search/join/BlockJoinSelector.java:80:  @Deprecated
+lucene/join/src/java/org/apache/lucene/search/join/BlockJoinSelector.java:106:  @Deprecated
+lucene/join/src/java/org/apache/lucene/search/join/BlockJoinSelector.java:124:  @Deprecated
+lucene/join/src/java/org/apache/lucene/search/join/BlockJoinSelector.java:155:  @Deprecated
+lucene/misc/src/java/org/apache/lucene/search/similarity/LegacyBM25Similarity.java:33:@Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/CharStream.java:30:  @Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/classic/CharStream.java:38:  @Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/flexible/standard/parser/CharStream.java:30:  @Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/flexible/standard/parser/CharStream.java:38:  @Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/surround/parser/CharStream.java:30:  @Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/surround/parser/CharStream.java:38:  @Deprecated
+lucene/queryparser/src/java/org/apache/lucene/queryparser/surround/query/SimpleTerm.java:45:  @Deprecated
+lucene/spatial-extras/src/java/org/apache/lucene/spatial/prefix/tree/DateRangePrefixTree.java:100:  @Deprecated
+lucene/suggest/src/java/org/apache/lucene/search/suggest/jaspell/JaspellTernarySearchTrie.java:68:@Deprecated
+lucene/suggest/src/java/org/apache/lucene/search/suggest/jaspell/JaspellLookup.java:41:@Deprecated
+lucene/test-framework/src/java/org/apache/lucene/util/LuceneTestCase.java:2812:  @Deprecated
+lucene/test-framework/src/java/org/apache/lucene/index/BaseFieldInfoFormatTestCase.java:320:  @Deprecated
+lucene/test-framework/src/java/org/apache/lucene/index/BaseSegmentInfoFormatTestCase.java:489:  @Deprecated
