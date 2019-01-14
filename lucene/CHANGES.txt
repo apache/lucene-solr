@@ -318,6 +318,8 @@ Optimizations
   rather than an in-place mergesort, which needs to perform fewer swaps.
   (Adrien Grand)
 
+* LUCENE-8623: Decrease I/O pressure when merging high dimensional points. (Ignacio Vera)
+
 Test Framework
 
 * LUCENE-8604: TestRuleLimitSysouts now has an optional "hard limit" of bytes that can be written
