@@ -39,9 +39,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "routedAlias";
   public static final String ALIAS = "alias";
-  public static final String OPTIMIZED_SHARDS = "optimizedShards";
-  private static final Set<String> knownRouters = Collections.singleton("time");
-
+  private static final Set<String> knownRouters = Collections.singleton("time"); // currently only supports TRA
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
@@ -55,7 +53,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    if(rb.stage == ResponseBuilder.STAGE_START) {
+    if (rb.stage == ResponseBuilder.STAGE_START) {
       SolrQueryRequest req = rb.req;
       if(rb.req.getParams().get(ALIAS) != null) {
         // was already set up
@@ -76,7 +74,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
       }
 
       // main sort field must equal router.field
-      if (!rb.getSortSpec().getSchemaFields().get(0).getName().equals(aliasConf.get(TimeRoutedAlias.ROUTER_FIELD))) {
+      if (!rb.getSortSpec().getSort().getSort()[0].getField().equals(aliasConf.get(TimeRoutedAlias.ROUTER_FIELD))) {
         // query is not sorted by TRA router field
         return ResponseBuilder.STAGE_DONE;
       }
@@ -84,7 +82,10 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
           .set(ALIAS, aliasName);
       req.setParams(newParams);
 
-      return ResponseBuilder.STAGE_PARSE_QUERY;
+      return ResponseBuilder.STAGE_GET_FIELDS;
+    }
+    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_GET_FIELDS;
     }
     return ResponseBuilder.STAGE_DONE;
   }
@@ -92,14 +93,13 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
   @Override
   public void finishStage(ResponseBuilder rb) {
     if(rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
-      final boolean debug = rb.isDebug();
       SolrParams params = rb.req.getParams();
       final String aliasName = params.get(ALIAS);
       if (aliasName == null) {
         // no alias was detected
         return;
       }
-      Aliases allAliases = rb.req.getCore().getCoreContainer().getZkController().zkStateReader.getAliases();
+      Aliases allAliases = rb.req.getCore().getCoreContainer().getZkController().getZkStateReader().getAliases();
       Map<String, String> aliasConf = allAliases.getCollectionAliasProperties(aliasName);
       if (aliasConf.size() == 0) {
         // no conf was found
@@ -140,9 +140,9 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
         if (docs >= rows) break; // found enough docs, no need to check remaining collections
       }
 
-      if (debug) {
+      if (rb.isDebug()) {
         rb.getDebugInfo().add(COMPONENT_NAME, "dropping all requests but requests for shards: " +
-            String.join(",", shardsWhiteList)
+            String.join(", ", shardsWhiteList)
         );
       }
 
