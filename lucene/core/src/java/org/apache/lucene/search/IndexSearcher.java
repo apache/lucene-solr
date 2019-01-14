@@ -443,16 +443,10 @@ public class IndexSearcher {
     search(leafContexts, createWeight(query, results.scoreMode(), 1), results);
   }
 
-  /** Search implementation with arbitrary sorting, plus
-   * control over whether hit scores and max score
-   * should be computed.  Finds
-   * the top <code>n</code> hits for <code>query</code>, and sorting
-   * the hits by the criteria in <code>sort</code>.
-   * If <code>doDocScores</code> is <code>true</code>
-   * then the score of each hit will be computed and
-   * returned.  If <code>doMaxScore</code> is
-   * <code>true</code> then the maximum score over all
-   * collected hits will be computed.
+  /** Search implementation with arbitrary sorting, plus control over whether hit scores should be
+   * computed.  Finds the top <code>n</code> hits for <code>query</code>, and sorting the hits by
+   * the criteria in <code>sort</code>.  If <code>doDocScores</code> is <code>true</code> then the
+   * score of each hit will be computed and returned.
    * 
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
@@ -492,15 +486,13 @@ public class IndexSearcher {
   /** Finds the top <code>n</code>
    * hits for <code>query</code> where all results are after a previous
    * result (<code>after</code>), allowing control over
-   * whether hit scores and max score should be computed.
+   * whether hit scores should be computed.
    * <p>
    * By passing the bottom result from a previous page as <code>after</code>,
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.  If <code>doDocScores</code> is <code>true</code>
    * then the score of each hit will be computed and
-   * returned.  If <code>doMaxScore</code> is
-   * <code>true</code> then the maximum score over all
-   * collected hits will be computed.
+   * returned.
    *
    * @throws BooleanQuery.TooManyClauses If a query would exceed 
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
@@ -525,25 +517,8 @@ public class IndexSearcher {
     final int cappedNumHits = Math.min(numHits, limit);
     final Sort rewrittenSort = sort.rewrite(this);
 
-    final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
-
-      @Override
-      public TopFieldCollector newCollector() throws IOException {
-        // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, TOTAL_HITS_THRESHOLD);
-      }
-
-      @Override
-      public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) throws IOException {
-        final TopFieldDocs[] topDocs = new TopFieldDocs[collectors.size()];
-        int i = 0;
-        for (TopFieldCollector collector : collectors) {
-          topDocs[i++] = collector.topDocs();
-        }
-        return TopDocs.merge(rewrittenSort, 0, cappedNumHits, topDocs, true);
-      }
-
-    };
+    final CollectorManager<TopFieldCollector, TopFieldDocs> manager =
+        TopFieldCollector.createManager(rewrittenSort, cappedNumHits, after, TOTAL_HITS_THRESHOLD, Integer.MAX_VALUE);
 
     TopFieldDocs topDocs = search(query, manager);
     if (doDocScores) {

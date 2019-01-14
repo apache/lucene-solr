@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -100,8 +101,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final Sort sort;
     final FieldValueHitQueue<Entry> queue;
 
-    public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, int totalHitsThreshold) {
-      super(queue, numHits, totalHitsThreshold, sort.needsScores());
+    public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, int totalHitsThreshold, int perSegmentMargin) {
+      super(queue, numHits, totalHitsThreshold, perSegmentMargin, sort.needsScores());
       this.sort = sort;
       this.queue = queue;
     }
@@ -114,9 +115,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       final int[] reverseMul = queue.getReverseMul();
       final Sort indexSort = context.reader().getMetaData().getSort();
       final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+      final int leafHitsThreshold = prorateForSegment(Math.max(numHits, totalHitsThreshold), context);
 
       return new MultiComparatorLeafCollector(comparators, reverseMul) {
 
+        private int leafHits = 0;
         boolean collectedAllCompetitiveHits = false;
 
         @Override
@@ -127,14 +130,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
         @Override
         public void collect(int doc) throws IOException {
+          ++leafHits;
           ++totalHits;
           if (queueFull) {
             if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
               // since docs are visited in doc Id order, if compare is 0, it means
-              // this document is largest than anything else in the queue, and
+              // this document is larger than anything else in the queue, and
               // therefore not competitive.
               if (canEarlyTerminate) {
-                if (totalHits > totalHitsThreshold) {
+                if (totalHits > totalHitsThreshold || leafHits > leafHitsThreshold) {
                   totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                   throw new CollectionTerminatedException();
                 } else {
@@ -165,9 +169,33 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               updateMinCompetitiveScore(scorer);
             }
           }
+          if (canEarlyTerminate) {
+              // When early terminating, stop collecting hits from this leaf once we have its prorated hits.
+              if (leafHits > leafHitsThreshold) {
+                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                  throw new CollectionTerminatedException();
+              }
+          }
         }
 
       };
+    }
+
+    /** The total number of documents that matched this query; may be a lower bound in case of early termination. */
+    @Override
+    public int getTotalHits() {
+      return totalHits;
+    }
+
+    private int prorateForSegment(int topK, LeafReaderContext leafCtx) {
+        // prorate number of hits to collect based on proportion of documents in this leaf (segment).
+        // p := probability of a top-k document (or any document) being in this segment
+        double p = (double) leafCtx.reader().numDocs() / leafCtx.parent.reader().numDocs();
+        // m := expected number of the topK results in this segment
+        double m = p * topK;
+        // Increase N to include a bound to ensure the probability of missing a doc is very small
+        double stddev = Math.sqrt(topK * (p - (p * p)));
+        return (int) Math.ceil(m + perSegmentMargin * stddev);
     }
 
   }
@@ -184,8 +212,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final int totalHitsThreshold;
 
     public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits,
-                                int totalHitsThreshold) {
-      super(queue, numHits, totalHitsThreshold, sort.needsScores());
+                                int totalHitsThreshold, int perSegmentMargin) {
+      super(queue, numHits, totalHitsThreshold, perSegmentMargin, sort.needsScores());
       this.sort = sort;
       this.queue = queue;
       this.after = after;
@@ -218,8 +246,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
         @Override
         public void collect(int doc) throws IOException {
-          //System.out.println("  collect doc=" + doc);
-
           totalHits++;
 
           if (queueFull) {
@@ -262,7 +288,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
             // Startup transient: queue hasn't gathered numHits yet
             final int slot = collectedHits - 1;
-            //System.out.println("    slot=" + slot);
             // Copy hit into queue
             comparator.copy(slot, doc);
 
@@ -283,6 +308,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   final int numHits;
   final int totalHitsThreshold;
+  final int perSegmentMargin;
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
   final int numComparators;
@@ -297,11 +323,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // internal versions. If someone will define a constructor with any other
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
-  private TopFieldCollector(FieldValueHitQueue<Entry> pq, int numHits, int totalHitsThreshold, boolean needsScores) {
+  private TopFieldCollector(FieldValueHitQueue<Entry> pq, int numHits, int totalHitsThreshold, int perSegmentMargin, boolean needsScores) {
     super(pq);
     this.needsScores = needsScores;
     this.numHits = numHits;
     this.totalHitsThreshold = totalHitsThreshold;
+    this.perSegmentMargin = perSegmentMargin;
     this.numComparators = pq.getComparators().length;
     FieldComparator<?> fieldComparator = pq.getComparators()[0];
     int reverseMul = pq.reverseMul[0];
@@ -355,7 +382,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *         the sort criteria.
    */
   public static TopFieldCollector create(Sort sort, int numHits, int totalHitsThreshold) {
-    return create(sort, numHits, null, totalHitsThreshold);
+    return create(sort, numHits, null, totalHitsThreshold, Integer.MAX_VALUE);
   }
 
   /**
@@ -384,7 +411,77 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
       int totalHitsThreshold) {
+    return create(sort, numHits, after, totalHitsThreshold, Integer.MAX_VALUE);
+  }
 
+  /**
+   * Creates a new {@link TopFieldCollector} from the given
+   * arguments.
+   *
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length
+   * <code>numHits</code>.
+   *
+   * @param sort
+   *          the sort criteria (SortFields).
+   * @param numHits
+   *          the number of results to collect.
+   * @param totalHitsThreshold
+   *          the number of docs to count accurately. If the query matches
+   *          {@code totalHitsThreshold} hits or more then its hit count will be a
+   *          lower bound. On the other hand if the query matches less than
+   *          {@code totalHitsThreshold} hits then the hit count of the result will
+   *          be accurate. {@link Integer#MAX_VALUE} may be used to make the hit
+   *          count accurate, but this will also make query processing slower.
+   * @param perSegmentMargin
+   *          the size of the margin (in standard deviations) to add to the totalHitsThreshold when
+   *          pro-rated per segment. Pro-rating per segment will collect fewer hits in small
+   *          segments, saving time in exchange for a small amount of noise in the ranking. A
+   *          typical value is 3. Only use this option for fields whose distribution is expected to
+   *          be uniformly random with respect to document update order (e.g.: <i>not</i>
+   *          timestamp). To disable prorated early termination, use MAX_INT. This parameter is only
+   *          effective when used with totalHitsThreshold &lt;&lt; MAX_INT.
+   * @return a {@link TopFieldCollector} instance which will sort the results by
+   *         the sort criteria.
+   */
+  public static TopFieldCollector create(Sort sort, int numHits, int totalHitsThreshold, int perSegmentMargin) {
+    return create(sort, numHits, null, totalHitsThreshold, perSegmentMargin);
+  }
+
+  /**
+   * Creates a new {@link TopFieldCollector} from the given
+   * arguments.
+   *
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length
+   * <code>numHits</code>.
+   *
+   * @param sort
+   *          the sort criteria (SortFields).
+   * @param numHits
+   *          the number of results to collect.
+   * @param after
+   *          only hits after this FieldDoc will be collected
+   * @param totalHitsThreshold
+   *          the number of docs to count accurately. If the query matches
+   *          {@code totalHitsThreshold} hits or more then its hit count will be a
+   *          lower bound. On the other hand if the query matches less than
+   *          {@code totalHitsThreshold} hits then the hit count of the result will
+   *          be accurate. {@link Integer#MAX_VALUE} may be used to make the hit
+   *          count accurate, but this will also make query processing slower.
+   * @param perSegmentMargin
+   *          the size of the margin (in standard deviations) to add to the totalHitsThreshold when
+   *          pro-rated per segment. Pro-rating per segment will collect fewer hits in small
+   *          segments, saving time in exchange for a small amount of noise in the ranking. A
+   *          typical value is 3. Only use this option for fields whose distribution is expected to
+   *          be uniformly random with respect to document update order (e.g.: <i>not</i>
+   *          timestamp). To disable prorated early termination, use MAX_INT. This parameter is only
+   *          effective when used with totalHitsThreshold &lt;&lt; MAX_INT.
+   * @return a {@link TopFieldCollector} instance which will sort the results by
+   *         the sort criteria.
+   */
+  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
+      int totalHitsThreshold, int perSegmentMargin) {
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
@@ -400,7 +497,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      return new SimpleFieldCollector(sort, queue, numHits, totalHitsThreshold);
+        return new SimpleFieldCollector(sort, queue, numHits, totalHitsThreshold, perSegmentMargin);
     } else {
       if (after.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
@@ -410,8 +507,52 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(sort, queue, after, numHits, totalHitsThreshold);
+      return new PagingFieldCollector(sort, queue, after, numHits, totalHitsThreshold, perSegmentMargin);
     }
+  }
+
+  /**
+   * Creates a CollectorManager wrapping TopFieldCollectors, with additional arguments that control
+   * early termination in conjunction with concurrent collection.
+   * @param sort
+   *          the sort criteria (SortFields).
+   * @param numHits
+   *          the number of results to collect.
+   * @param after
+   *          only hits after this FieldDoc will be collected
+   * @param totalHitsThreshold
+   *          the number of docs to count accurately.
+   * @param perSegmentMargin
+   *          the size of the margin (in standard deviations) to add to the totalHitsThreshold when
+   *          pro-rated per segment. Pro-rating per segment will collect fewer hits in small
+   *          segments, saving time in exchange for a small amount of noise in the ranking. A
+   *          typical value is 3. Only use this option for fields whose distribution is expected to
+   *          be uniformly random with respect to document update order (e.g.: <i>not</i>
+   *          timestamp). To disable prorated early termination, use MAX_INT. This parameter is only
+   *          effective when used with totalHitsThreshold &lt;&lt; MAX_INT.
+   * @return a {@link TopFieldCollector} instance which will sort the results by
+   *         the sort criteria.
+   */
+  public static CollectorManager<TopFieldCollector, TopFieldDocs> createManager(Sort sort, int numHits,
+      FieldDoc after, int totalHitsThreshold, int perSegmentMargin) {
+    return new CollectorManager<TopFieldCollector, TopFieldDocs>() {
+
+      @Override
+      public TopFieldCollector newCollector() throws IOException {
+        return TopFieldCollector.create(sort, numHits, after, totalHitsThreshold, perSegmentMargin);
+      }
+
+      @Override
+      public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) throws IOException {
+        final TopFieldDocs[] topDocs = new TopFieldDocs[collectors.size()];
+        int i = 0;
+        for (TopFieldCollector collector : collectors) {
+          topDocs[i++] = collector.topDocs();
+        }
+        return TopDocs.merge(sort, 0, numHits, topDocs, true);
+      }
+
+    };
   }
 
   /**
@@ -485,7 +626,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     // If this is a maxScoring tracking collector and there were no results,
-    return new TopFieldDocs(new TotalHits(totalHits, totalHitsRelation), results, ((FieldValueHitQueue<Entry>) pq).getFields());
+    return new TopFieldDocs(new TotalHits(getTotalHits(), totalHitsRelation), results, ((FieldValueHitQueue<Entry>) pq).getFields());
   }
 
   @Override

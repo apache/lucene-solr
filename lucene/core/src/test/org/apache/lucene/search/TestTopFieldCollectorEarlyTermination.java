@@ -22,22 +22,28 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MockRandomMergePolicy;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
 public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
@@ -46,6 +52,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
   private List<String> terms;
   private Directory dir;
   private final Sort sort = new Sort(new SortField("ndv1", SortField.Type.LONG));
+  private IndexWriter writer;
   private RandomIndexWriter iw;
   private IndexReader reader;
   private static final int FORCE_MERGE_MAX_SEGMENT_COUNT = 5;
@@ -61,12 +68,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
   private void createRandomIndex(boolean singleSortedSegment) throws IOException {
     dir = newDirectory();
     numDocs = atLeast(150);
-    final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
-    Set<String> randomTerms = new HashSet<>();
-    while (randomTerms.size() < numTerms) {
-      randomTerms.add(TestUtil.randomSimpleString(random()));
-    }
-    terms = new ArrayList<>(randomTerms);
+    createRandomTerms();
     final long seed = random().nextLong();
     final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
     if (iwc.getMergePolicy() instanceof MockRandomMergePolicy) {
@@ -104,7 +106,12 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
   
   private void closeIndex() throws IOException {
     reader.close();
-    iw.close();
+    if (iw != null) {
+      iw.close();
+    }
+    if (writer != null) {
+      writer.close();
+    }
     dir.close();
   }
 
@@ -115,6 +122,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
   public void testEarlyTerminationWhenPaging() throws IOException {
     doTestEarlyTermination(true);
   }
+
 
   private void doTestEarlyTermination(boolean paging) throws IOException {
     final int iters = atLeast(8);
@@ -234,13 +242,189 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         new Sort(new SortField("c", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
   }
 
+  private Document numberedDocument(int num, int iterm) {
+    final Document doc = new Document();
+    doc.add(new NumericDocValuesField("ndv1", num));
+    doc.add(new StringField("s", terms.get(iterm % terms.size()), Store.YES));
+    return doc;
+  }
+
+  private void createRandomTerms() {
+    final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
+    Set<String> randomTerms = new HashSet<>();
+    while (randomTerms.size() < numTerms) {
+      randomTerms.add(TestUtil.randomSimpleString(random()));
+    }
+    terms = new ArrayList<>(randomTerms);
+  }
+
+  private void createUniformIndexX() throws IOException {
+    dir = newDirectory();
+    numDocs = atLeast(150);
+    int numSegs = atLeast(5);
+    // Create segments of random pre-determined sizes so we can distribute the documents uniformly
+    // among them
+    int docsRemaining = numDocs;
+    List<Integer> segmentSizes = new ArrayList<>();
+    for (int i = 0; i < numSegs - 1; i++) {
+      int size = random().nextInt(docsRemaining - numSegs + i);
+      segmentSizes.add(size);
+      docsRemaining -= size;
+    }
+    segmentSizes.add(docsRemaining);
+    List<List<Document>> segDocs = new ArrayList<>();
+    for (int i = 0; i < numSegs; i++) {
+      segDocs.add(new ArrayList<>());
+    }
+    createRandomTerms();
+    List<List<Document>> segDocsToFill = new ArrayList<>(segDocs);
+    for (int seg = 0, i = 0, j = 0; i < numDocs; ++i) {
+      // Create documents with the sort key and terms uniformly distributed among segments
+      seg %= segDocsToFill.size();
+      if (seg == 0) {
+        // this causes equal numbers of docs with "score" j to be added to each segment that has at least j documents
+        // TODO: sometimes do not increment j (so we get more random setup), but we must increment it when complete a segment
+        ++j;
+      }
+      List<Document> docs = segDocsToFill.get(seg);
+      docs.add(numberedDocument(j, j));
+      if (docs.size() == segmentSizes.get(seg)) {
+        segmentSizes.remove(seg);
+        segDocsToFill.remove(seg);
+      } else {
+        ++seg;
+      }
+    }
+    final long seed = random().nextLong();
+    final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
+    // one segment per commit so we can control the segment sizes
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
+    iwc.setIndexSort(sort);
+    iw = new RandomIndexWriter(new Random(seed), dir, iwc);
+    for (int seg = 0; seg < segDocs.size(); seg++) {
+      for (Document doc : segDocs.get(seg)) {
+        iw.addDocument(doc);
+      }
+      iw.commit();
+    }
+    reader = iw.getReader();
+  }
+
+  private void createUniformIndex() throws IOException {
+    dir = newDirectory();
+    numDocs = atLeast(150);
+    int numSegs = atLeast(5);
+    // Create segments of random pre-determined sizes so we can distribute the documents uniformly
+    // among them
+    int docsRemaining = numDocs;
+    List<Integer> segmentSizes = new ArrayList<>();
+    for (int i = 0; i < numSegs - 1; i++) {
+      int size = random().nextInt(docsRemaining - numSegs + i);
+      segmentSizes.add(size);
+      docsRemaining -= size;
+    }
+    segmentSizes.add(docsRemaining);
+    createRandomTerms();
+    final long seed = random().nextLong();
+    final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
+    // one segment per commit so we can control the segment sizes
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
+    iwc.setMaxBufferedDocs(numDocs);
+    iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+    iwc.setIndexSort(sort);
+    writer = new IndexWriter(dir, iwc);
+    for (int seg = 0; seg < numSegs; seg++) {
+      int size = segmentSizes.get(seg);
+      double step = numDocs / (double) size;
+      for (int i = 0; i < size; i++) {
+        int num = (int) Math.round(i * step);
+        Document doc = numberedDocument(num, num);
+        writer.addDocument(doc);
+      }
+      writer.commit();
+    }
+    reader = DirectoryReader.open(writer);
+  }  
+
+  private void createSkewedIndex() throws IOException {
+    dir = newDirectory();
+    numDocs = atLeast(150);
+    createRandomTerms();
+    final long seed = random().nextLong();
+    final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
+    // one segment per commit so we can control the segment sizes
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
+    iwc.setIndexSort(sort);
+    writer = new IndexWriter(dir, iwc);
+    for (int i = 0; i < numDocs; ++i) {
+      // insert the documents in order, so successive segments have increasingly larger documents
+      writer.addDocument(numberedDocument(i, i));
+      if (random().nextInt(numDocs / 10) == 0) {
+        // Make about 10 random-sized segments
+        writer.commit();
+      }
+    }
+    reader = DirectoryReader.open(writer);
+  }
+
+  public void testProratedEarlyTermination() throws IOException {
+    final int iters = atLeast(8);
+    for (int i = 0; i < iters; ++i) {
+      createUniformIndex();
+      ExecutorService exec = Executors.newFixedThreadPool(8, new NamedThreadFactory("TestTopFieldCollectorEarlyTermination"));
+      try {
+        final IndexSearcher searcher = new IndexSearcher(reader, exec);
+        for (int j = 0; j < 10 * iters; ++j) {
+          final int numHits = TestUtil.nextInt(random(), 1, 50);
+          final int margin = TestUtil.nextInt(random(), 1, 5);
+          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager = TopFieldCollector.createManager(sort, numHits, null, numHits, margin);
+
+          final Query query = new MatchAllDocsQuery();
+          TopDocs expected = searcher.search(query, numHits, sort);
+          TopDocs td = searcher.search(query, collectorManager);
+          assertTopDocsEquals(expected.scoreDocs, td.scoreDocs);
+        }
+      } finally {
+        exec.shutdown();
+        closeIndex();
+      }
+    }
+  }
+
+  public void testProratedMarginTooSmall() throws IOException {
+    final int iters = atLeast(8);
+    for (int i = 0; i < iters; ++i) {
+      createSkewedIndex();
+      ExecutorService exec = Executors.newFixedThreadPool(8, new NamedThreadFactory("TestTopFieldCollectorEarlyTermination"));
+      try {
+        final IndexSearcher searcher = new IndexSearcher(reader, exec);
+        for (int j = 0; j < 10 * iters; ++j) {
+          final int numHits = TestUtil.nextInt(random(), 5, 50);
+          final int margin = 0;
+          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager = TopFieldCollector.createManager(sort, numHits, null, numHits, margin);
+
+          final Query query = new MatchAllDocsQuery();
+          TopDocs expected = searcher.search(query, numHits, sort);
+          TopDocs td = searcher.search(query, collectorManager);
+          expectThrows(AssertionError.class, () ->
+                       assertTopDocsEquals(expected.scoreDocs, td.scoreDocs));
+        }
+      } finally {
+        exec.shutdown();
+        closeIndex();
+      }
+    }
+  }
+
   private static void assertTopDocsEquals(ScoreDoc[] scoreDocs1, ScoreDoc[] scoreDocs2) {
-    assertEquals(scoreDocs1.length, scoreDocs2.length);
+    assertEquals("result set sizes differ", scoreDocs1.length, scoreDocs2.length);
     for (int i = 0; i < scoreDocs1.length; ++i) {
       final ScoreDoc scoreDoc1 = scoreDocs1[i];
       final ScoreDoc scoreDoc2 = scoreDocs2[i];
-      assertEquals(scoreDoc1.doc, scoreDoc2.doc);
-      assertEquals(scoreDoc1.score, scoreDoc2.score, 0f);
+      assertEquals("incorrect result #" + i, scoreDoc1.doc, scoreDoc2.doc);
+      assertEquals("incorrect score for result #" + i, scoreDoc1.score, scoreDoc2.score, 0f);
+      //System.out.println(scoreDoc1.doc);
     }
   }
+
 }
