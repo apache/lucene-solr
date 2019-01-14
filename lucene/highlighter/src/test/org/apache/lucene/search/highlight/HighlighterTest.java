@@ -52,6 +52,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -1996,7 +1997,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       TopDocs hits = searcher.search(query, 10);
       assertEquals(1, hits.scoreDocs.length);
-      TokenStream stream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), 0, FIELD_NAME, analyzer);
+      Fields tvFields = searcher.getIndexReader().getTermVectors(0);
+      Document doc = searcher.getIndexReader().document(0);
+      TokenStream stream = TokenSources.getTokenStream(FIELD_NAME, tvFields, doc.get(FIELD_NAME), analyzer, -1);
       if (random().nextBoolean()) {
         stream = new CachingTokenFilter(stream);//conceals detection of TokenStreamFromTermVector
       }
