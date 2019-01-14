@@ -140,6 +140,11 @@ Improvements
   'status' field, a 'message' field giving more details on the error, and an optional 'exception' field.  (Shalin Mangar,
   Jason Gerlowski)
 
+* SOLR-12888: The NestedUpdateProcessor (which populates internal fields for nested child docs) is now auto-registered
+  to run immediately prior to RunUpdateProcessor.  If the schema has no _nest_*_ fields then it's a no-op.
+  RunUpdateProcessorFactory looks up a special/internal URP chain "_preRun_" which is implicitly defined but could be
+  defined by an app for customization if desired.  (David Smiley)
+
 Optimizations
 ----------------------
 
@@ -243,6 +248,9 @@ Bug Fixes
 
 * SOLR-12237: Fix incorrect SOLR_SSL_KEYSTORE_TYPE variable in solr start script (janhoy, Joel Bernstein)
 
+* SOLR-13053: NodeAddedTrigger and NodeLostTrigger do not reserve added/removed time populated by restoreState
+  (Cao Manh Dat)
+
 Improvements
 ----------------------
 
@@ -270,6 +278,8 @@ Improvements
   update this property across the board more easily. (Jason Gerlowski)
 
 * SOLR-12983: JavabinLoader should avoid creating String Objects and create UTF8CharSequence fields from byte[] (noble)
+
+* SOLR-13016: Computing suggestions when policy have "#EQUAL" or "#ALL" rules take too long (noble)
 
 Other Changes
 ----------------------

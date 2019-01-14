@@ -113,7 +113,7 @@ public class FreeDiskVariable extends VariableBase {
               .hint(Hint.COLL_SHARD, new Pair<>(replica.getCollection(), replica.getShard()))
               .hint(Hint.SRC_NODE, node.node)
               .forceOperation(true);
-          if (ctx.addSuggestion(suggester) == null) break;
+          ctx.addSuggestion(suggester);
           currentDelta -= Clause.parseLong(CORE_IDX.tagName, replica.getVariable(CORE_IDX.tagName));
         }
       }

@@ -279,6 +279,8 @@ public class Lang {
         .withFunctionName("pivot", PivotEvaluator.class)
         .withFunctionName("ltrim", LeftShiftEvaluator.class)
         .withFunctionName("rtrim", RightShiftEvaluator.class)
+        .withFunctionName("repeat", RepeatEvaluator.class)
+        .withFunctionName("natural", NaturalEvaluator.class)
 
         // Boolean Stream Evaluators
 

@@ -27,8 +27,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.MapWriter;
@@ -51,9 +53,12 @@ public class Row implements MapWriter {
   final Cell[] cells;
   //this holds the details of each replica in the node
   public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
+
   boolean anyValueMissing = false;
   boolean isLive = true;
   Policy.Session session;
+  Map globalCache;
+  Map perCollCache;
 
   public Row(String node, List<Pair<String, Variable.Type>> params, List<String> perReplicaAttributes, Policy.Session session) {
     this.session = session;
@@ -70,7 +75,42 @@ public class Row implements MapWriter {
       if (NODE.equals(pair.first())) cells[i].val = node;
       if (cells[i].val == null) anyValueMissing = true;
     }
+    this.globalCache = new HashMap();
+    this.perCollCache = new HashMap();
+    isAlreadyCopied = true;
   }
+
+
+  public static final Map<String, CacheEntry> cacheStats = new HashMap<>();
+
+  static class CacheEntry implements MapWriter {
+    AtomicLong hits = new AtomicLong(), misses = new AtomicLong();
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("hits", hits.get());
+      ew.put("misses", misses.get());
+    }
+
+    public static boolean hit(String cacheName) {
+//      getCacheEntry(cacheName).hits.incrementAndGet();
+      return true;
+    }
+
+    private static CacheEntry getCacheEntry(String cacheName) {
+      CacheEntry cacheEntry = cacheStats.get(cacheName);
+      if (cacheEntry == null) {
+        cacheStats.put(cacheName, cacheEntry = new CacheEntry());
+      }
+      return cacheEntry;
+    }
+
+    public static boolean miss(String cacheName) {
+      getCacheEntry(cacheName).misses.incrementAndGet();
+      return true;
+    }
+  }
+
 
   public void forEachShard(String collection, BiConsumer<String, List<ReplicaInfo>> consumer) {
     collectionVsShardVsReplicas
@@ -78,8 +118,41 @@ public class Row implements MapWriter {
         .forEach(consumer);
   }
 
+
+  public <R> R computeCacheIfAbsent(String cacheName, Function<Object, R> supplier) {
+    R result = (R) globalCache.get(cacheName);
+    if (result != null) {
+      assert CacheEntry.hit(cacheName);
+      return result;
+    } else {
+      assert CacheEntry.miss(cacheName);
+      globalCache.put(cacheName, result = supplier.apply(cacheName));
+      return result;
+    }
+  }
+
+  public <R> R computeCacheIfAbsent(String coll, String shard, String cacheName, Object key, Function<Object, R> supplier) {
+    Map collMap = (Map) this.perCollCache.get(coll);
+    if (collMap == null) this.perCollCache.put(coll, collMap = new HashMap());
+    Map shardMap = (Map) collMap.get(shard);
+    if (shardMap == null) collMap.put(shard, shardMap = new HashMap());
+    Map cacheNameMap = (Map) shardMap.get(cacheName);
+    if (cacheNameMap == null) shardMap.put(cacheName, cacheNameMap = new HashMap());
+    R result = (R) cacheNameMap.get(key);
+    if (result == null) {
+      CacheEntry.miss(cacheName);
+      cacheNameMap.put(key, result = supplier.apply(key));
+      return result;
+    } else {
+      CacheEntry.hit(cacheName);
+      return result;
+    }
+  }
+
+
+
   public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
-      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session) {
+      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session, Map perRowCache, Map globalCache) {
     this.session = session;
     this.node = node;
     this.isLive = isLive;
@@ -90,6 +163,8 @@ public class Row implements MapWriter {
     }
     this.anyValueMissing = anyValueMissing;
     this.collectionVsShardVsReplicas = collectionVsShardVsReplicas;
+    this.perCollCache = perRowCache;
+    this.globalCache = globalCache;
   }
 
   @Override
@@ -101,7 +176,7 @@ public class Row implements MapWriter {
   }
 
   Row copy(Policy.Session session) {
-    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), isLive, session);
+    return new Row(node, cells, anyValueMissing, collectionVsShardVsReplicas, isLive, session, this.globalCache, this.perCollCache);
   }
 
   Object getVal(String name) {
@@ -147,11 +222,13 @@ public class Row implements MapWriter {
       log.error("more than 3 levels of recursion ", new RuntimeException());
       return this;
     }
+    lazyCopyReplicas(coll, shard);
     List<OperationInfo> furtherOps = new LinkedList<>();
     Consumer<OperationInfo> opCollector = it -> furtherOps.add(it);
     Row row = null;
     row = session.copy().getNode(this.node);
     if (row == null) throw new RuntimeException("couldn't get a row");
+    row.lazyCopyReplicas(coll, shard);
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
     String replicaname = "SYNTHETIC." + new Random().nextInt(1000) + 1000;
@@ -170,6 +247,33 @@ public class Row implements MapWriter {
     }
 
     return row;
+  }
+
+  boolean isAlreadyCopied = false;
+
+  private void lazyCopyReplicas(String coll, String shard) {
+    globalCache = new HashMap();
+    Map cacheCopy = new HashMap<>(perCollCache);
+    cacheCopy.remove(coll);//todo optimize at shard level later
+    perCollCache = cacheCopy;
+    if (isAlreadyCopied) return;//caches need to be invalidated but the rest can remain as is
+
+    Map<String, Map<String, List<ReplicaInfo>>> replicasCopy = new HashMap<>(collectionVsShardVsReplicas);
+    Map<String, List<ReplicaInfo>> oneColl = replicasCopy.get(coll);
+    if (oneColl != null) {
+      replicasCopy.put(coll, Utils.getDeepCopy(oneColl, 2));
+    }
+    collectionVsShardVsReplicas = replicasCopy;
+    isAlreadyCopied = true;
+  }
+
+  boolean hasColl(String coll) {
+    return collectionVsShardVsReplicas.containsKey(coll);
+  }
+
+  public void createCollShard(Pair<String, String> collShard) {
+    Map<String, List<ReplicaInfo>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), Utils.NEW_HASHMAP_FUN);
+    if (collShard.second() != null) shardInfo.computeIfAbsent(collShard.second(), Utils.NEW_ARRAYLIST_FUN);
   }
 
 
@@ -221,6 +325,7 @@ public class Row implements MapWriter {
     List<OperationInfo> furtherOps = new LinkedList<>();
     Consumer<OperationInfo> opCollector = it -> furtherOps.add(it);
     Row row = session.copy().getNode(this.node);
+    row.lazyCopyReplicas(coll, shard);
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
     List<ReplicaInfo> r = c.get(shard);
