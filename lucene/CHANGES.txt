@@ -85,6 +85,8 @@ Optimizations
   rather than an in-place mergesort, which needs to perform fewer swaps.
   (Adrien Grand)
 
+* LUCENE-8623: Decrease I/O pressure when merging high dimensional points. (Ignacio Vera)
+  
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
