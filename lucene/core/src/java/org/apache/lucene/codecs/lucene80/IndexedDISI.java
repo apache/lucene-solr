@@ -435,7 +435,7 @@ final class IndexedDISI extends DocIdSetIterator {
       gap = block - index - 1;
     } else {
       method = Method.DENSE;
-      denseBitmapOffset = slice.getFilePointer() + denseRankTable.length;
+      denseBitmapOffset = slice.getFilePointer() + (denseRankTable == null ?  0 : denseRankTable.length);
       blockEnd = denseBitmapOffset + (1 << 13);
       // Performance consideration: All rank (default 128 * 16 bits) are loaded up front. This should be fast with the
       // reusable byte[] buffer, but it is still wasted if the DENSE block is iterated in small steps.
