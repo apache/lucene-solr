@@ -68,29 +68,38 @@ solrAdminApp.controller('LoginController',
                 console.log("Expected token_type param 'bearer', but got " + hp['token_type']);
                 errorText += "Invalid values in token_type parameter. ";
               }
-              // Unpack access token and validate nonce, get username
-              var accessToken = hp['access_token'].split(".");
-              if (accessToken.length === 3) {
-                var payload = AuthenticationService.decodeJwtPart(accessToken[1]);
-                if (!payload['nonce'] || payload['nonce'] !== sessionStorage.getItem("auth.nonce")) {
-                  errorText += "Invalid 'nonce' value, possible attack detected. Please log in again. ";
-                }
+              // Unpack ID token and validate nonce, get username
+              if (hp['id_token']) {
+                var idToken = hp['id_token'].split(".");
+                if (idToken.length === 3) {
+                  var payload = AuthenticationService.decodeJwtPart(idToken[1]);
+                  if (!payload['nonce'] || payload['nonce'] !== sessionStorage.getItem("auth.nonce")) {
+                    errorText += "Invalid 'nonce' value, possible attack detected. Please log in again. ";
+                  }
 
-                if (errorText === "") {
-                  sessionStorage.setItem("auth.username", payload['sub']);
-                  sessionStorage.setItem("auth.header", "Bearer " + hp['access_token']);
-                  sessionStorage.removeItem("auth.statusText");
-                  sessionStorage.removeItem("auth.stateRandom");
-                  sessionStorage.removeItem("auth.wwwAuthHeader");
-                  console.log("User " + payload['sub'] + " is logged in");
-                  var redirectTo = sessionStorage.getItem("auth.location");
-                  console.log("Redirecting to stored location " + redirectTo);
-                  sessionStorage.setItem("auth.state", "authenticated");
-                  sessionStorage.removeItem("http401");
-                  $location.path(redirectTo).hash(""); 
+                  if (errorText === "") {
+                    sessionStorage.setItem("auth.username", payload['sub']);
+                    sessionStorage.setItem("auth.header", "Bearer " + hp['access_token']);
+                    sessionStorage.removeItem("auth.statusText");
+                    sessionStorage.removeItem("auth.stateRandom");
+                    sessionStorage.removeItem("auth.wwwAuthHeader");
+                    console.log("User " + payload['sub'] + " is logged in");
+                    var redirectTo = sessionStorage.getItem("auth.location");
+                    console.log("Redirecting to stored location " + redirectTo);
+                    sessionStorage.setItem("auth.state", "authenticated");
+                    sessionStorage.removeItem("http401");
+                    $location.path(redirectTo).hash("");
+                  }
+                } else {
+                  console.log("Expected JWT compact id_token param but got " + idToken);
+                  errorText += "Invalid values in id_token parameter. ";
                 }
               } else {
-                console.log("Expected JWT compact access_token param but got " + accessToken);
+                console.log("Callback was missing the id_token parameter, could not validate nonce.");
+                errorText += "Callback was missing the id_token parameter, could not validate nonce. ";
+              }
+              if (hp['access_token'].split(".").length !== 3) {
+                console.log("Expected JWT compact access_token param but got " + hp['access_token']);
                 errorText += "Invalid values in access_token parameter. ";
               }
               if (errorText !== "") {
@@ -102,7 +111,6 @@ solrAdminApp.controller('LoginController',
             } else if (hp['error']) {
               // The callback had errors
               console.log("Error received from idp: " + hp['error']);
-              alert("Error received from idp: " + hp['error']);
               var errorDescriptions = {};
               errorDescriptions['invalid_request'] = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.";
               errorDescriptions['unauthorized_client'] = "The client is not authorized to request an access token using this method.";
@@ -111,7 +119,7 @@ solrAdminApp.controller('LoginController',
               errorDescriptions['invalid_scope'] = "The requested scope is invalid, unknown, or malformed.";
               errorDescriptions['server_error'] = "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.";
               errorDescriptions['temporarily_unavailable'] = "The authorization server is currently unable to handle the request due to a temporary overloading or maintenance of the server.";
-              $scope.error = "Callback from Id Provider contained error: ";
+              $scope.error = "Callback from Id Provider contained error. ";
               if (hp['error_description']) {
                 $scope.errorDescription = decodeURIComponent(hp['error_description']);
               } else {
@@ -126,19 +134,18 @@ solrAdminApp.controller('LoginController',
               sessionStorage.setItem("auth.state", "error");
             }
           }
-          
-          if (errorText === "" && authParams) {
-            $scope.error = authParams['error'];
-            $scope.errorDescription = authParams['error_description'];
-            $scope.authData = AuthenticationService.getAuthDataHeader();
-          }
+        }
+
+        if (errorText === "" && !$scope.error && authParams) {
+          $scope.error = authParams['error'];
+          $scope.errorDescription = authParams['error_description'];
+          $scope.authData = AuthenticationService.getAuthDataHeader();
         }
         
         $scope.authScheme = sessionStorage.getItem("auth.scheme");
         $scope.authRealm = sessionStorage.getItem("auth.realm");
         $scope.wwwAuthHeader = sessionStorage.getItem("auth.wwwAuthHeader");
         $scope.statusText = sessionStorage.getItem("auth.statusText");
-        $scope.authConfig = sessionStorage.getItem("auth.config");
         $scope.authLocation = sessionStorage.getItem("auth.location");
         $scope.authLoggedinUser = sessionStorage.getItem("auth.username");
         $scope.authHeader = sessionStorage.getItem("auth.header");
