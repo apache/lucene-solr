@@ -178,3 +178,8 @@
 #SOLR_RECOMMENDED_MAX_PROCESSES=
 #SOLR_ULIMIT_CHECKS=
 
+# When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
+# list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
+# or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
+# host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"

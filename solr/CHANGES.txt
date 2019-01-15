@@ -32,7 +32,8 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
-(No Changes)
+* SOLR-12770: The 'shards' parameter handling logic changes to use a new config element to determine what hosts can be
+  requested. Please see Apache Solr Reference Guide chapter "Distributed Requests" for details, as well as SOLR-12770.
 
 New Features
 ----------------------
@@ -41,6 +42,9 @@ New Features
   the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
 
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
+
+* SOLR-12770: Make it possible to configure a host whitelist for distributed search
+  (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------
