@@ -60,7 +60,7 @@ During query processing, range and point queries are both supported.
 
 === Sub-field Suffixes
 
-You must specify parameters `amountLongSuffix` and `codeStrSuffix`, corresponding to dynamic fields to be used for the raw amount and the currency dynamic sub-fields, e.g.:
+You must specify parameters `amountLongSuffix` and `codeStrSuffix`, corresponding to dynamic fields to be used for the raw amount and the currency dynamic sub-fields, for example:
 
 [source,xml]
 ----

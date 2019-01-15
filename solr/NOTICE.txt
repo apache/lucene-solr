@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2018 The Apache Software Foundation
+ Copyright 2006-2019 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -46,6 +46,12 @@ Copyright (c) 2008-2014, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
 This product includes require.js Javascript library created by James Burke
 Copyright (C) 2010-2014 James Burke, https://github.com/jrburke/requirejs
 
+This product includes angular-utf8-base64.js Javascript library created by Andrey Bezyazychniy
+Copyright (c) 2014 Andrey Bezyazychniy, https://github.com/stranger82/angular-utf8-base64
+
+This product includes code copied and modified from the www-authenticate Javascript library 
+Copyright (c) 2013 Randy McLaughlin, MIT-license, https://github.com/randymized/www-authenticate
+
 This product includes fugue icons created by Yusuke Kamiyamane
 Copyright (C) 2013-2014 Yusuke Kamiyamane, https://github.com/yusukekamiyamane/fugue-icons
 
@@ -73,6 +79,10 @@ Copyright (c) 2000-2005 INRIA, France Telecom
 This project includes portions of the Jekyll Documentation Theme
 Copyright (c) 2016 Tom Johnson
 License: MIT https://github.com/tomjohnson1492/documentation-theme-jekyll/blob/gh-pages/licenses/LICENSE
+
+This project includes templates from the Asciidoctor HTML5 backend converter
+Copyright (c) 2014-2018 Jakub Jirutka
+License: MIT https://github.com/jirutka/asciidoctor-html5s/blob/master/LICENSE
 
 This project includes the Navgoco JQuery plugin
 Copyright (c) 2013 Christopher Tsoulloftas, http://www.komposta.net
@@ -119,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2018 The Apache Software Foundation
+Copyright 2001-2019 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).

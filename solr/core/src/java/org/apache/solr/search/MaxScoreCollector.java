@@ -19,13 +19,13 @@ package org.apache.solr.search;
 import java.io.IOException;
 
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 
 /** A {@link Collector} for the maximum score value. */
 public class MaxScoreCollector extends SimpleCollector {
-  private Scorer scorer;
+  private Scorable scorer;
   private float maxScore = Float.MIN_VALUE;
   private boolean collectedAnyHits = false;
 
@@ -43,7 +43,7 @@ public class MaxScoreCollector extends SimpleCollector {
   }
 
   @Override
-  public void setScorer(Scorer scorer) {
+  public void setScorer(Scorable scorer) {
     this.scorer = scorer;
   }
 

@@ -21,20 +21,37 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
+
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.TimeOut;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.junit.Assert;
+
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+
 
 /**
  * Some useful methods for SolrCloud tests.
@@ -97,19 +114,19 @@ public class CloudTestUtils {
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas
       if (coll == null) { // does not yet exist?
-        timeout.sleep(50);
+        timeout.sleep(100);
         continue;
       }
       if (predicate.matches(state.getLiveNodes(), coll)) {
         log.trace("-- predicate matched with state {}", state);
         return timeout.timeElapsed(TimeUnit.MILLISECONDS);
       }
-      timeout.sleep(50);
+      timeout.sleep(100);
       if (timeout.timeLeft(TimeUnit.MILLISECONDS) < timeWarn) {
         log.trace("-- still not matching predicate: {}", state);
       }
     }
-    throw new TimeoutException("last state: " + coll);
+    throw new TimeoutException("last ClusterState: " + state + ", last coll state: " + coll);
   }
 
   /**
@@ -136,18 +153,18 @@ public class CloudTestUtils {
                                                       boolean requireLeaders) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) {
-        log.trace("-- null collection");
+        log.info("-- null collection");
         return false;
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        log.trace("-- wrong number of active slices, expected={}, found={}", expectedShards, collectionState.getSlices().size());
+        log.info("-- wrong number of slices for collection {}, expected={}, found={}: {}", collectionState.getName(), expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
         return false;
       }
       Set<String> leaderless = new HashSet<>();
       for (Slice slice : slices) {
         int activeReplicas = 0;
-        if (requireLeaders && slice.getLeader() == null) {
+        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && slice.getLeader() == null) {
           leaderless.add(slice.getName());
           continue;
         }
@@ -160,16 +177,148 @@ public class CloudTestUtils {
             activeReplicas++;
         }
         if (activeReplicas != expectedReplicas) {
-          log.trace("-- wrong number of active replicas in slice {}, expected={}, found={}", slice.getName(), expectedReplicas, activeReplicas);
+          log.info("-- wrong number of active replicas for collection {} in slice {}, expected={}, found={}", collectionState.getName(), slice.getName(), expectedReplicas, activeReplicas);
           return false;
         }
       }
       if (leaderless.isEmpty()) {
         return true;
       } else {
-        log.trace("-- shards without leaders: {}", leaderless);
+        log.info("-- shards without leaders: {}", leaderless);
         return false;
       }
     };
+  }
+  
+  /**
+   * Wait for a particular named trigger to be scheduled.
+   * <p>
+   * This is a convenience method that polls the autoscaling API looking for a trigger with the 
+   * specified name using the {@link #DEFAULT_TIMEOUT}.  It is particularly useful for tests 
+   * that want to know when the Overseer has finished scheduling the automatic triggers on startup.
+   * </p>
+   *
+   * @param cloudManager current instance of {@link SolrCloudManager}
+   * @param triggerName the name of the trigger we need to see sheduled in order to return successfully
+   * @see #suspendTrigger
+   */
+  public static long waitForTriggerToBeScheduled(final SolrCloudManager cloudManager,
+                                                 final String triggerName)
+    throws InterruptedException, TimeoutException, IOException {
+
+    TimeOut timeout = new TimeOut(DEFAULT_TIMEOUT, TimeUnit.SECONDS, cloudManager.getTimeSource());
+    while (!timeout.hasTimedOut()) {
+      final SolrResponse response = cloudManager.request(AutoScalingRequest.create(SolrRequest.METHOD.GET, null));
+      final Map<String,?> triggers = (Map<String,?>) response.getResponse().get("triggers");
+      Assert.assertNotNull("null triggers in response from autoscaling request", triggers);
+      
+      if ( triggers.containsKey(triggerName) ) {
+        return timeout.timeElapsed(TimeUnit.MILLISECONDS);
+      }
+      timeout.sleep(100);
+    }
+    throw new TimeoutException("Never saw trigger with name: " + triggerName);
+  }
+
+  /**
+   * Suspends the trigger with the specified name
+   * <p>
+   * This is a convenience method that sends a <code>suspend-trigger</code> command to the autoscaling
+   * API for the specified trigger.  It is particularly useful for tests that may need to disable automatic
+   * triggers such as <code>.scheduled_maintenance</code> in order to test their own
+   * triggers.
+   * </p>
+   *
+   * @param cloudManager current instance of {@link SolrCloudManager}
+   * @param triggerName the name of the trigger to suspend.  This must already be scheduled.
+   * @see #assertAutoScalingRequest
+   * @see #waitForTriggerToBeScheduled
+   */
+  public static void suspendTrigger(final SolrCloudManager cloudManager,
+                                    final String triggerName) throws IOException {
+    assertAutoScalingRequest(cloudManager, "{'suspend-trigger' : {'name' : '"+triggerName+"'} }");
+  }
+
+  /**
+   * Creates &amp; executes an autoscaling request against the current cluster, asserting that 
+   * the result is a success.
+   * 
+   * @param cloudManager current instance of {@link SolrCloudManager}
+   * @param json The request to POST to the AutoScaling Handler
+   * @see AutoScalingRequest#create
+   */
+  public static void assertAutoScalingRequest(final SolrCloudManager cloudManager,
+                                              final String json) throws IOException {
+    // TODO: a lot of code that directly uses AutoScalingRequest.create should use this method
+    
+    final SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, json);
+    final SolrResponse rsp = cloudManager.request(req);
+    final String result = rsp.getResponse().get("result").toString();
+    Assert.assertEquals("Unexpected result from auto-scaling command: " + json + " -> " + rsp,
+                        "success", result);
+  }
+
+  
+  /**
+   * Helper class for sending (JSON) autoscaling requests that can randomize between V1 and V2 requests
+   */
+  public static class AutoScalingRequest extends SolrRequest {
+
+    /**
+     * Creates a request using a randomized root path (V1 vs V2)
+     *
+     * @param m HTTP Method to use
+     * @aram message JSON payload, may be null
+     */
+    public static SolrRequest create(SolrRequest.METHOD m, String message) {
+      return create(m, null, message);
+    }
+    /**
+     * Creates a request using a randomized root path (V1 vs V2)
+     *
+     * @param m HTTP Method to use
+     * @param subPath optional sub-path under <code>"$ROOT/autoscaling"</code>. may be null, 
+     *        otherwise must start with "/"
+     * @param message JSON payload, may be null
+     */
+    public static SolrRequest create(SolrRequest.METHOD m, String subPath, String message) {
+      final boolean useV1 = LuceneTestCase.random().nextBoolean();
+      String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
+      if (null != subPath) {
+        assert subPath.startsWith("/");
+        path += subPath;
+      }
+      return useV1
+        ? new AutoScalingRequest(m, path, message)
+        : new V2Request.Builder(path).withMethod(m).withPayload(message).build();
+    }
+    
+    protected final String message;
+
+    /**
+     * Simple request
+     * @param m HTTP Method to use
+     * @param path path to send request to
+     * @param message JSON payload, may be null
+     */
+    private AutoScalingRequest(METHOD m, String path, String message) {
+      super(m, path);
+      this.message = message;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      return null;
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      return message == null ? null : new StringPayloadContentWriter(message, JSON_MIME);
+    }
+
+    @Override
+    protected SolrResponse createResponse(SolrClient client) {
+      return new SolrResponseBase();
+    }
   }
 }

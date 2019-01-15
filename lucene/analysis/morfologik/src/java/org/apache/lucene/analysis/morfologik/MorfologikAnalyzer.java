@@ -28,6 +28,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 /**
  * {@link org.apache.lucene.analysis.Analyzer} using Morfologik library.
  * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
+ *
+ * @since 4.0.0
  */
 public class MorfologikAnalyzer extends Analyzer {
   private final Dictionary dictionary;

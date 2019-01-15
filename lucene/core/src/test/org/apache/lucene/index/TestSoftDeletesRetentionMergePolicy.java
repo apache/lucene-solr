@@ -40,6 +40,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
@@ -240,16 +241,16 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     DirectoryReader reader = writer.getReader();
     assertEquals(0, reader.numDocs());
     assertEquals(3, reader.maxDoc());
-    assertEquals(0, writer.numDocs());
-    assertEquals(3, writer.maxDoc());
+    assertEquals(0, writer.getDocStats().numDocs);
+    assertEquals(3, writer.getDocStats().maxDoc);
     assertEquals(3, reader.leaves().size());
     reader.close();
     writer.forceMerge(1);
     reader = writer.getReader();
     assertEquals(0, reader.numDocs());
     assertEquals(3, reader.maxDoc());
-    assertEquals(0, writer.numDocs());
-    assertEquals(3, writer.maxDoc());
+    assertEquals(0, writer.getDocStats().numDocs);
+    assertEquals(3, writer.getDocStats().maxDoc);
     assertEquals(1, reader.leaves().size());
     IOUtils.close(reader, writer, dir);
   }
@@ -394,8 +395,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     // when calling forceMergeDeletes.
     writer.forceMergeDeletes(true);
     assertEquals(1, writer.listOfSegmentCommitInfos().size());
-    assertEquals(1, writer.numDocs());
-    assertEquals(1, writer.maxDoc());
+    assertEquals(1, writer.getDocStats().numDocs);
+    assertEquals(1, writer.getDocStats().maxDoc);
     writer.close();
     dir.close();
   }
@@ -537,8 +538,8 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       }
     });
     writer.forceMerge(1);
-    assertEquals(2, writer.numDocs());
-    assertEquals(2, writer.maxDoc());
+    assertEquals(2, writer.getDocStats().numDocs);
+    assertEquals(2, writer.getDocStats().maxDoc);
     assertFalse(delete.get());
     IOUtils.close(reader, writer, dir);
   }
@@ -675,6 +676,32 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       assertEquals(liveDocs.size(), reader.numDocs());
     }
     writer.commit();
+    IOUtils.close(writer, dir);
+  }
+
+  public void testRewriteRetentionQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_deletes")
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_deletes",
+            () -> new PrefixQuery(new Term("id", "foo")), newMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+
+    Document d = new Document();
+    d.add(new StringField("id", "foo-1", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "foo-2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "foo-1"), d, new NumericDocValuesField("soft_deletes", 1));
+
+    d = new Document();
+    d.add(new StringField("id", "bar-1", Field.Store.YES));
+    writer.addDocument(d);
+    d.add(new StringField("id", "bar-2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "bar-1"), d, new NumericDocValuesField("soft_deletes", 1));
+
+    writer.forceMerge(1);
+    assertEquals(2, writer.getDocStats().numDocs); // foo-2, bar-2
+    assertEquals(3, writer.getDocStats().maxDoc);  // foo-1, foo-2, bar-2
     IOUtils.close(writer, dir);
   }
 

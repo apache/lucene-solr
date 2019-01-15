@@ -18,7 +18,7 @@ package org.apache.solr.prometheus.collector;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 import io.prometheus.client.Collector;
 import org.apache.solr.client.solrj.SolrClient;
@@ -57,7 +57,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrClient solrClient;
-  private Config config;
+  private XmlConfigFile config;
   private int numThreads;
   private ExecutorService executorService;
   private static ObjectMapper om = new ObjectMapper();
@@ -65,7 +65,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
   /**
    * Constructor.
    */
-  public SolrCollector(SolrClient solrClient, Config config, int numThreads) {
+  public SolrCollector(SolrClient solrClient, XmlConfigFile config, int numThreads) {
     this.solrClient = solrClient;
     this.config = config;
     this.numThreads = numThreads;

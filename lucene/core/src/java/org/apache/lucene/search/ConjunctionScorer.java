@@ -83,7 +83,7 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     // This scorer is only used for TOP_SCORES when there is a single scoring clause
     if (scorers.length == 1) {
       scorers[0].setMinCompetitiveScore(minScore);
@@ -91,10 +91,10 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>();
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>();
     for (Scorer scorer : required) {
-      children.add(new ChildScorer(scorer, "MUST"));
+      children.add(new ChildScorable(scorer, "MUST"));
     }
     return children;
   }

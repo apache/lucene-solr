@@ -119,7 +119,7 @@ public class CheckHits {
     }
     private int base = 0;
     @Override
-    public void setScorer(Scorer scorer) throws IOException {}
+    public void setScorer(Scorable scorer) throws IOException {}
     @Override
     public void collect(int doc) {
       bag.add(Integer.valueOf(doc + base));
@@ -487,7 +487,7 @@ public class CheckHits {
     String d;
     boolean deep;
     
-    Scorer scorer;
+    Scorable scorer;
     private int base = 0;
 
     /** Constructs an instance which does shallow tests on the Explanation */
@@ -502,7 +502,7 @@ public class CheckHits {
     }      
     
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;     
     }
     

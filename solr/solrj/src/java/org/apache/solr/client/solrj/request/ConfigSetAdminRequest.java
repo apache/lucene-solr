@@ -135,10 +135,9 @@ public abstract class ConfigSetAdminRequest
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      if (baseConfigSetName == null) {
-        throw new RuntimeException( "no Base ConfigSet specified!" );
+      if (baseConfigSetName != null) {
+        params.set("baseConfigSet", baseConfigSetName);
       }
-      params.set("baseConfigSet", baseConfigSetName);
       if (properties != null) {
         for (Map.Entry entry : properties.entrySet()) {
           params.set(PROPERTY_PREFIX + "." + entry.getKey().toString(),

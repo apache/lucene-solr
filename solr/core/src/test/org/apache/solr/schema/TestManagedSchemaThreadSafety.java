@@ -28,7 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.MockZkController;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkTestServer;
@@ -142,7 +141,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
     
     
-    MockZkController zkController = mock(MockZkController.class,
+    ZkController zkController = mock(ZkController.class,
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
 
     when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);

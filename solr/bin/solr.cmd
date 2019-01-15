@@ -981,8 +981,8 @@ IF [%SOLR_LOGS_DIR%] == [] (
 )
 
 set "EXAMPLE_DIR=%SOLR_TIP%\example"
-set TMP=!SOLR_HOME:%EXAMPLE_DIR%=!
-IF NOT "%TMP%"=="%SOLR_HOME%" (
+set TMP_SOLR_HOME=!SOLR_HOME:%EXAMPLE_DIR%=!
+IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
   set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
   set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
 )
@@ -1182,7 +1182,7 @@ if !JAVA_MAJOR_VERSION! GEQ 9  (
     echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
     GOTO :eof
   )
-  set GC_LOG_OPTS="-Xlog:gc*:file=\"!SOLR_LOGS_DIR!\solr_gc.log\":time,uptime:filecount=9,filesize=20000"
+  set GC_LOG_OPTS="-Xlog:gc*:file=\"!SOLR_LOGS_DIR!\solr_gc.log\":time,uptime:filecount=9,filesize=20M"
 ) else (
   IF "%GC_LOG_OPTS%"=="" (
     rem Set defaults for Java 8

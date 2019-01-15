@@ -36,6 +36,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Portuguese.
+ *
+ * @since 3.1
  */
 public final class PortugueseAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

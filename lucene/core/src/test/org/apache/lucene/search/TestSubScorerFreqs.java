@@ -33,7 +33,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -80,7 +79,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   private static class CountingCollector extends FilterCollector {
     public final Map<Integer, Map<Query, Float>> docCounts = new HashMap<>();
 
-    private final Map<Query, Scorer> subScorers = new HashMap<>();
+    private final Map<Query, Scorable> subScorers = new HashMap<>();
     private final Set<String> relationships;
 
     public CountingCollector(Collector other) {
@@ -92,13 +91,14 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       this.relationships = relationships;
     }
     
-    public void setSubScorers(Scorer scorer, String relationship) throws IOException {
-      for (ChildScorer child : scorer.getChildren()) {
-        if (scorer instanceof AssertingScorer || relationships.contains(child.relationship)) {
-          setSubScorers(child.child, child.relationship);
+    public void setSubScorers(Scorable scorer) throws IOException {
+      scorer = AssertingScorable.unwrap(scorer);
+      for (Scorable.ChildScorable child : scorer.getChildren()) {
+        if (relationships.contains(child.relationship)) {
+          setSubScorers(child.child);
         }
       }
-      subScorers.put(scorer.getWeight().getQuery(), scorer);
+      subScorers.put(((Scorer)scorer).getWeight().getQuery(), scorer);
     }
     
     public LeafCollector getLeafCollector(LeafReaderContext context)
@@ -109,8 +109,8 @@ public class TestSubScorerFreqs extends LuceneTestCase {
         @Override
         public void collect(int doc) throws IOException {
           final Map<Query, Float> freqs = new HashMap<Query, Float>();
-          for (Map.Entry<Query, Scorer> ent : subScorers.entrySet()) {
-            Scorer value = ent.getValue();
+          for (Map.Entry<Query, Scorable> ent : subScorers.entrySet()) {
+            Scorable value = ent.getValue();
             int matchId = value.docID();
             freqs.put(ent.getKey(), matchId == doc ? value.score() : 0.0f);
           }
@@ -119,10 +119,10 @@ public class TestSubScorerFreqs extends LuceneTestCase {
         }
         
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           subScorers.clear();
-          setSubScorers(scorer, "TOP");
+          setSubScorers(scorer);
         }
         
       };

@@ -46,7 +46,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -157,7 +157,7 @@ public class TestFSTs extends LuceneTestCase {
         final BytesRef NO_OUTPUT = outputs.getNoOutput();      
         final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<>(terms2.length);
         for(int idx=0;idx<terms2.length;idx++) {
-          final BytesRef output = random().nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
+          final BytesRef output = idx == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
           pairs.add(new FSTTester.InputOutput<>(terms2[idx], output));
         }
         FSTTester<BytesRef> tester = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false);
@@ -337,7 +337,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("FST stores docFreq");
       }
     }
-    Terms terms = MultiFields.getTerms(r, "body");
+    Terms terms = MultiTerms.getTerms(r, "body");
     if (terms != null) {
       final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
       final TermsEnum termsEnum = terms.iterator();
@@ -917,7 +917,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // Verify w/ MultiTermsEnum
-      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
+      final TermsEnum termsEnum = MultiTerms.getTerms(r, "id").iterator();
       for(int iter=0;iter<2*NUM_IDS;iter++) {
         final String id;
         final String nextID;

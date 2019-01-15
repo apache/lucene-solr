@@ -34,7 +34,7 @@ import org.apache.lucene.search.Weight;
  * range.  The score is the float value.  This can be a slow query if run by itself since it must visit all docs;
  * ideally it's combined with other queries.
  * It's mostly a wrapper around
- * {@link FunctionValues#getRangeScorer(LeafReaderContext, String, String, boolean, boolean)}.
+ * {@link FunctionValues#getRangeScorer(Weight, LeafReaderContext, String, String, boolean, boolean)}.
  *
  * A similar class is {@code org.apache.lucene.search.DocValuesRangeQuery} in the sandbox module.  That one is
  * constant scoring.
@@ -152,7 +152,7 @@ public class FunctionRangeQuery extends Query {
     public ValueSourceScorer scorer(LeafReaderContext context) throws IOException {
       FunctionValues functionValues = valueSource.getValues(vsContext, context);
       // getRangeScorer takes String args and parses them. Weird.
-      return functionValues.getRangeScorer(context, lowerVal, upperVal, includeLower, includeUpper);
+      return functionValues.getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
     }
 
     @Override

@@ -72,7 +72,7 @@ public class SimDistribStateManager implements DistribStateManager {
 
   public static final class Node {
     ReentrantLock dataLock = new ReentrantLock();
-    private int version = -1;
+    private int version = 0;
     private int seq = 0;
     private final CreateMode mode;
     private final String clientId;
@@ -90,7 +90,11 @@ public class SimDistribStateManager implements DistribStateManager {
       this.path = path;
       this.mode = mode;
       this.clientId = clientId;
+    }
 
+    Node(Node parent, String name, String path, byte[] data, CreateMode mode, String clientId) {
+      this(parent, name, path, mode, clientId);
+      this.data = data;
     }
 
     public void clear() {
@@ -214,6 +218,8 @@ public class SimDistribStateManager implements DistribStateManager {
   private final String id;
   private final Node root;
 
+  private int juteMaxbuffer = 0xfffff;
+
   public SimDistribStateManager() {
     this(null);
   }
@@ -226,6 +232,8 @@ public class SimDistribStateManager implements DistribStateManager {
     this.id = IdUtils.timeRandomId();
     this.root = root != null ? root : createNewRootNode();
     watchersPool = ExecutorUtil.newMDCAwareFixedThreadPool(10, new DefaultSolrThreadFactory("sim-watchers"));
+    String bufferSize = System.getProperty("jute.maxbuffer", Integer.toString(0xffffff));
+    juteMaxbuffer = Integer.parseInt(bufferSize);
   }
 
   public SimDistribStateManager(ActionThrottle actionThrottle, ActionError actionError) {
@@ -307,17 +315,7 @@ public class SimDistribStateManager implements DistribStateManager {
       n = parentNode.children != null ? parentNode.children.get(currentName) : null;
       if (n == null) {
         if (create) {
-          if ((parentNode.mode == CreateMode.EPHEMERAL || parentNode.mode == CreateMode.EPHEMERAL_SEQUENTIAL) &&
-              (mode == CreateMode.EPHEMERAL || mode == CreateMode.EPHEMERAL_SEQUENTIAL)) {
-            throw new IOException("NoChildrenEphemerals for " + parentNode.path);
-          }
-          if (CreateMode.PERSISTENT_SEQUENTIAL == mode || CreateMode.EPHEMERAL_SEQUENTIAL == mode) {
-            currentName = currentName + String.format(Locale.ROOT, "%010d", parentNode.seq);
-            parentNode.seq++;
-          }
-          currentPath.append(currentName);
-          n = new Node(parentNode, currentName, currentPath.toString(), mode, id);
-          parentNode.setChild(currentName, n);
+          n = createNode(parentNode, mode, currentPath, currentName,null, true);
         } else {
           break;
         }
@@ -327,6 +325,26 @@ public class SimDistribStateManager implements DistribStateManager {
       parentNode = n;
     }
     return n;
+  }
+
+  private Node createNode(Node parentNode, CreateMode mode, StringBuilder fullChildPath, String baseChildName, byte[] data, boolean attachToParent) throws IOException {
+    String nodeName = baseChildName;
+    if ((parentNode.mode == CreateMode.EPHEMERAL || parentNode.mode == CreateMode.EPHEMERAL_SEQUENTIAL) &&
+        (mode == CreateMode.EPHEMERAL || mode == CreateMode.EPHEMERAL_SEQUENTIAL)) {
+      throw new IOException("NoChildrenEphemerals for " + parentNode.path);
+    }
+    if (CreateMode.PERSISTENT_SEQUENTIAL == mode || CreateMode.EPHEMERAL_SEQUENTIAL == mode) {
+      nodeName = nodeName + String.format(Locale.ROOT, "%010d", parentNode.seq);
+      parentNode.seq++;
+    }
+
+    fullChildPath.append(nodeName);
+    Node child = new Node(parentNode, nodeName, fullChildPath.toString(), data, mode, id);
+
+    if (attachToParent) {
+      parentNode.setChild(nodeName, child);
+    }
+    return child;
   }
 
   @Override
@@ -440,59 +458,71 @@ public class SimDistribStateManager implements DistribStateManager {
     if ((CreateMode.EPHEMERAL == mode || CreateMode.PERSISTENT == mode) && hasData(path)) {
       throw new AlreadyExistsException(path);
     }
-    // check if parent exists
+
     String relPath = path.charAt(0) == '/' ? path.substring(1) : path;
-    if (relPath.length() > 0) { // non-root path - check if parent exists
-      String[] elements = relPath.split("/");
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < elements.length - 1; i++) {
-        sb.append('/');
-        sb.append(elements[i]);
-      }
-      if (!hasData(sb.toString())) {
-        throw new NoSuchElementException(sb.toString());
-      }
+    if (relPath.length() == 0) { //Trying to create root-node, return null.
+      // TODO should trying to create a root node throw an exception since its always init'd in the ctor?
+      return null;
     }
-    Node n = null;
+
+    String[] elements = relPath.split("/");
+    StringBuilder parentStringBuilder = new StringBuilder();
+    Node parentNode = null;
+    if (elements.length == 1) { // Direct descendant of '/'.
+      parentNode = getRoot();
+    } else { // Indirect descendant of '/', lookup parent node
+      for (int i = 0; i < elements.length - 1; i++) {
+        parentStringBuilder.append('/');
+        parentStringBuilder.append(elements[i]);
+      }
+      if (!hasData(parentStringBuilder.toString())) {
+        throw new NoSuchElementException(parentStringBuilder.toString());
+      }
+      parentNode = traverse(parentStringBuilder.toString(), false, mode);
+    }
+
     multiLock.lock();
     try {
-      n = traverse(path, true, mode);
+      String nodeName = elements[elements.length-1];
+      Node childNode = createNode(parentNode, mode, parentStringBuilder.append("/"), nodeName, data,false);
+      parentNode.setChild(childNode.name, childNode);
+      return childNode.path;
     } finally {
       multiLock.unlock();
     }
-    try {
-      n.setData(data, -1);
-      return n.path;
-    } catch (BadVersionException e) {
-      // not happening
-      return null;
-    }
+
   }
 
   @Override
   public void removeData(String path, int version) throws NoSuchElementException, NotEmptyException, BadVersionException, IOException {
     multiLock.lock();
+    Node parent;
+    Node n;
     try {
-      Node n = traverse(path, false, CreateMode.PERSISTENT);
+      n = traverse(path, false, CreateMode.PERSISTENT);
       if (n == null) {
         throw new NoSuchElementException(path);
       }
-      Node parent = n.parent;
+      parent = n.parent;
       if (parent == null) {
         throw new IOException("Cannot remove root node");
       }
       if (!n.children.isEmpty()) {
         throw new NotEmptyException(path);
       }
-      parent.removeChild(n.name, version);
     } finally {
       multiLock.unlock();
     }
-
+    
+    // outside the lock to avoid deadlock with update lock
+    parent.removeChild(n.name, version);
   }
 
   @Override
   public void setData(String path, byte[] data, int version) throws NoSuchElementException, BadVersionException, IOException {
+    if (data.length > juteMaxbuffer) {
+      throw new IOException("Len error " + data.length);
+    }
     multiLock.lock();
     Node n = null;
     try {
@@ -556,7 +586,7 @@ public class SimDistribStateManager implements DistribStateManager {
   @Override
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
     Map<String, Object> map = new HashMap<>();
-    int version = -1;
+    int version = 0;
     try {
       VersionedData data = getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, watcher);
       if (data != null && data.getData() != null && data.getData().length > 0) {

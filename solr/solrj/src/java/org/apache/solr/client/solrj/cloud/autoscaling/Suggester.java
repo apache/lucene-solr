@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,14 +66,27 @@ public abstract class Suggester implements MapWriter {
   boolean force;
   protected List<Violation> originalViolations = new ArrayList<>();
   private boolean isInitialized = false;
+  LinkedHashMap<Clause, double[]> deviations, lastBestDeviation;
+
 
   void _init(Policy.Session session) {
     this.session = session.copy();
   }
 
-  boolean isLessDeviant(double[] previousBest, double[] newDeviation) {
-    if (previousBest == null) return true;
-    return newDeviation[0] < previousBest[0];
+  boolean isLessDeviant() {
+    if (lastBestDeviation == null && deviations == null) return false;
+    if (deviations == null) return true;
+    if (lastBestDeviation == null) return false;
+    if (lastBestDeviation.size() < deviations.size()) return true;
+    for (Map.Entry<Clause, double[]> currentDeviation : deviations.entrySet()) {
+      double[] lastDeviation = lastBestDeviation.get(currentDeviation.getKey());
+      if (lastDeviation == null) return false;
+      int result = Preference.compareWithTolerance(currentDeviation.getValue()[0],
+          lastDeviation[0], 1);
+      if (result < 0) return true;
+      if (result > 0) return false;
+    }
+    return false;
   }
   public Suggester hint(Hint hint, Object value) {
     hint.validator.accept(value);
@@ -81,7 +94,15 @@ public abstract class Suggester implements MapWriter {
       Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
       ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
     } else {
-      hints.put(hint, value == null ? null : String.valueOf(value));
+      if (value == null) {
+        hints.put(hint, null);
+      } else {
+        if ((value instanceof Map) || (value instanceof Number)) {
+          hints.put(hint, value);
+        } else {
+          hints.put(hint, String.valueOf(value));
+        }
+      }
     }
     return this;
   }
@@ -99,10 +120,26 @@ public abstract class Suggester implements MapWriter {
     return this;
   }
 
-  protected boolean isNodeSuitableForReplicaAddition(Row row) {
-    if (!row.isLive) return false;
-    if (!isAllowed(row.node, Hint.TARGET_NODE)) return false;
-    if (!isAllowed(row.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+  protected boolean isNodeSuitableForReplicaAddition(Row targetRow, Row srcRow) {
+    if (!targetRow.isLive) return false;
+    if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) return false;
+    if (!isAllowed(targetRow.getVal(ImplicitSnitch.DISK), Hint.MINFREEDISK)) return false;
+
+    if (srcRow != null) {// if the src row has the same violation it's not
+      for (Violation v1 : originalViolations) {
+        if (!v1.getClause().getThirdTag().varType.meta.isNodeSpecificVal()) continue;
+        if (v1.getClause().hasComputedValue) continue;
+        if (targetRow.node.equals(v1.node)) {
+          for (Violation v2 : originalViolations) {
+            if (srcRow.node.equals(v2.node)) {
+              if (v1.getClause().equals(v2.getClause()))
+                return false;
+            }
+          }
+        }
+      }
+    }
+
     return true;
   }
 
@@ -169,15 +206,13 @@ public abstract class Suggester implements MapWriter {
     for (Pair<String, String> shard : collectionShardPairs) {
       // if this is not a known collection from the existing clusterstate,
       // then add it
-      if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(shard.first()))) {
+      if (session.matrix.stream().noneMatch(row -> row.hasColl(shard.first()))) {
         session.addClausesForCollection(stateProvider, shard.first());
       }
-      for (Row row : session.matrix) {
-        Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.computeIfAbsent(shard.first(), it -> new HashMap<>());
-        if (shard.second() != null) shardInfo.computeIfAbsent(shard.second(), it -> new ArrayList<>());
-      }
+      for (Row row : session.matrix) row.createCollShard(shard);
     }
   }
+
 
   public Policy.Session getSession() {
     return session;
@@ -189,12 +224,14 @@ public abstract class Suggester implements MapWriter {
   }
 
   public static class SuggestionInfo implements MapWriter {
+    String type;
     Violation violation;
     SolrRequest operation;
 
-    public SuggestionInfo(Violation violation, SolrRequest op) {
+    public SuggestionInfo(Violation violation, SolrRequest op, String type) {
       this.violation = violation;
       this.operation = op;
+      this.type = type;
     }
 
     public SolrRequest getOperation() {
@@ -207,8 +244,8 @@ public abstract class Suggester implements MapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("type", violation == null ? "improvement" : "violation");
-      ew.putIfNotNull("violation",
+      ew.put("type", type);
+      if(violation!= null) ew.put("violation",
           new ConditionalMapWriter(violation,
               (k, v) -> !"violatingReplicas".equals(k)));
       ew.put("operation", operation);
@@ -275,22 +312,30 @@ public abstract class Suggester implements MapWriter {
       for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
         if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
         if (shard.getValue() == null || shard.getValue().isEmpty()) continue;
-        replicaList.add(new Pair<>(shard.getValue().get(0), r));
+        for (ReplicaInfo replicaInfo : shard.getValue()) {
+          if (replicaInfo.getName().startsWith("SYNTHETIC.")) continue;
+          replicaList.add(new Pair<>(shard.getValue().get(0), r));
+          break;
+        }
       }
     }
   }
 
-  List<Violation> testChangedMatrix(boolean strict, Policy.Session session, double[] deviation) {
+  List<Violation> testChangedMatrix(boolean executeInStrictMode, Policy.Session session) {
+    if (this.deviations != null) this.lastBestDeviation = this.deviations;
+    this.deviations = null;
     Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences, session.matrix);
     List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
-      if (strict || clause.strict) {
-        List<Violation> errs = clause.test(session, deviation);
-        if (!errs.isEmpty()) {
-          errors.addAll(errs);
-        }
-      }
+      Clause originalClause = clause.derivedFrom == null ? clause : clause.derivedFrom;
+      if (this.deviations == null) this.deviations = new LinkedHashMap<>();
+      this.deviations.put(originalClause, new double[1]);
+      List<Violation> errs = clause.test(session, this.deviations == null ? null : this.deviations.get(originalClause));
+      if (!errs.isEmpty() &&
+          (executeInStrictMode || clause.strict)) errors.addAll(errs);
     }
+    session.violations = errors;
+    if (!errors.isEmpty()) deviations = null;
     return errors;
   }
 
@@ -350,6 +395,11 @@ public abstract class Suggester implements MapWriter {
     }),
     NUMBER(true, o -> {
       if (!(o instanceof Number)) throw new RuntimeException("NUMBER hint must be a number");
+    }),
+    PARAMS(false, o -> {
+      if (!(o instanceof Map)) {
+        throw new RuntimeException("PARAMS hint must be a Map<String, Object>");
+      }
     }),
     REPLICA(true);
 

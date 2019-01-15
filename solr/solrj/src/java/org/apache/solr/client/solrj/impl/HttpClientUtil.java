@@ -77,6 +77,8 @@ public class HttpClientUtil {
   
   public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
   public static final int DEFAULT_SO_TIMEOUT = 600000;
+  public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
+  public static final int DEFAULT_MAXCONNECTIONS = 100000;
   
   private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
   private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;
@@ -345,7 +347,7 @@ public class HttpClientUtil {
     HttpClientBuilder retBuilder = builder.setDefaultRequestConfig(requestConfig);
 
     if (config.getBool(HttpClientUtil.PROP_USE_RETRY, true)) {
-      retBuilder = retBuilder.setRetryHandler(new SolrHttpRequestRetryHandler(3));
+      retBuilder = retBuilder.setRetryHandler(new SolrHttpRequestRetryHandler(Integer.getInteger("solr.httpclient.retries", 3)));
 
     } else {
       retBuilder = retBuilder.setRetryHandler(NO_RETRY);

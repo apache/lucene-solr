@@ -32,14 +32,18 @@ import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexNotFoundException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -346,5 +350,15 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     taxoDir.deleteFile(infos.getSegmentsFileName());
     expectThrows(IndexNotFoundException.class, mgr::maybeRefreshBlocking);
     IOUtils.close(w, tw, mgr, indexDir, taxoDir);
+  }
+
+  private SearcherTaxonomyManager getSearcherTaxonomyManager(Directory indexDir, Directory taxoDir, SearcherFactory searcherFactory) throws IOException {
+    if (random().nextBoolean()) {
+      return new SearcherTaxonomyManager(indexDir, taxoDir, searcherFactory);
+    } else {
+      IndexReader reader = DirectoryReader.open(indexDir);
+      DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+      return new SearcherTaxonomyManager(reader, taxoReader, searcherFactory);
+    }
   }
 }

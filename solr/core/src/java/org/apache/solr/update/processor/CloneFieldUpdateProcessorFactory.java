@@ -129,10 +129,10 @@ import org.slf4j.LoggerFactory;
  * <code>fieldRegex</code> selector and a destination <code>pattern</code>, a "short hand" syntax 
  * is support for convinience: The <code>pattern</code> and <code>replacement</code> may be specified 
  * at the top level, omitting <code>source</code> and <code>dest</code> declarations completely, and 
- * the <code>pattern</code> will be used to construct an equivilent <code>source</code> selector internally.
+ * the <code>pattern</code> will be used to construct an equivalent <code>source</code> selector internally.
  * </p>
  * <p>
- * For example, both of the following configurations are equivilent:
+ * For example, both of the following configurations are equivalent:
  * </p>
  * <pre class="prettyprint">
  * &lt;!-- full syntax --&gt;
@@ -188,6 +188,7 @@ public class CloneFieldUpdateProcessorFactory
   /** @see #dest */
   private Pattern pattern = null;
 
+  @SuppressWarnings("WeakerAccess")
   protected final FieldNameSelector getSourceSelector() {
     if (null != srcSelector) return srcSelector;
 

@@ -48,9 +48,9 @@ public class BulkScorerWrapperScorer extends Scorer {
       final int min = Math.max(target, next);
       final int max = min + docs.length;
       next = scorer.score(new LeafCollector() {
-        Scorer scorer;
+        Scorable scorer;
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           this.scorer = scorer;
         }
         @Override

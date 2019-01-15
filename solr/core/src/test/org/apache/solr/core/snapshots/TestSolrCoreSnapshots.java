@@ -69,7 +69,6 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     configureCluster(1)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-
     docsSeed = random().nextLong();
   }
 

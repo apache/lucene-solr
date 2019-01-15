@@ -102,7 +102,7 @@ public class DocValuesNumbersQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
 
           @Override
           public boolean matches() throws IOException {

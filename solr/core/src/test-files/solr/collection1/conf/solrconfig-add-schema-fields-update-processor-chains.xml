@@ -179,11 +179,13 @@
     <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <arr name="format">
-        <str>yyyy-MM-dd'T'HH:mm[:ss[.SSS]][z</str>
-        <str>yyyy-MM-dd'T'HH:mm[:ss[,SSS]][z</str>
+        <str>yyyy-MM-dd['T'[HH:mm[:ss[.SSS]][z</str>
+        <str>yyyy-MM-dd['T'[HH:mm[:ss[,SSS]][z</str>
         <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>
         <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>
-        <str>yyyy-MM-dd</str>
+        <str>[EEE, ]dd MMM yyyy HH:mm[:ss] z</str>
+        <str>EEEE, dd-MMM-yy HH:mm:ss z</str>
+        <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>
       </arr>
     </processor>
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">

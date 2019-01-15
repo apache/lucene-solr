@@ -133,7 +133,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       CloudSolrClient cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
+      Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();

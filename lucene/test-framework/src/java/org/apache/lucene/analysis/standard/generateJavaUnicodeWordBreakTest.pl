@@ -40,8 +40,6 @@ $underscore_version =~ s/\./_/g;
 my $class_name = "WordBreakTestUnicode_${underscore_version}";
 my $output_filename = "${class_name}.java";
 my $header =<<"__HEADER__";
-package org.apache.lucene.analysis;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -58,6 +56,8 @@ package org.apache.lucene.analysis;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -81,7 +81,7 @@ import org.junit.Ignore;
  *    \\p{WordBreak = Hebrew_Letter}
  *    \\p{WordBreak = Katakana}
  *    \\p{WordBreak = Numeric}         (Excludes full-width Arabic digits)
- *    [\\uFF10-\\uFF19]                (Full-width Arabic digits)
+ *    [\\uFF10-\\uFF19]                 (Full-width Arabic digits)
  */
 \@Ignore
 public class ${class_name} extends BaseTokenStreamTestCase {
@@ -91,6 +91,7 @@ __HEADER__
 
 my $codepoints = [];
 map { $codepoints->[$_] = 1 } (0xFF10..0xFF19);
+my $regional_indicator_codepoints = [];
 # Complex_Context is an alias for 'SA', which is used in LineBreak.txt
 # Using lowercase versions of property value names to allow for case-
 # insensitive comparison with the names in the Unicode data files.
@@ -98,7 +99,9 @@ parse_Unicode_data_file($line_break_url, $codepoints, {'sa' => 1});
 parse_Unicode_data_file($scripts_url, $codepoints, 
                         {'han' => 1, 'hiragana' => 1});
 parse_Unicode_data_file($word_break_url, $codepoints,
-                        {'aletter' => 1, 'hebrew_letter' => 1, 'katakana' => 1, 'numeric' => 1});
+                        {'aletter' => 1, 'hebrew_letter' => 1, 'katakana' => 1, 'numeric' => 1, 'e_base' => 1,
+                         'e_modifier' => 1, 'glue_after_zwj' => 1, 'e_base_gaz' => 1});
+parse_Unicode_data_file($word_break_url, $regional_indicator_codepoints, {'regional_indicator' => 1});
 my @tests = split /\r?\n/, get_URL_content($word_break_test_url);
 
 my $output_path = File::Spec->catpath($volume, $directory, $output_filename);
@@ -124,10 +127,21 @@ for my $line (@tests) {
   $test_string =~ s/\\u000D/\\r/g;
   $test_string =~ s/\\u0022/\\\"/g;
   $sequence =~ s/^\s*÷\s*//; # Trim leading break character
+  
+  # TODO: When upgrading JFlex to a version that supports Unicode 11.0+: remove the special case below for a Unicode 9.0 test data line that conflicts with TR#51 11.0 test data
+  # ÷ 200D ÷ 261D ÷  #  ÷ [0.2] ZERO WIDTH JOINER (ZWJ_FE) ÷ [999.0] WHITE UP POINTING INDEX (E_Base) ÷ [0.3]
+  if ($sequence =~ /^200D\s*÷\s*261D$/) {
+    print OUT "    // Skipping this test because it conflicts with TR#51 v11.0 rules.\n\n";
+    next;
+  }
+  
   my @tokens = ();
+  my $isfirst = 0;
   for my $candidate (split /\s*÷\s*/, $sequence) {
+    $isfirst = 1;
     my @chars = ();
-    my $has_wanted_char = 0;
+    my $has_wanted_chars = 0;
+    my $prev_char_regional_indicator = 0;
     while ($candidate =~ /([0-9A-F]+)/gi) {
       my $hexchar = $1;
       if (4 == length($hexchar)) {
@@ -135,12 +149,21 @@ for my $line (@tests) {
       } else {
         push @chars, above_BMP_char_to_surrogates($hexchar);
       }
-      unless ($has_wanted_char) {
-        $has_wanted_char = 1 if (defined($codepoints->[hex($hexchar)]));
+      unless ($has_wanted_chars) {
+        my $codepoint = hex($hexchar);
+        if (defined($codepoints->[$codepoint])) {
+          $has_wanted_chars = 1;
+        } elsif (defined($regional_indicator_codepoints->[$codepoint])) {
+          if (1 == $prev_char_regional_indicator) {
+            $has_wanted_chars = 1; # must be 2 regional indicators in a row
+          } else {
+            $prev_char_regional_indicator = 1;
+          }
+        }
       }
     }
-    if ($has_wanted_char) {
-      push @tokens, '"'.join('', map { "\\u$_" } @chars).'"';
+    if ($has_wanted_chars) {
+      push @tokens, '"'.join('', map { $_ eq "0022" ? "\\\"" : "\\u$_" } @chars).'"';
     }
   }
   print OUT "    assertAnalyzesTo(analyzer, \"${test_string}\",\n";

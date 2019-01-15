@@ -116,6 +116,10 @@ public class TokenInfoDictionaryBuilder {
 
     // build tokeninfo dictionary
     for (String[] entry : lines) {
+      String surfaceForm = entry[0].trim();
+      if (surfaceForm.isEmpty()) {
+        continue;
+      }
       int next = dictionary.put(entry);
 
       if(next == offset){
@@ -123,15 +127,14 @@ public class TokenInfoDictionaryBuilder {
         continue;
       }
 
-      String token = entry[0];
-      if (!token.equals(lastValue)) {
+      if (!surfaceForm.equals(lastValue)) {
         // new word to add to fst
         ord++;
-        lastValue = token;
-        scratch.grow(token.length());
-        scratch.setLength(token.length());
-        for (int i = 0; i < token.length(); i++) {
-          scratch.setIntAt(i, (int) token.charAt(i));
+        lastValue = surfaceForm;
+        scratch.grow(surfaceForm.length());
+        scratch.setLength(surfaceForm.length());
+        for (int i = 0; i < surfaceForm.length(); i++) {
+          scratch.setIntAt(i, (int) surfaceForm.charAt(i));
         }
         fstBuilder.add(scratch.get(), ord);
       }

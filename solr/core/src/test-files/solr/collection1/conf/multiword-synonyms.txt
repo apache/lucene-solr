@@ -11,3 +11,5 @@
 # limitations under the License.
 
 US, U.S., U S, USA, U.S.A., U S A, United States, United States of America
+bar, tropical cyclone
+chicken, dinner bird

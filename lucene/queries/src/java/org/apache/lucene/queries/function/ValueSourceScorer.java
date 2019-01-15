@@ -22,13 +22,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 /**
  * {@link Scorer} which returns the result of {@link FunctionValues#floatVal(int)} as
  * the score for a document, and which filters out documents that don't match {@link #matches(int)}.
  * This Scorer has a {@link TwoPhaseIterator}.  This is similar to {@link FunctionQuery},
- * but this one has no {@link org.apache.lucene.search.Weight} normalization factors/multipliers
- * and that one doesn't filter either.
+ * with an added filter.
  * <p>
  * Note: If the scores are needed, then the underlying value will probably be
  * fetched/computed twice -- once to filter and next to return the score.  If that's non-trivial then
@@ -43,8 +43,8 @@ public abstract class ValueSourceScorer extends Scorer {
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
 
-  protected ValueSourceScorer(LeafReaderContext readerContext, FunctionValues values) {
-    super(null);//no weight
+  protected ValueSourceScorer(Weight weight, LeafReaderContext readerContext, FunctionValues values) {
+    super(weight);
     this.values = values;
     final DocIdSetIterator approximation = DocIdSetIterator.all(readerContext.reader().maxDoc()); // no approximation!
     this.twoPhaseIterator = new TwoPhaseIterator(approximation) {

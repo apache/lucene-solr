@@ -41,7 +41,7 @@ import org.apache.lucene.index.NumericDocValues;
  * special long-to-double encoding is required.
  *
  * Scores may be used as a source for value calculations by wrapping a {@link Scorer} using
- * {@link #fromScorer(Scorer)} and passing the resulting DoubleValues to {@link #getValues(LeafReaderContext, DoubleValues)}.
+ * {@link #fromScorer(Scorable)} and passing the resulting DoubleValues to {@link #getValues(LeafReaderContext, DoubleValues)}.
  * The scores can then be accessed using the {@link #SCORES} DoubleValuesSource.
  */
 public abstract class DoubleValuesSource implements SegmentCacheable {
@@ -331,7 +331,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
   /**
    * Returns a DoubleValues instance that wraps scores returned by a Scorer
    */
-  public static DoubleValues fromScorer(Scorer scorer) {
+  public static DoubleValues fromScorer(Scorable scorer) {
     return new DoubleValues() {
       @Override
       public double doubleValue() throws IOException {
@@ -471,7 +471,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
         }
 
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           holder.values = producer.getValues(ctx, fromScorer(scorer));
         }
       };

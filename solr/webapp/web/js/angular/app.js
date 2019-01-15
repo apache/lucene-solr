@@ -21,7 +21,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngCookies",
   "ngtimeago",
   "solrAdminServices",
-  "localytics.directives"
+  "localytics.directives",
+  "ab-base64"
 ]);
 
 solrAdminApp.config([
@@ -30,6 +31,10 @@ solrAdminApp.config([
       when('/', {
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
+      }).
+      when('/login', {
+        templateUrl: 'partials/login.html',
+        controller: 'LoginController'
       }).
       when('/~logging', {
         templateUrl: 'partials/logging.html',
@@ -71,7 +76,7 @@ solrAdminApp.config([
         templateUrl: 'partials/cluster_suggestions.html',
         controller: 'ClusterSuggestionsController'
       }).
-      when('/:core', {
+      when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
       }).
@@ -315,7 +320,7 @@ solrAdminApp.config([
     }
   };
 })
-.factory('httpInterceptor', function($q, $rootScope, $timeout, $injector) {
+.factory('httpInterceptor', function($q, $rootScope, $location, $timeout, $injector) {
   var activeRequests = 0;
 
   var started = function(config) {
@@ -326,6 +331,9 @@ solrAdminApp.config([
       delete $rootScope.exceptions[config.url];
     }
     activeRequests++;
+    if (sessionStorage.getItem("auth.header")) {
+      config.headers['Authorization'] = sessionStorage.getItem("auth.header");
+    }
     config.timeout = 10000;
     return config || $q.when(config);
   };
@@ -342,6 +350,11 @@ solrAdminApp.config([
         $rootScope.connectionRecovered=false;
         $rootScope.$broadcast('connectionStatusInactive');
       },2000);
+    }
+    if (!$location.path().startsWith('/login')) {
+      sessionStorage.removeItem("http401");
+      sessionStorage.removeItem("auth.state");
+      sessionStorage.removeItem("auth.statusText");
     }
     return response || $q.when(response);
   };
@@ -361,16 +374,38 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
+    } else if (rejection.status === 401) {
+      // Authentication redirect
+      var headers = rejection.headers();
+      var wwwAuthHeader = headers['www-authenticate'];
+      sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
+      sessionStorage.setItem("auth.statusText", rejection.statusText);
+      sessionStorage.setItem("http401", "true");
+      sessionStorage.removeItem("auth.scheme");
+      sessionStorage.removeItem("auth.realm");
+      sessionStorage.removeItem("auth.username");
+      sessionStorage.removeItem("auth.header");
+      sessionStorage.removeItem("auth.state");
+      if ($location.path().includes('/login')) {
+        if (!sessionStorage.getItem("auth.location")) {
+          sessionStorage.setItem("auth.location", "/");
+        }
+      } else {
+        sessionStorage.setItem("auth.location", $location.path());
+        $location.path('/login');
+      }
     } else {
       $rootScope.exceptions[rejection.config.url] = rejection.data.error;
     }
     return $q.reject(rejection);
-  }
+  };
 
   return {request: started, response: ended, responseError: failed};
 })
 .config(function($httpProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
+  // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
+  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 })
 .directive('fileModel', function ($parse) {
     return {
@@ -441,6 +476,8 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
+    $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
   };
 
   $scope.ping = function() {
@@ -456,7 +493,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCore = function(core) {
-    $location.url("/" + core.name);
+    $location.url("/" + core.name + "/core-overview");
   }
 
   $scope.showCollection = function(collection) {

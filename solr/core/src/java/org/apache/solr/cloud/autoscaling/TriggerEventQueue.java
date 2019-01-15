@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.Stats;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.TimeSource;
@@ -78,7 +79,11 @@ public class TriggerEventQueue {
           continue;
         }
       }
-    } catch (Exception e) {
+    } 
+    catch (AlreadyClosedException e) {
+      
+    }
+    catch (Exception e) {
       log.warn("Exception peeking queue of trigger " + triggerName, e);
     }
     return null;

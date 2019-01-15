@@ -174,7 +174,7 @@ public class SolrIndexSplitter {
           log.error("Original error closing IndexWriter:", e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reopening IndexWriter after failed close", e1);
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error closing current IndexWriter, aborting offline split...", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error closing current IndexWriter, aborting 'link' split...", e);
       }
     }
     boolean success = false;
@@ -195,7 +195,7 @@ public class SolrIndexSplitter {
         t = timings.sub("parentApplyBufferedUpdates");
         ulog.applyBufferedUpdates();
         t.stop();
-        log.info("Splitting in 'offline' mode " + (success? "finished" : "FAILED") +
+        log.info("Splitting in 'link' mode " + (success? "finished" : "FAILED") +
             ": re-opened parent IndexWriter.");
       }
     }
@@ -472,7 +472,7 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS " + dels.cardinality());
             }
           }
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(set, set.length()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(set, set.length()));
         }
 
         @Override

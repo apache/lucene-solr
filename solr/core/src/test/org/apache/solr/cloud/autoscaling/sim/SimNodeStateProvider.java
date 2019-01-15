@@ -18,9 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -233,6 +231,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
   }
 
   private static final Pattern REGISTRY_PATTERN = Pattern.compile("^solr\\.core\\.([\\w.-_]+?)\\.(shard[\\d_]+?)\\.(replica.*)");
+  private static final Pattern METRIC_KEY_PATTERN = Pattern.compile("^metrics:([^:]+?):([^:]+?)(:([^:]+))?$");
   /**
    * Simulate getting replica metrics values. This uses per-replica properties set in
    * {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)} and
@@ -245,33 +244,31 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (!liveNodesSet.contains(node)) {
       throw new RuntimeException("non-live node " + node);
     }
-    List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(node);
-    if (replicas == null || replicas.isEmpty()) {
-      return Collections.emptyMap();
-    }
     Map<String, Object> values = new HashMap<>();
     for (String tag : tags) {
-      String[] parts = tag.split(":");
-      if (parts.length < 3 || !parts[0].equals("metrics")) {
+      Matcher m = METRIC_KEY_PATTERN.matcher(tag);
+      if (!m.matches() || m.groupCount() < 2) {
         log.warn("Invalid metrics: tag: " + tag);
         continue;
       }
-      if (!parts[1].startsWith("solr.core.")) {
+      String registryName = m.group(1);
+      String key = m.group(3) != null ? m.group(2) + m.group(3) : m.group(2);
+      if (!registryName.startsWith("solr.core.")) {
         // skip - this is probably solr.node or solr.jvm metric
         continue;
       }
-      Matcher m = REGISTRY_PATTERN.matcher(parts[1]);
+      m = REGISTRY_PATTERN.matcher(registryName);
 
       if (!m.matches()) {
-        log.warn("Invalid registry name: " + parts[1]);
+        log.warn("Invalid registry name: " + registryName);
         continue;
       }
       String collection = m.group(1);
       String shard = m.group(2);
       String replica = m.group(3);
-      String key = parts.length > 3 ? parts[2] + ":" + parts[3] : parts[2];
+      List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(collection, shard);
       replicas.forEach(r -> {
-        if (r.getCollection().equals(collection) && r.getShard().equals(shard) && r.getCore().endsWith(replica)) {
+        if (r.getNode().equals(node) && r.getCore().endsWith(replica)) {
           Object value = r.getVariables().get(key);
           if (value != null) {
             values.put(tag, value);
@@ -296,7 +293,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
       throw new RuntimeException("non-live node " + node);
     }
     if (tags.isEmpty()) {
-      return Collections.emptyMap();
+      return new HashMap<>();
     }
     Map<String, Object> result = new HashMap<>();
     Map<String, Object> metrics = getReplicaMetricsValues(node, tags.stream().filter(s -> s.startsWith("metrics:solr.core.")).collect(Collectors.toList()));
@@ -313,13 +310,13 @@ public class SimNodeStateProvider implements NodeStateProvider {
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
     List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(node);
     if (replicas == null || replicas.isEmpty()) {
-      return Collections.emptyMap();
+      return new HashMap<>();
     }
     Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<>();
     // TODO: probably needs special treatment for "metrics:solr.core..." tags
     for (ReplicaInfo r : replicas) {
-      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), s -> new HashMap<>());
-      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), s -> new ArrayList<>());
+      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
+      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
       perShard.add(r);
     }
     return res;

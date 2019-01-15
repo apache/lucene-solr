@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -68,7 +69,7 @@ public class Preference implements MapWriter {
     int result = 0;
     if (o1 instanceof Long && o2 instanceof Long) result = ((Long) o1).compareTo((Long) o2);
     else if (o1 instanceof Double && o2 instanceof Double) {
-      result = compareWithTolerance((Double) o1, (Double) o2, useApprox ? 1 : 1);
+      result = compareWithTolerance((Double) o1, (Double) o2, useApprox ? 1f : 0.01f);
     } else if (!o1.getClass().getName().equals(o2.getClass().getName())) {
       throw new RuntimeException("Unable to compare " + o1 + " of type: " + o1.getClass().getName() + " from " + r1.cells[idx].toString() + " and " + o2 + " of type: " + o2.getClass().getName() + " from " + r2.cells[idx].toString());
     }
@@ -77,7 +78,7 @@ public class Preference implements MapWriter {
             next.compare(r1, r2, useApprox)) : sort.sortval * result;
   }
 
-  static int compareWithTolerance(Double o1, Double o2, int percentage) {
+  static int compareWithTolerance(Double o1, Double o2, float percentage) {
     if (percentage == 0) return o1.compareTo(o2);
     if (o1.equals(o2)) return 0;
     double delta = Math.abs(o1 - o2);
@@ -136,5 +137,12 @@ public class Preference implements MapWriter {
   @Override
   public String toString() {
     return Utils.toJSONString(this);
+  }
+
+  /**
+   * @return an unmodifiable copy of the original map from which this object was constructed
+   */
+  public Map getOriginal() {
+    return Collections.unmodifiableMap(original);
   }
 }

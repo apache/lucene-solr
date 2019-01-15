@@ -17,9 +17,12 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.cloud.MoveReplicaHDFSTest;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -33,6 +36,9 @@ import org.junit.BeforeClass;
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
 //commented 23-AUG-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+@Nightly
+@TimeoutSuite(millis = TimeUnits.HOUR)
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13060")
 public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrationTest {
 
   private static MiniDFSCluster dfsCluster;

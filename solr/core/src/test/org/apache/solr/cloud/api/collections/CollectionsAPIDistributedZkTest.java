@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -38,7 +38,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableList;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
@@ -75,14 +78,13 @@ import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Tests the Cloud Collections API.
@@ -91,16 +93,14 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void beforeCollectionsAPIDistributedZkTest() {
+  @Before
+  public void setupCluster() throws Exception {
     // we don't want this test to have zk timeouts
-    System.setProperty("zkClientTimeout", "240000");
-    TestInjection.randomDelayInCoreCreation = "true:20";
+    System.setProperty("zkClientTimeout", "60000");
+    System.setProperty("createCollectionWaitTimeTillActive", "5");
+    TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
-  }
-
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+    
     String solrXml = IOUtils.toString(CollectionsAPIDistributedZkTest.class.getResourceAsStream("/solr/solr-jmxreporter.xml"), "UTF-8");
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
@@ -108,14 +108,11 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .withSolrXml(solrXml)
         .configure();
   }
-
-  @Before
-  public void clearCluster() throws Exception {
-    try {
-      cluster.deleteAllCollections();
-    } finally {
-      System.clearProperty("zkClientTimeout");
-    }
+  
+  @After
+  public void tearDownCluster() throws Exception {
+    shutdownCluster();
+    System.clearProperty("createCollectionWaitTimeTillActive");
   }
 
   @Test
@@ -422,12 +419,20 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018 SOLR-12028
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018 SOLR-12028
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire
     int cnt = random().nextInt(TEST_NIGHTLY ? 3 : 1) + 1;
     CollectionAdminRequest.Create[] createRequests = new CollectionAdminRequest.Create[cnt];
+    
+    class Coll {
+      String name;
+      int numShards;
+      int replicationFactor;
+    }
+    
+    List<Coll> colls = new ArrayList<>();
 
     for (int i = 0; i < cnt; i++) {
 
@@ -439,8 +444,56 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
           = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor)
           .setMaxShardsPerNode(maxShardsPerNode);
       createRequests[i].processAsync(cluster.getSolrClient());
+      
+      Coll coll = new Coll();
+      coll.name = "awhollynewcollection_" + i;
+      coll.numShards = numShards;
+      coll.replicationFactor = replicationFactor;
+      colls.add(coll);
     }
 
+    for (Coll coll : colls) {
+      cluster.waitForActiveCollection(coll.name, coll.numShards, coll.numShards * coll.replicationFactor);
+    }
+
+    waitForStable(cnt, createRequests);
+
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      checkInstanceDirs(cluster.getJettySolrRunner(i));
+    }
+    
+    String collectionName = createRequests[random().nextInt(createRequests.length)].getCollectionName();
+    
+    // TODO: we should not need this...beast test well when trying to fix
+    Thread.sleep(1000);
+    
+    cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
+
+    new UpdateRequest()
+        .add("id", "6")
+        .add("id", "7")
+        .add("id", "8")
+        .commit(cluster.getSolrClient(), collectionName);
+    long numFound = 0;
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeOut.hasTimedOut()) {
+
+      numFound = cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
+      if (numFound == 3) {
+        break;
+      }
+
+      Thread.sleep(500);
+    }
+    
+    if (timeOut.hasTimedOut()) {
+      fail("Timeout waiting to see 3 found, instead saw " + numFound + " for collection " + collectionName);
+    }
+
+    checkNoTwoShardsUseTheSameIndexDir();
+  }
+
+  private void waitForStable(int cnt, CollectionAdminRequest.Create[] createRequests) throws InterruptedException {
     for (int i = 0; i < cnt; i++) {
       String collectionName = "awhollynewcollection_" + i;
       final int j = i;
@@ -449,38 +502,14 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
             CollectionAdminRequest.Create req = createRequests[j];
             return DocCollection.isFullyActive(n, c, req.getNumShards(), req.getReplicationFactor());
           });
+      
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      // make sure we have leaders for each shard
+      for (int z = 1; z < createRequests[j].getNumShards(); z++) {
+        zkStateReader.getLeaderRetry(collectionName, "shard" + z, 10000);
+      }      // make sure we again have leaders for each shard
+      
     }
-
-    cluster.injectChaos(random());
-
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      checkInstanceDirs(cluster.getJettySolrRunner(i));
-    }
-
-    String collectionName = createRequests[random().nextInt(createRequests.length)].getCollectionName();
-
-    new UpdateRequest()
-        .add("id", "6")
-        .add("id", "7")
-        .add("id", "8")
-        .commit(cluster.getSolrClient(), collectionName);
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      try {
-        long numFound = cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
-        assertEquals(3, numFound);
-        break;
-      } catch (Exception e) {
-        // Query node can have stale clusterstate
-        log.info("Error when query " + collectionName, e);
-        Thread.sleep(500);
-      }
-    }
-    if (timeOut.hasTimedOut()) {
-      fail("Timeout on query " + collectionName);
-    }
-
-    checkNoTwoShardsUseTheSameIndexDir();
   }
 
   @Test
@@ -621,6 +650,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     ArrayList<String> nodeList
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());

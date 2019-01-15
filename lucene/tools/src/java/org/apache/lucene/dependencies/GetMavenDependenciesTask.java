@@ -94,6 +94,7 @@ public class GetMavenDependenciesTask extends Task {
 
   private static final Set<String> globalOptionalExternalDependencies = new HashSet<>();
   private static final Map<String,Set<String>> perModuleOptionalExternalDependencies = new HashMap<>();
+  private static final Set<String> modulesWithTransitiveDependencies = new HashSet<>();
   static {
     // Add modules here that have split compile and test POMs
     // - they need compile-scope deps to also be test-scope deps.
@@ -105,6 +106,11 @@ public class GetMavenDependenciesTask extends Task {
     // Format is "groupId:artifactId"
     globalOptionalExternalDependencies.addAll(Arrays.asList
         ("org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-log4j12"));
+
+    // Add modules here that should NOT have their dependencies
+    // excluded in the grandparent POM's dependencyManagement section,
+    // thus enabling their dependencies to be transitive.
+    modulesWithTransitiveDependencies.addAll(Arrays.asList("lucene-test-framework"));
   }
 
   private final XPath xpath = XPathFactory.newInstance().newXPath();
@@ -894,7 +900,7 @@ public class GetMavenDependenciesTask extends Task {
     if (null != classifier) {
       builder.append(indent).append("  <classifier>").append(classifier).append("</classifier>\n");
     }
-    if (null != exclusions && ! exclusions.isEmpty()) {
+    if ( ! modulesWithTransitiveDependencies.contains(artifactId) && null != exclusions && ! exclusions.isEmpty()) {
       builder.append(indent).append("  <exclusions>\n");
       for (String dependency : exclusions) {
         int splitPos = dependency.indexOf(':');

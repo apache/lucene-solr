@@ -68,7 +68,7 @@ public final class DocValuesFieldExistsQuery extends Query {
         if (iterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), iterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
 
       @Override

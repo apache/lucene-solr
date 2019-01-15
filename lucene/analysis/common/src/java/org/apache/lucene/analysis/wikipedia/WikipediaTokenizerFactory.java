@@ -31,6 +31,8 @@ import org.apache.lucene.util.AttributeFactory;
  *     &lt;tokenizer class="solr.WikipediaTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class WikipediaTokenizerFactory extends TokenizerFactory {
   public static final String TOKEN_OUTPUT = "tokenOutput";

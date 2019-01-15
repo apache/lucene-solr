@@ -31,6 +31,8 @@ import org.apache.lucene.util.AttributeFactory;
  *     &lt;tokenizer class="solr.ThaiTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 4.10.0
  */
 public class ThaiTokenizerFactory extends TokenizerFactory {
   

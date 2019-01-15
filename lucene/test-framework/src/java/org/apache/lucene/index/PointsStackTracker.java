@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 
 /** Simple utility class to track the current BKD stack based solely on calls to {@link IntersectVisitor#compare}. */
 public class PointsStackTracker {
@@ -44,11 +44,11 @@ public class PointsStackTracker {
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim * bytesPerDim;
         // other.min < min?
-        if (StringHelper.compare(bytesPerDim, other.minPackedValue, offset, minPackedValue, offset) < 0) {
+        if (FutureArrays.compareUnsigned(other.minPackedValue, offset, offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
           return false;
         }
         // other.max > max?
-        if (StringHelper.compare(bytesPerDim, other.maxPackedValue, offset, maxPackedValue, offset) > 0) {
+        if (FutureArrays.compareUnsigned(other.maxPackedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
           return false;
         }
       }

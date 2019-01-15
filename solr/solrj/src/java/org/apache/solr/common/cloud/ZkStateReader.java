@@ -45,16 +45,19 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -127,6 +130,11 @@ public class ZkStateReader implements Closeable {
   public final static String CONFIGNAME_PROP="configName";
 
   public static final String LEGACY_CLOUD = "legacyCloud";
+
+  /**
+   * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
+   */
+  @Deprecated
   public static final String COLLECTION_DEF = "collectionDefaults";
 
   public static final String URL_SCHEME = "urlScheme";
@@ -137,7 +145,7 @@ public class ZkStateReader implements Closeable {
   protected volatile ClusterState clusterState;
 
   private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
-  private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = 4000;
+  private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));;
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -176,6 +184,8 @@ public class ZkStateReader implements Closeable {
   private Set<CloudCollectionsListener> cloudCollectionsListeners = ConcurrentHashMap.newKeySet();
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
+
+  private Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
   
   /** Used to submit notifications to Collection Properties watchers in order **/
   private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("collectionPropsNotifications"));
@@ -223,8 +233,6 @@ public class ZkStateReader implements Closeable {
     }
 
   }
-
-  private Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = unmodifiableSet(new HashSet<>(asList(
       LEGACY_CLOUD,
@@ -278,6 +286,8 @@ public class ZkStateReader implements Closeable {
   private final boolean closeClient;
 
   private volatile boolean closed = false;
+  
+  private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet();
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -288,6 +298,7 @@ public class ZkStateReader implements Closeable {
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = false;
     this.securityNodeListener = securityNodeListener;
+    assert ObjectReleaseTracker.track(this);
   }
 
 
@@ -313,6 +324,8 @@ public class ZkStateReader implements Closeable {
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
+    
+    assert ObjectReleaseTracker.track(this);
   }
 
   public ZkConfigManager getConfigManager() {
@@ -789,12 +802,20 @@ public class ZkStateReader implements Closeable {
       log.debug("Updated live nodes from ZooKeeper... {} -> {}", oldLiveNodes, newLiveNodes);
     }
     if (!oldLiveNodes.equals(newLiveNodes)) { // fire listeners
-      liveNodesListeners.forEach(listener ->
-          listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes)));
+      liveNodesListeners.forEach(listener -> {
+        if (listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes))) {
+          removeLiveNodesListener(listener);
+        }
+      });
     }
   }
 
   public void registerLiveNodesListener(LiveNodesListener listener) {
+    // fire it once with current live nodes
+    if (listener.onChange(new TreeSet<>(getClusterState().getLiveNodes()), new TreeSet<>(getClusterState().getLiveNodes()))) {
+      removeLiveNodesListener(listener);
+    }
+    
     liveNodesListeners.add(listener);
   }
 
@@ -815,18 +836,31 @@ public class ZkStateReader implements Closeable {
 
   public void close() {
     this.closed  = true;
-    notifications.shutdown();
+    
+    notifications.shutdownNow();
+    
+    waitLatches.parallelStream().forEach(c -> { c.countDown(); });
+    
+    ExecutorUtil.shutdownAndAwaitTermination(notifications);
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
     if (closeClient) {
       zkClient.close();
     }
+    assert ObjectReleaseTracker.release(this);
   }
   
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
     ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection, shard, timeout));
     return props.getCoreUrl();
   }
-
+  
+  public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {
+    Replica replica = docCollection != null ? docCollection.getLeader(shard) : null;
+    if (replica != null && liveNodes.contains(replica.getNodeName())) {
+      return replica;
+    }
+    return null;
+  }
   public Replica getLeader(String collection, String shard) {
     if (clusterState != null) {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
@@ -849,16 +883,25 @@ public class ZkStateReader implements Closeable {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
-    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (true) {
-      Replica leader = getLeader(collection, shard);
-      if (leader != null) return leader;
-      if (System.nanoTime() >= timeoutAt || closed) break;
-      Thread.sleep(GET_LEADER_RETRY_INTERVAL_MS);
+
+    AtomicReference<Replica> leader = new AtomicReference<>();
+    try {
+      waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c) -> {
+        if (c == null)
+          return false;
+        Replica l = getLeader(n, c, shard);
+        if (l != null) {
+          leader.set(l);
+          return true;
+        }
+        return false;
+      });
+    } catch (TimeoutException | InterruptedException e) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
+          + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
+          + " with live_nodes=" + clusterState.getLiveNodes());
     }
-    throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
-        + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
-        + " with live_nodes=" + clusterState.getLiveNodes());
+    return leader.get();
   }
 
   /**
@@ -1001,7 +1044,7 @@ public class ZkStateReader implements Closeable {
       while (true) {
         try {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
+          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
           return;
         } catch (KeeperException.NoNodeException e) {
@@ -1252,6 +1295,10 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public void process(WatchedEvent event) {
+      if (ZkStateReader.this.closed) {
+        return;
+      }
+      
       // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
         return;
@@ -1452,13 +1499,20 @@ public class ZkStateReader implements Closeable {
    */
   public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
-
+    
+    if (closed) {
+      throw new AlreadyClosedException();
+    }
+    
     final CountDownLatch latch = new CountDownLatch(1);
-
+    waitLatches.add(latch);
+    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     CollectionStateWatcher watcher = (n, c) -> {
+      docCollection.set(c);
       boolean matches = predicate.matches(n, c);
       if (matches)
         latch.countDown();
+      
       return matches;
     };
     registerCollectionStateWatcher(collection, watcher);
@@ -1466,14 +1520,60 @@ public class ZkStateReader implements Closeable {
     try {
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
-        throw new TimeoutException();
+        throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
 
     }
     finally {
       removeCollectionStateWatcher(collection, watcher);
+      waitLatches.remove(latch);
     }
   }
 
+  /**
+   * Block until a LiveNodesStatePredicate returns true, or the wait times out
+   *
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   *
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  the predicate to call on state changes
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException on timeout
+   */
+  public void waitForLiveNodes(long wait, TimeUnit unit, LiveNodesPredicate predicate)
+      throws InterruptedException, TimeoutException {
+    
+    if (closed) {
+      throw new AlreadyClosedException();
+    }
+    
+    final CountDownLatch latch = new CountDownLatch(1);
+    waitLatches.add(latch);
+
+    
+    LiveNodesListener listener = (o, n) -> {
+      boolean matches = predicate.matches(o, n);
+      if (matches)
+        latch.countDown();
+      return matches;
+    };
+    
+    registerLiveNodesListener(listener);
+
+    try {
+      // wait for the watcher predicate to return true, or time out
+      if (!latch.await(wait, unit))
+        throw new TimeoutException("Timeout waiting for live nodes, currently they are: " + getClusterState().getLiveNodes());
+
+    }
+    finally {
+      removeLiveNodesListener(listener);
+      waitLatches.remove(latch);
+    }
+  }
+
+  
   /**
    * Remove a watcher from a collection's watch list.
    *
@@ -1606,6 +1706,9 @@ public class ZkStateReader implements Closeable {
   }
 
   private void notifyStateWatchers(Set<String> liveNodes, String collection, DocCollection collectionState) {
+    if (this.closed) {
+      return;
+    }
     try {
       notifications.submit(new Notification(liveNodes, collection, collectionState));
     }
@@ -1781,6 +1884,8 @@ public class ZkStateReader implements Closeable {
         final byte[] data = zkClient.getData(ALIASES, this, stat, true);
         // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but not a big deal
         setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+      } catch (NoNodeException e) {
+        // /aliases.json will not always exist
       } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
         // note: aliases.json is required to be present
         log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());

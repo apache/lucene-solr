@@ -63,7 +63,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         + "zookeeper/server1/data";
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
+    zkServer.run(false);
     
     System.setProperty("zkHost", zkServer.getZkAddress());
     
@@ -194,7 +194,10 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         zkClient.delete(path + "/subnode", -1, false);
       }
     } catch (NoAuthException nae) {
-      if (create) fail("No NoAuthException expected");
+      if (create) {
+        nae.printStackTrace();
+        fail("No NoAuthException expected");
+      }
       // expected
     }
     

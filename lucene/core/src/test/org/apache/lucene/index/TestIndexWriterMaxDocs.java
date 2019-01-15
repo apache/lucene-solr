@@ -29,6 +29,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -67,7 +68,9 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
       assertEquals(IndexWriter.MAX_DOCS, ir.maxDoc());
       assertEquals(IndexWriter.MAX_DOCS, ir.numDocs());
       IndexSearcher searcher = new IndexSearcher(ir);
-      TopDocs hits = searcher.search(new TermQuery(new Term("field", "text")), 10);
+      TopScoreDocCollector collector = TopScoreDocCollector.create(10, Integer.MAX_VALUE);
+      searcher.search(new TermQuery(new Term("field", "text")), collector);
+      TopDocs hits = collector.topDocs();
       assertEquals(IndexWriter.MAX_DOCS, hits.totalHits.value);
 
       // Sort by docID reversed:
@@ -186,7 +189,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       w.forceMerge(1);
 
-      assertEquals(5, w.maxDoc());
+      assertEquals(5, w.getDocStats().maxDoc);
 
       // Add 5 more docs
       for(int i=0;i<5;i++) {
@@ -230,7 +233,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
 
       w.forceMerge(1);
 
-      assertEquals(5, w.maxDoc());
+      assertEquals(5, w.getDocStats().maxDoc);
 
       // Add 5 more docs
       for(int i=0;i<5;i++) {
@@ -266,7 +269,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
         w2.addIndexes(new Directory[] {dir});
       });
 
-      assertEquals(1, w2.maxDoc());
+      assertEquals(1, w2.getDocStats().maxDoc);
       DirectoryReader ir = DirectoryReader.open(dir);
       expectThrows(IllegalArgumentException.class, () -> {
         TestUtil.addIndexesSlowly(w2, ir);

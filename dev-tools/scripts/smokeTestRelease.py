@@ -285,23 +285,22 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
                                % (fullPath, luceneDistFilenames[jarFilename]))
 
 
-def checkSigs(project, urlString, version, tmpDir, isSigned):
+def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
 
   print('  test basics...')
   ents = getDirEntries(urlString)
   artifact = None
-  keysURL = None
   changesURL = None
   mavenURL = None
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
-  expectedSigs.extend(['sha1', 'sha512'])
-  
+  expectedSigs.extend(['sha512'])
+
   artifacts = []
   for text, subURL in ents:
     if text == 'KEYS':
-      keysURL = subURL
+      raise RuntimeError('%s: release dir should not contain a KEYS file - only toplevel /dist/lucene/KEYS is used' % project)
     elif text == 'maven/':
       mavenURL = subURL
     elif text.startswith('changes'):
@@ -345,15 +344,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   actual = [x[0] for x in artifacts]
   if expected != actual:
     raise RuntimeError('%s: wrong artifacts: expected %s but got %s' % (project, expected, actual))
-                
-  if keysURL is None:
-    raise RuntimeError('%s is missing KEYS' % project)
-
-  print('  get KEYS')
-  download('%s.KEYS' % project, keysURL, tmpDir)
-
-  keysFile = '%s/%s.KEYS' % (tmpDir, project)
-
+  
   # Set up clean gpg world; import keys file:
   gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
   if os.path.exists(gpgHomeDir):
@@ -547,29 +538,20 @@ def run(command, logFile):
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
-  print('    verify sha1/sha512 digests')
-  sha1Expected, t = load(urlString + '.sha1').strip().split()
-  if t != '*'+artifact:
-    raise RuntimeError('SHA1 %s.sha1 lists artifact %s but expected *%s' % (urlString, t, artifact))
-
+  print('    verify sha512 digest')
   sha512Expected, t = load(urlString + '.sha512').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('SHA512 %s.sha512 lists artifact %s but expected *%s' % (urlString, t, artifact))
   
-  s = hashlib.sha1()
   s512 = hashlib.sha512()
   f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
     if len(x) == 0:
       break
-    s.update(x)
     s512.update(x)
   f.close()
-  sha1Actual = s.hexdigest()
   sha512Actual = s512.hexdigest()
-  if sha1Actual != sha1Expected:
-    raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s' % (artifact, sha1Expected, sha1Actual))
   if sha512Actual != sha512Expected:
     raise RuntimeError('SHA512 digest mismatch for %s: expected %s but got %s' % (artifact, sha512Expected, sha512Actual))
 
@@ -977,7 +959,7 @@ def testDemo(run_java, isSrc, version, jdk):
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
 
-def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned):
+def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   POMtemplates = defaultdict()
   getPOMtemplates(solrSrcUnpackPath, POMtemplates, tmpDir)
   print('    download artifacts')
@@ -995,7 +977,7 @@ def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigne
   checkJavadocAndSourceArtifacts(artifacts, version)
   verifyDeployedPOMsCoordinates(artifacts, version)
   if isSigned:
-    verifyMavenSigs(baseURL, tmpDir, artifacts)
+    verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile)
 
   distFiles = getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL)
   checkIdenticalMavenArtifacts(distFiles, artifacts, version)
@@ -1117,13 +1099,9 @@ def getPOMcoordinate(treeRoot):
   packaging = 'jar' if packaging is None else packaging.text.strip()
   return groupId, artifactId, packaging, version
 
-def verifyMavenSigs(baseURL, tmpDir, artifacts):
+def verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile):
   print('    verify maven artifact sigs', end=' ')
   for project in ('lucene', 'solr'):
-    keysFile = '%s/%s.KEYS' % (tmpDir, project)
-    if not os.path.exists(keysFile):
-      keysURL = '%s/%s/KEYS' % (baseURL, project)
-      download('%s.KEYS' % project, keysURL, tmpDir, quiet=True)
 
     # Set up clean gpg world; import keys file:
     gpgHomeDir = '%s/%s.gpg' % (tmpDir, project)
@@ -1291,6 +1269,8 @@ def parse_config():
                       help='Temporary directory to test inside, defaults to /tmp/smoke_lucene_$version_$revision')
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
+  parser.add_argument('--local-keys', metavar='PATH',
+                      help='Uses local KEYS file instead of fetching from https://archive.apache.org/dist/lucene/KEYS')
   parser.add_argument('--revision',
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
@@ -1317,6 +1297,9 @@ def parse_config():
       parser.error('Could not find revision in URL')
     c.revision = revision_match.group(1)
     print('Revision: %s' % c.revision)
+
+  if c.local_keys is not None and not os.path.exists(c.local_keys):
+    parser.error('Local KEYS file "%s" not found' % c.local_keys)
 
   c.java = make_java_config(parser, c.test_java9)
 
@@ -1462,9 +1445,9 @@ def main():
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
-  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
+  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args))
 
-def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
 
   startTime = datetime.datetime.now()
 
@@ -1499,15 +1482,26 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
     raise RuntimeError('could not find solr subdir')
 
   print()
+  print('Get KEYS...')
+  if local_keys is not None:
+    print("    Using local KEYS file %s" % local_keys)
+    keysFile = local_keys
+  else:
+    keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
+    print("    Downloading online KEYS file %s" % keysFileURL)
+    download('KEYS', keysFileURL, tmpDir)
+    keysFile = '%s/KEYS' % (tmpDir)
+
+  print()
   print('Test Lucene...')
-  checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
+  checkSigs('lucene', lucenePath, version, tmpDir, isSigned, keysFile)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
     unpackAndVerify(java, 'lucene', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
   unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
 
   print()
   print('Test Solr...')
-  checkSigs('solr', solrPath, version, tmpDir, isSigned)
+  checkSigs('solr', solrPath, version, tmpDir, isSigned, keysFile)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
     unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
   solrSrcUnpackPath = unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version,
@@ -1515,7 +1509,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')
-  checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned)
+  checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 

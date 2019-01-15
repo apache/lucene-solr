@@ -710,7 +710,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // multiple params for picking groupHead should work as long as only one is non-null
     // sort used
     for (SolrParams collapse : new SolrParams[] {
-        // these should all be equivilently valid
+        // these should all be equally valid
         params("fq", "{!collapse field="+group+" nullPolicy=collapse sort='test_i asc'"+hint+"}"),
         params("fq", "{!collapse field="+group+" nullPolicy=collapse min='' sort='test_i asc'"+hint+"}"),
         params("fq", "{!collapse field="+group+" nullPolicy=collapse max='' sort='test_i asc'"+hint+"}"),
@@ -809,6 +809,15 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+" "+optional_min_or_max+"}");
     assertQ(req(params), "*[count(//doc)=0]");
+
+    // if a field is uninvertible=false, it should behave the same as a field that is indexed=false
+    // this is currently ok on fields that don't exist on any docs in the index
+    for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
+      for (String hint : Arrays.asList("", " hint=top_fc")) {
+        assertQ(req(params("q", "*:*", "fq", "{!collapse field="+f+hint+"}"))
+                , "*[count(//doc)=0]");
+      }
+    }
   }
 
   public void testNoDocsHaveGroupField() throws Exception {
@@ -881,13 +890,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   public void testGroupHeadSelector() {
     GroupHeadSelector s;
-    
-    try {
-      s = GroupHeadSelector.build(params("sort", "foo_s asc", "min", "bar_s"));
-      fail("no exception with multi criteria");
-    } catch (SolrException e) {
-      // expected
-    }
+
+    expectThrows(SolrException.class, "no exception with multi criteria",
+        () -> GroupHeadSelector.build(params("sort", "foo_s asc", "min", "bar_s"))
+    );
     
     s = GroupHeadSelector.build(params("min", "foo_s"));
     assertEquals(GroupHeadSelectorType.MIN, s.type);
@@ -917,6 +923,39 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                  GroupHeadSelector.build(params("sort", "foo_s asc",
                                                 "other", "stuff")).hashCode());
     
+  }
+
+  @Test
+  public void testForNotSupportedCases() {
+    String[] doc = {"id","3", "term_s", "YYYY", "test_ii", "5000", "test_l", "100", "test_f", "200",
+                    "not_indexed_sS", "zzz", "indexed_s_not_uninvert", "zzz"};
+    assertU(adoc(doc));
+    assertU(commit());
+
+    // collapsing on multivalued field
+    assertQEx("Should Fail with Bad Request", "Collapsing not supported on multivalued fields",
+        req("q","*:*", "fq","{!collapse field=test_ii}"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // collapsing on unknown field
+    assertQEx("Should Fail with Bad Request", "org.apache.solr.search.SyntaxError: undefined field: \"bleh\"",
+        req("q","*:*", "fq","{!collapse field=bleh}"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // if a field is uninvertible=false, it should behave the same as a field that is indexed=false ...
+    for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
+      { // this currently propogates up the low level DocValues error in the common case...
+        Exception e = expectThrows(RuntimeException.class, IllegalStateException.class,
+                                    () -> h.query(req(params("q", "*:*",
+                                                             "fq", "{!collapse field="+f+"}"))));
+        assertTrue("unexpected Message: " + e.getMessage(),
+                   e.getMessage().contains("Re-index with correct docvalues type"));
+      }
+      { // ... but in the case of hint=top_fc a bare NPE gets propogated up (SOLR-12979)...
+        expectThrows(RuntimeException.class, NullPointerException.class, 
+                     () -> h.query(req(params("q", "*:*",
+                                              "fq", "{!collapse field="+f+" hint=top_fc}"))));
+      }
+      
+    }
   }
 
   @Test

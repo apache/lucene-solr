@@ -49,10 +49,12 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
-    this.isLeader = r.getBool(LEADER_PROP, false);
+    boolean maybeLeader = r.getBool(LEADER_PROP, false);
     if (vals != null) {
       this.variables.putAll(vals);
+      maybeLeader = "true".equals(String.valueOf(vals.getOrDefault(LEADER_PROP, maybeLeader)));
     }
+    this.isLeader = maybeLeader;
     this.node = r.getNodeName();
   }
 
@@ -91,7 +93,7 @@ public class ReplicaInfo implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    BiPredicate<String, Object> p = dedupeKeyPredicate(new HashSet<>())
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>())
         .and(NON_NULL_VAL);
     ew.put(name, (MapWriter) ew1 -> {
       ew1.put(ZkStateReader.CORE_NAME_PROP, core, p)

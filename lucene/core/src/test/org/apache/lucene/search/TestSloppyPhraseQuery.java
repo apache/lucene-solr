@@ -185,11 +185,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     Scorer scorer;
     
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      this.scorer = scorer;
-      while (this.scorer instanceof AssertingScorer) {
-        this.scorer = ((AssertingScorer)this.scorer).getIn();
-      }
+    public void setScorer(Scorable scorer) throws IOException {
+      this.scorer = (Scorer) AssertingScorable.unwrap(scorer);
     }
 
     @Override
@@ -215,11 +212,8 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       Scorer scorer;
       
       @Override
-      public void setScorer(Scorer scorer) {
-        this.scorer = scorer;
-        while (this.scorer instanceof AssertingScorer) {
-          this.scorer = ((AssertingScorer)this.scorer).getIn();
-        }
+      public void setScorer(Scorable scorer) {
+        this.scorer = (Scorer) AssertingScorable.unwrap(scorer);
       }
       
       @Override

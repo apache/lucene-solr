@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +31,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.SystemLogListener;
@@ -52,8 +54,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
@@ -86,6 +86,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .setCreateNodeSet(systemCollNode)
         .process(solrClient);
+    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL, 1, 1);
     Set<String> otherNodes = cluster.getJettySolrRunners().stream().map(JettySolrRunner::getNodeName)
         .collect(Collectors.toSet());
     otherNodes.remove(systemCollNode);
@@ -93,8 +94,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         .setCreateNodeSet(String.join(",", otherNodes))
         .setMaxShardsPerNode(3)
         .process(solrClient);
-    waitForRecovery(CollectionAdminParams.SYSTEM_COLL);
-    waitForRecovery(COLL_NAME);
+    cluster.waitForActiveCollection(COLL_NAME, 1, 3);
   }
 
   public static class TesterListener extends TriggerListenerBase {
@@ -124,7 +124,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
 
@@ -141,7 +141,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TesterAction.class.getName() + "'}" +
         "]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -158,7 +158,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TesterAction.class.getName() + "'}" +
         "]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -168,7 +168,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"" + PREFIX + "_node_lost_trigger.system\"\n" +
         "\t}\n" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     removeListenerCommand = "{\n" +
@@ -176,7 +176,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"" + PREFIX + "_node_added_trigger.system\"\n" +
         "\t}\n" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     // set up our own listeners
@@ -191,7 +191,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'class' : '" + SystemLogListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     setListenerCommand = "{" +
@@ -203,7 +203,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'class' : '" + TesterListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -218,7 +218,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'class' : '" + SystemLogListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     setListenerCommand = "{" +
@@ -230,7 +230,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'class' : '" + TesterListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -240,7 +240,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'name' : '" + PREFIX + "_node_added_trigger'," +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     resumeTriggerCommand = "{" +
@@ -248,7 +248,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         "'name' : '" + PREFIX + "_node_lost_trigger'," +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -268,6 +268,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     log.info("### Start add node...");
     JettySolrRunner jetty = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     String nodeAddedName = jetty.getNodeName();
     log.info("### Added node " + nodeAddedName);
     boolean await = actionFiredLatch.await(60, TimeUnit.SECONDS);
@@ -336,10 +337,24 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     String overseerLeader = (String) overSeerStatus.get("leader");
     ClusterState state = cluster.getSolrClient().getZkStateReader().getClusterState();
     DocCollection coll = state.getCollection(COLL_NAME);
+    DocCollection system = state.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
+    Set<String> systemLeaderNodes;
+    if (system != null) {
+      systemLeaderNodes = system.getReplicas().stream()
+          .filter(r -> r.getBool("leader", false))
+          .map(r -> r.getNodeName())
+          .collect(Collectors.toSet());
+    } else {
+      systemLeaderNodes = Collections.emptySet();
+    }
     String nodeToKill = null;
     for (Replica r : coll.getReplicas()) {
       if (r.isActive(state.getLiveNodes()) &&
           !r.getNodeName().equals(overseerLeader)) {
+        if (systemLeaderNodes.contains(r.getNodeName())) {
+          log.info("--skipping .system leader replica {}", r);
+          continue;
+        }
         nodeToKill = r.getNodeName();
         break;
       }
@@ -348,7 +363,8 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     log.info("### Stopping node " + nodeToKill);
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(nodeToKill)) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }

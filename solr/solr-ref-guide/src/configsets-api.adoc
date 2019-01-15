@@ -130,7 +130,7 @@ name::
 The configset to be created. This parameter is required.
 
 baseConfigSet::
-The name of the configset to copy as a base. This parameter is required.
+The name of the configset to copy as a base. This defaults to `_default`
 
 configSetProp._property_=_value_::
 A configset property from the base configset to override in the copied configset.

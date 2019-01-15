@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -76,7 +77,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
     waitForThingsToLevelOut(30000);
@@ -102,7 +103,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     int maxShardsPerNode = 1;
     String testCollectionName = "repfacttest_c8n_2x2";
     String shardId = "shard1";
-    int minRf = 2;
 
     createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
 
@@ -122,7 +122,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // send directly to the leader using HttpSolrServer instead of CloudSolrServer (to test support for non-direct updates)
     UpdateRequest up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
+    maybeAddMinRfExplicitly(2, up);
     up.add(batch);
 
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
@@ -230,13 +230,13 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // Delete the docs by ID indicated
     UpdateRequest req = new UpdateRequest();
     req.deleteById(byIdsList);
-    req.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(expectedRfByIds));
+    maybeAddMinRfExplicitly(expectedRfByIds, req);
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfByIds, coll);
 
     //Delete the docs by query indicated.
     req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(byQueriesSet, " OR ") + ")");
-    req.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(expectedRfDBQ));
+    maybeAddMinRfExplicitly(expectedRfDBQ, req);
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, coll);
 
   }
@@ -261,6 +261,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       // Note that this also tests if we're wonky and return an achieved rf greater than the number of live replicas.
       assertTrue("Expected rf="+expectedRf+" for batch but got "+
           batchRf + "; clusterState: " + printClusterStateInfo(), batchRf == expectedRf);
+      if (up.getParams() != null && up.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
+        // If "min_rf" was specified in the request, it must be in the response for back compatibility
+        assertNotNull("Expecting min_rf to be in the response, since it was explicitly set in the request", hdr.get(UpdateRequest.MIN_REPFACT));
+        assertEquals("Unexpected min_rf in the response",
+            Integer.parseInt(up.getParams().get(UpdateRequest.MIN_REPFACT)), hdr.get(UpdateRequest.MIN_REPFACT));
+      }
     }
   }
 
@@ -282,7 +288,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     int rf = sendDoc(1, minRf);
     assertRf(3, "all replicas should be active", rf);
 
-    // Uses cloudClient do do it's work
+    // Uses cloudClient to do it's work
     doDBIdWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
     doDBQWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
 
@@ -292,7 +298,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     rf = sendDoc(2, minRf);
     assertRf(2, "one replica should be down", rf);
 
-    // Uses cloudClient do do it's work
+    // Uses cloudClient to do it's work
     doDBQWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
     doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
 
@@ -398,8 +404,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     addDocs(docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(docIds, " OR ") + ")");
-    req.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(expectedRf));
-    doDelete(req, msg, expectedRf, retries);
+    boolean minRfExplicit = maybeAddMinRfExplicitly(expectedRf, req);
+    doDelete(req, msg, expectedRf, retries, minRfExplicit);
   }
 
   protected void doDBIdWithRetry(int expectedRf, int retries, String msg, int docsToAdd) throws Exception {
@@ -407,14 +413,18 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     addDocs(docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteById(StringUtils.join(docIds, ","));
-    req.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(expectedRf));
-    doDelete(req, msg, expectedRf, retries);
+    boolean minRfExplicit = maybeAddMinRfExplicitly(expectedRf, req);
+    doDelete(req, msg, expectedRf, retries, minRfExplicit);
   }
 
-  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries) throws IOException, SolrServerException, InterruptedException {
+  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries, boolean minRfExplicit) throws IOException, SolrServerException, InterruptedException {
     int achievedRf = -1;
     for (int idx = 0; idx < retries; ++idx) {
-      achievedRf = cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(req));
+      NamedList<Object> response = cloudClient.request(req);
+      if (minRfExplicit) {
+        assertMinRfInResponse(expectedRf, response);
+      }
+      achievedRf = cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
       if (achievedRf == expectedRf) return;
       Thread.sleep(1000);
     }
@@ -423,12 +433,36 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   protected int sendDoc(int docId, int minRf) throws Exception {
     UpdateRequest up = new UpdateRequest();
-    up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
+    boolean minRfExplicit = maybeAddMinRfExplicitly(minRf, up);
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     up.add(doc);
-    return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up));
+    return runAndGetAchievedRf(up, minRfExplicit, minRf);
+  }
+  
+  private int runAndGetAchievedRf(UpdateRequest up, boolean minRfExplicit, int minRf) throws SolrServerException, IOException {
+    NamedList<Object> response = cloudClient.request(up);
+    if (minRfExplicit) {
+      assertMinRfInResponse(minRf, response);
+    }
+    return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
+  }
+
+  private void assertMinRfInResponse(int minRf, NamedList<Object> response) {
+    Object minRfFromResponse = response.findRecursive("responseHeader", UpdateRequest.MIN_REPFACT);
+    assertNotNull("Expected min_rf header in the response", minRfFromResponse);
+    assertEquals("Unexpected min_rf in response", ((Integer)minRfFromResponse).intValue(), minRf);
+  }
+
+  private boolean maybeAddMinRfExplicitly(int minRf, UpdateRequest up) {
+    boolean minRfExplicit = false;
+    if (rarely()) {
+      // test back compat behavior. Remove in Solr 9
+      up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
+      minRfExplicit = true;
+    }
+    return minRfExplicit;
   }
   
   protected void assertRf(int expected, String explain, int actual) throws Exception {
@@ -439,7 +473,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor, int maxShardsPerNode) throws IOException, SolrServerException, InterruptedException {
+  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor, int maxShardsPerNode) throws IOException, SolrServerException, InterruptedException, TimeoutException {
     CollectionAdminResponse resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
 
     if (resp.getResponse().get("failure") != null) {

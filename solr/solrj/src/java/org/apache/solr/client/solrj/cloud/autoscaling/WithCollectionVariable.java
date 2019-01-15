@@ -82,7 +82,7 @@ public class WithCollectionVariable extends VariableBase {
     return Integer.compare(v1.getViolatingReplicas().size(), v2.getViolatingReplicas().size());
   }
 
-  public void addViolatingReplicas(Violation.Ctx ctx) {
+  public boolean addViolatingReplicas(Violation.Ctx ctx) {
     String node = ctx.currentViolation.node;
     for (Row row : ctx.allRows) {
       if (node.equals(row.node)) {
@@ -103,6 +103,7 @@ public class WithCollectionVariable extends VariableBase {
         }
       }
     }
+    return true;
   }
 
   @Override

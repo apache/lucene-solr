@@ -22,17 +22,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-<<<<<<< HEAD
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
-=======
-import java.util.List;
-import java.util.Random;
-
 import org.apache.lucene.util.ArrayUtil;
->>>>>>> master
 import org.apache.lucene.util.IOUtils.IOConsumer;
 import org.junit.Test;
 
@@ -125,13 +117,8 @@ public abstract class BaseDataOutputTestCase<T extends DataOutput> extends Rando
           src.readBytes(read, off, len);
           assertArrayEquals(
               "readBytes(byte[], off)",
-<<<<<<< HEAD
-              Arrays.copyOfRange(bytes, off, len + off),
-              Arrays.copyOfRange(read, off, len + off));
-=======
               ArrayUtil.copyOfSubArray(bytes, off, len + off),
               ArrayUtil.copyOfSubArray(read, off, len + off));
->>>>>>> master
         };
       }
     );

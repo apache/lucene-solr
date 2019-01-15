@@ -40,6 +40,7 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
   
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSingleZkHostSpecified() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
         .build()) {
@@ -50,6 +51,7 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
   
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSeveralZkHostsSpecifiedSingly() throws IOException {
     final List<String> zkHostList = new ArrayList<>();
     zkHostList.add(ANY_ZK_HOST); zkHostList.add(ANY_OTHER_ZK_HOST);
@@ -63,6 +65,7 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
   
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSeveralZkHostsSpecifiedTogether() throws IOException {
     final ArrayList<String> zkHosts = new ArrayList<String>();
     zkHosts.add(ANY_ZK_HOST);
@@ -76,6 +79,7 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
   
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
       assertTrue(createdClient.isUpdatesToLeaders() == true);
@@ -83,6 +87,7 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
 
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIsDirectUpdatesToLeadersOnlyDefault() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
       assertFalse(createdClient.isDirectUpdatesToLeadersOnly());
@@ -90,6 +95,7 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
   }
   
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void test0Timeouts() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
         .withSocketTimeout(0)

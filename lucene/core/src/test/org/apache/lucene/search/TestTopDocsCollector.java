@@ -61,7 +61,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
         }
 
         @Override
-        public void setScorer(Scorer scorer) {
+        public void setScorer(Scorable scorer) {
           // Don't do anything. Assign scores in random
         }
       };
@@ -192,14 +192,10 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
   }
 
-  private static class FakeScorer extends Scorer {
+  private static class ScoreAndDoc extends Scorable {
     int doc = -1;
     float score;
     Float minCompetitiveScore = null;
-
-    FakeScorer() {
-      super(null);
-    }
 
     @Override
     public void setMinCompetitiveScore(float minCompetitiveScore) {
@@ -214,16 +210,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     @Override
     public float score() throws IOException {
       return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
     }
   }
 
@@ -240,7 +226,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     w.close();
 
     TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
-    FakeScorer scorer = new FakeScorer();
+    ScoreAndDoc scorer = new ScoreAndDoc();
 
     LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
     leafCollector.setScorer(scorer);
@@ -269,7 +255,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
 
     // Make sure the min score is set on scorers on new segments
-    scorer = new FakeScorer();
+    scorer = new ScoreAndDoc();
     leafCollector = collector.getLeafCollector(reader.leaves().get(1));
     leafCollector.setScorer(scorer);
     assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
@@ -302,7 +288,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
 
     for (int totalHitsThreshold = 1; totalHitsThreshold < 20; ++ totalHitsThreshold) {
       TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, totalHitsThreshold);
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
 
       LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
       leafCollector.setScorer(scorer);

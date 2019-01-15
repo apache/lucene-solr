@@ -94,10 +94,10 @@ public class TestTermScorer extends LuceneTestCase {
     
     ts.score(new SimpleCollector() {
       private int base = 0;
-      private Scorer scorer;
+      private Scorable scorer;
       
       @Override
-      public void setScorer(Scorer scorer) {
+      public void setScorer(Scorable scorer) {
         this.scorer = scorer;
       }
       

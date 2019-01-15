@@ -176,7 +176,14 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
   fi
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
-  SOLR_JETTY_CONFIG+=("--module=https")
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
+    echo >&2 "HTTP/2 + SSL is not support in Java 8. "
+    echo >&2 "Configure Solr with HTTP/1.1 + SSL"
+    SOLR_JETTY_CONFIG+=("--module=https8")
+  else
+    SOLR_JETTY_CONFIG+=("--module=https")
+  fi
+
   SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
@@ -220,7 +227,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
     fi
     if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEY_STORE_TYPE"
     fi
   fi
 
@@ -1911,7 +1918,7 @@ if [ "$GC_LOG_OPTS" != "" ]; then
       # for simplicity, we only look at the prefix '-Xlog:gc'
       # (if 'all' or multiple tags are used starting with anything other then 'gc' the user is on their own)
       # if a single additional ':' exists in param, then there is already an explicit output specifier
-      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20000|")
+      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
     done
   fi
 fi

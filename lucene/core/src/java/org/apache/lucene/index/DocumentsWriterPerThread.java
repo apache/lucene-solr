@@ -443,8 +443,7 @@ final class DocumentsWriterPerThread {
         flushState.liveDocs.clear(delDocID);
       }
       flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
-      pendingUpdates.bytesUsed.addAndGet(-pendingUpdates.deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
-      pendingUpdates.deleteDocIDs.clear();
+      pendingUpdates.clearDeletedDocIds();
     }
 
     if (aborted) {
@@ -493,7 +492,7 @@ final class DocumentsWriterPerThread {
       }
 
       final BufferedUpdates segmentDeletes;
-      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
+      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numFieldUpdates.get() == 0) {
         pendingUpdates.clear();
         segmentDeletes = null;
       } else {
@@ -636,7 +635,7 @@ final class DocumentsWriterPerThread {
   }
 
   long bytesUsed() {
-    return bytesUsed.get() + pendingUpdates.bytesUsed.get();
+    return bytesUsed.get() + pendingUpdates.ramBytesUsed();
   }
 
   /* Initial chunks size of the shared byte[] blocks used to

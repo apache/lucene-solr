@@ -77,8 +77,8 @@ public class DoubleRange extends Field {
    */
   public void setRangeValues(double[] min, double[] max) {
     checkArgs(min, max);
-    if (min.length*2 != type.pointDimensionCount() || max.length*2 != type.pointDimensionCount()) {
-      throw new IllegalArgumentException("field (name=" + name + ") uses " + type.pointDimensionCount()/2
+    if (min.length*2 != type.pointDataDimensionCount() || max.length*2 != type.pointDataDimensionCount()) {
+      throw new IllegalArgumentException("field (name=" + name + ") uses " + type.pointDataDimensionCount()/2
           + " dimensions; cannot change to (incoming) " + min.length + " dimensions");
     }
 
@@ -148,7 +148,7 @@ public class DoubleRange extends Field {
    * @return the decoded min value
    */
   public double getMin(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDimensionCount()/2);
+    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
     return decodeMin(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -158,7 +158,7 @@ public class DoubleRange extends Field {
    * @return the decoded max value
    */
   public double getMax(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDimensionCount()/2);
+    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
     return decodeMax(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -244,7 +244,7 @@ public class DoubleRange extends Field {
     sb.append(':');
     byte[] b = ((BytesRef)fieldsData).bytes;
     toString(b, 0);
-    for (int d = 0; d < type.pointDimensionCount() / 2; ++d) {
+    for (int d = 0; d < type.pointDataDimensionCount() / 2; ++d) {
       sb.append(' ');
       sb.append(toString(b, d));
     }

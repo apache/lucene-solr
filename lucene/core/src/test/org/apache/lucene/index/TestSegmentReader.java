@@ -115,9 +115,9 @@ public class TestSegmentReader extends LuceneTestCase {
   } 
   
   public void testTerms() throws IOException {
-    Fields fields = MultiFields.getFields(reader);
+    final Collection<String> fields = FieldInfos.getIndexedFields(reader);
     for (String field : fields) {
-      Terms terms = fields.terms(field);
+      Terms terms = MultiTerms.getTerms(reader, field);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator();
       while(termsEnum.next() != null) {
@@ -144,7 +144,7 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     
-    PostingsEnum positions = MultiFields.getTermPositionsEnum(reader,
+    PostingsEnum positions = MultiTerms.getTermPostingsEnum(reader,
                                                                       DocHelper.TEXT_FIELD_1_KEY,
                                                                       new BytesRef("field"));
     // NOTE: prior rev of this test was failing to first

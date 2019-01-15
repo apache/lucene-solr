@@ -26,10 +26,13 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -53,6 +56,8 @@ import org.junit.Test;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@TimeoutSuite(millis = TimeUnits.HOUR)
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13060")
 //commented 23-AUG-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistributedZkTest {
 
@@ -84,7 +89,6 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
 
   @Test
   public void moveReplicaTest() throws Exception {
-    cluster.waitForAllNodes(5000);
     String coll = "movereplicatest_coll";
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -130,7 +134,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
     checkNumOfCores(cloudClient, replica.getNodeName(), 0);
     checkNumOfCores(cloudClient, targetNode, 2);
 
-    waitForState("Wait for recovery finish failed",coll, clusterShape(2,2));
+    waitForState("Wait for recovery finish failed",coll, clusterShape(2,4));
     slice = cloudClient.getZkStateReader().getClusterState().getCollection(coll).getSlice(slice.getName());
     boolean found = false;
     for (Replica newReplica : slice.getReplicas()) {

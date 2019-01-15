@@ -27,6 +27,10 @@ public interface CommonAdminParams
   String IN_PLACE_MOVE = "inPlaceMove";
   /** Method to use for shard splitting. */
   String SPLIT_METHOD = "splitMethod";
+  /** Number of sub-shards to create. **/
+  String NUM_SUB_SHARDS = "numSubShards";
   /** Timeout for replicas to become active. */
   String TIMEOUT = "timeout";
+  /** Inexact shard splitting factor. */
+  String SPLIT_FUZZ = "splitFuzz";
 }

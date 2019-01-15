@@ -173,7 +173,7 @@ public class BBoxStrategy extends SpatialStrategy {
     if ((this.hasDocVals = fieldType.docValuesType() != DocValuesType.NONE)) {
       numQuads++;
     }
-    if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
+    if ((this.hasPointVals = fieldType.pointDataDimensionCount() > 0)) {
       numQuads++;
     }
     if (fieldType.indexOptions() != IndexOptions.NONE && fieldType instanceof LegacyFieldType && ((LegacyFieldType)fieldType).numericType() != null) {

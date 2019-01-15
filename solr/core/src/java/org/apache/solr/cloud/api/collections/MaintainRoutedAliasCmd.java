@@ -75,7 +75,12 @@ public class MaintainRoutedAliasCmd implements OverseerCollectionMessageHandler.
     this.ocmh = ocmh;
   }
 
-  /** Invokes this command from the client.  If there's a problem it will throw an exception. */
+  /**
+   * Invokes this command from the client.  If there's a problem it will throw an exception.
+   * Please note that is important to never add async to this invocation. This method must
+   * block (up to the standard OCP timeout) to prevent large batches of add's from sending a message
+   * to the overseer for every document added in TimeRoutedAliasUpdateProcessor.
+   */
   public static NamedList remoteInvoke(CollectionsHandler collHandler, String aliasName, String mostRecentCollName)
       throws Exception {
     final String operation = CollectionParams.CollectionAction.MAINTAINROUTEDALIAS.toLower();

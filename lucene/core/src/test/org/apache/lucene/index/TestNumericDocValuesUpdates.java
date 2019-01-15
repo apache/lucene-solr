@@ -354,7 +354,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.close();
     }
     
-    Bits liveDocs = MultiFields.getLiveDocs(reader);
+    Bits liveDocs = MultiBits.getLiveDocs(reader);
     boolean[] expectedLiveDocs = new boolean[] { true, false, false, true, true, true };
     for (int i = 0; i < expectedLiveDocs.length; i++) {
       assertEquals(expectedLiveDocs[i], liveDocs.get(i));

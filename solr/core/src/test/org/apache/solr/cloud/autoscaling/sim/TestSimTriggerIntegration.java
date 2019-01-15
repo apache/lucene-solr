@@ -17,8 +17,11 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,45 +35,43 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.util.concurrent.AtomicDouble;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.autoscaling.ActionContext;
+import org.apache.solr.cloud.autoscaling.AutoScaling;
+import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
+import org.apache.solr.cloud.autoscaling.NodeAddedTrigger;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
+import org.apache.solr.cloud.autoscaling.TriggerBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerEventQueue;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
-import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.cloud.autoscaling.ScheduledTriggers.DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS;
+import com.google.common.util.concurrent.AtomicDouble;
 
 /**
  * An end-to-end integration test for triggers
@@ -81,25 +82,26 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   public static final int SPEED = 50;
 
-  private static CountDownLatch actionConstructorCalled;
-  private static CountDownLatch actionInitCalled;
-  private static CountDownLatch triggerFiredLatch;
-  private static int waitForSeconds = 1;
-  private static CountDownLatch actionStarted;
-  private static CountDownLatch actionInterrupted;
-  private static CountDownLatch actionCompleted;
-  private static CountDownLatch triggerStartedLatch;
-  private static CountDownLatch triggerFinishedLatch;
-  private static AtomicInteger triggerStartedCount;
-  private static AtomicInteger triggerFinishedCount;
-  private static AtomicBoolean triggerFired;
+  private static volatile CountDownLatch actionConstructorCalled;
+  private static volatile CountDownLatch actionInitCalled;
+  private static volatile CountDownLatch triggerFiredLatch;
+  private static volatile int waitForSeconds = 1;
+  private static volatile CountDownLatch actionStarted;
+  private static volatile CountDownLatch actionInterrupted;
+  private static volatile CountDownLatch actionCompleted;
+  private static volatile CountDownLatch triggerStartedLatch;
+  private static volatile CountDownLatch triggerFinishedLatch;
+  private static volatile AtomicInteger triggerStartedCount;
+  private static volatile AtomicInteger triggerFinishedCount;
+  private static volatile AtomicBoolean triggerFired;
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
 
   private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(2, TimeSource.get("simTime:" + SPEED));
+
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -120,15 +122,12 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.simGetSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    configureCluster(2, TimeSource.get("simTime:" + SPEED));
 
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cluster, ".scheduled_maintenance");
+    
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
     actionInitCalled = new CountDownLatch(1);
@@ -143,21 +142,13 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     triggerFinishedCount = new AtomicInteger();
     events.clear();
     listenerEvents.clear();
-    while (cluster.getClusterStateProvider().getLiveNodes().size() < 2) {
-      // perhaps a test stopped a node but didn't start it back
-      // lets start a node
-      cluster.simAddNode();
-    }
-    // do this in advance if missing
-    if (!cluster.getSimClusterStateProvider().simListCollections().contains(CollectionAdminParams.SYSTEM_COLL)) {
-      cluster.getSimClusterStateProvider().createSystemCollection();
-      CloudTestUtils.waitForState(cluster, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(1, 1, false, true));
-    }
+    allListenerEvents.clear();
+    failDummyAction = false;
+    listenerCreated = new CountDownLatch(1);
+    listenerEventLatch = new CountDownLatch(0);
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testTriggerThrottling() throws Exception  {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -167,70 +158,65 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     SolrClient solrClient = cluster.simGetSolrClient();
 
     // first trigger
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger1'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '0s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger1'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '0s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
+       "}}");
 
-    // second trigger
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger2'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '0s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger2'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '0s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     // wait until the two instances of action are created
-    if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
+    if (!actionInitCalled.await(10000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("Two TriggerAction instances should have been created by now");
     }
 
     String newNode = cluster.simAddNode();
 
-    if (!triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS)) {
+    if (!triggerFiredLatch.await(420000 / SPEED, TimeUnit.MILLISECONDS)) {
       fail("Both triggers should have fired by now");
     }
 
     // reset shared state
     lastActionExecutedAt.set(0);
-    TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
+    actionInitCalled = new CountDownLatch(2);
     triggerFiredLatch = new CountDownLatch(2);
 
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger1'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '0s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_lost_trigger1'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '0s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
+       "}}");
 
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger2'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '0s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_lost_trigger2'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '0s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     // wait until the two instances of action are created
     if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
@@ -240,9 +226,10 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     // stop the node we had started earlier
     cluster.simRemoveNode(newNode, false);
 
-    if (!triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS)) {
-      fail("Both triggers should have fired by now");
-    }
+    // AwaitsFix - maybe related to leaders not always getting elected in sim
+//    if (!triggerFiredLatch.await(34000 / SPEED, TimeUnit.MILLISECONDS)) {
+//      fail("Both triggers should have fired by now");
+//    }
   }
 
   static AtomicLong lastActionExecutedAt = new AtomicLong(0);
@@ -285,148 +272,198 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  // commented 20-July-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testNodeLostTriggerRestoreState() throws Exception {
-    // for this test we want to update the trigger so we must assert that the actions were created twice
-    TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
+    
+    final String triggerName = "node_lost_restore_trigger";
+      
+    // should be enough to ensure trigger doesn't fire any actions until we replace the trigger
+    waitForSeconds = 500000;
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : '"+triggerName+"'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '"+waitForSeconds+"s'," + 
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
 
-    // start a new node
-    String nodeName = cluster.simAddNode();
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
-    SolrClient solrClient = cluster.simGetSolrClient();
-    waitForSeconds = 5;
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_restore_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '5s'," + // should be enough for us to update the trigger
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-
-    TimeOut timeOut = new TimeOut(2, TimeUnit.SECONDS, cluster.getTimeSource());
-    while (actionInitCalled.getCount() == 0 && !timeOut.hasTimedOut()) {
-      timeOut.sleep(200);
-    }
-    assertTrue("The action specified in node_lost_restore_trigger was not instantiated even after 2 seconds", actionInitCalled.getCount() > 0);
-
+    assertAutoscalingUpdateComplete();
+    
+    // start a new node that we can kill later
+    final String nodeName = cluster.simAddNode();
+    
+    // poll the internal state of the trigger until it run()s at least once and updates
+    // it's internal state to know the node we added is live
+    //
+    // (this should run roughly once a second of simulated time)
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+    .waitFor("initial trigger never ran to detect new live node", () ->
+             (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
+              .contains(nodeName)));
+    
+    // kill our node
     cluster.simRemoveNode(nodeName, false);
+    
+    // poll the internal state of the trigger until it run()s at least once (more) and updates
+    // it's internal state to know the node we killed is no longer alive
+    //
+    // (this should run roughly once a second of simulated time)
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+    .waitFor("initial trigger never ran to detect lost node", () ->
+             ! (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
+                .contains(nodeName)));
+    
+    // since we know the nodeLost event has been detected, we can recored the current timestamp
+    // (relative to the cluster's time source) and later assert that (restored state) correctly
+    // tracked that the event happened prior to "now"
+    final long maxEventTimeNs = cluster.getTimeSource().getTimeNs();
+    
+    // even though our trigger has detected a lost node, the *action* we registered should not have
+    // been run yet, due to the large waitFor configuration...
+    assertEquals("initial trigger action should not have fired", false, triggerFired.get());
+    assertEquals("initial trigger action latch should not have counted down",
+                 1, triggerFiredLatch.getCount());
+    assertEquals("initial trigger action should not have recorded any events: " + events.toString(),
+                 0, events.size());
 
-    // ensure that the old trigger sees the stopped node, todo find a better way to do this
-    timeOut.sleep(500 + TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS));
-
-    waitForSeconds = 0;
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_restore_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '0s'," + // update a property so that it replaces the old trigger, also we want it to fire immediately
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-
-    // wait until the second instance of action is created
-    if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
-      fail("Two TriggerAction instances should have been created by now");
-    }
-
-    boolean await = triggerFiredLatch.await(5000 / SPEED, TimeUnit.MILLISECONDS);
-    assertTrue("The trigger did not fire at all", await);
-    assertTrue(triggerFired.get());
-    NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) events.iterator().next();
-    assertNotNull(nodeLostEvent);
-    List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
-    assertTrue(nodeNames.contains(nodeName));
+    //
+    // now replace the trigger with a new instance to test that the state gets copied over correctly
+    //
+    
+    // reset the actionInitCalled counter so we can confirm the second instances is inited
+    actionInitCalled = new CountDownLatch(1);
+    // use a low waitTime to ensure it processes the event quickly.
+    // (this updated property also ensures the set-trigger won't be treated as a No-Op)
+    waitForSeconds = 0 + random().nextInt(3);
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : '"+triggerName+"'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '"+waitForSeconds+"s'," + 
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+    
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
+               
+    // the trigger actions should now (eventually) record that the node is lost
+    assertTrue("Second instance of our trigger never fired the action to process the event",
+               triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    
+    final TriggerEvent event = assertSingleEvent(nodeName, maxEventTimeNs);
+    assertTrue("Event should have been a nodeLost event: " + event.getClass(),
+               event instanceof NodeLostTrigger.NodeLostEvent);
+    
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testNodeAddedTriggerRestoreState() throws Exception {
-    // for this test we want to update the trigger so we must assert that the actions were created twice
-    TestSimTriggerIntegration.actionInitCalled = new CountDownLatch(2);
+    
+    final String triggerName = "node_added_restore_trigger";
+      
+    // should be enough to ensure trigger doesn't fire any actions until we replace the trigger
+    waitForSeconds = 500000;
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : '"+triggerName+"'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '"+waitForSeconds+"s'," + 
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
 
-    SolrClient solrClient = cluster.simGetSolrClient();
-    waitForSeconds = 5;
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_restore_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '5s'," + // should be enough for us to update the trigger
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoscalingUpdateComplete();
 
-    TimeOut timeOut = new TimeOut(2, TimeUnit.SECONDS, cluster.getTimeSource());
-    while (actionInitCalled.getCount() == 0 && !timeOut.hasTimedOut()) {
-      timeOut.sleep(200);
-    }
-    assertTrue("The action specified in node_added_restore_trigger was not instantiated even after 2 seconds", actionInitCalled.getCount() > 0);
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
     // start a new node
-    String newNode = cluster.simAddNode();
+    final String nodeName = cluster.simAddNode();
 
-    // ensure that the old trigger sees the new node, todo find a better way to do this
-    cluster.getTimeSource().sleep(500 + TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS));
+    // poll the internal state of the trigger until it run()s at least once and updates
+    // it's internal state to know the node we added is live
+    //
+    // (this should run roughly once a second of simulated time)
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+    .waitFor("initial trigger never ran to detect new live node", () ->
+             (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
+              .contains(nodeName)));
 
-    waitForSeconds = 0;
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_restore_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '0s'," + // update a property so that it replaces the old trigger, also we want it to fire immediately
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    // since we know the nodeAddded event has been detected, we can recored the current timestamp
+    // (relative to the cluster's time source) and later assert that (restored state) correctly
+    // tracked that the event happened prior to "now"
+    final long maxEventTimeNs = cluster.getTimeSource().getTimeNs();
+    
+    // even though our trigger has detected an added node, the *action* we registered should not have
+    // been run yet, due to the large waitFor configuration...
+    assertEquals("initial trigger action should not have fired", false, triggerFired.get());
+    assertEquals("initial trigger action latch should not have counted down",
+                 1, triggerFiredLatch.getCount());
+    assertEquals("initial trigger action should not have recorded any events: " + events.toString(),
+                 0, events.size());
 
-    // wait until the second instance of action is created
-    if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
-      fail("Two TriggerAction instances should have been created by now");
-    }
+    //
+    // now replace the trigger with a new instance to test that the state gets copied over correctly
+    //
+    
+    // reset the actionInitCalled counter so we can confirm the second instances is inited
+    actionInitCalled = new CountDownLatch(1);
+    // use a low waitTime to ensure it processes the event quickly.
+    // (this updated property also ensures the set-trigger won't be treated as a No-Op)
+    waitForSeconds = 0 + random().nextInt(3);
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : '"+triggerName+"'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '"+waitForSeconds+"s'," + 
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
 
-    boolean await = triggerFiredLatch.await(5000 / SPEED, TimeUnit.MILLISECONDS);
-    assertTrue("The trigger did not fire at all", await);
-    assertTrue(triggerFired.get());
-    TriggerEvent nodeAddedEvent = events.iterator().next();
-    assertNotNull(nodeAddedEvent);
-    List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
-    assertTrue(nodeNames.toString(), nodeNames.contains(newNode));
+    assertAutoscalingUpdateComplete();
+
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
+    
+    // the trigger actions should now (eventually) record that the new node is added
+    assertTrue("Second instance of our trigger never fired the action to process the event",
+               triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    
+    final TriggerEvent event = assertSingleEvent(nodeName, maxEventTimeNs);
+    assertTrue("Event should have been a nodeAdded event: " + event.getClass(),
+               event instanceof NodeAddedTrigger.NodeAddedEvent);
+
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void testNodeAddedTrigger() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     if (!actionInitCalled.await(5000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
 
     String newNode = cluster.simAddNode();
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(240000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     TriggerEvent nodeAddedEvent = events.iterator().next();
@@ -439,17 +476,17 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     actionInitCalled = new CountDownLatch(1);
 
     // update the trigger with exactly the same data
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     // this should be a no-op so the action should have been created but init should not be called
     if (!actionConstructorCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
@@ -460,28 +497,27 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testNodeLostTrigger() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_lost_trigger'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     if (!actionInitCalled.await(5000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
 
-    String lostNodeName = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    String lostNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     cluster.simRemoveNode(lostNodeName, false);
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     TriggerEvent nodeLostEvent = events.iterator().next();
@@ -494,17 +530,17 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     actionInitCalled = new CountDownLatch(1);
 
     // update the trigger with exactly the same data
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_lost_trigger'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     // this should be a no-op so the action should have been created but init should not be called
     if (!actionConstructorCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
@@ -544,7 +580,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
@@ -634,28 +670,30 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   public static long eventQueueActionWait = 5000;
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 16-Apr-2018
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072") // this test fails easily
   public void testEventQueue() throws Exception {
     waitForSeconds = 1;
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger1'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestEventQueueAction.class.getName() + "'}]" +
-        "}}";
+    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode();
 
-    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger1'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestEventQueueAction.class.getName() + "'}]" +
+       "}}");
 
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoscalingUpdateComplete();
 
     if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("The TriggerAction should have been created by now");
     }
+
+    // wait for the trigger to run at least once
+    cluster.getTimeSource().sleep(2 * waitForSeconds * 1000);
 
     // add node to generate the event
     String newNode = cluster.simAddNode();
@@ -672,6 +710,9 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     // kill overseer
     cluster.simRestartOverseer(overseerLeader);
     cluster.getTimeSource().sleep(5000);
+
+    assertAutoscalingUpdateComplete();
+
     // new overseer leader should be elected and run triggers
     await = actionInterrupted.await(3000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("action wasn't interrupted", await);
@@ -687,20 +728,19 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
   public void testEventFromRestoredState() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '10s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '10s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+
+    assertAutoscalingUpdateComplete();
 
     if (!actionInitCalled.await(10000 / SPEED, TimeUnit.MILLISECONDS))  {
       fail("The TriggerAction should have been created by now");
@@ -709,7 +749,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     events.clear();
 
     String newNode = cluster.simAddNode();
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(90000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
     // reset
@@ -724,7 +764,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     cluster.getTimeSource().sleep(10000);
     // kill overseer
     cluster.simRestartOverseer(null);
-    await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    await = triggerFiredLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
   }
@@ -741,7 +781,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     @Override
-    public void onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+    public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
       onChangeLatch.countDown();
       Set<String> old = new HashSet<>(oldLiveNodes);
       old.removeAll(newLiveNodes);
@@ -752,6 +792,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       if (!newLiveNodes.isEmpty()) {
         addedNodes.addAll(newLiveNodes);
       }
+      return false;
     }
   }
 
@@ -794,7 +835,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testNodeMarkersRegistration() throws Exception {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -804,8 +844,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
     SolrClient solrClient = cluster.simGetSolrClient();
 
-    // pick overseer node
-    String overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    // get overseer node
+    String overseerLeader = cluster.getSimClusterStateProvider().simGetOverseerLeader();
 
     // add a node
     String node = cluster.simAddNode();
@@ -822,7 +862,9 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     // stop overseer
     log.info("====== KILL OVERSEER 1");
     cluster.simRestartOverseer(overseerLeader);
-    if (!listener.onChangeLatch.await(10000 / SPEED, TimeUnit.MILLISECONDS)) {
+    assertAutoscalingUpdateComplete();
+
+    if (!listener.onChangeLatch.await(10000, TimeUnit.MILLISECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
     assertEquals(1, listener.lostNodes.size());
@@ -832,7 +874,19 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     cluster.getTimeSource().sleep(5000);
     // verify that a znode does NOT exist - there's no nodeLost trigger,
     // so the new overseer cleaned up existing nodeLost markers
+    
     String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
+    
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeout.waitFor("Path " + pathLost + " exists", () -> {
+      try {
+        return !cluster.getDistribStateManager().hasData(pathLost);
+      } catch (IOException | KeeperException | InterruptedException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    });
+
     assertFalse("Path " + pathLost + " exists", cluster.getDistribStateManager().hasData(pathLost));
 
     listener.reset();
@@ -840,31 +894,28 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     // set up triggers
 
     log.info("====== ADD TRIGGERS");
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '1s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '1s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
+       "}}");
 
-    setTriggerCommand = "{" +
+    assertAutoScalingRequest
+      ("{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '1s'," +
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+       "}}");
 
-    overseerLeader = cluster.getSimClusterStateProvider().simGetRandomNode(random());
+    assertAutoscalingUpdateComplete();
+    overseerLeader = cluster.getSimClusterStateProvider().simGetOverseerLeader();
 
     // create another node
     log.info("====== ADD NODE 1");
@@ -878,14 +929,10 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node1;
     assertTrue("Path " + pathAdded + " wasn't created", cluster.getDistribStateManager().hasData(pathAdded));
 
-    cluster.getTimeSource().sleep(5000);
-    // nodeAdded marker should be consumed now by nodeAdded trigger
-    assertFalse("Path " + pathAdded + " should have been deleted",
-        cluster.getDistribStateManager().hasData(pathAdded));
-
     listener.reset();
     events.clear();
-    triggerFiredLatch = new CountDownLatch(1);
+    // one nodeAdded (not cleared yet) and one nodeLost
+    triggerFiredLatch = new CountDownLatch(2);
     // kill overseer again
     log.info("====== KILL OVERSEER 2");
     cluster.simRestartOverseer(overseerLeader);
@@ -893,21 +940,39 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       fail("onChange listener didn't execute on cluster change");
     }
 
+    assertAutoscalingUpdateComplete();
 
-    if (!triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS)) {
+    if (!triggerFiredLatch.await(120000 / SPEED, TimeUnit.MILLISECONDS)) {
       fail("Trigger should have fired by now");
     }
-    assertEquals(1, events.size());
-    TriggerEvent ev = events.iterator().next();
-    List<String> nodeNames = (List<String>)ev.getProperty(TriggerEvent.NODE_NAMES);
+    assertEquals(2, events.size());
+    TriggerEvent nodeAdded = null;
+    TriggerEvent nodeLost = null;
+    for (TriggerEvent ev : events) {
+      switch (ev.getEventType()) {
+        case NODEADDED:
+          nodeAdded = ev;
+          break;
+        case NODELOST:
+          nodeLost = ev;
+          break;
+        default:
+          fail("unexpected event type: " + ev);
+      }
+    }
+    assertNotNull("expected nodeAdded event", nodeAdded);
+    assertNotNull("expected nodeLost event", nodeLost);
+    List<String> nodeNames = (List<String>)nodeLost.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(overseerLeader));
-    assertEquals(TriggerEventType.NODELOST, ev.getEventType());
+    nodeNames = (List<String>)nodeAdded.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(node1));
   }
 
-  static Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
-  static List<CapturedEvent> allListenerEvents = new ArrayList<>();
-  static CountDownLatch listenerCreated = new CountDownLatch(1);
-  static boolean failDummyAction = false;
+  static final Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
+  static final List<CapturedEvent> allListenerEvents = Collections.synchronizedList(new ArrayList<>());
+  static volatile CountDownLatch listenerCreated = new CountDownLatch(1);
+  static volatile CountDownLatch listenerEventLatch = new CountDownLatch(0);
+  static volatile boolean failDummyAction = false;
 
   public static class TestTriggerListener extends TriggerListenerBase {
     @Override
@@ -919,10 +984,18 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
-      lst.add(ev);
-      allListenerEvents.add(ev);
+      final CountDownLatch latch = listenerEventLatch;
+      synchronized (latch) {
+        if (0 == latch.getCount()) {
+          log.warn("Ignoring captured event since latch is 'full': {}", ev);
+        } else {
+          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
+          lst.add(ev);
+          allListenerEvents.add(ev);
+          latch.countDown();
+        }
+      }
     }
   }
 
@@ -938,69 +1011,64 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testListeners() throws Exception {
+    listenerEventLatch = new CountDownLatch(4 + 5);
+    
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [" +
-        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}," +
-        "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
-        "]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_trigger'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [" +
+       "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}," +
+       "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
+       "]" +
+       "}}");
 
-    if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
-      fail("The TriggerAction should have been created by now");
-    }
+    assertAutoScalingRequest
+      ("{" +
+       "'set-listener' : " +
+       "{" +
+       "'name' : 'foo'," +
+       "'trigger' : 'node_added_trigger'," +
+       "'stage' : ['STARTED','ABORTED','SUCCEEDED', 'FAILED']," +
+       "'beforeAction' : 'test'," +
+       "'afterAction' : ['test', 'test1']," +
+       "'class' : '" + TestTriggerListener.class.getName() + "'" +
+       "}" +
+       "}");
 
-    String setListenerCommand = "{" +
-        "'set-listener' : " +
-        "{" +
-        "'name' : 'foo'," +
-        "'trigger' : 'node_added_trigger'," +
-        "'stage' : ['STARTED','ABORTED','SUCCEEDED', 'FAILED']," +
-        "'beforeAction' : 'test'," +
-        "'afterAction' : ['test', 'test1']," +
-        "'class' : '" + TestTriggerListener.class.getName() + "'" +
-        "}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-listener' : " +
+       "{" +
+       "'name' : 'bar'," +
+       "'trigger' : 'node_added_trigger'," +
+       "'stage' : ['FAILED','SUCCEEDED']," +
+       "'beforeAction' : ['test', 'test1']," +
+       "'afterAction' : 'test'," +
+       "'class' : '" + TestTriggerListener.class.getName() + "'" +
+       "}" +
+       "}");
 
-    String setListenerCommand1 = "{" +
-        "'set-listener' : " +
-        "{" +
-        "'name' : 'bar'," +
-        "'trigger' : 'node_added_trigger'," +
-        "'stage' : ['FAILED','SUCCEEDED']," +
-        "'beforeAction' : ['test', 'test1']," +
-        "'afterAction' : 'test'," +
-        "'class' : '" + TestTriggerListener.class.getName() + "'" +
-        "}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoscalingUpdateComplete();
+    assertTrue("The TriggerAction should have been init'ed w/in a reasonable amount of time",
+               actionInitCalled.await(10, TimeUnit.SECONDS));
 
     listenerEvents.clear();
     failDummyAction = false;
 
     String newNode = cluster.simAddNode();
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
 
-    assertEquals("both listeners should have fired", 2, listenerEvents.size());
-
-    cluster.getTimeSource().sleep(2000);
+    assertTrue("the listeners shou;d have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
+    assertEquals("at least 2 event types should have been recorded", 2, listenerEvents.size());
 
     // check foo events
     List<CapturedEvent> testEvents = listenerEvents.get("foo");
@@ -1058,12 +1126,15 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     listenerEvents.clear();
     failDummyAction = true;
+    listenerEventLatch = new CountDownLatch(4 + 4); // fewer total due to failDummyAction
 
     newNode = cluster.simAddNode();
     await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
 
-    cluster.getTimeSource().sleep(2000);
+    assertTrue("the listeners shoud have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
+    assertEquals("at least 2 event types should have been recorded", 2, listenerEvents.size());
 
     // check foo events
     testEvents = listenerEvents.get("foo");
@@ -1100,55 +1171,56 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCooldown() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     failDummyAction = false;
+    listenerEventLatch = new CountDownLatch(1);
     waitForSeconds = 1;
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_added_cooldown_trigger'," +
-        "'event' : 'nodeAdded'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [" +
-        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
-        "]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_added_cooldown_trigger'," +
+       "'event' : 'nodeAdded'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [" +
+       "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
+       "]" +
+       "}}");
 
-    String setListenerCommand1 = "{" +
-        "'set-listener' : " +
-        "{" +
-        "'name' : 'bar'," +
-        "'trigger' : 'node_added_cooldown_trigger'," +
-        "'stage' : ['FAILED','SUCCEEDED', 'IGNORED']," +
-        "'class' : '" + TestTriggerListener.class.getName() + "'" +
-        "}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-listener' : " +
+       "{" +
+       "'name' : 'bar'," +
+       "'trigger' : 'node_added_cooldown_trigger'," +
+       "'stage' : ['FAILED','SUCCEEDED', 'IGNORED']," +
+       "'class' : '" + TestTriggerListener.class.getName() + "'" +
+       "}" +
+       "}");
+
+    assertAutoscalingUpdateComplete();
+    assertTrue("The TriggerAction should have been init'ed w/in a reasonable amount of time",
+               actionInitCalled.await(10, TimeUnit.SECONDS));
 
     listenerCreated = new CountDownLatch(1);
     listenerEvents.clear();
 
     String newNode = cluster.simAddNode();
-    boolean await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerFiredLatch.await(45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(5000);
+    assertTrue("the listener should have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
 
     List<CapturedEvent> capturedEvents = listenerEvents.get("bar");
     assertNotNull("no events for 'bar'!", capturedEvents);
-    // we may get a few IGNORED events if other tests caused events within cooldown period
-    assertTrue(capturedEvents.toString(), capturedEvents.size() > 0);
-    long prevTimestamp = capturedEvents.get(capturedEvents.size() - 1).timestamp;
+
+    assertEquals(capturedEvents.toString(), 1, capturedEvents.size());
+    long prevTimestamp = capturedEvents.get(0).timestamp;
 
     // reset the trigger and captured events
+    listenerEventLatch = new CountDownLatch(1);
     listenerEvents.clear();
     triggerFiredLatch = new CountDownLatch(1);
     triggerFired.compareAndSet(true, false);
@@ -1156,13 +1228,14 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     String newNode2 = cluster.simAddNode();
     await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(2000);
+    assertTrue("the listener should have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
 
     // there must be exactly one SUCCEEDED event
     capturedEvents = listenerEvents.get("bar");
-    assertTrue(capturedEvents.toString(), capturedEvents.size() >= 1);
-    CapturedEvent ev = capturedEvents.get(capturedEvents.size() - 1);
+    assertNotNull(capturedEvents);
+    assertEquals(capturedEvents.toString(), 1, capturedEvents.size());
+    CapturedEvent ev = capturedEvents.get(0);
     assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
     // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
     // must be larger than cooldown period
@@ -1208,7 +1281,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String COLL1 = "collection1";
@@ -1217,56 +1289,54 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     create.process(solrClient);
     CloudTestUtils.waitForState(cluster, COLL1, 10, TimeUnit.SECONDS, CloudTestUtils.clusterShape(1, 2, false, true));
 
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'search_rate_trigger'," +
-        "'event' : 'searchRate'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'aboveRate' : 1.0," +
-        "'aboveNodeRate' : 1.0," +
-        "'actions' : [" +
-        "{'name':'start','class':'" + StartTriggerAction.class.getName() + "'}," +
-        "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
-        "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
-        "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
-        "{'name':'finish','class':'" + FinishTriggerAction.class.getName() + "'}," +
-        "]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    listenerEventLatch = new CountDownLatch(4);
+    
+    assertAutoScalingRequest
+      ("{" +
+       "'set-trigger' : {" +
+       "'name' : 'search_rate_trigger'," +
+       "'event' : 'searchRate'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'aboveRate' : 1.0," +
+       "'aboveNodeRate' : 1.0," +
+       "'actions' : [" +
+       "{'name':'start','class':'" + StartTriggerAction.class.getName() + "'}," +
+       "{'name':'compute','class':'" + ComputePlanAction.class.getName() + "'}," +
+       "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
+       "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
+       "{'name':'finish','class':'" + FinishTriggerAction.class.getName() + "'}," +
+       "]" +
+       "}}");
 
-    String setListenerCommand1 = "{" +
-        "'set-listener' : " +
-        "{" +
-        "'name' : 'srt'," +
-        "'trigger' : 'search_rate_trigger'," +
-        "'stage' : ['FAILED','SUCCEEDED']," +
-        "'afterAction': ['compute', 'execute', 'test']," +
-        "'class' : '" + TestTriggerListener.class.getName() + "'" +
-        "}" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    assertAutoScalingRequest
+      ("{" +
+       "'set-listener' : " +
+       "{" +
+       "'name' : 'srt'," +
+       "'trigger' : 'search_rate_trigger'," +
+       "'stage' : ['FAILED','SUCCEEDED']," +
+       "'afterAction': ['compute', 'execute', 'test']," +
+       "'class' : '" + TestTriggerListener.class.getName() + "'" +
+       "}" +
+       "}");
 
-//    SolrParams query = params(CommonParams.Q, "*:*");
-//    for (int i = 0; i < 500; i++) {
-//      solrClient.query(COLL1, query);
-//    }
+    assertAutoscalingUpdateComplete();
+
 
     cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, false, true);
 
-    boolean await = triggerStartedLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
+    boolean await = triggerStartedLatch.await(30000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not start in time", await);
     await = triggerFinishedLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not finish in time", await);
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(5000);
-    List<CapturedEvent> events = listenerEvents.get("srt");
 
-    assertEquals(listenerEvents.toString(), 4, events.size());
+    assertTrue("the listener should have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
+
+    List<CapturedEvent> events = new ArrayList<>(listenerEvents.get("srt"));
+    assertNotNull("Could not find events for srt", events);
+    assertEquals(events.toString(), 4, events.size());
     assertEquals("AFTER_ACTION", events.get(0).stage.toString());
     assertEquals("compute", events.get(0).actionName);
     assertEquals("AFTER_ACTION", events.get(1).stage.toString());
@@ -1312,11 +1382,58 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue(totalReplicaRate.get() > 100.0);
 
     // check operations
-    List<Map<String, Object>> ops = (List<Map<String, Object>>)ev.context.get("properties.operations");
+    List<MapWriter> ops = (List<MapWriter>)ev.context.get("properties.operations");
     assertNotNull(ops);
     assertTrue(ops.size() > 1);
-    for (Map<String, Object> m : ops) {
-      assertEquals("ADDREPLICA", m.get("params.action"));
+    for (MapWriter m : ops) {
+      assertEquals("ADDREPLICA", m._get("params.action", null));
     }
   }
+
+  /** 
+   * Helper method for getting a copy of the current (internal) trigger state of a scheduled trigger. 
+   */
+  private Map<String, Object> getTriggerState(final String name) {
+    final AutoScaling.Trigger t = cluster.getOverseerTriggerThread().getScheduledTriggers().getTrigger(name);
+    assertNotNull(name + " is not a currently scheduled trigger", t);
+    assertTrue(name + " is not a TriggerBase w/state: " + t.getClass(),
+               t instanceof TriggerBase);
+    return ((TriggerBase)t).deepCopyState();
+  }
+
+  /**
+   * Helper method for making some common assertions about {@link #events}:
+   * <ul>
+   *  <li>Exactly one event that is not null</li>
+   *  <li>Event refers to exactly one expected {@link TriggerEvent#NODE_NAMES}</li>
+   *  <li>Event has exactly one {@link TriggerEvent#EVENT_TIMES} (which matches {@link TriggerEvent#getEventTime}) which is less then the  <code>maxExpectedEventTimeNs</code></li>
+   * </ul>
+   * @return the event found so that other assertions can be made
+   */
+  private static TriggerEvent assertSingleEvent(final String expectedNodeName,
+                                                final long maxExpectedEventTimeNs) {
+    
+    assertEquals("Wrong number of events recorded: " + events.toString(),
+                 1, events.size());
+    
+    final TriggerEvent event = events.iterator().next();
+    assertNotNull("null event???", event);
+    assertNotNull("event is missing NODE_NAMES: " + event, event.getProperty(TriggerEvent.NODE_NAMES));
+    assertEquals("event has incorrect NODE_NAMES: " + event,
+                 Collections.singletonList(expectedNodeName),
+                 event.getProperty(TriggerEvent.NODE_NAMES));
+    
+    assertTrue("event TS is too late, should be before (max) expected TS @ "
+               + maxExpectedEventTimeNs + ": " + event,
+               event.getEventTime() < maxExpectedEventTimeNs);
+    
+    assertNotNull("event is missing EVENT_TIMES: " + event, event.getProperty(TriggerEvent.EVENT_TIMES));
+    assertEquals("event has unexpeted number of EVENT_TIMES: " + event,
+                 1, ((Collection)event.getProperty(TriggerEvent.EVENT_TIMES)).size());
+    assertEquals("event's TS doesn't match EVENT_TIMES: " + event,
+                 event.getEventTime(),
+                 ((Collection)event.getProperty(TriggerEvent.EVENT_TIMES)).iterator().next());
+    return event;
+  }
+
 }

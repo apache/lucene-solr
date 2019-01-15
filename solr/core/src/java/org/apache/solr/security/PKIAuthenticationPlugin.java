@@ -28,6 +28,7 @@ import java.security.Principal;
 import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.HttpEntity;
@@ -39,7 +40,9 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -49,25 +52,21 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
+import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
-  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "10000"));
+  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "15000"));
   private final String myNodeName;
   private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
-
-  public void setInterceptorRegistered(){
-    this.interceptorRegistered = true;
-  }
 
   public boolean isInterceptorRegistered(){
     return interceptorRegistered;
@@ -90,6 +89,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
     if (requestURI.endsWith(PublicKeyHandler.PATH)) {
+      numPassThrough.inc();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -98,6 +98,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (header == null) {
       //this must not happen
       log.error("No SolrAuth header present");
+      numMissingCredentials.inc();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -105,6 +106,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() < 2) {
       log.error("Invalid SolrAuth Header {}", header);
+      numErrors.mark();
       filterChain.doFilter(request, response);
       return true;
     }
@@ -115,19 +117,22 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     PKIHeaderData decipher = decipherHeader(nodeName, cipher);
     if (decipher == null) {
       log.error("Could not decipher a header {} . No principal set", header);
+      numMissingCredentials.inc();
       filterChain.doFilter(request, response);
       return true;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
       log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
-        filterChain.doFilter(request, response);
-        return true;
+      numErrors.mark();
+      filterChain.doFilter(request, response);
+      return true;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
         SU :
         new BasicUserPrincipal(decipher.userName);
 
+    numAuthenticated.inc();
     filterChain.doFilter(getWrapper((HttpServletRequest) request, principal), response);
     return true;
   }
@@ -222,8 +227,28 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   @Override
+  public void setup(Http2SolrClient client) {
+    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
+      @Override
+      public void onQueued(Request request) {
+        if (cores.getAuthenticationPlugin() == null) {
+          return;
+        }
+        if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
+          log.debug("{} secures this internode request", this.getClass().getSimpleName());
+          generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
+        } else {
+          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+        }
+      }
+    };
+    client.addListenerFactory(() -> listener);
+  }
+
+  @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
+    interceptorRegistered = true;
     return builder;
   }
 
@@ -238,21 +263,29 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     @Override
     public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-      if (disabled()) return;
-      setHeader(httpRequest);
+      if (cores.getAuthenticationPlugin() == null) {
+        return;
+      }
+      if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
+        log.debug("{} secures this internode request", this.getClass().getSimpleName());
+        setHeader(httpRequest);
+      } else {
+        log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+      }
     }
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  void setHeader(HttpRequest httpRequest) {
+  private Optional<String> generateToken() {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
     if (reqInfo != null) {
-      Principal principal = reqInfo.getReq().getUserPrincipal();
+      Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
+        log.debug("principal is null");
         //this had a request but not authenticated
         //so we don't not need to set a principal
-        return;
+        return Optional.empty();
       } else {
         usr = principal.getName();
       }
@@ -260,7 +293,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       if (!isSolrThread()) {
         //if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
-        return;
+        return Optional.empty();
       }
       //this request seems to be originated from Solr itself
       usr = "$"; //special name to denote the user is the node itself
@@ -271,7 +304,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    httpRequest.setHeader(HEADER, myNodeName + " " + base64Cipher);
+    return Optional.of(base64Cipher);
+  }
+
+  void setHeader(HttpRequest httpRequest) {
+    generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
   }
 
   boolean isSolrThread() {
@@ -282,14 +319,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return SolrRequestInfo.getRequestInfo();
   }
 
-  boolean disabled() {
-    return cores.getAuthenticationPlugin() == null ||
-        cores.getAuthenticationPlugin() instanceof HttpClientBuilderPlugin;
-  }
-
   @Override
   public void close() throws IOException {
     HttpClientUtil.removeRequestInterceptor(interceptor);
+    interceptorRegistered = false;
   }
 
   public String getPublicKey() {

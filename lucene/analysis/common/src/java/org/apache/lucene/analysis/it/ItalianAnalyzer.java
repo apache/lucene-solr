@@ -38,6 +38,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Italian.
+ *
+ * @since 3.1
  */
 public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

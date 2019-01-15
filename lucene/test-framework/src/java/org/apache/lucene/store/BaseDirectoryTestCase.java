@@ -513,9 +513,17 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       o.writeBytes(b, 0, len);
       o.close();
       IndexInput i = dir.openInput("out", newIOContext(random()));
+
+      // Seeking past EOF should always throw EOFException
+      expectThrows(EOFException.class, () -> i.seek(len + RandomizedTest.randomIntBetween(1, 2048)));
+
+      // Seeking exactly to EOF should never throw any exception.
+      i.seek(len);
+
+      // But any read following the seek(len) should throw an EOFException.
+      expectThrows(EOFException.class, i::readByte);
       expectThrows(EOFException.class, () -> {
-        i.seek(len + random().nextInt(2048));
-        i.readByte();
+        i.readBytes(new byte [1], 0, 1);
       });
 
       i.close();
