@@ -354,11 +354,6 @@ public class TestPointQueries extends LuceneTestCase {
     doTestRandomLongs(10000);
   }
 
-  @Nightly
-  public void testRandomLongsBig() throws Exception {
-    doTestRandomLongs(50000);
-  }
-
   private void doTestRandomLongs(int count) throws Exception {
 
     int numValues = TestUtil.nextInt(random(), count, count*2);
@@ -432,9 +427,8 @@ public class TestPointQueries extends LuceneTestCase {
     Document doc = null;
     int lastID = -1;
 
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    for(int ord=0;ord<values.length;ord++) {
-
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for (int ord = 0; ord < values.length; ord++) {
       int id;
       if (ids == null) {
         id = ord;
@@ -483,7 +477,7 @@ public class TestPointQueries extends LuceneTestCase {
       }
       w.forceMerge(1);
     }
-    final IndexReader r = w.getReader();
+    final IndexReader r = DirectoryReader.open(w);
     w.close();
 
     IndexSearcher s = newSearcher(r, false);
@@ -612,11 +606,6 @@ public class TestPointQueries extends LuceneTestCase {
     doTestRandomBinary(10000);
   }
 
-  @Nightly
-  public void testRandomBinaryBig() throws Exception {
-    doTestRandomBinary(50000);
-  }
-
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
@@ -679,7 +668,7 @@ public class TestPointQueries extends LuceneTestCase {
       dir = newDirectory();
     }
 
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    IndexWriter w = new IndexWriter(dir, iwc);
 
     int numValues = docValues.length;
     if (VERBOSE) {
@@ -751,7 +740,7 @@ public class TestPointQueries extends LuceneTestCase {
       }
       w.forceMerge(1);
     }
-    final IndexReader r = w.getReader();
+    final IndexReader r = DirectoryReader.open(w);
     w.close();
 
     IndexSearcher s = newSearcher(r, false);
