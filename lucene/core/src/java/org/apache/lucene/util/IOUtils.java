@@ -41,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FileSwitchDirectory;
@@ -486,7 +487,7 @@ public final class IOUtils {
       FileSwitchDirectory fsd = (FileSwitchDirectory) dir;
       // Spinning is contagious:
       return spins(fsd.getPrimaryDir()) || spins(fsd.getSecondaryDir());
-    } else if (dir instanceof RAMDirectory) {
+    } else if (dir instanceof RAMDirectory || dir instanceof ByteBuffersDirectory) {
       return false;
     } else if (dir instanceof FSDirectory) {
       return spins(((FSDirectory) dir).getDirectory());
