@@ -611,11 +611,6 @@ public class TestPointQueries extends LuceneTestCase {
     doTestRandomBinary(10000);
   }
 
-  @Nightly
-  public void testRandomBinaryBig() throws Exception {
-    doTestRandomBinary(100000);
-  }
-
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
