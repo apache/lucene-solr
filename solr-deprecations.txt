@@ -1,0 +1,139 @@
+solr/contrib/analytics/src/java/org/apache/solr/analytics/function/field/DateMultiTrieField.java:30:@Deprecated
+solr/contrib/analytics/src/java/org/apache/solr/analytics/function/field/DoubleMultiTrieField.java:35:@Deprecated
+solr/contrib/analytics/src/java/org/apache/solr/analytics/function/field/IntMultiTrieField.java:37:@Deprecated
+solr/contrib/analytics/src/java/org/apache/solr/analytics/function/field/LongMultiTrieField.java:35:@Deprecated
+solr/contrib/analytics/src/java/org/apache/solr/analytics/function/field/FloatMultiTrieField.java:36:@Deprecated
+solr/core/src/test/org/apache/solr/handler/tagger/EmbeddedSolrNoSerializeTest.java:96:    // Deprecated in 7.2 but should live on until 8.x
+solr/core/src/test/org/apache/solr/TestTrie.java:39:@Deprecated
+solr/core/src/test/org/apache/solr/legacy/TestNumericTokenStream.java:29:@Deprecated
+solr/core/src/test/org/apache/solr/search/TestTrieFacet.java:28:@Deprecated
+solr/core/src/test/org/apache/solr/schema/TrieIntPrefixActsAsRangeQueryFieldType.java:29:@Deprecated
+solr/core/src/test/org/apache/solr/schema/WrappedTrieIntField.java:25:@Deprecated
+solr/core/src/java/org/apache/solr/handler/StandardRequestHandler.java:21:@Deprecated
+solr/core/src/java/org/apache/solr/handler/component/HttpShardHandlerFactory.java:151:  @Deprecated
+solr/core/src/java/org/apache/solr/handler/component/HighlightComponent.java:86:  @Deprecated // DWS: in 7.0 lets restructure the abstractions/relationships
+solr/core/src/java/org/apache/solr/handler/component/HighlightComponent.java:93:  @Deprecated
+solr/core/src/java/org/apache/solr/handler/component/HighlightComponent.java:99:  @Deprecated
+solr/core/src/java/org/apache/solr/handler/SnapShooter.java:66:  @Deprecated
+solr/core/src/java/org/apache/solr/core/SolrCore.java:729:  @Deprecated
+solr/core/src/java/org/apache/solr/core/NodeConfig.java:64:  @Deprecated
+solr/core/src/java/org/apache/solr/core/NodeConfig.java:233:    @Deprecated
+solr/core/src/java/org/apache/solr/core/NodeConfig.java:358:    @Deprecated
+solr/core/src/java/org/apache/solr/analysis/LowerCaseTokenizer.java:41:@Deprecated
+solr/core/src/java/org/apache/solr/analysis/LowerCaseTokenizerFactory.java:45:@Deprecated
+solr/core/src/java/org/apache/solr/response/DocsStreamer.java:120:  @Deprecated
+solr/core/src/java/org/apache/solr/update/DefaultSolrCoreState.java:89:  @Deprecated
+solr/core/src/java/org/apache/solr/highlight/PostingsSolrHighlighter.java:37:@Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:107:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:118:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:123:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:128:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:134:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:139:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:146:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:153:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:160:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:165:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:174:  @Deprecated
+solr/core/src/java/org/apache/solr/internal/csv/CSVStrategy.java:189:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyNumericTokenStream.java:93:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyDoubleField.java:115:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyIntField.java:114:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyFloatField.java:113:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyNumericRangeQuery.java:177:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyNumericUtils.java:58:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/PointVectorStrategy.java:85:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/PointVectorStrategy.java:133:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/BBoxStrategy.java:88:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/BBoxStrategy.java:146:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyLongField.java:125:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyNumericType.java:24:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyFieldType.java:26:@Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyFieldType.java:55:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyFieldType.java:71:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyFieldType.java:86:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/LegacyFieldType.java:105:  @Deprecated
+solr/core/src/java/org/apache/solr/legacy/package-info.java:19: * Deprecated stuff!
+solr/core/src/java/org/apache/solr/legacy/LegacyField.java:28:@Deprecated
+solr/core/src/java/org/apache/solr/search/EarlyTerminatingSortingCollector.java:57:@Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:77:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:81:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:87:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:92:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:98:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:104:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:110:  @Deprecated
+solr/core/src/java/org/apache/solr/search/grouping/GroupingSpecification.java:116:  @Deprecated
+solr/core/src/java/org/apache/solr/search/LegacyNumericRangeQueryBuilder.java:89:@Deprecated
+solr/core/src/java/org/apache/solr/search/SolrIndexSearcher.java:825:  @Deprecated // TODO remove for 8.0
+solr/core/src/java/org/apache/solr/search/Insanity.java:44:@Deprecated
+solr/core/src/java/org/apache/solr/search/Sorting.java:28:@Deprecated
+solr/core/src/java/org/apache/solr/search/Sorting.java:43:  @Deprecated
+solr/core/src/java/org/apache/solr/search/Sorting.java:53:  @Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieDoubleField.java:54:@Deprecated
+solr/core/src/java/org/apache/solr/schema/SpatialTermQueryPrefixTreeFieldType.java:25:@Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieField.java:85:@Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieField.java:650:@Deprecated
+solr/core/src/java/org/apache/solr/schema/SpatialPointVectorFieldType.java:30:@Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieFloatField.java:54:@Deprecated
+solr/core/src/java/org/apache/solr/schema/GeoHashField.java:46:@Deprecated
+solr/core/src/java/org/apache/solr/schema/EnumField.java:50:@Deprecated
+solr/core/src/java/org/apache/solr/schema/CurrencyField.java:37:@Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieIntField.java:47:@Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieLongField.java:47:@Deprecated
+solr/core/src/java/org/apache/solr/schema/LatLonType.java:61:@Deprecated
+solr/core/src/java/org/apache/solr/schema/TrieDateField.java:86:@Deprecated
+solr/core/src/java/org/apache/solr/cloud/ZkController.java:241:  @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/UninvertingReader.java:96:    @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/UninvertingReader.java:105:    @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/UninvertingReader.java:114:    @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/UninvertingReader.java:123:    @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/FieldCache.java:75:    @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/FieldCache.java:166:  @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/FieldCache.java:189:  @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/FieldCache.java:214:  @Deprecated
+solr/core/src/java/org/apache/solr/uninverting/FieldCache.java:236:  @Deprecated
+solr/core/src/java/org/apache/solr/spelling/Token.java:54:@Deprecated
+solr/core/src/java/org/apache/solr/rest/schema/analysis/ManagedSynonymFilterFactory.java:59:@Deprecated
+solr/solrj/src/java/org/apache/solr/common/SolrDocumentBase.java:70:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/params/CollectionParams.java:37:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:460:  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:470:  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:496:  @Deprecated //move to NamedList to allow easier flow
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:501:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:538:  // Deprecated because there isn't a universal way to deal with multi-values (always
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:541:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/params/SolrParams.java:561:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/params/AutoScalingParams.java:73:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/params/FacetParams.java:143:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/cloud/ClusterState.java:310:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/cloud/rule/SnitchContext.java:83:  @Deprecated
+solr/solrj/src/java/org/apache/solr/common/cloud/ZkStateReader.java:137:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.java:104:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.java:713:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.java:724:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:81:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:95:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:105:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:119:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:190:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:202:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/LBHttpSolrClient.java:211:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:204:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:388:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1302:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1369:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1429:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1446:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1462:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1489:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1500:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/CloudSolrClient.java:1575:    @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/DelegationTokenHttpSolrClient.java:45:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/DelegationTokenHttpSolrClient.java:79:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/HttpSolrClient.java:153:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/HttpSolrClient.java:172:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/HttpSolrClient.java:745:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/impl/HttpSolrClient.java:759:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/SolrRequest.java:173:  @Deprecated
+solr/solrj/src/java/org/apache/solr/client/solrj/request/RequestWriter.java:79:  @Deprecated
