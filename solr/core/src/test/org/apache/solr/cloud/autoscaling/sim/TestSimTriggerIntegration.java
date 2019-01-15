@@ -142,10 +142,13 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     triggerFinishedCount = new AtomicInteger();
     events.clear();
     listenerEvents.clear();
+    allListenerEvents.clear();
+    failDummyAction = false;
+    listenerCreated = new CountDownLatch(1);
+    listenerEventLatch = new CountDownLatch(0);
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072")
   public void testTriggerThrottling() throws Exception  {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -441,7 +444,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072")
   public void testNodeAddedTrigger() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     assertAutoScalingRequest
@@ -495,7 +497,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072")
   public void testNodeLostTrigger() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     assertAutoScalingRequest
@@ -727,7 +728,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
- // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072")
   public void testEventFromRestoredState() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     assertAutoScalingRequest
@@ -835,7 +835,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072")
   public void testNodeMarkersRegistration() throws Exception {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -972,6 +971,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   static final Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
   static final List<CapturedEvent> allListenerEvents = Collections.synchronizedList(new ArrayList<>());
   static volatile CountDownLatch listenerCreated = new CountDownLatch(1);
+  static volatile CountDownLatch listenerEventLatch = new CountDownLatch(0);
   static volatile boolean failDummyAction = false;
 
   public static class TestTriggerListener extends TriggerListenerBase {
@@ -984,10 +984,18 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
-      lst.add(ev);
-      allListenerEvents.add(ev);
+      final CountDownLatch latch = listenerEventLatch;
+      synchronized (latch) {
+        if (0 == latch.getCount()) {
+          log.warn("Ignoring captured event since latch is 'full': {}", ev);
+        } else {
+          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
+          lst.add(ev);
+          allListenerEvents.add(ev);
+          latch.countDown();
+        }
+      }
     }
   }
 
@@ -1005,6 +1013,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   @Test
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testListeners() throws Exception {
+    listenerEventLatch = new CountDownLatch(4 + 5);
+    
     SolrClient solrClient = cluster.simGetSolrClient();
     assertAutoScalingRequest
       ("{" +
@@ -1018,10 +1028,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
        "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
        "]" +
        "}}");
-
-    if (!actionInitCalled.await(3000 / SPEED, TimeUnit.MILLISECONDS))  {
-      fail("The TriggerAction should have been created by now");
-    }
 
     assertAutoScalingRequest
       ("{" +
@@ -1050,6 +1056,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
        "}");
 
     assertAutoscalingUpdateComplete();
+    assertTrue("The TriggerAction should have been init'ed w/in a reasonable amount of time",
+               actionInitCalled.await(10, TimeUnit.SECONDS));
 
     listenerEvents.clear();
     failDummyAction = false;
@@ -1059,9 +1067,9 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
 
-    assertEquals("both listeners should have fired", 2, listenerEvents.size());
-
-    cluster.getTimeSource().sleep(3000);
+    assertTrue("the listeners shou;d have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
+    assertEquals("at least 2 event types should have been recorded", 2, listenerEvents.size());
 
     // check foo events
     List<CapturedEvent> testEvents = listenerEvents.get("foo");
@@ -1119,12 +1127,15 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     listenerEvents.clear();
     failDummyAction = true;
+    listenerEventLatch = new CountDownLatch(4 + 4); // fewer total due to failDummyAction
 
     newNode = cluster.simAddNode();
     await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
 
-    cluster.getTimeSource().sleep(3000);
+    assertTrue("the listeners shoud have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
+    assertEquals("at least 2 event types should have been recorded", 2, listenerEvents.size());
 
     // check foo events
     testEvents = listenerEvents.get("foo");
@@ -1161,10 +1172,10 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072")
   public void testCooldown() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     failDummyAction = false;
+    listenerEventLatch = new CountDownLatch(1);
     waitForSeconds = 1;
     assertAutoScalingRequest
       ("{" +
@@ -1190,6 +1201,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
        "}");
 
     assertAutoscalingUpdateComplete();
+    assertTrue("The TriggerAction should have been init'ed w/in a reasonable amount of time",
+               actionInitCalled.await(10, TimeUnit.SECONDS));
 
     listenerCreated = new CountDownLatch(1);
     listenerEvents.clear();
@@ -1198,16 +1211,17 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     boolean await = triggerFiredLatch.await(45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(5000);
+    assertTrue("the listener should have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
 
     List<CapturedEvent> capturedEvents = listenerEvents.get("bar");
     assertNotNull("no events for 'bar'!", capturedEvents);
-    // we may get a few IGNORED events if other tests caused events within cooldown period
-    assertTrue(capturedEvents.toString(), capturedEvents.size() > 0);
-    long prevTimestamp = capturedEvents.get(capturedEvents.size() - 1).timestamp;
+
+    assertEquals(capturedEvents.toString(), 1, capturedEvents.size());
+    long prevTimestamp = capturedEvents.get(0).timestamp;
 
     // reset the trigger and captured events
+    listenerEventLatch = new CountDownLatch(1);
     listenerEvents.clear();
     triggerFiredLatch = new CountDownLatch(1);
     triggerFired.compareAndSet(true, false);
@@ -1215,14 +1229,14 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     String newNode2 = cluster.simAddNode();
     await = triggerFiredLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(8000);
+    assertTrue("the listener should have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
 
     // there must be exactly one SUCCEEDED event
     capturedEvents = listenerEvents.get("bar");
     assertNotNull(capturedEvents);
-    assertTrue(capturedEvents.toString(), capturedEvents.size() >= 1);
-    CapturedEvent ev = capturedEvents.get(capturedEvents.size() - 1);
+    assertEquals(capturedEvents.toString(), 1, capturedEvents.size());
+    CapturedEvent ev = capturedEvents.get(0);
     assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
     // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
     // must be larger than cooldown period
@@ -1268,7 +1282,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13072") // this test is way to sensitive to timing, must be beasted before returned
   public void testSearchRate() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String COLL1 = "collection1";
@@ -1277,6 +1290,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     create.process(solrClient);
     CloudTestUtils.waitForState(cluster, COLL1, 10, TimeUnit.SECONDS, CloudTestUtils.clusterShape(1, 2, false, true));
 
+    listenerEventLatch = new CountDownLatch(4);
+    
     assertAutoScalingRequest
       ("{" +
        "'set-trigger' : {" +
@@ -1309,10 +1324,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
     assertAutoscalingUpdateComplete();
 
-//    SolrParams query = params(CommonParams.Q, "*:*");
-//    for (int i = 0; i < 500; i++) {
-//      solrClient.query(COLL1, query);
-//    }
 
     cluster.getSimClusterStateProvider().simSetCollectionValue(COLL1, "QUERY./select.requestTimes:1minRate", 500, false, true);
 
@@ -1320,12 +1331,13 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue("The trigger did not start in time", await);
     await = triggerFinishedLatch.await(60000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not finish in time", await);
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(5000);
-    
-    List<CapturedEvent> events = listenerEvents.get("srt");
+
+    assertTrue("the listener should have recorded all events w/in a reasonable amount of time",
+               listenerEventLatch.await(10, TimeUnit.SECONDS));
+
+    List<CapturedEvent> events = new ArrayList<>(listenerEvents.get("srt"));
     assertNotNull("Could not find events for srt", events);
-    assertEquals(listenerEvents.toString(), 4, events.size());
+    assertEquals(events.toString(), 4, events.size());
     assertEquals("AFTER_ACTION", events.get(0).stage.toString());
     assertEquals("compute", events.get(0).actionName);
     assertEquals("AFTER_ACTION", events.get(1).stage.toString());
