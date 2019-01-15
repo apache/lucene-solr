@@ -29,6 +29,12 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
+Upgrade Notes
+----------------------
+
+* SOLR-12770: The 'shards' parameter handling logic changes to use a new config element to determine what hosts can be
+  requested. Please see Apache Solr Reference Guide chapter "Distributed Requests" for details, as well as SOLR-12770.
+
 Bug Fixes
 ----------------------
 
@@ -37,6 +43,9 @@ Bug Fixes
 
 * SOLR-12514: Rule-base Authorization plugin skips authorization if querying node does not have collection
   replica (noble)
+
+* SOLR-12770: Make it possible to configure a host whitelist for distributed search
+  (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
 ==================  6.6.5 ==================
 

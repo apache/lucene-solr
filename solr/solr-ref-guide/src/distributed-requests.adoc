@@ -89,7 +89,7 @@ To configure the standard handler, provide a configuration like this in `solrcon
 </requestHandler>
 ----
 
-The parameters that can be specified are as follows:
+`HttpShardHandlerFactory` is the only `ShardHandlerFactory` implementation included out of the box with Solr, It accepts the following parameters:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -105,6 +105,10 @@ The parameters that can be specified are as follows:
 |`maxThreadIdleTime` |5 seconds |The amount of time to wait for before threads are scaled back in response to a reduction in load.
 |`sizeOfQueue` |-1 |If specified, the thread pool will use a backing queue instead of a direct handoff buffer. High throughput systems will want to configure this to be a direct hand off (with -1). Systems that desire better latency will want to configure a reasonable size of queue to handle variations in requests.
 |`fairnessPolicy` |false |Chooses the JVM specifics dealing with fair policy queuing, if enabled distributed searches will be handled in a First in First out fashion at a cost to throughput. If disabled throughput will be favored over latency.
+|`shardsWhitelist` | |If specified, this lists limits what nodes can be requested in the `shards` request parameter. In cloud mode this whitelist is automatically configured to include all live nodes in the cluster. In standalone mode the whitelist defaults to empty (sharding not allowed). If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.: `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
+
+NOTE: In cloud mode, if at least one node is included in the shards whitelist, then the live_nodes will no longer be used as source for the list. This means that, if you need to do a cross-cluster request using the `shards` parameter in cloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist. 
+
 |===
 
 [[DistributedRequests-ConfiguringstatsCache_DistributedIDF_]]
