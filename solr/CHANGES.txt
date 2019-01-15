@@ -82,6 +82,8 @@ Bug Fixes
 * SOLR-13053: NodeAddedTrigger and NodeLostTrigger do not reserve added/removed time populated by restoreState
   (Cao Manh Dat)
 
+* SOLR-13137: NPE when /admin/zookeeper/status endpoint hit in standalone mode (janhoy)
+
 Improvements
 ----------------------
 
