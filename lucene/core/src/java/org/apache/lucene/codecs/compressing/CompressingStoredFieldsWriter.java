@@ -231,8 +231,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     final boolean sliced = bufferedDocs.size() >= 2 * chunkSize;
     writeHeader(docBase, numBufferedDocs, numStoredFields, lengths, sliced);
 
-    // compress stored fields to fieldsStream
-    // NOCOMMIT: do we need to slice it since we already have the slices in the buffer? Perhaps
+    // compress stored fields to fieldsStream.
+    //
+    // TODO: do we need to slice it since we already have the slices in the buffer? Perhaps
     // we should use max-block-bits restriction on the buffer itself, then we won't have to check it here.
     byte [] content = bufferedDocs.toArrayCopy();
     bufferedDocs.reset();

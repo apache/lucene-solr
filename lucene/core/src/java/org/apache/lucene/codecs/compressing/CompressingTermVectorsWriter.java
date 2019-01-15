@@ -361,7 +361,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       flushPayloadLengths();
 
       // compress terms and payloads and write them to the output
-      // NOCOMMIT: can we compress in the slices we already have in the buffer (min/max slice 
+      //
+      // TODO: We could compress in the slices we already have in the buffer (min/max slice
       // can be set on the buffer itself).
       byte[] content = termSuffixes.toArrayCopy();
       compressor.compress(content, 0, content.length, vectorsStream);
