@@ -446,6 +446,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     if (str.equals("*"))
       return cal;
     int offset = 0;//a pointer
+    int parsedVal = 0;
     try {
       //year & era:
       int lastOffset = str.charAt(str.length()-1) == 'Z' ? str.length() - 1 : str.length();
@@ -463,31 +464,46 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
       // The str.substring()'s hopefully get optimized to be stack-allocated.
 
       //month:
-      cal.set(Calendar.MONTH, Integer.parseInt(str.substring(offset, offset+2)) - 1);//starts at 0
+      parsedVal = parseIntegerAndValidate( str, offset, 1, 12);
+      cal.set(Calendar.MONTH, parsedVal - 1);//starts at 0
       offset += 3;
       if (lastOffset < offset)
         return cal;
       //day:
-      cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(str.substring(offset, offset+2)));
+      isValidDateDelimeter(str, offset-1, '-');
+
+      parsedVal = parseIntegerAndValidate( str, offset, 1, 31);
+      cal.set(Calendar.DAY_OF_MONTH, parsedVal);
       offset += 3;
       if (lastOffset < offset)
         return cal;
+      isValidDateDelimeter(str, offset-1, 'T');
       //hour:
-      cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(str.substring(offset, offset+2)));
+
+      parsedVal = parseIntegerAndValidate( str, offset, 0, 24);
+      cal.set(Calendar.HOUR_OF_DAY, parsedVal);
       offset += 3;
       if (lastOffset < offset)
         return cal;
+      isValidDateDelimeter(str, offset-1, ':');
       //minute:
-      cal.set(Calendar.MINUTE, Integer.parseInt(str.substring(offset, offset+2)));
+
+      parsedVal = parseIntegerAndValidate( str, offset, 1, 60);
+      cal.set(Calendar.MINUTE, parsedVal);
       offset += 3;
       if (lastOffset < offset)
         return cal;
+      isValidDateDelimeter(str, offset-1, ':');
       //second:
-      cal.set(Calendar.SECOND, Integer.parseInt(str.substring(offset, offset+2)));
+
+      parsedVal = parseIntegerAndValidate( str, offset, 1, 60);
+      cal.set(Calendar.SECOND, parsedVal);
       offset += 3;
       if (lastOffset < offset)
         return cal;
+      isValidDateDelimeter(str, offset-1, '.');
       //ms:
+
       cal.set(Calendar.MILLISECOND, Integer.parseInt(str.substring(offset, offset+3)));
       offset += 3;//last one, move to next char
       if (lastOffset == offset)
@@ -498,6 +514,21 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
       throw pe;
     }
     throw new ParseException("Improperly formatted date: "+str, offset);
+  }
+
+  private  void isValidDateDelimeter(String str, int offset, char delim) throws ParseException{
+    if(str.charAt(offset) != delim) {
+      throw new ParseException("Invalid delimeter: "+delim,offset);
+    }
+  }
+
+  private int parseIntegerAndValidate(String  str, int offset, int min, int max) throws ParseException {
+    int val = Integer.parseInt(str.substring(offset, offset+2));
+    if((val < min ) || (val>max)) {
+      throw new ParseException("Invalid date param value: "+val+"," +
+          " expectedVal range: ["+min+" TO "+max+"]", offset);
+    }
+    return val;
   }
 
 }

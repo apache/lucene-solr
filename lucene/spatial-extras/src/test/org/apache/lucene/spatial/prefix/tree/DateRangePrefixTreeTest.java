@@ -210,4 +210,34 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     assertEquals("[* TO 2014-09-15]", tree.parseShape("[* TO 2014-09-15]").toString());
   }
 
+  public void testInvalidDateException() {
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-10T13-1");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-13-12");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-13-41T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:61Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:14:61Z");
+    });
+  }
+
 }
