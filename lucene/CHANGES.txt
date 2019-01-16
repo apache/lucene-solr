@@ -184,6 +184,12 @@ New Features
 * LUCENE-8622: Adds a minimum-should-match interval function that produces intervals
   spanning a subset of a set of sources. (Alan Woodward)
 
+* LUCENE-8645: Intervals.fixField() allows you to report intervals from one field
+  as if they came from another. (Alan Woodward)
+
+* LUCENE-8646: New interval functions: Intervals.prefix() and Intervals.wildcard()
+  (Alan Woodward)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.

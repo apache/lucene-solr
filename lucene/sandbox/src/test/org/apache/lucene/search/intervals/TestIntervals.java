@@ -704,4 +704,26 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(2, source.minExtent());
   }
 
+  public void testFixedField() throws IOException {
+
+    IntervalsSource source = Intervals.phrase(
+        Intervals.term("alph"),
+        Intervals.fixField("field1", Intervals.term("hot")));
+
+    // We search in field2, but 'hot' will report intervals from field1
+    checkIntervals(source, "field2", 1, new int[][]{
+        {},
+        { 1, 2 },
+        {},
+        {},
+        {},
+        {}
+    });
+
+    MatchesIterator mi = getMatches(source, 1, "field2");
+    assertNotNull(mi);
+    assertMatch(mi, 1, 2, 6, 18);
+
+  }
+
 }

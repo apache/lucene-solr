@@ -160,6 +160,17 @@ public final class Intervals {
   }
 
   /**
+   * Create an {@link IntervalsSource} that always returns intervals from a specific field
+   *
+   * This is useful for comparing intervals across multiple fields, for example fields that
+   * have been analyzed differently, allowing you to search for stemmed terms near unstemmed
+   * terms, etc.
+   */
+  public static IntervalsSource fixField(String field, IntervalsSource source) {
+    return new FixedFieldIntervalsSource(field, source);
+  }
+
+  /**
    * Create a non-overlapping IntervalsSource
    *
    * Returns intervals of the minuend that do not overlap with intervals from the subtrahend
