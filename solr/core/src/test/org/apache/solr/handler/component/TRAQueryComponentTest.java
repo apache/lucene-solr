@@ -29,26 +29,22 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessorTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -176,7 +172,7 @@ public class TRAQueryComponentTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testComponentConditions() throws Exception {
+  public void testComponentRunConditions() throws Exception {
 
     createConfigSet(TRAConfigName, false);
 
@@ -185,8 +181,9 @@ public class TRAQueryComponentTest extends SolrCloudTestCase {
     assertNotNull("jetty runner should be up", cluster.getJettySolrRunner(0));
 
     RoutedAliasOptimizeQueryComponent component = new RoutedAliasOptimizeQueryComponent();
+    // query component to be used to parse query
     QueryComponent queryComponent = new QueryComponent();
-    // new SolrQueryReqMock(alias, new ModifiableSolrParams())
+
     ResponseBuilder rb = createResponseBuilderWQuery(queryComponent, createQueryReq(alias, params()));
 
     // should return fast since TRA does not have any collections.
@@ -259,33 +256,6 @@ public class TRAQueryComponentTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(solrClient);
 
-    // manipulate the config...
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
-            "  'add-updateprocessor' : {" +
-            "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
-            "  }," +
-            // See TrackingUpdateProcessorFactory javadocs for details...
-            "  'add-updateprocessor' : {" +
-            "    'name':'tracking-testSliceRouting', 'class':'solr.TrackingUpdateProcessorFactory', 'group':'" + getSaferTestName() + "'" +
-            "  }," +
-            "  'add-updateprocessor' : {" + // for testing
-            "    'name':'inc', 'class':'" + TimeRoutedAliasUpdateProcessorTest.IncrementURPFactory.class.getName() + "'," +
-            "    'fieldName':'" + intField + "'" +
-            "  }," +
-            "}").build()));
-    // only sometimes test with "tolerant" URP:
-    final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set' : {" +
-            "    '_UPDATE' : {'processor':'" + urpNames + "'}" +
-            "  }" +
-            "}").build()));
-
     if (!deleteCollection) {
       cluster.waitForActiveCollection(configName, 1, 1);
       return;
@@ -296,11 +266,6 @@ public class TRAQueryComponentTest extends SolrCloudTestCase {
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
             .contains(configName)
     );
-  }
-
-  private void checkNoError(NamedList<Object> response) { //TODO rename
-    Object errors = response.get("errorMessages");
-    assertNull("" + errors, errors);
   }
 
   private List<String> getShardsFromQueryDebug(String debugInfo) {
