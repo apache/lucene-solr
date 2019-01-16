@@ -57,7 +57,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
       SolrQueryRequest req = rb.req;
       if(rb.req.getParams().get(ALIAS) != null) {
         // was already set up
-        return ResponseBuilder.STAGE_DONE;
+        return ResponseBuilder.STAGE_GET_FIELDS;
       }
       String path = req.getHttpSolrCall().getReq().getPathInfo();
       final String aliasName = path.substring(1, path.indexOf('/', 1));
@@ -84,9 +84,13 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
 
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+
+    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS && rb.req.getParams().get(ALIAS) != null) {
+      // was already set up
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
+
+    // not querying an alias
     return ResponseBuilder.STAGE_DONE;
   }
 
@@ -99,6 +103,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
         // no alias was detected
         return;
       }
+      final boolean debug = rb.isDebug();
       Aliases allAliases = rb.req.getCore().getCoreContainer().getZkController().getZkStateReader().getAliases();
       Map<String, String> aliasConf = allAliases.getCollectionAliasProperties(aliasName);
       if (aliasConf.size() == 0) {
@@ -110,6 +115,9 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
       final int rows = Integer.valueOf(params.get("rows", "10"));
       if( rb.getResponseDocs().getNumFound() <= rows) {
         // rows was not reached, so there is no need to optimize this query.
+        if (debug) {
+          rb.getDebugInfo().add(COMPONENT_NAME, "limit was not reached, no filtering was required");
+        }
         return;
       }
 
@@ -140,7 +148,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
         if (docs >= rows) break; // found enough docs, no need to check remaining collections
       }
 
-      if (rb.isDebug()) {
+      if (debug) {
         rb.getDebugInfo().add(COMPONENT_NAME, "dropping all requests but requests for shards: " +
             String.join(", ", shardsWhiteList)
         );
@@ -167,7 +175,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
   /**
    *
    * @param sortedCollections - list of collections in TRA sorted by date.
-   * @return Collection of lists of shards sorted by lists date.
+   * @return Collection of lists of shards. Top level list is sorted by collection date.
    */
   private List<List<String>> groupShardsBySortedCollection(String[] shards, List<Map.Entry<Instant, String>> sortedCollections) {
     return sortedCollections.stream()

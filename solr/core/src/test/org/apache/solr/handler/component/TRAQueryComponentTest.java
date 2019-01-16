@@ -165,10 +165,19 @@ public class TRAQueryComponentTest extends SolrCloudTestCase {
     assertEquals(3, shards.size()); // two collections but one of them has 2 shards, so 3 in total
     assertTrue("expected to only get fields from '" + alias + "_2017-10-23, '" + alias + "_2017-10-24', but instead got : " + String.join(", ", shards),
         collectionMatchesRegex(shards, alias + ".*_2017-10-23_shard.*", alias + ".*_2017-10-24_shard.*"));
+
+    // ensure no filtering is done if rows is not reached
+    qResp = solrClient.query(alias, params("q", "*:*", "sort", timeField + " asc",
+        "rows", "30", "debug", "true")
+    );
+    debugInfo = getComponentDebugInfo(qResp);
+    assertNotNull("debug info was not added", debugInfo);
+    assertEquals(6, qResp.getResults().getNumFound());
+    assertEquals("rows was not reached but filtering was still attempted", "limit was not reached, no filtering was required", debugInfo);
   }
 
   private String getComponentDebugInfo(QueryResponse qResp) {
-    return (String) qResp.getDebugMap().getOrDefault(RoutedAliasOptimizeQueryComponent.COMPONENT_NAME, "");
+    return (String) qResp.getDebugMap().get(RoutedAliasOptimizeQueryComponent.COMPONENT_NAME);
   }
 
   @Test
