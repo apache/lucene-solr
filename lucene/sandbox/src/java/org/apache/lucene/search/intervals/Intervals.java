@@ -177,7 +177,7 @@ public final class Intervals {
    * @param reference   the source to filter by
    */
   public static IntervalsSource overlapping(IntervalsSource source, IntervalsSource reference) {
-    return new ConjunctionIntervalsSource(Arrays.asList(source, reference), IntervalFunction.OVERLAPPING);
+    return new FilteringConjunctionIntervalsSource(source, reference, IntervalFunction.OVERLAPPING);
   }
 
   /**
@@ -230,7 +230,7 @@ public final class Intervals {
    * @param small   the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containing(IntervalsSource big, IntervalsSource small) {
-    return new ConjunctionIntervalsSource(Arrays.asList(big, small), IntervalFunction.CONTAINING);
+    return new FilteringConjunctionIntervalsSource(big, small, IntervalFunction.CONTAINING);
   }
 
   /**
@@ -255,7 +255,7 @@ public final class Intervals {
    * @param big       the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containedBy(IntervalsSource small, IntervalsSource big) {
-    return new ConjunctionIntervalsSource(Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
+    return new FilteringConjunctionIntervalsSource(small, big, IntervalFunction.CONTAINED_BY);
   }
 
   /**
@@ -269,8 +269,8 @@ public final class Intervals {
    * Returns intervals from the source that appear before intervals from the reference
    */
   public static IntervalsSource before(IntervalsSource source, IntervalsSource reference) {
-    return new ConjunctionIntervalsSource(Arrays.asList(source,
-        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0)),
+    return new FilteringConjunctionIntervalsSource(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0),
         IntervalFunction.CONTAINED_BY);
   }
 
@@ -278,8 +278,8 @@ public final class Intervals {
    * Returns intervals from the source that appear after intervals from the reference
    */
   public static IntervalsSource after(IntervalsSource source, IntervalsSource reference) {
-    return new ConjunctionIntervalsSource(Arrays.asList(source,
-        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE)),
+    return new FilteringConjunctionIntervalsSource(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE),
         IntervalFunction.CONTAINED_BY);
   }
 

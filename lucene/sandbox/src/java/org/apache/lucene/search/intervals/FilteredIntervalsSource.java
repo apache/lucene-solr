@@ -78,6 +78,11 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    return in.minExtent();
+  }
+
+  @Override
   public void extractTerms(String field, Set<Term> terms) {
     in.extractTerms(field, terms);
   }
