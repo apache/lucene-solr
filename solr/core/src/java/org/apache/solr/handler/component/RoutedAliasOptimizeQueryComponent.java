@@ -55,10 +55,6 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     if (rb.stage == ResponseBuilder.STAGE_START) {
       SolrQueryRequest req = rb.req;
-      if(rb.req.getParams().get(ALIAS) != null) {
-        // was already set up
-        return ResponseBuilder.STAGE_GET_FIELDS;
-      }
       String path = req.getHttpSolrCall().getReq().getPathInfo();
       final String aliasName = path.substring(1, path.indexOf('/', 1));
       Aliases allAliases = rb.req.getCore().getCoreContainer().getZkController().zkStateReader.getAliases();
