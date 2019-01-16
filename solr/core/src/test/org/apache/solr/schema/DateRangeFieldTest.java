@@ -20,7 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DateRangeFieldTest extends SolrTestCaseJ4 {
+public class  DateRangeFieldTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

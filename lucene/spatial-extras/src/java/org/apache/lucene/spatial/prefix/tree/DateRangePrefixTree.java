@@ -446,6 +446,8 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     if (str.equals("*"))
       return cal;
     int offset = 0;//a pointer
+    if(!isValidDate(str))
+      throw new IllegalArgumentException("Str is not valid date "+str);
     try {
       //year & era:
       int lastOffset = str.charAt(str.length()-1) == 'Z' ? str.length() - 1 : str.length();
@@ -500,4 +502,58 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     throw new ParseException("Improperly formatted date: "+str, offset);
   }
 
+
+  /**
+   * (yyyy-mm-ddTHH:MM:SS.sssZ)
+   * delimeterArr holds all the possible delimeters in the date String
+   * noOfdigits holds all the possible Token length in the date String
+   * indexes are representation for 0-> year, 1-> month, 2-> day, 3-> hour, 4->min , 5->sec, 6->ms
+   * if value is -1 then we will not match the no of digits for the respective entity
+   * In this we are ignoring length check for Year to match -292275055-05-16T16:47:04.192 kind of data
+   *
+   * */
+  private  boolean isValidDate(String str) {
+    if(str.startsWith("+") || str.startsWith("-")) {
+      str = str.substring(1);
+    }
+    int lastOffset = str.charAt(str.length() - 1) == 'Z' ? str.length() - 1 : str.length();
+    char[] delimeterArr = new char[]{'-', '-', 'T', ':', ':', '.', 'Z'};
+    int[] noOfdigits = new int[]{-1, 2, 2, 2, 2, 2, 3};
+
+    int offset =0;
+    for (int i = 0; i < delimeterArr.length; i++) {
+      offset = checkDateParam(str, delimeterArr[i], lastOffset, offset, noOfdigits[i]);
+      if(offset == -2) {
+        break;
+      } else if (offset == -1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   *This will return nextOffset
+   *-2 if the offset has passed the lastOffset
+   *-1 if it is a invalid date
+   */
+  private  int checkDateParam(String str, char delimeter, int lastOffset, Integer offset, int noOfdigit) {
+    try {
+      if (lastOffset <= offset) {
+        return -2;
+      }
+      int deliIdx = str.substring(offset).indexOf(delimeter);
+      if (deliIdx < 0) {
+        deliIdx = lastOffset - offset;
+      }
+      String valStr = str.substring(offset, offset + deliIdx);
+      if (noOfdigit !=-1 && valStr.length() != noOfdigit) {
+        return -1;
+      }
+      Integer.parseInt(valStr);
+      return offset+deliIdx+1;
+    }catch (NumberFormatException ex) {
+      return -1;
+    }
+  }
 }
