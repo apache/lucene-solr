@@ -92,6 +92,20 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    int[] subExtents = new int[sources.length];
+    for (int i = 0; i < subExtents.length; i++) {
+      subExtents[i] = sources[i].minExtent();
+    }
+    Arrays.sort(subExtents);
+    int minExtent = 0;
+    for (int i = 0; i < minShouldMatch; i++) {
+      minExtent += subExtents[i];
+    }
+    return minExtent;
+  }
+
+  @Override
   public String toString() {
     return "AtLeast("
         + Arrays.stream(sources).map(IntervalsSource::toString).collect(Collectors.joining(","))

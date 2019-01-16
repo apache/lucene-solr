@@ -56,11 +56,16 @@ public abstract class IntervalsSource {
   public abstract MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException;
 
   /**
-   * Expert: collect {@link Term} objects from this source, to be used for top-level term scoring
+   * Expert: collect {@link Term} objects from this source
    * @param field the field to be scored
    * @param terms a {@link Set} which terms should be added to
    */
   public abstract void extractTerms(String field, Set<Term> terms);
+
+  /**
+   * Return the minimum possible width of an interval returned by this source
+   */
+  public abstract int minExtent();
 
   @Override
   public abstract int hashCode();
