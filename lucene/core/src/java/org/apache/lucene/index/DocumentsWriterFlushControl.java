@@ -459,8 +459,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
   
   ThreadState obtainAndLock() {
-    final ThreadState perThread = perThreadPool.getAndLock(Thread
-        .currentThread(), documentsWriter);
+    final ThreadState perThread = perThreadPool.getAndLock();
     boolean success = false;
     try {
       if (perThread.isInitialized() && perThread.dwpt.deleteQueue != documentsWriter.deleteQueue) {
@@ -490,14 +489,18 @@ final class DocumentsWriterFlushControl implements Accountable {
       // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
 
-      // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
-      // if we have some sequence numbers that were never assigned:
-      seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
-      flushingQueue.maxSeqNo = seqNo+1;
+      perThreadPool.lockNewThreadStates(); // no new thread-states while we do a flush otherwise the seqNo accounting might be off
+      try {
+        // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
+        // if we have some sequence numbers that were never assigned:
+        seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
+        flushingQueue.maxSeqNo = seqNo + 1;
+        DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation + 1, seqNo + 1);
+        documentsWriter.deleteQueue = newQueue;
 
-      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation+1, seqNo+1);
-
-      documentsWriter.deleteQueue = newQueue;
+      } finally {
+        perThreadPool.unlockNewThreadStates();
+      }
     }
     final int limit = perThreadPool.getActiveThreadStateCount();
     for (int i = 0; i < limit; i++) {
