@@ -153,6 +153,10 @@ Changes in Runtime Behavior
   tokens by default, preventing a number of bugs when the filter is chained with
   tokenfilters that change the length of their tokens (Alan Woodward)
 
+* LUCENE-8633: IntervalQuery scores do not use term weighting any more, the score
+  is instead calculated as a function of the sloppy frequency of the matching
+  intervals. (Alan Woodward, Jim Ferenczi)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
@@ -261,6 +265,9 @@ Bug fixes:
 * LUCENE-8625: int overflow in ByteBuffersDataInput.sliceBufferList. (Mulugeta Mammo,
   Dawid Weiss)
 
+* LUCENE-8639: Newly created threadstates while flushing / refreshing can cause duplicated
+  sequence IDs on IndexWriter. (Simon Willnauer)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
@@ -317,6 +324,8 @@ Optimizations
 * LUCENE-8600: Doc-value updates get applied faster by sorting with quicksort,
   rather than an in-place mergesort, which needs to perform fewer swaps.
   (Adrien Grand)
+
+* LUCENE-8623: Decrease I/O pressure when merging high dimensional points. (Ignacio Vera)
 
 Test Framework
 

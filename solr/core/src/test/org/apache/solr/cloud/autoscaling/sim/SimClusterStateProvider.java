@@ -210,14 +210,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
       initialState.forEachCollection(dc -> {
         collProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>()).putAll(dc.getProperties());
-        opDelays.computeIfAbsent(dc.getName(), c -> new HashMap<>()).putAll(defaultOpDelays);
+        opDelays.computeIfAbsent(dc.getName(), Utils.NEW_HASHMAP_FUN).putAll(defaultOpDelays);
         dc.getSlices().forEach(s -> {
           sliceProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>())
-              .computeIfAbsent(s.getName(), name -> new HashMap<>()).putAll(s.getProperties());
+              .computeIfAbsent(s.getName(), Utils.NEW_HASHMAP_FUN).putAll(s.getProperties());
           s.getReplicas().forEach(r -> {
             ReplicaInfo ri = new ReplicaInfo(r.getName(), r.getCoreName(), dc.getName(), s.getName(), r.getType(), r.getNodeName(), r.getProperties());
             if (liveNodes.get().contains(r.getNodeName())) {
-              nodeReplicaMap.computeIfAbsent(r.getNodeName(), rn -> new ArrayList<>()).add(ri);
+              nodeReplicaMap.computeIfAbsent(r.getNodeName(), Utils.NEW_ARRAYLIST_FUN).add(ri);
             }
           });
         });
@@ -370,6 +370,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     } catch (Exception e) {
       log.warn("Exception saving overseer leader id", e);
     }
+  }
+
+  public synchronized String simGetOverseerLeader() {
+    return overseerLeader;
   }
 
   // this method needs to be called under a lock

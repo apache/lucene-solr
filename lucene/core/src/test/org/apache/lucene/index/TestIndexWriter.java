@@ -3657,4 +3657,38 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
+  // see LUCENE-8639
+  public void testFlushWhileStartingNewThreads() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    w.addDocument(new Document());
+    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    assertEquals(1, activeThreadStateCount);
+    CountDownLatch latch = new CountDownLatch(1);
+    Thread thread = new Thread(() -> {
+      latch.countDown();
+      List<Closeable> states = new ArrayList<>();
+      try {
+        for (int i = 0; i < 100; i++) {
+          DocumentsWriterPerThreadPool.ThreadState state = w.docWriter.perThreadPool.getAndLock();
+          states.add(state::unlock);
+          if (state.isInitialized()) {
+            state.dwpt.deleteQueue.getNextSequenceNumber();
+          } else {
+            w.docWriter.deleteQueue.getNextSequenceNumber();
+          }
+        }
+      } finally {
+        IOUtils.closeWhileHandlingException(states);
+      }
+    });
+    thread.start();
+    latch.await();
+    w.docWriter.flushControl.markForFullFlush();
+    thread.join();
+    w.docWriter.flushControl.abortFullFlushes();
+    w.close();
+    dir.close();
+  }
+
 }

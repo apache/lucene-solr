@@ -34,11 +34,11 @@ import org.apache.lucene.util.packed.PagedMutable;
 final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   // TODO: can't this just be NumericDocValues now?  avoid boxing the long value...
   final static class Iterator extends DocValuesFieldUpdates.AbstractIterator {
-    private final AbstractPagedMutable values;
+    private final AbstractPagedMutable<?> values;
     private final long minValue;
     private long value;
 
-    Iterator(int size, long minValue, AbstractPagedMutable values, PagedMutable docs, long delGen) {
+    Iterator(int size, long minValue, AbstractPagedMutable<?> values, PagedMutable docs, long delGen) {
       super(size, docs, delGen);
       this.values = values;
       this.minValue = minValue;
@@ -58,7 +58,7 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
       value = values.get(idx) + minValue;
     }
   }
-  private AbstractPagedMutable values;
+  private AbstractPagedMutable<?> values;
   private final long minValue;
 
   NumericDocValuesFieldUpdates(long delGen, String field, int maxDoc) {

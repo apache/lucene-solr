@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.ZkController;
@@ -52,12 +51,10 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.solr.common.util.ExecutorUtil.newMDCAwareSingleThreadExecutor;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.apache.solr.update.processor.TimeRoutedAliasUpdateProcessor.CreationType.ASYNC_PREEMPTIVE;
@@ -97,8 +94,10 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private List<Map.Entry<Instant, String>> parsedCollectionsDesc; // k=timestamp (start), v=collection.  Sorted descending
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
 
-  // This will be updated out in async creation threads see preemptiveAsync(Runnable r) for details
-  private volatile ExecutorService preemptiveCreationExecutor;
+  // This class is created once per request and the overseer methods prevent duplicate create requests
+  // from creating extra copies. All we need to track here is that we don't spam preemptive creates to
+  // the overseer multiple times from *this* request.
+  private volatile boolean preemptiveCreateOnceAlready = false;
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
     //TODO get from "Collection property"
@@ -215,7 +214,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           // This next line blocks until all collections required by the current document have been created
           return createAllRequiredCollections(docTimestamp, cmd.getPrintableId(), candidateCollectionDesc);
         case ASYNC_PREEMPTIVE:
-          if (preemptiveCreationExecutor == null) {
+          if (!preemptiveCreateOnceAlready) {
+            log.info("EXECUTING preemptive creation for {}", timeRoutedAlias.getAliasName());
             // It's important not to add code between here and the prior call to findCandidateGivenTimestamp()
             // in processAdd() that invokes updateParsedCollectionAliases(). Doing so would update parsedCollectionsDesc
             // and create a race condition. We are relying on the fact that get(0) is returning the head of the parsed
@@ -242,18 +242,8 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void preemptiveAsync(Runnable r) {
-    // Note: creating an executor and throwing it away is slightly expensive, but this is only likely to happen
-    // once per hour/day/week (depending on time slice size for the TRA). If the executor were retained, it
-    // would need to be shut down in a close hook to avoid test failures due to thread leaks in tests which is slightly
-    // more complicated from a code maintenance and readability stand point. An executor must used instead of a
-    // thread to ensure we pick up the proper MDC logging stuff from ExecutorUtil.
-    DefaultSolrThreadFactory threadFactory = new DefaultSolrThreadFactory("TRA-preemptive-creation");
-    preemptiveCreationExecutor = newMDCAwareSingleThreadExecutor(threadFactory);
-    preemptiveCreationExecutor.execute(() -> {
-      r.run();
-      preemptiveCreationExecutor.shutdown();
-      preemptiveCreationExecutor = null;
-    });
+    preemptiveCreateOnceAlready = true;
+    req.getCore().runAsync(r);
   }
 
   /**
@@ -479,9 +469,11 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           return targetCollectionDesc.getValue(); // we don't need another collection
         case ASYNC_PREEMPTIVE:
           // can happen when preemptive interval is longer than one time slice
-          String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
-          preemptiveAsync(() -> createNextCollection(mostRecentCollName));
-          return targetCollectionDesc.getValue();
+          if (!preemptiveCreateOnceAlready) {
+            String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
+            preemptiveAsync(() -> createNextCollection(mostRecentCollName));
+            return targetCollectionDesc.getValue();
+          }
         case SYNCHRONOUS:
           createNextCollection(targetCollectionDesc.getValue()); // *should* throw if fails for some reason but...
           if (!updateParsedCollectionAliases()) { // thus we didn't make progress...
@@ -495,7 +487,6 @@ public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
           break;
         default:
           throw unknownCreateType();
-
       }
     } while (true);
   }
