@@ -202,7 +202,8 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
-(No Changes)
+* SOLR-12770: The 'shards' parameter handling logic changes to use a new config element to determine what hosts can be
+  requested. Please see Apache Solr Reference Guide chapter "Distributed Requests" for details, as well as SOLR-12770.
 
 New Features
 ----------------------
@@ -212,8 +213,13 @@ New Features
 
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
+* SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski) 
+
 * SOLR-11126: New Node-level health check handler at /admin/info/healthcheck and /node/health paths that
   checks if the node is live, connected to zookeeper and not shutdown. (Anshum Gupta, Amrit Sarkar, shalin)
+  
+* SOLR-12770: Make it possible to configure a host whitelist for distributed search
+  (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------
@@ -250,6 +256,8 @@ Bug Fixes
 
 * SOLR-13053: NodeAddedTrigger and NodeLostTrigger do not reserve added/removed time populated by restoreState
   (Cao Manh Dat)
+
+* SOLR-13137: NPE when /admin/zookeeper/status endpoint hit in standalone mode (janhoy)
 
 Improvements
 ----------------------

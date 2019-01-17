@@ -62,6 +62,15 @@ class ExtendedIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    int minExtent = before + source.minExtent() + after;
+    if (minExtent < 0) {
+      return Integer.MAX_VALUE;
+    }
+    return minExtent;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;

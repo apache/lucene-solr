@@ -34,21 +34,22 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.RAMFile;
-import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /*
  * This just asks IndexWriter to open new NRT reader, in order to publish a new NRT point.  This could be improved, if we separated out 1)
  * nrt flush (and incRef the SIS) from 2) opening a new reader, but this is tricky with IW's concurrency, and it would also be hard-ish to share
- * IW's reader pool with our searcher manager.  So we do the simpler solution now, but that adds some unecessary latency to NRT refresh on
+ * IW's reader pool with our searcher manager.  So we do the simpler solution now, but that adds some unnecessary latency to NRT refresh on
  * replicas since step 2) could otherwise be done concurrently with replicas copying files over.
  */
 
-/** Node that holds an IndexWriter, indexing documents into its local index.
+/** 
+ * Node that holds an IndexWriter, indexing documents into its local index.
  *
- * @lucene.experimental */
-
+ * @lucene.experimental 
+ */
 public abstract class PrimaryNode extends Node {
 
   // Current NRT segment infos, incRef'd with IndexWriter.deleter:
@@ -241,11 +242,12 @@ public abstract class PrimaryNode extends Node {
 
     message("top: switch to infos=" + infos.toString() + " version=" + infos.getVersion());
 
-    // Serialize the SegmentInfos:
-    RAMOutputStream out = new RAMOutputStream(new RAMFile(), true);
-    infos.write(dir, out);
-    byte[] infosBytes = new byte[(int) out.getFilePointer()];
-    out.writeTo(infosBytes, 0);
+    // Serialize the SegmentInfos.
+    ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
+    try (ByteBuffersIndexOutput tmpIndexOutput = new ByteBuffersIndexOutput(buffer, "temporary", "temporary")) {
+      infos.write(dir, tmpIndexOutput);
+    }
+    byte[] infosBytes = buffer.toArrayCopy();
 
     Map<String,FileMetaData> filesMetaData = new HashMap<String,FileMetaData>();
     for(SegmentCommitInfo info : infos) {
