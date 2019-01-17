@@ -17,12 +17,11 @@
 
 package org.apache.lucene.geo;
 
-import org.apache.lucene.document.LatLonShape;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 
-import static org.apache.lucene.document.LatLonShape.BYTES;
+import static java.lang.Integer.BYTES;
 
 public class TestRectangle2D extends LuceneTestCase {
 
@@ -82,13 +81,13 @@ public class TestRectangle2D extends LuceneTestCase {
       int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
       int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
 
-      byte[] triangle = new byte[4 * LatLonShape.BYTES];
+      byte[] triangle = new byte[4 * BYTES];
       NumericUtils.intToSortableBytes(tMinY, triangle, 0);
       NumericUtils.intToSortableBytes(tMinX, triangle, BYTES);
       NumericUtils.intToSortableBytes(tMaxY, triangle, 2 * BYTES);
       NumericUtils.intToSortableBytes(tMaxX, triangle, 3 * BYTES);
 
-      PointValues.Relation r = rectangle2D.relateRangeBBox(LatLonShape.BYTES, 0, triangle, 3 * LatLonShape.BYTES, 2 * LatLonShape.BYTES, triangle);
+      PointValues.Relation r = rectangle2D.relateRangeBBox(BYTES, 0, triangle, 3 * BYTES, 2 * BYTES, triangle);
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
         assertFalse(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
         assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
