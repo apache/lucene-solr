@@ -29,6 +29,7 @@ import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box and polygon query tests for random generated {@link Line} types */
+@SuppressWarnings("SimpleText")
 public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
 
   protected final LineValidator VALIDATOR = new LineValidator();
