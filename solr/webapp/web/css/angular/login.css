@@ -41,6 +41,12 @@ limitations under the License.
   margin-bottom: 1rem;
 }
 
+#content #login a
+{
+  color: #0000bf;
+  cursor: pointer;
+}
+
 #content #login .login-error
 {
   font-size: 1rem;
