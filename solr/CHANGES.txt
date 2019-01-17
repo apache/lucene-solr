@@ -193,6 +193,8 @@ New Features
 
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
+* SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski) 
+
 * SOLR-11126: New Node-level health check handler at /admin/info/healthcheck and /node/health paths that
   checks if the node is live, connected to zookeeper and not shutdown. (Anshum Gupta, Amrit Sarkar, shalin)
   
