@@ -16,13 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token] (JWT) based Bearer authentication with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external https://en.wikipedia.org/wiki/Identity_provider[Identity Provider] by validating that the JWT is digitally signed by the Identity Provider. One possible use case is for https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect] which uses JWT formatted https://en.wikipedia.org/wiki/Access_token[access tokens] .
+Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token] (JWT) based Bearer authentication with the use of the JWTAuthPlugin. This allows Solr to assert that a user is already authenticated with an external https://en.wikipedia.org/wiki/Identity_provider[Identity Provider] by validating that the JWT formatted https://en.wikipedia.org/wiki/Access_token[access token] is digitally signed by the Identity Provider. The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect] enabled IdP.
 
 == Enable JWT Authentication
 
-To use JWT authentication, you must first create a `security.json` file. This file and where to put it is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
-
-The `security.json` file must have an `authentication` part which defines the class being used for authentication along with configuration parameters.
+To use JWT Bearer authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication along with configuration parameters.
 
 The simplest possible `security.json` for registering the plugin without configuration is:
 
@@ -35,27 +33,27 @@ The simplest possible `security.json` for registering the plugin without configu
 }
 ----
 
-The plugin will NOT block anonymous traffic in this mode, since the default for `blockUnknown` is false. It is then possible to start configuring the plugin using REST API calls.
+The plugin will NOT block anonymous traffic in this mode, since the default for `blockUnknown` is false. It is then possible to start configuring the plugin using REST API calls, which is described below.
 
 == Configuration parameters
 
 [%header,format=csv,separator=;]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Set to `false` in order to pass requests from unknown users without a token  ; `true`
+blockUnknown         ; Set to `true` in order to block requests from users without a token  ; `false`
 wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
 clientId             ; Client identifier for use with OpenID Connect           ; (no default value) Required to authenticate with Admin UI
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
 jwkUrl               ; An https URL to a https://tools.ietf.org/html/rfc7517[JWK] keys file. ; Auto configured if `wellKnownUrl` is provided
-jwk                  ; As an alternative to `jwkUrl` you may provide a JSON object here containing the public key(s) of the issuer.  ; Auto configured if `wellKnownUrl` is provided
-iss                  ; Validates that `iss` (issuer) equals this string        ; Auto configured if `wellKnownUrl` is provided
-aud                  ; Validates that `aud` (audience) equals this string      ; If `clientId` is configured, require `aud` to match it
-requireSub           ; Makes `sub` (subject) mandatory                         ; `true`
-requireExp           ; Makes `exp` (expiry time) mandatory                     ; `true`
+jwk                  ; As an alternative to `jwkUrl` you may provide a JSON object here containing the public key(s) of the issuer.  ;
+iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
+aud                  ; Validates that the `aud` (audience) claim equals this string      ; If `clientId` is configured, require `aud` to match it
+requireSub           ; Makes `sub` (subject) claim mandatory                         ; `true`
+requireExp           ; Makes `exp` (expiry time) claim mandatory                     ; `true`
 algWhitelist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms 
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
-principalClaim       ; What claim id to pull principal from                    ; '`sub`'
+principalClaim       ; What claim id to pull principal from                    ; `sub`
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided 
@@ -64,7 +62,7 @@ redirectUris         ; Valid location(s) for redirect after external authenticat
 
 == More configuration examples
 === With JWK URL
-To start enforcing authentication for all users, requiring a valid JWT token in the `Authorization` header, you need to configure the plugin with one or more https://tools.ietf.org/html/rfc7517[JSON Web Key]s (JWK). This is a JSON document containing the key used to sign/encrypt the JWT. It could be a symmetric or asymmetric key. The JWK can either be fetched (and cached) from an external HTTPS endpoint or specified directly in `security.json`. Below is an example of the former:
+To start enforcing authentication for all users, requiring a valid JWT in the `Authorization` header, you need to configure the plugin with one or more https://tools.ietf.org/html/rfc7517[JSON Web Key]s (JWK). This is a JSON document containing the key used to sign/encrypt the JWT. It could be a symmetric or asymmetric key. The JWK can either be fetched (and cached) from an external HTTPS endpoint or specified directly in `security.json`. Below is an example of the former:
 
 [source,json]
 ----
@@ -168,7 +166,7 @@ curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:
 ====
 --
 
-Insert your JWT token in compact `xxx.yyy.zzz` format above to authenticate with Solr once the plugin is active.
+Insert a valid JWT access token in compact serialization format (`xxx.yyy.zzz` above) to authenticate with Solr once the plugin is active.
 
 == Using clients with JWT Auth 
 
