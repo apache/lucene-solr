@@ -101,8 +101,9 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       throw new RuntimeException(e);
     }
     clone.data = data.clone();
-    clone.dataInputs = new HashMap<>();
     clone.disiInputs = new HashMap<>();
+    clone.disiJumpTables = new HashMap<>();
+    clone.dataInputs = new HashMap<>();
     clone.merging = true;
     return clone;
   }
