@@ -20,6 +20,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -39,11 +40,22 @@ public class BasicResultContext extends ResultContext {
   }
 
   public BasicResultContext(ResponseBuilder rb) {
-    this(rb.getResults().docList, rb.rsp.getReturnFields(), null, rb.getQuery(), rb.req);
+    this(rb.getResults().docList, rb.rsp.getReturnFields(), null, getQueryFromResponseBuilder(rb), rb.req);
   }
 
   public BasicResultContext(ResponseBuilder rb, DocList docList) {
-    this(docList, rb.rsp.getReturnFields(), null, rb.getQuery(), rb.req);
+    this(docList, rb.rsp.getReturnFields(), null, getQueryFromResponseBuilder(rb), rb.req);
+  }
+
+  private static Query getQueryFromResponseBuilder(ResponseBuilder rb) {
+    // This makes sure we are wrapping the original query with rank query
+    // if it exists, which allows doc transformers like ExplainAugmenterFactory
+    // to output the right explanations
+    final RankQuery rankQuery = rb.getRankQuery();
+    if (rankQuery != null) {
+      return rankQuery.wrap(rb.getQuery());
+    }
+    return rb.getQuery();
   }
 
   @Override

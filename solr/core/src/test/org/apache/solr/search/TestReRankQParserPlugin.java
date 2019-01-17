@@ -646,7 +646,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13143")
+  @Test
   public void testReRankExplain() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());
