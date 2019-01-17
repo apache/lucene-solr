@@ -1402,8 +1402,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         int bitsPerValue;
         do {
           // If the needed block is the one directly following the current block, it is cheaper to avoid the cache
-          if (entry.valueJumpTableOffset != -1 && block != this.block+1) {
-            blockEndOffset = rankSlice.readLong(block*Long.BYTES-entry.valuesOffset)-entry.valuesOffset;
+          if (rankSlice != null && block != this.block+1) {
+            blockEndOffset = rankSlice.readLong(block*Long.BYTES)-entry.valuesOffset;
             this.block = block-1;
           }
           offset = blockEndOffset;
