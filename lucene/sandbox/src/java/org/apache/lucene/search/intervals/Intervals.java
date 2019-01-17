@@ -19,7 +19,11 @@ package org.apache.lucene.search.intervals;
 
 import java.util.Arrays;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Constructor functions for {@link IntervalsSource} types
@@ -73,6 +77,28 @@ public final class Intervals {
     if (subSources.length == 1)
       return subSources[0];
     return new DisjunctionIntervalsSource(Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of all terms that begin with a prefix
+   *
+   * @throws IllegalStateException if the prefix expands to more than 128 terms
+   */
+  public static IntervalsSource prefix(String prefix) {
+    CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(new BytesRef(prefix)));
+    return new MultiTermIntervalsSource(ca, 128, prefix);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of all terms that match a wildcard glob
+   *
+   * @throws IllegalStateException if the wildcard glob expands to more than 128 terms
+   *
+   * @see WildcardQuery for glob format
+   */
+  public static IntervalsSource wildcard(String wildcard) {
+    CompiledAutomaton ca = new CompiledAutomaton(WildcardQuery.toAutomaton(new Term("", wildcard)));
+    return new MultiTermIntervalsSource(ca, 128, wildcard);
   }
 
   /**

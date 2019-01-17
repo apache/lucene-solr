@@ -99,7 +99,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     return minExtent;
   }
 
-  private static class DisjunctionIntervalIterator extends IntervalIterator {
+  static class DisjunctionIntervalIterator extends IntervalIterator {
 
     final DocIdSetIterator approximation;
     final PriorityQueue<IntervalIterator> intervalQueue;
