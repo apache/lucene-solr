@@ -222,14 +222,19 @@ limitations under the License.
               </td>
               <td class="scroll-height-250">
                   <div ng-show="!n.cores">(none)</div>
-                  <div ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index">
-                    <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)
-                    <ul class="core-details" ng-show="showDetails[key]">
-                      <li>deleted: {{core.deletedDocsHuman}}</li>
-                      <li>warmupTime: {{core.warmupTime}}</li>
-                      <li ng-show="core.numDocs > 0">avg size/doc: {{core.avgSizePerDoc}}</li>
-                    </ul>
-                  </div>
+                  <ul dnd-list="n.cores" dnd-drop="replicaDropped($item, n)">
+                    <li ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index"
+                      dnd-draggable="core"
+                      dnd-moved="replicaDragged($event, n.cores, $index, core)"
+                      dnd-effect-allowed="move">
+                      <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)
+                      <ul class="core-details" ng-show="showDetails[key]">
+                        <li>deleted: {{core.deletedDocsHuman}}</li>
+                        <li>warmupTime: {{core.warmupTime}}</li>
+                        <li ng-show="core.numDocs > 0">avg size/doc: {{core.avgSizePerDoc}}</li>
+                      </ul>
+                    </li>
+                  </ul>
                   <div class="more" ng-show="n.cores.length > 2 && !showDetails[key]">
                     <a ng-click="toggleDetails(key)">({{n.cores.length - 2}} more...)</a>
                   </div>

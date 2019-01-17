@@ -163,6 +163,18 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     return nodesInHost[0] === node;
   };
   
+  $scope.replicaDragged = function(event, cores, index, cores) {
+	console.log(event);  
+  };
+  
+  $scope.replicaDropped = function(item, node) {
+	console.log(event);  
+  };
+  
+  $scope.moveReplica = function(data) {
+	console.log(data);
+  };
+  
   // Initializes the cluster state, list of nodes, collections etc
   $scope.initClusterState = function() {
     var nodes = {};

@@ -22,7 +22,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngtimeago",
   "solrAdminServices",
   "localytics.directives",
-  "ab-base64"
+  "ab-base64",
+  "dndLists"
 ]);
 
 solrAdminApp.config([
@@ -334,7 +335,7 @@ solrAdminApp.config([
     if (sessionStorage.getItem("auth.header")) {
       config.headers['Authorization'] = sessionStorage.getItem("auth.header");
     }
-    config.timeout = 10000;
+    config.timeout = 20000;
     return config || $q.when(config);
   };
 
