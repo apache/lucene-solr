@@ -646,4 +646,31 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13143")
+  public void testReRankExplain() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+
+    String[] doc = {"id", "1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id", "2", "term_s", "YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200"};
+    assertU(adoc(doc1));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=200}");
+    params.add("q", "*:*");
+    params.add("start", "0");
+    params.add("rows", "2");
+    params.add("rqq", "id:1");
+    params.add("fl", "explain:[explain],id,score");
+    params.add("debugQuery", "true");
+    // Make sure that the explanations from the debugQuery and ExplainAugmenterFactory are equal
+    assertQ(req(params),
+        "normalize-space(string(//result/doc[1]/str[@name='explain']))=normalize-space(string(//lst[@name='debug']/lst[@name='explain']/str[@name='1']))",
+        "normalize-space(string(//result/doc[2]/str[@name='explain']))=normalize-space(string(//lst[@name='debug']/lst[@name='explain']/str[@name='2']))");
+  }
+
 }
