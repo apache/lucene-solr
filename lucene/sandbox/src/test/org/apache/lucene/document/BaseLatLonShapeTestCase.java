@@ -175,7 +175,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
   @Slow
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
+    doTestRandom(1000);
   }
 
   @Slow
@@ -366,12 +366,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   private int scaledIterationCount(int shapes) {
     if (shapes < 500) {
       return atLeast(50);
-    } else if (shapes < 10000) {
+    } else if (shapes < 5000) {
       return atLeast(25);
     } else if (shapes < 25000) {
-      return atLeast(10);
+      return atLeast(5);
     } else {
-      return atLeast(3);
+      return atLeast(2);
     }
   }
 
