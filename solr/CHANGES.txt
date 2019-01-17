@@ -43,6 +43,8 @@ New Features
 
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
+* SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski) 
+
 * SOLR-12770: Make it possible to configure a host whitelist for distributed search
   (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
