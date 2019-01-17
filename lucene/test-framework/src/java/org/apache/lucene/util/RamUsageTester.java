@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.ToLongFunction;
@@ -148,41 +147,34 @@ public final class RamUsageTester {
          * and accumulate this object's shallow size. 
          */
         try {
+          ClassCache cachedInfo = classCache.get(obClazz);
+          if (cachedInfo == null) {
+            classCache.put(obClazz, cachedInfo = createCacheEntry(obClazz));
+          }
+          
           boolean needsReflection = true;
           if (Constants.JRE_IS_MINIMUM_JAVA9 && obClazz.getName().startsWith("java.")) {
-            long alignedShallowInstanceSize = RamUsageEstimator.shallowSizeOf(ob);
-
             // Java 9: Best guess for some known types, as we cannot precisely look into runtime classes:
             final ToLongFunction<Object> func = SIMPLE_TYPES.get(obClazz);
             if (func != null) { // some simple type like String where the size is easy to get from public properties
-              totalSize += accumulator.accumulateObject(ob, alignedShallowInstanceSize + func.applyAsLong(ob),
+              totalSize += accumulator.accumulateObject(ob, cachedInfo.alignedShallowInstanceSize + func.applyAsLong(ob), 
                   Collections.emptyMap(), stack);
               needsReflection = false;
-            } else if (ob instanceof ByteBuffer) {
-              // Approximate ByteBuffers with their underlying storage (ignores field overhead).
-              totalSize += byteArraySize(((ByteBuffer) ob).capacity());
+            } else if (ob instanceof Iterable) {
+              final List<Object> values = StreamSupport.stream(((Iterable<?>) ob).spliterator(), false)
+                  .collect(Collectors.toList());
+              totalSize += accumulator.accumulateArray(ob, cachedInfo.alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
               needsReflection = false;
             }  else if (ob instanceof Map) {
               final List<Object> values = ((Map<?,?>) ob).entrySet().stream()
                   .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
                   .collect(Collectors.toList());
-              totalSize += accumulator.accumulateArray(ob, alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
+              totalSize += accumulator.accumulateArray(ob, cachedInfo.alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
               totalSize += RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-              needsReflection = false;
-            } else if (ob instanceof Iterable) {
-            final List<Object> values = StreamSupport.stream(((Iterable<?>) ob).spliterator(), false)
-                .collect(Collectors.toList());
-              totalSize += accumulator.accumulateArray(ob, alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
               needsReflection = false;
             }
           }
-
           if (needsReflection) {
-            ClassCache cachedInfo = classCache.get(obClazz);
-            if (cachedInfo == null) {
-              classCache.put(obClazz, cachedInfo = createCacheEntry(obClazz));
-            }
-
             final Map<Field, Object> fieldValues = new HashMap<>();
             for (Field f : cachedInfo.referenceFields) {
               fieldValues.put(f, f.get(ob));
@@ -220,6 +212,8 @@ public final class RamUsageTester {
       a(StringBuffer.class, v -> charArraySize(v.capacity()));
       // Types with large buffers:
       a(ByteArrayOutputStream.class, v -> byteArraySize(v.size()));
+      // Approximate ByteBuffers with their underling storage (ignores field overhead).
+      a(ByteBuffer.class, v -> byteArraySize(v.capacity()));
       // For File and Path, we just take the length of String representation as approximation:
       a(File.class, v -> charArraySize(v.toString().length()));
       a(Path.class, v -> charArraySize(v.toString().length()));
@@ -232,6 +226,10 @@ public final class RamUsageTester {
     
     private long charArraySize(int len) {
       return RamUsageEstimator.alignObjectSize((long)RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long)Character.BYTES * len);
+    }
+    
+    private long byteArraySize(int len) {
+      return RamUsageEstimator.alignObjectSize((long)RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + len);
     }
   });
   
@@ -273,10 +271,11 @@ public final class RamUsageTester {
                 f.setAccessible(true);
                 referenceFields.add(f);
               } catch (RuntimeException re) {
-                throw new RuntimeException(String.format(Locale.ROOT,
-                    "Can't access field %s of class %s for RAM estimation.",
-                    f.toString(),
-                    c.getName()), re);
+                if ("java.lang.reflect.InaccessibleObjectException".equals(re.getClass().getName())) {
+                  // LUCENE-7595: this is Java 9, which prevents access to fields in foreign modules
+                } else {
+                  throw re;
+                }
               }
             }
           }
@@ -290,7 +289,4 @@ public final class RamUsageTester {
     });
   }
 
-  private static long byteArraySize(int len) {
-    return RamUsageEstimator.alignObjectSize((long) RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + len);
-  }
 }
