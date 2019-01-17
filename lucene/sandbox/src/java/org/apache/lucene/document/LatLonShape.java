@@ -55,7 +55,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * @lucene.experimental
  */
 public class LatLonShape {
-  public static final int BYTES = LatLonPoint.BYTES;
+  static final int BYTES = Integer.BYTES;
 
   protected static final FieldType TYPE = new FieldType();
   static {
