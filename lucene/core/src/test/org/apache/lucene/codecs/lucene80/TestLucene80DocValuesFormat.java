@@ -562,65 +562,38 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
   // and numeric multi blocks. This test focuses on testing these jumps.
   @Slow
   public void testNumericFieldJumpTables() throws Exception {
-    final int maxDoc = atLeast(3*65536); // Must be above 3*65536 to trigger IndexedDISI block skips
+    // IndexedDISI block skipping only activated if target >= current+2, so we need at least 5 blocks to
+    // trigger consecutive block skips
+    final int maxDoc = atLeast(5*65536);
 
     Directory dir = newDirectory();
     IndexWriter iw = createFastIndexWriter(dir, maxDoc);
 
+    Field idField = newStringField("id", "", Field.Store.NO);
+    Field storedField = newStringField("stored", "", Field.Store.YES);
+    Field dvField = new NumericDocValuesField("dv", 0);
+
     for (int i = 0 ; i < maxDoc ; i++) {
       Document doc = new Document();
-      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      idField.setStringValue(Integer.toBinaryString(i));
+      doc.add(idField);
       if (random().nextInt(100) > 10) { // Skip 10% to make DENSE blocks
         int value = random().nextInt(100000);
-        doc.add(new NumericDocValuesField("dv", value));
-        doc.add(new StringField("storedValue", Integer.toString(value), Field.Store.YES));
+        storedField.setStringValue(Integer.toString(value));
+        doc.add(storedField);
+        dvField.setLongValue(value);
+        doc.add(dvField);
       }
       iw.addDocument(doc);
     }
     iw.flush();
     iw.forceMerge(1, true); // Single segment to force large enough structures
     iw.commit();
-
-    try (DirectoryReader dr = DirectoryReader.open(iw)) {
-        assertEquals("maxDoc should be as expected", maxDoc, dr.maxDoc());
-        LeafReader r = getOnlyLeafReader(dr);
-
-      // Check non-jumping first
-      {
-        NumericDocValues numDV = DocValues.getNumeric(r, "dv");
-        for (int i = 0; i < maxDoc; i++) {
-          IndexableField fieldValue = r.document(i).getField("storedValue");
-          if (fieldValue == null) {
-            assertFalse("There should be no DocValue for document #" + i, numDV.advanceExact(i));
-          } else {
-            assertTrue("There should be a DocValue for document #" + i, numDV.advanceExact(i));
-            assertEquals("The value for document #" + i + " should be correct",
-                fieldValue.stringValue(), Long.toString(numDV.longValue()));
-          }
-        }
-      }
-
-      // We use steps of 511 to have a non-divisor for the different possible jump-steps 512 (DENSE),
-      // 16384 (variable bits per value) and 65536 (IndexedDISI blocks)
-      {
-        for (int jump = 511; jump < maxDoc; jump += 511) {
-          // Create a new instance each time to ensure jumps from the beginning
-          NumericDocValues numDV = DocValues.getNumeric(r, "dv");
-          for (int index = 0; index < maxDoc; index += jump) {
-            IndexableField fieldValue = r.document(index).getField("storedValue");
-            if (fieldValue == null) {
-              assertFalse("There should be no DocValue for document #" + jump, numDV.advanceExact(index));
-            } else {
-              assertTrue("There should be a DocValue for document #" + jump, numDV.advanceExact(index));
-              assertEquals("The value for document #" + jump + " should be correct",
-                  fieldValue.stringValue(), Long.toString(numDV.longValue()));
-            }
-          }
-        }
-      }
-    }
-
     iw.close();
+
+    assertDVIterate(dir);
+    assertDVAdvance(dir, rarely() ? 1 : 7); // 1 is heavy (~20 s), so we do it rarely. 7 is a lot faster (8 s)
+
     dir.close();
   }
 
@@ -740,25 +713,39 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     writer.close();
     
     // compare
+    assertDVIterate(dir);
+    assertDVAdvance(dir, 1); // Tests all jump-lengths from 1 to maxDoc (quite slow ~= 1 minute for 200K docs)
+
+    dir.close();
+  }
+
+  // Tests that advanceExact does not change the outcome
+  private void assertDVAdvance(Directory dir, int jumpStep) throws IOException {
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      NumericDocValues docValues = DocValues.getNumeric(r, "dv");
-      docValues.nextDoc();
-      for (int i = 0; i < r.maxDoc(); i++) {
-        String storedValue = r.document(i).get("stored");
-        if (storedValue == null) {
-          assertTrue(docValues.docID() > i);
-        } else {
-          assertEquals(i, docValues.docID());
-          assertEquals(Long.parseLong(storedValue), docValues.longValue());
-          docValues.nextDoc();
+
+
+      for (int jump = jumpStep; jump < r.maxDoc(); jump += jumpStep) {
+        // Create a new instance each time to ensure jumps from the beginning
+        NumericDocValues docValues = DocValues.getNumeric(r, "dv");
+        for (int docID = 0; docID < r.maxDoc(); docID += jump) {
+          String base = "document #" + docID + "/" + r.maxDoc() + ", jumping " + jump + " from #" + (docID-jump);
+          String storedValue = r.document(docID).get("stored");
+          if (storedValue == null) {
+            assertFalse("There should be no DocValue for " + base,
+                docValues.advanceExact(docID));
+          } else {
+            assertTrue("There should be a DocValue for " + base,
+                docValues.advanceExact(docID));
+            assertEquals("The doc value should be correct for " + base,
+                Long.parseLong(storedValue), docValues.longValue());
+          }
         }
       }
-      assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
     }
     ir.close();
-    dir.close();
   }
+
 }

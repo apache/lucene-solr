@@ -1205,9 +1205,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs) throws Exception {
     doTestNumericsVsStoredFields(density, longs, 256);
-    // TODO: 200000 docs are needed to test jumps properly (see LUCENE-8585), but that is quite slow (few minutes).
-    // Maybe it can be nightly?
-    //doTestNumericsVsStoredFields(density, longs, 200000);
   }
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs, int minDocs) throws Exception {
     Directory dir = newDirectory();
@@ -1255,14 +1252,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     writer.close();
     // compare
     assertDVIterate(dir);
-    // Consider enabling assertDVAdvance(dir, 1) for nightly
-    //assertDVAdvance(dir, 1); // Tests all jump-lengths from 1 to maxDoc (quite slow ~= 1 minute for 200K docs)
-    assertDVAdvance(dir, 8191); // Smallest jump-table block (vBPV) has 16384 entries
     dir.close();
   }
 
   // Asserts equality of stored value vs. DocValue by iterating DocValues one at a time
-  private void assertDVIterate(Directory dir) throws IOException {
+  protected void assertDVIterate(Directory dir) throws IOException {
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
@@ -1280,35 +1274,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
         }
       }
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
-    }
-    ir.close();
-  }
-
-  // Tests that advanceExact does not change the outcome
-  private void assertDVAdvance(Directory dir, int jumpStep) throws IOException {
-    DirectoryReader ir = DirectoryReader.open(dir);
-    TestUtil.checkReader(ir);
-    for (LeafReaderContext context : ir.leaves()) {
-      LeafReader r = context.reader();
-
-
-      for (int jump = jumpStep; jump < r.maxDoc(); jump += jumpStep) {
-        // Create a new instance each time to ensure jumps from the beginning
-        NumericDocValues docValues = DocValues.getNumeric(r, "dv");
-        for (int docID = 0; docID < r.maxDoc(); docID += jump) {
-          String base = "document #" + docID + "/" + r.maxDoc() + ", jumping " + jump + " from #" + (docID-jump);
-          String storedValue = r.document(docID).get("stored");
-          if (storedValue == null) {
-            assertFalse("There should be no DocValue for " + base,
-                docValues.advanceExact(docID));
-          } else {
-            assertTrue("There should be a DocValue for " + base,
-                docValues.advanceExact(docID));
-            assertEquals("The doc value should be correct for " + base,
-                Long.parseLong(storedValue), docValues.longValue());
-          }
-        }
-      }
     }
     ir.close();
   }
