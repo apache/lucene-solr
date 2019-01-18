@@ -222,10 +222,11 @@ limitations under the License.
               </td>
               <td class="scroll-height-250">
                   <div ng-show="!n.cores">(none)</div>
-                  <ul dnd-list="n.cores" dnd-drop="replicaDropped($item, n)">
+                  <!-- {item} is provided by the dnd-drop callback invocation -->
+                  <ul dnd-list="n.cores" dnd-drop="replicaDropped(item, n, key)">
                     <li ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index"
                       dnd-draggable="core"
-                      dnd-moved="replicaDragged($event, n.cores, $index, core)"
+                      dnd-moved="n.cores.splice($index, 1)"
                       dnd-effect-allowed="move">
                       <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)
                       <ul class="core-details" ng-show="showDetails[key]">

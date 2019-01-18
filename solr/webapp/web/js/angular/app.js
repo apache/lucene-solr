@@ -335,7 +335,7 @@ solrAdminApp.config([
     if (sessionStorage.getItem("auth.header")) {
       config.headers['Authorization'] = sessionStorage.getItem("auth.header");
     }
-    config.timeout = 20000;
+    config.timeout = 10000;
     return config || $q.when(config);
   };
 

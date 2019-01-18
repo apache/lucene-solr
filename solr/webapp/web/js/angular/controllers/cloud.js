@@ -110,7 +110,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, Collections, System, Metrics) {
+var nodesSubController = function($scope, Collections, System, Metrics, ModalService) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -163,16 +163,37 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     return nodesInHost[0] === node;
   };
   
-  $scope.replicaDragged = function(event, cores, index, cores) {
-	console.log(event);  
-  };
-  
-  $scope.replicaDropped = function(item, node) {
-	console.log(event);  
+  $scope.replicaDropped = function(replica, targetNode, targetNodeName) {
+	if (confirm(replica.label + '  -->  ' + targetNodeName)) {
+		const p = $scope.moveReplica({replica, targetNode, targetNodeName});
+		p.then(function(response){
+			if (response.responseHeader.status == 0) {
+				Collections.requestStatus({requestid: response.requestid}).$promise.then(function(statusResponse) {
+					alert(JSON.stringify(statusResponse.status));
+				});
+			}
+		}, function (err){
+			console.error(err);
+			alert(err.message);
+		});
+		replica.label = 'MOVED-' + replica.label;
+		return replica;
+	} else {
+		return false;
+	}
   };
   
   $scope.moveReplica = function(data) {
 	console.log(data);
+	const p = Collections.moveReplica({
+		collection: data.replica.collection,
+		shard: data.replica.shard,
+		replica: data.replica.name,
+		sourceNode: data.replica.node_name,
+		targetNode: data.targetNodeName,
+		async: Math.floor(Math.random() * 10000) + 1
+	});
+	return p.$promise;
   };
   
   // Initializes the cluster state, list of nodes, collections etc

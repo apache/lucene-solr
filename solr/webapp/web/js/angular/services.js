@@ -31,6 +31,7 @@ solrAdminServices.factory('System',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
     "status": {params:{action: "CLUSTERSTATUS"}},
+    "requestStatus": {params:{action: "REQUESTSTATUS"}},
     "add": {params:{action: "CREATE"}},
     "delete": {params:{action: "DELETE"}},
     "rename": {params:{action: "RENAME"}},
