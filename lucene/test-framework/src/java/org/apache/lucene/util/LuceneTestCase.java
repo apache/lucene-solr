@@ -490,7 +490,6 @@ public abstract class LuceneTestCase extends Assert {
   private static final List<String> CORE_DIRECTORIES;
   static {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
-    CORE_DIRECTORIES.add("RAMDirectory");
     CORE_DIRECTORIES.add(ByteBuffersDirectory.class.getSimpleName());
   }
   
