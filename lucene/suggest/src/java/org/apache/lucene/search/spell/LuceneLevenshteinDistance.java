@@ -65,13 +65,8 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     d = new int[n+1][m+1];
     
     if (n == 0 || m == 0) {
-      if (n == m) {
-        return 0;
-      }
-      else {
-        return Math.max(n, m);
-      }
-    } 
+      return 0;
+    }
 
     // indexes into strings s and t
     int i; // iterates through s
@@ -103,7 +98,7 @@ public final class LuceneLevenshteinDistance implements StringDistance {
       }
     }
     
-    return 1.0f - ((float) d[n][m] / Math.min(m, n));
+    return 1.0f - ((float) d[n][m] / Math.max(m, n));
   }
   
   private static IntsRef toIntsRef(String s) {
