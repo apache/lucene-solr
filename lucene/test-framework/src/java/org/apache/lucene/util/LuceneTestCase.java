@@ -1626,7 +1626,7 @@ public abstract class LuceneTestCase extends Assert {
       if (rarely(random)) {
         clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
       } else {
-        clazzName = "RAMDirectory";
+        clazzName = ByteBuffersDirectory.class.getName();
       }
     }
 
