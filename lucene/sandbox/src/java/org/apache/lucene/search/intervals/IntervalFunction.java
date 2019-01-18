@@ -75,19 +75,19 @@ abstract class IntervalFunction {
     @Override
     public int nextInterval() throws IOException {
       if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-        return IntervalIterator.NO_MORE_INTERVALS;
+        return start = end = IntervalIterator.NO_MORE_INTERVALS;
       int i = 1;
       while (i < subIterators.size()) {
         while (subIterators.get(i).start() <= subIterators.get(i - 1).end()) {
           if (subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-            return IntervalIterator.NO_MORE_INTERVALS;
+            return start = end = IntervalIterator.NO_MORE_INTERVALS;
         }
         if (subIterators.get(i).start() == subIterators.get(i - 1).end() + 1) {
           i = i + 1;
         }
         else {
           if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-            return IntervalIterator.NO_MORE_INTERVALS;
+            return start = end = IntervalIterator.NO_MORE_INTERVALS;
           i = 1;
         }
       }
@@ -150,6 +150,9 @@ abstract class IntervalFunction {
           i++;
         }
         start = subIterators.get(0).start();
+        if (start == NO_MORE_INTERVALS) {
+          return end = NO_MORE_INTERVALS;
+        }
         firstEnd = subIterators.get(0).end();
         end = subIterators.get(subIterators.size() - 1).end();
         b = subIterators.get(subIterators.size() - 1).start();
@@ -248,7 +251,7 @@ abstract class IntervalFunction {
           if (allowOverlaps == false) {
             while (hasOverlaps(it)) {
               if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-                return IntervalIterator.NO_MORE_INTERVALS;
+                return start = end = IntervalIterator.NO_MORE_INTERVALS;
             }
           }
           queue.add(it);
@@ -256,7 +259,7 @@ abstract class IntervalFunction {
         }
       }
       if (this.queue.size() < subIterators.length)
-        return IntervalIterator.NO_MORE_INTERVALS;
+        return start = end = IntervalIterator.NO_MORE_INTERVALS;
       // then, minimize it
       do {
         start = queue.top().start();
@@ -350,25 +353,7 @@ abstract class IntervalFunction {
         throw new IllegalStateException("CONTAINING function requires two iterators");
       IntervalIterator a = iterators.get(0);
       IntervalIterator b = iterators.get(1);
-      return new ConjunctionIntervalIterator(iterators) {
-
-        boolean bpos;
-
-        @Override
-        public int start() {
-          return a.start();
-        }
-
-        @Override
-        public int end() {
-          return a.end();
-        }
-
-        @Override
-        public int gaps() {
-          return a.gaps();
-        }
-
+      return new FilteringIntervalIterator(a, b) {
         @Override
         public int nextInterval() throws IOException {
           if (bpos == false)
@@ -382,11 +367,6 @@ abstract class IntervalFunction {
               return a.start();
           }
           return IntervalIterator.NO_MORE_INTERVALS;
-        }
-
-        @Override
-        protected void reset() throws IOException {
-          bpos = b.nextInterval() != NO_MORE_INTERVALS;
         }
       };
     }
@@ -402,47 +382,96 @@ abstract class IntervalFunction {
         throw new IllegalStateException("CONTAINED_BY function requires two iterators");
       IntervalIterator a = iterators.get(0);
       IntervalIterator b = iterators.get(1);
-      return new ConjunctionIntervalIterator(iterators) {
-
-        boolean bpos;
-
-        @Override
-        public int start() {
-          return a.start();
-        }
-
-        @Override
-        public int end() {
-          return a.end();
-        }
-
-        @Override
-        public int gaps() {
-          return a.gaps();
-        }
-
+      return new FilteringIntervalIterator(a, b) {
         @Override
         public int nextInterval() throws IOException {
           if (bpos == false)
             return IntervalIterator.NO_MORE_INTERVALS;
           while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
             while (b.end() < a.end()) {
-              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+                bpos = false;
                 return IntervalIterator.NO_MORE_INTERVALS;
+              }
             }
             if (b.start() <= a.start())
               return a.start();
           }
+          bpos = false;
           return IntervalIterator.NO_MORE_INTERVALS;
-        }
-
-        @Override
-        protected void reset() throws IOException {
-          bpos = b.nextInterval() != NO_MORE_INTERVALS;
         }
       };
     }
   };
+
+  static final IntervalFunction OVERLAPPING = new SingletonFunction("OVERLAPPING") {
+    @Override
+    public IntervalIterator apply(List<IntervalIterator> iterators) {
+      if (iterators.size() != 2)
+        throw new IllegalStateException("OVERLAPPING function requires two iterators");
+      IntervalIterator a = iterators.get(0);
+      IntervalIterator b = iterators.get(1);
+      return new FilteringIntervalIterator(a, b) {
+        @Override
+        public int nextInterval() throws IOException {
+          if (bpos == false)
+            return IntervalIterator.NO_MORE_INTERVALS;
+          while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
+            while (b.end() < a.start()) {
+              if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+                bpos = false;
+                return IntervalIterator.NO_MORE_INTERVALS;
+              }
+            }
+            if (b.start() <= a.end())
+              return a.start();
+          }
+          bpos = false;
+          return IntervalIterator.NO_MORE_INTERVALS;
+        }
+      };
+    }
+  };
+
+  private static abstract class FilteringIntervalIterator extends ConjunctionIntervalIterator {
+
+    final IntervalIterator a;
+    final IntervalIterator b;
+
+    boolean bpos;
+
+    protected FilteringIntervalIterator(IntervalIterator a, IntervalIterator b) {
+      super(Arrays.asList(a, b));
+      this.a = a;
+      this.b = b;
+    }
+
+    @Override
+    public int start() {
+      if (bpos == false) {
+        return NO_MORE_INTERVALS;
+      }
+      return a.start();
+    }
+
+    @Override
+    public int end() {
+      if (bpos == false) {
+        return NO_MORE_INTERVALS;
+      }
+      return a.end();
+    }
+
+    @Override
+    public int gaps() {
+      return a.gaps();
+    }
+
+    @Override
+    protected void reset() throws IOException {
+      bpos = b.nextInterval() != NO_MORE_INTERVALS;
+    }
+  }
 
   private static abstract class SingletonFunction extends IntervalFunction {
 

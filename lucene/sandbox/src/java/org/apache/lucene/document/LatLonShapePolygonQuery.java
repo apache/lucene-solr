@@ -62,34 +62,26 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    double minLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minYOffset));
-    double minLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(minTriangle, minXOffset));
-    double maxLat = GeoEncodingUtils.decodeLatitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxYOffset));
-    double maxLon = GeoEncodingUtils.decodeLongitude(LatLonShape.decodeTriangleBoxVal(maxTriangle, maxXOffset));
+
+    double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
     return poly2D.relate(minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected boolean queryMatches(byte[] t) {
-    long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
-    long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
-    long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
+  protected boolean queryMatches(byte[] t, int[] scratchTriangle) {
+    LatLonShape.decodeTriangle(t, scratchTriangle);
 
-    int aX = (int)((a >>> 32) & 0x00000000FFFFFFFFL);
-    int bX = (int)((b >>> 32) & 0x00000000FFFFFFFFL);
-    int cX = (int)((c >>> 32) & 0x00000000FFFFFFFFL);
-    int aY = (int)(a & 0x00000000FFFFFFFFL);
-    int bY = (int)(b & 0x00000000FFFFFFFFL);
-    int cY = (int)(c & 0x00000000FFFFFFFFL);
-
-    double alat = GeoEncodingUtils.decodeLatitude(aY);
-    double alon = GeoEncodingUtils.decodeLongitude(aX);
-    double blat = GeoEncodingUtils.decodeLatitude(bY);
-    double blon = GeoEncodingUtils.decodeLongitude(bX);
-    double clat = GeoEncodingUtils.decodeLatitude(cY);
-    double clon = GeoEncodingUtils.decodeLongitude(cX);
+    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
+    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);
+    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle[2]);
+    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle[3]);
+    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle[4]);
+    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
 
     if (queryRelation == QueryRelation.WITHIN) {
       return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;

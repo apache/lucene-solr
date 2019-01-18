@@ -85,7 +85,7 @@ To configure the standard search handler, provide a configuration like this in `
 </requestHandler>
 ----
 
-The parameters that can be specified are as follows:
+`HttpShardHandlerFactory` is the only `ShardHandlerFactory` implementation included out of the box with Solr, It accepts the following parameters:
 
 `socketTimeout`::
 The amount of time in ms that a socket is allowed to wait. The default is `0`, where the operating system's default will be used.
@@ -95,9 +95,6 @@ The amount of time in ms that is accepted for binding / connecting a socket. The
 
 `maxConnectionsPerHost`::
 The maximum number of concurrent connections that is made to each individual shard in a distributed search. The default is `100000`.
-
-`maxConnections`::
-The total maximum number of concurrent connections in distributed searches. The default is `100000`
 
 `corePoolSize`::
 The retained lowest limit on the number of threads used in coordinating distributed search. The default is `0`.
@@ -113,6 +110,12 @@ If specified, the thread pool will use a backing queue instead of a direct hando
 
 `fairnessPolicy`::
 Chooses the JVM specifics dealing with fair policy queuing, if enabled distributed searches will be handled in a First in First out fashion at a cost to throughput. If disabled throughput will be favored over latency. The default is `false`.
+
+`shardsWhitelist`::
+If specified, this lists limits what nodes can be requested in the `shards` request parameter. In cloud mode this whitelist is automatically configured to include all live nodes in the cluster. In standalone mode the whitelist defaults to empty (sharding not allowed). If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.:
+`10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
+
+NOTE: In cloud mode, if at least one node is included in the whitelist, then the live_nodes will no longer be used as source for the list. This means that, if you need to do a cross-cluster request using the `shards` parameter in cloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist. 
 
 == Configuring statsCache (Distributed IDF)
 

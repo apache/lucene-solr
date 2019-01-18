@@ -19,11 +19,11 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.LatLonShape;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.FutureArrays;
+import org.apache.lucene.util.NumericUtils;
 
-import static org.apache.lucene.document.LatLonShape.BYTES;
+import static java.lang.Integer.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -183,12 +183,12 @@ public class Rectangle2D {
    */
   private static void encode(final int minX, final int maxX, final int minY, final int maxY, byte[] b) {
     if (b == null) {
-      b = new byte[4 * LatLonShape.BYTES];
+      b = new byte[4 * BYTES];
     }
-    LatLonShape.encodeTriangleBoxVal(minY, b, 0);
-    LatLonShape.encodeTriangleBoxVal(minX, b, BYTES);
-    LatLonShape.encodeTriangleBoxVal(maxY, b, 2 * BYTES);
-    LatLonShape.encodeTriangleBoxVal(maxX, b, 3 * BYTES);
+    NumericUtils.intToSortableBytes(minY, b, 0);
+    NumericUtils.intToSortableBytes(minX, b, BYTES);
+    NumericUtils.intToSortableBytes(maxY, b, 2 * BYTES);
+    NumericUtils.intToSortableBytes(maxX, b, 3 * BYTES);
   }
 
   /** returns true if the query intersects the provided triangle (in encoded space) */

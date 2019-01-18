@@ -27,11 +27,11 @@ import java.nio.file.Path;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
@@ -432,16 +432,14 @@ public final class FST<T> implements Accountable {
       out.writeByte((byte) 1);
 
       // Serialize empty-string output:
-      RAMOutputStream ros = new RAMOutputStream();
+      ByteBuffersDataOutput ros = new ByteBuffersDataOutput();
       outputs.writeFinalOutput(emptyOutput, ros);
-      
-      byte[] emptyOutputBytes = new byte[(int) ros.getFilePointer()];
-      ros.writeTo(emptyOutputBytes, 0);
+      byte[] emptyOutputBytes = ros.toArrayCopy();
 
       // reverse
       final int stopAt = emptyOutputBytes.length/2;
       int upto = 0;
-      while(upto < stopAt) {
+      while (upto < stopAt) {
         final byte b = emptyOutputBytes[upto];
         emptyOutputBytes[upto] = emptyOutputBytes[emptyOutputBytes.length-upto-1];
         emptyOutputBytes[emptyOutputBytes.length-upto-1] = b;

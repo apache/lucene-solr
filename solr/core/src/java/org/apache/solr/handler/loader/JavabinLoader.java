@@ -118,7 +118,9 @@ public class JavabinLoader extends ContentStreamLoader {
     for (; ; ) {
       if (in.peek() == -1) return;
       try {
-        update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
+        update = new JavaBinUpdateRequestCodec()
+            .setReadStringAsCharSeq(true)
+            .unmarshal(in, handler);
       } catch (EOFException e) {
         break; // this is expected
       }

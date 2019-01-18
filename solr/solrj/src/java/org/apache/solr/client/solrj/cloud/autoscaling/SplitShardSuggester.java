@@ -47,7 +47,11 @@ class SplitShardSuggester extends Suggester {
     }
     Pair<String, String> collShard = shards.iterator().next();
     Map<String, Object> params = (Map<String, Object>)hints.getOrDefault(Hint.PARAMS, Collections.emptyMap());
+    Float splitFuzz = (Float)params.get(CommonAdminParams.SPLIT_FUZZ);
     CollectionAdminRequest.SplitShard req = CollectionAdminRequest.splitShard(collShard.first()).setShardName(collShard.second());
+    if (splitFuzz != null) {
+      req.setSplitFuzz(splitFuzz);
+    }
     String splitMethod = (String)params.get(CommonAdminParams.SPLIT_METHOD);
     if (splitMethod != null) {
       req.setSplitMethod(splitMethod);

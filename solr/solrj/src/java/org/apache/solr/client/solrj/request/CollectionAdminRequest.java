@@ -1154,6 +1154,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String shard;
     protected String splitMethod;
     protected Integer numSubShards;
+    protected Float splitFuzz;
 
     private Properties properties;
 
@@ -1181,6 +1182,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public String getSplitMethod() {
       return splitMethod;
+    }
+
+    public SplitShard setSplitFuzz(float splitFuzz) {
+      this.splitFuzz = splitFuzz;
+      return this;
+    }
+
+    public Float getSplitFuzz() {
+      return splitFuzz;
     }
 
     public SplitShard setSplitKey(String splitKey) {
@@ -1220,8 +1230,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set("split.key", this.splitKey);
       params.set(CoreAdminParams.RANGES, ranges);
       params.set(CommonAdminParams.SPLIT_METHOD, splitMethod);
-      if(numSubShards != null)
+      if(numSubShards != null) {
         params.set("numSubShards", numSubShards);
+      }
+      if (splitFuzz != null) {
+        params.set(CommonAdminParams.SPLIT_FUZZ, String.valueOf(splitFuzz));
+      }
 
       if(properties != null) {
         addProperties(params, properties);

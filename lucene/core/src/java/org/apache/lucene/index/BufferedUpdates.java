@@ -69,11 +69,11 @@ class BufferedUpdates implements Accountable {
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numFieldUpdates = new AtomicInteger();
 
-  final Map<Term,Integer> deleteTerms = new HashMap<>();
+  final Map<Term,Integer> deleteTerms = new HashMap<>(); // TODO cut this over to FieldUpdatesBuffer
   final Map<Query,Integer> deleteQueries = new HashMap<>();
   final List<Integer> deleteDocIDs = new ArrayList<>();
 
-  final Map<String,FieldUpdatesBuffer> fieldUpdates = new HashMap<>();
+  final Map<String, FieldUpdatesBuffer> fieldUpdates = new HashMap<>();
   
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
@@ -109,7 +109,7 @@ class BufferedUpdates implements Accountable {
         s += " " + deleteDocIDs.size() + " deleted docIDs";
       }
       if (numFieldUpdates.get() != 0) {
-        s += " " + numFieldUpdates.get() + " field updates (unique count=" + fieldUpdates.size() + ")";
+        s += " " + numFieldUpdates.get() + " field updates";
       }
       if (bytesUsed.get() != 0) {
         s += " bytesUsed=" + bytesUsed.get();

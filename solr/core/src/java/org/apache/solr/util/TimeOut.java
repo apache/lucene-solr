@@ -61,7 +61,7 @@ public class TimeOut {
   public void waitFor(String messageOnTimeOut, Supplier<Boolean> supplier)
       throws InterruptedException, TimeoutException {
     while (!supplier.get() && !hasTimedOut()) {
-      Thread.sleep(250);
+      timeSource.sleep(250);
     }
     if (hasTimedOut()) throw new TimeoutException(messageOnTimeOut);
   }

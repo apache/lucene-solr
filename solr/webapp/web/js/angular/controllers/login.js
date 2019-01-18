@@ -27,9 +27,13 @@ solrAdminApp.controller('LoginController',
         var authScheme = sessionStorage.getItem("auth.scheme");
         if (wwwAuthHeader) {
           // Parse www-authenticate header
-          var wwwHeader = wwwAuthHeader.match(/(\w+)\s+(.*)/);
-          authScheme = wwwHeader[1];
-          var authParams = www_auth_parse_params(wwwHeader[2]);
+          var wwwHeader = wwwAuthHeader.match(/(\w+)(\s+)?(.*)/);
+          authScheme = "unknown";
+          var authParams = {};
+          if (wwwHeader && wwwHeader.length >= 1)
+            authScheme = wwwHeader[1]; 
+          if (wwwHeader && wwwHeader.length >= 3)
+            authParams = www_auth_parse_params(wwwHeader[3]);
           if (typeof authParams === 'string' || authParams instanceof String) {
             $scope.authParamsError = authParams;
           } else {
@@ -43,7 +47,7 @@ solrAdminApp.controller('LoginController',
           sessionStorage.setItem("auth.scheme", authScheme);
         }
 
-        var supportedSchemes = ['Basic', 'Bearer'];
+        var supportedSchemes = ['Basic', 'Bearer', 'Negotiate'];
         $scope.authSchemeSupported = supportedSchemes.includes(authScheme);
         $scope.authScheme = sessionStorage.getItem("auth.scheme");
         $scope.authRealm = sessionStorage.getItem("auth.realm");

@@ -36,6 +36,7 @@ import junit.framework.Assert;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -76,7 +77,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.hamcrest.CoreMatchers.is;
 
 /**
@@ -1700,11 +1701,16 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
-      } else {
+      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
         client.commit(); //just to be sure the client has sent the doc
         ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("Conflict"));
+      } else if (client instanceof SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) {
+        client.commit(); //just to be sure the client has sent the doc
+        SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
+        assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
+        assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("conflict"));
       }
     } catch (SolrException se) {
       assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));

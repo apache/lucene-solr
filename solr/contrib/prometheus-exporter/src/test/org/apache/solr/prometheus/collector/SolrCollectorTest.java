@@ -16,8 +16,8 @@
  */
 package org.apache.solr.prometheus.collector;
 
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.prometheus.exporter.SolrExporter;
 import org.apache.solr.prometheus.exporter.SolrExporterTestBase;
 import io.prometheus.client.CollectorRegistry;
@@ -52,7 +52,7 @@ public class SolrCollectorTest extends SolrExporterTestBase {
   public void testSolrCollector() throws Exception {
     String name = "solr-exporter-config.xml";
     SolrResourceLoader loader = new SolrResourceLoader(getFile("conf/").toPath());
-    Config config = new Config(loader, name);
+    XmlConfigFile config = new XmlConfigFile(loader, name);
 
     CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 
@@ -65,7 +65,7 @@ public class SolrCollectorTest extends SolrExporterTestBase {
   public void testCollect() throws Exception {
     String name = "solr-exporter-config.xml";
     SolrResourceLoader loader = new SolrResourceLoader(getFile("conf/").toPath());
-    Config config = new Config(loader, name);
+    XmlConfigFile config = new XmlConfigFile(loader, name);
 
     CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 

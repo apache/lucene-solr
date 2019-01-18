@@ -40,9 +40,9 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortedSetSelector;
-import org.apache.lucene.store.GrowableByteArrayDataOutput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -296,7 +296,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     long[] offsets = new long[ArrayUtil.oversize(1, Long.BYTES)];
     int offsetsIndex = 0;
     final long[] buffer = new long[NUMERIC_BLOCK_SIZE];
-    final GrowableByteArrayDataOutput encodeBuffer = new GrowableByteArrayDataOutput(NUMERIC_BLOCK_SIZE);
+    final ByteBuffersDataOutput encodeBuffer = ByteBuffersDataOutput.newResettableInstance();
     int upTo = 0;
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
       for (int i = 0, count = values.docValueCount(); i < count; ++i) {
@@ -324,7 +324,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     return offsetsOrigo;
   }
 
-  private void writeBlock(long[] values, int length, long gcd, GrowableByteArrayDataOutput buffer) throws IOException {
+  private void writeBlock(long[] values, int length, long gcd, ByteBuffersDataOutput buffer) throws IOException {
     assert length > 0;
     long min = values[0];
     long max = values[0];
@@ -340,7 +340,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     } else {
       final int bitsPerValue = DirectWriter.unsignedBitsRequired(max - min);
       buffer.reset();
-      assert buffer.getPosition() == 0;
+      assert buffer.size() == 0;
       final DirectWriter w = DirectWriter.getInstance(buffer, length, bitsPerValue);
       for (int i = 0; i < length; ++i) {
         w.add((values[i] - min) / gcd);
@@ -348,8 +348,8 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       w.finish();
       data.writeByte((byte) bitsPerValue);
       data.writeLong(min);
-      data.writeInt(buffer.getPosition());
-      data.writeBytes(buffer.getBytes(), buffer.getPosition());
+      data.writeInt(Math.toIntExact(buffer.size()));
+      buffer.copyTo(data);
     }
   }
 
@@ -477,10 +477,11 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeVLong(size);
     meta.writeInt(Lucene80DocValuesFormat.TERMS_DICT_BLOCK_SHIFT);
 
-    RAMOutputStream addressBuffer = new RAMOutputStream();
+    ByteBuffersDataOutput addressBuffer = new ByteBuffersDataOutput();
+    ByteBuffersIndexOutput addressOutput = new ByteBuffersIndexOutput(addressBuffer, "temp", "temp");
     meta.writeInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
     long numBlocks = (size + Lucene80DocValuesFormat.TERMS_DICT_BLOCK_MASK) >>> Lucene80DocValuesFormat.TERMS_DICT_BLOCK_SHIFT;
-    DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressBuffer, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
+    DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressOutput, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
 
     BytesRefBuilder previous = new BytesRefBuilder();
     long ord = 0;
@@ -515,7 +516,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
     start = data.getFilePointer();
-    addressBuffer.writeTo(data);
+    addressBuffer.copyTo(data);
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
 
@@ -529,38 +530,40 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     long start = data.getFilePointer();
 
     long numBlocks = 1L + ((size + Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) >>> Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_SHIFT);
-    RAMOutputStream addressBuffer = new RAMOutputStream();
-    DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressBuffer, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
-
-    TermsEnum iterator = values.termsEnum();
-    BytesRefBuilder previous = new BytesRefBuilder();
-    long offset = 0;
-    long ord = 0;
-    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-      if ((ord & Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
-        writer.add(offset);
-        final int sortKeyLength;
-        if (ord == 0) {
-          // no previous term: no bytes to write
-          sortKeyLength = 0;
-        } else {
-          sortKeyLength = StringHelper.sortKeyLength(previous.get(), term);
+    ByteBuffersDataOutput addressBuffer = new ByteBuffersDataOutput();
+    DirectMonotonicWriter writer;
+    try (ByteBuffersIndexOutput addressOutput = new ByteBuffersIndexOutput(addressBuffer, "temp", "temp")) {
+      writer = DirectMonotonicWriter.getInstance(meta, addressOutput, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
+      TermsEnum iterator = values.termsEnum();
+      BytesRefBuilder previous = new BytesRefBuilder();
+      long offset = 0;
+      long ord = 0;
+      for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+        if ((ord & Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
+          writer.add(offset);
+          final int sortKeyLength;
+          if (ord == 0) {
+            // no previous term: no bytes to write
+            sortKeyLength = 0;
+          } else {
+            sortKeyLength = StringHelper.sortKeyLength(previous.get(), term);
+          }
+          offset += sortKeyLength;
+          data.writeBytes(term.bytes, term.offset, sortKeyLength);
+        } else if ((ord & Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {
+          previous.copyBytes(term);
         }
-        offset += sortKeyLength;
-        data.writeBytes(term.bytes, term.offset, sortKeyLength);
-      } else if ((ord & Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {
-        previous.copyBytes(term);
+        ++ord;
       }
-      ++ord;
+      writer.add(offset);
+      writer.finish();
+      meta.writeLong(start);
+      meta.writeLong(data.getFilePointer() - start);
+      start = data.getFilePointer();
+      addressBuffer.copyTo(data);
+      meta.writeLong(start);
+      meta.writeLong(data.getFilePointer() - start);
     }
-    writer.add(offset);
-    writer.finish();
-    meta.writeLong(start);
-    meta.writeLong(data.getFilePointer() - start);
-    start = data.getFilePointer();
-    addressBuffer.writeTo(data);
-    meta.writeLong(start);
-    meta.writeLong(data.getFilePointer() - start);
   }
 
   @Override

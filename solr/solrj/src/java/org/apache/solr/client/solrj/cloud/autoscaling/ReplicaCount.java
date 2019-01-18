@@ -73,6 +73,13 @@ class ReplicaCount  implements MapWriter {
     increment(info.getType());
   }
 
+  void increment(ReplicaCount count) {
+    nrt += count.nrt;
+    pull += count.pull;
+    tlog += count.tlog;
+  }
+
+
   public void increment(Replica.Type type) {
     switch (type) {
       case NRT:
@@ -87,6 +94,16 @@ class ReplicaCount  implements MapWriter {
       default:
         nrt++;
     }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ReplicaCount) {
+      ReplicaCount that = (ReplicaCount) obj;
+      return that.nrt == this.nrt && that.tlog == this.tlog && that.pull == this.pull;
+
+    }
+    return false;
   }
 
   @Override

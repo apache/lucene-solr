@@ -37,7 +37,7 @@ import java.util.Map;
 public class TestDocumentObjectBinder extends LuceneTestCase {
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimple() throws Exception {
     DocumentObjectBinder binder = new DocumentObjectBinder();
     XMLResponseParser parser = new XMLResponseParser();
@@ -82,7 +82,7 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testDynamicFieldBinding() {
     DocumentObjectBinder binder = new DocumentObjectBinder();
     XMLResponseParser parser = new XMLResponseParser();

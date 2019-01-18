@@ -72,7 +72,6 @@ import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
@@ -94,6 +93,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
+  //TODO using Http2Client
   protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
   
@@ -168,7 +168,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         extraProperties = new Properties();
 
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
 
       coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);

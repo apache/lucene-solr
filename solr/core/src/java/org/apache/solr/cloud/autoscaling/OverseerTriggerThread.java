@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -31,7 +30,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.AlreadyClosedException;
@@ -72,9 +70,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
   /*
   Following variables are only accessed or modified when updateLock is held
    */
-  private int znodeVersion = -1;
+  private int znodeVersion = 0;
 
   private Map<String, AutoScaling.Trigger> activeTriggers = new HashMap<>();
+
+  private volatile int processedZnodeVersion = -1;
 
   private volatile boolean isClosed = false;
 
@@ -109,6 +109,16 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
    */
   public ScheduledTriggers getScheduledTriggers() {
     return scheduledTriggers;
+  }
+
+  /**
+   * For tests, to ensure that all processing has been completed in response to an update of /autoscaling.json.
+   * @lucene.internal
+   * @return version of /autoscaling.json for which all configuration updates &amp; processing have been completed.
+   *  Until then this value will always be smaller than the current znodeVersion of /autoscaling.json.
+   */
+  public int getProcessedZnodeVersion() {
+    return processedZnodeVersion;
   }
 
   @Override
@@ -226,19 +236,11 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           scheduledTriggers.remove(managedTriggerName);
         }
       }
-      // check for nodeLost triggers in the current config, and if
-      // absent then clean up old nodeLost / nodeAdded markers
-      boolean cleanOldNodeLostMarkers = true;
-      boolean cleanOldNodeAddedMarkers = true;
+      // nodeLost / nodeAdded markers are checked by triggers during their init() call
+      // which is invoked in scheduledTriggers.add(), so once this is done we can remove them
       try {
         // add new triggers and/or replace and close the replaced triggers
         for (Map.Entry<String, AutoScaling.Trigger> entry : copy.entrySet()) {
-          if (entry.getValue().getEventType().equals(TriggerEventType.NODELOST)) {
-            cleanOldNodeLostMarkers = false;
-          }
-          if (entry.getValue().getEventType().equals(TriggerEventType.NODEADDED)) {
-            cleanOldNodeAddedMarkers = false;
-          }
           try {
             scheduledTriggers.add(entry.getValue());
           } catch (AlreadyClosedException e) {
@@ -255,48 +257,20 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           throw new IllegalStateException("Caught AlreadyClosedException from ScheduledTriggers, but we're not closed yet!", e);
         }
       }
-      DistribStateManager stateManager = cloudManager.getDistribStateManager();
-      if (cleanOldNodeLostMarkers) {
-        log.debug("-- clean old nodeLost markers");
-        try {
-          List<String> markers = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-          markers.forEach(n -> {
-            removeNodeMarker(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, n);
-          });
-        } catch (NoSuchElementException e) {
-          // ignore
-        } catch (Exception e) {
-          log.warn("Error removing old nodeLost markers", e);
-        }
-      }
-      if (cleanOldNodeAddedMarkers) {
-        log.debug("-- clean old nodeAdded markers");
-        try {
-          List<String> markers = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-          markers.forEach(n -> {
-            removeNodeMarker(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, n);
-          });
-        } catch (NoSuchElementException e) {
-          // ignore
-        } catch (AlreadyClosedException e) {
-
-        } catch (Exception e) {
-          log.warn("Error removing old nodeAdded markers", e);
-        }
-
-      }
+      log.debug("-- cleaning old nodeLost / nodeAdded markers");
+      removeMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+      removeMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+      processedZnodeVersion = znodeVersion;
     }
   }
 
-  private void removeNodeMarker(String path, String nodeName) {
-    path = path + "/" + nodeName;
+  private void removeMarkers(String path) {
     try {
-      cloudManager.getDistribStateManager().removeData(path, -1);
-      log.debug("  -- deleted " + path);
+      cloudManager.getDistribStateManager().removeRecursively(path, true, false);
     } catch (NoSuchElementException e) {
       // ignore
     } catch (Exception e) {
-      log.warn("Error removing old marker " + path, e);
+      log.warn("Error removing old markers", e);
     }
   }
 

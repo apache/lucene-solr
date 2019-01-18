@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.NumericUtils;
 
 /**
  * Finds all previously indexed shapes that intersect the specified bounding box.
@@ -46,18 +45,16 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t) {
+  protected boolean queryMatches(byte[] t, int[] scratchTriangle) {
     // decode indexed triangle
-    long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
-    long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
-    long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
+    LatLonShape.decodeTriangle(t, scratchTriangle);
 
-    int aX = (int)((a >>> 32) & 0x00000000FFFFFFFFL);
-    int bX = (int)((b >>> 32) & 0x00000000FFFFFFFFL);
-    int cX = (int)((c >>> 32) & 0x00000000FFFFFFFFL);
-    int aY = (int)(a & 0x00000000FFFFFFFFL);
-    int bY = (int)(b & 0x00000000FFFFFFFFL);
-    int cY = (int)(c & 0x00000000FFFFFFFFL);
+    int aY = scratchTriangle[0];
+    int aX = scratchTriangle[1];
+    int bY = scratchTriangle[2];
+    int bX = scratchTriangle[3];
+    int cY = scratchTriangle[4];
+    int cX = scratchTriangle[5];
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
       return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);

@@ -58,6 +58,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 public class Clause implements MapWriter, Comparable<Clause> {
   private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
 
+  private final int hashCode;
   final boolean hasComputedValue;
   final Map<String, Object> original;
   final Clause derivedFrom;
@@ -67,6 +68,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   protected Clause(Clause clause, Function<Condition, Object> computedValueEvaluator) {
     this.original = clause.original;
+    this.hashCode = original.hashCode();
     this.type = clause.type;
     this.collection = clause.collection;
     this.shard = clause.shard;
@@ -80,6 +82,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   // internal use only
   Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict)  {
+    this.hashCode = original.hashCode();
     this.original = original;
     this.tag = tag;
     this.globalTag = globalTag;
@@ -93,6 +96,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   private Clause(Map<String, Object> m) {
     derivedFrom = (Clause) m.remove(Clause.class.getName());
     this.original = Utils.getDeepCopy(m, 10);
+    this.hashCode = original.hashCode();
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
@@ -449,12 +453,27 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   }
 
+  public static long addReplicaCountsForNode = 0;
+  public static long addReplicaCountsForNodeCacheMiss = 0;
+  public static final String PERSHARD_REPLICAS = Clause.class.getSimpleName() + ".perShardReplicas";
   private void addReplicaCountsForNode(ComputedValueEvaluator computedValueEvaluator, ReplicaCount replicaCount, Row node) {
-    node.forEachReplica((String) collection.getValue(), ri -> {
-      if (Policy.ANY.equals(computedValueEvaluator.shardName)
-          || computedValueEvaluator.shardName.equals(ri.getShard()))
-        replicaCount.increment(ri);
-    });
+    addReplicaCountsForNode++;
+
+    ReplicaCount rc = node.computeCacheIfAbsent(computedValueEvaluator.collName, computedValueEvaluator.shardName, PERSHARD_REPLICAS,
+        this, o -> {
+          addReplicaCountsForNodeCacheMiss++;
+          ReplicaCount result = new ReplicaCount();
+          node.forEachReplica((String) collection.getValue(), ri -> {
+            if (Policy.ANY.equals(computedValueEvaluator.shardName)
+                || computedValueEvaluator.shardName.equals(ri.getShard()))
+              result.increment(ri);
+          });
+          return result;
+        });
+    if (rc != null)
+      replicaCount.increment(rc);
+
+
   }
 
   List<Violation> testPerNode(Policy.Session session, double[] deviations) {
@@ -633,7 +652,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   @Override
   public int hashCode() {
-    return original.hashCode();
+    return hashCode;
   }
 
   public static Double parseDouble(String name, Object val) {

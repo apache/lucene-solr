@@ -50,7 +50,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -94,26 +94,19 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return decodeLongitude(encodeLongitudeCeil(rawLon));
   }
 
-  /** quantizes a provided polygon to be consistent with the index encoding */
-  protected Polygon quantizePolygon(Polygon polygon) {
-    double[] lats = new double[polygon.numPoints()];
-    double[] lons = new double[polygon.numPoints()];
-    for (int i = 0; i < lats.length; ++i) {
-      lats[i] = quantizeLat(polygon.getPolyLat(i));
-      lons[i] = quantizeLon(polygon.getPolyLon(i));
-    }
-    return new Polygon(lats, lons);
+  /** quantizes a triangle to be consistent with index encoding */
+  protected double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
+    return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
   }
 
-  /** quantizes a provided linestring to be consistent with the index encoding */
-  protected Line quantizeLine(Line line) {
-    double[] lats = new double[line.numPoints()];
-    double[] lons = new double[line.numPoints()];
-    for (int i = 0; i < lats.length; ++i) {
-      lats[i] = quantizeLat(line.getLat(i));
-      lons[i] = quantizeLon(line.getLon(i));
-    }
-    return new Line(lats, lons);
+  /** encode/decode a triangle */
+  protected int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    byte[] encoded = new byte[7 * LatLonShape.BYTES];
+    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
+    int[] decoded = new int[6];
+    LatLonShape.decodeTriangle(encoded, decoded);
+    return decoded;
   }
 
   /** use {@link GeoTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
@@ -164,7 +157,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
   // A particularly tricky adversary for BKD tree:
   public void testSameShapeManyTimes() throws Exception {
-    int numShapes = atLeast(1000);
+    int numShapes = atLeast(500);
 
     // Every doc has 2 points:
     Object theShape = nextShape();
@@ -180,13 +173,15 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     doTestRandom(10);
   }
 
+  @Slow
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
+    doTestRandom(1000);
   }
 
+  @Slow
   @Nightly
   public void testRandomBig() throws Exception {
-    doTestRandom(50000);
+    doTestRandom(20000);
   }
 
   protected void doTestRandom(int count) throws Exception {
@@ -199,7 +194,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
     Object[] shapes = new Object[numShapes];
     for (int id = 0; id < numShapes; ++id) {
-      int x = randomInt(20);
+      int x = randomIntBetween(0, 20);
       if (x == 17) {
         shapes[id] = null;
         if (VERBOSE) {
@@ -273,7 +268,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   protected void verifyRandomBBoxQueries(IndexReader reader, Object... shapes) throws Exception {
     IndexSearcher s = newSearcher(reader);
 
-    final int iters = atLeast(75);
+    final int iters = scaledIterationCount(shapes.length);
 
     Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
@@ -368,11 +363,23 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  private int scaledIterationCount(int shapes) {
+    if (shapes < 500) {
+      return atLeast(50);
+    } else if (shapes < 5000) {
+      return atLeast(25);
+    } else if (shapes < 25000) {
+      return atLeast(5);
+    } else {
+      return atLeast(2);
+    }
+  }
+
   /** test random generated lines */
   protected void verifyRandomLineQueries(IndexReader reader, Object... shapes) throws Exception {
     IndexSearcher s = newSearcher(reader);
 
-    final int iters = atLeast(75);
+    final int iters = scaledIterationCount(shapes.length);
 
     Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
@@ -459,7 +466,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   protected void verifyRandomPolygonQueries(IndexReader reader, Object... shapes) throws Exception {
     IndexSearcher s = newSearcher(reader);
 
-    final int iters = atLeast(75);
+    final int iters = scaledIterationCount(shapes.length);
 
     Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();

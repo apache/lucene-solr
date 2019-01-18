@@ -496,6 +496,7 @@ public class HttpSolrCall {
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
+          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -574,6 +575,7 @@ public class HttpSolrCall {
     }
   }
 
+  //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
     HttpRequestBase method = null;
     HttpEntity httpEntity = null;

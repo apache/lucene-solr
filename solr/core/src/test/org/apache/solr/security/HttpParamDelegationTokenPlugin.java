@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import javax.servlet.Filter;
@@ -49,12 +50,15 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
+import org.eclipse.jetty.client.api.Request;
 
 /**
  * AuthenticationHandler that supports delegation tokens and simple
@@ -73,27 +77,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   private final HttpRequestInterceptor interceptor = new HttpRequestInterceptor() {
     @Override
     public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-      SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
-      String usr;
-      if (reqInfo != null) {
-        Principal principal = reqInfo.getReq().getUserPrincipal();
-        if (principal == null) {
-          //this had a request but not authenticated
-          //so we don't not need to set a principal
-          return;
-        } else {
-          usr = principal.getName();
-        }
-      } else {
-        if (!isSolrThread()) {
-          //if this is not running inside a Solr threadpool (as in testcases)
-          // then no need to add any header
-          return;
-        }
-        //this request seems to be originated from Solr itself
-        usr = "$"; //special name to denote the user is the node itself
-      }
-      httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr);
+      getPrincipal().ifPresent(usr -> httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr));
     }
   };
 
@@ -139,10 +123,46 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     }
   }
 
+  private Optional<String> getPrincipal() {
+    SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+    String usr;
+    if (reqInfo != null) {
+      Principal principal = reqInfo.getUserPrincipal();
+      if (principal == null) {
+        //this had a request but not authenticated
+        //so we don't not need to set a principal
+        return Optional.empty();
+      } else {
+        usr = principal.getName();
+      }
+    } else {
+      if (!isSolrThread()) {
+        //if this is not running inside a Solr threadpool (as in testcases)
+        // then no need to add any header
+        return Optional.empty();
+      }
+      //this request seems to be originated from Solr itself
+      usr = "$"; //special name to denote the user is the node itself
+    }
+    return Optional.of(usr);
+  }
+
+  @Override
+  public void setup(Http2SolrClient client) {
+    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
+      @Override
+      public void onQueued(Request request) {
+        getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
+      }
+    };
+    client.addListenerFactory(() -> listener);
+  }
+
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     HttpClientUtil.addRequestInterceptor(interceptor);
-    return super.getHttpClientBuilder(builder);
+    builder = super.getHttpClientBuilder(builder);
+    return builder;
   }
 
   @Override

@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -86,6 +87,18 @@ public class ScheduledTriggers implements Closeable {
     DEFAULT_PROPERTIES.put(TRIGGER_COOLDOWN_PERIOD_SECONDS, DEFAULT_COOLDOWN_PERIOD_SECONDS);
     DEFAULT_PROPERTIES.put(TRIGGER_CORE_POOL_SIZE, DEFAULT_TRIGGER_CORE_POOL_SIZE);
     DEFAULT_PROPERTIES.put(ACTION_THROTTLE_PERIOD_SECONDS, DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS);
+  }
+
+  protected static final Random RANDOM;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
   }
 
   private final Map<String, TriggerWrapper> scheduledTriggerWrappers = new ConcurrentHashMap<>();
@@ -267,6 +280,8 @@ public class ScheduledTriggers implements Closeable {
         return false;
       } else {
         log.debug("++++++++ Cooldown inactive - processing event: " + event);
+        // start cooldown here to immediately reject other events
+        cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
       }
       if (hasPendingActions.compareAndSet(false, true)) {
         // pause all triggers while we execute actions so triggers do not operate on a cluster in transition
@@ -286,6 +301,7 @@ public class ScheduledTriggers implements Closeable {
             String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s from trigger %s because the executor has already been closed", event.toString(), source);
             triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
             log.warn(msg);
+            hasPendingActions.set(false);
             // we do not want to lose this event just because the trigger was closed, perhaps a replacement will need it
             return false;
           }
@@ -325,6 +341,7 @@ public class ScheduledTriggers implements Closeable {
               triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED);
               log.warn("Unhandled exception executing actions", e);
             } finally {
+              // update cooldown to the time when we actually finished processing the actions
               cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
               hasPendingActions.set(false);
               // resume triggers after cool down period
@@ -348,6 +365,7 @@ public class ScheduledTriggers implements Closeable {
         }
         return true;
       } else {
+        log.debug("Ignoring event {}, already processing other actions.", event.id);
         // there is an action in the queue and we don't want to enqueue another until it is complete
         triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Already processing another event.");
         return false;
@@ -376,9 +394,13 @@ public class ScheduledTriggers implements Closeable {
    * @lucene.internal
    */
   public synchronized void resumeTriggers(long afterDelayMillis) {
-    scheduledTriggerWrappers.forEach((s, triggerWrapper) ->  {
+    List<Map.Entry<String, TriggerWrapper>> entries = new ArrayList<>(scheduledTriggerWrappers.entrySet());
+    Collections.shuffle(entries, RANDOM);
+    entries.forEach(e ->  {
+      String key = e.getKey();
+      TriggerWrapper triggerWrapper = e.getValue();
       if (triggerWrapper.scheduledFuture.isCancelled()) {
-        log.debug("Resuming trigger: {} after {}ms", s, afterDelayMillis);
+        log.debug("Resuming trigger: {} after {}ms", key, afterDelayMillis);
         triggerWrapper.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(triggerWrapper, afterDelayMillis,
             cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
       }
@@ -489,6 +511,19 @@ public class ScheduledTriggers implements Closeable {
     return Collections.unmodifiableSet(new HashSet<>(scheduledTriggerWrappers.keySet())); // shallow copy
   }
 
+  /**
+   * For use in white/grey box testing: The Trigger returned may be inspected, 
+   * but should not be modified in any way.
+   *
+   * @param name the name of an existing trigger
+   * @return the current scheduled trigger with that name, or null if none exists
+   * @lucene.internal
+   */
+  public synchronized AutoScaling.Trigger getTrigger(String name) {
+    TriggerWrapper w = scheduledTriggerWrappers.get(name);
+    return (null == w) ? null : w.trigger;
+  }
+  
   @Override
   public void close() throws IOException {
     synchronized (this) {

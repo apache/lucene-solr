@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkDistributedQueueFactory;
@@ -65,7 +66,6 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 @LuceneTestCase.Slow
@@ -91,7 +91,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
   public void testCreateCollection() throws Exception  {
     String commands =  "{ set-cluster-policy: [ {cores: '0', node: '#ANY'} ] }"; // disallow replica placement anywhere
-    cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     String collectionName = "testCreateCollection";
     HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class,
         () -> CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient()));
@@ -116,7 +116,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     }
 
     commands =  "{ set-cluster-policy: [ {cores: '<2', node: '#ANY'} ] }";
-    cluster.getSolrClient().request(createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
     SolrClientCloudManager scm = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getSolrClient().getZkStateReader().getZkClient()), cluster.getSolrClient());
     Policy.Session session = scm.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(scm);
@@ -185,7 +185,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     int port = jetty.getLocalPort();
 
     String commands =  "{set-policy :{c1 : [{replica:0 , shard:'#EACH', port: '!" + port + "'}]}}";
-    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
@@ -213,7 +213,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     int secondNodePort = secondNode.getLocalPort();
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + firstNodePort + "'}, {replica:1, shard:'#EACH', port:'" + secondNodePort + "'}]}}";
-    NamedList<Object> response = cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    NamedList<Object> response = cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     assertEquals("success", response.get("result"));
 
     String collectionName = "testCreateCollectionSplitShard";
@@ -256,7 +256,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "      {'metrics:abc':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     try {
       solrClient.request(req);
       fail("expected exception");
@@ -272,7 +272,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "      {'metrics:solr.node:ADMIN./admin/authorization.clientErrors:count':'>58768765', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     //org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
@@ -315,7 +315,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "]}";
 
 
-    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
         Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
@@ -367,7 +367,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     int port = jetty.getLocalPort();
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
-    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));

@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.After;
 import org.junit.Before;
@@ -51,8 +51,6 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     return true;
   };
 
-  private static final TimeSource timeSource = TimeSource.CURRENT_TIME;
-  // currentTimeMillis is not as precise so to avoid false positives while comparing time of fire, we add some delta
   private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(2);
 
   @BeforeClass
@@ -81,8 +79,9 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     long waitForSeconds = 1 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
-    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
-      trigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), props);
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger1")) {
+      final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
+      trigger.configure(container.getResourceLoader(), cloudManager, props);
       trigger.init();
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
@@ -97,7 +96,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -124,10 +123,15 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       assertTrue(nodeNames.contains(newNode2.getNodeName()));
     }
 
+    // clean nodeAdded markers - normally done by OverseerTriggerThread
+    container.getZkController().getSolrCloudManager().getDistribStateManager()
+        .removeRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, true, false);
+
     // add a new node but remove it before the waitFor period expires
     // and assert that the trigger doesn't fire at all
-    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger")) {
-      trigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), props);
+    try (NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger2")) {
+      final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
+      trigger.configure(container.getResourceLoader(), cloudManager, props);
       trigger.init();
       final long waitTime = 2;
       props.put("waitFor", waitTime);
@@ -138,7 +142,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -281,13 +285,14 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     }
 
     try (NodeAddedTrigger newTrigger = new NodeAddedTrigger("node_added_trigger"))  {
-      newTrigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), props);
+      final SolrCloudManager cloudManager = container.getZkController().getSolrCloudManager();
+      newTrigger.configure(container.getResourceLoader(), cloudManager, props);
       newTrigger.init();
       AtomicBoolean stop = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setProcessor(event -> {
         //the processor may get called 2 times, for newly added node and initial nodes
-        long currentTimeNanos = timeSource.getTimeNs();
+        long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {

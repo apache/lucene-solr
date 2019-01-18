@@ -40,6 +40,18 @@
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="compile"/>
 
+    <dependency org="org.eclipse.jetty.http2" name="http2-client" rev="${/org.eclipse.jetty.http2/http2-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-http-client-transport" rev="${/org.eclipse.jetty.http2/http2-http-client-transport}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="compile"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="compile"/>
+
+    <dependency org="org.eclipse.jetty" name="jetty-client" rev="${/org.eclipse.jetty/jetty-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-java-client" rev="${/org.eclipse.jetty/jetty-alpn-java-client}" conf="compile"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-client" rev="${/org.eclipse.jetty/jetty-alpn-client}" conf="compile"/>
+
     <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="test"/>
 
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>

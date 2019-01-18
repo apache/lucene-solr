@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
@@ -52,12 +53,10 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 /**
@@ -73,14 +72,9 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(1, TimeSource.get("simTime:50"));
-  }
-
   @Before
   public void init() throws Exception {
-
+    configureCluster(1, TimeSource.get("simTime:50"));
     fired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     actionContextPropsRef.set(null);
@@ -92,7 +86,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     SolrResponse rsp = cluster.request(req);
     NamedList<Object> response = rsp.getResponse();
     assertEquals(response.get("result").toString(), "success");
@@ -102,10 +96,11 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "{'minimize': 'cores'}," +
         "{'maximize': 'freedisk','precision': 100}]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
     rsp = cluster.request(req);
     response = rsp.getResponse();
     assertEquals(response.get("result").toString(), "success");
+    assertAutoscalingUpdateComplete();
     cluster.getTimeSource().sleep(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS));
   }
 
@@ -118,7 +113,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     for (String coll: cluster.getSimClusterStateProvider().simListCollections()) {
       log.info("* Collection " + coll + " state: " + state.getCollection(coll));
     }
-
+    shutdownCluster();
   }
 
   @Test
@@ -140,9 +135,11 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + TestSimComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeLost",
         "conf",1, 2);
@@ -203,9 +200,11 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf",2, 3);
@@ -262,7 +261,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
 
   @Test
   //17-Aug-2018 commented @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAdded() throws Exception {
     AssertingTriggerAction.expectedNode = null;
     SolrClient solrClient = cluster.simGetSolrClient();
@@ -275,7 +274,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + TestSimComputePlanAction.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -287,9 +286,11 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
         "conf",1, 4).setMaxShardsPerNode(-1);
@@ -306,9 +307,11 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     // start a node so that the 'violation' created by the previous policy update is fixed
     String newNode = cluster.simAddNode();
