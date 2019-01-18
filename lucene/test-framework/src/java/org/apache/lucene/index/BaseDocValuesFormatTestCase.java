@@ -1204,6 +1204,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs) throws Exception {
+    doTestNumericsVsStoredFields(density, longs, 256);
+  }
+  private void doTestNumericsVsStoredFields(double density, LongSupplier longs, int minDocs) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -1216,7 +1219,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = atLeast((int) (minDocs*1.172));
     // numDocs should be always > 256 so that in case of a codec that optimizes
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;
@@ -1243,12 +1246,17 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
 
     // merge some segments and ensure that at least one of them has more than
-    // 256 values
-    writer.forceMerge(numDocs / 256);
+    // max(256, minDocs) values
+    writer.forceMerge(numDocs / Math.max(256, minDocs));
 
     writer.close();
-    
     // compare
+    assertDVIterate(dir);
+    dir.close();
+  }
+
+  // Asserts equality of stored value vs. DocValue by iterating DocValues one at a time
+  protected void assertDVIterate(Directory dir) throws IOException {
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
@@ -1268,9 +1276,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
     }
     ir.close();
-    dir.close();
   }
-  
+
   private void doTestSortedNumericsVsStoredFields(LongSupplier counts, LongSupplier values) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
