@@ -293,7 +293,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   // Returns the offset to the jump-table for vBPV
   private long writeValuesMultipleBlocks(SortedNumericDocValues values, long gcd) throws IOException {
-    long[] offsets = new long[ArrayUtil.oversize(100, Long.BYTES)]; // 100 blocks = 1.6M values
+    long[] offsets = new long[ArrayUtil.oversize(1, Long.BYTES)];
     int offsetsIndex = 0;
     final long[] buffer = new long[NUMERIC_BLOCK_SIZE];
     final GrowableByteArrayDataOutput encodeBuffer = new GrowableByteArrayDataOutput(NUMERIC_BLOCK_SIZE);
