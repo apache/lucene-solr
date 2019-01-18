@@ -27,8 +27,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -38,7 +38,7 @@ public class TestMultiTermsEnum extends LuceneTestCase {
 
   // LUCENE-6826
   public void testNoTermsInField() throws Exception {
-    Directory directory = new RAMDirectory();
+    Directory directory = new ByteBuffersDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new MockAnalyzer(random())));
     Document document = new Document();
     document.add(new StringField("deleted", "0", Field.Store.YES));
@@ -47,7 +47,7 @@ public class TestMultiTermsEnum extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(writer);
     writer.close();
 
-    Directory directory2 = new RAMDirectory();
+    Directory directory2 = new ByteBuffersDirectory();
     writer = new IndexWriter(directory2, new IndexWriterConfig(new MockAnalyzer(random())));
     
     List<LeafReaderContext> leaves = reader.leaves();

@@ -64,8 +64,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.BytesRef;
@@ -143,7 +143,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       termField.append(randomTerm());
     }
     
-    Directory ramdir = new RAMDirectory();
+    Directory ramdir = new ByteBuffersDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(analyzer).setCodec(

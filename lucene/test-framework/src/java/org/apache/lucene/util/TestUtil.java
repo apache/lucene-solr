@@ -71,12 +71,12 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
@@ -1281,9 +1281,12 @@ public final class TestUtil {
     }
   }
   
-  /** Returns a copy of directory, entirely in RAM */
-  public static RAMDirectory ramCopyOf(Directory dir) throws IOException {
-    RAMDirectory ram = new RAMDirectory();
+  /**
+   * Returns a copy of the source directory, with file contents stored
+   * in RAM.
+   */
+  public static Directory ramCopyOf(Directory dir) throws IOException {
+    Directory ram = new ByteBuffersDirectory();
     for (String file : dir.listAll()) {
       if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         ram.copyFrom(dir, file, file, IOContext.DEFAULT);

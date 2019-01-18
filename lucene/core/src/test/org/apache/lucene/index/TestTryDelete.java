@@ -30,8 +30,8 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 
@@ -53,7 +53,7 @@ public class TestTryDelete extends LuceneTestCase
   private static Directory createIndex ()
     throws IOException
   {
-    Directory directory = new RAMDirectory();
+    Directory directory = new ByteBuffersDirectory();
 
     IndexWriter writer = getWriter(directory);
 

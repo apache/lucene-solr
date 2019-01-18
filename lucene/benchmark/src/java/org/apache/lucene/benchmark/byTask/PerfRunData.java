@@ -44,9 +44,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -76,6 +76,7 @@ import org.apache.lucene.util.IOUtils;
  */
 public class PerfRunData implements Closeable {
 
+  private static final String DEFAULT_DIRECTORY = "ByteBuffersDirectory";
   private Points points;
   
   // objects used during performance test run
@@ -192,7 +193,7 @@ public class PerfRunData implements Closeable {
 
   private Directory createDirectory(boolean eraseIndex, String dirName,
       String dirParam) throws IOException {
-    if ("FSDirectory".equals(config.get(dirParam,"RAMDirectory"))) {
+    if ("FSDirectory".equals(config.get(dirParam, DEFAULT_DIRECTORY))) {
       Path workDir = Paths.get(config.get("work.dir","work"));
       Path indexDir = workDir.resolve(dirName);
       if (eraseIndex && Files.exists(indexDir)) {
@@ -200,9 +201,9 @@ public class PerfRunData implements Closeable {
       }
       Files.createDirectories(indexDir);
       return FSDirectory.open(indexDir);
-    } 
+    }
 
-    return new RAMDirectory();
+    return new ByteBuffersDirectory();
   }
   
   /** Returns an object that was previously set by {@link #setPerfObject(String, Object)}. */

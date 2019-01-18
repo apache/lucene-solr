@@ -32,9 +32,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -62,7 +62,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
         }
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();

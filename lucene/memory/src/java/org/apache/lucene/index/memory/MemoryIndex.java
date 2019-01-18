@@ -42,7 +42,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
@@ -65,8 +65,8 @@ import org.apache.lucene.util.Version;
  * <p>
  * <b>Overview</b>
  * <p>
- * This class is a replacement/substitute for a large subset of
- * {@link RAMDirectory} functionality. It is designed to
+ * This class is a replacement/substitute for RAM-resident {@link Directory} implementations.
+ * It is designed to
  * enable maximum efficiency for on-the-fly matchmaking combining structured and 
  * fuzzy fulltext search in realtime streaming applications such as Nux XQuery based XML 
  * message queues, publish-subscribe systems for Blogs/newsfeeds, text chat, data acquisition and 

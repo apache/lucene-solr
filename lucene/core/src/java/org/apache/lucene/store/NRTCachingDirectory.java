@@ -35,7 +35,7 @@ import org.apache.lucene.util.IOUtils;
 //   - rename to MergeCacheingDir?  NRTCachingDir
 
 /**
- * Wraps a {@link RAMDirectory}
+ * Wraps a {@link ByteBuffersDirectory}
  * around any provided delegate directory, to
  * be used during NRT search.
  *
