@@ -316,6 +316,12 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     .waitFor("initial trigger never ran to detect lost node", () ->
              ! (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
                 .contains(nodeName)));
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+        .waitFor("initial trigger never ran to detect lost node", () ->
+            (((Map<String, Long>) getTriggerState(triggerName).get("nodeNameVsTimeRemoved"))
+                .containsKey(nodeName)));
+
+    Map<String, Long> nodeNameVsTimeRemoved = (Map<String, Long>) getTriggerState(triggerName).get("nodeNameVsTimeRemoved");
     
     // since we know the nodeLost event has been detected, we can recored the current timestamp
     // (relative to the cluster's time source) and later assert that (restored state) correctly
@@ -359,7 +365,20 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     final TriggerEvent event = assertSingleEvent(nodeName, maxEventTimeNs);
     assertTrue("Event should have been a nodeLost event: " + event.getClass(),
                event instanceof NodeLostTrigger.NodeLostEvent);
-    
+
+    // assert that the time nodes were removed was actually restored
+    NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) event;
+    List<String> removedNodeNames = (List<String>) nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
+    List<Long> removedNodeTimes = (List<Long>) nodeLostEvent.getProperty(TriggerEvent.EVENT_TIMES);
+
+    assertFalse("Empty removedNodeNames", removedNodeNames.isEmpty());
+    assertEquals("Size of removedNodeNames and removedNodeTimes does not match",
+        removedNodeNames.size(), removedNodeTimes.size());
+    for (int i = 0; i < removedNodeNames.size(); i++) {
+      String nn = removedNodeNames.get(i);
+      Long nt = removedNodeTimes.get(i);
+      assertEquals(nodeNameVsTimeRemoved.get(nn), nt);
+    }
   }
 
   @Test
@@ -395,6 +414,13 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     .waitFor("initial trigger never ran to detect new live node", () ->
              (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
               .contains(nodeName)));
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+        .waitFor("initial trigger never ran to detect new live node", () ->
+            (((Map<String, Long>) getTriggerState(triggerName).get("nodeNameVsTimeAdded"))
+                .containsKey(nodeName)));
+
+    Map<String, Long> nodeNameVsTimeAdded = (Map<String, Long>) getTriggerState(triggerName).get("nodeNameVsTimeAdded");
+
 
     // since we know the nodeAddded event has been detected, we can recored the current timestamp
     // (relative to the cluster's time source) and later assert that (restored state) correctly
@@ -441,6 +467,19 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue("Event should have been a nodeAdded event: " + event.getClass(),
                event instanceof NodeAddedTrigger.NodeAddedEvent);
 
+    // assert that the time nodes were added was actually restored
+    NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) event;
+    List<String> addedNodeNames = (List<String>) nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
+    List<Long> addedNodeTimes = (List<Long>) nodeAddedEvent.getProperty(TriggerEvent.EVENT_TIMES);
+
+    assertFalse("Empty addedNodeNames", addedNodeNames.isEmpty());
+    assertEquals("Size of addedNodeNames and addedNodeTimes does not match",
+        addedNodeNames.size(), addedNodeTimes.size());
+    for (int i = 0; i < addedNodeNames.size(); i++) {
+      String nn = addedNodeNames.get(i);
+      Long nt = addedNodeTimes.get(i);
+      assertEquals(nodeNameVsTimeAdded.get(nn), nt);
+    }
   }
 
   @Test
