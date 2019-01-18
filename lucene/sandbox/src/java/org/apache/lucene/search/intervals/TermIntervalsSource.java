@@ -196,6 +196,11 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    return 1;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(term);
   }

@@ -59,6 +59,9 @@ The following components support distributed search:
 * The *Stats* component, which returns simple statistics for numeric fields within the DocSet.
 * The *Debug* component, which helps with debugging.
 
+=== Shards Whitelist
+What nodes are allowed in the `shards` parameter is configurable through the `shardsWhitelist` property in `solr.xml`. This whitelist is automatically configured for SolrCloud but needs explicit configuration for master/slave mode. Read more details in <<distributed-requests.adoc#configuring-the-shardhandlerfactory>>. 
+
 == Limitations to Distributed Search
 
 Distributed searching in Solr has the following limitations:

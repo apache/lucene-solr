@@ -47,6 +47,22 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
+* Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8.
+  Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost.
+
+* Solr nodes can now listen and serve HTTP/2 requests. Most of internal requests (sent by UpdateShardHandler, HttpShardHandler)
+  Http2SolrClient is used. Since by default, internal requests are sent by using HTTP/2,
+  Solr 8.0 nodes can't talk to old nodes (7.x). However we can follow these steps to do rolling updates:
+  - Do rolling updates as normally, but the Solr 8.0 nodes must start with -Dsolr.http1=true as startup parameter.
+    By using this parameter internal requests are sent by using HTTP/1.1
+  - When all nodes are upgraded to 8.0, restart them, this time -Dsolr.http1 parameter should be removed.
+
+* ALPN is not supported in Java 8 or lower version therefore when a node started in Java 8 or a lower version with SSL enabled,
+  it will send and can only be able to handle HTTP/1.1 requests. In case of using SSL Java 9 or latter versions are recommended.
+
+* Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through
+  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated.    
+
 * LUCENE-7996: The 'func' query parser now returns scores that are equal to 0
   when a negative value is produced. This change is due to the fact that
   Lucene now requires scores to be positive. (Adrien Grand)
@@ -70,7 +86,18 @@ Upgrade Notes
 
 * SOLR-12593: The "extraction" contrib (Solr Cell) no longer does any date parsing, and thus no longer has the
   "date.formats" configuration.  To ensure date strings are properly parsed, use ParseDateFieldUpdateProcessorFactory
-  (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein)
+  (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein) 
+
+* SOLR-12643: Since Http2SolrClient does not support exposing connections related metrics. These metrics are no longer
+  available 'QUERY.httpShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}',
+  'UPDATE.updateShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}'
+
+* SOLR-12605: UpdateShardHandler's updateOnlyClient is now a Http2SolrClient (previous HttpSolrClient). This new
+  client does not support 'maxConnections','maxConnectionsPerHost' parameters.
+
+* SOLR-12640: HttpShardHandlerFactory's defaultClient is now a Http2SolrClient (previous HttpSolrClient). This new
+  client does not support 'maxConnections','maxConnectionsPerHost' parameters. LBHttpSolrClient.Req and LBHttpSolrClient.Rsp
+  are marked as deprecated, uses LBSolrClient.Req and LBSolrClient.Rsp instead.
 
 * SOLR-12754: The UnifiedHighlighter hl.weightMatches now defaults to true.  If there are unforseen highlight problems,
   this may be the culprit.
@@ -115,6 +142,8 @@ New Features
 * SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
 
 * SOLR-12730: Implement staggered SPLITSHARD requests in IndexSizeTrigger. (ab)
+
+* SOLR-12639: Umbrella JIRA for adding support HTTP/2 (Cao Manh Dat)
 
 Bug Fixes
 ----------------------
@@ -198,7 +227,8 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
-(No Changes)
+* SOLR-12770: The 'shards' parameter handling logic changes to use a new config element to determine what hosts can be
+  requested. Please see Apache Solr Reference Guide chapter "Distributed Requests" for details, as well as SOLR-12770.
 
 New Features
 ----------------------
@@ -208,8 +238,13 @@ New Features
 
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
+* SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski) 
+
 * SOLR-11126: New Node-level health check handler at /admin/info/healthcheck and /node/health paths that
   checks if the node is live, connected to zookeeper and not shutdown. (Anshum Gupta, Amrit Sarkar, shalin)
+  
+* SOLR-12770: Make it possible to configure a host whitelist for distributed search
+  (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------
@@ -246,6 +281,8 @@ Bug Fixes
 
 * SOLR-13053: NodeAddedTrigger and NodeLostTrigger do not reserve added/removed time populated by restoreState
   (Cao Manh Dat)
+
+* SOLR-13137: NPE when /admin/zookeeper/status endpoint hit in standalone mode (janhoy)
 
 Improvements
 ----------------------
