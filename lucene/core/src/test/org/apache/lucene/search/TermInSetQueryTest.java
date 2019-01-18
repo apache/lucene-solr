@@ -173,7 +173,6 @@ public class TermInSetQueryTest extends LuceneTestCase {
     QueryUtils.checkEqual(query1, query2);
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8641")
   public void testRamBytesUsed() {
     List<BytesRef> terms = new ArrayList<>();
     final int numTerms = 10000 + random().nextInt(1000);
