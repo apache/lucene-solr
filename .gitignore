@@ -26,3 +26,4 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
+/.gitconfig
