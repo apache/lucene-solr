@@ -90,6 +90,8 @@ Bug Fixes
 
 * SOLR-13137: NPE when /admin/zookeeper/status endpoint hit in standalone mode (janhoy)
 
+* SOLR-13091: REBALANCELEADERS is broken (Erick Erickson)
+
 Improvements
 ----------------------
 
