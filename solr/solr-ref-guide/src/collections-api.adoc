@@ -1291,7 +1291,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&val=bar&wt=xml
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&propertyValue=bar&wt=xml
 ----
 
 *Output*
@@ -2163,6 +2163,8 @@ http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=
 
 In this example, two replicas in the "alreadyLeaders" section already had the leader assigned to the same node as the `preferredLeader` property so no action was taken.
 
+The "Success" tag indicates that the command rebalanced all leaders. If, for any reason some replicas with preferredLeader=true are not leaders, this will be "Failure" rather than "Success". If a replica cannot be made leader due to not being "Active", it's also considered a failure.
+
 The replica in the "inactivePreferreds" section had the `preferredLeader` property set but the node was down and no action was taken. The three nodes in the "successes" section were made leaders because they had the `preferredLeader` property set but were not leaders and they were active.
 
 [source,xml]
@@ -2171,6 +2173,9 @@ The replica in the "inactivePreferreds" section had the `preferredLeader` proper
   <lst name="responseHeader">
     <int name="status">0</int>
     <int name="QTime">123</int>
+  </lst>
+  <lst>
+    <str name="Success">All replicas with the preferredLeader property set are leaders</str>
   </lst>
   <lst name="alreadyLeaders">
     <lst name="core_node1">
@@ -2218,6 +2223,10 @@ The replica in the "inactivePreferreds" section had the `preferredLeader` proper
 ----
 
 Examining the clusterstate after issuing this call should show that every live node that has the `preferredLeader` property should also have the "leader" property set to _true_.
+
+NOTE: The added work done by an NRT leader during indexing is quite small. The primary use-case is to redistribute the leader role if there are a large number of leaders concentrated on a small number of nodes. Rebalancing will likely not improve performance unless the imbalance of leadership roles is measured in multiples of 10.
+
+NOTE: The BALANCESHARDUNIQUE command that distributes the preferredLeader property does not guarantee perfect distribution and in some collection topoligies it is impossible to make that guarantee.
 
 [[forceleader]]
 == FORCELEADER: Force Shard Leader
