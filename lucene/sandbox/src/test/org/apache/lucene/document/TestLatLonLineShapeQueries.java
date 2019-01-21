@@ -76,7 +76,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     return VALIDATOR;
   }
 
-  protected class LineValidator extends Validator {
+  protected static class LineValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Line line = (Line)shape;

@@ -75,33 +75,33 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   }
 
   /** quantizes a latitude value to be consistent with index encoding */
-  protected double quantizeLat(double rawLat) {
+  protected static double quantizeLat(double rawLat) {
     return decodeLatitude(encodeLatitude(rawLat));
   }
 
   /** quantizes a provided latitude value rounded up to the nearest encoded integer */
-  protected double quantizeLatCeil(double rawLat) {
+  protected static double quantizeLatCeil(double rawLat) {
     return decodeLatitude(encodeLatitudeCeil(rawLat));
   }
 
   /** quantizes a longitude value to be consistent with index encoding */
-  protected double quantizeLon(double rawLon) {
+  protected static double quantizeLon(double rawLon) {
     return decodeLongitude(encodeLongitude(rawLon));
   }
 
   /** quantizes a provided longitude value rounded up to the nearest encoded integer */
-  protected double quantizeLonCeil(double rawLon) {
+  protected static double quantizeLonCeil(double rawLon) {
     return decodeLongitude(encodeLongitudeCeil(rawLon));
   }
 
   /** quantizes a triangle to be consistent with index encoding */
-  protected double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  protected static double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
     return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
   }
 
   /** encode/decode a triangle */
-  protected int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  protected static int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     byte[] encoded = new byte[7 * LatLonShape.BYTES];
     LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
     int[] decoded = new int[6];
@@ -347,7 +347,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           }
           b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  shape=" + shapes[id] + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
           b.append("  rect=Rectangle(lat=" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + qMinLon + " TO " + quantizeLon(rect.maxLon) + ")\n");          if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
@@ -445,7 +449,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           }
           b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  shape=" + shapes[id] + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
           b.append("  queryPolygon=" + queryLine.toGeoJSON());
           if (true) {
@@ -532,7 +540,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           }
           b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  shape=" + shapes[id] + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
           b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
           if (true) {
@@ -622,7 +634,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   }
 
   /** validator class used to test query results against "ground truth" */
-  protected abstract class Validator {
+  protected static abstract class Validator {
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
     public abstract boolean testLineQuery(Line2D line2d, Object shape);
