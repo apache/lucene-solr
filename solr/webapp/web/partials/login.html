@@ -60,7 +60,23 @@ limitations under the License.
 
   </div>
 
-
+  <div ng-show="authScheme === 'Negotiate'">
+    <h1>Kerberos Authentication</h1>
+    <p>Your browser did not provide the required information to authenticate using Kerberos. 
+      Please check that your computer has a valid ticket for communicating with Solr, 
+      and that your browser is properly configured to provide that ticket when required. 
+      For more information, consult 
+      <a href="https://lucene.apache.org/solr/guide/kerberos-authentication-plugin.html">
+        Solr's Kerberos documentation
+      </a>.
+    </p>
+    The response from the server was:
+    <hr/>
+    <pre>HTTP 401 {{statusText}}
+WWW-Authenticate: {{wwwAuthHeader}}</pre>
+    <hr/>
+  </div>
+  
   <div ng-show="!authSchemeSupported">
     <h1>Authentication scheme not supported</h1>
 

@@ -64,6 +64,8 @@ import org.slf4j.LoggerFactory;
 //@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
   
+  public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @SafeVarargs
   public static <T> Set<T> set(T... a) {
@@ -468,6 +470,12 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml
       System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(100000));
+      
+      // If we want to run with whitelist list, this must be explicitly set to true for the test
+      // otherwise we disable the check
+      if (System.getProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST) == null) {
+        systemSetPropertySolrDisableShardsWhitelist("true");
+      }
 
       jetty.start();
       port = jetty.getLocalPort();
@@ -533,6 +541,20 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     // For params.set("shards", getShards())
     public String getShards() {
       return getShardsParam(slist);
+    }
+    
+    public String getWhitelistString() {
+      StringBuilder sb = new StringBuilder();
+      boolean first = true;
+      for (SolrInstance instance : slist) {
+        if (first) {
+          first = false;
+        } else {
+          sb.append(',');
+        }
+        sb.append( instance.getBaseURL().replace("/solr", ""));
+      }
+      return sb.toString();
     }
 
     public List<SolrClient> getSolrJs() {

@@ -26,7 +26,11 @@ See the section <<Example: Manual Collection Creation with a Policy>> for an exa
 
 == Cluster Preferences Specification
 
-A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to which to add a replica, Solr can apply the preferences and choose the node with the fewest cores.
+A preference is a hint to Solr on how to sort nodes based on their utilization.
+
+The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node, with a precision of 1.
+Therefore, by default, when selecting a node to which to add a replica, Solr can apply the preferences and choose the node with the fewest cores.
+In the case of a tie in the number of cores, available freedisk will be used to further sort nodes.
 
 More than one preference can be added to break ties. For example, we may choose to use free disk space to break ties if the number of cores on two nodes is the same. The node with the higher free disk space can be chosen as the target of the cluster operation.
 

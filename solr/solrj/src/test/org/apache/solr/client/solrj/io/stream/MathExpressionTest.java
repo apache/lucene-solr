@@ -2736,7 +2736,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               e=harmfit(a)," +
         "               f=getAmplitude(e)," +
         "               g=getAngularFrequency(e)," +
-        "               h=getPhase(e))";
+        "               h=getPhase(e)," +
+        "               i=derivative(a))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2764,6 +2765,11 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(amp.doubleValue(), 10, .1);
     assertEquals(freq.doubleValue(), .3, .1);
     assertEquals(pha.doubleValue(), 2.9, .1);
+
+    List<Number> der = (List<Number>)tuples.get(0).get("i");
+    assertEquals(der.size(), 128);
+    assertEquals(der.get(0).doubleValue(), -0.7177479876419472, 0);
+    assertEquals(der.get(127).doubleValue(), 0.47586800641412696, 0);
   }
 
   @Test
