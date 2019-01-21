@@ -812,7 +812,6 @@ public class SolrPluginUtils {
    *  « left-pointing double angle quotation mark (&#171; &laquo;)
    *  » right-pointing double angle quotation mark (&#187; &raquo;)
    *  ‟ double high-reversed-9 quotation mark - (&#8223;)
-   *  
    *  ❝ heavy double turned comma quotation mark ornament - (&#10077;)
    *  ❞ heavy double comma quotation mark ornament -(&#10078;)
    *  ⹂ double low-reversed-9 quotation mark - (&#11842;)

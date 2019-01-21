@@ -80,6 +80,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
         
     assertEquals("",ruds(""));
     assertEquals("we are the music makers",ruds("we are the music makers"));
+    assertEquals(" \" \" \" \" \" \" \" \" \" \" \" \" ",ruds(" “ ” „ “ „ « » ‟ ❝ ❞ ⹂ ＂ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the \"music makers\" "));
     assertEquals("we are the \"music makers\" ",ruds("we are the “music makers“ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the „music makers„ "));
@@ -90,18 +91,6 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals("we are the \"music makers\" ",ruds("we are the ❝music makers❞ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the ⹂music makers⹂ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the ＂music makers＂ "));
-    
-  }
-  
-  @Test
-  public void testReplaceUnicodeQuotes() {
-        
-    assertEquals("",strip(""));
-    assertEquals("foo",strip("foo"));
-    assertEquals("foo \"bar\"",strip("foo \"bar\""));
-    assertEquals("42",strip("42\""));
-    assertEquals("\"how now brown cow?\"",strip("\"how now brown cow?\""));
-    assertEquals("\"you go\" \"now!\"",strip("\"you go\" \"now!\""));
     
   }
 
