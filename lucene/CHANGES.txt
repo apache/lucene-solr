@@ -274,6 +274,9 @@ Bug fixes:
 * LUCENE-8639: Newly created threadstates while flushing / refreshing can cause duplicated
   sequence IDs on IndexWriter. (Simon Willnauer)
 
+* LUCENE-8649: LatLonShape's within and disjoint queries can return false positives with
+  indexed multi-shapes. (Ignacio Vera)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
