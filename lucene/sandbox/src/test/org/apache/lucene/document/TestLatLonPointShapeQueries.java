@@ -72,7 +72,7 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     return VALIDATOR;
   }
 
-  protected class PointValidator extends Validator {
+  protected static class PointValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point p = (Point)shape;

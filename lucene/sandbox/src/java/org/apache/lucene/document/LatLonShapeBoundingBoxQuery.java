@@ -45,7 +45,7 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle) {
+  protected boolean queryMatches(byte[] t, int[] scratchTriangle, LatLonShape.QueryRelation queryRelation) {
     // decode indexed triangle
     LatLonShape.decodeTriangle(t, scratchTriangle);
 
