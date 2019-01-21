@@ -74,6 +74,36 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals("\"you go\" \"now!\"",strip("\"you go\" \"now!\""));
         
   }
+  
+  @Test
+  public void testReplaceUnicodeDoubleQuotes() {
+        
+    assertEquals("",ruds(""));
+    assertEquals("we are the music makers",ruds("we are the music makers"));
+    assertEquals("we are the \"music makers\" ",ruds("we are the \"music makers\" "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the “music makers“ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the „music makers„ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the “music makers“ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the „music makers„ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the «music makers» "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the ‟music makers‟ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the ❝music makers❞ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the ⹂music makers⹂ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the ＂music makers＂ "));
+    
+  }
+  
+  @Test
+  public void testReplaceUnicodeQuotes() {
+        
+    assertEquals("",strip(""));
+    assertEquals("foo",strip("foo"));
+    assertEquals("foo \"bar\"",strip("foo \"bar\""));
+    assertEquals("42",strip("42\""));
+    assertEquals("\"how now brown cow?\"",strip("\"how now brown cow?\""));
+    assertEquals("\"you go\" \"now!\"",strip("\"you go\" \"now!\""));
+    
+  }
 
   @Test
   public void testStripIllegalOperators() {
@@ -446,6 +476,11 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   /** macro */
   public int calcMSM(int clauses, String spec) {
     return SolrPluginUtils.calculateMinShouldMatch(clauses, spec);
+  }
+  
+  /** macro */
+  public String ruds(CharSequence s) {
+    return SolrPluginUtils.replaceUnicodeDoubleQuotes(s).toString();
   }
 }
 

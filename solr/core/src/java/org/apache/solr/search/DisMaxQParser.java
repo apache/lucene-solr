@@ -201,7 +201,9 @@ public class DisMaxQParser extends QParser {
       query.add(altUserQuery, BooleanClause.Occur.MUST);
     } else {
       // There is a valid query string
-      userQuery = SolrPluginUtils.partialEscape(SolrPluginUtils.stripUnbalancedQuotes(userQuery)).toString();
+      userQuery = SolrPluginUtils.replaceUnicodeDoubleQuotes(userQuery).toString();
+      userQuery = SolrPluginUtils.stripUnbalancedQuotes(userQuery).toString();
+      userQuery = SolrPluginUtils.partialEscape(userQuery).toString();
       userQuery = SolrPluginUtils.stripIllegalOperators(userQuery).toString();
 
       parsedUserQuery = getUserQuery(userQuery, up, solrParams);

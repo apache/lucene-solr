@@ -802,6 +802,30 @@ public class SolrPluginUtils {
   }
 
   /**
+   * Replace UNICODE double quotes with basic Latin standard quote mark (") - &#34; &quot;
+   * Replaces: 
+   *  “ left double quotation mark - (&#147; &ldquo;)
+   *  ” right double quotation mark  - (&#148; &rdquo;)
+   *  „ index quote german scandanavian - (&#132; ind)
+   *  “ sts quote german scandanavian - (&#147; set transmit state)
+   *  „ double low-9 quotation mark - (&#132; &bdquo;)
+   *  « left-pointing double angle quotation mark (&#171; &laquo;)
+   *  » right-pointing double angle quotation mark (&#187; &raquo;)
+   *  ‟ double high-reversed-9 quotation mark - (&#8223;)
+   *  
+   *  ❝ heavy double turned comma quotation mark ornament - (&#10077;)
+   *  ❞ heavy double comma quotation mark ornament -(&#10078;)
+   *  ⹂ double low-reversed-9 quotation mark - (&#11842;)
+   *  ＂fullwidth quotation mark - (&#65282;)
+   *  
+   * @param s The query string
+   * @return Returns {@code s} with UNICODE double quotes replaced as standard double quote
+   */
+  public static CharSequence replaceUnicodeDoubleQuotes(CharSequence s) {
+    return s.toString().replaceAll("[“”„“„«»‟❝❞⹂＂]","\"");
+  }
+  
+  /**
    * Adds to {@code dest} all the not-null elements of {@code entries} that have non-null names
    *
    * @param entries The array of entries to be added to the {@link NamedList} {@code dest}
