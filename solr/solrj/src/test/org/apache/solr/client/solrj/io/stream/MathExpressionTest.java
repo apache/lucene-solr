@@ -4314,6 +4314,26 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testMovingMAD() throws Exception {
+    String cexpr = "movingMAD(array(1,2,3,4,5,6,9), 4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size()==4);
+    assertEquals((double) out.get(0).doubleValue(), 1, .0);
+    assertEquals((double) out.get(1).doubleValue(), 1, .0);
+    assertEquals((double) out.get(2).doubleValue(), 1, .0);
+    assertEquals((double) out.get(3).doubleValue(), 1.5, .0);
+  }
+
+  @Test
   public void testMannWhitney() throws Exception {
     String cexpr = "mannWhitney(array(0.15,0.10,0.11,0.24,0.08,0.08,0.10,0.10,0.10,0.12,0.04,0.07), " +
                                "array(0.10,0.20,0.30,0.10,0.10,0.02,0.05,0.07))";
