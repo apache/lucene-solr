@@ -77,21 +77,18 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReplaceUnicodeDoubleQuotes() {
-        
     assertEquals("",ruds(""));
     assertEquals("we are the music makers",ruds("we are the music makers"));
-    assertEquals(" \" \" \" \" \" \" \" \" \" \" \" \" ",ruds(" “ ” „ “ „ « » ‟ ❝ ❞ ⹂ ＂ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the \"music makers\" "));
-    assertEquals("we are the \"music makers\" ",ruds("we are the “music makers“ "));
-    assertEquals("we are the \"music makers\" ",ruds("we are the „music makers„ "));
-    assertEquals("we are the \"music makers\" ",ruds("we are the “music makers“ "));
+    assertEquals(" \" \" \" \" \" \" \" \" \" \" \" \" ",ruds(" “ ” 〝 〞 „ « » ‟ ❝ ❞ ⹂ ＂ "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the “music makers” "));
+    assertEquals("we are the \"music makers\" ",ruds("we are the 〝music makers〞 "));
     assertEquals("we are the \"music makers\" ",ruds("we are the „music makers„ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the «music makers» "));
     assertEquals("we are the \"music makers\" ",ruds("we are the ‟music makers‟ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the ❝music makers❞ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the ⹂music makers⹂ "));
     assertEquals("we are the \"music makers\" ",ruds("we are the ＂music makers＂ "));
-    
   }
 
   @Test

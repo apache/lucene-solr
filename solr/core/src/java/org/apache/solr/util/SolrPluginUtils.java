@@ -804,24 +804,24 @@ public class SolrPluginUtils {
   /**
    * Replace UNICODE double quotes with basic Latin standard quote mark (") - &#34; &quot;
    * Replaces: 
-   *  “ left double quotation mark - (&#147; &ldquo;)
-   *  ” right double quotation mark  - (&#148; &rdquo;)
-   *  „ index quote german scandanavian - (&#132; ind)
-   *  “ sts quote german scandanavian - (&#147; set transmit state)
-   *  „ double low-9 quotation mark - (&#132; &bdquo;)
-   *  « left-pointing double angle quotation mark (&#171; &laquo;)
-   *  » right-pointing double angle quotation mark (&#187; &raquo;)
-   *  ‟ double high-reversed-9 quotation mark - (&#8223;)
-   *  ❝ heavy double turned comma quotation mark ornament - (&#10077;)
-   *  ❞ heavy double comma quotation mark ornament -(&#10078;)
-   *  ⹂ double low-reversed-9 quotation mark - (&#11842;)
-   *  ＂fullwidth quotation mark - (&#65282;)
+   *  “ left double quotation mark (%u201C)
+   *  ” right double quotation mark (%u201D)
+   * 〝 left curly quote (%u301D)
+   *  〞right curly quote (%u301E)
+   *  „ index quote german scandanavian (%u201E)
+   *  « left-pointing double angle quotation mark (%AB)
+   *  » right-pointing double angle quotation mark (%BB)
+   *  ‟ double high-reversed-9 quotation mark (%u201F)
+   *  ❝ heavy double turned comma quotation mark ornament (%u275D)
+   *  ❞ heavy double comma quotation mark ornament (%u275E)
+   *  ⹂ double low-reversed-9 quotation mark - (%u2E42)
+   *  ＂fullwidth quotation mark - (%uFF02)
    *  
    * @param s The query string
    * @return Returns {@code s} with UNICODE double quotes replaced as standard double quote
    */
   public static CharSequence replaceUnicodeDoubleQuotes(CharSequence s) {
-    return s.toString().replaceAll("[“”„“„«»‟❝❞⹂＂]","\"");
+    return s.toString().replaceAll("[“”〝〞„«»‟❝❞⹂＂]","\"");
   }
   
   /**
