@@ -270,6 +270,8 @@ Bug Fixes
 
 * SOLR-13091: REBALANCELEADERS is broken (Erick Erickson)
 
+* SOLR-11998: RebalanceLeaders API broken response format with wt=JSON (Erick Erickson)
+
 Improvements
 ----------------------
 
