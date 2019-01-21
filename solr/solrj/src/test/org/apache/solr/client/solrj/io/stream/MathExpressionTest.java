@@ -4315,7 +4315,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testMovingMAD() throws Exception {
-    String cexpr = "movingMAD(array(1,2,3,4,5,6,9), 4)";
+    String cexpr = "movingMAD(array(1,2,3,4,5,6,9.25), 4)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -4327,10 +4327,11 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size()==4);
+    System.out.println("MAD:"+out);
     assertEquals((double) out.get(0).doubleValue(), 1, .0);
     assertEquals((double) out.get(1).doubleValue(), 1, .0);
     assertEquals((double) out.get(2).doubleValue(), 1, .0);
-    assertEquals((double) out.get(3).doubleValue(), 1.5, .0);
+    assertEquals((double) out.get(3).doubleValue(), 1.59375, .0);
   }
 
   @Test
