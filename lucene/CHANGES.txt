@@ -283,6 +283,10 @@ Bug fixes:
 * LUCENE-8654: Polygon2D#relateTriangle returns the wrong answer if polygon is inside
   the triangle. (Ignacio Vera)
 
+* LUCENE-8650: ConcatenatingTokenStream did not correctly clear its state in reset(), and
+  was not propagating final position increments from its child streams correctly.
+  (Dan Meehl, Alan Woodward)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
