@@ -162,7 +162,7 @@ Changes in Runtime Behavior
 
 New Features
 
-* LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
+* LUCENE-8340: LongPoint#newDistanceFeatureQuery may be used to boost scores based on
   how close a value of a long field is from an configurable origin. This is
   typically useful to boost by recency. (Adrien Grand)
 
