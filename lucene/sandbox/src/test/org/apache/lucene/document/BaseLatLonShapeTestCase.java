@@ -367,19 +367,6 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
-  private String getWKT(Polygon[] polygons) {
-    StringBuilder builder = new StringBuilder("MULTIPOLYGON(");
-    for (Polygon p : polygons) {
-      builder.append("((");
-      for (int j =0; j < p.getPolyLats().length; j++) {
-        builder.append(p.getPolyLon(j) + " " + p.getPolyLat(j) +",");
-      }
-      builder.append(p.getPolyLon(0) + " " + p.getPolyLat(0) +")),");
-      builder.append(p.getHoles().length);
-    }
-    return builder.toString();
-  }
-
   private int scaledIterationCount(int shapes) {
     if (shapes < 500) {
       return atLeast(50);
@@ -553,14 +540,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           }
           b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append(getWKT((Polygon[]) shapes[id])+ "\n");
           if (shapes[id] instanceof Object[]) {
             b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
           } else {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append(getWKT(new Polygon[] {queryPolygon})+ "\n");
           b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
