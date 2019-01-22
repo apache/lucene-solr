@@ -14,11 +14,11 @@
    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
    KIND, either express or implied.  See the License for the
    specific language governing permissions and limitations
-   under the License.    
+   under the License.
 -->
 <ivy-module version="2.0"  xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="core"/>
-  
+
   <configurations defaultconfmapping="compile->master;compile.hadoop->master;test->master;test.DfsMiniCluster->master;test.MiniKdc->master">
     <!-- artifacts in the "compile" and "compile.hadoop" configurations will go into solr/core/lib/ -->
     <conf name="compile" transitive="false"/>
@@ -62,6 +62,7 @@
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="${/com.fasterxml.jackson.core/jackson-annotations}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-smile" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-smile}" conf="compile"/>
+    <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-xml" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-xml}" conf="compile"/>
 
 
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop"/>
@@ -75,11 +76,11 @@
     <dependency org="org.apache.hadoop" name="hadoop-auth" rev="${/org.apache.hadoop/hadoop-auth}" conf="compile.hadoop"/>
     <dependency org="commons-configuration" name="commons-configuration" rev="${/commons-configuration/commons-configuration}" conf="compile.hadoop"/>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile.hadoop"/>
-    
+
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop"/>
     <dependency org="com.github.ben-manes.caffeine" name="caffeine" rev="${/com.github.ben-manes.caffeine/caffeine}" conf="compile.hadoop"/>
     <dependency org="org.apache.htrace" name="htrace-core" rev="${/org.apache.htrace/htrace-core}" conf="compile.hadoop"/>
-    
+
     <!-- Hadoop DfsMiniCluster Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />
@@ -98,7 +99,7 @@
     <dependency org="org.apache.htrace" name="htrace-core" rev="${/org.apache.htrace/htrace-core}" conf="test.DfsMiniCluster"/>
     <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="compile" />
     <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="compile" />
- 
+
     <!-- Hadoop MiniKdc Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
     <dependency org="org.apache.directory.server" name="apacheds-core" rev="${/org.apache.directory.server/apacheds-core}" conf="test.MiniKdc"/>
@@ -156,6 +157,6 @@
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
 
-    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

@@ -33,6 +33,11 @@ import org.apache.solr.common.util.WriteableValue;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 /**
  * @since solr 5.2
  */
@@ -79,7 +84,18 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display );
+      boolean indent = req.getParams().getBool("indent", false);
+      ObjectMapper mapper = null;
+      if (indent) {
+        if (applyToWT.equalsIgnoreCase("json")) {
+          mapper = new ObjectMapper();
+        }
+        else {
+          mapper = new XmlMapper();
+        }
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+      }
+      return new RawTransformer( field, display, mapper );
     }
     
     if (field.equals(display)) {
@@ -93,11 +109,13 @@ public class RawValueTransformerFactory extends TransformerFactory
   {
     final String field;
     final String display;
+    final ObjectMapper mapper;
 
-    public RawTransformer( String field, String display )
+    public RawTransformer( String field, String display, ObjectMapper mapper )
     {
       this.field = field;
       this.display = display;
+      this.mapper = mapper;
     }
 
     @Override
@@ -116,12 +134,12 @@ public class RawValueTransformerFactory extends TransformerFactory
         Collection current = (Collection)val;
         ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
         for(Object v : current) {
-          vals.add(new WriteableStringValue(v));
+          vals.add(new WriteableStringValue(v, mapper));
         }
         doc.setField(display, vals);
       }
       else {
-        doc.setField(display, new WriteableStringValue(val));
+        doc.setField(display, new WriteableStringValue(val, mapper));
       }
     }
 
@@ -133,9 +151,12 @@ public class RawValueTransformerFactory extends TransformerFactory
   
   public static class WriteableStringValue extends WriteableValue {
     public final Object val;
+    private ObjectMapper mapper;
     
-    public WriteableStringValue(Object val) {
+    
+    public WriteableStringValue(Object val, ObjectMapper mapper) {
       this.val = val;
+      this.mapper = mapper;
     }
     
     @Override
@@ -146,6 +167,16 @@ public class RawValueTransformerFactory extends TransformerFactory
       }
       else {
         str = val.toString();
+      }
+      if (mapper != null) {
+        try {
+          Object obj = mapper.readValue(str, Object.class); 
+          str = mapper.writer(new IndentedPrettyPrinter()).writeValueAsString(obj);
+          str = str + "\n      ";
+        }
+        catch (IOException e) {
+          // If we can't parse the JSON for whatever reason, just ignore indenting.
+        }
       }
       writer.getWriter().write(str);
     }
@@ -159,7 +190,16 @@ public class RawValueTransformerFactory extends TransformerFactory
       }
       return val.toString();
     }
+    
+    private class IndentedPrettyPrinter extends DefaultPrettyPrinter{
+      public IndentedPrettyPrinter() {
+        super();
+        this._nesting = 4; // Start nested in 4 levels to match wrapping Solr indentation.
+      }
+    }
   }
+  
+  
 }
 
 

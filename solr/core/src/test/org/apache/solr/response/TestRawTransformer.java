@@ -49,14 +49,17 @@ public class TestRawTransformer extends SolrTestCaseJ4 {
       SolrInputDocument sdoc = new SolrInputDocument();
       sdoc.addField("id", i);
       sdoc.addField("subject", "{poffL:[{offL:[{oGUID:\"79D5A31D-B3E4-4667-B812-09DF4336B900\",oID:\"OO73XRX\",prmryO:1,oRank:1,addTp:\"Office\",addCd:\"AA4GJ5T\",ad1:\"102 S 3rd St Ste 100\",city:\"Carson City\",st:\"MI\",zip:\"48811\",lat:43.176885,lng:-84.842919,phL:[\"(989) 584-1308\"],faxL:[\"(989) 584-6453\"]}]}]}");
+      sdoc.addField("subject_clean_json_s", "{\"poffL\": [{\"offL\": [{\"oGUID\": \"79D5A31D-B3E4-4667-B812-09DF4336B900\\\",oID:\\\"OO73XRX\\\",prmryO:1,oRank:1,addTp:\\\"Office\\\",addCd:\\\"AA4GJ5T\\\",ad1:\\\"102 S 3rd St Ste 100\\\",city:\\\"Carson City\\\",st:\\\"MI\\\",zip:\\\"48811\\\",lat:43.176885,lng:-84.842919,phL:[\\\"(989) 584-1308\\\"],faxL:[\\\"(989) 584-6453\\\"]\"}]}]}");
       sdoc.addField("title", "title_" + i);
       updateJ(jsonAdd(sdoc), null);
     }
     assertU(commit());
+    
     assertQ(req("q", "*:*"), "//*[@numFound='" + max + "']");
 
     SolrQueryRequest req = req("q", "*:*", "fl", "subject:[json]", "wt", "json");
     String strResponse = h.query(req);
+    
     assertTrue("response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("\"subject\":[{poffL:[{offL:[{oGUID:\"7"));
 
@@ -64,6 +67,25 @@ public class TestRawTransformer extends SolrTestCaseJ4 {
     strResponse = h.query(req);
     assertTrue("response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("subject\":[\""));
+    
+    req = req("q", "*:*", "fl", "id,subject:[json]", "wt", "json");
+    strResponse = h.query(req);
+    assertTrue("response does not contain right JSON encoding: " + strResponse,
+        strResponse.contains("\"id\":\"9\",\n" + 
+            "        \"subject\":[{poffL:[{offL:[{oGUID:\"7"));
+    
+    req = req("q", "*:*", "fl", "id,subject_clean_json_s:[json]", "wt", "json", "indent","true");
+    strResponse = h.query(req);
+    assertTrue("response should include indented JSON formatted field text: " + strResponse,
+        strResponse.contains("\"subject_clean_json_s\":[{\n" + 
+            "          \"poffL\" : [ {\n" + 
+            "            \"offL\" : [ {"));    
+      
+    req = req("q", "*:*", "fl", "id,subject:[json]", "wt", "json", "indent","true");
+    strResponse = h.query(req);
+    assertTrue("response should return non indented JSON if it can't be parsed: " + strResponse,
+        strResponse.contains("\"id\":\"9\",\n" + 
+            "        \"subject\":[{poffL:[{offL:[{oGUID:\"7")); 
   }
 
 }
