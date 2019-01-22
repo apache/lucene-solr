@@ -177,7 +177,7 @@ public class TestPolygon2D extends LuceneTestCase {
     }
   }
   
-  /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
+  /** If polygon.crosses(box) returns false, then any point in that box should return false as well */
   public void testIntersectRandom() {
     int iters = atLeast(10);
     for (int i = 0; i < iters; i++) {
@@ -213,7 +213,7 @@ public class TestPolygon2D extends LuceneTestCase {
     }
   }
   
-  /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
+  /** If polygon.crosses(box) returns false, then any point in that box should return false as well */
   // different from testIntersectsRandom in that its not a purely random test. we iterate the vertices of the polygon
   // and generate boxes near each one of those to try to be more efficient.
   public void testIntersectEdgeCases() {
@@ -330,6 +330,35 @@ public class TestPolygon2D extends LuceneTestCase {
         double[] c = random().nextBoolean() ? new double[] {polygon.getPolyLat(j), polygon.getPolyLon(j)} : new double[] {a[0], a[1]};
         assertTrue(impl.relateTriangle(a[0], a[1], b[0], b[1], c[0], c[1]) != Relation.CELL_OUTSIDE_QUERY);
       }
+    }
+  }
+
+  // targets the polygon directly
+  public void testWithinTriangle() {
+    Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
+    Polygon2D impl = Polygon2D.create(polygon);
+    assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-10, -1, 2, -1, 2, 5));
+    assertEquals(Boolean.TRUE, impl.withinTriangle(-10, -1, true, 2, -1, true, 2, 5, true));
+    assertEquals(Boolean.FALSE, impl.withinTriangle(-10, -10, true, 0.5, -10, true, 0.5, 30, true));
+    assertEquals(Boolean.TRUE, impl.withinTriangle(-10, -10, true, 1, -10, false, 1, 30, true));
+    assertEquals(null, impl.withinTriangle(80, 0, true, 81, 0, true, 81, 1, true));
+  }
+
+  // targets the polygon directly
+  public void testRandomWithinTriangle() {
+    for (int i = 0; i < 100; ++i) {
+      // random radius between 1Km and 10Km
+      int randomRadius = RandomNumbers.randomIntBetween(random(), 10000, 10000);
+      // random number of vertices
+      int numVertices = RandomNumbers.randomIntBetween(random(), 100, 1000);
+      Polygon polygon = createRegularPolygon(0, 0, randomRadius, numVertices);
+      Polygon2D impl = Polygon2D.create(polygon);
+      assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-90, -90, 10, -90, 10, 90));
+      assertEquals(Boolean.TRUE, impl.withinTriangle(-90, -90, true,10, -90, true,10, 90, true));
+      assertEquals(Boolean.FALSE, impl.withinTriangle(-10, -10, true,0, -10, true,0, 30, true));
+      assertEquals(Boolean.TRUE, impl.withinTriangle(-10, -10, true,0, -10, false,0, 30, true));
+      assertEquals(Boolean.FALSE, impl.withinTriangle(0, 0, true,1e-6, 0, true,1e-6, 1e-6, true));
+      assertEquals(null, impl.withinTriangle(80, 0, true,81, 0, true,81, 1, true));
     }
   }
 }

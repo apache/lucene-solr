@@ -24,6 +24,7 @@ import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.index.PointValues;
 
 /** random bounding box and polygon query tests for random indexed arrays of {@link Polygon} types */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -42,19 +43,47 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     int n = random().nextInt(4) + 1;
     Polygon[] polygons = new Polygon[n];
     for (int i =0; i < n; i++) {
+      int  repetitions =0;
       while (true) {
         // if we can't tessellate; then random polygon generator created a malformed shape
         Polygon p = (Polygon) getShapeType().nextShape();
         try {
-          Tessellator.tessellate(p);
-          polygons[i] = p;
-          break;
+          //polygons are disjoint so CONTAINS works. Note that if we intersect
+          //any shape then contains return false.
+          if (isDisjoint(polygons, Tessellator.tessellate(p), i)) {
+            polygons[i] = p;
+            break;
+          }
+          repetitions++;
+          if (repetitions > 1000) {
+            //try again
+            return nextShape();
+          }
         } catch (IllegalArgumentException e) {
           continue;
         }
       }
     }
     return polygons;
+  }
+
+  private boolean isDisjoint(Polygon[] polygons, List<Tessellator.Triangle> triangles, int totalPolygons) {
+    if (totalPolygons == 0) {
+      return true;
+    }
+    Polygon[] currentPolygons = new Polygon[totalPolygons];
+    for (int i =0; i < totalPolygons; i++) {
+      currentPolygons[i] = polygons[i];
+    }
+    Polygon2D impl = Polygon2D.create(currentPolygons);
+    for (Tessellator.Triangle triangle : triangles) {
+      if (impl.relateTriangle(triangle.getLon(0), triangle.getLat(0),
+          triangle.getLon(1), triangle.getLat(1),
+          triangle.getLon(2), triangle.getLat(2)) != PointValues.Relation.CELL_OUTSIDE_QUERY) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -85,13 +114,13 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
 
     @Override
@@ -101,13 +130,13 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         boolean b = POLYGONVALIDATOR.testLineQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
 
     @Override
@@ -117,13 +146,13 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         boolean b = POLYGONVALIDATOR.testPolygonQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
   }
 

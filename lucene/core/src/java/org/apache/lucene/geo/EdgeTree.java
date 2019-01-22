@@ -101,6 +101,60 @@ public abstract class EdgeTree {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
+  /** Used by {@link withinTriangle} to check the relationship between a triangle and the query shape */
+  public enum WithinRelation {
+    /** If the shape is a candidate for within. Tipically this is return if the query shape is fully inside
+     * the triangle or if the query shape intersects only edges that do not belong to the original shape. */
+    CANDIDATE,
+    /** Return this if if the query shape intersects an edge that does belong to the original shape. */
+    INTERSECTS,
+    /** Return this if the query shape is disjoint with the triangle. Note that the query shape can still be
+     * within the indexed shape that correspond to the triangle */
+    DISJOINT
+  }
+
+  /**
+   *  Checks if the shape is within the provided triangle.
+   *
+   * @param ax longitude of point a of the triangle
+   * @param ay latitude of point a of the triangle
+   * @param ab if edge ab belongs to the original shape
+   * @param bx longitude of point b of the triangle
+   * @param by latitude of point b of the triangle
+   * @param bc if edge bc belongs to the original shape
+   * @param cx longitude of point c of the triangle
+   * @param cy latitude of point c of the triangle
+   * @param ca if edge ca belongs to the original shape
+   * @return
+   */
+  public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // compute bounding box of triangle
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+
+    if (minLat <= maxY && minLon <= maxX) {
+      WithinRelation relation = internalWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+      if (relation != null) {
+        return relation;
+      }
+      if (left != null) {
+        relation = left.withinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        if (relation != null) {
+          return relation;
+        }
+      }
+      if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
+        relation = right.withinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        if (relation != null) {
+          return relation;
+        }
+      }
+    }
+    return WithinRelation.DISJOINT;
+  }
+
   /** Returns relation to the provided rectangle */
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     if (minLat <= maxY && minLon <= maxX) {
@@ -150,7 +204,86 @@ public abstract class EdgeTree {
     if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;
     }
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
     return Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  private WithinRelation internalWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // compute bounding box of triangle
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+
+    //disjoint then we return null
+    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+
+    Relation shapeRelation = componentRelateTriangle(ax, ay, bx, by, cx, cy);
+    if (shapeRelation == Relation.CELL_OUTSIDE_QUERY) {
+      return WithinRelation.DISJOINT;
+    } else if (shapeRelation == Relation.CELL_INSIDE_QUERY) {
+      return WithinRelation.INTERSECTS;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+
+    // we cross
+    if (tree.crossesEdge(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.INTERSECTS;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesEdge(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.INTERSECTS;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesEdge(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.INTERSECTS;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
+  /** This should be moved when LatLonShape is moved from sandbox!
+   * compute whether the given x, y point is in a triangle; uses the winding order method */
+  private static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
+    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
+    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
+    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
+    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
+      int a = orient(x, y, ax, ay, bx, by);
+      int b = orient(x, y, bx, by, cx, cy);
+      if (a == 0 || b == 0 || a < 0 == b < 0) {
+        int c = orient(x, y, cx, cy, ax, ay);
+        return c == 0 || (c < 0 == (b < 0 || a < 0));
+      }
+      return false;
+    } else {
+      return false;
+    }
   }
 
 
@@ -307,6 +440,50 @@ public abstract class EdgeTree {
       return false;
     }
 
+    /** Returns true if the triangle crosses any edge in this edge subtree */
+    boolean crossesEdge(double ax, double ay, double bx, double by) {
+      // compute bounding box of triangle
+      double minLat = StrictMath.min(ay, by);
+      double minLon = StrictMath.min(ax, bx);
+      double maxLat = StrictMath.max(ay, by);
+      double maxLon = StrictMath.max(ax, bx);
+
+      if (minLat <= max) {
+        double dy = lat1;
+        double ey = lat2;
+        double dx = lon1;
+        double ex = lon2;
+
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (dy < minLat && ey < minLat) ||
+            (dy > maxLat && ey > maxLat) ||
+            (dx < minLon && ex < minLon) ||
+            (dx > maxLon && ex > maxLon);
+
+        if (outside == false) {
+          // does triangle's first edge intersect polyline?
+          // ax, ay -> bx, by
+          if (lineCrossesLine(ax, ay, bx, by, dx, dy, ex, ey)) {
+            return true;
+          }
+        }
+
+        if (left != null) {
+          if (left.crossesEdge(ax, ay, bx, by)) {
+            return true;
+          }
+        }
+
+        if (right != null && maxLat >= low) {
+          if (right.crossesEdge(ax, ay, bx, by)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     /** Returns true if the box crosses any edge in this edge subtree */
     boolean crosses(double minLat, double maxLat, double minLon, double maxLon) {
       // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
@@ -315,7 +492,7 @@ public abstract class EdgeTree {
         // if we find one, return true.
         // for each box line (AB):
         //   for each poly line (CD):
-        //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
+        //     crosses = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
         double cy = lat1;
         double dy = lat2;
         double cx = lon1;

@@ -107,7 +107,7 @@ public class Rectangle2D {
     return eastRelation;
   }
 
-  /** Checks if the rectangle intersects the provided triangle **/
+  /** Checks if the rectangle crosses the provided triangle **/
   public boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
     // 1. query contains any triangle points
     if (queryContainsPoint(aX, aY) || queryContainsPoint(bX, bY) || queryContainsPoint(cX, cY)) {
@@ -146,6 +146,90 @@ public class Rectangle2D {
       return true;
     }
     return false;
+  }
+
+  /**
+   *  Checks if the shape is within the provided triangle.
+   *
+   * @param ax longitude of point a of the triangle
+   * @param ay latitude of point a of the triangle
+   * @param ab if edge ab belongs to the original shape
+   * @param bx longitude of point b of the triangle
+   * @param by latitude of point b of the triangle
+   * @param bc if edge bc belongs to the original shape
+   * @param cx longitude of point c of the triangle
+   * @param cy latitude of point c of the triangle
+   * @param ca if edge ca belongs to the original shape
+   * @return the {@link EdgeTree.WithinRelation}
+   */
+  public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
+    if (this.crossesDateline() == true) {
+      //Triangles cannot cross the date line so it is always false
+      return EdgeTree.WithinRelation.INTERSECTS;
+    }
+    // compute bounding box of triangle
+    int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+    int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+    int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+    int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+    if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY,  minX, maxX, minY, maxY)) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+
+    return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);
+  }
+  public EdgeTree.WithinRelation bboxWithinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca, int minLon, int maxLon, int minLat, int maxLat) {
+    //points belong to the shape so if points are inside the rectangle then it cannot be within. It is valid if the point
+    //is on the edge.
+    if (bboxContainsPoint(ax, ay, minLon, maxLon, minLat, maxLat) ||
+        bboxContainsPoint(bx, by, minLon, maxLon, minLat, maxLat) ||
+        bboxContainsPoint(cx, cy, minLon, maxLon, minLat, maxLat)) {
+      return EdgeTree.WithinRelation.INTERSECTS;
+    }
+    //if any of the edges crosses and edge belonging to the polygon then it cannot be within.
+    //Note that crosses is different to crosses as it needs to have points at both sides.
+    boolean inside = false;
+    if  (edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
+      if (ab == true) {
+        return EdgeTree.WithinRelation.INTERSECTS;
+      } else {
+        inside = true;
+      }
+    }
+    if (edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
+      if (bc == true) {
+        return EdgeTree.WithinRelation.INTERSECTS;
+      } else {
+        inside = true;
+      }
+    }
+    if (edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
+      if (ca == true) {
+        return EdgeTree.WithinRelation.INTERSECTS;
+      } else {
+        inside = true;
+      }
+    }
+    //if any of the edges crosses and edge that does not belong to the polygon
+    // then it is a candidate for within
+    if (inside == true) {
+      return EdgeTree.WithinRelation.CANDIDATE;
+    }
+
+    // Check if the rectangle is fully within the triangle, if not then the relationship is undefined.
+    // compute bounding box of triangle
+    int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+    int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+    int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+    int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+    if ((tMinX <= minLon && tMaxX >= maxLon && tMinY <= minLat && tMaxY >= maxLat) == false) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+    //We check the min and max points, if true it is inside
+    if ((Tessellator.pointInTriangle(minLon, minLat, ax, ay, bx, by, cx, cy))) {
+      return EdgeTree.WithinRelation.CANDIDATE;
+    }
+    return EdgeTree.WithinRelation.DISJOINT;
   }
 
   /** Checks if the rectangle contains the provided triangle **/
@@ -191,7 +275,7 @@ public class Rectangle2D {
     NumericUtils.intToSortableBytes(maxX, b, 3 * BYTES);
   }
 
-  /** returns true if the query intersects the provided triangle (in encoded space) */
+  /** returns true if the query crosses the provided triangle (in encoded space) */
   private boolean queryIntersects(int ax, int ay, int bx, int by, int cx, int cy) {
     // check each edge of the triangle against the query
     if (edgeIntersectsQuery(ax, ay, bx, by) ||
@@ -202,7 +286,7 @@ public class Rectangle2D {
     return false;
   }
 
-  /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
+  /** returns true if the edge (defined by (ax, ay) (bx, by)) crosses the query */
   private boolean edgeIntersectsQuery(int ax, int ay, int bx, int by) {
     if (this.crossesDateline() == true) {
       return edgeIntersectsBox(ax, ay, bx, by, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
@@ -216,6 +300,11 @@ public class Rectangle2D {
     return (x < minX || x > maxX || y < minY || y > maxY) == false;
   }
 
+  /** static utility method to check if a bounding box is disjoint with a point */
+  private static boolean bboxContainsPointNotInEdge(int x, int y, int minX, int maxX, int minY, int maxY) {
+    return (x <= minX || x >= maxX || y <= minY || y >= maxY) == false;
+  }
+
   /** static utility method to check if a bounding box contains a triangle */
   private static boolean bboxContainsTriangle(int ax, int ay, int bx, int by, int cx, int cy,
                                              int minX, int maxX, int minY, int maxY) {
@@ -224,7 +313,7 @@ public class Rectangle2D {
         && bboxContainsPoint(cx, cy, minX, maxX, minY, maxY);
   }
 
-  /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
+  /** returns true if the edge (defined by (ax, ay) (bx, by)) crosses the query */
   private static boolean edgeIntersectsBox(int ax, int ay, int bx, int by,
                                            int minX, int maxX, int minY, int maxY) {
     // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point

@@ -95,22 +95,22 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   }
 
   /** quantizes a triangle to be consistent with index encoding */
-  protected static double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
-    return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
+  protected static double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    LatLonShape.Triangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+    return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
   }
 
   /** encode/decode a triangle */
-  protected static int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  protected static LatLonShape.Triangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     byte[] encoded = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
-    int[] decoded = new int[6];
+    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
+    LatLonShape.Triangle decoded = new LatLonShape.Triangle();
     LatLonShape.decodeTriangle(encoded, decoded);
     return decoded;
   }
 
   /** use {@link GeoTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
-  public Line nextLine() {
+  public static Line nextLine() {
     Polygon poly = GeoTestUtil.nextPolygon();
     double[] lats = new double[poly.numPoints() - 1];
     double[] lons = new double[lats.length];
@@ -367,6 +367,19 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  private String getWKT(Polygon[] polygons) {
+    StringBuilder builder = new StringBuilder("MULTIPOLYGON(");
+    for (Polygon p : polygons) {
+      builder.append("((");
+      for (int j =0; j < p.getPolyLats().length; j++) {
+        builder.append(p.getPolyLon(j) + " " + p.getPolyLat(j) +",");
+      }
+      builder.append(p.getPolyLon(0) + " " + p.getPolyLat(0) +")),");
+      builder.append(p.getHoles().length);
+    }
+    return builder.toString();
+  }
+
   private int scaledIterationCount(int shapes) {
     if (shapes < 500) {
       return atLeast(50);
@@ -540,12 +553,14 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           }
           b.append("  relation=" + queryRelation + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
+          b.append(getWKT((Polygon[]) shapes[id])+ "\n");
           if (shapes[id] instanceof Object[]) {
             b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
           } else {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append(getWKT(new Polygon[] {queryPolygon})+ "\n");
           b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
