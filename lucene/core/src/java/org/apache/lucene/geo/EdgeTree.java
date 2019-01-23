@@ -101,13 +101,13 @@ public abstract class EdgeTree {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
-  /** Used by {@link withinTriangle} to check the relationship between a triangle and the query shape */
+  /** Used by withinTriangle to check the within relationship between a triangle and the query shape */
   public enum WithinRelation {
-    /** If the shape is a candidate for within. Tipically this is return if the query shape is fully inside
+    /** If the shape is a candidate for within. Typically this is return if the query shape is fully inside
      * the triangle or if the query shape intersects only edges that do not belong to the original shape. */
     CANDIDATE,
     /** Return this if if the query shape intersects an edge that does belong to the original shape. */
-    INTERSECTS,
+    CROSSES,
     /** Return this if the query shape is disjoint with the triangle. Note that the query shape can still be
      * within the indexed shape that correspond to the triangle */
     DISJOINT
@@ -226,7 +226,7 @@ public abstract class EdgeTree {
     if (shapeRelation == Relation.CELL_OUTSIDE_QUERY) {
       return WithinRelation.DISJOINT;
     } else if (shapeRelation == Relation.CELL_INSIDE_QUERY) {
-      return WithinRelation.INTERSECTS;
+      return WithinRelation.CROSSES;
     }
 
     WithinRelation relation = WithinRelation.DISJOINT;
@@ -234,21 +234,21 @@ public abstract class EdgeTree {
     // we cross
     if (tree.crossesEdge(ax, ay, bx, by)) {
       if (ab == true) {
-        return WithinRelation.INTERSECTS;
+        return WithinRelation.CROSSES;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
     if (tree.crossesEdge(bx, by, cx, cy)) {
       if (bc == true) {
-        return WithinRelation.INTERSECTS;
+        return WithinRelation.CROSSES;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
     if (tree.crossesEdge(cx, cy, ax, ay)) {
       if (ca == true) {
-        return WithinRelation.INTERSECTS;
+        return WithinRelation.CROSSES;
       } else {
         relation = WithinRelation.CANDIDATE;
       }

@@ -44,7 +44,7 @@ import org.apache.lucene.util.FixedBitSet;
  * Base LatLonShape Query class providing common query logic for
  * {@link LatLonShapeBoundingBoxQuery} and {@link LatLonShapePolygonQuery}
  *
- * Note: this class implements the majority of the INTERSECTS, WITHIN, DISJOINT relation logic
+ * Note: this class implements the majority of the CROSSES, WITHIN, DISJOINT relation logic
  *
  * @lucene.experimental
  **/
@@ -155,7 +155,7 @@ abstract class LatLonShapeQuery extends Query {
               EdgeTree.WithinRelation within = queryWithin(t, scratchTriangle);
               if (within == EdgeTree.WithinRelation.CANDIDATE) {
                 intersect.set(docID);
-              } else if (within == EdgeTree.WithinRelation.INTERSECTS) {
+              } else if (within == EdgeTree.WithinRelation.CROSSES) {
                 disjoint.set(docID);
               }
             } else {
@@ -317,7 +317,7 @@ abstract class LatLonShapeQuery extends Query {
       this.queryRelation = queryRelation;
     }
 
-    /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
+    /** create a visitor that clears documents that do NOT match the polygon query; used with CROSSES */
     private IntersectVisitor getInverseIntersectVisitor(LatLonShapeQuery query, FixedBitSet result, int[] cost) {
       return new IntersectVisitor() {
         LatLonShape.Triangle scratchTriangle = new LatLonShape.Triangle();

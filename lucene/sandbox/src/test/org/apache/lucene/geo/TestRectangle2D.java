@@ -50,7 +50,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(2);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.INTERSECTS, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(EdgeTree.WithinRelation.CROSSES, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleContains() {
@@ -64,7 +64,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(0.25);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.INTERSECTS, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(EdgeTree.WithinRelation.CROSSES, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleContainsEdgeCase() {
@@ -78,7 +78,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(0.25);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.INTERSECTS, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(EdgeTree.WithinRelation.CROSSES, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleWithin() {
@@ -106,7 +106,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(30);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.INTERSECTS, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(EdgeTree.WithinRelation.CROSSES, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testRandomTriangles() {

@@ -72,7 +72,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
       return true;
     }
     Polygon[] currentPolygons = new Polygon[totalPolygons];
-    for (int i =0; i < totalPolygons; i++) {
+    for (int i = 0; i < totalPolygons; i++) {
       currentPolygons[i] = polygons[i];
     }
     Polygon2D impl = Polygon2D.create(currentPolygons);

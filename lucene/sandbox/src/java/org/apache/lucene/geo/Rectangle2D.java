@@ -97,7 +97,7 @@ public class Rectangle2D {
     return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
   }
 
-  /** compare this to a provided rangle bounding box **/
+  /** compare this to a provided range bounding box **/
   public PointValues.Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
                                               int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     PointValues.Relation eastRelation = compareBBoxToRangeBBox(this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
@@ -107,7 +107,7 @@ public class Rectangle2D {
     return eastRelation;
   }
 
-  /** Checks if the rectangle crosses the provided triangle **/
+  /** Checks if the rectangle intersects the provided triangle **/
   public boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
     // 1. query contains any triangle points
     if (queryContainsPoint(aX, aY) || queryContainsPoint(bX, bY) || queryContainsPoint(cX, cY)) {
@@ -165,7 +165,7 @@ public class Rectangle2D {
   public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
     if (this.crossesDateline() == true) {
       //Triangles cannot cross the date line so it is always false
-      return EdgeTree.WithinRelation.INTERSECTS;
+      return EdgeTree.WithinRelation.CROSSES;
     }
     // compute bounding box of triangle
     int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
@@ -184,28 +184,28 @@ public class Rectangle2D {
     if (bboxContainsPoint(ax, ay, minLon, maxLon, minLat, maxLat) ||
         bboxContainsPoint(bx, by, minLon, maxLon, minLat, maxLat) ||
         bboxContainsPoint(cx, cy, minLon, maxLon, minLat, maxLat)) {
-      return EdgeTree.WithinRelation.INTERSECTS;
+      return EdgeTree.WithinRelation.CROSSES;
     }
     //if any of the edges crosses and edge belonging to the polygon then it cannot be within.
     //Note that crosses is different to crosses as it needs to have points at both sides.
     boolean inside = false;
     if  (edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
       if (ab == true) {
-        return EdgeTree.WithinRelation.INTERSECTS;
+        return EdgeTree.WithinRelation.CROSSES;
       } else {
         inside = true;
       }
     }
     if (edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
       if (bc == true) {
-        return EdgeTree.WithinRelation.INTERSECTS;
+        return EdgeTree.WithinRelation.CROSSES;
       } else {
         inside = true;
       }
     }
     if (edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
       if (ca == true) {
-        return EdgeTree.WithinRelation.INTERSECTS;
+        return EdgeTree.WithinRelation.CROSSES;
       } else {
         inside = true;
       }
@@ -275,7 +275,7 @@ public class Rectangle2D {
     NumericUtils.intToSortableBytes(maxX, b, 3 * BYTES);
   }
 
-  /** returns true if the query crosses the provided triangle (in encoded space) */
+  /** returns true if the query intersects the provided triangle (in encoded space) */
   private boolean queryIntersects(int ax, int ay, int bx, int by, int cx, int cy) {
     // check each edge of the triangle against the query
     if (edgeIntersectsQuery(ax, ay, bx, by) ||

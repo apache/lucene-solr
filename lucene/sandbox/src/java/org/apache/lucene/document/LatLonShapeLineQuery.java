@@ -98,7 +98,7 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
       return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
-    // INTERSECTS
+    // CROSSES
     return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 

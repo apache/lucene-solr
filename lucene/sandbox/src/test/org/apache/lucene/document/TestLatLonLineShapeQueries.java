@@ -88,9 +88,9 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
           if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
           }
-        } else if(queryRelation == QueryRelation.CONTAINS) {
+        } else if (queryRelation == QueryRelation.CONTAINS) {
           EdgeTree.WithinRelation relation = rectangle2D.withinTriangle(decoded.aX, decoded.aY, decoded.ab, decoded.bX, decoded.bY, decoded.bc, decoded.cX, decoded.cY, decoded.ca);
-          if  (relation == EdgeTree.WithinRelation.INTERSECTS) {
+          if (relation == EdgeTree.WithinRelation.CROSSES) {
             return false;
           } else if (relation == EdgeTree.WithinRelation.CANDIDATE) {
             withinRelation = EdgeTree.WithinRelation.CANDIDATE;
@@ -144,7 +144,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         EdgeTree.WithinRelation relation = tree.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
-        if (relation == EdgeTree.WithinRelation.INTERSECTS) {
+        if (relation == EdgeTree.WithinRelation.CROSSES) {
           return false;
         } else if (relation == EdgeTree.WithinRelation.CANDIDATE) {
           answer = EdgeTree.WithinRelation.CANDIDATE;
