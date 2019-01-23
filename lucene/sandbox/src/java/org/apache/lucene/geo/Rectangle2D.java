@@ -164,7 +164,6 @@ public class Rectangle2D {
    */
   public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
     if (this.crossesDateline() == true) {
-      //Triangles cannot cross the date line so it is always false
       throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
     }
     return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);

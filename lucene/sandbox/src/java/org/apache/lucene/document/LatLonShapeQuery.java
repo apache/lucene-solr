@@ -82,7 +82,7 @@ abstract class LatLonShapeQuery extends Query {
    * Checks if the query shape is within the provided triangle.
    * @param triangle the encoded triangle to check
    * @param scratchTriangle triangle helper to be used for decoding the provided encoded triangle.
-   * @return the {@link EdgeTree.WithinRelation}
+   * @return the within relationship
    */
   protected abstract EdgeTree.WithinRelation queryWithin(byte[] triangle, LatLonShape.Triangle scratchTriangle);
 

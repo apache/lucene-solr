@@ -110,7 +110,7 @@ public abstract class EdgeTree {
      * the triangle is inside the shape. */
     NOTWITHIN,
     /** Return this if the query shape is disjoint with the triangle. Note that the query shape can still be
-     * within the indexed shape that correspond to the triangle */
+     * within the indexed shape that corresponds to the triangle */
     DISJOINT
   }
 
@@ -126,7 +126,7 @@ public abstract class EdgeTree {
    * @param cx longitude of point c of the triangle
    * @param cy latitude of point c of the triangle
    * @param ca if edge ca belongs to the original shape
-   * @return the {@Link WithinRelation}
+   * @return the within relationship
    */
   public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     if (left != null || right != null) {

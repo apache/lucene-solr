@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.Relation;
 
 import static org.apache.lucene.geo.GeoUtils.orient;
