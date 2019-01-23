@@ -267,7 +267,7 @@ public abstract class EdgeTree {
     }
     return relation;
   }
-  
+
   /** Returns relation to the provided rectangle for this component */
   protected Relation internalComponentRelate(double minLat, double maxLat, double minLon, double maxLon) {
     // if the bounding boxes are disjoint then the shape does not cross
