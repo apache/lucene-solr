@@ -312,6 +312,12 @@ public class TestPolygon2D extends LuceneTestCase {
     }
   }
 
+  public void testRelateTriangleContainsPolygon() {
+    Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
+    Polygon2D impl = Polygon2D.create(polygon);
+    assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-10 , -1, 2, -1, 10, 10));
+  }
+
   // test
   public void testRelateTriangleEdgeCases() {
     for (int i = 0; i < 100; ++i) {
