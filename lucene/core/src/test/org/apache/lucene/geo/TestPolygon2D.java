@@ -177,7 +177,7 @@ public class TestPolygon2D extends LuceneTestCase {
     }
   }
   
-  /** If polygon.crosses(box) returns false, then any point in that box should return false as well */
+  /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
   public void testIntersectRandom() {
     int iters = atLeast(10);
     for (int i = 0; i < iters; i++) {
@@ -213,7 +213,7 @@ public class TestPolygon2D extends LuceneTestCase {
     }
   }
   
-  /** If polygon.crosses(box) returns false, then any point in that box should return false as well */
+  /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
   // different from testIntersectsRandom in that its not a purely random test. we iterate the vertices of the polygon
   // and generate boxes near each one of those to try to be more efficient.
   public void testIntersectEdgeCases() {
