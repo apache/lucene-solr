@@ -854,7 +854,7 @@ public abstract class NumberRangePrefixTree extends SpatialPrefixTree {
       if (getLevel() > lv.getLevel())
         return SpatialRelation.WITHIN;
       return SpatialRelation.CONTAINS;//or equals
-      //no CROSSES; that won't happen.
+      //no INTERSECTS; that won't happen.
     }
 
     public SpatialRelation relate(SpanUnitsNRShape spanShape) {

@@ -199,12 +199,12 @@ public class QuadPrefixTree extends LegacyPrefixTree {
       matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
     } else if (SpatialRelation.DISJOINT == v) {
       // nothing
-    } else { // SpatialRelation.WITHIN, SpatialRelation.CROSSES
+    } else { // SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
       str.bytes[str.length++] = (byte)c;//append
 
       int nextLevel = level+1;
       if (nextLevel >= maxLevel) {
-        //str.append(SpatialPrefixGrid.CROSSES);
+        //str.append(SpatialPrefixGrid.INTERSECTS);
         matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
       } else {
         build(cx, cy, nextLevel, matches, str, shape, maxLevel);

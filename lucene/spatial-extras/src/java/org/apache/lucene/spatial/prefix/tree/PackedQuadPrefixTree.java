@@ -121,7 +121,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     if (SpatialRelation.CONTAINS == v || (level >= maxLevel)) {
       matches.add(new PackedQuadCell(term, v.transpose()));
-    } else {// SpatialRelation.WITHIN, SpatialRelation.CROSSES
+    } else {// SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
       build(cx, cy, level, matches, term, shape, maxLevel);
     }
   }
