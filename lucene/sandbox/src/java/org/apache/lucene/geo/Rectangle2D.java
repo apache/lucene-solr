@@ -165,67 +165,59 @@ public class Rectangle2D {
   public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
     if (this.crossesDateline() == true) {
       //Triangles cannot cross the date line so it is always false
-      return EdgeTree.WithinRelation.CROSSES;
+      throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
     }
-    // compute bounding box of triangle
+    return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);
+  }
+
+  public EdgeTree.WithinRelation bboxWithinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca, int minLon, int maxLon, int minLat, int maxLat) {
+    //compute bounding box of triangle
     int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
     int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
     int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
     int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
-    if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY,  minX, maxX, minY, maxY)) {
+    //bounding boxes disjoint?
+    if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
       return EdgeTree.WithinRelation.DISJOINT;
     }
 
-    return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);
-  }
-  public EdgeTree.WithinRelation bboxWithinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca, int minLon, int maxLon, int minLat, int maxLat) {
-    //points belong to the shape so if points are inside the rectangle then it cannot be within. It is valid if the point
-    //is on the edge.
+    //points belong to the shape so if points are inside the rectangle then it cannot be within.
     if (bboxContainsPoint(ax, ay, minLon, maxLon, minLat, maxLat) ||
         bboxContainsPoint(bx, by, minLon, maxLon, minLat, maxLat) ||
         bboxContainsPoint(cx, cy, minLon, maxLon, minLat, maxLat)) {
-      return EdgeTree.WithinRelation.CROSSES;
+      return EdgeTree.WithinRelation.NOTWITHIN;
     }
-    //if any of the edges crosses and edge belonging to the polygon then it cannot be within.
-    //Note that crosses is different to crosses as it needs to have points at both sides.
+
+    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
     boolean inside = false;
     if  (edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
       if (ab == true) {
-        return EdgeTree.WithinRelation.CROSSES;
+        return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
         inside = true;
       }
     }
     if (edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
       if (bc == true) {
-        return EdgeTree.WithinRelation.CROSSES;
+        return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
         inside = true;
       }
     }
     if (edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
       if (ca == true) {
-        return EdgeTree.WithinRelation.CROSSES;
+        return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
         inside = true;
       }
     }
-    //if any of the edges crosses and edge that does not belong to the polygon
+    // if any of the edges crosses and edge that does not belong to the shape
     // then it is a candidate for within
     if (inside == true) {
       return EdgeTree.WithinRelation.CANDIDATE;
     }
 
-    // Check if the rectangle is fully within the triangle, if not then the relationship is undefined.
-    // compute bounding box of triangle
-    int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
-    int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
-    int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
-    int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
-    if ((tMinX <= minLon && tMaxX >= maxLon && tMinY <= minLat && tMaxY >= maxLat) == false) {
-      return EdgeTree.WithinRelation.DISJOINT;
-    }
-    //We check the min and max points, if true it is inside
+    //Check if shape is within the triangle,
     if ((Tessellator.pointInTriangle(minLon, minLat, ax, ay, bx, by, cx, cy))) {
       return EdgeTree.WithinRelation.CANDIDATE;
     }

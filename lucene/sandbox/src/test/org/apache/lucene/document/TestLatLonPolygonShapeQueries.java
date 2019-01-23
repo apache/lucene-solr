@@ -82,7 +82,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
           }
         } else if (queryRelation == QueryRelation.CONTAINS) {
           EdgeTree.WithinRelation relation = rectangle2D.withinTriangle(decoded.aX, decoded.aY, decoded.ab, decoded.bX, decoded.bY, decoded.bc, decoded.cX, decoded.cY, decoded.ca);
-          if (relation == EdgeTree.WithinRelation.CROSSES) {
+          if (relation == EdgeTree.WithinRelation.NOTWITHIN) {
             return false;
           } else if (relation == EdgeTree.WithinRelation.CANDIDATE) {
             withinRelation = EdgeTree.WithinRelation.CANDIDATE;
@@ -143,7 +143,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
         EdgeTree.WithinRelation relation = tree.withinTriangle(GeoEncodingUtils.decodeLongitude(qTriangle.aX), GeoEncodingUtils.decodeLatitude(qTriangle.aY), qTriangle.ab,
             GeoEncodingUtils.decodeLongitude(qTriangle.bX), GeoEncodingUtils.decodeLatitude(qTriangle.bY), qTriangle.bc,
             GeoEncodingUtils.decodeLongitude(qTriangle.cX), GeoEncodingUtils.decodeLatitude(qTriangle.cY), qTriangle.ca);
-        if (relation == EdgeTree.WithinRelation.CROSSES) {
+        if (relation == EdgeTree.WithinRelation.NOTWITHIN) {
           return false;
         } else if (relation == EdgeTree.WithinRelation.CANDIDATE) {
           answer = EdgeTree.WithinRelation.CANDIDATE;

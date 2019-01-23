@@ -155,7 +155,7 @@ abstract class LatLonShapeQuery extends Query {
               EdgeTree.WithinRelation within = queryWithin(t, scratchTriangle);
               if (within == EdgeTree.WithinRelation.CANDIDATE) {
                 intersect.set(docID);
-              } else if (within == EdgeTree.WithinRelation.CROSSES) {
+              } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
                 disjoint.set(docID);
               }
             } else {

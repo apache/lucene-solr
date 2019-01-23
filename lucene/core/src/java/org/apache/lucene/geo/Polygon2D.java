@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.geo;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.Relation;
+
+import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D polygon implementation represented as a balanced interval tree of edges.
@@ -89,17 +92,103 @@ public final class Polygon2D extends EdgeTree {
         return Relation.CELL_OUTSIDE_QUERY;
       }
     }
-    // check each corner: if < 3 are present, its cheaper than crossesSlowly
+    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
       if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners > 0) {
-      return Relation.CELL_CROSSES_QUERY;
+    } else if (numCorners == 0) {
+      if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
     }
-    return null;
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  @Override
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // check any holes
+    if (holes != null) {
+      Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
+      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
+        return WithinRelation.NOTWITHIN;
+      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
+        return WithinRelation.DISJOINT;
+      }
+    }
+
+    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
+    if (numCorners > 0) {
+      return WithinRelation.NOTWITHIN;
+    }
+    WithinRelation relation = WithinRelation.DISJOINT;
+    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
+    if (tree.crossesEdge(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesEdge(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesEdge(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    //if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    //check that triangle bounding box not inside shape bounding box
+    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+
+    //Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
+  //This should be moved when LatLonShape is moved from sandbox!
+  /**
+   * Compute whether the given x, y point is in a triangle; uses the winding order method */
+  private static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
+    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
+    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
+    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
+    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
+    //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
+    //coplanar points that are not part of the triangle.
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
+      int a = orient(x, y, ax, ay, bx, by);
+      int b = orient(x, y, bx, by, cx, cy);
+      if (a == 0 || b == 0 || a < 0 == b < 0) {
+        int c = orient(x, y, cx, cy, ax, ay);
+        return c == 0 || (c < 0 == (b < 0 || a < 0));
+      }
+      return false;
+    } else {
+      return false;
+    }
   }
 
   /** Returns relation to the provided rectangle for this component */
@@ -114,17 +203,23 @@ public final class Polygon2D extends EdgeTree {
         return Relation.CELL_OUTSIDE_QUERY;
       }
     }
-    // check each corner: if < 4 are present, its cheaper than crossesSlowly
+    // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minLat, maxLat, minLon, maxLon);
     if (numCorners == 4) {
       if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners > 0) {
-      return Relation.CELL_CROSSES_QUERY;
+    }  else if (numCorners == 0) {
+      if (minLat >= tree.lat1 && maxLat <= tree.lat1 && minLon >= tree.lon2 && maxLon <= tree.lon2) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
     }
-    return null;
+    return Relation.CELL_CROSSES_QUERY;
   }
 
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {

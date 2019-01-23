@@ -106,8 +106,9 @@ public abstract class EdgeTree {
     /** If the shape is a candidate for within. Typically this is return if the query shape is fully inside
      * the triangle or if the query shape intersects only edges that do not belong to the original shape. */
     CANDIDATE,
-    /** Return this if if the query shape intersects an edge that does belong to the original shape. */
-    CROSSES,
+    /** Return this if if the query shape intersects an edge that does belong to the original shape or any point of
+     * the triangle is inside the shape. */
+    NOTWITHIN,
     /** Return this if the query shape is disjoint with the triangle. Note that the query shape can still be
      * within the indexed shape that correspond to the triangle */
     DISJOINT
@@ -128,31 +129,11 @@ public abstract class EdgeTree {
    * @return
    */
   public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    // compute bounding box of triangle
-    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
-    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
-    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
-    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
-
-    if (minLat <= maxY && minLon <= maxX) {
-      WithinRelation relation = internalWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-      if (relation != null) {
-        return relation;
-      }
-      if (left != null) {
-        relation = left.withinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-        if (relation != null) {
-          return relation;
-        }
-      }
-      if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
-        relation = right.withinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-        if (relation != null) {
-          return relation;
-        }
-      }
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
     }
-    return WithinRelation.DISJOINT;
+    return internalWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+
   }
 
   /** Returns relation to the provided rectangle */
@@ -178,12 +159,9 @@ public abstract class EdgeTree {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
-  protected Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
-    return null;
-  }
-  protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    return null;
-  }
+  protected abstract Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon);
+  protected abstract Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
+  protected abstract WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
 
   private Relation internalComponentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     // compute bounding box of triangle
@@ -191,25 +169,11 @@ public abstract class EdgeTree {
     double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+    //bounding boxes disjoint?
     if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
-
-    Relation shapeRelation = componentRelateTriangle(ax, ay, bx, by, cx, cy);
-    if (shapeRelation != null) {
-      return shapeRelation;
-    }
-
-    // we cross
-    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-
-    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-
-    return Relation.CELL_OUTSIDE_QUERY;
+    return  componentRelateTriangle(ax, ay, bx, by, cx, cy);
   }
 
   private WithinRelation internalWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
@@ -219,53 +183,11 @@ public abstract class EdgeTree {
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
 
-    //disjoint then we return null
+    //check if bounding boxes are disjoint
     if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
       return WithinRelation.DISJOINT;
     }
-
-    Relation shapeRelation = componentRelateTriangle(ax, ay, bx, by, cx, cy);
-    if (shapeRelation == Relation.CELL_OUTSIDE_QUERY) {
-      return WithinRelation.DISJOINT;
-    } else if (shapeRelation == Relation.CELL_INSIDE_QUERY) {
-      return WithinRelation.CROSSES;
-    }
-
-    WithinRelation relation = WithinRelation.DISJOINT;
-
-    // we cross
-    if (tree.crossesEdge(ax, ay, bx, by)) {
-      if (ab == true) {
-        return WithinRelation.CROSSES;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (tree.crossesEdge(bx, by, cx, cy)) {
-      if (bc == true) {
-        return WithinRelation.CROSSES;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (tree.crossesEdge(cx, cy, ax, ay)) {
-      if (ca == true) {
-        return WithinRelation.CROSSES;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (relation == WithinRelation.CANDIDATE) {
-      return WithinRelation.CANDIDATE;
-    }
-    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
-      return WithinRelation.DISJOINT;
-    }
-
-    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
-      return WithinRelation.CANDIDATE;
-    }
-    return relation;
+    return componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
   }
 
   /** Returns relation to the provided rectangle for this component */
@@ -278,18 +200,7 @@ public abstract class EdgeTree {
     if (minLat <= this.minLat && maxLat >= this.maxLat && minLon <= this.minLon && maxLon >= this.maxLon) {
       return Relation.CELL_CROSSES_QUERY;
     }
-
-    Relation shapeRelation = componentRelate(minLat, maxLat, minLon, maxLon);
-    if (shapeRelation != null) {
-      return shapeRelation;
-    }
-
-    // we cross
-    if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-
-    return Relation.CELL_OUTSIDE_QUERY;
+    return componentRelate(minLat, maxLat, minLon, maxLon);
   }
 
   /** Creates tree from sorted components (with range low and high inclusive) */
@@ -533,29 +444,6 @@ public abstract class EdgeTree {
           }
         }
       }
-      return false;
-    }
-  }
-
-  //This should be moved when LatLonShape is moved from sandbox!
-  /**
-   * Compute whether the given x, y point is in a triangle; uses the winding order method */
-  private static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
-    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
-    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
-    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
-    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
-    //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
-    //coplanar points that are not part of the triangle.
-    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
-      int a = orient(x, y, ax, ay, bx, by);
-      int b = orient(x, y, bx, by, cx, cy);
-      if (a == 0 || b == 0 || a < 0 == b < 0) {
-        int c = orient(x, y, cx, cy, ax, ay);
-        return c == 0 || (c < 0 == (b < 0 || a < 0));
-      }
-      return false;
-    } else {
       return false;
     }
   }

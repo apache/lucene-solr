@@ -279,8 +279,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       }
 
       // BBox
-      Rectangle rect = GeoTestUtil.nextBox();
+
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Rectangle rect = GeoTestUtil.nextBox();
+      while (queryRelation == QueryRelation.CONTAINS && rect.crossesDateline()) {
+        rect = GeoTestUtil.nextBox();
+      }
       Query query = newRectQuery(FIELD_NAME, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
       if (VERBOSE) {
