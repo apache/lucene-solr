@@ -44,7 +44,7 @@ import org.apache.lucene.util.FixedBitSet;
  * Base LatLonShape Query class providing common query logic for
  * {@link LatLonShapeBoundingBoxQuery} and {@link LatLonShapePolygonQuery}
  *
- * Note: this class implements the majority of the CROSSES, WITHIN, DISJOINT relation logic
+ * Note: this class implements the majority of the INTERSECTS, WITHIN, DISJOINT and CONTAINS relation logic
  *
  * @lucene.experimental
  **/
@@ -52,9 +52,11 @@ abstract class LatLonShapeQuery extends Query {
   /** field name */
   final String field;
   /** query relation
-   * disjoint: {@code CELL_OUTSIDE_QUERY}
-   * intersects: {@code CELL_CROSSES_QUERY},
-   * within: {@code CELL_WITHIN_QUERY} */
+   * disjoint: {@link QueryRelation#DISJOINT},
+   * intersects: {@link QueryRelation#INTERSECTS},
+   * within: {@link QueryRelation#DISJOINT},
+   * contains: {@link QueryRelation#CONTAINS}
+   * */
   final LatLonShape.QueryRelation queryRelation;
 
   protected LatLonShapeQuery(String field, final QueryRelation queryType) {
@@ -191,22 +193,22 @@ abstract class LatLonShapeQuery extends Query {
         if (queryRelation == QueryRelation.INTERSECTS) {
           return getIntersectScorerSupplier(reader, values, weight, scoreMode);
         }
-        FixedBitSet within = new FixedBitSet(reader.maxDoc());
-        FixedBitSet disjoint = new FixedBitSet(reader.maxDoc());
+        FixedBitSet candidates = new FixedBitSet(reader.maxDoc());
+        FixedBitSet rejected = new FixedBitSet(reader.maxDoc());
         IntersectVisitor visitor;
         IntersectVisitor disjointVisitor;
         if (queryRelation == QueryRelation.CONTAINS) {
-          visitor = getDenseIntersectVisitor(within, disjoint, queryRelation);
+          visitor = getDenseIntersectVisitor(candidates, rejected, queryRelation);
           disjointVisitor = null;
         } else {
           //For within and disjoint we need two passes to remove false positives in case of multi-shapes.
-          visitor = getDenseIntersectVisitor(within, disjoint, QueryRelation.WITHIN);
-          disjointVisitor = getDenseIntersectVisitor(within, disjoint, QueryRelation.DISJOINT);
+          visitor = getDenseIntersectVisitor(candidates, rejected, QueryRelation.WITHIN);
+          disjointVisitor = getDenseIntersectVisitor(candidates, rejected, QueryRelation.DISJOINT);
         }
         return new RelationScorerSupplier(values, visitor, disjointVisitor, queryRelation) {
           @Override
           public Scorer get(long leadCost) throws IOException {
-            return getScorer(LatLonShapeQuery.this, weight, within, disjoint, score(), scoreMode);
+            return getScorer(LatLonShapeQuery.this, weight, candidates, rejected, score(), scoreMode);
           }
         };
       }
@@ -366,20 +368,20 @@ abstract class LatLonShapeQuery extends Query {
 
     /** returns a Scorer for all other (non INTERSECT) queries */
     protected Scorer getScorer(LatLonShapeQuery query, Weight weight,
-                               FixedBitSet intersect, FixedBitSet disjoint, final float boost, ScoreMode scoreMode) throws IOException {
+                               FixedBitSet candidates, FixedBitSet rejected, final float boost, ScoreMode scoreMode) throws IOException {
       values.intersect(visitor);
       if (disjointVisitor != null) {
         values.intersect(disjointVisitor);
       }
       DocIdSetIterator iterator;
       if (query.queryRelation == QueryRelation.DISJOINT) {
-        disjoint.andNot(intersect);
-        iterator = new BitSetIterator(disjoint, cost());
+        rejected.andNot(candidates);
+        iterator = new BitSetIterator(rejected, cost());
       } else if (query.queryRelation == QueryRelation.WITHIN || query.queryRelation == QueryRelation.CONTAINS) {
-        intersect.andNot(disjoint);
-        iterator = new BitSetIterator(intersect, cost());
+        candidates.andNot(rejected);
+        iterator = new BitSetIterator(candidates, cost());
       } else {
-        iterator = new BitSetIterator(intersect, cost());
+        iterator = new BitSetIterator(candidates, cost());
       }
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }

@@ -126,7 +126,7 @@ public abstract class EdgeTree {
    * @param cx longitude of point c of the triangle
    * @param cy latitude of point c of the triangle
    * @param ca if edge ca belongs to the original shape
-   * @return
+   * @return the {@Link WithinRelation}
    */
   public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     if (left != null || right != null) {

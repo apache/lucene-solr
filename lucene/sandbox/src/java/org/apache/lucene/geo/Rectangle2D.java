@@ -189,39 +189,39 @@ public class Rectangle2D {
     }
 
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
-    boolean inside = false;
-    if  (edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
+    EdgeTree.WithinRelation relation = EdgeTree.WithinRelation.DISJOINT;
+    if (edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
       if (ab == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
-        inside = true;
+        relation = EdgeTree.WithinRelation.CANDIDATE;
       }
     }
     if (edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
       if (bc == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
-        inside = true;
+        relation = EdgeTree.WithinRelation.CANDIDATE;
       }
     }
     if (edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
       if (ca == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
-        inside = true;
+        relation = EdgeTree.WithinRelation.CANDIDATE;
       }
     }
-    // if any of the edges crosses and edge that does not belong to the shape
+    //if any of the edges crosses and edge that does not belong to the shape
     // then it is a candidate for within
-    if (inside == true) {
-      return EdgeTree.WithinRelation.CANDIDATE;
+    if (relation == EdgeTree.WithinRelation.CANDIDATE) {
+      return EdgeTree. WithinRelation.CANDIDATE;
     }
 
     //Check if shape is within the triangle,
     if ((Tessellator.pointInTriangle(minLon, minLat, ax, ay, bx, by, cx, cy))) {
       return EdgeTree.WithinRelation.CANDIDATE;
     }
-    return EdgeTree.WithinRelation.DISJOINT;
+    return relation;
   }
 
   /** Checks if the rectangle contains the provided triangle **/
