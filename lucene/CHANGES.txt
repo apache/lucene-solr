@@ -277,6 +277,9 @@ Bug fixes:
 * LUCENE-8639: Newly created threadstates while flushing / refreshing can cause duplicated
   sequence IDs on IndexWriter. (Simon Willnauer)
 
+* LUCENE-8649: LatLonShape's within and disjoint queries can return false positives with
+  indexed multi-shapes. (Ignacio Vera)
+
 * LUCENE-8654: Polygon2D#relateTriangle returns the wrong answer if polygon is inside
   the triangle. (Ignacio Vera)
 
