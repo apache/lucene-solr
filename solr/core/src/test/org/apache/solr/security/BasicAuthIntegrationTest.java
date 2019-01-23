@@ -16,9 +16,6 @@
  */
 package org.apache.solr.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonMap;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,23 +24,16 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
-import org.apache.commons.io.IOUtils;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.message.AbstractHttpMessage;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -66,9 +56,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SolrCLI;
 import org.junit.After;
@@ -76,6 +64,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonMap;
 
 public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
@@ -166,7 +157,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           "}";
 
       HttpPost httpPost = new HttpPost(baseUrl + authcPrefix);
-      setBasicAuthHeader(httpPost, "solr", "SolrRocks");
+      setAuthorizationHeader(httpPost, makeBasicAuthHeader("solr", "SolrRocks"));
       httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
       httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
@@ -363,7 +354,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
-    setBasicAuthHeader(httpPost, user, pwd);
+    setAuthorizationHeader(httpPost, makeBasicAuthHeader(user, pwd));
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
@@ -371,54 +362,6 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
     Utils.consumeFully(r.getEntity());
-  }
-
-  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
-                                          Object expected, int count) throws Exception {
-    verifySecurityStatus(cl, url, objPath, expected, count, null, null);
-  }
-
-
-  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
-                                          Object expected, int count, String user, String pwd)
-      throws Exception {
-    boolean success = false;
-    String s = null;
-    List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
-    for (int i = 0; i < count; i++) {
-      HttpGet get = new HttpGet(url);
-      if (user != null) setBasicAuthHeader(get, user, pwd);
-      HttpResponse rsp = cl.execute(get);
-      s = EntityUtils.toString(rsp.getEntity());
-      Map m = null;
-      try {
-        m = (Map) Utils.fromJSONString(s);
-      } catch (Exception e) {
-        fail("Invalid json " + s);
-      }
-      Utils.consumeFully(rsp.getEntity());
-      Object actual = Utils.getObjectByPath(m, true, hierarchy);
-      if (expected instanceof Predicate) {
-        Predicate predicate = (Predicate) expected;
-        if (predicate.test(actual)) {
-          success = true;
-          break;
-        }
-      } else if (Objects.equals(actual == null ? null : String.valueOf(actual), expected)) {
-        success = true;
-        break;
-      }
-      Thread.sleep(50);
-    }
-    assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
-
-  }
-
-  public static void setBasicAuthHeader(AbstractHttpMessage httpMsg, String user, String pwd) {
-    String userPass = user + ":" + pwd;
-    String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
-    httpMsg.setHeader(new BasicHeader("Authorization", "Basic " + encoded));
-    log.info("Added Basic Auth security Header {}",encoded );
   }
 
   public static Replica getRandomReplica(DocCollection coll, Random random) {
@@ -432,8 +375,6 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     Collections.shuffle(l, random);
     return l.isEmpty() ? null : l.get(0);
   }
-
-  protected static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
   //the password is 'SolrRocks'
   //this could be generated everytime. But , then we will not know if there is any regression

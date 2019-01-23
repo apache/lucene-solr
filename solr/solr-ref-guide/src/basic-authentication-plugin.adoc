@@ -81,7 +81,7 @@ There are a few things to keep in mind when using the Basic authentication plugi
 * A user who has access to write permissions to `security.json` will be able to modify all the permissions and how users have been assigned permissions. Special care should be taken to only grant access to editing security to appropriate users.
 * Your network should, of course, be secure. Even with Basic authentication enabled, you should not unnecessarily expose Solr to the outside world.
 
-== Editing Authentication Plugin Configuration
+== Editing Basic Authentication Plugin Configuration
 
 An Authentication API allows modifying user IDs and passwords. The API provides an endpoint with specific commands to set user details or delete a user.
 
