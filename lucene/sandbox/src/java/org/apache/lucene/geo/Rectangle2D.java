@@ -291,12 +291,7 @@ public class Rectangle2D {
   private static boolean bboxContainsPoint(int x, int y, int minX, int maxX, int minY, int maxY) {
     return (x < minX || x > maxX || y < minY || y > maxY) == false;
   }
-
-  /** static utility method to check if a bounding box is disjoint with a point */
-  private static boolean bboxContainsPointNotInEdge(int x, int y, int minX, int maxX, int minY, int maxY) {
-    return (x <= minX || x >= maxX || y <= minY || y >= maxY) == false;
-  }
-
+  
   /** static utility method to check if a bounding box contains a triangle */
   private static boolean bboxContainsTriangle(int ax, int ay, int bx, int by, int cx, int cy,
                                              int minX, int maxX, int minY, int maxY) {
