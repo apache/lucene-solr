@@ -94,6 +94,8 @@ Bug Fixes
 
 * SOLR-11998: RebalanceLeaders API broken response format with wt=JSON (Erick Erickson)
 
+* SOLR-9735: Fix v2 API for AutoscalingHistoryHandler. (ab)
+
 Improvements
 ----------------------
 
