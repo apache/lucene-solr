@@ -68,14 +68,9 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     // decode indexed triangle
     LatLonShape.decodeTriangle(t, scratchTriangle);
 
-    int aY = scratchTriangle.aY;
-    int aX = scratchTriangle.aX;
-    int bY = scratchTriangle.bY;
-    int bX = scratchTriangle.bX;
-    int cY = scratchTriangle.cY;
-    int cX = scratchTriangle.cX;
-
-    return rectangle2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+    return rectangle2D.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
+                                      scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
+                                      scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);
   }
 
   @Override

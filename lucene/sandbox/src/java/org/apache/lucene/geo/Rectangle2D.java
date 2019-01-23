@@ -286,7 +286,7 @@ public class Rectangle2D {
     return false;
   }
 
-  /** returns true if the edge (defined by (ax, ay) (bx, by)) crosses the query */
+  /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
   private boolean edgeIntersectsQuery(int ax, int ay, int bx, int by) {
     if (this.crossesDateline() == true) {
       return edgeIntersectsBox(ax, ay, bx, by, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
@@ -313,7 +313,7 @@ public class Rectangle2D {
         && bboxContainsPoint(cx, cy, minX, maxX, minY, maxY);
   }
 
-  /** returns true if the edge (defined by (ax, ay) (bx, by)) crosses the query */
+  /** returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query */
   private static boolean edgeIntersectsBox(int ax, int ay, int bx, int by,
                                            int minX, int maxX, int minY, int maxY) {
     // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
