@@ -22,12 +22,16 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
+import com.google.common.collect.Sets;
+import org.apache.commons.collections.iterators.ReverseListIterator;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -120,16 +124,15 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
       List<Map.Entry<Instant, String>> sortedColls = alias.parseCollections(allAliases,
           () -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Alias must exist: " + alias.getAliasName()));
 
-      if (!rb.getSortSpec().getSort().getSort()[0].getReverse()) {
-        // sort by router.field asc, reverse collection order
-        Collections.reverse(sortedColls);
-      }
+      final boolean isDescending = rb.getSortSpec().getSort().getSort()[0].getReverse();
 
       long docs = 0;
       List<List<String>> sortedShards = groupShardsBySortedCollection(rb.shards, sortedColls);
       Set<String> shardsWhiteList = new HashSet<>();
-      for (List<String> collectionShardReqs : sortedShards) {
-        for (String shardReq : collectionShardReqs) {
+      Iterator<List<String>> CollectionIter = isDescending? sortedShards.iterator(): new ReverseListIterator(sortedShards); // get iterator by sort
+      while (CollectionIter.hasNext()) {
+        List<String> collectionShards = CollectionIter.next();
+        for (String shardReq : collectionShards) {
           docs += rb.finished.stream()
               .map(x -> x.responses)
               .mapToLong(r -> r.stream()
