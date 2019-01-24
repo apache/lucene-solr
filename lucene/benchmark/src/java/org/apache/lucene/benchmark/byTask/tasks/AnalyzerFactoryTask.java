@@ -17,16 +17,6 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
 
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.FilesystemResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
-import org.apache.lucene.util.Version;
-
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -37,6 +27,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.FilesystemResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
+import org.apache.lucene.util.Version;
 
 /**
  * Analyzer factory construction task.  The name given to the constructed factory may
@@ -372,7 +372,7 @@ public class AnalyzerFactoryTask extends PerfTask {
         if (!Files.isDirectory(baseDir)) {
           baseDir = Paths.get(".");
         }
-        ((ResourceLoaderAware)instance).inform(new FilesystemResourceLoader(baseDir));
+        ((ResourceLoaderAware)instance).inform(new FilesystemResourceLoader(baseDir, AnalyzerFactoryTask.class.getClassLoader()));
       }
       if (CharFilterFactory.class.isAssignableFrom(clazz)) {
         charFilterFactories.add((CharFilterFactory)instance);

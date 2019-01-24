@@ -40,22 +40,6 @@ import java.nio.file.Path;
 public final class FilesystemResourceLoader implements ResourceLoader {
   private final Path baseDirectory;
   private final ResourceLoader delegate;
-  
-  /**
-   * Creates a resource loader that resolves resources against the given
-   * base directory (may be {@code null} to refer to CWD).
-   * Files not found in file system and class lookups are delegated to context
-   * classloader.
-   * 
-   * @deprecated You should not use this ctor, because it uses the thread's context
-   * class loader as fallback for resource lookups, which is bad programming style.
-   * Please specify a {@link ClassLoader} instead.
-   * @see #FilesystemResourceLoader(Path, ClassLoader)
-   */
-  @Deprecated
-  public FilesystemResourceLoader(Path baseDirectory) {
-    this(baseDirectory, new ClasspathResourceLoader());
-  }
 
   /**
    * Creates a resource loader that resolves resources against the given
