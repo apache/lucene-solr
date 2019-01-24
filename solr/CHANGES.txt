@@ -28,9 +28,13 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
+Upgrade Notes
+----------------------
 
-(No Changes)
+New Features
+----------------------
 
+* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
 ==================  8.0.0 ==================
 
@@ -285,6 +289,10 @@ Bug Fixes
 * SOLR-13137: NPE when /admin/zookeeper/status endpoint hit in standalone mode (janhoy)
 
 * SOLR-13091: REBALANCELEADERS is broken (Erick Erickson)
+
+* SOLR-11998: RebalanceLeaders API broken response format with wt=JSON (Erick Erickson)
+
+* SOLR-9735: Fix v2 API for AutoscalingHistoryHandler. (ab)
 
 Improvements
 ----------------------

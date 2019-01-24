@@ -162,7 +162,7 @@ Changes in Runtime Behavior
 
 New Features
 
-* LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
+* LUCENE-8340: LongPoint#newDistanceFeatureQuery may be used to boost scores based on
   how close a value of a long field is from an configurable origin. This is
   typically useful to boost by recency. (Adrien Grand)
 
@@ -186,6 +186,12 @@ New Features
 
 * LUCENE-8622: Adds a minimum-should-match interval function that produces intervals
   spanning a subset of a set of sources. (Alan Woodward)
+
+* LUCENE-8645: Intervals.fixField() allows you to report intervals from one field
+  as if they came from another. (Alan Woodward)
+
+* LUCENE-8646: New interval functions: Intervals.prefix() and Intervals.wildcard()
+  (Alan Woodward)
 
 Improvements
 
@@ -273,6 +279,12 @@ Bug fixes:
 
 * LUCENE-8639: Newly created threadstates while flushing / refreshing can cause duplicated
   sequence IDs on IndexWriter. (Simon Willnauer)
+
+* LUCENE-8649: LatLonShape's within and disjoint queries can return false positives with
+  indexed multi-shapes. (Ignacio Vera)
+
+* LUCENE-8654: Polygon2D#relateTriangle returns the wrong answer if polygon is inside
+  the triangle. (Ignacio Vera)
 
 New Features
 

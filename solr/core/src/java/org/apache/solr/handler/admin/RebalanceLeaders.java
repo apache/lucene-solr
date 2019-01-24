@@ -37,7 +37,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -110,7 +110,7 @@ class RebalanceLeaders {
   final static String INACTIVE_PREFERREDS = "inactivePreferreds";
   final static String ALREADY_LEADERS = "alreadyLeaders";
   final static String SUMMARY = "Summary";
-  final NamedList<Object> results = new NamedList<>();
+  final SimpleOrderedMap results = new SimpleOrderedMap();
   final Map<String, String> pendingOps = new HashMap<>();
   private String collectionName;
 
@@ -154,7 +154,7 @@ class RebalanceLeaders {
     }
 
     checkLeaderStatus();
-    NamedList<Object> summary = new NamedList<>();
+    SimpleOrderedMap summary = new SimpleOrderedMap();
     if (pendingOps.size() == 0) {
       summary.add("Success", "All active replicas with the preferredLeader property set are leaders");
     } else {
@@ -287,12 +287,12 @@ class RebalanceLeaders {
   // Provide some feedback to the user about what actually happened, or in this case where no action was
   // possible
   private void addInactiveToResults(Slice slice, Replica replica) {
-    NamedList<Object> inactives = (NamedList<Object>) results.get(INACTIVE_PREFERREDS);
+    SimpleOrderedMap inactives = (SimpleOrderedMap) results.get(INACTIVE_PREFERREDS);
     if (inactives == null) {
-      inactives = new NamedList<>();
+      inactives = new SimpleOrderedMap();
       results.add(INACTIVE_PREFERREDS, inactives);
     }
-    NamedList<Object> res = new NamedList<>();
+    SimpleOrderedMap res = new SimpleOrderedMap();
     res.add("status", "skipped");
     res.add("msg", "Replica " + replica.getName() + " is a referredLeader for shard " + slice.getName() + ", but is inactive. No change necessary");
     inactives.add(replica.getName(), res);
@@ -301,12 +301,12 @@ class RebalanceLeaders {
   // Provide some feedback to the user about what actually happened, or in this case where no action was
   // necesary since this preferred replica was already the leader
   private void addAlreadyLeaderToResults(Slice slice, Replica replica) {
-    NamedList<Object> alreadyLeaders = (NamedList<Object>) results.get(ALREADY_LEADERS);
+    SimpleOrderedMap alreadyLeaders = (SimpleOrderedMap) results.get(ALREADY_LEADERS);
     if (alreadyLeaders == null) {
-      alreadyLeaders = new NamedList<>();
+      alreadyLeaders = new SimpleOrderedMap();
       results.add(ALREADY_LEADERS, alreadyLeaders);
     }
-    NamedList<Object> res = new NamedList<>();
+    SimpleOrderedMap res = new SimpleOrderedMap();
     res.add("status", "skipped");
     res.add("msg", "Replica " + replica.getName() + " is already the leader for shard " + slice.getName() + ". No change necessary");
     alreadyLeaders.add(replica.getName(), res);
@@ -459,13 +459,13 @@ class RebalanceLeaders {
 
   // If we actually changed the leader, we should send that fact back in the response.
   private void addToSuccesses(Slice slice, Replica replica) {
-    NamedList<Object> successes = (NamedList<Object>) results.get("successes");
+    SimpleOrderedMap successes = (SimpleOrderedMap) results.get("successes");
     if (successes == null) {
-      successes = new NamedList<>();
+      successes = new SimpleOrderedMap();
       results.add("successes", successes);
     }
     log.info("Successfully changed leader of shard {} to replica {}", slice.getName(), replica.getName());
-    NamedList<Object> res = new NamedList<>();
+    SimpleOrderedMap res = new SimpleOrderedMap();
     res.add("status", "success");
     res.add("msg", "Successfully changed leader of slice " + slice.getName() + " to " + replica.getName());
     successes.add(slice.getName(), res);
@@ -478,12 +478,12 @@ class RebalanceLeaders {
     if (pendingOps.size() == 0) {
       return;
     }
-    NamedList<Object> fails = (NamedList<Object>) new NamedList<>();
+    SimpleOrderedMap fails = new SimpleOrderedMap();
     results.add("failures", fails);
 
     for (Map.Entry<String, String> ent : pendingOps.entrySet()) {
       log.info("Failed to change leader of shard {} to replica {}", ent.getKey(), ent.getValue());
-      NamedList<Object> res = new NamedList<>();
+      SimpleOrderedMap res = new SimpleOrderedMap();
       res.add("status", "failed");
       res.add("msg", String.format(Locale.ROOT, "Could not change leder for slice %s to %s", ent.getKey(), ent.getValue()));
       fails.add(ent.getKey(), res);

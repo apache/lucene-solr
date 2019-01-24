@@ -150,6 +150,11 @@ public abstract class EdgeTree {
     if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;
     }
+
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
@@ -375,6 +380,29 @@ public abstract class EdgeTree {
           }
         }
       }
+      return false;
+    }
+  }
+
+  //This should be moved when LatLonShape is moved from sandbox!
+  /**
+   * Compute whether the given x, y point is in a triangle; uses the winding order method */
+  private static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
+    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
+    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
+    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
+    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
+    //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
+    //coplanar points that are not part of the triangle.
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
+      int a = orient(x, y, ax, ay, bx, by);
+      int b = orient(x, y, bx, by, cx, cy);
+      if (a == 0 || b == 0 || a < 0 == b < 0) {
+        int c = orient(x, y, cx, cy, ax, ay);
+        return c == 0 || (c < 0 == (b < 0 || a < 0));
+      }
+      return false;
+    } else {
       return false;
     }
   }

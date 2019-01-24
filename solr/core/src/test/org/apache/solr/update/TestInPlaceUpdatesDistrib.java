@@ -487,7 +487,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Retries the specified 'req' against each SolrClient in "clients" untill the expected number of 
+   * Retries the specified 'req' against each SolrClient in "clients" until the expected number of 
    * results are returned, at which point the results are verified using assertDocIdsAndValuesInResults
    *
    * @param debug used in log and assertion messages
