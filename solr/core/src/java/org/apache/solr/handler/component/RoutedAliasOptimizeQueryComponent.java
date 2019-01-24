@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
-import com.google.common.collect.Sets;
 import org.apache.commons.collections.iterators.ReverseListIterator;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocumentList;
