@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -67,7 +68,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   /**
    * Used to check metric counts for PKI auth
    */
-  protected void assertPkiAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
+  protected void assertPkiAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
     assertAuthMetricsMinimums(METRICS_PREFIX_PKI, requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, errors);
   }
   
@@ -76,7 +77,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * 
    * TODO: many of these params have to be under specified - this should wait a bit to see the desired params and timeout
    */
-  protected void assertAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
+  protected void assertAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
     assertAuthMetricsMinimums(METRICS_PREFIX, requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, errors);
   }
 
@@ -103,17 +104,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * Common test method to be able to check security from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
-  private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
-    Map<String, Long> counts = countAuthMetrics(prefix);
-    
-    // check each counter
-    boolean success = isMetricEuqalOrLarger(requests, "requests", counts)
-        & isMetricEuqalOrLarger(authenticated, "authenticated", counts)
-        & isMetricEuqalOrLarger(passThrough, "passThrough", counts)
-        & isMetricEuqalOrLarger(failWrongCredentials, "failWrongCredentials", counts)
-        & isMetricEuqalOrLarger(failMissingCredentials, "failMissingCredentials", counts)
-        & isMetricEuqalOrLarger(errors, "errors", counts);
-    
+  private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
     Map<String, Long> expectedCounts = new HashMap<>();
     expectedCounts.put("requests", (long) requests);
     expectedCounts.put("authenticated", (long) authenticated);
@@ -121,6 +112,16 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     expectedCounts.put("failWrongCredentials", (long) failWrongCredentials);
     expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
     expectedCounts.put("errors", (long) errors);
+
+    Map<String, Long> counts = countAuthMetrics(prefix);
+    boolean success = isMetricsEqualOrLarger(expectedCounts, counts);
+    if (!success) {
+      log.info("First metrics count assert failed, pausing 2s before re-attempt");
+      Thread.sleep(2000);
+      counts = countAuthMetrics(prefix);
+      success = isMetricsEqualOrLarger(expectedCounts, counts);
+    }
+    
     assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
     
     if (counts.get("requests") > 0) {
@@ -129,11 +130,9 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     }
   }
 
-  // Check that the actual metric is equal to or greater than the expected value, never less
-  private boolean isMetricEuqalOrLarger(int expected, String key, Map<String, Long> counts) {
-    long cnt = counts.get(key);
-    log.debug("Asserting that auth metrics count ({}) > expected ({})", cnt, expected);
-    return(cnt >= expected);
+  private boolean isMetricsEqualOrLarger(Map<String, Long> expectedCounts, Map<String, Long> actualCounts) {
+    return Stream.of("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors")
+        .allMatch(k -> actualCounts.get(k).intValue() >= expectedCounts.get(k).intValue());
   }
 
   // Have to sum the metrics from all three shards/nodes
