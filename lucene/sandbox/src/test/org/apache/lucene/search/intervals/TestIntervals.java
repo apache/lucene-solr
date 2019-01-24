@@ -189,6 +189,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 4, 4, 27, 35);
     assertMatch(mi, 7, 7, 47, 55);
     assertFalse(mi.next());
+
+    assertEquals(1, source.minExtent());
   }
 
   public void testOrderedNearIntervals() throws IOException {
@@ -214,6 +216,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(sub, 17, 17, 97, 100);
     assertFalse(sub.next());
     assertFalse(mi.next());
+
+    assertEquals(2, source.minExtent());
   }
 
   public void testPhraseIntervals() throws IOException {
@@ -235,6 +239,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(sub, 4, 4, 26, 34);
     assertFalse(sub.next());
     assertMatch(mi, 6, 7, 41, 55);
+
+    assertEquals(2, source.minExtent());
   }
 
   public void testUnorderedNearIntervals() throws IOException {
@@ -261,6 +267,8 @@ public class TestIntervals extends LuceneTestCase {
     assertGaps(source, 1, "field1", new int[]{
         1, 0, 10
     });
+
+    assertEquals(2, source.minExtent());
   }
 
   public void testIntervalDisjunction() throws IOException {
@@ -280,6 +288,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 7, 7, 31, 36);
     assertNull(mi.getSubMatches());
     assertFalse(mi.next());
+
+    assertEquals(1, source.minExtent());
   }
 
   public void testCombinationDisjunction() throws IOException {
@@ -292,6 +302,8 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 8 },
         {}, {}, {}, {}
     });
+
+    assertEquals(2, source.minExtent());
   }
 
   public void testNesting() throws IOException {
@@ -307,6 +319,7 @@ public class TestIntervals extends LuceneTestCase {
         { 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 17 },
         {}
     });
+    assertEquals(3, source.minExtent());
 
     assertNull(getMatches(source, 0, "field1"));
     MatchesIterator mi = getMatches(source, 1, "field1");
@@ -384,6 +397,7 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(sub, 21, 21, 114, 118);
     assertFalse(sub.next());
     assertFalse(it.next());
+    assertEquals(4, source.minExtent());
   }
 
   public void testUnorderedDistinct() throws IOException {
@@ -447,6 +461,7 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(subs, 21, 21, 114, 118);
     assertFalse(subs.next());
     assertFalse(mi.next());
+    assertEquals(1, source.minExtent());
   }
 
   public void testContaining() throws IOException {
@@ -476,6 +491,7 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(subs, 21, 21, 114, 118);
     assertFalse(subs.next());
     assertFalse(mi.next());
+    assertEquals(2, source.minExtent());
   }
 
   public void testNotContaining() throws IOException {
@@ -498,6 +514,7 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(subs, 6, 6, 41, 46);
     assertFalse(subs.next());
     assertFalse(mi.next());
+    assertEquals(2, source.minExtent());
   }
 
   public void testMaxGaps() throws IOException {
@@ -511,6 +528,8 @@ public class TestIntervals extends LuceneTestCase {
 
     MatchesIterator mi = getMatches(source, 5, "field2");
     assertMatch(mi, 0, 3, 0, 11);
+
+    assertEquals(3, source.minExtent());
 
   }
 
@@ -531,6 +550,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 0, 3, 0, 11);
     assertMatch(mi, 3, 6, 9, 20);
     assertMatch(mi, 4, 8, 12, 26);
+
+    assertEquals(3, source.minExtent());
   }
 
   public void testMinimumShouldMatch() throws IOException {
@@ -564,6 +585,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(subs, 7, 7, 47, 55);
     assertMatch(subs, 11, 11, 67, 71);
 
+    assertEquals(3, source.minExtent());
+
   }
 
   public void testDefinedGaps() throws IOException {
@@ -580,6 +603,7 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 7 },
         {}
     });
+    assertEquals(5, source.minExtent());
 
     MatchesIterator mi = getMatches(source, 1, "field1");
     assertMatch(mi, 3, 7, 20, 55);
@@ -594,6 +618,8 @@ public class TestIntervals extends LuceneTestCase {
         {}, {}, {}, {}, {},
         { 0, Integer.MAX_VALUE - 1, 0, Integer.MAX_VALUE - 1, 5, Integer.MAX_VALUE - 1 }
     });
+
+    assertEquals(Integer.MAX_VALUE, source.minExtent());
   }
 
   public void testAfter() throws IOException {
@@ -616,6 +642,8 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(sub, 5, 5, 35, 39);
     assertMatch(sub, 7, 7, 47, 55);
     assertFalse(sub.next());
+
+    assertEquals(1, source.minExtent());
   }
 
   public void testBefore() throws IOException {
@@ -628,6 +656,7 @@ public class TestIntervals extends LuceneTestCase {
         { 5, 5 },
         {}
     });
+    assertEquals(1, source.minExtent());
   }
 
   public void testWithin() throws IOException {
@@ -641,6 +670,7 @@ public class TestIntervals extends LuceneTestCase {
         { 2, 2 },
         {}
     });
+    assertEquals(1, source.minExtent());
   }
 
   public void testOverlapping() throws IOException {
@@ -670,6 +700,66 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(sub, 5, 5, 35, 39);
     assertFalse(sub.next());
     assertMatch(mi, 7, 17, 41, 118);
+
+    assertEquals(2, source.minExtent());
+  }
+
+  public void testFixedField() throws IOException {
+
+    IntervalsSource source = Intervals.phrase(
+        Intervals.term("alph"),
+        Intervals.fixField("field1", Intervals.term("hot")));
+
+    // We search in field2, but 'hot' will report intervals from field1
+    checkIntervals(source, "field2", 1, new int[][]{
+        {},
+        { 1, 2 },
+        {},
+        {},
+        {},
+        {}
+    });
+
+    MatchesIterator mi = getMatches(source, 1, "field2");
+    assertNotNull(mi);
+    assertMatch(mi, 1, 2, 6, 18);
+
+  }
+
+  public void testPrefix() throws IOException {
+    IntervalsSource source = Intervals.prefix("p");
+    checkIntervals(source, "field1", 5, new int[][]{
+        {},
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
+        { 7, 7 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
+        { 0, 0 }
+    });
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertNotNull(mi);
+    assertMatch(mi, 0, 0, 0, 5);
+    assertMatch(mi, 1, 1, 6, 14);
+
+    IntervalsSource noSuch = Intervals.prefix("qqq");
+    checkIntervals(noSuch, "field1", 0, new int[][]{});
+  }
+
+  public void testWildcard() throws IOException {
+    IntervalsSource source = Intervals.wildcard("?ot");
+    checkIntervals(source, "field1", 4, new int[][]{
+        {},
+        { 2, 2, 10, 10, 17, 17, 27, 27 },
+        { 5, 5, 10, 10, 21, 21 },
+        { 3, 3 },
+        { 2, 2, 10, 10, 17, 17 },
+        {}
+    });
+    MatchesIterator mi = getMatches(source, 4, "field1");
+    assertNotNull(mi);
+    assertMatch(mi, 2, 2, 15, 18);
+    assertMatch(mi, 10, 10, 63, 66);
+    assertMatch(mi, 17, 17, 97, 100);
   }
 
 }

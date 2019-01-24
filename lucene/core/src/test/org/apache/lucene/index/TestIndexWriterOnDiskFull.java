@@ -547,7 +547,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
                                                 .setMergeScheduler(new ConcurrentMergeScheduler())
                                                 .setCommitOnClose(false));
     writer.commit(); // empty commit, to not create confusing situation with first commit
-    dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
+    dir.setMaxSizeInBytes(Math.max(1, dir.sizeInBytes()));
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));

@@ -63,6 +63,15 @@ class ConjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    int minExtent = 0;
+    for (IntervalsSource source : subSources) {
+      minExtent += source.minExtent();
+    }
+    return minExtent;
+  }
+
+  @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
     List<IntervalIterator> subIntervals = new ArrayList<>();
     for (IntervalsSource source : subSources) {

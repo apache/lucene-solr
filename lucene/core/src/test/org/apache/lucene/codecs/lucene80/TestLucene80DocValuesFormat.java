@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene70;
-
+package org.apache.lucene.codecs.lucene80;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,9 +59,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
@@ -72,10 +70,11 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests Lucene70DocValuesFormat
+ * Tests Lucene80DocValuesFormat
+ * Copied directly from the lucene70 package for separation of codec-code
  */
-public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene70DocValuesFormat());
+public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene80DocValuesFormat());
 
   @Override
   protected Codec getCodec() {
@@ -287,7 +286,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
     final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
-    final DocValuesFormat dv = new Lucene70DocValuesFormat();
+    final DocValuesFormat dv = new Lucene80DocValuesFormat();
     conf.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
@@ -442,7 +441,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
 
   @Slow
   public void testSortedSetAroundBlockSize() throws IOException {
-    final int frontier = 1 << Lucene70DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+    final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
@@ -474,20 +473,21 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertEquals(maxDoc, sr.maxDoc());
       SortedSetDocValues values = sr.getSortedSetDocValues("sset");
       assertNotNull(values);
-      RAMInputStream in = new RAMInputStream("", buffer);
-      BytesRefBuilder b = new BytesRefBuilder();
-      for (int i = 0; i < maxDoc; ++i) {
-        assertEquals(i, values.nextDoc());
-        final int numValues = in.readVInt();
+      try (RAMInputStream in = new RAMInputStream("", buffer)) {
+        BytesRefBuilder b = new BytesRefBuilder();
+        for (int i = 0; i < maxDoc; ++i) {
+          assertEquals(i, values.nextDoc());
+          final int numValues = in.readVInt();
 
-        for (int j = 0; j < numValues; ++j) {
-          b.setLength(in.readVInt());
-          b.grow(b.length());
-          in.readBytes(b.bytes(), 0, b.length());
-          assertEquals(b.get(), values.lookupOrd(values.nextOrd()));
+          for (int j = 0; j < numValues; ++j) {
+            b.setLength(in.readVInt());
+            b.grow(b.length());
+            in.readBytes(b.bytes(), 0, b.length());
+            assertEquals(b.get(), values.lookupOrd(values.nextOrd()));
+          }
+
+          assertEquals(SortedSetDocValues.NO_MORE_ORDS, values.nextOrd());
         }
-
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, values.nextOrd());
       }
       r.close();
       dir.close();
@@ -496,7 +496,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
 
   @Slow
   public void testSortedNumericAroundBlockSize() throws IOException {
-    final int frontier = 1 << Lucene70DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+    final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
@@ -524,12 +524,13 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertEquals(maxDoc, sr.maxDoc());
       SortedNumericDocValues values = sr.getSortedNumericDocValues("snum");
       assertNotNull(values);
-      RAMInputStream in = new RAMInputStream("", buffer);
-      for (int i = 0; i < maxDoc; ++i) {
-        assertEquals(i, values.nextDoc());
-        assertEquals(2, values.docValueCount());
-        assertEquals(in.readVLong(), values.nextValue());
-        assertEquals(in.readVLong(), values.nextValue());
+      try (RAMInputStream in = new RAMInputStream("", buffer)) {
+        for (int i = 0; i < maxDoc; ++i) {
+          assertEquals(i, values.nextDoc());
+          assertEquals(2, values.docValueCount());
+          assertEquals(in.readVLong(), values.nextValue());
+          assertEquals(in.readVLong(), values.nextValue());
+        }
       }
       r.close();
       dir.close();
@@ -556,15 +557,62 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     doTestSparseNumericBlocksOfVariousBitsPerValue(random().nextDouble());
   }
 
+  // The LUCENE-8585 jump-tables enables O(1) skipping of IndexedDISI blocks, DENSE block lookup
+  // and numeric multi blocks. This test focuses on testing these jumps.
+  @Slow
+  public void testNumericFieldJumpTables() throws Exception {
+    // IndexedDISI block skipping only activated if target >= current+2, so we need at least 5 blocks to
+    // trigger consecutive block skips
+    final int maxDoc = atLeast(5*65536);
+
+    Directory dir = newDirectory();
+    IndexWriter iw = createFastIndexWriter(dir, maxDoc);
+
+    Field idField = newStringField("id", "", Field.Store.NO);
+    Field storedField = newStringField("stored", "", Field.Store.YES);
+    Field dvField = new NumericDocValuesField("dv", 0);
+
+    for (int i = 0 ; i < maxDoc ; i++) {
+      Document doc = new Document();
+      idField.setStringValue(Integer.toBinaryString(i));
+      doc.add(idField);
+      if (random().nextInt(100) > 10) { // Skip 10% to make DENSE blocks
+        int value = random().nextInt(100000);
+        storedField.setStringValue(Integer.toString(value));
+        doc.add(storedField);
+        dvField.setLongValue(value);
+        doc.add(dvField);
+      }
+      iw.addDocument(doc);
+    }
+    iw.flush();
+    iw.forceMerge(1, true); // Single segment to force large enough structures
+    iw.commit();
+    iw.close();
+
+    assertDVIterate(dir);
+    assertDVAdvance(dir, rarely() ? 1 : 7); // 1 is heavy (~20 s), so we do it rarely. 7 is a lot faster (8 s)
+
+    dir.close();
+  }
+
+  private IndexWriter createFastIndexWriter(Directory dir, int maxBufferedDocs) throws IOException {
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMaxBufferedDocs(maxBufferedDocs);
+    conf.setRAMBufferSizeMB(-1);
+    conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    return new IndexWriter(dir, conf);
+  }
+
   private static LongSupplier blocksOfVariousBPV() {
     final long mul = TestUtil.nextInt(random(), 1, 100);
     final long min = random().nextInt();
     return new LongSupplier() {
-      int i = Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE;
+      int i = Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE;
       int maxDelta;
       @Override
       public long getAsLong() {
-        if (i == Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE) {
+        if (i == Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE) {
           maxDelta = 1 << random().nextInt(5);
           i = 0;
         }
@@ -577,12 +625,12 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   private void doTestSortedNumericBlocksOfVariousBitsPerValue(LongSupplier counts) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE));
+    conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
     conf.setRAMBufferSizeMB(-1);
     conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    final int numDocs = atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
+    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
     final LongSupplier values = blocksOfVariousBPV();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -636,7 +684,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   private void doTestSparseNumericBlocksOfVariousBitsPerValue(double density) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE));
+    conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
     conf.setRAMBufferSizeMB(-1);
     conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -646,7 +694,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     doc.add(storedField);
     doc.add(dvField);
 
-    final int numDocs = atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
+    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
     final LongSupplier longs = blocksOfVariousBPV();
     for (int i = 0; i < numDocs; i++) {
       if (random().nextDouble() > density) {
@@ -664,25 +712,39 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     writer.close();
     
     // compare
+    assertDVIterate(dir);
+    assertDVAdvance(dir, 1); // Tests all jump-lengths from 1 to maxDoc (quite slow ~= 1 minute for 200K docs)
+
+    dir.close();
+  }
+
+  // Tests that advanceExact does not change the outcome
+  private void assertDVAdvance(Directory dir, int jumpStep) throws IOException {
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      NumericDocValues docValues = DocValues.getNumeric(r, "dv");
-      docValues.nextDoc();
-      for (int i = 0; i < r.maxDoc(); i++) {
-        String storedValue = r.document(i).get("stored");
-        if (storedValue == null) {
-          assertTrue(docValues.docID() > i);
-        } else {
-          assertEquals(i, docValues.docID());
-          assertEquals(Long.parseLong(storedValue), docValues.longValue());
-          docValues.nextDoc();
+
+
+      for (int jump = jumpStep; jump < r.maxDoc(); jump += jumpStep) {
+        // Create a new instance each time to ensure jumps from the beginning
+        NumericDocValues docValues = DocValues.getNumeric(r, "dv");
+        for (int docID = 0; docID < r.maxDoc(); docID += jump) {
+          String base = "document #" + docID + "/" + r.maxDoc() + ", jumping " + jump + " from #" + (docID-jump);
+          String storedValue = r.document(docID).get("stored");
+          if (storedValue == null) {
+            assertFalse("There should be no DocValue for " + base,
+                docValues.advanceExact(docID));
+          } else {
+            assertTrue("There should be a DocValue for " + base,
+                docValues.advanceExact(docID));
+            assertEquals("The doc value should be correct for " + base,
+                Long.parseLong(storedValue), docValues.longValue());
+          }
         }
       }
-      assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
     }
     ir.close();
-    dir.close();
   }
+
 }

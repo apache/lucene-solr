@@ -281,6 +281,7 @@ public class Lang {
         .withFunctionName("rtrim", RightShiftEvaluator.class)
         .withFunctionName("repeat", RepeatEvaluator.class)
         .withFunctionName("natural", NaturalEvaluator.class)
+        .withFunctionName("movingMAD", MovingMADEvaluator.class)
 
         // Boolean Stream Evaluators
 

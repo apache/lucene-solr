@@ -616,6 +616,8 @@ To limit field facet with certain terms specify them comma separated with `terms
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
 
+This parameter disables sorting, facet values are returned in the given order. 
+
 == Related Topics
 
 See also <<spatial-search.adoc#spatial-search,Heatmap Faceting (Spatial)>>.

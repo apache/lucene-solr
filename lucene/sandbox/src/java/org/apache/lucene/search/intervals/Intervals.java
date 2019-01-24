@@ -19,7 +19,11 @@ package org.apache.lucene.search.intervals;
 
 import java.util.Arrays;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Constructor functions for {@link IntervalsSource} types
@@ -73,6 +77,28 @@ public final class Intervals {
     if (subSources.length == 1)
       return subSources[0];
     return new DisjunctionIntervalsSource(Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of all terms that begin with a prefix
+   *
+   * @throws IllegalStateException if the prefix expands to more than 128 terms
+   */
+  public static IntervalsSource prefix(String prefix) {
+    CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(new BytesRef(prefix)));
+    return new MultiTermIntervalsSource(ca, 128, prefix);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of all terms that match a wildcard glob
+   *
+   * @throws IllegalStateException if the wildcard glob expands to more than 128 terms
+   *
+   * @see WildcardQuery for glob format
+   */
+  public static IntervalsSource wildcard(String wildcard) {
+    CompiledAutomaton ca = new CompiledAutomaton(WildcardQuery.toAutomaton(new Term("", wildcard)));
+    return new MultiTermIntervalsSource(ca, 128, wildcard);
   }
 
   /**
@@ -160,6 +186,17 @@ public final class Intervals {
   }
 
   /**
+   * Create an {@link IntervalsSource} that always returns intervals from a specific field
+   *
+   * This is useful for comparing intervals across multiple fields, for example fields that
+   * have been analyzed differently, allowing you to search for stemmed terms near unstemmed
+   * terms, etc.
+   */
+  public static IntervalsSource fixField(String field, IntervalsSource source) {
+    return new FixedFieldIntervalsSource(field, source);
+  }
+
+  /**
    * Create a non-overlapping IntervalsSource
    *
    * Returns intervals of the minuend that do not overlap with intervals from the subtrahend
@@ -177,7 +214,7 @@ public final class Intervals {
    * @param reference   the source to filter by
    */
   public static IntervalsSource overlapping(IntervalsSource source, IntervalsSource reference) {
-    return new ConjunctionIntervalsSource(Arrays.asList(source, reference), IntervalFunction.OVERLAPPING);
+    return new FilteringConjunctionIntervalsSource(source, reference, IntervalFunction.OVERLAPPING);
   }
 
   /**
@@ -230,7 +267,7 @@ public final class Intervals {
    * @param small   the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containing(IntervalsSource big, IntervalsSource small) {
-    return new ConjunctionIntervalsSource(Arrays.asList(big, small), IntervalFunction.CONTAINING);
+    return new FilteringConjunctionIntervalsSource(big, small, IntervalFunction.CONTAINING);
   }
 
   /**
@@ -255,7 +292,7 @@ public final class Intervals {
    * @param big       the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containedBy(IntervalsSource small, IntervalsSource big) {
-    return new ConjunctionIntervalsSource(Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
+    return new FilteringConjunctionIntervalsSource(small, big, IntervalFunction.CONTAINED_BY);
   }
 
   /**
@@ -269,8 +306,8 @@ public final class Intervals {
    * Returns intervals from the source that appear before intervals from the reference
    */
   public static IntervalsSource before(IntervalsSource source, IntervalsSource reference) {
-    return new ConjunctionIntervalsSource(Arrays.asList(source,
-        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0)),
+    return new FilteringConjunctionIntervalsSource(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0),
         IntervalFunction.CONTAINED_BY);
   }
 
@@ -278,8 +315,8 @@ public final class Intervals {
    * Returns intervals from the source that appear after intervals from the reference
    */
   public static IntervalsSource after(IntervalsSource source, IntervalsSource reference) {
-    return new ConjunctionIntervalsSource(Arrays.asList(source,
-        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE)),
+    return new FilteringConjunctionIntervalsSource(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE),
         IntervalFunction.CONTAINED_BY);
   }
 

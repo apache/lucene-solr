@@ -92,7 +92,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
     if (random().nextBoolean()) {
       loader = new StringMockResourceLoader(tailoredRules);
     } else {
-      loader = new FilesystemResourceLoader(confDir.toPath());
+      loader = new FilesystemResourceLoader(confDir.toPath(), TestICUCollationField.class.getClassLoader());
     }
     final Collator readCollator = ICUCollationField.createFromRules(osFileName, loader);
     assertEquals(tailoredCollator, readCollator);
