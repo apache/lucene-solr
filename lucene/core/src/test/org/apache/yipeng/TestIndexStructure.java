@@ -49,7 +49,8 @@ public class TestIndexStructure {
   public static  Path indexPath = Paths.get("/lucene/index_structure");
   //ware_id,category_id,vender_id,title,online_time,stock,brand_id,s1,s2
   public static void main(String[] args) throws IOException {
-    updateIndex();
+//    updateIndex();
+    createIndex();
   }
 
 

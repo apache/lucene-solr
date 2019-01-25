@@ -27,7 +27,7 @@ public class TestIndexSearch {
     Directory directory = FSDirectory.open(TestIndexStructure.indexPath);
     IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
-    TermQuery query = new TermQuery(new Term("brand_id", "11111111"));
+    TermQuery query = new TermQuery(new Term("brand_id", "41"));
 
     SortField sortField = new SortField("s1",SortField.Type.FLOAT,true);
     Sort sort = new Sort(sortField);

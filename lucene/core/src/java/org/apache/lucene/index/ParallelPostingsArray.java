@@ -22,9 +22,9 @@ class ParallelPostingsArray {
   final static int BYTES_PER_POSTING = 3 * Integer.BYTES;
 
   final int size;
-  final int[] textStarts;
-  final int[] intStarts;
-  final int[] byteStarts;
+  final int[] textStarts; //存储每个term在ByteBlockPool里面的起始位置,通过textStarts[termID]可以快速找到termID对应的term
+  final int[] intStarts;  //存储的是term在IntBlockPool的地址信息,而IntBlockPool则存储着term在
+  final int[] byteStarts; //存储的是term在ByteBlockPool的结束位置的下一个位置。
 
   ParallelPostingsArray(final int size) {
     this.size = size;

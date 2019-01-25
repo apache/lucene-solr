@@ -309,4 +309,6 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
 
   /** Creates a new postings array of the specified size. */
   abstract ParallelPostingsArray createPostingsArray(int size);
+
+
 }

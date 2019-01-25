@@ -31,7 +31,7 @@ import org.apache.lucene.util.IntBlockPool;
  *  tokens in a hash table, and allocates separate byte
  *  streams per token.  Consumers of this class, eg {@link
  *  FreqProxTermsWriter} and {@link TermVectorsConsumer},
- *  write their own byte streams under each term. */
+ *  write their own byte streams(字节流) under each term. */
 abstract class TermsHash {
 
   final TermsHash nextTermsHash;
