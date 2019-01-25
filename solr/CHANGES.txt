@@ -279,6 +279,9 @@ Bug Fixes
 
 * SOLR-9735: Fix v2 API for AutoscalingHistoryHandler. (ab)
 
+* SOLR-13168: Fixed a bug in TestInjection that caused test only code to be invoked when TLOG replicas
+  recieved commits if java assertions were enabled. (hossman)
+
 Improvements
 ----------------------
 

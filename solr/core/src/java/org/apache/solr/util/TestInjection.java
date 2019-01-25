@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
-import static org.apache.solr.handler.ReplicationHandler.COMMAND;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -34,23 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -441,54 +428,12 @@ public class TestInjection {
     return true;
   }
 
-  @SuppressForbidden(reason = "Need currentTimeMillis, because COMMIT_TIME_MSEC_KEY use currentTimeMillis as value")
   public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) {
+    // NOTE: this method should do *NOTHING* unless LUCENE_TEST_CASE is non-null
+    
     if (waitForReplicasInSync == null) return true;
-    log.info("Start waiting for replica in sync with leader");
-    long currentTime = System.currentTimeMillis();
-    Pair<Boolean,Integer> pair = parseValue(waitForReplicasInSync);
-    boolean enabled = pair.first();
-    if (!enabled) return true;
-    long t = System.currentTimeMillis() - 200;
-    int i = 0;
-    TimeOut timeOut = new TimeOut(pair.second(), TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      try {
-        if (core.isClosed()) return true;
-        Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
-            collection, shardId);
-        try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl()).build()) {
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(CommonParams.QT, ReplicationHandler.PATH);
-          params.set(COMMAND, CMD_DETAILS);
-
-          NamedList<Object> response = leaderClient.request(new QueryRequest(params));
-          long leaderVersion = (long) ((NamedList)response.get("details")).get("indexVersion");
-          String localVersion = core.withSearcher(searcher ->
-              searcher.getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY));
-          if (localVersion == null && leaderVersion == 0 && !core.getUpdateHandler().getUpdateLog().hasUncommittedChanges())
-            return true;
-          if (localVersion != null && Long.parseLong(localVersion) == leaderVersion && (leaderVersion >= t || i >= 6)) {
-            log.info("Waiting time for tlog replica to be in sync with leader: {}", System.currentTimeMillis()-currentTime);
-            return true;
-          } else {
-            log.debug("Tlog replica not in sync with leader yet. Attempt: {}. Local Version={}, leader Version={}", i, localVersion, leaderVersion);
-            Thread.sleep(250);
-          }
-
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        if (core.isClosed()) return true;
-        log.error("Thread interrupted while waiting for core {} to be in sync with leader", core.getName());
-        return false;
-      } catch (Exception e) {
-        if (core.isClosed()) return true;
-        log.error("Exception when wait for replicas in sync with master. Will retry until timeout.", e);
-      }
-      i++;
-    }
-    return false;
+    
+    return true; // No-Op: see SOLR-12313
   }
   
   private static Pair<Boolean,Integer> parseValue(final String raw) {
