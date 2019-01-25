@@ -250,6 +250,11 @@ New Features
 * SOLR-12770: Make it possible to configure a host whitelist for distributed search
   (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
+* SOLR-12373: Add a "tombstoneConfig" option to DocBasedVersionConstraintsProcessor that allows
+  users to configure which fields/values to add to tombstone documents. This can be useful to
+  make sure tombstone documents include fields that are marked as required in the schema
+  (Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
