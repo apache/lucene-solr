@@ -210,4 +210,47 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     assertEquals("[* TO 2014-09-15]", tree.parseShape("[* TO 2014-09-15]").toString());
   }
 
+  public void testInvalidDateException() throws ParseException {
+    
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-10T13-1");
+    });
+    {
+        String causeMessage = expectThrows(ParseException.class, () -> {
+          tree.parseCalendar("2000-11-10T13Z1");
+        }).getCause().getMessage();
+        assertTrue(causeMessage +" has actual delimeter", causeMessage.contains("Z"));
+        assertTrue(causeMessage +" has expected delimeter",causeMessage.contains(":"));
+        assertFalse(causeMessage +" has no input",causeMessage.contains("2000-11-10"));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13Z");
+    });
+    {
+      String causeMessage = expectThrows(ParseException.class, () -> {
+        tree.parseCalendar("2000-13-12");
+      }).getCause().getMessage();
+      assertTrue(causeMessage +" has actual value",causeMessage.contains("13"));
+      assertFalse(causeMessage +" has no input",causeMessage.contains("2000-13-12"));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-13-41T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:61Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:14:61Z");
+    });
+  }
+
 }
