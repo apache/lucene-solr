@@ -30,16 +30,15 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -661,9 +660,9 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      public ImpactsEnum impacts(int flags) throws IOException {
         decodeMetaData();
-        return postingsReader.impacts(fieldInfo, state, scorer, flags);
+        return postingsReader.impacts(fieldInfo, state, flags);
       }
 
       @Override

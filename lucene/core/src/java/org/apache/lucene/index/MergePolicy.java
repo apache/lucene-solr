@@ -29,11 +29,14 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.lucene.util.InfoStream;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -49,7 +52,7 @@ import org.apache.lucene.util.IOSupplier;
  * {@link MergeSpecification} instance describing the set of
  * merges that should be done, or null if no merges are
  * necessary.  When IndexWriter.forceMerge is called, it calls
- * {@link #findForcedMerges(SegmentInfos,int,Map, IndexWriter)} and the MergePolicy should
+ * {@link #findForcedMerges(SegmentInfos, int, Map, MergeContext)} and the MergePolicy should
  * then return the necessary merges.</p>
  *
  * <p>Note that the policy can return more than one merge at
@@ -64,6 +67,7 @@ import org.apache.lucene.util.IOSupplier;
  * @lucene.experimental
  */
 public abstract class MergePolicy {
+
   /**
    * Progress and state for an executing merge. This class
    * encapsulates the logic to pause and resume the merge thread
@@ -205,6 +209,7 @@ public abstract class MergePolicy {
     volatile long totalMergeBytes;
 
     List<SegmentReader> readers;        // used by IndexWriter
+    List<Bits> hardLiveDocs;        // used by IndexWriter
 
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;
@@ -481,9 +486,9 @@ public abstract class MergePolicy {
    * @param mergeTrigger the event that triggered the merge
    * @param segmentInfos
    *          the total set of segments in the index
-   * @param writer the IndexWriter to find the merges on
+   * @param mergeContext the IndexWriter to find the merges on
    */
-  public abstract MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+  public abstract MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException;
 
   /**
@@ -492,36 +497,34 @@ public abstract class MergePolicy {
    * {@link IndexWriter#forceMerge} method is called. This call is always
    * synchronized on the {@link IndexWriter} instance so only one thread at a
    * time will call this method.
-   * 
-   * @param segmentInfos
+   *  @param segmentInfos
    *          the total set of segments in the index
    * @param maxSegmentCount
    *          requested maximum number of segments in the index (currently this
    *          is always 1)
    * @param segmentsToMerge
-   *          contains the specific SegmentInfo instances that must be merged
-   *          away. This may be a subset of all
-   *          SegmentInfos.  If the value is True for a
-   *          given SegmentInfo, that means this segment was
-   *          an original segment present in the
-   *          to-be-merged index; else, it was a segment
-   *          produced by a cascaded merge.
-   * @param writer the IndexWriter to find the merges on
+ *          contains the specific SegmentInfo instances that must be merged
+ *          away. This may be a subset of all
+ *          SegmentInfos.  If the value is True for a
+ *          given SegmentInfo, that means this segment was
+ *          an original segment present in the
+ *          to-be-merged index; else, it was a segment
+ *          produced by a cascaded merge.
+   * @param mergeContext the IndexWriter to find the merges on
    */
   public abstract MergeSpecification findForcedMerges(
-          SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
+      SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
       throws IOException;
 
   /**
    * Determine what set of merge operations is necessary in order to expunge all
    * deletes from the index.
-   * 
-   * @param segmentInfos
+   *  @param segmentInfos
    *          the total set of segments in the index
-   * @param writer the IndexWriter to find the merges on
+   * @param mergeContext the IndexWriter to find the merges on
    */
   public abstract MergeSpecification findForcedDeletesMerges(
-      SegmentInfos segmentInfos, IndexWriter writer) throws IOException;
+      SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException;
 
   /**
    * Returns true if a new segment (regardless of its origin) should use the
@@ -530,11 +533,11 @@ public abstract class MergePolicy {
    * {@link #getMaxCFSSegmentSizeMB()} and the size is less or equal to the
    * TotalIndexSize * {@link #getNoCFSRatio()} otherwise <code>false</code>.
    */
-  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, IndexWriter writer) throws IOException {
+  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, MergeContext mergeContext) throws IOException {
     if (getNoCFSRatio() == 0.0) {
       return false;
     }
-    long mergedInfoSize = size(mergedInfo, writer);
+    long mergedInfoSize = size(mergedInfo, mergeContext);
     if (mergedInfoSize > maxCFSSegmentSize) {
       return false;
     }
@@ -543,7 +546,7 @@ public abstract class MergePolicy {
     }
     long totalSize = 0;
     for (SegmentCommitInfo info : infos) {
-      totalSize += size(info, writer);
+      totalSize += size(info, mergeContext);
     }
     return mergedInfoSize <= getNoCFSRatio() * totalSize;
   }
@@ -551,23 +554,34 @@ public abstract class MergePolicy {
   /** Return the byte size of the provided {@link
    *  SegmentCommitInfo}, pro-rated by percentage of
    *  non-deleted documents is set. */
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+  protected long size(SegmentCommitInfo info, MergeContext mergeContext) throws IOException {
     long byteSize = info.sizeInBytes();
-    int delCount = writer.numDeletesToMerge(info);
+    int delCount = mergeContext.numDeletesToMerge(info);
+    assert assertDelCount(delCount, info);
     double delRatio = info.info.maxDoc() <= 0 ? 0.0f : (float) delCount / (float) info.info.maxDoc();
     assert delRatio <= 1.0;
     return (info.info.maxDoc() <= 0 ? byteSize : (long) (byteSize * (1.0 - delRatio)));
+  }
+
+  /**
+   * Asserts that the delCount for this SegmentCommitInfo is valid
+   */
+  protected final boolean assertDelCount(int delCount, SegmentCommitInfo info) {
+    assert delCount >= 0: "delCount must be positive: " + delCount;
+    assert delCount <= info.info.maxDoc() : "delCount: " + delCount
+        + " must be leq than maxDoc: " + info.info.maxDoc();
+    return true;
   }
   
   /** Returns true if this single info is already fully merged (has no
    *  pending deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  protected final boolean isMerged(SegmentInfos infos, SegmentCommitInfo info, IndexWriter writer) throws IOException {
-    assert writer != null;
-    boolean hasDeletions = writer.numDeletesToMerge(info) > 0;
-    return !hasDeletions &&
-      info.info.dir == writer.getDirectory() &&
-      useCompoundFile(infos, info, writer) == info.info.getUseCompoundFile();
+  protected final boolean isMerged(SegmentInfos infos, SegmentCommitInfo info, MergeContext mergeContext) throws IOException {
+    assert mergeContext != null;
+    int delCount = mergeContext.numDeletesToMerge(info);
+    assert assertDelCount(delCount, info);
+    return delCount == 0 &&
+      useCompoundFile(infos, info, mergeContext) == info.info.getUseCompoundFile();
   }
   
   /** Returns current {@code noCFSRatio}.
@@ -624,11 +638,68 @@ public abstract class MergePolicy {
    * @see IndexWriter#softUpdateDocument(Term, Iterable, Field...)
    * @see IndexWriterConfig#setSoftDeletesField(String)
    * @param info the segment info that identifies the segment
-   * @param pendingDeleteCount the number of pending deletes for this segment
+   * @param delCount the number deleted documents for this segment
    * @param readerSupplier a supplier that allows to obtain a {@link CodecReader} for this segment
    */
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount,
+  public int numDeletesToMerge(SegmentCommitInfo info, int delCount,
                                IOSupplier<CodecReader> readerSupplier) throws IOException {
-    return info.getDelCount() + pendingDeleteCount;
+    return delCount;
+  }
+
+  /**
+   * Builds a String representation of the given SegmentCommitInfo instances
+   */
+  protected final String segString(MergeContext mergeContext, Iterable<SegmentCommitInfo> infos) {
+    return StreamSupport.stream(infos.spliterator(), false)
+        .map(info -> info.toString(mergeContext.numDeletedDocs(info) - info.getDelCount()))
+        .collect(Collectors.joining(" "));
+  }
+
+  /** Print a debug message to {@link MergeContext}'s {@code
+   *  infoStream}. */
+  protected final void message(String message, MergeContext mergeContext) {
+    if (verbose(mergeContext)) {
+      mergeContext.getInfoStream().message("MP", message);
+    }
+  }
+
+  /**
+   * Returns <code>true</code> if the info-stream is in verbose mode
+   * @see #message(String, MergeContext)
+   */
+  protected final boolean verbose(MergeContext mergeContext) {
+    return mergeContext.getInfoStream().isEnabled("MP");
+  }
+
+  /**
+   * This interface represents the current context of the merge selection process.
+   * It allows to access real-time information like the currently merging segments or
+   * how many deletes a segment would claim back if merged. This context might be stateful
+   * and change during the execution of a merge policy's selection processes.
+   * @lucene.experimental
+   */
+  public interface MergeContext {
+
+    /**
+     * Returns the number of deletes a merge would claim back if the given segment is merged.
+     * @see MergePolicy#numDeletesToMerge(SegmentCommitInfo, int, org.apache.lucene.util.IOSupplier)
+     * @param info the segment to get the number of deletes for
+     */
+    int numDeletesToMerge(SegmentCommitInfo info) throws IOException;
+
+    /**
+     * Returns the number of deleted documents in the given segments.
+     */
+    int numDeletedDocs(SegmentCommitInfo info);
+
+    /**
+     * Returns the info stream that can be used to log messages
+     */
+    InfoStream getInfoStream();
+
+    /**
+     * Returns an unmodifiable set of segments that are currently merging.
+     */
+    Set<SegmentCommitInfo> getMergingSegments();
   }
 }

@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -86,7 +86,7 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
+      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
     }
   }
 
@@ -116,7 +116,7 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
       assertTrue(precision >= 0d);
       assertTrue(precision <= 1d);
 
-      Terms terms = MultiFields.getTerms(leafReader, categoryFieldName);
+      Terms terms = MultiTerms.getTerms(leafReader, categoryFieldName);
       TermsEnum iterator = terms.iterator();
       BytesRef term;
       while ((term = iterator.next()) != null) {

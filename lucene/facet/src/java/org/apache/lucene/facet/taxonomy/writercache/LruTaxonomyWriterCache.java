@@ -17,7 +17,6 @@
 package org.apache.lucene.facet.taxonomy.writercache;
 
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
 /**
  * LRU {@link TaxonomyWriterCache} - good choice for huge taxonomies.
@@ -89,6 +88,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     cache = null;
   }
 
+  @Override
   public int size() {
     return cache.getSize();
   }
@@ -105,7 +105,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
 
   @Override
   public synchronized boolean put(FacetLabel categoryPath, int ordinal) {
-    boolean ret = cache.put(categoryPath, new Integer(ordinal));
+    boolean ret = cache.put(categoryPath, ordinal);
     // If the cache is full, we need to clear one or more old entries
     // from the cache. However, if we delete from the cache a recent
     // addition that isn't yet in our reader, for this entry to be

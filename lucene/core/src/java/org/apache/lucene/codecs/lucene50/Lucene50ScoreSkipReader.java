@@ -17,90 +17,143 @@
 package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
+import java.util.AbstractList;
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.List;
+import java.util.RandomAccess;
 
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.index.Impact;
+import org.apache.lucene.index.Impacts;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 
 final class Lucene50ScoreSkipReader extends Lucene50SkipReader {
 
-  private final SimScorer scorer;
-  private final float[] maxScore;
-  private final byte[][] impacts;
-  private final int[] impactsLength;
-  private final float globalMaxScore;
+  private final byte[][] impactData;
+  private final int[] impactDataLength;
   private final ByteArrayDataInput badi = new ByteArrayDataInput();
+  private final Impacts impacts;
+  private int numLevels = 1;
+  private final MutableImpactList[] perLevelImpacts;
 
   public Lucene50ScoreSkipReader(int version, IndexInput skipStream, int maxSkipLevels,
-      boolean hasPos, boolean hasOffsets, boolean hasPayloads, SimScorer scorer) {
+      boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
     super(version, skipStream, maxSkipLevels, hasPos, hasOffsets, hasPayloads);
     if (version < Lucene50PostingsFormat.VERSION_IMPACT_SKIP_DATA) {
       throw new IllegalStateException("Cannot skip based on scores if impacts are not indexed");
     }
-    this.scorer = Objects.requireNonNull(scorer);
-    this.maxScore = new float[maxSkipLevels];
-    this.impacts = new byte[maxSkipLevels][];
-    Arrays.fill(impacts, new byte[0]);
-    this.impactsLength = new int[maxSkipLevels];
-    this.globalMaxScore = scorer.score(Float.MAX_VALUE, 1);
+    this.impactData = new byte[maxSkipLevels][];
+    Arrays.fill(impactData, new byte[0]);
+    this.impactDataLength = new int[maxSkipLevels];
+    this.perLevelImpacts = new MutableImpactList[maxSkipLevels];
+    for (int i = 0; i < perLevelImpacts.length; ++i) {
+      perLevelImpacts[i] = new MutableImpactList();
+    }
+    impacts = new Impacts() {
+
+      @Override
+      public int numLevels() {
+        return numLevels;
+      }
+
+      @Override
+      public int getDocIdUpTo(int level) {
+        return skipDoc[level];
+      }
+
+      @Override
+      public List<Impact> getImpacts(int level) {
+        assert level < numLevels;
+        if (impactDataLength[level] > 0) {
+          badi.reset(impactData[level], 0, impactDataLength[level]);
+          perLevelImpacts[level] = readImpacts(badi, perLevelImpacts[level]);
+          impactDataLength[level] = 0;
+        }
+        return perLevelImpacts[level];
+      }
+    };
   }
 
   @Override
-  public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) throws IOException {
-    super.init(skipPointer, docBasePointer, posBasePointer, payBasePointer, df);
-    Arrays.fill(impactsLength, 0);
-    Arrays.fill(maxScore, globalMaxScore);
+  public int skipTo(int target) throws IOException {
+    int result = super.skipTo(target);
+    if (numberOfSkipLevels > 0) {
+      numLevels = numberOfSkipLevels;
+    } else {
+      // End of postings don't have skip data anymore, so we fill with dummy data
+      // like SlowImpactsEnum.
+      numLevels = 1;
+      perLevelImpacts[0].length = 1;
+      perLevelImpacts[0].impacts[0].freq = Integer.MAX_VALUE;
+      perLevelImpacts[0].impacts[0].norm = 1L;
+      impactDataLength[0] = 0;
+    }
+    return result;
   }
 
-  /** Upper bound of scores up to {@code upTo} included. */
-  public float getMaxScore(int upTo) throws IOException {
-    for (int level = 0; level < numberOfSkipLevels; ++level) {
-      if (upTo <= skipDoc[level]) {
-        return maxScore(level);
-      }
-    }
-    return globalMaxScore;
-  }
-
-  private float maxScore(int level) throws IOException {
-    assert level < numberOfSkipLevels;
-    if (impactsLength[level] > 0) {
-      badi.reset(impacts[level], 0, impactsLength[level]);
-      maxScore[level] = readImpacts(badi, scorer);
-      impactsLength[level] = 0;
-    }
-    return maxScore[level];
+  Impacts getImpacts() {
+    return impacts;
   }
 
   @Override
   protected void readImpacts(int level, IndexInput skipStream) throws IOException {
     int length = skipStream.readVInt();
-    if (impacts[level].length < length) {
-      impacts[level] = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
+    if (impactData[level].length < length) {
+      impactData[level] = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
     }
-    skipStream.readBytes(impacts[level], 0, length);
-    impactsLength[level] = length;
+    skipStream.readBytes(impactData[level], 0, length);
+    impactDataLength[level] = length;
   }
 
-  static float readImpacts(ByteArrayDataInput in, SimScorer scorer) throws IOException {
+  static MutableImpactList readImpacts(ByteArrayDataInput in, MutableImpactList reuse) {
+    int maxNumImpacts = in.length(); // at most one impact per byte
+    if (reuse.impacts.length < maxNumImpacts) {
+      int oldLength = reuse.impacts.length;
+      reuse.impacts = ArrayUtil.grow(reuse.impacts, maxNumImpacts);
+      for (int i = oldLength; i < reuse.impacts.length; ++i) {
+        reuse.impacts[i] = new Impact(Integer.MAX_VALUE, 1L);
+      }
+    }
+
     int freq = 0;
     long norm = 0;
-    float maxScore = 0;
+    int length = 0;
     while (in.getPosition() < in.length()) {
       int freqDelta = in.readVInt();
       if ((freqDelta & 0x01) != 0) {
         freq += 1 + (freqDelta >>> 1);
-        norm += 1 + in.readZLong();
+        try {
+          norm += 1 + in.readZLong();
+        } catch (IOException e) {
+          throw new RuntimeException(e); // cannot happen on a BADI
+        }
       } else {
         freq += 1 + (freqDelta >>> 1);
         norm++;
       }
-      maxScore = Math.max(maxScore, scorer.score(freq, norm));
+      Impact impact = reuse.impacts[length];
+      impact.freq = freq;
+      impact.norm = norm;
+      length++;
     }
-    return maxScore;
+    reuse.length = length;
+    return reuse;
+  }
+
+  static class MutableImpactList extends AbstractList<Impact> implements RandomAccess {
+    int length = 1;
+    Impact[] impacts = new Impact[] { new Impact(Integer.MAX_VALUE, 1L) };
+
+    @Override
+    public Impact get(int index) {
+      return impacts[index];
+    }
+
+    @Override
+    public int size() {
+      return length;
+    }
   }
 
 }

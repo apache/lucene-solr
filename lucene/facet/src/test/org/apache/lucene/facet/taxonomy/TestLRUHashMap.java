@@ -17,7 +17,6 @@
 package org.apache.lucene.facet.taxonomy;
 
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.junit.Test;
 
 public class TestLRUHashMap extends FacetTestCase {

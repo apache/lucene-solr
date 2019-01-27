@@ -25,9 +25,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -287,12 +290,26 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       new SimpleMergedSegmentWarmer(InfoStream.NO_OUTPUT).warm(reader);
     }
 
-    final long actualBytes = RamUsageTester.sizeOf(reader2, new Accumulator(reader2)) - RamUsageTester.sizeOf(reader1, new Accumulator(reader1));
-    final long expectedBytes = ((SegmentReader) reader2).ramBytesUsed() - ((SegmentReader) reader1).ramBytesUsed();
-    final long absoluteError = actualBytes - expectedBytes;
-    final double relativeError = (double) absoluteError / actualBytes;
-    final String message = "Actual RAM usage " + actualBytes + ", but got " + expectedBytes + ", " + 100*relativeError + "% error";
-    assertTrue(message, Math.abs(relativeError) < 0.20d || Math.abs(absoluteError) < 1000);
+    long act1 = RamUsageTester.sizeOf(reader2, new Accumulator(reader2));
+    long act2 = RamUsageTester.sizeOf(reader1, new Accumulator(reader1));
+    final long measuredBytes = act1 - act2;
+
+    long reported1 = ((SegmentReader) reader2).ramBytesUsed();
+    long reported2 = ((SegmentReader) reader1).ramBytesUsed();
+    final long reportedBytes = reported1 - reported2;
+
+    final long absoluteError = Math.abs(measuredBytes - reportedBytes);
+    final double relativeError = (double) absoluteError / measuredBytes;
+    final String message = String.format(Locale.ROOT,
+        "RamUsageTester reports %d bytes but ramBytesUsed() returned %d (%.1f error). " +
+        " [Measured: %d, %d. Reported: %d, %d]",
+        measuredBytes,
+        reportedBytes,
+        (100 * relativeError),
+        act1, act2,
+        reported1, reported2);
+
+    assertTrue(message, relativeError < 0.20d || absoluteError < 1000);
 
     reader1.close();
     reader2.close();
@@ -323,7 +340,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
                                     proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
-                                    proto.getPointDimensionCount(), proto.getPointNumBytes());
+                                    proto.getPointDataDimensionCount(), proto.getPointIndexDimensionCount(), proto.getPointNumBytes(), proto.isSoftDeletesField());
 
     FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
 
@@ -357,7 +374,25 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       
     };
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
-      consumer.write(MultiFields.getFields(oneDocReader), fakeNorms);
+      final Fields fields = new Fields() {
+        TreeSet<String> indexedFields = new TreeSet<>(FieldInfos.getIndexedFields(oneDocReader));
+
+        @Override
+        public Iterator<String> iterator() {
+          return indexedFields.iterator();
+        }
+
+        @Override
+        public Terms terms(String field) throws IOException {
+          return oneDocReader.terms(field);
+        }
+
+        @Override
+        public int size() {
+          return indexedFields.size();
+        }
+      };
+      consumer.write(fields, fakeNorms);
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }

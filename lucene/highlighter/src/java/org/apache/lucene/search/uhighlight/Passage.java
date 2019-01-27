@@ -157,7 +157,16 @@ public class Passage {
   }
 
   /**
-   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.
+   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.  The primary purpose of this
+   * method is to expose the number of unique terms per passage for use in passage scoring.
+   * The actual term byte content is not well defined by this highlighter, and thus use of it is more subject to
+   * change.
+   * <p>
+   * The term might be simply the analyzed term at this position.
+   * Depending on the highlighter's configuration, the match term may be a phrase (instead of a word), and in such
+   * a case might be a series of space-separated analyzed terms.
+   * If the match is from a {@link org.apache.lucene.search.MultiTermQuery} then the match term may be the toString() of
+   * that query.
    * <p>
    * Only {@link #getNumMatches()} are valid.
    */

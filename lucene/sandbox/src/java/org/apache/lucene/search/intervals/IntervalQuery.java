@@ -18,24 +18,21 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
-import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterMatchesIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A query that retrieves documents containing intervals returned from an
@@ -43,11 +40,30 @@ import org.apache.lucene.search.similarities.Similarity;
  *
  * Static constructor functions for various different sources can be found in the
  * {@link Intervals} class
+ *
+ * Scores for this query are computed as a function of the sloppy frequency of
+ * intervals appearing in a particular document.  Sloppy frequency is calculated
+ * from the number of matching intervals, and their width, with wider intervals
+ * contributing lower values.  The scores can be adjusted with two optional
+ * parameters:
+ * <ul>
+ *   <li>pivot - the sloppy frequency value at which the overall score of the
+ *               document will equal 0.5.  The default value is 1</li>
+ *   <li>exp   - higher values of this parameter make the function grow more slowly
+ *               below the pivot and faster higher than the pivot.  The default value is 1</li>
+ * </ul>
+ *
+ * Optimal values for both pivot and exp depend on the type of queries and corpus of
+ * documents being queried.
+ *
+ * Scores are bounded to between 0 and 1.  For higher contributions, wrap the query
+ * in a {@link org.apache.lucene.search.BoostQuery}
  */
 public final class IntervalQuery extends Query {
 
   private final String field;
   private final IntervalsSource intervalsSource;
+  private final IntervalScoreFunction scoreFunction;
 
   /**
    * Create a new IntervalQuery
@@ -55,10 +71,41 @@ public final class IntervalQuery extends Query {
    * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
    */
   public IntervalQuery(String field, IntervalsSource intervalsSource) {
-    this.field = field;
-    this.intervalsSource = intervalsSource;
+    this(field, intervalsSource, IntervalScoreFunction.saturationFunction(1));
   }
 
+  /**
+   * Create a new IntervalQuery with a scoring pivot
+   *
+   * @param field             the field to query
+   * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
+   * @param pivot             the sloppy frequency value at which the score will be 0.5, must be within (0, +Infinity)
+   */
+  public IntervalQuery(String field, IntervalsSource intervalsSource, float pivot) {
+    this(field, intervalsSource, IntervalScoreFunction.saturationFunction(pivot));
+  }
+
+  /**
+   * Create a new IntervalQuery with a scoring pivot and exponent
+   * @param field             the field to query
+   * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
+   * @param pivot             the sloppy frequency value at which the score will be 0.5, must be within (0, +Infinity)
+   * @param exp               exponent, higher values make the function grow slower before 'pivot' and faster
+   *                          after 'pivot', must be in (0, +Infinity)
+   */
+  public IntervalQuery(String field, IntervalsSource intervalsSource, float pivot, float exp) {
+    this(field, intervalsSource, IntervalScoreFunction.sigmoidFunction(pivot, exp));
+  }
+
+  private IntervalQuery(String field, IntervalsSource intervalsSource, IntervalScoreFunction scoreFunction) {
+    this.field = field;
+    this.intervalsSource = intervalsSource;
+    this.scoreFunction = scoreFunction;
+  }
+
+  /**
+   * The field to query
+   */
   public String getField() {
     return field;
   }
@@ -70,26 +117,7 @@ public final class IntervalQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new IntervalWeight(this, scoreMode.needsScores() ? buildSimScorer(searcher, boost) : null,
-        searcher.getSimilarity(), scoreMode);
-  }
-
-  private Similarity.SimScorer buildSimScorer(IndexSearcher searcher, float boost) throws IOException {
-    Set<Term> terms = new HashSet<>();
-    intervalsSource.extractTerms(field, terms);
-    TermStatistics[] termStats = new TermStatistics[terms.size()];
-    int termUpTo = 0;
-    for (Term term : terms) {
-      TermStatistics termStatistics = searcher.termStatistics(term, TermStates.build(searcher.getTopReaderContext(), term, true));
-      if (termStatistics != null) {
-        termStats[termUpTo++] = termStatistics;
-      }
-    }
-    if (termUpTo == 0) {
-      return null;
-    }
-    CollectionStatistics collectionStats = searcher.collectionStatistics(field);
-    return searcher.getSimilarity().scorer(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
+    return new IntervalWeight(this, boost, scoreMode);
   }
 
   @Override
@@ -108,15 +136,13 @@ public final class IntervalQuery extends Query {
 
   private class IntervalWeight extends Weight {
 
-    final Similarity.SimScorer simScorer;
-    final Similarity similarity;
     final ScoreMode scoreMode;
+    final float boost;
 
-    public IntervalWeight(Query query, Similarity.SimScorer simScorer, Similarity similarity, ScoreMode scoreMode) {
+    public IntervalWeight(Query query, float boost, ScoreMode scoreMode) {
       super(query);
-      this.simScorer = simScorer;
-      this.similarity = similarity;
       this.scoreMode = scoreMode;
+      this.boost = boost;
     }
 
     @Override
@@ -130,10 +156,27 @@ public final class IntervalQuery extends Query {
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
-          return scorer.explain("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "]");
+          float freq = scorer.freq();
+          return scoreFunction.explain(intervalsSource.toString(), boost, freq);
         }
       }
       return Explanation.noMatch("no matching intervals");
+    }
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return MatchesUtils.forField(field, () -> {
+        MatchesIterator mi = intervalsSource.matches(field, context, doc);
+        if (mi == null) {
+          return null;
+        }
+        return new FilterMatchesIterator(mi) {
+          @Override
+          public Query getQuery() {
+            return new IntervalQuery(field, intervalsSource);
+          }
+        };
+      });
     }
 
     @Override
@@ -141,9 +184,7 @@ public final class IntervalQuery extends Query {
       IntervalIterator intervals = intervalsSource.intervals(field, context);
       if (intervals == null)
         return null;
-      LeafSimScorer leafScorer = simScorer == null ? null
-          : new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), Float.MAX_VALUE);
-      return new IntervalScorer(this, intervals, leafScorer);
+      return new IntervalScorer(this, intervals, intervalsSource.minExtent(), boost, scoreFunction);
     }
 
     @Override

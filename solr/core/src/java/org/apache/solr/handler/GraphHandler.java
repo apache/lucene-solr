@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   private StreamFactory streamFactory = new DefaultStreamFactory();
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
 
   @Override
@@ -110,7 +110,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
-      SolrException.log(logger, e);
+      SolrException.log(log, e);
       Map requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;

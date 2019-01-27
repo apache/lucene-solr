@@ -32,7 +32,7 @@ import org.apache.solr.common.util.SuppressForbidden;
  */
 @SuppressForbidden(reason = "delegate methods")
 public class ServletInputStreamWrapper extends ServletInputStream {
-  final ServletInputStream stream;
+  ServletInputStream stream;
   
   public ServletInputStreamWrapper(ServletInputStream stream) throws IOException {
     this.stream = stream;

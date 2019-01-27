@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MatchesIterator;
 
 /**
  * A helper class for {@link IntervalQuery} that provides an {@link IntervalIterator}
@@ -43,11 +44,28 @@ public abstract class IntervalsSource {
   public abstract IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException;
 
   /**
-   * Expert: collect {@link Term} objects from this source, to be used for top-level term scoring
+   * Return a {@link MatchesIterator} over the intervals defined by this {@link IntervalsSource} for a
+   * given document and field
+   *
+   * Returns {@code null} if no intervals exist in the given document and field
+   *
+   * @param field the field to read positions from
+   * @param ctx   the document's context
+   * @param doc   the document to return matches for
+   */
+  public abstract MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException;
+
+  /**
+   * Expert: collect {@link Term} objects from this source
    * @param field the field to be scored
    * @param terms a {@link Set} which terms should be added to
    */
   public abstract void extractTerms(String field, Set<Term> terms);
+
+  /**
+   * Return the minimum possible width of an interval returned by this source
+   */
+  public abstract int minExtent();
 
   @Override
   public abstract int hashCode();

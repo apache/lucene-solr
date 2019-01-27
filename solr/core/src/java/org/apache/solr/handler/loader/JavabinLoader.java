@@ -19,6 +19,8 @@ package org.apache.solr.handler.loader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,8 +33,11 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -46,6 +51,16 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
  * @see org.apache.solr.common.util.JavaBinCodec
  */
 public class JavabinLoader extends ContentStreamLoader {
+  final ContentStreamLoader contentStreamLoader;
+
+  public JavabinLoader() {
+    this.contentStreamLoader = this;
+  }
+
+  public JavabinLoader(ContentStreamLoader contentStreamLoader) {
+    super();
+    this.contentStreamLoader = contentStreamLoader;
+  }
 
   @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor) throws Exception {
@@ -62,6 +77,10 @@ public class JavabinLoader extends ContentStreamLoader {
   
   private void parseAndLoadDocs(final SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream,
                                 final UpdateRequestProcessor processor) throws IOException {
+    if (req.getParams().getBool("multistream", false)) {
+      handleMultiStream(req, rsp, stream, processor);
+      return;
+    }
     UpdateRequest update = null;
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       private AddUpdateCommand addCmd = null;
@@ -69,13 +88,6 @@ public class JavabinLoader extends ContentStreamLoader {
       @Override
       public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
         if (document == null) {
-          // Perhaps commit from the parameters
-          try {
-            RequestHandlerUtils.handleCommit(req, processor, updateRequest.getParams(), false);
-            RequestHandlerUtils.handleRollback(req, processor, updateRequest.getParams(), false);
-          } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR handling commit/rollback");
-          }
           return;
         }
         if (addCmd == null) {
@@ -106,7 +118,9 @@ public class JavabinLoader extends ContentStreamLoader {
     for (; ; ) {
       if (in.peek() == -1) return;
       try {
-        update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
+        update = new JavaBinUpdateRequestCodec()
+            .setReadStringAsCharSeq(true)
+            .unmarshal(in, handler);
       } catch (EOFException e) {
         break; // this is expected
       }
@@ -114,6 +128,44 @@ public class JavabinLoader extends ContentStreamLoader {
         delete(req, update, processor);
       }
     }
+  }
+
+  private void handleMultiStream(SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream, UpdateRequestProcessor processor)
+      throws IOException {
+    FastInputStream in = FastInputStream.wrap(stream);
+    SolrParams old = req.getParams();
+    new JavaBinCodec() {
+      SolrParams params;
+      AddUpdateCommand addCmd = null;
+
+      @Override
+      public List<Object> readIterator(DataInputInputStream fis) throws IOException {
+        while (true) {
+          Object o = readVal(fis);
+          if (o == END_OBJ) break;
+          if (o instanceof NamedList) {
+            params = ((NamedList) o).toSolrParams();
+          } else {
+            try {
+              if (o instanceof byte[]) {
+                if (params != null) req.setParams(params);
+                byte[] buf = (byte[]) o;
+                contentStreamLoader.load(req, rsp, new ContentStreamBase.ByteArrayStream(buf, null), processor);
+              } else {
+                throw new RuntimeException("unsupported type ");
+              }
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            } finally {
+              params = null;
+              req.setParams(old);
+            }
+          }
+        }
+        return Collections.emptyList();
+      }
+
+    }.unmarshal(in);
   }
 
   private AddUpdateCommand getAddCommand(SolrQueryRequest req, SolrParams params) {

@@ -31,6 +31,7 @@ import java.util.function.Predicate;
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -174,24 +175,31 @@ public class ZkContainer {
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
-  public static Predicate<CoreDescriptor> testing_beforeRegisterInZk;
+  public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
 
   public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
+    CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
     Runnable r = () -> {
       MDCLoggingContext.setCore(core);
       try {
         try {
           if (testing_beforeRegisterInZk != null) {
-            testing_beforeRegisterInZk.test(core.getCoreDescriptor());
+            testing_beforeRegisterInZk.test(cd);
           }
-          zkController.register(core.getName(), core.getCoreDescriptor(), skipRecovery);
+          if (!core.getCoreContainer().isShutDown()) {
+            zkController.register(core.getName(), cd, skipRecovery);
+          }
         } catch (InterruptedException e) {
           // Restore the interrupted status
           Thread.currentThread().interrupt();
           SolrException.log(log, "", e);
+        } catch (KeeperException e) {
+          SolrException.log(log, "", e);
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           try {
-            zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
+            zkController.publish(cd, Replica.State.DOWN);
           } catch (InterruptedException e1) {
             Thread.currentThread().interrupt();
             log.error("", e1);

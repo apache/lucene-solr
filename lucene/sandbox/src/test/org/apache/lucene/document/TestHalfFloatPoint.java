@@ -23,8 +23,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 public class TestHalfFloatPoint extends LuceneTestCase {
@@ -89,7 +89,7 @@ public class TestHalfFloatPoint extends LuceneTestCase {
         values[o++] = v;
       }
     }
-    values = Arrays.copyOf(values, o);
+    values = ArrayUtil.copyOfSubArray(values, 0, o);
 
     int iters = atLeast(1000000);
     for (int iter = 0; iter < iters; ++iter) {
@@ -161,7 +161,7 @@ public class TestHalfFloatPoint extends LuceneTestCase {
       HalfFloatPoint.shortToSortableBytes((short) (i - 1), previous, 0);
       byte[] current = new byte[HalfFloatPoint.BYTES];
       HalfFloatPoint.shortToSortableBytes((short) i, current, 0);
-      assertTrue(StringHelper.compare(HalfFloatPoint.BYTES, previous, 0, current, 0) < 0);
+      assertTrue(FutureArrays.compareUnsigned(previous, 0, HalfFloatPoint.BYTES, current, 0, HalfFloatPoint.BYTES) < 0);
       assertEquals(i, HalfFloatPoint.sortableBytesToShort(current, 0));
     }
   }

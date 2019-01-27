@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -61,6 +62,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private CuratorFramework curatorFramework;
+  private final Locale defaultLocale = Locale.getDefault();
 
   @Override
   public void init(FilterConfig conf) throws ServletException {
@@ -118,6 +120,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       @Override
       public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
           throws IOException, ServletException {
+        Locale.setDefault(defaultLocale);
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
         UserGroupInformation ugi = HttpUserGroupInformation.get();
@@ -131,6 +134,8 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       }
     };
 
+    // A hack until HADOOP-15681 get committed
+    Locale.setDefault(Locale.US);
     super.doFilter(requestNonNullQueryString, response, filterChainWrapper);
   }
 

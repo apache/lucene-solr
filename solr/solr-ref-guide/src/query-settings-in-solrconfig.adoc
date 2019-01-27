@@ -126,9 +126,11 @@ If you want auto-warming of your cache, include a `regenerator` attribute with t
 
 This sets the maximum number of clauses allowed in a boolean query. This can affect range or prefix queries that expand to a query with a large number of boolean terms. If this limit is exceeded, an exception is thrown.
 
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property where present.  This provides an easy way for users to change this value in all collections without needing to search through and update all of their configs.
+
 [source,xml]
 ----
-<maxBooleanClauses>1024</maxBooleanClauses>
+<maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
 
 [WARNING]

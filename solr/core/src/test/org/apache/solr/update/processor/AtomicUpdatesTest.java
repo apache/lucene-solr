@@ -146,8 +146,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
     List<Long> removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -158,8 +158,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
     removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));    
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -214,8 +214,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
     List<Long> removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -226,8 +226,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
     removeList = new ArrayList<Long>();
-    removeList.add(new Long(222));
-    removeList.add(new Long(333));    
+    removeList.add(222L);
+    removeList.add(333L);
     doc.setField("intRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -1215,7 +1215,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=7"
+              , "count(//doc/*)=8"
               );
 
       // do atomic update
@@ -1230,7 +1230,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=7"
+              , "count(//doc/*)=8"
               );
 
       assertU(commit());
@@ -1244,7 +1244,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=7"
+              , "count(//doc/*)=8"
               );
     }
     
@@ -1267,7 +1267,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
+              , "count(//doc/*)=7"
               );
       // do atomic update
       assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
@@ -1281,7 +1281,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
+              , "count(//doc/*)=7"
               );
 
       // diff doc where we check that we can overwrite the default value
@@ -1296,7 +1296,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
+              , "count(//doc/*)=7"
               );
       // do atomic update
       assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("inc", -555))));
@@ -1310,7 +1310,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
+              , "count(//doc/*)=7"
               );
       
       assertU(commit());
@@ -1325,7 +1325,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
+              , "count(//doc/*)=7"
               );
       assertQ(fieldToUpdate + ": doc8 post commit RTG"
               , req("qt", "/get", "id", "8")
@@ -1337,7 +1337,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
+              , "count(//doc/*)=7"
               );
     }
     

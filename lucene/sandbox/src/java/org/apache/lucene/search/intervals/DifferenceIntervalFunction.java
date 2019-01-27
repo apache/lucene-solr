@@ -18,7 +18,6 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * A function that takes two interval iterators and combines them to produce a third,
@@ -126,6 +125,11 @@ abstract class DifferenceIntervalFunction {
     }
 
     @Override
+    public int gaps() {
+      return a.gaps();
+    }
+
+    @Override
     public float matchCost() {
       return a.matchCost() + b.matchCost();
     }
@@ -152,101 +156,6 @@ abstract class DifferenceIntervalFunction {
           return a.start();
       }
       return NO_MORE_INTERVALS;
-    }
-  }
-
-  /**
-   * Filters the minuend iterator so that only intervals that do not occur within a set number
-   * of positions of intervals from the subtrahend iterator are returned
-   */
-  static class NotWithinFunction extends DifferenceIntervalFunction {
-
-    private final int positions;
-
-    NotWithinFunction(int positions) {
-      this.positions = positions;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      NotWithinFunction that = (NotWithinFunction) o;
-      return positions == that.positions;
-    }
-
-    @Override
-    public String toString() {
-      return "NOTWITHIN/" + positions;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(positions);
-    }
-
-    @Override
-    public IntervalIterator apply(IntervalIterator minuend, IntervalIterator subtrahend) {
-      IntervalIterator notWithin = new IntervalIterator() {
-
-        @Override
-        public int docID() {
-          return subtrahend.docID();
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          positioned = false;
-          return subtrahend.nextDoc();
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          positioned = false;
-          return subtrahend.advance(target);
-        }
-
-        @Override
-        public long cost() {
-          return subtrahend.cost();
-        }
-
-        boolean positioned = false;
-
-        @Override
-        public int start() {
-          if (positioned == false)
-            return -1;
-          int start = subtrahend.start();
-          return Math.max(0, start - positions);
-        }
-
-        @Override
-        public int end() {
-          if (positioned == false)
-            return -1;
-          int end = subtrahend.end();
-          int newEnd = end + positions;
-          if (newEnd < 0) // check for overflow
-            return Integer.MAX_VALUE;
-          return newEnd;
-        }
-
-        @Override
-        public int nextInterval() throws IOException {
-          if (positioned == false) {
-            positioned = true;
-          }
-          return subtrahend.nextInterval();
-        }
-
-        @Override
-        public float matchCost() {
-          return subtrahend.matchCost();
-        }
-
-      };
-      return NON_OVERLAPPING.apply(minuend, notWithin);
     }
   }
 

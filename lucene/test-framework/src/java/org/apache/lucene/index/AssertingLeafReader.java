@@ -18,15 +18,15 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
@@ -211,12 +211,12 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    public ImpactsEnum impacts(int flags) throws IOException {
       assertThread("Terms enums", creationThread);
       assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
       assert (flags & PostingsEnum.FREQS) != 0 : "Freqs should be requested on impacts";
 
-      return new AssertingImpactsEnum(super.impacts(scorer, flags));
+      return new AssertingImpactsEnum(super.impacts(flags));
     }
 
     // TODO: we should separately track if we are 'at the end' ?
@@ -454,7 +454,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     private final AssertingPostingsEnum assertingPostings;
     private final ImpactsEnum in;
-    private int lastShallowTarget;
+    private int lastShallowTarget = -1;
 
     AssertingImpactsEnum(ImpactsEnum impacts) {
       in = impacts;
@@ -463,20 +463,19 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int advanceShallow(int target) throws IOException {
+    public void advanceShallow(int target) throws IOException {
       assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
       assert target >= docID() : "target = " + target + " < docID = " + docID();
-      int upTo = in.advanceShallow(target);
-      assert upTo >= target : "upTo = " + upTo + " < target = " + target;
       lastShallowTarget = target;
-      return upTo;
+      in.advanceShallow(target);
     }
 
     @Override
-    public float getMaxScore(int upTo) throws IOException {
-      assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last shallow target = " + lastShallowTarget;
-      float maxScore = in.getMaxScore(upTo);
-      return maxScore;
+    public Impacts getImpacts() throws IOException {
+      assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get impacts until the iterator is positioned or advanceShallow has been called";
+      Impacts impacts = in.getImpacts();
+      CheckIndex.checkImpacts(impacts, Math.max(docID(), lastShallowTarget));
+      return new AssertingImpacts(impacts, this);
     }
 
     @Override
@@ -525,6 +524,38 @@ public class AssertingLeafReader extends FilterLeafReader {
     public long cost() {
       return assertingPostings.cost();
     }
+  }
+
+  static class AssertingImpacts extends Impacts {
+
+    private final Impacts in;
+    private final AssertingImpactsEnum impactsEnum;
+    private final int validFor;
+
+    AssertingImpacts(Impacts in, AssertingImpactsEnum impactsEnum) {
+      this.in = in;
+      this.impactsEnum = impactsEnum;
+      validFor = Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget);
+    }
+
+    @Override
+    public int numLevels() {
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      return in.numLevels();
+    }
+
+    @Override
+    public int getDocIdUpTo(int level) {
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      return in.getDocIdUpTo(level);
+    }
+
+    @Override
+    public List<Impact> getImpacts(int level) {
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      return in.getImpacts(level);
+    }
+
   }
 
   /** Wraps a NumericDocValues but with additional asserts */
@@ -1017,7 +1048,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
-      in.intersect(new AssertingIntersectVisitor(in.getNumDimensions(), in.getBytesPerDimension(), visitor));
+      in.intersect(new AssertingIntersectVisitor(in.getNumDataDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
     }
 
     @Override
@@ -1038,8 +1069,13 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int getNumDimensions() throws IOException {
-      return in.getNumDimensions();
+    public int getNumDataDimensions() throws IOException {
+      return in.getNumDataDimensions();
+    }
+
+    @Override
+    public int getNumIndexDimensions() throws IOException {
+      return in.getNumIndexDimensions();
     }
 
     @Override
@@ -1062,7 +1098,8 @@ public class AssertingLeafReader extends FilterLeafReader {
   /** Validates in the 1D case that all points are visited in order, and point values are in bounds of the last cell checked */
   static class AssertingIntersectVisitor implements IntersectVisitor {
     final IntersectVisitor in;
-    final int numDims;
+    final int numDataDims;
+    final int numIndexDims;
     final int bytesPerDim;
     final byte[] lastDocValue;
     final byte[] lastMinPackedValue;
@@ -1071,13 +1108,14 @@ public class AssertingLeafReader extends FilterLeafReader {
     private int lastDocID = -1;
     private int docBudget;
 
-    AssertingIntersectVisitor(int numDims, int bytesPerDim, IntersectVisitor in) {
+    AssertingIntersectVisitor(int numDataDims, int numIndexDims, int bytesPerDim, IntersectVisitor in) {
       this.in = in;
-      this.numDims = numDims;
+      this.numDataDims = numDataDims;
+      this.numIndexDims = numIndexDims;
       this.bytesPerDim = bytesPerDim;
-      lastMaxPackedValue = new byte[numDims*bytesPerDim];
-      lastMinPackedValue = new byte[numDims*bytesPerDim];
-      if (numDims == 1) {
+      lastMaxPackedValue = new byte[numDataDims*bytesPerDim];
+      lastMinPackedValue = new byte[numDataDims*bytesPerDim];
+      if (numDataDims == 1) {
         lastDocValue = new byte[bytesPerDim];
       } else {
         lastDocValue = null;
@@ -1101,15 +1139,15 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert lastCompareResult == PointValues.Relation.CELL_CROSSES_QUERY;
 
       // This doc's packed value should be contained in the last cell passed to compare:
-      for(int dim=0;dim<numDims;dim++) {
-        assert StringHelper.compare(bytesPerDim, lastMinPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
-        assert StringHelper.compare(bytesPerDim, lastMaxPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
+      for(int dim=0;dim<numIndexDims;dim++) {
+        assert FutureArrays.compareUnsigned(lastMinPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0: "dim=" + dim + " of " +  numDataDims + " value=" + new BytesRef(packedValue);
+        assert FutureArrays.compareUnsigned(lastMaxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) >= 0: "dim=" + dim + " of " +  numDataDims + " value=" + new BytesRef(packedValue);
       }
 
       // TODO: we should assert that this "matches" whatever relation the last call to compare had returned
-      assert packedValue.length == numDims * bytesPerDim;
-      if (numDims == 1) {
-        int cmp = StringHelper.compare(bytesPerDim, lastDocValue, 0, packedValue, 0);
+      assert packedValue.length == numDataDims * bytesPerDim;
+      if (numDataDims == 1) {
+        int cmp = FutureArrays.compareUnsigned(lastDocValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp < 0) {
           // ok
         } else if (cmp == 0) {
@@ -1132,11 +1170,11 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      for(int dim=0;dim<numDims;dim++) {
-        assert StringHelper.compare(bytesPerDim, minPackedValue, dim*bytesPerDim, maxPackedValue, dim*bytesPerDim) <= 0;
+      for(int dim=0;dim<numIndexDims;dim++) {
+        assert FutureArrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0;
       }
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numDims*bytesPerDim);
-      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numDims*bytesPerDim);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numIndexDims*bytesPerDim);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numIndexDims*bytesPerDim);
       lastCompareResult = in.compare(minPackedValue, maxPackedValue);
       return lastCompareResult;
     }

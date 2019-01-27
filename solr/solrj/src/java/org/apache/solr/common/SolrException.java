@@ -213,7 +213,7 @@ public class SolrException extends RuntimeException {
     return null;
   }
   
-  public static Throwable getRootCause(Throwable t) {
+    public static Throwable getRootCause(Throwable t) {
     while (true) {
       Throwable cause = t.getCause();
       if (cause!=null) {

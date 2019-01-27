@@ -69,7 +69,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static long docsSeed; // see indexDocs()
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static JettySolrRunner createJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
+  private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -106,7 +106,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     master.setUp();
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
-    masterJetty = createJetty(master);
+    masterJetty = createAndStartJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
     docsSeed = random().nextLong();
   }
@@ -146,7 +146,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         IndexReader reader = DirectoryReader.open(dir)) {
       IndexSearcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
-      assertEquals(nDocs, hits.totalHits);
+      assertEquals(nDocs, hits.totalHits.value);
     }
   }
 

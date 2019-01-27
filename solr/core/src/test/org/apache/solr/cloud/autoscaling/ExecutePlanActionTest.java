@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -43,8 +44,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,27 +68,29 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(NODE_COUNT)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+
   }
 
   @Before
   public void setUp() throws Exception  {
     super.setUp();
+    
+    configureCluster(NODE_COUNT)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+    
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
 
-    if (cluster.getJettySolrRunners().size() < NODE_COUNT) {
-      // start some to get to original state
-      int numJetties = cluster.getJettySolrRunners().size();
-      for (int i = 0; i < NODE_COUNT - numJetties; i++) {
-        cluster.startJettySolrRunner();
-      }
-    }
-    cluster.waitForAllNodes(30);
-    loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
+
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+  }
+  
+
+  @After
+  public void tearDown() throws Exception  {
+    shutdownCluster();
+    super.tearDown();
   }
 
   @Test
@@ -98,6 +101,8 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "conf", 1, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
+    
+    cluster.waitForActiveCollection(collectionName, 1, 2);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
         collectionName, clusterShape(1, 2));
@@ -146,9 +151,11 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         }
       };
       List<CollectionAdminRequest.AsyncCollectionAdminRequest> operations = Lists.asList(moveReplica, new CollectionAdminRequest.AsyncCollectionAdminRequest[]{mockRequest});
-      NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
-          "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTimeNs()),
-          Collections.singletonList(sourceNodeName));
+      NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent
+        (TriggerEventType.NODELOST, "mock_trigger_name",
+         Collections.singletonList(cloudManager.getTimeSource().getTimeNs()),
+         Collections.singletonList(sourceNodeName),
+         CollectionParams.CollectionAction.MOVEREPLICA.toLower());
       ActionContext actionContext = new ActionContext(survivor.getCoreContainer().getZkController().getSolrCloudManager(), null,
           new HashMap<>(Collections.singletonMap("operations", operations)));
       action.process(nodeLostEvent, actionContext);
@@ -179,7 +186,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
-    SolrRequest req = AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -188,6 +195,8 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
         "conf", 1, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
+    
+    cluster.waitForActiveCollection(collectionName, 1, 2);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
         collectionName, clusterShape(1, 2));
@@ -208,11 +217,13 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       JettySolrRunner runner = cluster.getJettySolrRunner(i);
       if (runner == sourceNode) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
       }
     }
+    
+    Thread.sleep(1000);
 
-    cluster.waitForAllNodes(30);
     waitForState("Timed out waiting for replicas of collection to be 2 again",
         collectionName, clusterShape(1, 2));
 
@@ -220,6 +231,6 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     docCollection = clusterState.getCollection(collectionName);
     List<Replica> replicasOnSurvivor = docCollection.getReplicas(survivor.getNodeName());
     assertNotNull(replicasOnSurvivor);
-    assertEquals(2, replicasOnSurvivor.size());
+    assertEquals(docCollection.toString(), 2, replicasOnSurvivor.size());
   }
 }

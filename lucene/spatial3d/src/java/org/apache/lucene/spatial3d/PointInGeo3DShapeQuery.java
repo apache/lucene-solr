@@ -102,7 +102,7 @@ final class PointInGeo3DShapeQuery extends Query {
 
         values.intersect(new PointInShapeIntersectVisitor(result, shape, shapeBounds));
 
-        return new ConstantScoreScorer(this, score(), result.build().iterator());
+        return new ConstantScoreScorer(this, score(), scoreMode, result.build().iterator());
       }
 
       @Override

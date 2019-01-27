@@ -71,6 +71,11 @@ import org.apache.solr.ltr.norm.Normalizer;
  */
 public class LinearModel extends LTRScoringModel {
 
+  /**
+   * featureToWeight is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   protected Float[] featureToWeight;
 
   public void setWeights(Object weights) {
@@ -78,7 +83,7 @@ public class LinearModel extends LTRScoringModel {
     for (int ii = 0; ii < features.size(); ++ii) {
       final String key = features.get(ii).getName();
       final Double val = modelWeights.get(key);
-      featureToWeight[ii] = (val == null ? null : new Float(val.floatValue()));
+      featureToWeight[ii] = (val == null ? null : val.floatValue());
     }
   }
 

@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -28,7 +29,7 @@ import org.apache.solr.common.cloud.LiveNodesListener;
 /**
  * This class represents a set of live nodes and allows adding listeners to track their state.
  */
-public class LiveNodesSet {
+public class LiveNodesSet implements Iterable<String> {
 
   private final Set<String> set = ConcurrentHashMap.newKeySet();
   private final Set<LiveNodesListener> listeners = ConcurrentHashMap.newKeySet();
@@ -47,6 +48,10 @@ public class LiveNodesSet {
 
   public void removeLiveNodesListener(LiveNodesListener listener) {
     listeners.remove(listener);
+  }
+  
+  public void removeAllLiveNodesListeners() {
+    listeners.clear();
   }
 
   private void fireListeners(SortedSet<String> oldNodes, SortedSet<String> newNodes) {
@@ -99,5 +104,10 @@ public class LiveNodesSet {
     TreeSet<String> oldNodes = new TreeSet<>(set);
     set.clear();
     fireListeners(oldNodes, Collections.emptySortedSet());
+  }
+
+  @Override
+  public Iterator<String> iterator() {
+    return set.iterator();
   }
 }

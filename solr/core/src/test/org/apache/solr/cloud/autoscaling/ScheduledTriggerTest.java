@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +57,8 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // this does not appear to be a good way to test this
   public void testTrigger() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
 
@@ -75,6 +77,7 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
     scheduledTriggerTest(container, properties);
   }
 
+  @Test
   public void testIgnoredEvent() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
     long threeDaysAgo = new Date().getTime() - TimeUnit.DAYS.toMillis(3);
@@ -100,7 +103,7 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
       scheduledTrigger.init();
       scheduledTrigger.setProcessor(noFirstRunProcessor);
       scheduledTrigger.run();
-      final List<Long> eventTimes = new ArrayList<>();
+      final List<Long> eventTimes = Collections.synchronizedList(new ArrayList<>());
       scheduledTrigger.setProcessor(event -> {
         eventTimes.add(event.getEventTime());
         return true;

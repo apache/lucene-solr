@@ -18,7 +18,7 @@ package org.apache.solr.prometheus.collector;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 import io.prometheus.client.Collector;
 import org.apache.solr.client.solrj.SolrClient;
@@ -54,10 +54,10 @@ import java.util.concurrent.TimeUnit;
  * SolrCollector
  */
 public class SolrCollector extends Collector implements Collector.Describable {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrClient solrClient;
-  private Config config;
+  private XmlConfigFile config;
   private int numThreads;
   private ExecutorService executorService;
   private static ObjectMapper om = new ObjectMapper();
@@ -65,7 +65,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
   /**
    * Constructor.
    */
-  public SolrCollector(SolrClient solrClient, Config config, int numThreads) {
+  public SolrCollector(SolrClient solrClient, XmlConfigFile config, int numThreads) {
     this.solrClient = solrClient;
     this.config = config;
     this.numThreads = numThreads;
@@ -124,7 +124,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
                       futureList.add(future);
                     }
                   } catch (SolrServerException | IOException e) {
-                    this.logger.error("failed to get cores: " + e.getMessage());
+                    this.log.error("failed to get cores: " + e.getMessage());
                   }
                 } else if (coreName != null && collectionName == null) {
                   LinkedHashMap conf = (LinkedHashMap) requestNL.asMap(10);
@@ -141,17 +141,17 @@ public class SolrCollector extends Collector implements Collector.Describable {
                 Map<String, MetricFamilySamples> m = future.get(60, TimeUnit.SECONDS);
                 mergeMetrics(metricFamilySamplesMap, m);
               } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                this.logger.error(e.getMessage());
+                this.log.error(e.getMessage());
               }
             }
           } catch (SolrServerException | IOException e) {
-            this.logger.error("failed to get HttpSolrClients: " + e.getMessage());
+            this.log.error("failed to get HttpSolrClients: " + e.getMessage());
           } finally {
             for (HttpSolrClient httpSolrClient : httpSolrClients) {
               try {
                 httpSolrClient.close();
               } catch (IOException e) {
-                this.logger.error("failed to close HttpSolrClient: " + e.getMessage());
+                this.log.error("failed to close HttpSolrClient: " + e.getMessage());
               }
             }
           }
@@ -175,7 +175,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
                   futureList.add(future);
                 }
               } catch (SolrServerException | IOException e) {
-                this.logger.error("failed to get cores: " + e.getMessage());
+                this.log.error("failed to get cores: " + e.getMessage());
               }
             } else if (coreName == null && collectionName != null) {
               LinkedHashMap conf = (LinkedHashMap) requestNL.asMap(10);
@@ -204,7 +204,7 @@ public class SolrCollector extends Collector implements Collector.Describable {
                   futureList.add(future);
                 }
               } catch (SolrServerException | IOException e) {
-                this.logger.error("failed to get cores: " + e.getMessage());
+                this.log.error("failed to get cores: " + e.getMessage());
               }
             } else {
               LinkedHashMap conf = (LinkedHashMap) requestNL.asMap(10);
@@ -244,17 +244,17 @@ public class SolrCollector extends Collector implements Collector.Describable {
                 Map<String, MetricFamilySamples> m = future.get(60, TimeUnit.SECONDS);
                 mergeMetrics(metricFamilySamplesMap, m);
               } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                this.logger.error(e.getMessage());
+                this.log.error(e.getMessage());
               }
             }
           } catch (SolrServerException | IOException e) {
-            this.logger.error(e.getMessage());
+            this.log.error(e.getMessage());
           } finally {
             for (HttpSolrClient httpSolrClient : httpSolrClients) {
               try {
                 httpSolrClient.close();
               } catch (IOException e) {
-                this.logger.error(e.getMessage());
+                this.log.error(e.getMessage());
               }
             }
           }
@@ -306,11 +306,11 @@ public class SolrCollector extends Collector implements Collector.Describable {
           Map<String, MetricFamilySamples> m = future.get(60, TimeUnit.SECONDS);
           mergeMetrics(metricFamilySamplesMap, m);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-          this.logger.error(e.getMessage());
+          this.log.error(e.getMessage());
         }
       }
     } catch (Exception e) {
-      this.logger.error(e.getMessage());
+      this.log.error(e.getMessage());
       e.printStackTrace();
     }
 

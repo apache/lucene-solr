@@ -43,6 +43,7 @@ import org.junit.Test;
 
 public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
 
+  private static final int defFacetLimit = 10;
   private static final String collection = "facetcollection";
 
   @BeforeClass
@@ -67,6 +68,8 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
     CollectionAdminRequest.createCollection(collection, configName, shards, replicas)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collection, shards, shards * replicas);
 
   }
 
@@ -74,7 +77,8 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
       "fuchsia", "light","dark","green","grey","don't","know","any","more" );
   final static List<String> sizes = Arrays.asList("s","m","l","xl","xxl","xml","xxxl","3","4","5","6","petite","maxi");
   
-  @Test
+  @SuppressWarnings("unchecked")
+  @Test 
   public void testBJQFacetComponent() throws Exception {
     
     assert ! colors.removeAll(sizes): "there is no colors in sizes";
@@ -126,12 +130,20 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
     if (!parentDocs.isEmpty()) {
       indexDocs(parentDocs);
     }
-    cluster.getSolrClient().commit(collection);
-
+    if (random().nextBoolean()) {
+      cluster.getSolrClient().commit(collection);
+    } else {
+      cluster.getSolrClient().optimize(collection);
+    }
     // to parent query
-    final String childQueryClause = "COLOR_s:("+(matchingColors.toString().replaceAll("[,\\[\\]]", " "))+")";
+    final String matchingColorsCommaSep = matchingColors.toString().replaceAll("[ \\[\\]]", "");
+    final String childQueryClause = "{!terms f=COLOR_s}" + matchingColorsCommaSep;
       final boolean oldFacetsEnabled = random().nextBoolean();
-      QueryResponse results = query("q", "{!parent which=\"type_s:parent\"}"+childQueryClause,
+      final boolean limitJsonSizes = random().nextBoolean();
+      final boolean limitJsonColors = random().nextBoolean();
+      
+      QueryResponse results = query("q", "{!parent which=\"type_s:parent\" v=$matchingColors}",//+childQueryClause,
+          "matchingColors", childQueryClause,
           "facet", oldFacetsEnabled ? "true":"false", // try to enforce multiple phases
               oldFacetsEnabled ? "facet.field" : "ignore" , "BRAND_s",
               oldFacetsEnabled&&usually() ? "facet.limit" : "ignore" , "1",
@@ -141,7 +153,18 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
           "child.facet.field", "COLOR_s",
           "child.facet.field", "SIZE_s",
           "distrib.singlePass", random().nextBoolean() ? "true":"false",
-          "rows", random().nextBoolean() ? "0":"10"
+          "rows", random().nextBoolean() ? "0":"10",
+          "json.facet","{ "
+              + "children:{ type: query, query:\"*:*\", domain:{"
+                    +"blockChildren:\"type_s:parent\", filter:{param:matchingColors}"
+                    + "}, facet:{ colors:{ type:field, field:COLOR_s,"
+                    +              (limitJsonColors ? "":" limit:-1,")
+                    +              " facet:{ inprods:\"uniqueBlock(_root_)\"}}, "
+                    +         "sizes:{type:field, field:SIZE_s, "
+                    +              (limitJsonSizes ? "" : "limit:-1,")
+                    +              " facet:{inprods:\"uniqueBlock(_root_)\"}}"
+                    + "}"
+              + "}}", "debugQuery","true"//, "shards", "shard1"
           );
       NamedList<Object> resultsResponse = results.getResponse();
       assertNotNull(resultsResponse);
@@ -155,9 +178,49 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
               parentIdsByAttrValue.get(c.getName()).size(), c.getCount());
         }
       }
-      
+
       assertEquals(msg , parentIdsByAttrValue.size(),color_s.getValueCount() + size_s.getValueCount());
-      //System.out.println(parentIdsByAttrValue);
+
+      final List<NamedList<Object>> jsonSizes = (List<NamedList<Object>>)
+                              get(resultsResponse, "facets", "children", "sizes", "buckets");
+      final List<NamedList<Object>> jsonColors = (List<NamedList<Object>>)
+                                get(resultsResponse, "facets", "children", "colors", "buckets");
+
+      if (limitJsonColors) {
+        assertTrue(""+jsonColors, jsonColors.size()<=defFacetLimit);
+      }
+
+      if (limitJsonSizes) {
+        assertTrue(""+jsonSizes, jsonSizes.size()<=defFacetLimit);
+      }
+
+      for (List<NamedList<Object>> vals : new List[] { jsonSizes,jsonColors}) {
+        int i=0;
+        for(NamedList<Object> tuples: vals) {
+          String  val = (String) get(tuples,"val");
+          Number  count = (Number) get(tuples,"inprods");
+          if (((vals==jsonSizes && limitJsonSizes) || // vals close to the limit are not exact 
+              (vals==jsonColors && limitJsonColors)) && i>=defFacetLimit/2) {
+            assertTrue(i+ "th "+tuples+". "+vals, 
+                parentIdsByAttrValue.get(val).size()>= count.intValue() &&
+                count.intValue()>0);
+          } else {
+            assertEquals(tuples+". "+vals, 
+                parentIdsByAttrValue.get(val).size(),count.intValue());
+          }
+          i++;
+        }
+      }
+      if (!limitJsonColors && !limitJsonSizes) {
+        assertEquals(""+jsonSizes+jsonColors, parentIdsByAttrValue.size(),jsonSizes.size() + jsonColors.size());
+      }
+  }
+
+  private static Object get(Object nvList, String ... segments) {
+    for(String segment: segments) {
+      nvList = ((NamedList<Object>) nvList).get(segment);
+    }
+    return nvList;
   }
 
   private QueryResponse query(String ... arg) throws SolrServerException, IOException {

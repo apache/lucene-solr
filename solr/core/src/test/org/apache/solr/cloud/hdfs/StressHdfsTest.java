@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +32,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
-import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -61,6 +61,8 @@ import java.util.concurrent.TimeUnit;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+@Nightly
 public class StressHdfsTest extends BasicDistributedZkTest {
 
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
@@ -97,6 +99,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   }
 
   @Test
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws Exception {
     randomlyEnableAutoSoftCommit();
     
@@ -113,7 +116,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         
         waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
 
-        ChaosMonkey.stop(jettys.get(0));
+        jettys.get(0).stop();
         
         // enter safe mode and restart a node
         NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
@@ -128,7 +131,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
           }
         }, rnd);
         
-        ChaosMonkey.start(jettys.get(0));
+        jettys.get(0).start();
         
         waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
       } finally {

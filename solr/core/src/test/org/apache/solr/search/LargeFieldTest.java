@@ -25,7 +25,6 @@ import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,13 +79,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     assertQ(req("q", "101", "df", ID_FLD, "fl", ID_FLD)); // eager load ID_FLD; rest are lazy
 
     // fetch the document; we know it will be from the documentCache, docId 0
-    final Document d;
-    RefCounted<SolrIndexSearcher> searcherRef = h.getCore().getSearcher();
-    try {
-      d = searcherRef.get().doc(0);
-    } finally {
-      searcherRef.decref();
-    }
+    final Document d = h.getCore().withSearcher(searcher -> searcher.doc(0));
 
     assertEager(d, ID_FLD);
     assertLazyNotLoaded(d, LAZY_FIELD);

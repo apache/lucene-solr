@@ -24,38 +24,28 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 
-class ReplicaCount extends Number implements MapWriter {
+class ReplicaCount  implements MapWriter {
   long nrt, tlog, pull;
+
+  public ReplicaCount() {
+    nrt = tlog = pull = 0;
+  }
+
+  public ReplicaCount(long nrt, long tlog, long pull) {
+    this.nrt = nrt;
+    this.tlog = tlog;
+    this.pull = pull;
+  }
 
   public long total() {
     return nrt + tlog + pull;
   }
 
   @Override
-  public int intValue() {
-    return (int) total();
-  }
-
-  @Override
-  public long longValue() {
-    return total();
-  }
-
-  @Override
-  public float floatValue() {
-    return total();
-  }
-
-  @Override
-  public double doubleValue() {
-    return total();
-  }
-
-  @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(Replica.Type.NRT.name(), nrt);
-    ew.put(Replica.Type.PULL.name(), pull);
-    ew.put(Replica.Type.TLOG.name(), tlog);
+    if (nrt > 0) ew.put(Replica.Type.NRT.name(), nrt);
+    if (pull > 0) ew.put(Replica.Type.PULL.name(), pull);
+    if (tlog > 0) ew.put(Replica.Type.TLOG.name(), tlog);
     ew.put("count", total());
   }
 
@@ -75,24 +65,64 @@ class ReplicaCount extends Number implements MapWriter {
   public void increment(List<ReplicaInfo> infos) {
     if (infos == null) return;
     for (ReplicaInfo info : infos) {
-      switch (info.getType()) {
-        case NRT:
-          nrt++;
-          break;
-        case PULL:
-          pull++;
-          break;
-        case TLOG:
-          tlog++;
-          break;
-        default:
-          nrt++;
-      }
+      increment(info);
     }
+  }
+
+  void increment(ReplicaInfo info) {
+    increment(info.getType());
+  }
+
+  void increment(ReplicaCount count) {
+    nrt += count.nrt;
+    pull += count.pull;
+    tlog += count.tlog;
+  }
+
+
+  public void increment(Replica.Type type) {
+    switch (type) {
+      case NRT:
+        nrt++;
+        break;
+      case PULL:
+        pull++;
+        break;
+      case TLOG:
+        tlog++;
+        break;
+      default:
+        nrt++;
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ReplicaCount) {
+      ReplicaCount that = (ReplicaCount) obj;
+      return that.nrt == this.nrt && that.tlog == this.tlog && that.pull == this.pull;
+
+    }
+    return false;
   }
 
   @Override
   public String toString() {
     return Utils.toJSONString(this);
+  }
+
+  public ReplicaCount copy() {
+    return new ReplicaCount(nrt, tlog, pull);
+  }
+
+  public void reset() {
+    nrt = tlog = pull = 0;
+  }
+
+  public int delta(int expectedReplicaCount, Replica.Type type) {
+    if (type == Replica.Type.NRT) return (int) (nrt - expectedReplicaCount);
+    if (type == Replica.Type.PULL) return (int) (pull - expectedReplicaCount);
+    if (type == Replica.Type.TLOG) return (int) (tlog - expectedReplicaCount);
+    throw new RuntimeException("NO type");
   }
 }

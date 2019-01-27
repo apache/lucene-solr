@@ -114,7 +114,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = (float) Math.sqrt(d.score);
@@ -132,7 +132,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
@@ -151,7 +151,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
@@ -171,7 +171,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     Sort sort = new Sort(expr2.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = 2*d.score;
@@ -203,7 +203,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile(sb.toString());
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
-    TopFieldDocs td = searcher.search(query, 3, sort, true, true);
+    TopFieldDocs td = searcher.search(query, 3, sort, true);
     for (int i = 0; i < 3; i++) {
       FieldDoc d = (FieldDoc) td.scoreDocs[i];
       float expected = n*d.score;

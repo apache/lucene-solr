@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,16 +36,18 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
+import org.apache.solr.client.solrj.cloud.autoscaling.VariableBase;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -58,6 +61,9 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTALDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_COLLECTION;
 
 /**
  *
@@ -70,22 +76,38 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
   private final CloudSolrClient solrClient;
-  private final ZkStateReader zkStateReader;
-  private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
+  protected final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
+  private Map<String, String> withCollectionsMap = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
-    this.zkStateReader = solrClient.getZkStateReader();
-    ClusterState clusterState = zkStateReader.getClusterState();
+    try {
+      readReplicaDetails();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    if(log.isDebugEnabled()) INST = this;
+  }
+
+  protected ClusterStateProvider getClusterStateProvider() {
+    return solrClient.getClusterStateProvider();
+  }
+
+  protected void readReplicaDetails() throws IOException {
+    ClusterStateProvider clusterStateProvider = getClusterStateProvider();
+    ClusterState clusterState = clusterStateProvider.getClusterState();
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
-    Map<String, ClusterState.CollectionRef> all = clusterState.getCollectionStates();
+    Map<String, ClusterState.CollectionRef> all = clusterStateProvider.getClusterState().getCollectionStates();
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
       if (coll == null) return;
+      if (coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION) != null) {
+        withCollectionsMap.put(coll.getName(), (String) coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION));
+      }
       coll.forEachReplica((shard, replica) -> {
         Map<String, Map<String, List<ReplicaInfo>>> nodeData = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
         Map<String, List<ReplicaInfo>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
@@ -93,47 +115,61 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         replicas.add(new ReplicaInfo(collName, shard, replica, new HashMap<>(replica.getProperties())));
       });
     });
-    if(log.isDebugEnabled()) INST = this;
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-//    ew.put("liveNodes", liveNodes);
     ew.put("replicaInfo", Utils.getDeepCopy(nodeVsCollectionVsShardVsReplicaInfo, 5));
     ew.put("nodeValues", nodeVsTags);
-
   }
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+    Map<String, Object> tagVals = fetchTagValues(node, tags);
+    nodeVsTags.put(node, tagVals);
+    if (tags.contains(WITH_COLLECTION.tagName)) {
+      tagVals.put(WITH_COLLECTION.tagName, withCollectionsMap);
+    }
+    return tagVals;
+  }
+
+  protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     AutoScalingSnitch snitch = new AutoScalingSnitch();
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, node, snitchSession, solrClient);
     snitch.getTags(node, new HashSet<>(tags), ctx);
-    nodeVsTags.put(node, ctx.getTags());
     return ctx.getTags();
+  }
+
+  public void forEachReplica(String node, Consumer<ReplicaInfo> consumer){
+    Row.forEachReplica(nodeVsCollectionVsShardVsReplicaInfo.get(node), consumer);
   }
 
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, s -> emptyMap());
+    Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
     if (!keys.isEmpty()) {
-      Map<String, Pair<String, ReplicaInfo>> keyVsReplica = new HashMap<>();
+      Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica = new HashMap<>();
       Row.forEachReplica(result, r -> {
         for (String key : keys) {
-          if (r.getVariables().containsKey(key)) continue;
-          keyVsReplica.put("solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":" + key, new Pair<>(key, r));
+          if (r.getVariables().containsKey(key)) continue;// it's already collected
+          String perReplicaMetricsKey = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
+          Type tagType = VariableBase.getTagType(key);
+          String perReplicaValue = key;
+          if (tagType != null) {
+            perReplicaValue = tagType.metricsAttribute;
+            perReplicaValue = perReplicaValue == null ? key : perReplicaValue;
+          }
+          perReplicaMetricsKey += perReplicaValue;
+          metricsKeyVsTagReplica.put(perReplicaMetricsKey, new Pair<>(key, r));
         }
       });
 
-      if (!keyVsReplica.isEmpty()) {
-        ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
-        fetchMetrics(node, ctx,
-            keyVsReplica.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey)));
-        ctx.getTags().forEach((k, o) -> {
-          Pair<String, ReplicaInfo> p = keyVsReplica.get(k);
-          Suggestion.ConditionType validator = Suggestion.getTagType(p.first());
+      if (!metricsKeyVsTagReplica.isEmpty()) {
+        Map<String, Object> tagValues = fetchReplicaMetrics(node, metricsKeyVsTagReplica);
+        tagValues.forEach((k, o) -> {
+          Pair<String, ReplicaInfo> p = metricsKeyVsTagReplica.get(k);
+          Type validator = VariableBase.getTagType(p.first());
           if (validator != null) o = validator.convertVal(o);
           if (p.second() != null) p.second().getVariables().put(p.first(), o);
         });
@@ -143,13 +179,50 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return result;
   }
 
-  static void fetchMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
+  protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica) {
+    Map<String, Object> collect = metricsKeyVsTagReplica.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
+    ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
+    fetchReplicaMetrics(node, ctx, collect);
+    return ctx.getTags();
+
+  }
+
+  static void fetchReplicaMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
+    if (!ctx.isNodeAlive(solrNode)) return;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
-      SimpleSolrResponse rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
+      
+      SimpleSolrResponse rsp = null;
+      int cnt = 0;
+      while (cnt++ < 3) {
+        try {
+          rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
+        } catch (SolrException | SolrServerException | IOException e) {
+          boolean hasCauseIOException = false;
+          Throwable cause = e;
+          while (cause != null) {
+            if (cause instanceof IOException) {
+              hasCauseIOException = true;
+              break;
+            }
+            cause = cause.getCause();
+          }
+          if (hasCauseIOException || e instanceof IOException) {
+            log.info("Error on getting remote info, trying again: " + e.getMessage());
+            Thread.sleep(500);
+            continue;
+          } else {
+            throw e;
+          }
+        }
+      }
+      
+      
+      SimpleSolrResponse frsp = rsp;
       metricsKeyVsTag.forEach((key, tag) -> {
-        Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
+        Object v = Utils.getObjectByPath(frsp.nl, true, Arrays.asList("metrics", key));
         if (tag instanceof Function) {
           Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
           ctx.getTags().put(p.first(), p.second());
@@ -171,6 +244,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static class AutoScalingSnitch extends ImplicitSnitch {
     @Override
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
+      if (!((ClientSnitchCtx)ctx).isNodeAlive(solrNode)) return;
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
       Map<String, Object> metricsKeyVsTag = new HashMap<>();
       for (String tag : requestedTags) {
@@ -181,22 +255,19 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         }
       }
       if (requestedTags.contains(ImplicitSnitch.DISKTYPE)) {
-        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", new Function<Object, Pair<String,Object>>() {
-          @Override
-          public Pair<String, Object> apply(Object o) {
-            if("true".equals(String.valueOf(o))){
-              return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
-            }
-            if("false".equals(String.valueOf(o))){
-              return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
-            }
-            return new Pair<>(ImplicitSnitch.DISKTYPE,null);
-
+        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", (Function<Object, Pair<String, Object>>) o -> {
+          if("true".equals(String.valueOf(o))){
+            return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
           }
+          if("false".equals(String.valueOf(o))){
+            return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
+          }
+          return new Pair<>(ImplicitSnitch.DISKTYPE,null);
+
         });
       }
       if (!metricsKeyVsTag.isEmpty()) {
-        fetchMetrics(solrNode, snitchContext, metricsKeyVsTag);
+        fetchReplicaMetrics(solrNode, snitchContext, metricsKeyVsTag);
       }
 
       Set<String> groups = new HashSet<>();
@@ -204,6 +275,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       if (requestedTags.contains(DISK)) {
         groups.add("solr.node");
         prefixes.add("CONTAINER.fs.usableSpace");
+      }
+      if (requestedTags.contains(TOTALDISK.tagName)) {
+        groups.add("solr.node");
+        prefixes.add("CONTAINER.fs.totalSpace");
       }
       if (requestedTags.contains(CORES)) {
         groups.add("solr.core");
@@ -224,11 +299,48 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       params.add("prefix", StrUtils.join(prefixes, ','));
 
       try {
-        SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
+        SimpleSolrResponse rsp = null;
+        int retries = 5;
+        int cnt = 0;
+        while (cnt++ < retries) {
+          try {
+            rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
+          } catch (SolrException | SolrServerException | IOException e) {
+            if (e instanceof SolrServerException) {
+              
+            }
+            
+            boolean hasCauseIOException = false;
+            Throwable cause = e;
+            while (cause != null) {
+              if (cause instanceof IOException) {
+                hasCauseIOException = true;
+                break;
+              }
+              cause = cause.getCause();
+            }
+            if (hasCauseIOException || e instanceof IOException) {
+              log.info("Error on getting remote info, trying again: " + e.getMessage());
+              Thread.sleep(500);
+              continue;
+            } else {
+              throw e;
+            }
+          }
+        }
+        
+        if (cnt == retries) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after many retries on NoHttpResponseException");
+        }
+                
         Map m = rsp.nl.asMap(4);
-        if (requestedTags.contains(DISK)) {
+        if (requestedTags.contains(FREEDISK.tagName)) {
           Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.usableSpace");
-          if (n != null) ctx.getTags().put(DISK, Suggestion.getTagType(DISK).convertVal(n));
+          if (n != null) ctx.getTags().put(FREEDISK.tagName, FREEDISK.convertVal(n));
+        }
+        if (requestedTags.contains(TOTALDISK.tagName)) {
+          Object n = Utils.getObjectByPath(m, true, "metrics/solr.node/CONTAINER.fs.totalSpace");
+          if (n != null) ctx.getTags().put(TOTALDISK.tagName, TOTALDISK.convertVal(n));
         }
         if (requestedTags.contains(CORES)) {
           int count = 0;
@@ -247,7 +359,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
         }
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
       }
     }
   }
@@ -264,6 +376,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     ZkClientClusterStateProvider zkClientClusterStateProvider;
     CloudSolrClient solrClient;
 
+    public boolean isNodeAlive(String node) {
+      if (zkClientClusterStateProvider != null) {
+        return zkClientClusterStateProvider.getLiveNodes().contains(node);
+      }
+      return true;
+    }
     public ClientSnitchCtx(SnitchInfo perSnitch,
                            String node, Map<String, Object> session,
                            CloudSolrClient solrClient) {
@@ -283,7 +401,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         throws IOException, SolrServerException {
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
-      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
       try (HttpSolrClient client = new HttpSolrClient.Builder()
           .withHttpClient(solrClient.getHttpClient())
           .withBaseSolrUrl(url)

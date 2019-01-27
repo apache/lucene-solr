@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -326,7 +328,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       if (success) {
         IndexReader reader = DirectoryReader.open(dir);
-        final Bits delDocs = MultiFields.getLiveDocs(reader);
+        final Bits delDocs = MultiBits.getLiveDocs(reader);
         for(int j=0;j<reader.maxDoc();j++) {
           if (delDocs == null || !delDocs.get(j)) {
             reader.document(j);
@@ -654,5 +656,65 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     assertTrue(!failed.get());
     writerRef.get().close();
     d.close();
+  }
+
+  public void testUpdateSingleDocWithThreads() throws Exception {
+    stressUpdateSingleDocWithThreads(false, rarely());
+  }
+
+  public void testSoftUpdateSingleDocWithThreads() throws Exception {
+    stressUpdateSingleDocWithThreads(true, rarely());
+  }
+
+  public void stressUpdateSingleDocWithThreads(boolean useSoftDeletes, boolean forceMerge) throws Exception{
+    try (Directory dir = newDirectory();
+         RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
+             newIndexWriterConfig().setMaxBufferedDocs(-1).setRAMBufferSizeMB(0.00001), useSoftDeletes)) {
+      Thread[] threads = new Thread[3 + random().nextInt(3)];
+      AtomicInteger done = new AtomicInteger(0);
+      CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
+      Document doc = new Document();
+      doc.add(new StringField("id", "1", Field.Store.NO));
+      writer.updateDocument(new Term("id", "1"), doc);
+      int itersPerThread = 100 + random().nextInt(2000);
+      for (int i = 0; i < threads.length; i++) {
+        threads[i] = new Thread(() -> {
+          try {
+            barrier.await();
+            for (int iters = 0; iters < itersPerThread; iters++) {
+              Document d = new Document();
+              d.add(new StringField("id", "1", Field.Store.NO));
+              writer.updateDocument(new Term("id", "1"), d);
+            }
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          } finally {
+            done.incrementAndGet();
+          }
+        });
+        threads[i].start();
+      }
+      DirectoryReader open = DirectoryReader.open(writer.w);
+      assertEquals(open.numDocs(), 1);
+      barrier.await();
+      try {
+        do {
+          if (forceMerge && random().nextBoolean()) {
+            writer.forceMerge(1);
+          }
+          DirectoryReader newReader = DirectoryReader.openIfChanged(open);
+          if (newReader != null) {
+            open.close();
+            open = newReader;
+          }
+          assertEquals(open.numDocs(), 1);
+        } while (done.get() < threads.length);
+      } finally {
+        open.close();
+        for (int i = 0; i < threads.length; i++) {
+          threads[i].join();
+        }
+      }
+    }
   }
 }

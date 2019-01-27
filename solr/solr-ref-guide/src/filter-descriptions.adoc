@@ -469,15 +469,17 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 == ICU Folding Filter
 
-This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode Technical Report 30] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
+This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
-To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`. For more information about adding jars, see the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in Solrconfig>>.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
 
-*Arguments:* None
+*Arguments:*
 
-*Example:*
+`filter`:: (string, optional) A Unicode set filter that can be used to e.g., exclude a set of characters from being processed. See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
+
+*Example without a filter:*
 
 [source,xml]
 ----
@@ -487,27 +489,39 @@ To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructio
 </analyzer>
 ----
 
-For detailed information on this normalization form, see http://www.unicode.org/reports/tr30/tr30-4.html.
+*Example with a filter to exclude Swedish/Finnish characters:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.ICUFoldingFilterFactory" filter="[^åäöÅÄÖ]"/>
+</analyzer>
+----
+
+For detailed information on this normalization form, see http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings].
 
 == ICU Normalizer 2 Filter
 
 This filter factory normalizes text according to one of five Unicode Normalization Forms as described in http://unicode.org/reports/tr15/[Unicode Standard Annex #15]:
 
-* NFC: (name="nfc" mode="compose") Normalization Form C, canonical decomposition
-* NFD: (name="nfc" mode="decompose") Normalization Form D, canonical decomposition, followed by canonical composition
-* NFKC: (name="nfkc" mode="compose") Normalization Form KC, compatibility decomposition
-* NFKD: (name="nfkc" mode="decompose") Normalization Form KD, compatibility decomposition, followed by canonical composition
-* NFKC_Casefold: (name="nfkc_cf" mode="compose") Normalization Form KC, with additional Unicode case folding. Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<Lower Case Filter>> and NFKC normalization.
+* NFC: (`name="nfc" mode="compose"`) Normalization Form C, canonical decomposition
+* NFD: (`name="nfc" mode="decompose"`) Normalization Form D, canonical decomposition, followed by canonical composition
+* NFKC: (`name="nfkc" mode="compose"`) Normalization Form KC, compatibility decomposition
+* NFKD: (`name="nfkc" mode="decompose"`) Normalization Form KD, compatibility decomposition, followed by canonical composition
+* NFKC_Casefold: (`name="nfkc_cf" mode="compose"`) Normalization Form KC, with additional Unicode case folding. Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<Lower Case Filter>> and NFKC normalization.
 
 *Factory class:* `solr.ICUNormalizer2FilterFactory`
 
 *Arguments:*
 
-`name`:: (string) The name of the normalization form; `nfc`, `nfd`, `nfkc`, `nfkd`, `nfkc_cf`
+`name`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
 
-`mode`:: (string) The mode of Unicode character composition and decomposition; `compose` or `decompose`
+`mode`:: The mode of Unicode character composition and decomposition. Valid options are: `compose` (the default) or `decompose`. Required.
 
-*Example:*
+`filter`:: A Unicode set filter that can be used to e.g., exclude a set of characters from being processed. See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information. Optional.
+
+*Example with NFKC_Casefold:*
 
 [source,xml]
 ----
@@ -517,9 +531,19 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 </analyzer>
 ----
 
-For detailed information about these Unicode Normalization Forms, see http://unicode.org/reports/tr15/.
+*Example with a filter to exclude Swedish/Finnish characters:*
 
-To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose" filter="[^åäöÅÄÖ]"/>
+</analyzer>
+----
+
+For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
+
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
 
 == ICU Transform Filter
 
@@ -543,7 +567,7 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
-To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
 
 == Keep Word Filter
 
@@ -1112,6 +1136,53 @@ This filter applies the Porter Stemming Algorithm for English. The results are s
 
 *Out:* "jump", "jump", "jump"
 
+== Protected Term Filter
+
+This filter enables a form of conditional filtering: it only applies its wrapped filters to terms that are *not contained* in a protected set.
+
+*Factory class:* `solr.ProtectedTermFilterFactory`
+
+*Arguments:*
+
+`protected`:: (required) Comma-separated list of files containing protected terms, one per line.
+
+`wrappedFilters`:: (required) Case-insensitive comma-separated list of `TokenFilterFactory` SPI names (strip trailing `(Token)FilterFactory` from the factory name - see the https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[java.util.ServiceLoader interface]).  Each filter name must be unique, so if you need to specify the same filter more than once, you must add case-insensitive unique `-id` suffixes to each same-SPI-named filter (note that the `-id` suffix is stripped prior to SPI lookup).
+
+`ignoreCase`:: (true/false, default false) Ignore case when testing for protected words. If true, the protected list should contain lowercase words.
+
+*Example:*
+
+All terms except those in `protectedTerms.txt` are truncated at 4 characters and lowercased:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+  <filter class="solr.ProtectedTermFilterFactory"
+          ignoreCase="true" protected="protectedTerms.txt"
+          wrappedFilters="truncate,lowercase"
+          truncate.prefixLength="4"/>
+</analyzer>
+----
+
+*Example:*
+
+This example includes multiple same-named wrapped filters with unique `-id` suffixes.  Note that both the filter SPI names and `-id` suffixes are treated case-insensitively.
+
+For all terms except those in `protectedTerms.txt`, synonyms are added, terms are reversed, and then synonyms are added for the reversed terms:
+
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+  <filter class="solr.ProtectedTermFilterFactory"
+          ignoreCase="true" protected="protectedTerms.txt"
+          wrappedFilters="SynonymGraph-fwd,ReverseString,SynonymGraph-rev"
+          synonymgraph-FWD.synonyms="fwd-syns.txt"
+          synonymgraph-FWD.synonyms="rev-syns.txt"/>
+</analyzer>
+----
+
 == Remove Duplicates Token Filter
 
 The filter removes duplicate tokens in the stream. Tokens are considered to be duplicates ONLY if they have the same text and position values.
@@ -1314,19 +1385,6 @@ Spanish stemmer, Spanish words:
 
 *Out:* "cant", "cant"
 
-== Standard Filter
-
-This filter removes dots from acronyms and the substring "'s" from the end of tokens. This filter depends on the tokens being tagged with the appropriate term-type to recognize acronyms and words with apostrophes.
-
-*Factory class:* `solr.StandardFilterFactory`
-
-*Arguments:* None
-
-[WARNING]
-====
-This filter is no longer operational in Solr when the `luceneMatchVersion` (in `solrconfig.xml`) is higher than "3.1".
-====
-
 == Stop Filter
 
 This filter discards, or _stops_ analysis of, tokens that are on the given stop words list. A standard stop words list is included in the Solr `conf` directory, named `stopwords.txt`, which is appropriate for typical English language text.
@@ -1381,7 +1439,7 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
 
 Like <<Stop Filter>>, this filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
 
-Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
+Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation, etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
 
 By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopword, since it's followed by a space. When using one of the analyzing suggesters, you would normally use the ordinary `StopFilterFactory` in your index analyzer and then SuggestStopFilter in your query analyzer.
 
@@ -1443,7 +1501,7 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of absolute paths, or paths relative to the Solr config directory.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-and-plugin-loading.adoc#resource-and-plugin-loading,Resource and Plugin Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +

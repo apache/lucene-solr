@@ -63,7 +63,19 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * reader ({@link DirectoryReader#open(IndexWriter)}).
  * Once you have a new {@link IndexReader}, it's relatively
  * cheap to create a new IndexSearcher from it.
- * 
+ *
+ * <p><b>NOTE</b>: The {@link #search} and {@link #searchAfter} methods are
+ * configured to only count top hits accurately up to {@code 1,000} and may
+ * return a {@link TotalHits.Relation lower bound} of the hit count if the
+ * hit count is greater than or equal to {@code 1,000}. On queries that match
+ * lots of documents, counting the number of hits may take much longer than
+ * computing the top hits so this trade-off allows to get some minimal
+ * information about the hit count without slowing down search too much. The
+ * {@link TopDocs#scoreDocs} array is always accurate however. If this behavior
+ * doesn't suit your needs, you should create collectors manually with either
+ * {@link TopScoreDocCollector#create} or {@link TopFieldCollector#create} and
+ * call {@link #search(Query, Collector)}.
+ *
  * <a name="thread-safety"></a><p><b>NOTE</b>: <code>{@link
  * IndexSearcher}</code> instances are completely
  * thread safe, meaning multiple threads can call any of its
@@ -82,6 +94,11 @@ public class IndexSearcher {
     final long maxRamBytesUsed = Math.min(1L << 25, Runtime.getRuntime().maxMemory() / 20);
     DEFAULT_QUERY_CACHE = new LRUQueryCache(maxCachedQueries, maxRamBytesUsed);
   }
+  /**
+   * By default we count hits accurately up to 1000. This makes sure that we
+   * don't spend most time on computing hit counts
+   */
+  private static final int TOTAL_HITS_THRESHOLD = 1000;
 
   final IndexReader reader; // package private for testing!
   
@@ -90,7 +107,7 @@ public class IndexSearcher {
   protected final IndexReaderContext readerContext;
   protected final List<LeafReaderContext> leafContexts;
   /** used with executor - each slice holds a set of leafs executed within one thread */
-  protected final LeafSlice[] leafSlices;
+  private final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search
   private final ExecutorService executor;
@@ -352,6 +369,14 @@ public class IndexSearcher {
     return search(query, collectorManager);
   }
 
+  /** Returns the leaf slices used for concurrent searching, or null if no {@code ExecutorService} was
+   *  passed to the constructor.
+   *
+   * @lucene.experimental */
+  public LeafSlice[] getSlices() {
+      return leafSlices;
+  }
+  
   /** Finds the top <code>n</code>
    * hits for <code>query</code> where all results are after a previous 
    * result (<code>after</code>).
@@ -376,7 +401,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, true);
+        return TopScoreDocCollector.create(cappedNumHits, after, TOTAL_HITS_THRESHOLD);
       }
 
       @Override
@@ -433,8 +458,8 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs search(Query query, int n,
-      Sort sort, boolean doDocScores, boolean doMaxScore) throws IOException {
-    return searchAfter(null, query, n, sort, doDocScores, doMaxScore);
+      Sort sort, boolean doDocScores) throws IOException {
+    return searchAfter(null, query, n, sort, doDocScores);
   }
 
   /**
@@ -446,7 +471,7 @@ public class IndexSearcher {
    * @throws IOException if there is a low-level I/O error
    */
   public TopFieldDocs search(Query query, int n, Sort sort) throws IOException {
-    return searchAfter(null, query, n, sort, false, false);
+    return searchAfter(null, query, n, sort, false);
   }
 
   /** Finds the top <code>n</code>
@@ -461,7 +486,7 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int n, Sort sort) throws IOException {
-    return searchAfter(after, query, n, sort, false, false);
+    return searchAfter(after, query, n, sort, false);
   }
 
   /** Finds the top <code>n</code>
@@ -481,17 +506,17 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs searchAfter(ScoreDoc after, Query query, int numHits, Sort sort,
-      boolean doDocScores, boolean doMaxScore) throws IOException {
+      boolean doDocScores) throws IOException {
     if (after != null && !(after instanceof FieldDoc)) {
       // TODO: if we fix type safety of TopFieldDocs we can
       // remove this
       throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
     }
-    return searchAfter((FieldDoc) after, query, numHits, sort, doDocScores, doMaxScore);
+    return searchAfter((FieldDoc) after, query, numHits, sort, doDocScores);
   }
 
   private TopFieldDocs searchAfter(FieldDoc after, Query query, int numHits, Sort sort,
-      boolean doDocScores, boolean doMaxScore) throws IOException {
+      boolean doDocScores) throws IOException {
     final int limit = Math.max(1, reader.maxDoc());
     if (after != null && after.doc >= limit) {
       throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
@@ -504,9 +529,8 @@ public class IndexSearcher {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-        final boolean fillFields = true;
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, fillFields, doDocScores, doMaxScore, true);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, TOTAL_HITS_THRESHOLD);
       }
 
       @Override
@@ -521,7 +545,11 @@ public class IndexSearcher {
 
     };
 
-    return search(query, manager);
+    TopFieldDocs topDocs = search(query, manager);
+    if (doDocScores) {
+      TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+    }
+    return topDocs;
   }
 
  /**
@@ -709,7 +737,11 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public static class LeafSlice {
-    final LeafReaderContext[] leaves;
+
+    /** The leaves that make up this slice.
+     *
+     *  @lucene.experimental */
+    public final LeafReaderContext[] leaves;
     
     public LeafSlice(LeafReaderContext... leaves) {
       this.leaves = leaves;

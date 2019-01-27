@@ -25,14 +25,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.TestUtil;
 
-@SuppressFileSystems("WindowsFS")
 public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
   public void test() throws Exception {
     MockDirectoryWrapper dir = newMockFSDirectory(createTempDir("TestIndexWriterOutOfFileDescriptors"));
@@ -65,10 +62,6 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         MergeScheduler ms = iwc.getMergeScheduler();
         if (ms instanceof ConcurrentMergeScheduler) {
           ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
-        }
-        if (Constants.WINDOWS && dir.checkPendingDeletions()) {
-          // if we are on windows and we have pending deletions we can't execute this test
-          break;
         }
         w = new IndexWriter(dir, iwc);
         if (r != null && random().nextInt(5) == 3) {

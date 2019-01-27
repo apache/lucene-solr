@@ -55,10 +55,10 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
       PatternLayout
         .newBuilder()
         .withPattern("%-5p [%t]: %m%n")
-        .build(), 
+        .build(),
         null, writer, "RequestLoggingTest", false, true);
     appender.start();
-    
+
   }
 
   @Test
@@ -75,7 +75,7 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
 
   public void testLogBeforeExecute(Logger logger) {
     Level level = logger.getLevel();
-    
+
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
     LoggerConfig config = ctx.getConfiguration().getLoggerConfig(logger.getName());
     config.setLevel(Level.DEBUG);

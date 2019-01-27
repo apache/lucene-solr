@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.internal.csv.CSVPrinter;
 import org.apache.solr.internal.csv.CSVStrategy;
@@ -45,7 +46,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.util.FastWriter;
 
 /**
  *
@@ -247,7 +247,7 @@ class CSVWriter extends TextResponseWriter {
 
     Collection<String> fields = returnFields.getRequestedFieldNames();
     Object responseObj = rsp.getResponse();
-    boolean returnOnlyStored = false;
+    boolean returnStoredOrDocValStored = false;
     if (fields==null||returnFields.hasPatternMatching()) {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
@@ -271,7 +271,7 @@ class CSVWriter extends TextResponseWriter {
       } else {
         fields.remove("score");
       }
-      returnOnlyStored = true;
+      returnStoredOrDocValStored = true;
     }
 
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
@@ -293,8 +293,9 @@ class CSVWriter extends TextResponseWriter {
         sf = new SchemaField(field, ft);
       }
       
-      // Return only stored fields, unless an explicit field list is specified
-      if (returnOnlyStored && sf != null && !sf.stored()) {
+      // Return stored fields or useDocValuesAsStored=true fields,
+      // unless an explicit field list is specified
+      if (returnStoredOrDocValStored && !sf.stored() && !(sf.hasDocValues() && sf.useDocValuesAsStored())) {
         continue;
       }
 

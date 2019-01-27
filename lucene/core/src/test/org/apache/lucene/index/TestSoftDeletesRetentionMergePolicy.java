@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
@@ -39,7 +40,10 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -237,16 +241,16 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     DirectoryReader reader = writer.getReader();
     assertEquals(0, reader.numDocs());
     assertEquals(3, reader.maxDoc());
-    assertEquals(0, writer.numDocs());
-    assertEquals(3, writer.maxDoc());
+    assertEquals(0, writer.getDocStats().numDocs);
+    assertEquals(3, writer.getDocStats().maxDoc);
     assertEquals(3, reader.leaves().size());
     reader.close();
     writer.forceMerge(1);
     reader = writer.getReader();
     assertEquals(0, reader.numDocs());
     assertEquals(3, reader.maxDoc());
-    assertEquals(0, writer.numDocs());
-    assertEquals(3, writer.maxDoc());
+    assertEquals(0, writer.getDocStats().numDocs);
+    assertEquals(3, writer.getDocStats().maxDoc);
     assertEquals(1, reader.leaves().size());
     IOUtils.close(reader, writer, dir);
   }
@@ -289,6 +293,9 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
               writer.softUpdateDocument(new Term("id", id), doc,
                   new NumericDocValuesField("soft_delete", 1));
             }
+            if (rarely()) {
+              writer.flush();
+            }
             ids.add(id);
           }
         } catch (IOException | InterruptedException e) {
@@ -308,10 +315,10 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     for (String id : ids) {
       TopDocs topDocs = searcher.search(new TermQuery(new Term("id", id)), 10);
       if (updateSeveralDocs) {
-        assertEquals(2, topDocs.totalHits);
+        assertEquals(2, topDocs.totalHits.value);
         assertEquals(Math.abs(topDocs.scoreDocs[0].doc - topDocs.scoreDocs[1].doc), 1);
       } else {
-        assertEquals(1, topDocs.totalHits);
+        assertEquals(1, topDocs.totalHits.value);
       }
     }
     writer.addDocument(new Document()); // add a dummy doc to trigger a segment here
@@ -350,13 +357,13 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       }
     });
     TopDocs seq_id = searcher.search(IntPoint.newRangeQuery("seq_id", seqIds.intValue() - 50, Integer.MAX_VALUE), 10);
-    assertTrue(seq_id.totalHits + " hits", seq_id.totalHits >= 50);
+    assertTrue(seq_id.totalHits.value + " hits", seq_id.totalHits.value >= 50);
     searcher = new IndexSearcher(reader);
     for (String id : ids) {
       if (updateSeveralDocs) {
-        assertEquals(2, searcher.search(new TermQuery(new Term("id", id)), 10).totalHits);
+        assertEquals(2, searcher.search(new TermQuery(new Term("id", id)), 10).totalHits.value);
       } else {
-        assertEquals(1, searcher.search(new TermQuery(new Term("id", id)), 10).totalHits);
+        assertEquals(1, searcher.search(new TermQuery(new Term("id", id)), 10).totalHits.value);
       }
     }
     IOUtils.close(reader, writer, dir);
@@ -382,13 +389,14 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     Document tombstone = new Document();
     tombstone.add(new NumericDocValuesField("soft_delete", 1));
     writer.softUpdateDocument(new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
-    // Internally, forceMergeDeletes will call flush to flush pending updates
-    // Thus, we will have two segments - both having soft-deleted documents.
+    writer.flush(false, true); // flush pending updates but don't trigger a merge, we run forceMergeDeletes below
+    // Now we have have two segments - both having soft-deleted documents.
     // We expect any MP to merge these segments into one segment
     // when calling forceMergeDeletes.
     writer.forceMergeDeletes(true);
-    assertEquals(1, writer.maxDoc());
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    assertEquals(1, writer.getDocStats().numDocs);
+    assertEquals(1, writer.getDocStats().maxDoc);
     writer.close();
     dir.close();
   }
@@ -409,7 +417,7 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
       writer.addDocument(d);
     }
     writer.flush();
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
 
     if (softDelete != null) {
       // the newly created segment should be dropped as it is fully deleted (i.e. only contains deleted docs).
@@ -437,9 +445,348 @@ public class TestSoftDeletesRetentionMergePolicy extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     assertEquals(reader.numDocs(), 1);
     reader.close();
-    assertEquals(1, writer.segmentInfos.asList().size());
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
 
     writer.close();
     dir.close();
+  }
+
+  public void testSoftDeleteWhileMergeSurvives() throws IOException {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDelete);
+    AtomicBoolean update = new AtomicBoolean(true);
+    config.setReaderPooling(true);
+    config.setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete", () -> new DocValuesFieldExistsQuery("keep"),
+        new LogDocMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+    writer.getConfig().setMergedSegmentWarmer(sr -> {
+      if (update.compareAndSet(true, false)) {
+        try {
+          writer.softUpdateDocument(new Term("id", "0"), new Document(),
+              new NumericDocValuesField(softDelete, 1), new NumericDocValuesField("keep", 1));
+          writer.commit();
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      }
+    });
+
+    boolean preExistingDeletes = random().nextBoolean();
+    for (int i = 0; i < 2; i++) {
+      Document d = new Document();
+      d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+      if (preExistingDeletes && random().nextBoolean()) {
+        writer.addDocument(d); // randomly add a preexisting hard-delete that we don't carry over
+        writer.deleteDocuments(new Term("id", Integer.toString(i)));
+        d.add(new NumericDocValuesField("keep", 1));
+        writer.addDocument(d);
+      } else {
+        d.add(new NumericDocValuesField("keep", 1));
+        writer.addDocument(d);
+      }
+      writer.flush();
+    }
+    writer.forceMerge(1);
+    writer.commit();
+    assertFalse(update.get());
+    DirectoryReader open = DirectoryReader.open(dir);
+    assertEquals(0, open.numDeletedDocs());
+    assertEquals(3, open.maxDoc());
+    IOUtils.close(open, writer, dir);
+  }
+
+  /*
+   * This test is trying to hard-delete a particular document while the segment is merged which is already soft-deleted
+   * This requires special logic inside IndexWriter#carryOverHardDeletes since docMaps are not created for this document.
+   */
+  public void testDeleteDocWhileMergeThatIsSoftDeleted() throws IOException {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField(softDelete);
+    AtomicBoolean delete = new AtomicBoolean(true);
+    config.setReaderPooling(true);
+    config.setMergePolicy(new LogDocMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "1", Field.Store.YES));
+    writer.addDocument(d);
+    if (random().nextBoolean()) {
+      // randomly run with a preexisting hard delete
+      d = new Document();
+      d.add(new StringField("id", "2", Field.Store.YES));
+      writer.addDocument(d);
+      writer.deleteDocuments(new Term("id", "2"));
+    }
+
+    writer.flush();
+    DirectoryReader reader = writer.getReader();
+    writer.softUpdateDocument(new Term("id", "0"), new Document(),
+        new NumericDocValuesField(softDelete, 1));
+    writer.flush();
+    writer.getConfig().setMergedSegmentWarmer(sr -> {
+      if (delete.compareAndSet(true, false)) {
+        try {
+          long seqNo = writer.tryDeleteDocument(reader, 0);
+          assertTrue("seqId was -1", seqNo !=  -1);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
+      }
+    });
+    writer.forceMerge(1);
+    assertEquals(2, writer.getDocStats().numDocs);
+    assertEquals(2, writer.getDocStats().maxDoc);
+    assertFalse(delete.get());
+    IOUtils.close(reader, writer, dir);
+  }
+
+  public void testUndeleteDocument() throws IOException {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig()
+        .setSoftDeletesField(softDelete)
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
+        MatchAllDocsQuery::new, new LogDocMergePolicy()));
+    config.setReaderPooling(true);
+    config.setMergePolicy(new LogDocMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    d.add(new StringField("seq_id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "1", Field.Store.YES));
+    writer.addDocument(d);
+    writer.updateDocValues(new Term("id", "0"), new NumericDocValuesField("soft_delete", 1));
+    try (IndexReader reader = writer.getReader()) {
+      assertEquals(2, reader.maxDoc());
+      assertEquals(1, reader.numDocs());
+    }
+    doUpdate(new Term("id", "0"), writer, new NumericDocValuesField("soft_delete", null));
+    try (IndexReader reader = writer.getReader()) {
+      assertEquals(2, reader.maxDoc());
+      assertEquals(2, reader.numDocs());
+    }
+    IOUtils.close(writer, dir);
+  }
+
+  public void testMergeSoftDeleteAndHardDelete() throws Exception {
+    Directory dir = newDirectory();
+    String softDelete = "soft_delete";
+    IndexWriterConfig config = newIndexWriterConfig()
+        .setSoftDeletesField(softDelete)
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete",
+            MatchAllDocsQuery::new, new LogDocMergePolicy()));
+    config.setReaderPooling(true);
+    IndexWriter writer = new IndexWriter(dir, config);
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "1", Field.Store.YES));
+    d.add(new NumericDocValuesField("soft_delete", 1));
+    writer.addDocument(d);
+    try (DirectoryReader reader = writer.getReader()) {
+      assertEquals(2, reader.maxDoc());
+      assertEquals(1, reader.numDocs());
+    }
+    while (true) {
+      try (DirectoryReader reader = writer.getReader()) {
+        TopDocs topDocs = new IndexSearcher(new IncludeSoftDeletesWrapper(reader)).search(new TermQuery(new Term("id", "1")), 1);
+        assertEquals(1, topDocs.totalHits.value);
+        if (writer.tryDeleteDocument(reader, topDocs.scoreDocs[0].doc) > 0) {
+          break;
+        }
+      }
+    }
+    writer.forceMergeDeletes(true);
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    SegmentCommitInfo si = writer.listOfSegmentCommitInfos().get(0);
+    assertEquals(0, si.getSoftDelCount()); // hard-delete should supersede the soft-delete
+    assertEquals(0, si.getDelCount());
+    assertEquals(1, si.info.maxDoc());
+    IOUtils.close(writer, dir);
+  }
+
+  public void testSoftDeleteWithTryUpdateDocValue() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_delete")
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_delete", MatchAllDocsQuery::new, newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+    SearcherManager sm = new SearcherManager(writer, new SearcherFactory());
+    Document d = new Document();
+    d.add(new StringField("id", "0", Field.Store.YES));
+    writer.addDocument(d);
+    sm.maybeRefreshBlocking();
+    doUpdate(new Term("id", "0"), writer,
+        new NumericDocValuesField("soft_delete", 1), new NumericDocValuesField("other-field", 1));
+    sm.maybeRefreshBlocking();
+    assertEquals(1, writer.listOfSegmentCommitInfos().size());
+    SegmentCommitInfo si = writer.listOfSegmentCommitInfos().get(0);
+    assertEquals(1, si.getSoftDelCount());
+    assertEquals(1, si.info.maxDoc());
+    IOUtils.close(sm, writer, dir);
+  }
+
+  public void testMixedSoftDeletesAndHardDeletes() throws Exception {
+    Directory dir = newDirectory();
+    String softDeletesField = "soft-deletes";
+    IndexWriterConfig config = newIndexWriterConfig()
+        .setMaxBufferedDocs(2 + random().nextInt(50)).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+        .setSoftDeletesField(softDeletesField)
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy(softDeletesField, MatchAllDocsQuery::new, newMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+    int numDocs = 10 + random().nextInt(100);
+    Set<String> liveDocs = new HashSet<>();
+    for (int i = 0; i < numDocs; i++) {
+      String id = Integer.toString(i);
+      Document doc = new Document();
+      doc.add(new StringField("id", id, Field.Store.YES));
+      writer.addDocument(doc);
+      liveDocs.add(id);
+    }
+    for (int i = 0; i < numDocs; i++) {
+      if (random().nextBoolean()) {
+        String id = Integer.toString(i);
+        if (random().nextBoolean() && liveDocs.contains(id)) {
+          doUpdate(new Term("id", id), writer, new NumericDocValuesField(softDeletesField, 1));
+        } else {
+          Document doc = new Document();
+          doc.add(new StringField("id", "v" + id, Field.Store.YES));
+          writer.softUpdateDocument(new Term("id", id), doc, new NumericDocValuesField(softDeletesField, 1));
+          liveDocs.add("v" + id);
+        }
+      }
+      if (random().nextBoolean() && liveDocs.isEmpty() == false) {
+        String delId = RandomPicks.randomFrom(random(), liveDocs);
+        if (random().nextBoolean()) {
+          doDelete(new Term("id", delId), writer);
+        } else {
+          writer.deleteDocuments(new Term("id", delId));
+        }
+        liveDocs.remove(delId);
+      }
+    }
+    try (DirectoryReader unwrapped = writer.getReader()) {
+      DirectoryReader reader = new IncludeSoftDeletesWrapper(unwrapped);
+      assertEquals(liveDocs.size(), reader.numDocs());
+    }
+    writer.commit();
+    IOUtils.close(writer, dir);
+  }
+
+  public void testRewriteRetentionQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setSoftDeletesField("soft_deletes")
+        .setMergePolicy(new SoftDeletesRetentionMergePolicy("soft_deletes",
+            () -> new PrefixQuery(new Term("id", "foo")), newMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, config);
+
+    Document d = new Document();
+    d.add(new StringField("id", "foo-1", Field.Store.YES));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(new StringField("id", "foo-2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "foo-1"), d, new NumericDocValuesField("soft_deletes", 1));
+
+    d = new Document();
+    d.add(new StringField("id", "bar-1", Field.Store.YES));
+    writer.addDocument(d);
+    d.add(new StringField("id", "bar-2", Field.Store.YES));
+    writer.softUpdateDocument(new Term("id", "bar-1"), d, new NumericDocValuesField("soft_deletes", 1));
+
+    writer.forceMerge(1);
+    assertEquals(2, writer.getDocStats().numDocs); // foo-2, bar-2
+    assertEquals(3, writer.getDocStats().maxDoc);  // foo-1, foo-2, bar-2
+    IOUtils.close(writer, dir);
+  }
+
+  static void doUpdate(Term doc, IndexWriter writer, Field... fields) throws IOException {
+    long seqId = -1;
+    do { // retry if we just committing a merge
+      try (DirectoryReader reader = writer.getReader()) {
+        TopDocs topDocs = new IndexSearcher(new IncludeSoftDeletesWrapper(reader)).search(new TermQuery(doc), 10);
+        assertEquals(1, topDocs.totalHits.value);
+        int theDoc = topDocs.scoreDocs[0].doc;
+        seqId = writer.tryUpdateDocValue(reader, theDoc, fields);
+      }
+    } while (seqId == -1);
+  }
+
+  static void doDelete(Term doc, IndexWriter writer) throws IOException {
+    long seqId;
+    do { // retry if we just committing a merge
+      try (DirectoryReader reader = writer.getReader()) {
+        TopDocs topDocs = new IndexSearcher(new IncludeSoftDeletesWrapper(reader)).search(new TermQuery(doc), 10);
+        assertEquals(1, topDocs.totalHits.value);
+        int theDoc = topDocs.scoreDocs[0].doc;
+        seqId = writer.tryDeleteDocument(reader, theDoc);
+      }
+    } while (seqId == -1);
+  }
+
+  private static final class IncludeSoftDeletesSubReaderWrapper extends FilterDirectoryReader.SubReaderWrapper {
+    @Override
+    public LeafReader wrap(LeafReader reader) {
+      while (reader instanceof FilterLeafReader) {
+        reader = ((FilterLeafReader) reader).getDelegate();
+      }
+      Bits hardLiveDocs = ((SegmentReader) reader).getHardLiveDocs();
+      final int numDocs;
+      if (hardLiveDocs == null) {
+        numDocs = reader.maxDoc();
+      } else {
+        int bits = 0;
+        for (int i = 0; i < hardLiveDocs.length(); i++) {
+          if (hardLiveDocs.get(i)) {
+            bits++;
+          }
+        }
+        numDocs = bits;
+      }
+      return new FilterLeafReader(reader) {
+        @Override
+        public int numDocs() {
+          return numDocs;
+        }
+
+        @Override
+        public Bits getLiveDocs() {
+          return hardLiveDocs;
+        }
+
+        @Override
+        public CacheHelper getCoreCacheHelper() {
+          return null;
+        }
+
+        @Override
+        public CacheHelper getReaderCacheHelper() {
+          return null;
+        }
+      };
+    }
+  }
+
+  private static final class IncludeSoftDeletesWrapper extends FilterDirectoryReader {
+
+    IncludeSoftDeletesWrapper(DirectoryReader in) throws IOException {
+      super(in, new IncludeSoftDeletesSubReaderWrapper());
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new IncludeSoftDeletesWrapper(in);
+    }
+
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
 }

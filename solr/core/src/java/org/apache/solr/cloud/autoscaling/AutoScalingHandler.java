@@ -36,13 +36,13 @@ import java.util.stream.Stream;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
@@ -52,6 +52,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -61,7 +62,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,8 +124,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           autoScalingConf.writeMap(new MapWriter.EntryWriter() {
 
             @Override
-            public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-              rsp.getValues().add(k, v);
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              rsp.getValues().add(k.toString(), v);
               return this;
             }
           });
@@ -252,7 +252,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     List<Clause> cp = null;
     try {
-      cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+      cp = clusterPolicy.stream().map(Clause::create).collect(Collectors.toList());
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;
@@ -315,18 +315,17 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         return currentConfig;
       }
     }
-    List<String> params = new ArrayList<>(currentConfig.getPolicy().getParams());
-    Map<String, List<Clause>> mergedPolicies = new HashMap<>(currentConfig.getPolicy().getPolicies());
-    Map<String, List<Clause>> newPolicies = null;
+    Map<String, List<Clause>> currentClauses = new HashMap<>(currentConfig.getPolicy().getPolicies());
+    Map<String, List<Clause>> newClauses = null;
     try {
-      newPolicies = Policy.policiesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
-          params);
+      newClauses = Policy.clausesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
+          new ArrayList<>() );
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;
     }
-    mergedPolicies.putAll(newPolicies);
-    Policy p = currentConfig.getPolicy().withPolicies(mergedPolicies).withParams(params);
+    currentClauses.putAll(newClauses);
+    Policy p = currentConfig.getPolicy().withPolicies(currentClauses);
     currentConfig = currentConfig.withPolicy(p);
     return currentConfig;
   }

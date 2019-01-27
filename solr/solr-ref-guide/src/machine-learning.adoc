@@ -26,13 +26,12 @@ Before performing machine learning operations its often necessary to
 scale the feature vectors so they can be compared at the same scale.
 
 All the scaling function operate on vectors and matrices.
-When operating on a matrix the *rows* of the matrix are scaled.
+When operating on a matrix the rows of the matrix are scaled.
 
 === Min/Max Scaling
 
-The `minMaxScale` function scales a vector or matrix between a min and
-max value. By default it will scale between 0 and 1 if min/max values
-are not provided.
+The `minMaxScale` function scales a vector or matrix between a minimum and maximum value.
+By default it will scale between 0 and 1 if min/max values are not provided.
 
 Below is a simple example of min/max scaling between 0 and 1.
 Notice that once brought into the same scale the vectors are the same.
@@ -79,10 +78,10 @@ This expression returns the following response:
 
 === Standardization
 
-The `standardize` function scales a vector so that it has a
-mean of 0 and a standard deviation of 1. Standardization can be
-used with machine learning algorithms, such as SVM, that
-perform better when the data has a normal distribution.
+The `standardize` function scales a vector so that it has a mean of 0 and a standard deviation of 1.
+Standardization can be used with machine learning algorithms, such as
+https://en.wikipedia.org/wiki/Support_vector_machine[Support Vector Machine (SVM)], that perform better
+when the data has a normal distribution.
 
 [source,text]
 ----
@@ -127,8 +126,7 @@ This expression returns the following response:
 === Unit Vectors
 
 The `unitize` function scales vectors to a magnitude of 1. A vector with a
-magnitude of 1 is known as a unit vector.  Unit vectors are
-preferred when the vector math deals
+magnitude of 1 is known as a unit vector. Unit vectors are preferred when the vector math deals
 with vector direction rather than magnitude.
 
 [source,text]
@@ -171,21 +169,22 @@ This expression returns the following response:
 }
 ----
 
-== Distance Measures
+== Distance and Distance Measures
 
-The `distance` function computes a distance measure for two
-numeric arrays or a *distance matrix* for the columns of a matrix.
+The `distance` function computes the distance for two numeric arrays or a distance matrix for the columns of a matrix.
 
-There are four distance measures currently supported:
+There are five distance measure functions that return a function that performs the actual distance calculation:
 
-* euclidean (default)
-* manhattan
-* canberra
-* earthMovers
+* `euclidean` (default)
+* `manhattan`
+* `canberra`
+* `earthMovers`
+* `haversineMeters` (Geospatial distance measure)
 
-Below is an example for computing euclidean distance for
-two numeric arrays:
+The distance measure functions can be used with all machine learning functions
+that support distance measures.
 
+Below is an example for computing Euclidean distance for two numeric arrays:
 
 [source,text]
 ----
@@ -212,6 +211,35 @@ This expression returns the following response:
   }
 }
 ----
+
+Below the distance is calculated using *Manahattan* distance.
+
+[source,text]
+----
+let(a=array(20, 30, 40, 50),
+    b=array(21, 29, 41, 49),
+    c=distance(a, b, manhattan()))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": 4
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
 
 Below is an example for computing a distance matrix for columns
 of a matrix:
@@ -260,47 +288,45 @@ This expression returns the following response:
 }
 ----
 
-== K-means Clustering
+== K-Means Clustering
 
 The `kmeans` functions performs k-means clustering of the rows of a matrix.
 Once the clustering has been completed there are a number of useful functions available
-for examining the *clusters* and *centroids*.
+for examining the clusters and centroids.
 
-The examples below are clustering *term vectors*.
-The chapter on <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> should be
-consulted for a full explanation of these features.
+The examples below cluster _term vectors_.
+The section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> offers
+a full explanation of these features.
 
 === Centroid Features
 
 In the example below the `kmeans` function is used to cluster a result set from the Enron email data-set
 and then the top features are extracted from the cluster centroids.
 
-Let's look at what data is assigned to each variable:
-
-* *a*: The `random` function returns a sample of 500 documents from the *enron*
-collection that match the query *body:oil*. The `select` function selects the *id* and
-and annotates each tuple with the analyzed bigram terms from the body field.
-
-* *b*: The `termVectors` function creates a TF-IDF term vector matrix from the
-tuples stored in variable *a*. Each row in the matrix represents a document. The columns of the matrix
-are the bigram terms that were attached to each tuple.
-* *c*: The `kmeans` function clusters the rows of the matrix into 5 clusters. The k-means clustering is performed using the
-*Euclidean distance* measure.
-* *d*: The `getCentroids` function returns a matrix of cluster centroids. Each row in the matrix is a centroid
-from one of the 5 clusters. The columns of the matrix are the same bigrams terms of the term vector matrix.
-* *e*: The `topFeatures` function returns the column labels for the top 5 features of each centroid in the matrix.
-This returns the top 5 bigram terms for each centroid.
-
 [source,text]
 ----
-let(a=select(random(enron, q="body:oil", rows="500", fl="id, body"),
+let(a=select(random(enron, q="body:oil", rows="500", fl="id, body"), <1>
                     id,
                     analyze(body, body_bigram) as terms),
-    b=termVectors(a, maxDocFreq=.10, minDocFreq=.05, minTermLength=14, exclude="_,copyright"),
-    c=kmeans(b, 5),
-    d=getCentroids(c),
-    e=topFeatures(d, 5))
+    b=termVectors(a, maxDocFreq=.10, minDocFreq=.05, minTermLength=14, exclude="_,copyright"),<2>
+    c=kmeans(b, 5), <3>
+    d=getCentroids(c), <4>
+    e=topFeatures(d, 5)) <5>
 ----
+
+Let's look at what data is assigned to each variable:
+
+<1> *`a`*: The `random` function returns a sample of 500 documents from the "enron"
+collection that match the query "body:oil". The `select` function selects the `id` and
+and annotates each tuple with the analyzed bigram terms from the `body` field.
+<2> *`b`*: The `termVectors` function creates a TF-IDF term vector matrix from the
+tuples stored in variable *`a`*. Each row in the matrix represents a document. The columns of the matrix
+are the bigram terms that were attached to each tuple.
+<3> *`c`*: The `kmeans` function clusters the rows of the matrix into 5 clusters. The k-means clustering is performed using the Euclidean distance measure.
+<4> *`d`*: The `getCentroids` function returns a matrix of cluster centroids. Each row in the matrix is a centroid
+from one of the 5 clusters. The columns of the matrix are the same bigrams terms of the term vector matrix.
+<5> *`e`*: The `topFeatures` function returns the column labels for the top 5 features of each centroid in the matrix.
+This returns the top 5 bigram terms for each centroid.
 
 This expression returns the following response:
 
@@ -362,12 +388,6 @@ This expression returns the following response:
 The example below examines the top features of a specific cluster. This example uses the same techniques
 as the centroids example but the top features are extracted from a cluster rather then the centroids.
 
-The `getCluster` function returns a cluster by its index. Each cluster is a matrix containing term vectors
-that have been clustered together based on their features.
-
-In the example below the `topFeatures` function is used to extract the top 4 features from each term vector
-in the cluster.
-
 [source,text]
 ----
 let(a=select(random(collection3, q="body:oil", rows="500", fl="id, body"),
@@ -375,9 +395,14 @@ let(a=select(random(collection3, q="body:oil", rows="500", fl="id, body"),
                     analyze(body, body_bigram) as terms),
     b=termVectors(a, maxDocFreq=.09, minDocFreq=.03, minTermLength=14, exclude="_,copyright"),
     c=kmeans(b, 25),
-    d=getCluster(c, 0),
-    e=topFeatures(d, 4))
+    d=getCluster(c, 0), <1>
+    e=topFeatures(d, 4)) <2>
 ----
+
+<1> The `getCluster` function returns a cluster by its index. Each cluster is a matrix containing term vectors
+that have been clustered together based on their features.
+<2> The `topFeatures` function is used to extract the top 4 features from each term vector
+in the cluster.
 
 This expression returns the following response:
 
@@ -455,19 +480,17 @@ This expression returns the following response:
 }
 ----
 
-== Multi K-means Clustering
+== Multi K-Means Clustering
 
-K-means clustering will be produce different results depending on
+K-means clustering will produce different results depending on
 the initial placement of the centroids. K-means is fast enough
 that multiple trials can be performed and the best outcome selected.
-The `multiKmeans` function runs the K-means
-clustering algorithm for a gven number of trials and selects the
-best result based on which trial produces the lowest intra-cluster
-variance.
 
-The example below is identical to centroids example except that
-it uses `multiKmeans` with 100 trials, rather then a single
-trial of the `kmeans` function.
+The `multiKmeans` function runs the k-means clustering algorithm for a given number of trials and selects the
+best result based on which trial produces the lowest intra-cluster variance.
+
+The example below is identical to centroids example except that it uses `multiKmeans` with 100 trials,
+rather then a single trial of the `kmeans` function.
 
 [source,text]
 ----
@@ -535,10 +558,10 @@ This expression returns the following response:
 }
 ----
 
-== Fuzzy K-means Clustering
+== Fuzzy K-Means Clustering
 
 The `fuzzyKmeans` function is a soft clustering algorithm which
-allows vectors to be assigned to more then one cluster. The *fuzziness* parameter
+allows vectors to be assigned to more then one cluster. The `fuzziness` parameter
 is a value between 1 and 2 that determines how fuzzy to make the cluster assignment.
 
 After the clustering has been performed the `getMembershipMatrix` function can be called
@@ -551,27 +574,26 @@ A simple example will make this more clear. In the example below 300 documents a
 then turned into a term vector matrix. Then the `fuzzyKmeans` function clusters the
 term vectors into 12 clusters with a fuzziness factor of 1.25.
 
-The `getMembershipMatrix` function is used to return the membership matrix and the first row
-of membership matrix is retrieved with the `rowAt` function. The `precision` function is then applied to the first row
-of the matrix to make it easier to read.
-
-The output shows a single vector representing the cluster membership probabilities for the first
-term vector. Notice that the term vector has the highest association with the 12th cluster,
-but also has significant associations with the 3rd, 5th, 6th and 7th clusters.
-
 [source,text]
 ----
-et(a=select(random(collection3, q="body:oil", rows="300", fl="id, body"),
+let(a=select(random(collection3, q="body:oil", rows="300", fl="id, body"),
                    id,
                    analyze(body, body_bigram) as terms),
    b=termVectors(a, maxDocFreq=.09, minDocFreq=.03, minTermLength=14, exclude="_,copyright"),
    c=fuzzyKmeans(b, 12, fuzziness=1.25),
-   d=getMembershipMatrix(c),
-   e=rowAt(d, 0),
-   f=precision(e, 5))
+   d=getMembershipMatrix(c),  <1>
+   e=rowAt(d, 0),  <2>
+   f=precision(e, 5))  <3>
 ----
 
-This expression returns the following response:
+<1> The `getMembershipMatrix` function is used to return the membership matrix;
+<2> and the first row of membership matrix is retrieved with the `rowAt` function.
+<3> The `precision` function is then applied to the first row
+of the matrix to make it easier to read.
+
+This expression returns a single vector representing the cluster membership probabilities for the first
+term vector. Notice that the term vector has the highest association with the 12^th^ cluster,
+but also has significant associations with the 3^rd^, 5^th^, 6^th^ and 7^th^ clusters:
 
 [source,json]
 ----
@@ -603,30 +625,21 @@ This expression returns the following response:
 }
 ----
 
-== K-nearest Neighbor (knn)
+== K-Nearest Neighbor (KNN)
 
 The `knn` function searches the rows of a matrix for the
-K-nearest neighbors of a search vector. The `knn` function
-returns a *matrix* of the K-nearest neighbors. The `knn` function
-has a *named parameter* called *distance* which specifies the distance measure.
-There are four distance measures currently supported:
+k-nearest neighbors of a search vector. The `knn` function
+returns a matrix of the k-nearest neighbors.
 
-* euclidean (Default)
-* manhattan
-* canberra
-* earthMovers
+The `knn` function supports changing of the distance measure by providing one of these
+distance measure functions as the fourth parameter:
 
-The example below builds on the clustering examples to demonstrate
-the `knn` function.
+* `euclidean` (Default)
+* `manhattan`
+* `canberra`
+* `earthMovers`
 
-In the example, the centroids matrix is set to variable *d*. The first
-centroid vector is selected from the matrix with the `rowAt` function.
-Then the `knn` function is used to find the 3 nearest neighbors
-to the centroid vector in the term vector matrix (variable b).
-
-The `knn` function returns a matrix with the 3 nearest neighbors based on the
-default distance measure which is euclidean. Finally, the top 4 features
-of the term vectors in the nearest neighbor matrix are returned.
+The example below builds on the clustering examples to demonstrate the `knn` function.
 
 [source,text]
 ----
@@ -635,13 +648,21 @@ let(a=select(random(collection3, q="body:oil", rows="500", fl="id, body"),
                     analyze(body, body_bigram) as terms),
     b=termVectors(a, maxDocFreq=.09, minDocFreq=.03, minTermLength=14, exclude="_,copyright"),
     c=multiKmeans(b, 5, 100),
-    d=getCentroids(c),
-    e=rowAt(d, 0),
-    g=knn(b, e, 3),
-    h=topFeatures(g, 4))
+    d=getCentroids(c),  <1>
+    e=rowAt(d, 0),  <2>
+    g=knn(b, e, 3),  <3>
+    h=topFeatures(g, 4)) <4>
 ----
 
-This expression returns the following response:
+<1> In the example, the centroids matrix is set to variable *`d`*.
+<2> The first centroid vector is selected from the matrix with the `rowAt` function.
+<3> Then the `knn` function is used to find the 3 nearest neighbors
+to the centroid vector in the term vector matrix (variable *`b`*).
+<4> The `topFeatures` function is used to request the top 4 featurs of the term vectors in the knn matrix.
+
+The `knn` function returns a matrix with the 3 nearest neighbors based on the
+default distance measure which is euclidean. Finally, the top 4 features
+of the term vectors in the nearest neighbor matrix are returned:
 
 [source,json]
 ----
@@ -673,6 +694,185 @@ This expression returns the following response:
       {
         "EOF": true,
         "RESPONSE_TIME": 1243
+      }
+    ]
+  }
+}
+----
+
+== K-Nearest Neighbor Regression
+
+K-nearest neighbor regression is a non-linear, multi-variate regression method. Knn regression is a lazy learning
+technique which means it does not fit a model to the training set in advance. Instead the
+entire training set of observations and outcomes are held in memory and predictions are made
+by averaging the outcomes of the k-nearest neighbors.
+
+The `knnRegress` function prepares the training set for use with the `predict` function.
+
+Below is an example of the `knnRegress` function. In this example 10,000 random samples
+are taken, each containing the variables `filesize_d`, `service_d` and `response_d`. The pairs of
+`filesize_d` and `service_d` will be used to predict the value of `response_d`.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes , 5))
+----
+
+This expression returns the following response. Notice that `knnRegress` returns a tuple describing the regression inputs:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "lazyModel": {
+          "features": 2,
+          "robust": false,
+          "distance": "EuclideanDistance",
+          "observations": 10000,
+          "scale": false,
+          "k": 5
+        }
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 170
+      }
+    ]
+  }
+}
+----
+
+=== Prediction and Residuals
+
+The output of `knnRegress` can be used with the `predict` function like other regression models.
+
+In the example below the `predict` function is used to predict results for the original training
+data. The sumSq of the residuals is then calculated.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes , 5),
+    predictions=predict(lazyModel, observations),
+    residuals=ebeSubtract(outcomes, predictions),
+    sumSqErr=sumSq(residuals))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "sumSqErr": 1920290.1204126712
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3796
+      }
+    ]
+  }
+}
+----
+
+=== Setting Feature Scaling
+
+If the features in the observation matrix are not in the same scale then the larger features
+will carry more weight in the distance calculation then the smaller features. This can greatly
+impact the accuracy of the prediction. The `knnRegress` function has a `scale` parameter which
+can be set to `true` to automatically scale the features in the same range.
+
+The example below shows `knnRegress` with feature scaling turned on.
+
+Notice that when feature scaling is turned on the `sumSqErr` in the output is much lower.
+This shows how much more accurate the predictions are when feature scaling is turned on in
+this particular example. This is because the `filesize_d` feature is significantly larger then
+the `service_d` feature.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes , 5, scale=true),
+    predictions=predict(lazyModel, observations),
+    residuals=ebeSubtract(outcomes, predictions),
+    sumSqErr=sumSq(residuals))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "sumSqErr": 4076.794951120683
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3790
+      }
+    ]
+  }
+}
+----
+
+
+=== Setting Robust Regression
+
+The default prediction approach is to take the mean of the outcomes of the k-nearest
+neighbors. If the outcomes contain outliers the mean value can be skewed. Setting
+the `robust` parameter to `true` will take the median outcome of the k-nearest neighbors.
+This provides a regression prediction that is robust to outliers.
+
+=== Setting the Distance Measure
+
+The distance measure can be changed for the k-nearest neighbor search by adding a distance measure
+function to the `knnRegress` parameters. Below is an example using `manhattan` distance.
+
+[source,text]
+----
+let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
+    filesizes=col(samples, filesize_d),
+    serviceLevels=col(samples, service_d),
+    outcomes=col(samples, response_d),
+    observations=transpose(matrix(filesizes, serviceLevels)),
+    lazyModel=knnRegress(observations, outcomes, 5, manhattan(), scale=true),
+    predictions=predict(lazyModel, observations),
+    residuals=ebeSubtract(outcomes, predictions),
+    sumSqErr=sumSq(residuals))
+----
+
+This expression returns the following response:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "sumSqErr": 4761.221942288098
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3571
       }
     ]
   }

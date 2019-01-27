@@ -17,11 +17,13 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.Pair;
 
 /**
@@ -44,6 +46,16 @@ class SplitShardSuggester extends Suggester {
       throw new RuntimeException("split-shard requires exactly one pair of 'collection' and 'shard'");
     }
     Pair<String, String> collShard = shards.iterator().next();
-    return CollectionAdminRequest.splitShard(collShard.first()).setShardName(collShard.second());
+    Map<String, Object> params = (Map<String, Object>)hints.getOrDefault(Hint.PARAMS, Collections.emptyMap());
+    Float splitFuzz = (Float)params.get(CommonAdminParams.SPLIT_FUZZ);
+    CollectionAdminRequest.SplitShard req = CollectionAdminRequest.splitShard(collShard.first()).setShardName(collShard.second());
+    if (splitFuzz != null) {
+      req.setSplitFuzz(splitFuzz);
+    }
+    String splitMethod = (String)params.get(CommonAdminParams.SPLIT_METHOD);
+    if (splitMethod != null) {
+      req.setSplitMethod(splitMethod);
+    }
+    return req;
   }
 }

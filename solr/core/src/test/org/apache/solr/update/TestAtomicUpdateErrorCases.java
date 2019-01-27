@@ -17,7 +17,6 @@
 package org.apache.solr.update;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.common.SolrException;
 
 public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {

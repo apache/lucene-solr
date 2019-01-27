@@ -27,7 +27,6 @@ class ConjunctionScorer extends Scorer {
   final DocIdSetIterator disi;
   final Scorer[] scorers;
   final Collection<Scorer> required;
-  final MaxScoreSumPropagator maxScorePropagator;
 
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
   ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers) throws IOException {
@@ -36,7 +35,6 @@ class ConjunctionScorer extends Scorer {
     this.disi = ConjunctionDISI.intersectScorers(required);
     this.scorers = scorers.toArray(new Scorer[scorers.size()]);
     this.required = required;
-    this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
   @Override
@@ -85,7 +83,7 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     // This scorer is only used for TOP_SCORES when there is a single scoring clause
     if (scorers.length == 1) {
       scorers[0].setMinCompetitiveScore(minScore);
@@ -93,10 +91,10 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>();
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>();
     for (Scorer scorer : required) {
-      children.add(new ChildScorer(scorer, "MUST"));
+      children.add(new ChildScorable(scorer, "MUST"));
     }
     return children;
   }

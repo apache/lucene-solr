@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -93,14 +94,14 @@ import static org.apache.solr.common.params.CommonParams.ID;
 public class SolrClusterReporter extends SolrCoreContainerReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String CLUSTER_GROUP = SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.cluster.toString());
+  public static final String CLUSTER_GROUP = SolrMetricManager.enforcePrefix(SolrInfoBean.Group.cluster.toString());
 
   public static final List<SolrReporter.Report> DEFAULT_REPORTS = new ArrayList<SolrReporter.Report>() {{
     add(new SolrReporter.Report(CLUSTER_GROUP, "jetty",
-        SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.jetty.toString()),
+        SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jetty.toString()),
         Collections.emptySet())); // all metrics
     add(new SolrReporter.Report(CLUSTER_GROUP, "jvm",
-        SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.jvm.toString()),
+        SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jvm.toString()),
         new HashSet<String>() {{
           add("memory\\.total\\..*");
           add("memory\\.heap\\..*");
@@ -110,7 +111,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
           add("os\\.OpenFileDescriptorCount");
           add("threads\\.count");
         }}));
-    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.node.toString()),
+    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.enforcePrefix(SolrInfoBean.Group.node.toString()),
         new HashSet<String>() {{
           add("CONTAINER\\.cores\\..*");
           add("CONTAINER\\.fs\\..*");
@@ -207,7 +208,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       log.info("Turning off node reporter, period=" + period);
       return;
     }
-    HttpClient httpClient = cc.getUpdateShardHandler().getHttpClient();
+    HttpClient httpClient = cc.getUpdateShardHandler().getDefaultHttpClient();
     ZkController zk = cc.getZkController();
     String reporterId = zk.getNodeName();
     reporter = SolrReporter.Builder.forReports(metricManager, reports)
@@ -270,13 +271,15 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       if (oid == null) {
         return lastKnownUrl;
       }
-      String[] ids = oid.split("-");
-      if (ids.length != 3) { // unknown format
-        log.warn("Unknown format of leader id, skipping: " + oid);
+      String nodeName = null;
+      try {
+        nodeName = LeaderElector.getNodeName(oid);
+      } catch (Exception e) {
+        log.warn("Unknown format of leader id, skipping: " + oid, e);
         return lastKnownUrl;
       }
       // convert nodeName back to URL
-      String url = zk.getZkStateReader().getBaseUrlForNodeName(ids[1]);
+      String url = zk.getZkStateReader().getBaseUrlForNodeName(nodeName);
       // check that it's parseable
       try {
         new java.net.URL(url);

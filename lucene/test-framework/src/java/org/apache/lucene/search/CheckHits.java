@@ -119,7 +119,7 @@ public class CheckHits {
     }
     private int base = 0;
     @Override
-    public void setScorer(Scorer scorer) throws IOException {}
+    public void setScorer(Scorable scorer) throws IOException {}
     @Override
     public void collect(int doc) {
       bag.add(Integer.valueOf(doc + base));
@@ -487,7 +487,7 @@ public class CheckHits {
     String d;
     boolean deep;
     
-    Scorer scorer;
+    Scorable scorer;
     private int base = 0;
 
     /** Constructs an instance which does shallow tests on the Explanation */
@@ -502,7 +502,7 @@ public class CheckHits {
     }      
     
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;     
     }
     
@@ -583,8 +583,8 @@ public class CheckHits {
   }
 
   private static void doCheckTopScores(Query query, IndexSearcher searcher, int numHits) throws IOException {
-    TopScoreDocCollector collector1 = TopScoreDocCollector.create(numHits, null, true); // COMPLETE
-    TopScoreDocCollector collector2 = TopScoreDocCollector.create(numHits, null, false); // TOP_SCORES
+    TopScoreDocCollector collector1 = TopScoreDocCollector.create(numHits, null, Integer.MAX_VALUE); // COMPLETE
+    TopScoreDocCollector collector2 = TopScoreDocCollector.create(numHits, null, 1); // TOP_SCORES
     searcher.search(query, collector1);
     searcher.search(query, collector2);
     checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
@@ -632,7 +632,7 @@ public class CheckHits {
           Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
           float score = s2.score();
           Assert.assertEquals(s1.score(), score);
-          Assert.assertTrue(score <= maxScore);
+          Assert.assertTrue(score + " > " + maxScore + " up to " + upTo, score <= maxScore);
 
           if (score >= minScore && random.nextInt(10) == 0) {
             // On some scorers, changing the min score changes the way that docs are iterated

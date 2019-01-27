@@ -61,12 +61,14 @@
     <dependency org="de.l3s.boilerpipe" name="boilerpipe" rev="${/de.l3s.boilerpipe/boilerpipe}" conf="compile"/>
     <dependency org="com.rometools" name="rome" rev="${/com.rometools/rome}" conf="compile"/>
     <dependency org="com.rometools" name="rome-utils" rev="${/com.rometools/rome-utils}" conf="compile"/>
-    <dependency org="org.jdom" name="jdom" rev="${/org.jdom/jdom}" conf="compile"/>
+    <dependency org="org.jdom" name="jdom2" rev="${/org.jdom/jdom2}" conf="compile"/>
     <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="${/com.googlecode.juniversalchardet/juniversalchardet}" conf="compile"/>
     <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" conf="compile"/>
     <dependency org="com.adobe.xmp" name="xmpcore" rev="${/com.adobe.xmp/xmpcore}" conf="compile"/>
     <dependency org="com.pff" name="java-libpst" rev="${/com.pff/java-libpst}" conf="compile"/>
     <dependency org="org.tallison" name="jmatio" rev="${/org.tallison/jmatio}" conf="compile"/>
+    <dependency org="com.epam" name="parso" rev="${/com.epam/parso}" conf="compile"/>
+    <dependency org="org.brotli" name="dec" rev="${/org.brotli/dec}" conf="compile"/>
 
     <!-- Other ExtractingRequestHandler dependencies -->
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile"/>

@@ -74,7 +74,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
   public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     CodecReader reader = readerIOSupplier.get();
     /* we only need a single hit to keep it no need for soft deletes to be checked*/
-    Scorer scorer = getScorer(retentionQuerySupplier.get(), wrapLiveDocs(reader, null, reader.maxDoc()));
+    Scorer scorer = getScorer(retentionQuerySupplier.get(), FilterCodecReader.wrapLiveDocs(reader, null, reader.maxDoc()));
     if (scorer != null) {
       DocIdSetIterator iterator = scorer.iterator();
       boolean atLeastOneHit = iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -89,7 +89,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
     if (liveDocs == null) { // no deletes - just keep going
       return reader;
     }
-    CodecReader wrappedReader = wrapLiveDocs(reader, new Bits() { // only search deleted
+    CodecReader wrappedReader = FilterCodecReader.wrapLiveDocs(reader, new Bits() { // only search deleted
       @Override
       public boolean get(int index) {
         return liveDocs.get(index) == false;
@@ -105,7 +105,7 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
     builder.add(retentionQuery, BooleanClause.Occur.FILTER);
     Scorer scorer = getScorer(builder.build(), wrappedReader);
     if (scorer != null) {
-      FixedBitSet cloneLiveDocs = cloneLiveDocs(liveDocs);
+      FixedBitSet cloneLiveDocs = FixedBitSet.copyOf(liveDocs);
       DocIdSetIterator iterator = scorer.iterator();
       int numExtraLiveDocs = 0;
       while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -115,73 +115,29 @@ public final class SoftDeletesRetentionMergePolicy extends OneMergeWrappingMerge
         }
       }
       assert reader.numDocs() + numExtraLiveDocs <= reader.maxDoc() : "numDocs: " + reader.numDocs() + " numExtraLiveDocs: " + numExtraLiveDocs + " maxDoc: " + reader.maxDoc();
-      return wrapLiveDocs(reader, cloneLiveDocs, reader.numDocs() + numExtraLiveDocs);
+      return FilterCodecReader.wrapLiveDocs(reader, cloneLiveDocs, reader.numDocs() + numExtraLiveDocs);
     } else {
       return reader;
-    }
-  }
-
-  /**
-   * Clones the given live docs
-   */
-  static FixedBitSet cloneLiveDocs(Bits liveDocs) {
-    if (liveDocs instanceof FixedBitSet) {
-      return ((FixedBitSet) liveDocs).clone();
-    } else { // mainly if we have asserting codec
-      FixedBitSet mutableBits = new FixedBitSet(liveDocs.length());
-      for (int i = 0; i < liveDocs.length(); i++) {
-        if (liveDocs.get(i)) {
-          mutableBits.set(i);
-        }
-      }
-      return mutableBits;
     }
   }
 
   private static Scorer getScorer(Query query, CodecReader reader) throws IOException {
     IndexSearcher s = new IndexSearcher(reader);
     s.setQueryCache(null);
-    Weight weight = s.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
+    Weight weight = s.createWeight(s.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1.0f);
     return weight.scorer(reader.getContext());
   }
 
-  /**
-   * Returns a codec reader with the given live docs
-   */
-  private static CodecReader wrapLiveDocs(CodecReader reader, Bits liveDocs, int numDocs) {
-    return new FilterCodecReader(reader) {
-      @Override
-      public CacheHelper getCoreCacheHelper() {
-        return reader.getCoreCacheHelper();
-      }
-
-      @Override
-      public CacheHelper getReaderCacheHelper() {
-        return null; // we are altering live docs
-      }
-
-      @Override
-      public Bits getLiveDocs() {
-        return liveDocs;
-      }
-
-      @Override
-      public int numDocs() {
-        return numDocs;
-      }
-    };
-  }
-
   @Override
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
-    final int numDeletesToMerge = super.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
-    if (numDeletesToMerge != 0) {
+  public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+    final int numDeletesToMerge = super.numDeletesToMerge(info, delCount, readerSupplier);
+    if (numDeletesToMerge != 0 && info.getSoftDelCount() > 0) {
       final CodecReader reader = readerSupplier.get();
       if (reader.getLiveDocs() != null) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(new DocValuesFieldExistsQuery(field), BooleanClause.Occur.FILTER);
         builder.add(retentionQuerySupplier.get(), BooleanClause.Occur.FILTER);
-        Scorer scorer = getScorer(builder.build(), wrapLiveDocs(reader, null, reader.maxDoc()));
+        Scorer scorer = getScorer(builder.build(), FilterCodecReader.wrapLiveDocs(reader, null, reader.maxDoc()));
         if (scorer != null) {
           DocIdSetIterator iterator = scorer.iterator();
           Bits liveDocs = reader.getLiveDocs();

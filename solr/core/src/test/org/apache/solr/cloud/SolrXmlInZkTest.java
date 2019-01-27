@@ -71,8 +71,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(),
-        zkServer.getZkAddress(), "solrconfig.xml", "schema.xml");
+    zkServer.buildZooKeeper("solrconfig.xml", "schema.xml");
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 
@@ -140,12 +139,12 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   @Test
   public void testNotInZkOrOnDisk() throws Exception {
     try {
-      System.setProperty("hostPort", "8787");
-      setUpZkAndDiskXml(false, false); // solr.xml not on disk either
-      fail("Should have thrown an exception here");
-    } catch (SolrException solre) {
+      SolrException e = expectThrows(SolrException.class, () -> {
+        System.setProperty("hostPort", "8787");
+        setUpZkAndDiskXml(false, false); // solr.xml not on disk either
+      });
       assertTrue("Should be failing to create default solr.xml in code",
-          solre.getMessage().contains("solr.xml does not exist"));
+          e.getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();
     }

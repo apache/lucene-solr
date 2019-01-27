@@ -38,6 +38,9 @@ final class BlockMaxConjunctionScorer extends Scorer {
   BlockMaxConjunctionScorer(Weight weight, Collection<Scorer> scorersList) throws IOException {
     super(weight);
     this.scorers = scorersList.toArray(new Scorer[scorersList.size()]);
+    for (Scorer scorer : scorers) {
+      scorer.advanceShallow(0);
+    }
     this.maxScorePropagator = new MaxScoreSumPropagator(scorersList);
 
     // Put scorers with the higher max scores first
@@ -142,6 +145,20 @@ final class BlockMaxConjunctionScorer extends Scorer {
             return NO_MORE_DOCS;
           }
 
+          if (doc > upTo) {
+            // This check is useful when scorers return information about blocks
+            // that do not actually have any matches. Otherwise `doc` will always
+            // be in the current block already since it is always the result of
+            // lead.advance(advanceTarget(some_doc_id))
+            final int nextTarget = advanceTarget(doc);
+            if (nextTarget != doc) {
+              doc = lead.advance(nextTarget);
+              continue;
+            }
+          }
+
+          assert doc <= upTo;
+
           if (minScore > 0) {
             score = leadScorer.score();
             if (score < minScores[0]) {
@@ -227,15 +244,16 @@ final class BlockMaxConjunctionScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     minScore = score;
+    maxScorePropagator.setMinCompetitiveScore(score);
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>();
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>();
     for (Scorer scorer : scorers) {
-      children.add(new ChildScorer(scorer, "MUST"));
+      children.add(new ChildScorable(scorer, "MUST"));
     }
     return children;
   }

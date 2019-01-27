@@ -75,7 +75,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
   private static final class ScoreCachingCollector extends SimpleCollector {
 
     private int idx = 0;
-    private Scorer scorer;
+    private Scorable scorer;
     float[] mscores;
     
     public ScoreCachingCollector(int numToCollect) {
@@ -95,7 +95,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       ++idx;
     }
 
-    @Override public void setScorer(Scorer scorer) {
+    @Override public void setScorer(Scorable scorer) {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
     

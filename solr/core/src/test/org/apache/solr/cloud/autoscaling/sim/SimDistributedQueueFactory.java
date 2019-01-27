@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * exposed anywhere.
  */
 public class SimDistributedQueueFactory implements DistributedQueueFactory {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   Map<String, SimDistributedQueue> queues = new ConcurrentHashMap<>();
 
@@ -190,7 +190,7 @@ public class SimDistributedQueueFactory implements DistributedQueueFactory {
       try {
         queue.offer(new Pair(String.format(Locale.ROOT, "qn-%010d", seq), data));
         seq++;
-        LOG.trace("=== offer " + System.nanoTime());
+        log.trace("=== offer " + System.nanoTime());
         changed.signalAll();
       } finally {
         updateLock.unlock();

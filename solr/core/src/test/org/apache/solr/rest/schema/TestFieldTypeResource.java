@@ -26,12 +26,13 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertQ("/schema/fieldtypes/float?wt=xml&showDefaults=true",
             "count(/response/lst[@name='fieldType']) = 1",
-            "count(/response/lst[@name='fieldType']/*) = 17",
+            "count(/response/lst[@name='fieldType']/*) = 18",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
             "/response/lst[@name='fieldType']/str[@name='class'] = '"+expectedFloatClass+"'",
             "/response/lst[@name='fieldType']/str[@name='precisionStep'] ='0'",
             "/response/lst[@name='fieldType']/bool[@name='indexed'] = 'true'",
             "/response/lst[@name='fieldType']/bool[@name='stored'] = 'true'",
+            "/response/lst[@name='fieldType']/bool[@name='uninvertible'] = 'true'",
             "/response/lst[@name='fieldType']/bool[@name='docValues'] = '"+expectedDocValues+"'",
             "/response/lst[@name='fieldType']/bool[@name='termVectors'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='termPositions'] = 'false'",
@@ -63,6 +64,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
              "/fieldType/precisionStep=='0'",
              "/fieldType/indexed==true",
              "/fieldType/stored==true",
+             "/fieldType/uninvertible==true",
              "/fieldType/docValues=="+expectedDocValues,
              "/fieldType/termVectors==false",
              "/fieldType/termPositions==false",
@@ -81,8 +83,8 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
             "count(/response/lst[@name='fieldType']/*) = 3",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'teststop'",
             "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TextField'",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/lst[@name='tokenizer']/str[@name='class'] = 'solr.LowerCaseTokenizerFactory'",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StandardFilterFactory']",
+            "/response/lst[@name='fieldType']/lst[@name='analyzer']/lst[@name='tokenizer']/str[@name='class'] = 'solr.LetterTokenizerFactory'",
+            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.LowerCaseFilterFactory']",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StopFilterFactory']",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='words'][.='stopwords.txt']"
             );

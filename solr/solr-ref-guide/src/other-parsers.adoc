@@ -24,7 +24,7 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,indexed as nested documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<uploading-data-with-index-handlers.adoc#nested-child-documents, indexed as nested documents>>.
 
 The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
 
@@ -498,11 +498,11 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 
 === Simplified Models
 
-The Document & Field modeling used in the above examples enumerated all of the outgoing and income edges for each node explicitly, to help demonstrate exactly how the "from" and "to" params work, and to give you an idea of what is possible. With multiple sets of fields like these for identifying incoming and outgoing edges, it's possible to model many independent Directed Graphs that contain some or all of the documents in your collection.
+The Document & Field modeling used in the above examples enumerated all of the outgoing and income edges for each node explicitly, to help demonstrate exactly how the "from" and "to" parameters work, and to give you an idea of what is possible. With multiple sets of fields like these for identifying incoming and outgoing edges, it's possible to model many independent Directed Graphs that contain some or all of the documents in your collection.
 
 But in many cases it can also be possible to drastically simplify the model used.
 
-For example, the same graph shown in the diagram above can be modelled by Solr Documents that represent each node and know only the ids of the nodes they link to, without knowing anything about the incoming links:
+For example, the same graph shown in the diagram above can be modeled by Solr Documents that represent each node and know only the ids of the nodes they link to, without knowing anything about the incoming links:
 
 [source,bash]
 ----
@@ -927,7 +927,7 @@ In the examples below, the result of each query is "XXX":
 {!switch case=XXX case.bar=zzz case.yak=qqq}
 ----
 
-A practical usage of this `QParserPlugin`, is in specifying `appends` fq params in the configuration of a SearchHandler, to provide a fixed set of filter options for clients using custom parameter names.
+A practical usage of this parser, is in specifying `appends` filter query (`fq`) parameters in the configuration of a SearchHandler, to provide a fixed set of filter options for clients using custom parameter names.
 
 Using the example configuration below, clients can optionally specify the custom parameters `in_stock` and `shipping` to override the default filtering behavior, but are limited to the specific set of legal values (shipping=any|free, in_stock=yes|no|all).
 

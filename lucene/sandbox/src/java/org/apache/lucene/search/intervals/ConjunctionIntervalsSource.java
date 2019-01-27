@@ -26,11 +26,15 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterMatchesIterator;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
 
 class ConjunctionIntervalsSource extends IntervalsSource {
 
-  final List<IntervalsSource> subSources;
-  final IntervalFunction function;
+  protected final List<IntervalsSource> subSources;
+  protected final IntervalFunction function;
 
   ConjunctionIntervalsSource(List<IntervalsSource> subSources, IntervalFunction function) {
     this.subSources = subSources;
@@ -59,6 +63,15 @@ class ConjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    int minExtent = 0;
+    for (IntervalsSource source : subSources) {
+      minExtent += source.minExtent();
+    }
+    return minExtent;
+  }
+
+  @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
     List<IntervalIterator> subIntervals = new ArrayList<>();
     for (IntervalsSource source : subSources) {
@@ -71,7 +84,112 @@ class ConjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    List<MatchesIterator> subs = new ArrayList<>();
+    for (IntervalsSource source : subSources) {
+      MatchesIterator mi = source.matches(field, ctx, doc);
+      if (mi == null) {
+        return null;
+      }
+      subs.add(mi);
+    }
+    IntervalIterator it = function.apply(subs.stream().map(m -> IntervalMatches.wrapMatches(m, doc)).collect(Collectors.toList()));
+    if (it.advance(doc) != doc) {
+      return null;
+    }
+    if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+      return null;
+    }
+    return new ConjunctionMatchesIterator(it, subs);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(subSources, function);
   }
+
+  private static class ConjunctionMatchesIterator implements MatchesIterator {
+
+    final IntervalIterator iterator;
+    final List<MatchesIterator> subs;
+    boolean cached = true;
+
+    private ConjunctionMatchesIterator(IntervalIterator iterator, List<MatchesIterator> subs) {
+      this.iterator = iterator;
+      this.subs = subs;
+    }
+
+    @Override
+    public boolean next() throws IOException {
+      if (cached) {
+        cached = false;
+        return true;
+      }
+      return iterator.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int startPosition() {
+      return iterator.start();
+    }
+
+    @Override
+    public int endPosition() {
+      return iterator.end();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      int start = Integer.MAX_VALUE;
+      for (MatchesIterator s : subs) {
+        start = Math.min(start, s.startOffset());
+      }
+      return start;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      int end = -1;
+      for (MatchesIterator s : subs) {
+        end = Math.max(end, s.endOffset());
+      }
+      return end;
+    }
+
+    @Override
+    public MatchesIterator getSubMatches() throws IOException {
+      List<MatchesIterator> subMatches = new ArrayList<>();
+      for (MatchesIterator mi : subs) {
+        MatchesIterator sub = mi.getSubMatches();
+        if (sub == null) {
+          sub = new SingletonMatchesIterator(mi);
+        }
+        subMatches.add(sub);
+      }
+      return MatchesUtils.disjunction(subMatches);
+    }
+
+    @Override
+    public Query getQuery() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class SingletonMatchesIterator extends FilterMatchesIterator {
+
+    boolean exhausted = false;
+
+    SingletonMatchesIterator(MatchesIterator in) {
+      super(in);
+    }
+
+    @Override
+    public boolean next() {
+      if (exhausted) {
+        return false;
+      }
+      return exhausted = true;
+    }
+  }
+
 }

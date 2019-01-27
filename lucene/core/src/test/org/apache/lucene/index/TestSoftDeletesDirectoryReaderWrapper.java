@@ -27,12 +27,63 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
+
+  public void testDropFullyDeletedSegments() throws IOException {
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    String softDeletesField = "soft_delete";
+    indexWriterConfig.setSoftDeletesField(softDeletesField);
+    indexWriterConfig.setMergePolicy(new SoftDeletesRetentionMergePolicy(softDeletesField, MatchAllDocsQuery::new,
+        NoMergePolicy.INSTANCE));
+    try (Directory dir = newDirectory();
+         IndexWriter writer = new IndexWriter(dir, indexWriterConfig)) {
+
+      Document doc = new Document();
+      doc.add(new StringField("id", "1", Field.Store.YES));
+      doc.add(new StringField("version", "1", Field.Store.YES));
+      writer.addDocument(doc);
+      writer.commit();
+      doc = new Document();
+      doc.add(new StringField("id", "2", Field.Store.YES));
+      doc.add(new StringField("version", "1", Field.Store.YES));
+      writer.addDocument(doc);
+      writer.commit();
+
+      try (DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField)) {
+        assertEquals(2, reader.leaves().size());
+        assertEquals(2, reader.numDocs());
+        assertEquals(2, reader.maxDoc());
+        assertEquals(0, reader.numDeletedDocs());
+      }
+      writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField(softDeletesField, 1));
+      writer.commit();
+      try (DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(writer), softDeletesField)) {
+        assertEquals(1, reader.numDocs());
+        assertEquals(1, reader.maxDoc());
+        assertEquals(0, reader.numDeletedDocs());
+        assertEquals(1, reader.leaves().size());
+      }
+      try (DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField)) {
+        assertEquals(1, reader.numDocs());
+        assertEquals(1, reader.maxDoc());
+        assertEquals(0, reader.numDeletedDocs());
+        assertEquals(1, reader.leaves().size());
+      }
+
+      try (DirectoryReader reader = DirectoryReader.open(dir)) {
+        assertEquals(2, reader.numDocs());
+        assertEquals(2, reader.maxDoc());
+        assertEquals(0, reader.numDeletedDocs());
+        assertEquals(2, reader.leaves().size());
+      }
+    }
+  }
 
   public void testReuseUnchangedLeafReader() throws IOException {
     Directory dir = newDirectory();
@@ -104,7 +155,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
   }
 
   private boolean isWrapped(LeafReader reader) {
-    return reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterLeafReader;
+    return reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterLeafReader
+        || reader instanceof SoftDeletesDirectoryReaderWrapper.SoftDeletesFilterCodecReader;
   }
 
   public void testMixSoftAndHardDeletes() throws IOException {
@@ -133,7 +185,7 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     assertEquals(uniqueDocs.size(), reader.numDocs());
     IndexSearcher searcher = new IndexSearcher(reader);
     for (Integer docId : uniqueDocs) {
-      assertEquals(1, searcher.search(new TermQuery(new Term("id", docId.toString())), 1).totalHits);
+      assertEquals(1, searcher.count(new TermQuery(new Term("id", docId.toString()))));
     }
 
     IOUtils.close(reader, dir);

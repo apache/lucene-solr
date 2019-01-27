@@ -52,6 +52,12 @@ public abstract class TimeSource {
     }
 
     @Override
+    public long[] getTimeAndEpochNs() {
+      long time = getTimeNs();
+      return new long[] {time, time};
+    }
+
+    @Override
     public void sleep(long ms) throws InterruptedException {
       Thread.sleep(ms);
     }
@@ -85,6 +91,12 @@ public abstract class TimeSource {
     @Override
     public long getEpochTimeNs() {
       return epochStart + getTimeNs() - nanoStart;
+    }
+
+    @Override
+    public long[] getTimeAndEpochNs() {
+      long time = getTimeNs();
+      return new long[] {time, epochStart + time - nanoStart};
     }
 
     @Override
@@ -123,6 +135,12 @@ public abstract class TimeSource {
     @Override
     public long getEpochTimeNs() {
       return epochStart + getTimeNs() - nanoStart;
+    }
+
+    @Override
+    public long[] getTimeAndEpochNs() {
+      long time = getTimeNs();
+      return new long[] {time, epochStart + time - nanoStart};
     }
 
     @Override
@@ -197,6 +215,15 @@ public abstract class TimeSource {
    * the actual epoch time.
    */
   public abstract long getEpochTimeNs();
+
+  /**
+   * Return both the source's time value and the corresponding epoch time
+   * value. This method ensures that epoch time calculations use the same internal
+   * value of time as that reported by {@link #getTimeNs()}.
+   * @return an array where the first element is {@link #getTimeNs()} and the
+   * second element is {@link #getEpochTimeNs()}.
+   */
+  public abstract long[] getTimeAndEpochNs();
 
   /**
    * Sleep according to this source's notion of time. Eg. accelerated time source such as

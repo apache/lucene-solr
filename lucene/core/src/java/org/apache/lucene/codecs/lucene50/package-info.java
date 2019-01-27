@@ -17,7 +17,7 @@
 
 /**
  * Components from the Lucene 5.0 index format
- * See {@link org.apache.lucene.codecs.lucene50} for an overview
+ * See {@link org.apache.lucene.codecs.lucene80} for an overview
  * of the index format.
  */
 package org.apache.lucene.codecs.lucene50;

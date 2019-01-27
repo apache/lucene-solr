@@ -140,7 +140,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
         public Scorer scorer(LeafReaderContext context) throws IOException {
           DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
           TwoPhaseIterator it = predicateValueSource.iterator(context, approximation);
-          return new ConstantScoreScorer(this, score(), it);
+          return new ConstantScoreScorer(this, score(), scoreMode, it);
         }
 
         @Override

@@ -16,13 +16,9 @@
  */
 package org.apache.solr.client.solrj.request.schema;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 
 public abstract class AbstractSchemaRequest<T extends SolrResponse> extends SolrRequest<T> {
   private SolrParams params = null;
@@ -41,8 +37,4 @@ public abstract class AbstractSchemaRequest<T extends SolrResponse> extends Solr
     return params;
   }
 
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
-  }
 }

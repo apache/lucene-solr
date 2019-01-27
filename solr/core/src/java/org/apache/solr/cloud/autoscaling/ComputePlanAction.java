@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,22 +29,26 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.UnsupportedSuggester;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
 
 /**
  * This class is responsible for using the configured policy and preferences
@@ -89,8 +94,7 @@ public class ComputePlanAction extends TriggerActionBase {
         log.trace("-- state: {}", clusterState);
       }
       try {
-        Suggester intialSuggester = getSuggester(session, event, context, cloudManager);
-        Suggester suggester = intialSuggester;
+        Suggester suggester = getSuggester(session, event, context, cloudManager);
         int maxOperations = getMaxNumOps(event, autoScalingConf, clusterState);
         int requestedOperations = getRequestedNumOps(event);
         if (requestedOperations > maxOperations) {
@@ -119,20 +123,20 @@ public class ComputePlanAction extends TriggerActionBase {
           // unless a specific number of ops was requested
           // uncomment the following to log too many operations
           /*if (opCount > 10) {
-            PolicyHelper.logState(cloudManager, intialSuggester);
+            PolicyHelper.logState(cloudManager, initialSuggester);
           }*/
 
           if (operation == null) {
             if (requestedOperations < 0) {
               //uncomment the following to log zero operations
-//              PolicyHelper.logState(cloudManager, intialSuggester);
+//              PolicyHelper.logState(cloudManager, initialSuggester);
               break;
             } else {
               log.info("Computed plan empty, remained " + (opCount - opLimit) + " requested ops to try.");
               continue;
             }
           }
-          log.info("Computed Plan: {}", operation.getParams());
+          log.debug("Computed Plan: {}", operation.getParams());
           if (!collections.isEmpty()) {
             String coll = operation.getParams().get(CoreAdminParams.COLLECTION);
             if (coll != null && !collections.contains(coll)) {
@@ -168,7 +172,17 @@ public class ComputePlanAction extends TriggerActionBase {
     // estimate a maximum default limit that should be sufficient for most purposes:
     // number of nodes * total number of replicas * 3
     AtomicInteger totalRF = new AtomicInteger();
-    clusterState.forEachCollection(coll -> totalRF.addAndGet(coll.getReplicationFactor() * coll.getSlices().size()));
+    clusterState.forEachCollection(coll -> {
+      Integer rf = coll.getReplicationFactor();
+      if (rf == null) {
+        if (coll.getSlices().isEmpty()) {
+          rf = 1; // ???
+        } else {
+          rf = coll.getReplicas().size() / coll.getSlices().size();
+        }
+      }
+      totalRF.addAndGet(rf * coll.getSlices().size());
+    });
     int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
     int maxOp = (Integer) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
     Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);
@@ -191,16 +205,36 @@ public class ComputePlanAction extends TriggerActionBase {
 
   private static final String START = "__start__";
 
-  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) {
+  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) throws IOException {
     Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:
-        suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
-            .hint(Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
+        suggester = getNodeAddedSuggester(cloudManager, session, event);
         break;
       case NODELOST:
-        suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
-            .hint(Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
+        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        switch (action) {
+          case MOVEREPLICA:
+            suggester = session.getSuggester(action)
+                .hint(Suggester.Hint.SRC_NODE, event.getProperty(NODE_NAMES));
+            break;
+          case DELETENODE:
+            int start = (Integer)event.getProperty(START, 0);
+            List<String> srcNodes = (List<String>) event.getProperty(NODE_NAMES);
+            if (srcNodes.isEmpty() || start >= srcNodes.size()) {
+              return NoneSuggester.get(session);
+            }
+            String sourceNode = srcNodes.get(start);
+            suggester = session.getSuggester(action)
+                .hint(Suggester.Hint.SRC_NODE, Collections.singletonList(sourceNode));
+            event.getProperties().put(START, ++start);
+            break;
+          case NONE:
+            return NoneSuggester.get(session);
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported preferredOperation: " + action.toLower() + " specified for node lost trigger");
+        }
         break;
       case SEARCHRATE:
       case METRIC:
@@ -213,22 +247,55 @@ public class ComputePlanAction extends TriggerActionBase {
         TriggerEvent.Op op = ops.get(start);
         suggester = session.getSuggester(op.getAction());
         if (suggester instanceof UnsupportedSuggester) {
-          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent("unsupportedOps", k -> new ArrayList<TriggerEvent.Op>());
+          List<TriggerEvent.Op> unsupportedOps = (List<TriggerEvent.Op>)context.getProperties().computeIfAbsent(TriggerEvent.UNSUPPORTED_OPS, k -> new ArrayList<TriggerEvent.Op>());
           unsupportedOps.add(op);
         }
         for (Map.Entry<Suggester.Hint, Object> e : op.getHints().entrySet()) {
           suggester = suggester.hint(e.getKey(), e.getValue());
         }
-        start++;
-        event.getProperties().put(START, start);
+        suggester = suggester.forceOperation(true);
+        event.getProperties().put(START, ++start);
         break;
       case SCHEDULED:
-        String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
-        CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+        preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+        action = CollectionParams.CollectionAction.get(preferredOp);
         suggester = session.getSuggester(action);
         break;
       default:
-        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate, metric and indexSize. Received: " + event.getEventType());
+        throw new UnsupportedOperationException("No support for events other than nodeAdded, nodeLost, searchRate, metric, scheduled and indexSize. Received: " + event.getEventType());
+    }
+    return suggester;
+  }
+
+  private Suggester getNodeAddedSuggester(SolrCloudManager cloudManager, Policy.Session session, TriggerEvent event) throws IOException {
+    String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+    CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
+
+    Suggester suggester = session.getSuggester(action)
+        .hint(Suggester.Hint.TARGET_NODE, event.getProperty(NODE_NAMES));
+    switch (action) {
+      case ADDREPLICA:
+        // add all collection/shard pairs and let policy engine figure out which one
+        // to place on the target node
+        // todo in future we can prune ineligible collection/shard pairs
+        ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+        Set<Pair<String, String>> collShards = new HashSet<>();
+        clusterState.getCollectionStates().forEach((collectionName, collectionRef) -> {
+          DocCollection docCollection = collectionRef.get();
+          if (docCollection != null)  {
+            docCollection.getActiveSlices().stream()
+                .map(slice -> new Pair<>(collectionName, slice.getName()))
+                .forEach(collShards::add);
+          }
+        });
+        suggester.hint(Suggester.Hint.COLL_SHARD, collShards);
+        break;
+      case MOVEREPLICA:
+      case NONE:
+        break;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unsupported preferredOperation=" + preferredOp + " for node added event");
     }
     return suggester;
   }

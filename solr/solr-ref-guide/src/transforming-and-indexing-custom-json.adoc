@@ -416,8 +416,8 @@ There are two restrictions: wildcards can only be used at the end of the `json-p
 A single asterisk `\*` maps only to direct children, and a double asterisk `**` maps recursively to all descendants. The following are example wildcard path mappings:
 
 * `f=$FQN:/**`: maps all fields to the fully qualified name (`$FQN`) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (`.`) as a delimiter. This is the default behavior if no `f` path mappings are specified.
-* `f=/docs/*`: maps all the fields under docs and in the name as given in json
-* `f=/docs/**`: maps all the fields under docs and its children in the name as given in json
+* `f=/docs/*`: maps all the fields under docs and in the name as given in JSON
+* `f=/docs/**`: maps all the fields under docs and its children in the name as given in JSON
 * `f=searchField:/docs/*`: maps all fields under /docs to a single field called ‘searchField’
 * `f=searchField:/docs/**`: maps all fields under /docs and its children to searchField
 
@@ -903,7 +903,7 @@ It is possible to send any JSON to the `/update/json/docs` endpoint and the defa
 </initParams>
 ----
 
-So, if no params are passed, the entire JSON file would get indexed to the `\_src_` field and all the values in the input JSON would go to a field named `text`. If there is a value for the uniqueKey it is stored and if no value could be obtained from the input JSON, a UUID is created and used as the uniqueKey field value.
+So, if no parameters are passed, the entire JSON file would get indexed to the `\_src_` field and all the values in the input JSON would go to a field named `text`. If there is a value for the uniqueKey it is stored and if no value could be obtained from the input JSON, a UUID is created and used as the uniqueKey field value.
 
 Alternately, use the Request Parameters feature to set these parameters, as shown earlier in the section <<Reusing Parameters in Multiple Requests>>.
 

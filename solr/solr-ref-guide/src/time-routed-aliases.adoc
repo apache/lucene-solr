@@ -1,18 +1,37 @@
 = Time Routed Aliases
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 Time Routed Aliases (TRAs) is a SolrCloud feature that manages an alias and a time sequential series of collections.
+
 It automatically creates new collections and (optionally) deletes old ones as it routes documents to the correct
   collection based on its timestamp.
 This approach allows for indefinite indexing of data without degradation of performance otherwise experienced due to the
   continuous growth of a single index.
+
 If you need to store a lot of timestamped data in Solr, such as logs or IoT sensor data, then this feature probably
   makes more sense than creating one sharded hash-routed collection.
 
-== How it works
+== How It Works
 
 First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with some
   router settings.
 Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+
 The first collection will be created automatically, along with an alias pointing to it.
 Each underlying Solr "core" in a collection that is a member of a TRA has a special core property referencing the alias.
 The name of each collection is comprised of the TRA name and the start timestamp (UTC), with trailing zeros and symbols
@@ -20,26 +39,28 @@ The name of each collection is comprised of the TRA name and the start timestamp
 Ideally, as a user of this feature, you needn't concern yourself with the particulars of the collection naming pattern
   since both queries and updates may be done via the alias.
 
-When adding data, you should usually direct documents to the alias (e.g. reference the alias name instead of any collection).
+When adding data, you should usually direct documents to the alias (e.g., reference the alias name instead of any collection).
 The Solr server and CloudSolrClient will direct an update request to the first collection that an alias points to.
+
 The collections list for a TRA is always reverse sorted, and thus the connection path of the request will route to the
-  lead collection.  Using CloudSolrClient is preferable as it can reduce the number of underlying physical HTTP requests by one.
+  lead collection. Using CloudSolrClient is preferable as it can reduce the number of underlying physical HTTP requests by one.
 If you know that a particular set of documents to be delivered is going to a particular older collection then you could
-  direct it there at the client side as an optimization but it's not necessary.  CloudSolrClient does not (yet) do this.
+  direct it there from the client side as an optimization but it's not necessary. CloudSolrClient does not (yet) do this.
 
 When processing an update for a TRA, Solr initializes its
   <<update-request-processors.adoc#update-request-processors,UpdateRequestProcessor>> chain as usual, but
-  when DistributedUpdateProcessor (DUP) initializes, it detects that the update targets a TRA and injects
-  TimeRoutedUpdateProcessor (TRUP) in front of itself.
+  when `DistributedUpdateProcessor` (DUP) initializes, it detects that the update targets a TRA and injects
+  `TimeRoutedUpdateProcessor` (TRUP) in front of itself.
 TRUP, in coordination with the Overseer, is the main part of a TRA, and must immediately precede DUP. It is not
   possible to configure custom chains with other types of UpdateRequestProcessors between TRUP and DUP.
+
 TRUP first reads TRA configuration from the alias properties when it is initialized.  As it sees each document, it checks for
   changes to TRA properties, updates its cached configuration if needed and then determines which collection the
   document belongs to:
 
 * If TRUP needs to send it to a time segment represented by a collection other than the one that
   the client chose to communicate with, then it will do so using mechanisms shared with DUP.
-  Once the document is forwarded to the correct collection (i.e. the correct TRA time segment), it skips directly to
+  Once the document is forwarded to the correct collection (i.e., the correct TRA time segment), it skips directly to
   DUP on the target collection and continues normally, potentially being routed again to the correct shard & replica
   within the target collection.
 
@@ -51,9 +72,12 @@ TRUP first reads TRA configuration from the alias properties when it is initiali
   added at the front of the TRA.
   TRUP will create this collection, add it to the alias and then forward the document to the collection it just created.
   This can happen recursively if more than one collection needs to be created.
-  Each time a new collection is added, the oldest collections in the TRA are examined for possible deletion, if that has
++
+Each time a new collection is added, the oldest collections in the TRA are examined for possible deletion, if that has
     been configured.
-  All this happens synchronously, potentially adding seconds to the update request and indexing latency.
+All this happens synchronously, potentially adding seconds to the update request and indexing latency.
+If `router.preemptiveCreateMath` is configured and if the document arrives within this window then it will occur
+asynchronously.
 
 Any other type of update like a commit or delete is routed by TRUP to all collections.
 Generally speaking, this is not a performance concern. When Solr receives a delete or commit wherein nothing is deleted
@@ -72,18 +96,18 @@ Some _potential_ areas for improvement that _are not implemented yet_ are:
 * Ways to automatically optimize (or reduce the resources of) older collections that aren't expected to receive more
   updates, and might have less search demand.
 
-* New collections ought to be created preemptively, as an option, to avoid delaying a document that does not yet have
-  a collection to go to.
-
 * CloudSolrClient could route documents to the correct collection based on a timestamp instead always picking the
   latest.
+
+* Compatibility with CDCR.
 
 == Limitations & Assumptions
 
 * Only *time* routed aliases are supported.  If you instead have some other sequential number, you could fake it
-  as a time (e.g. convert to a timestamp assuming some epoch and increment).
-  The smallest possible interval is one second.
-  No other routing scheme is supported, although this feature was developed with considerations that it could be
+  as a time (e.g., convert to a timestamp assuming some epoch and increment).
++
+The smallest possible interval is one second.
+No other routing scheme is supported, although this feature was developed with considerations that it could be
   extended/improved to other schemes.
 
 * The underlying collections form a contiguous sequence without gaps.  This will not be suitable when there are

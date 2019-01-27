@@ -52,6 +52,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -64,6 +65,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -74,7 +76,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.VirusCheckingFS;
@@ -86,6 +87,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FSLockFactory;
@@ -210,7 +212,9 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
-@TestRuleLimitSysouts.Limit(bytes = TestRuleLimitSysouts.DEFAULT_SYSOUT_BYTES_THRESHOLD)
+@TestRuleLimitSysouts.Limit(
+    bytes = TestRuleLimitSysouts.DEFAULT_LIMIT,
+    hardLimit = TestRuleLimitSysouts.DEFAULT_HARD_LIMIT)
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------
@@ -487,6 +491,7 @@ public abstract class LuceneTestCase extends Assert {
   static {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
+    CORE_DIRECTORIES.add(ByteBuffersDirectory.class.getSimpleName());
   }
   
   /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */
@@ -890,7 +895,7 @@ public abstract class LuceneTestCase extends Assert {
    * Convenience method for logging an iterator.
    *
    * @param label  String logged before/after the items in the iterator
-   * @param iter   Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
+   * @param iter   Each next() is toString()ed and logged on its own line. If iter is null this is logged differently then an empty iterator.
    * @param stream Stream to log messages to.
    */
   public static void dumpIterator(String label, Iterator<?> iter,
@@ -1131,7 +1136,7 @@ public abstract class LuceneTestCase extends Assert {
       tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
     }
     configureRandom(r, tmp);
-    tmp.setReclaimDeletesWeight(r.nextDouble()*4);
+    tmp.setDeletesPctAllowed(20 + random().nextDouble() * 30);
     return tmp;
   }
 
@@ -1266,7 +1271,7 @@ public abstract class LuceneTestCase extends Assert {
           tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
         }
         configureRandom(r, tmp);
-        tmp.setReclaimDeletesWeight(r.nextDouble()*4);
+        tmp.setDeletesPctAllowed(20 + random().nextDouble() * 30);
       }
       didChange = true;
     }
@@ -1946,7 +1951,7 @@ public abstract class LuceneTestCase extends Assert {
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assertReaderStatisticsEquals(info, leftReader, rightReader);
-    assertFieldsEquals(info, leftReader, MultiFields.getFields(leftReader), MultiFields.getFields(rightReader), true);
+    assertTermsEquals(info, leftReader, rightReader, true);
     assertNormsEquals(info, leftReader, rightReader);
     assertStoredFieldsEquals(info, leftReader, rightReader);
     assertTermVectorsEquals(info, leftReader, rightReader);
@@ -1970,33 +1975,13 @@ public abstract class LuceneTestCase extends Assert {
   /** 
    * Fields api equivalency 
    */
-  public void assertFieldsEquals(String info, IndexReader leftReader, Fields leftFields, Fields rightFields, boolean deep) throws IOException {
-    // Fields could be null if there are no postings,
-    // but then it must be null for both
-    if (leftFields == null || rightFields == null) {
-      assertNull(info, leftFields);
-      assertNull(info, rightFields);
-      return;
-    }
-    assertFieldStatisticsEquals(info, leftFields, rightFields);
-    
-    Iterator<String> leftEnum = leftFields.iterator();
-    Iterator<String> rightEnum = rightFields.iterator();
-    
-    while (leftEnum.hasNext()) {
-      String field = leftEnum.next();
-      assertEquals(info, field, rightEnum.next());
-      assertTermsEquals(info, leftReader, leftFields.terms(field), rightFields.terms(field), deep);
-    }
-    assertFalse(rightEnum.hasNext());
-  }
+  public void assertTermsEquals(String info, IndexReader leftReader, IndexReader rightReader, boolean deep) throws IOException {
+    Set<String> leftFields = new HashSet<>(FieldInfos.getIndexedFields(leftReader));
+    Set<String> rightFields = new HashSet<>(FieldInfos.getIndexedFields(rightReader));
+    assertEquals(info, leftFields, rightFields);
 
-  /** 
-   * checks that top-level statistics on Fields are the same 
-   */
-  public void assertFieldStatisticsEquals(String info, Fields leftFields, Fields rightFields) throws IOException {
-    if (leftFields.size() != -1 && rightFields.size() != -1) {
-      assertEquals(info, leftFields.size(), rightFields.size());
+    for (String field : leftFields) {
+      assertTermsEquals(info, leftReader, MultiTerms.getTerms(leftReader, field), MultiTerms.getTerms(rightReader, field), deep);
     }
   }
 
@@ -2327,15 +2312,9 @@ public abstract class LuceneTestCase extends Assert {
    * checks that norms are the same across all fields 
    */
   public void assertNormsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    Fields leftFields = MultiFields.getFields(leftReader);
-    Fields rightFields = MultiFields.getFields(rightReader);
-    // Fields could be null if there are no postings,
-    // but then it must be null for both
-    if (leftFields == null || rightFields == null) {
-      assertNull(info, leftFields);
-      assertNull(info, rightFields);
-      return;
-    }
+    Set<String> leftFields = new HashSet<>(FieldInfos.getIndexedFields(leftReader));
+    Set<String> rightFields = new HashSet<>(FieldInfos.getIndexedFields(rightReader));
+    assertEquals(info, leftFields, rightFields);
     
     for (String field : leftFields) {
       NumericDocValues leftNorms = MultiDocValues.getNormValues(leftReader, field);
@@ -2403,13 +2382,32 @@ public abstract class LuceneTestCase extends Assert {
     for (int i = 0; i < leftReader.maxDoc(); i++) {
       Fields leftFields = leftReader.getTermVectors(i);
       Fields rightFields = rightReader.getTermVectors(i);
-      assertFieldsEquals(info, leftReader, leftFields, rightFields, rarely());
+
+      // Fields could be null if there are no postings,
+      // but then it must be null for both
+      if (leftFields == null || rightFields == null) {
+        assertNull(info, leftFields);
+        assertNull(info, rightFields);
+        return;
+      }
+      if (leftFields.size() != -1 && rightFields.size() != -1) {
+        assertEquals(info, leftFields.size(), rightFields.size());
+      }
+
+      Iterator<String> leftEnum = leftFields.iterator();
+      Iterator<String> rightEnum = rightFields.iterator();
+      while (leftEnum.hasNext()) {
+        String field = leftEnum.next();
+        assertEquals(info, field, rightEnum.next());
+        assertTermsEquals(info, leftReader, leftFields.terms(field), rightFields.terms(field), rarely());
+      }
+      assertFalse(rightEnum.hasNext());
     }
   }
 
   private static Set<String> getDVFields(IndexReader reader) {
     Set<String> fields = new HashSet<>();
-    for(FieldInfo fi : MultiFields.getMergedFieldInfos(reader)) {
+    for(FieldInfo fi : FieldInfos.getMergedFieldInfos(reader)) {
       if (fi.getDocValuesType() != DocValuesType.NONE) {
         fields.add(fi.name);
       }
@@ -2554,8 +2552,8 @@ public abstract class LuceneTestCase extends Assert {
   // TODO: this is kinda stupid, we don't delete documents in the test.
   public void assertDeletedDocsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assert leftReader.numDeletedDocs() == rightReader.numDeletedDocs();
-    Bits leftBits = MultiFields.getLiveDocs(leftReader);
-    Bits rightBits = MultiFields.getLiveDocs(rightReader);
+    Bits leftBits = MultiBits.getLiveDocs(leftReader);
+    Bits rightBits = MultiBits.getLiveDocs(rightReader);
     
     if (leftBits == null || rightBits == null) {
       assertNull(info, leftBits);
@@ -2571,8 +2569,8 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public void assertFieldInfosEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    FieldInfos leftInfos = MultiFields.getMergedFieldInfos(leftReader);
-    FieldInfos rightInfos = MultiFields.getMergedFieldInfos(rightReader);
+    FieldInfos leftInfos = FieldInfos.getMergedFieldInfos(leftReader);
+    FieldInfos rightInfos = FieldInfos.getMergedFieldInfos(rightReader);
     
     // TODO: would be great to verify more than just the names of the fields!
     TreeSet<String> left = new TreeSet<>();
@@ -2627,13 +2625,15 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public void assertPointsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(leftReader);
-    FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(rightReader);
+    FieldInfos fieldInfos1 = FieldInfos.getMergedFieldInfos(leftReader);
+    FieldInfos fieldInfos2 = FieldInfos.getMergedFieldInfos(rightReader);
     for(FieldInfo fieldInfo1 : fieldInfos1) {
-      if (fieldInfo1.getPointDimensionCount() != 0) {
+      if (fieldInfo1.getPointDataDimensionCount() != 0) {
         FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
-        // same dimension count?
-        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
+        // same data dimension count?
+        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo2.getPointDataDimensionCount());
+        // same index dimension count?
+        assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo2.getPointIndexDimensionCount());
         // same bytes per dimension?
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo2.getPointNumBytes());
 
@@ -2645,10 +2645,12 @@ public abstract class LuceneTestCase extends Assert {
 
     // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
     for(FieldInfo fieldInfo2 : fieldInfos2) {
-      if (fieldInfo2.getPointDimensionCount() != 0) {
+      if (fieldInfo2.getPointDataDimensionCount() != 0) {
         FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
-        // same dimension count?
-        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
+        // same data dimension count?
+        assertEquals(info, fieldInfo2.getPointDataDimensionCount(), fieldInfo1.getPointDataDimensionCount());
+        // same index dimension count?
+        assertEquals(info, fieldInfo2.getPointIndexDimensionCount(), fieldInfo1.getPointIndexDimensionCount());
         // same bytes per dimension?
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo1.getPointNumBytes());
 
@@ -2665,6 +2667,11 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Checks a specific exception class is thrown by the given runnable, and returns it. */
   public static <T extends Throwable> T expectThrows(Class<T> expectedType, ThrowingRunnable runnable) {
+    return expectThrows(expectedType, "Expected exception "+ expectedType.getSimpleName() + " but no exception was thrown", runnable);
+  }
+
+  /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+  public static <T extends Throwable> T expectThrows(Class<T> expectedType, String noExceptionMessage, ThrowingRunnable runnable) {
     try {
       runnable.run();
     } catch (Throwable e) {
@@ -2675,7 +2682,39 @@ public abstract class LuceneTestCase extends Assert {
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName() + " but no exception was thrown");
+    throw new AssertionFailedError(noExceptionMessage);
+  }
+
+  /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+  public static <T extends Throwable> T expectThrowsAnyOf(List<Class<? extends T>> expectedTypes, ThrowingRunnable runnable) {
+    if (expectedTypes.isEmpty()) {
+      throw new AssertionError("At least one expected exception type is required?");
+    }
+
+    Throwable thrown = null;
+    try {
+      runnable.run();
+    } catch (Throwable e) {
+      for (Class<? extends T> expectedType : expectedTypes) {
+        if (expectedType.isInstance(e)) {
+          return expectedType.cast(e);
+        }
+      }
+      thrown = e;
+    }
+
+    List<String> exceptionTypes = expectedTypes.stream().map(c -> c.getSimpleName()).collect(Collectors.toList());
+
+    if (thrown != null) {
+      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected any of " +
+          exceptionTypes +
+          " but got: " + thrown);
+      assertion.initCause(thrown);
+      throw assertion;
+    } else {
+      throw new AssertionFailedError("Expected any of the following exception types: " +
+          exceptionTypes+ " but no exception was thrown.");
+    }
   }
 
   /**
@@ -2693,17 +2732,64 @@ public abstract class LuceneTestCase extends Assert {
           return expectedWrappedType.cast(cause);
         } else {
           AssertionFailedError assertion = new AssertionFailedError
-              ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName());
+              ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName() 
+                  + " but got: " + cause);
           assertion.initCause(e);
           throw assertion;
         }
       }
       AssertionFailedError assertion = new AssertionFailedError
-          ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName());
+          ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName()
+           + " but got: " + e);
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName());
+    throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName()
+        + " but no exception was thrown.");
+  }
+
+  /**
+   * Checks that one of the specified wrapped and outer exception classes are thrown
+   * by the given runnable, and returns the outer exception.
+   * 
+   * This method accepts outer exceptions with no wrapped exception;
+   * an empty list of expected wrapped exception types indicates no wrapped exception.
+   */
+  public static <TO extends Throwable, TW extends Throwable> TO expectThrowsAnyOf
+  (LinkedHashMap<Class<? extends TO>,List<Class<? extends TW>>> expectedOuterToWrappedTypes, ThrowingRunnable runnable) {
+    try {
+      runnable.run();
+    } catch (Throwable e) {
+      for (Map.Entry<Class<? extends TO>, List<Class<? extends TW>>> entry : expectedOuterToWrappedTypes.entrySet()) {
+        Class<? extends TO> expectedOuterType = entry.getKey();
+        List<Class<? extends TW>> expectedWrappedTypes = entry.getValue();
+        Throwable cause = e.getCause();
+        if (expectedOuterType.isInstance(e)) {
+          if (expectedWrappedTypes.isEmpty()) {
+            return null; // no wrapped exception
+          } else {
+            for (Class<? extends TW> expectedWrappedType : expectedWrappedTypes) {
+              if (expectedWrappedType.isInstance(cause)) {
+                return expectedOuterType.cast(e);
+              }
+            }
+            List<String> wrappedTypes = expectedWrappedTypes.stream().map(Class::getSimpleName).collect(Collectors.toList());
+            AssertionFailedError assertion = new AssertionFailedError
+                ("Unexpected wrapped exception type, expected one of " + wrappedTypes + " but got: " + cause);
+            assertion.initCause(e);
+            throw assertion;
+          }
+        }
+      }
+      List<String> outerTypes = expectedOuterToWrappedTypes.keySet().stream().map(Class::getSimpleName).collect(Collectors.toList());
+      AssertionFailedError assertion = new AssertionFailedError
+          ("Unexpected outer exception type, expected one of " + outerTypes + " but got: " + e);
+      assertion.initCause(e);
+      throw assertion;
+    }
+    List<String> outerTypes = expectedOuterToWrappedTypes.keySet().stream().map(Class::getSimpleName).collect(Collectors.toList());
+    throw new AssertionFailedError("Expected any of the following outer exception types: " + outerTypes
+        + " but no exception was thrown.");
   }
 
   /** Returns true if the file exists (can be opened), false

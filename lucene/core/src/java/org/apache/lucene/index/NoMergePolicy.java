@@ -36,22 +36,22 @@ public final class NoMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) { return null; }
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-             int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) { return null; }
+                                             int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) { return null; }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) { return null; }
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, IndexWriter writer) {
+  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {
     return newSegment.info.getUseCompoundFile();
   }
 
   @Override
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
+  protected long size(SegmentCommitInfo info, MergeContext context) throws IOException {
     return Long.MAX_VALUE;
   }
 
@@ -81,8 +81,8 @@ public final class NoMergePolicy extends MergePolicy {
   }
 
   @Override
-  public int numDeletesToMerge(SegmentCommitInfo info, int pendingDeleteCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
-    return  super.numDeletesToMerge(info, pendingDeleteCount, readerSupplier);
+  public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
+    return  super.numDeletesToMerge(info, delCount, readerSupplier);
   }
 
   @Override

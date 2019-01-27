@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.store.Directory;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -32,14 +32,16 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -98,7 +100,27 @@ enum CoreAdminOperation implements CoreAdminOp {
     boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
     boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
     boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
+    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, false);
+    CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
     it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+    if (deleteMetricsHistory) {
+      MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
+      if (historyHandler != null) {
+        CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
+        String registry;
+        if (cd == null) {
+          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
+        } else {
+          String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
+          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core,
+              cd.getCollectionName(),
+              cd.getShardId(),
+              replicaName);
+        }
+        historyHandler.checkSystemCollection();
+        historyHandler.removeHistory(registry);
+      }
+    }
 
     assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
   }),
@@ -317,7 +339,7 @@ enum CoreAdminOperation implements CoreAdminOp {
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
               try {
                 SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-                long size = getIndexSize(core);
+                long size = core.getIndexSize();
                 indexInfo.add("sizeInBytes", size);
                 indexInfo.add("size", NumberUtils.readableSize(size));
                 info.add("index", indexInfo);
@@ -330,24 +352,6 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
     }
     return info;
-  }
-
-  static long getIndexSize(SolrCore core) {
-    Directory dir;
-    long size = 0;
-    try {
-
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-
-      try {
-        size = core.getDirectoryFactory().size(dir);
-      } finally {
-        core.getDirectoryFactory().release(dir);
-      }
-    } catch (IOException e) {
-      SolrException.log(log, "IO error while trying to get the size of the Directory", e);
-    }
-    return size;
   }
 
   @Override

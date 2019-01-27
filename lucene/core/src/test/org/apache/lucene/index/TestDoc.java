@@ -222,7 +222,7 @@ public class TestDoc extends LuceneTestCase {
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(r1, r2),
                                              si, InfoStream.getDefault(), trackingDir,
-                                             new FieldInfos.FieldNumbers(), context);
+                                             new FieldInfos.FieldNumbers(null), context);
 
     MergeState mergeState = merger.merge();
     r1.close();
@@ -238,7 +238,7 @@ public class TestDoc extends LuceneTestCase {
       }
     }
 
-    return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);
+    return new SegmentCommitInfo(si, 0, 0, -1L, -1L, -1L);
   }
 
 

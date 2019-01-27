@@ -77,19 +77,24 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
+  public int advanceShallow(int target) throws IOException {
+    return reqScorer.advanceShallow(target);
+  }
+
+  @Override
   public float getMaxScore(int upTo) throws IOException {
     return reqScorer.getMaxScore(upTo);
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     // The score of this scorer is the same as the score of 'reqScorer'.
     reqScorer.setMinCompetitiveScore(score);
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    return Collections.singleton(new ChildScorer(reqScorer, "MUST"));
+  public Collection<ChildScorable> getChildren() {
+    return Collections.singleton(new ChildScorable(reqScorer, "MUST"));
   }
 
   /**

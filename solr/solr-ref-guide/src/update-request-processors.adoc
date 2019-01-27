@@ -275,6 +275,8 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/IgnoreCommitOptimizeUpdateProcessorFactory.html[IgnoreCommitOptimizeUpdateProcessorFactory]:: Allows you to ignore commit and/or optimize requests from client applications when running in SolrCloud mode, for more information, see: Shards and Indexing Data in SolrCloud
 
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/IgnoreLargeDocumentProcessorFactory.html[IgnoreLargeDocumentProcessorFactory]:: Allows you to prevent large documents with size more than `limit` (in KB) from getting indexed. It can help to prevent unexpected problems on indexing as well as on recovering because of very large documents.
+
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
@@ -315,7 +317,7 @@ These factories all provide functionality to _modify_ fields in a document as th
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Boolean values.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Solr date values.
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Date values.
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseNumericFieldUpdateProcessorFactory.html[ParseNumericFieldUpdateProcessorFactory] derived classes::
 
@@ -349,13 +351,9 @@ The {solr-javadocs}/solr-langid/index.html[`langid`] contrib provides::
 
 {solr-javadocs}/solr-langid/org/apache/solr/update/processor/TikaLanguageIdentifierUpdateProcessorFactory.html[TikaLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using Tika's LanguageIdentifier.
 
-The {solr-javadocs}/solr-uima/index.html[`uima`] contrib provides::
-
-{solr-javadocs}/solr-uima/org/apache/solr/uima/processor/UIMAUpdateRequestProcessorFactory.html[UIMAUpdateRequestProcessorFactory]::: Update document(s) to be indexed with UIMA extracted information.
-
 The {solr-javadocs}/solr-analysis-extras/index.html[`analysis-extras`] contrib provides::
 
-{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.  Note that in order to use model files larger than 1MB on SolrCloud, <<setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit,ZooKeeper server and client configuration is required>>.  
+{solr-javadocs}/solr-analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.  Note that in order to use model files larger than 1MB on SolrCloud, you must either <<setting-up-an-external-zookeeper-ensemble#increasing-the-file-size-limit,configure both ZooKeeper server and clients>> or <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,store the model files on the filesystem>> on each node hosting a collection replica.  
 
 === Update Processor Factories You Should _Not_ Modify or Remove
 

@@ -94,7 +94,7 @@ Example: `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 Description of some of the keys in the above example:
 
 * `**documentation**`: URL to the online Solr reference guide section for this API
-* `**description**`: A text description of the feature/variable/command etc.
+* `**description**`: A text description of the feature/variable/command, etc.
 * `**spec/methods**`: HTTP methods supported by this API
 * `**spec/url/paths**`: URL paths supported by this API
 * `**spec/url/params**`: List of supported URL request params
@@ -146,7 +146,7 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
 }
 ----
 
-The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a json object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
+The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a JSON object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
 
 == Invocation Examples
 

@@ -6,4 +6,4 @@
   // based on page variables, build up the list of headers for the top level toc (and any sub-section tocs)
   do_tocs({{ page.toclevels | default:2 }})
 </script>
-<div id="toc" class="toc toc-{{ page.tocclass | default:'normal' }}"></div>
+<nav id="toc" class="toc toc-{{ page.tocclass | default:'normal' }}"></nav>

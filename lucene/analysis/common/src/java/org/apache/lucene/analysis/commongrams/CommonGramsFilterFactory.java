@@ -23,8 +23,10 @@ import java.util.Map;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Constructs a {@link CommonGramsFilter}.
@@ -35,6 +37,8 @@ import org.apache.lucene.analysis.util.*;
  *     &lt;filter class="solr.CommonGramsFilterFactory" words="commongramsstopwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class CommonGramsFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   // TODO: shared base class for Stop/Keep/CommonGrams? 
@@ -63,7 +67,7 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements Reso
         commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
       }
     } else {
-      commonWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
+      commonWords = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
     }
   }
 

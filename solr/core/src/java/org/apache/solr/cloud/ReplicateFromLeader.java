@@ -37,13 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ReplicateFromLeader {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private CoreContainer cc;
-  private String coreName;
+  private final CoreContainer cc;
+  private final String coreName;
 
-  private ReplicationHandler replicationProcess;
-  private long lastVersion = 0;
+  private volatile ReplicationHandler replicationProcess;
+  private volatile long lastVersion = 0;
 
   public ReplicateFromLeader(CoreContainer cc, String coreName) {
     this.cc = cc;
@@ -66,12 +66,15 @@ public class ReplicateFromLeader {
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
       String pollIntervalStr = "00:00:03";
+      if (System.getProperty("jetty.testMode") != null) {
+        pollIntervalStr = "00:00:01";
+      }
       if (uinfo.autoCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime/2);
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime/2);
       }
-      LOG.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
+      log.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
 
       NamedList<Object> slaveConfig = new NamedList<>();
       slaveConfig.add("fetchFromLeader", Boolean.TRUE);
@@ -97,7 +100,7 @@ public class ReplicateFromLeader {
                 new ModifiableSolrParams());
             CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
             cuc.setVersion(Long.parseLong(commitVersion));
-            updateLog.copyOverOldUpdates(cuc);
+            updateLog.commitAndSwitchToNewTlog(cuc);
             lastVersion = Long.parseLong(commitVersion);
           }
         });
@@ -114,7 +117,7 @@ public class ReplicateFromLeader {
       if (commitVersion == null) return null;
       else return commitVersion;
     } catch (Exception e) {
-      LOG.warn("Cannot get commit command version from index commit point ",e);
+      log.warn("Cannot get commit command version from index commit point ",e);
       return null;
     }
   }

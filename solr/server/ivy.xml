@@ -16,7 +16,7 @@
    specific language governing permissions and limitations
    under the License.    
 -->
-<ivy-module version="2.0">
+<ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="server"/>
   <configurations defaultconfmapping="metrics->master;jetty->master;start->master;servlet->master;logging->master">
     <conf name="metrics" description="metrics jars" transitive="true"/>
@@ -56,11 +56,18 @@
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-java-server" rev="${/org.eclipse.jetty/jetty-alpn-java-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-server" rev="${/org.eclipse.jetty/jetty-alpn-server}" conf="jetty"/>
+
+    <dependency org="org.eclipse.jetty.http2" name="http2-server" rev="${/org.eclipse.jetty.http2/http2-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="jetty"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 
-    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start"/>
-
+    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start">
+      <artifact name="jetty-start" type="jar" maven:classifier="shaded"/>
+    </dependency>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

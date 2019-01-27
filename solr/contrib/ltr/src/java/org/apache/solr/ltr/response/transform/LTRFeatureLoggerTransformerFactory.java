@@ -204,7 +204,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
             "searcher is null");
       }
       leafContexts = searcher.getTopReaderContext().leaves();
-
+      if (threadManager != null) {
+        threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+      }
+      
       // Setup LTRScoringQuery
       scoringQuery = SolrQueryRequestContextUtils.getScoringQuery(req);
       docsWereNotReranked = (scoringQuery == null);
@@ -256,7 +259,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void transform(SolrDocument doc, int docid, float score)
         throws IOException {
-      implTransform(doc, docid, new Float(score));
+      implTransform(doc, docid, score);
     }
 
     @Override

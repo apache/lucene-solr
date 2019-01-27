@@ -16,38 +16,14 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.DocIdSetIterator;
-
 /**
- * Extension of {@link PostingsEnum} which also provides information about the
- * produced scores.
+ * Extension of {@link PostingsEnum} which also provides information about
+ * upcoming impacts.
  * @lucene.experimental
  */
-public abstract class ImpactsEnum extends PostingsEnum {
+public abstract class ImpactsEnum extends PostingsEnum implements ImpactsSource {
 
   /** Sole constructor. */
   protected ImpactsEnum() {}
-
-  /**
-   * Advance to the block of documents that contains {@code target} in order to
-   * get scoring information about this block. This method is implicitly called
-   * by {@link DocIdSetIterator#advance(int)} and
-   * {@link DocIdSetIterator#nextDoc()}. Calling this method doesn't modify the
-   * current {@link DocIdSetIterator#docID()}.
-   * It returns a number that is greater than or equal to all documents
-   * contained in the current block, but less than any doc IDS of the next block.
-   * {@code target} must be &gt;= {@link #docID()} as well as all targets that
-   * have been passed to {@link #advanceShallow(int)} so far.
-   */
-  public abstract int advanceShallow(int target) throws IOException;
-
-  /**
-   * Return the maximum score that documents between the last {@code target}
-   * that this iterator was {@link #advanceShallow(int) shallow-advanced} to
-   * included and {@code upTo} included.
-   */
-  public abstract float getMaxScore(int upTo) throws IOException;
 
 }

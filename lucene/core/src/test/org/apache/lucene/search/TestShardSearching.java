@@ -24,8 +24,8 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -41,7 +41,7 @@ import org.apache.lucene.util.TestUtil;
 //   - test pulling docs in 2nd round trip...
 //   - filter too
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestShardSearching extends ShardSearchingTestBase {
 
   private static class PreviousSearchState {
@@ -174,7 +174,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
           if (terms == null && docCount > minDocsToMakeTerms) {
             // TODO: try to "focus" on high freq terms sometimes too
             // TODO: maybe also periodically reset the terms...?
-            final TermsEnum termsEnum = MultiFields.getTerms(mockReader, "body").iterator();
+            final TermsEnum termsEnum = MultiTerms.getTerms(mockReader, "body").iterator();
             terms = new ArrayList<>();
             while(termsEnum.next() != null) {
               terms.add(BytesRef.deepCopyOf(termsEnum.term()));
@@ -328,12 +328,12 @@ public class TestShardSearching extends ShardSearchingTestBase {
         System.out.println("  shard=" + shardID + " maxDoc=" + shardSearchers[shardID].searcher.getIndexReader().maxDoc());
       }
       */
-      System.out.println("  single searcher: " + hits.totalHits + " totalHits maxScore=" + hits.getMaxScore());
+      System.out.println("  single searcher: " + hits.totalHits.value);
       for(int i=0;i<hits.scoreDocs.length;i++) {
         final ScoreDoc sd = hits.scoreDocs[i];
         System.out.println("    doc=" + sd.doc + " score=" + sd.score);
       }
-      System.out.println("  shard searcher: " + shardHits.totalHits + " totalHits maxScore=" + shardHits.getMaxScore());
+      System.out.println("  shard searcher: " + shardHits.totalHits.value);
       for(int i=0;i<shardHits.scoreDocs.length;i++) {
         final ScoreDoc sd = shardHits.scoreDocs[i];
         System.out.println("    doc=" + sd.doc + " (rebased: " + (sd.doc + base[sd.shardIndex]) + ") score=" + sd.score + " shard=" + sd.shardIndex);
@@ -355,7 +355,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
     final ScoreDoc bottomHit;
     final ScoreDoc bottomHitShards;
 
-    if (numHitsPaged < hits.totalHits) {
+    if (numHitsPaged < hits.totalHits.value) {
       // More hits to page through
       moreHits = true;
       if (sort == null) {
@@ -372,7 +372,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       }
 
     } else {
-      assertEquals(hits.totalHits, numHitsPaged);
+      assertEquals(hits.totalHits.value, numHitsPaged);
       bottomHit = null;
       bottomHitShards = null;
       moreHits = false;
@@ -384,7 +384,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
       sd.doc += base[sd.shardIndex];
     }
 
-    TestUtil.assertEquals(hits, shardHits);
+    TestUtil.assertConsistent(hits, shardHits);
 
     if (moreHits) {
       // Return a continuation:

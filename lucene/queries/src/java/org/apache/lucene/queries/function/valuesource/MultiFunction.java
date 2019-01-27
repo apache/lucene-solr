@@ -73,7 +73,7 @@ public abstract class MultiFunction extends ValueSource {
   }
   
   /**
-   * Equivilent the the {@code FunctionValues[]} method with the same name, but optimized for 
+   * Equivalent to the {@code FunctionValues[]} method with the same name, but optimized for
    * dealing with exactly 2 arguments.
    *
    * @return true if <em>both</em> of the specified <code>values</code>
@@ -85,7 +85,7 @@ public abstract class MultiFunction extends ValueSource {
   }
   
   /**
-   * Equivilent the the {@code FunctionValues[]} method with the same name, but optimized for 
+   * Equivalent to the {@code FunctionValues[]} method with the same name, but optimized for
    * dealing with exactly 2 arguments.
    *
    * @return true if <em>either</em> of the specified <code>values</code>

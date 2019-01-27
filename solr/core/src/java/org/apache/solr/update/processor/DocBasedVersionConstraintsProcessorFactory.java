@@ -16,22 +16,24 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 /**
  * <p>
@@ -80,6 +82,14 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     document version that is not great enough to be silently ignored (and return 
  *     a status 200 to the client) instead of generating a 409 Version Conflict error.
  *   </li>
+ *
+ *   <li><code>supportMissingVersionOnOldDocs</code> - This boolean parameter defaults to
+ *     <code>false</code>, but if set to <code>true</code> allows any documents written *before*
+ *     this feature is enabled and which are missing the versionField to be overwritten.
+ *   </li>
+ *   <li><code>tombstoneConfig</code> - a list of field names to values to add to the
+ *   created tombstone document. In general is not a good idea to populate tombsone documents
+ *   with anything other than the minimum required fields so that it doean't match queries</li>
  * </ul>
  * @since 4.6.0
  */
@@ -90,7 +100,10 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
   private List<String> versionFields = null;
   private List<String> deleteVersionParamNames = Collections.emptyList();
   private boolean useFieldCache;
+  private boolean supportMissingVersionOnOldDocs = false;
+  private NamedList<Object> tombstoneConfig;
 
+  @SuppressWarnings("unchecked")
   @Override
   public void init( NamedList args )  {
 
@@ -129,6 +142,26 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       }
       ignoreOldUpdates = (Boolean) tmp;
     }
+
+    // optional - defaults to false
+    tmp = args.remove("supportMissingVersionOnOldDocs");
+    if (null != tmp) {
+      if (! (tmp instanceof Boolean) ) {
+        throw new SolrException(SERVER_ERROR,
+                "'supportMissingVersionOnOldDocs' must be configured as a <bool>");
+      }
+      supportMissingVersionOnOldDocs = ((Boolean)tmp).booleanValue();
+    }
+    
+    tmp = args.remove("tombstoneConfig");
+    if (null != tmp) {
+      if (! (tmp instanceof NamedList) ) {
+        throw new SolrException(SERVER_ERROR,
+                "'tombstoneConfig' must be configured as a <lst>.");
+      }
+      tombstoneConfig = (NamedList<Object>)tmp;
+    }
+
     super.init(args);
   }
 
@@ -139,8 +172,10 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
     return new DocBasedVersionConstraintsProcessor(versionFields,
                                                    ignoreOldUpdates,
                                                    deleteVersionParamNames,
+                                                   supportMissingVersionOnOldDocs,
                                                    useFieldCache,
-                                                   req, rsp, next);
+                                                   tombstoneConfig,
+                                                   req, next);
   }
 
   @Override
@@ -172,7 +207,34 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         }
       }
     }
+    
+    canCreateTombstoneDocument(core.getLatestSchema());
   }
-
+  
+  /**
+   * Validates that the schema would allow tombstones to be created by DocBasedVersionConstraintsProcessor by
+   * checking if the required fields are of known types
+   */
+  protected boolean canCreateTombstoneDocument(IndexSchema schema) {
+    Set<String> requiredFieldNames = schema.getRequiredFields().stream()
+        .filter(field -> field.getDefaultValue() == null)
+        .map(field -> field.getName())
+        .collect(Collectors.toSet());
+    if (tombstoneConfig != null) {
+      tombstoneConfig.forEach((k,v) -> requiredFieldNames.remove(k));
+    }
+    requiredFieldNames.remove(schema.getUniqueKeyField().getName());
+    if (versionFields != null) {
+      versionFields.forEach(field -> requiredFieldNames.remove(field));
+    }
+    if (!requiredFieldNames.isEmpty()) {
+      log.warn("The schema \"{}\" has required fields that aren't added in the tombstone."
+          + " This can cause deletes to fail if those aren't being added in some other way. Required Fields={}",
+          schema.getSchemaName(),
+          requiredFieldNames);
+      return false;
+    }
+    return true;
+  }
 
 }

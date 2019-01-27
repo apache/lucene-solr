@@ -16,11 +16,10 @@
  limitations under the License.
 -->
 <schema name="codec" version="1.2">
-  <fieldType name="string_direct" class="solr.StrField" postingsFormat="Direct"/>
+  <fieldType name="string_direct" class="solr.StrField" postingsFormat="Direct" docValuesFormat="Direct"/>
   <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene50"/>
 
-  <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene70"/>
-  <fieldType name="string_memory" class="solr.StrField" docValuesFormat="Memory"/>
+  <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene80"/>
 
   <fieldType name="string" class="solr.StrField"/>
 
@@ -39,7 +38,6 @@
   <field name="string_standard_f" type="string_standard" indexed="true" stored="true"/>
 
   <field name="string_disk_f" type="string_disk" indexed="false" stored="false" docValues="true" default=""/>
-  <field name="string_memory_f" type="string_memory" indexed="false" stored="false" docValues="true" default=""/>
 
   <field name="string_f" type="string" indexed="true" stored="true" docValues="true" required="true"/>
   <field name="text" type="text_general" indexed="true" stored="true"/>
@@ -48,7 +46,6 @@
   <dynamicField name="*_standard" type="string_standard" indexed="true" stored="true"/>
 
   <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true"/>
-  <dynamicField name="*_memory" type="string_memory" indexed="false" stored="false" docValues="true"/>
 
   <uniqueKey>string_f</uniqueKey>
 </schema>

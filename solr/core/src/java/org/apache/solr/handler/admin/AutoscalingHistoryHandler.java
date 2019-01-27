@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * collection.
  */
 public class AutoscalingHistoryHandler extends RequestHandlerBase implements PermissionNameProvider {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SYSTEM_COLLECTION_PARAM = "systemCollection";
 
@@ -125,8 +125,8 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
         }
       }
     }
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(coreContainer.getZkController().getZkServerAddress()), Optional.empty())
-        .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(coreContainer.getZkController().getZkServerAddress()), Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000)
+        .withHttpClient(coreContainer.getUpdateShardHandler().getDefaultHttpClient())
         .build()) {
       QueryResponse qr = cloudSolrClient.query(collection, params);
       rsp.setAllValues(qr.getResponse());
@@ -134,7 +134,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign
         String msg = "Collection " + collection + " does not exist.";
-        LOG.info(msg);
+        log.info(msg);
         rsp.getValues().add("error", msg);
       } else {
         throw e;

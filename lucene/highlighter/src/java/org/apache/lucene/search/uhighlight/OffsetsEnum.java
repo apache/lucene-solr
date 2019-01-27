@@ -19,12 +19,20 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.TreeSet;
+import java.util.function.Supplier;
 
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -45,6 +53,10 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
       int cmp = Integer.compare(startOffset(), other.startOffset());
       if (cmp != 0) {
         return cmp; // vast majority of the time we return here.
+      }
+      cmp = Integer.compare(endOffset(), other.endOffset());
+      if (cmp != 0) {
+        return cmp;
       }
       final BytesRef thisTerm = this.getTerm();
       final BytesRef otherTerm = other.getTerm();
@@ -73,8 +85,10 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   public abstract int freq() throws IOException;
 
   /**
-   * The term at this position; usually always the same.
+   * The term at this position.
    * This BytesRef is safe to continue to refer to, even after we move to the next position.
+   *
+   * @see Passage#getMatchTerms()
    */
   public abstract BytesRef getTerm() throws IOException;
 
@@ -89,8 +103,14 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   @Override
   public String toString() {
     final String name = getClass().getSimpleName();
+    String offset = "";
     try {
-      return name + "(term:" + getTerm().utf8ToString() +")";
+      offset = ",[" + startOffset() + "-" + endOffset() + "]";
+    } catch (Exception e) {
+      //ignore; for debugging only
+    }
+    try {
+      return name + "(term:" + getTerm().utf8ToString() + offset + ")";
     } catch (Exception e) {
       return name;
     }
@@ -153,6 +173,201 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
   }
 
+  /** Based on a {@link MatchesIterator} with submatches. */
+  public static class OfMatchesIteratorWithSubs extends OffsetsEnum {
+    //Either CachedOE impls (which are the submatches) or OfMatchesIterator impls
+    private final PriorityQueue<OffsetsEnum> pendingQueue = new PriorityQueue<>();
+    private final HashMap<Query,BytesRef> queryToTermMap = new HashMap<>();
+
+    public OfMatchesIteratorWithSubs(MatchesIterator matchesIterator) {
+      pendingQueue.add(new OfMatchesIterator(matchesIterator, () -> queryToTerm(matchesIterator.getQuery())));
+    }
+
+    @Override
+    public boolean nextPosition() throws IOException {
+      OffsetsEnum formerHeadOE = pendingQueue.poll(); // removes the head
+      if (formerHeadOE instanceof CachedOE) {
+        // we're done with the former head.  CachedOE's are one use only.
+        // Look at the new head...
+        OffsetsEnum newHeadOE = pendingQueue.peek();
+        if (newHeadOE instanceof OfMatchesIterator) {
+          // We found the matchesIterator.  Requires processing.
+          nextWhenMatchesIterator((OfMatchesIterator) newHeadOE);  // May or may not remove or re-queue itself
+        } // else new head is a CacheOE or no more.  Nothing to do with it.
+
+      } else { // formerHeadOE is OfMatchesIterator; advance it
+        OfMatchesIterator miOE = (OfMatchesIterator) formerHeadOE;
+        if (miOE.nextPosition()) {
+          nextWhenMatchesIterator(miOE); // requires processing.  May or may not re-enqueue itself
+        }
+      }
+      return pendingQueue.isEmpty() == false;
+    }
+
+    private void nextWhenMatchesIterator(OfMatchesIterator miOE) throws IOException {
+      boolean isHead = miOE == pendingQueue.peek();
+      MatchesIterator subMatches = miOE.matchesIterator.getSubMatches();
+      if (subMatches != null) {
+        // remove this miOE from the queue, add it's submatches, next() it, then re-enqueue it
+        if (isHead) {
+          pendingQueue.poll(); // remove
+        }
+
+        enqueueCachedMatches(subMatches);
+
+        if (miOE.nextPosition()) {
+          pendingQueue.add(miOE);
+          assert pendingQueue.peek() != miOE; // miOE should follow cached entries
+        }
+
+      } else { // else has no subMatches.  It will stay enqueued.
+        if (!isHead) {
+          pendingQueue.add(miOE);
+        } // else it's *already* in pendingQueue
+      }
+    }
+
+    private boolean enqueueCachedMatches(MatchesIterator thisMI) throws IOException {
+      if (thisMI == null) {
+        return false;
+      } else {
+        while (thisMI.next()) {
+          if (false == enqueueCachedMatches(thisMI.getSubMatches())) { // recursion
+            // if no sub-matches then add ourselves
+            pendingQueue.add(new CachedOE(queryToTerm(thisMI.getQuery()), thisMI.startOffset(), thisMI.endOffset()));
+          }
+        }
+        return true;
+      }
+    }
+
+    /** Maps a Query from {@link MatchesIterator#getQuery()} to {@link OffsetsEnum#getTerm()}.
+     * See {@link Passage#getMatchTerms()}. */
+    private BytesRef queryToTerm(Query query) {
+      // compute an approximate BytesRef term of a Query.  We cache this since we're likely to see the same query again.
+      // Our approach is to call extractTerms and visit each term in order, concatenating them with an adjoining space.
+      //  If we don't have any (perhaps due to an MTQ like a wildcard) then we fall back on the toString() of the query.
+      return queryToTermMap.computeIfAbsent(query, (Query q) -> {
+        try {
+          BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
+          UnifiedHighlighter.EMPTY_INDEXSEARCHER
+              .createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1f)
+              .extractTerms(new TreeSet<Term>() {
+            @Override
+            public boolean add(Term term) {
+              if (bytesRefBuilder.length() > 0) {
+                bytesRefBuilder.append((byte) ' ');
+              }
+              bytesRefBuilder.append(term.bytes());
+              return true;
+            }
+          });
+          if (bytesRefBuilder.length() > 0) {
+            return bytesRefBuilder.get();
+          }
+        } catch (IOException e) {//ignore
+          // go to fallback...
+        }
+
+        // fallback:  (likely a MultiTermQuery)
+        return new BytesRef(q.toString());
+      });
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return pendingQueue.peek().freq();
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      return pendingQueue.peek().getTerm();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return pendingQueue.peek().startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return pendingQueue.peek().endOffset();
+    }
+
+    private static class CachedOE extends OffsetsEnum {
+      final BytesRef term;
+      final int startOffset;
+      final int endOffset;
+
+      private CachedOE(BytesRef term, int startOffset, int endOffset) {
+        this.term = term;
+        this.startOffset = startOffset;
+        this.endOffset = endOffset;
+      }
+
+      @Override
+      public boolean nextPosition() throws IOException {
+        return false;
+      }
+
+      @Override
+      public int freq() throws IOException {
+        return 1; // documented short-coming of MatchesIterator based UnifiedHighlighter
+      }
+
+      @Override
+      public BytesRef getTerm() throws IOException {
+        return term;
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return startOffset;
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return endOffset;
+      }
+    }
+  }
+
+  /** Based on a {@link MatchesIterator}; does not look at submatches. */
+  public static class OfMatchesIterator extends OffsetsEnum {
+    private final MatchesIterator matchesIterator;
+    private final Supplier<BytesRef> termSupplier;
+
+    public OfMatchesIterator(MatchesIterator matchesIterator, Supplier<BytesRef> termSupplier) {
+      this.matchesIterator = matchesIterator;
+      this.termSupplier = termSupplier;
+    }
+
+    @Override
+    public boolean nextPosition() throws IOException {
+      return matchesIterator.next();
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 1; // documented short-coming of MatchesIterator based UnifiedHighlighter
+    }
+
+    @Override
+    public BytesRef getTerm() throws IOException {
+      return termSupplier.get();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return matchesIterator.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return matchesIterator.endOffset();
+    }
+  }
+
   /**
    * Empty enumeration
    */
@@ -187,6 +402,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   /**
    * A view over several OffsetsEnum instances, merging them in-place
    */
+  //If OffsetsEnum and MatchesIterator ever truly merge then this could go away in lieu of DisjunctionMatchesIterator
   public static class MultiOffsetsEnum extends OffsetsEnum {
 
     private final PriorityQueue<OffsetsEnum> queue;

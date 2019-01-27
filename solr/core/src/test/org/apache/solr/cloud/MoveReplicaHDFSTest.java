@@ -16,13 +16,19 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+
 import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +40,9 @@ import org.junit.Test;
     BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
-@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
+@Nightly // test is too long for non nightly
+@TimeoutSuite(millis = TimeUnits.HOUR)
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13060")
 public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   private static MiniDFSCluster dfsCluster;
@@ -52,35 +60,61 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    cluster.shutdown(); // need to close before the MiniDFSCluster
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      IOUtils.close(
+          () -> {
+            try {
+              if (cluster != null) cluster.shutdown();
+            } catch (Exception e) {
+              throw new IOException("Could not shut down the cluster.", e);
+            }
+          },
+          () -> {
+            try {
+              if (dfsCluster != null) HdfsTestUtil.teardownClass(dfsCluster);
+            } catch (Exception e) {
+              throw new IOException("Could not shut down dfs cluster.", e);
+            }
+          }
+      );
+    } finally {
+      cluster = null;
+      dfsCluster = null;
+    }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
   public void testNormalMove() throws Exception {
     inPlaceMove = false;
     test();
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+  //commented 23-AUG-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
+  //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNormalFailedMove() throws Exception {
     inPlaceMove = false;
     testFailedMove();
   }
 
-  public static class ForkJoinThreadsFilter implements ThreadFilter {
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12080") // added 03-Oct-2018
+  public void testFailedMove() throws Exception {
+    super.testFailedMove();
+  }
 
+  public static class ForkJoinThreadsFilter implements ThreadFilter {
     @Override
     public boolean reject(Thread t) {
       String name = t.getName();
-      if (name.startsWith("ForkJoinPool.commonPool")) {
-        return true;
-      }
-      return false;
+      return name.startsWith("ForkJoinPool.commonPool");
     }
   }
-
 }
+

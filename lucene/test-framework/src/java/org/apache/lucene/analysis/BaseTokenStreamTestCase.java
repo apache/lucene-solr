@@ -194,7 +194,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       
       checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
       assertTrue("token "+i+" does not exist", ts.incrementToken());
-      assertTrue("clearAttributes() was not called correctly in TokenStream chain", checkClearAtt.getAndResetClearCalled());
+      assertTrue("clearAttributes() was not called correctly in TokenStream chain at token " + i, checkClearAtt.getAndResetClearCalled());
 
       assertEquals("term "+i, output[i], termAtt.toString());
       if (startOffsets != null) {
@@ -438,7 +438,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     } finally {
       // consume correctly
       ts.reset();
-      while (ts.incrementToken()) {}
+      while (ts.incrementToken()) { }
       ts.end();
       ts.close();
     }
@@ -549,9 +549,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     Directory dir = null;
     RandomIndexWriter iw = null;
     final String postingsFormat =  TestUtil.getPostingsFormat("dummy");
-    boolean codecOk = iterations * maxWordLength < 100000 ||
-        !(postingsFormat.equals("Memory") ||
-            postingsFormat.equals("SimpleText"));
+    boolean codecOk = iterations * maxWordLength < 100000 || !(postingsFormat.equals("SimpleText"));
     if (rarely(random) && codecOk) {
       dir = newFSDirectory(createTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);

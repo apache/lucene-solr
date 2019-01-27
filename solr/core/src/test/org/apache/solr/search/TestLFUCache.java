@@ -16,18 +16,6 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.ConcurrentLFUCache;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.RefCounted;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -37,6 +25,17 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.ConcurrentLFUCache;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -56,9 +55,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
 
   @Test
   public void testTimeDecayParams() throws IOException {
-    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
-    try {
-      SolrIndexSearcher searcher = holder.get();
+    h.getCore().withSearcher(searcher -> {
       LFUCache cacheDecayTrue = (LFUCache) searcher.getCache("lfuCacheDecayTrue");
       assertNotNull(cacheDecayTrue);
       Map<String,Object> stats = cacheDecayTrue.getMetricsMap().getValue();
@@ -101,10 +98,8 @@ public class TestLFUCache extends SolrTestCaseJ4 {
         addCache(cacheDecayFalse, idx);
       }
       assertCache(cacheDecayFalse, 1, 2, 3, 4, 5);
-
-    } finally {
-      holder.decref();
-    }
+      return null;
+    });
   }
 
   private void addCache(LFUCache cache, int... inserts) {

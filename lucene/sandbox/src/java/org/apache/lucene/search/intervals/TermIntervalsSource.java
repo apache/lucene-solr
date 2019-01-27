@@ -30,6 +30,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -53,6 +55,10 @@ class TermIntervalsSource extends IntervalsSource {
     if (te.seekExact(term) == false) {
       return null;
     }
+    return intervals(term, te);
+  }
+
+  static IntervalIterator intervals(BytesRef term, TermsEnum te) throws IOException {
     PostingsEnum pe = te.postings(null, PostingsEnum.POSITIONS);
     float cost = termPositionsCost(te);
     return new IntervalIterator() {
@@ -94,6 +100,11 @@ class TermIntervalsSource extends IntervalsSource {
       }
 
       @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
       public int nextInterval() throws IOException {
         if (upto <= 0)
           return pos = NO_MORE_INTERVALS;
@@ -122,6 +133,79 @@ class TermIntervalsSource extends IntervalsSource {
         return term.utf8ToString() + ":" + super.toString();
       }
     };
+  }
+
+  @Override
+  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    Terms terms = ctx.reader().terms(field);
+    if (terms == null)
+      return null;
+    if (terms.hasPositions() == false) {
+      throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
+    }
+    TermsEnum te = terms.iterator();
+    if (te.seekExact(term) == false) {
+      return null;
+    }
+    return matches(te, doc);
+  }
+
+  static MatchesIterator matches(TermsEnum te, int doc) throws IOException {
+    PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
+    if (pe.advance(doc) != doc) {
+      return null;
+    }
+    return new MatchesIterator() {
+
+      int upto = pe.freq();
+      int pos = -1;
+
+      @Override
+      public boolean next() throws IOException {
+        if (upto <= 0) {
+          pos = IntervalIterator.NO_MORE_INTERVALS;
+          return false;
+        }
+        upto--;
+        pos = pe.nextPosition();
+        return true;
+      }
+
+      @Override
+      public int startPosition() {
+        return pos;
+      }
+
+      @Override
+      public int endPosition() {
+        return pos;
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return pe.startOffset();
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return pe.endOffset();
+      }
+
+      @Override
+      public MatchesIterator getSubMatches() {
+        return null;
+      }
+
+      @Override
+      public Query getQuery() {
+        throw new UnsupportedOperationException();
+      }
+    };
+  }
+
+  @Override
+  public int minExtent() {
+    return 1;
   }
 
   @Override

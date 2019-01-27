@@ -18,7 +18,6 @@ package org.apache.lucene.spatial;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
@@ -31,6 +30,7 @@ import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
+import org.apache.lucene.util.ArrayUtil;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
@@ -107,7 +107,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   void checkDistValueSource(Point pt, float... distances) throws IOException {
     float multiplier = random().nextFloat() * 100f;
-    float[] dists2 = Arrays.copyOf(distances, distances.length);
+    float[] dists2 = ArrayUtil.copyOfSubArray(distances, 0, distances.length);
     for (int i = 0; i < dists2.length; i++) {
       dists2[i] *= multiplier;
     }

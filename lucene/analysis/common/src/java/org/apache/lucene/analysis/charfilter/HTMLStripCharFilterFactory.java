@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
  */
 public class HTMLStripCharFilterFactory extends CharFilterFactory {
   final Set<String> escapedTags;

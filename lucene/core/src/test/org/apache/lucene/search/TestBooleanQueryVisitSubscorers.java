@@ -37,7 +37,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -141,7 +140,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     private final Set<Scorer> tqsSet = new HashSet<>();
     
     MyCollector() {
-      super(TopScoreDocCollector.create(10));
+      super(TopScoreDocCollector.create(10, Integer.MAX_VALUE));
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context)
@@ -150,7 +149,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
       return new FilterLeafCollector(super.getLeafCollector(context)) {
         
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           tqsSet.clear();
           fillLeaves(scorer, tqsSet);
@@ -171,11 +170,11 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
       };
     }
     
-    private void fillLeaves(Scorer scorer, Set<Scorer> set) throws IOException {
-      if (scorer.getWeight().getQuery() instanceof TermQuery) {
-        set.add(scorer);
+    private void fillLeaves(Scorable scorer, Set<Scorer> set) throws IOException {
+      if (scorer instanceof TermScorer) {
+        set.add((Scorer)scorer);
       } else {
-        for (ChildScorer child : scorer.getChildren()) {
+        for (Scorable.ChildScorable child : scorer.getChildren()) {
           fillLeaves(child.child, set);
         }
       }
@@ -283,7 +282,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
       return new LeafCollector() {
 
         @Override
-        public void setScorer(Scorer scorer) throws IOException {
+        public void setScorer(Scorable scorer) throws IOException {
           final StringBuilder builder = new StringBuilder();
           summarizeScorer(builder, scorer, 0);
           summaries.add(builder.toString());
@@ -296,13 +295,13 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
       };
     }
 
-    private static void summarizeScorer(final StringBuilder builder, final Scorer scorer, final int indent) throws IOException {
+    private static void summarizeScorer(final StringBuilder builder, final Scorable scorer, final int indent) throws IOException {
       builder.append(scorer.getClass().getSimpleName());
       if (scorer instanceof TermScorer) {
-        TermQuery termQuery = (TermQuery) scorer.getWeight().getQuery();
+        TermQuery termQuery = (TermQuery) ((Scorer)scorer).getWeight().getQuery();
         builder.append(" ").append(termQuery.getTerm().field()).append(":").append(termQuery.getTerm().text());
       }
-      for (final ChildScorer childScorer : scorer.getChildren()) {
+      for (final Scorable.ChildScorable childScorer : scorer.getChildren()) {
         indent(builder, indent + 1).append(childScorer.relationship).append(" ");
         summarizeScorer(builder, childScorer.child, indent + 2);
       }
@@ -329,7 +328,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
 
     @Override
     public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimScorer(collectionStats.field()) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           return freq;

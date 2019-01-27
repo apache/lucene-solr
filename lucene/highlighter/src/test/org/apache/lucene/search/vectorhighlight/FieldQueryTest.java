@@ -27,16 +27,12 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.join.QueryBitSetProducer;
-import org.apache.lucene.search.join.ScoreMode;
-import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.BytesRef;
@@ -954,15 +950,4 @@ public class FieldQueryTest extends AbstractTestCase {
     fq.flatten( query, reader, flatQueries, 1f );
     assertCollectionQueries( flatQueries, tq( boost, "A" ) );
   }
-
-  public void testFlattenToParentBlockJoinQuery() throws Exception {
-    initBoost();
-    Query childQuery = tq(boost, "a");
-    Query query = new ToParentBlockJoinQuery(childQuery, new QueryBitSetProducer(new MatchAllDocsQuery()), ScoreMode.None);
-    FieldQuery fq = new FieldQuery(query, true, true );
-    Set<Query> flatQueries = new HashSet<>();
-    fq.flatten(query, reader, flatQueries, 1f);
-    assertCollectionQueries(flatQueries, tq(boost, "a"));
-  }
-
 }

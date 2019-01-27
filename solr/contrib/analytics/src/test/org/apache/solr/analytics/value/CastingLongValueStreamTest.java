@@ -86,7 +86,7 @@ public class CastingLongValueStreamTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValues(20L, -3L, 42L);
-    Iterator<Object> values = Arrays.<Object>asList(new Long(20L), new Long(-3L), new Long(42L)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(20L, -3L, 42L).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);

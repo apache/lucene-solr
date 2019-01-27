@@ -82,7 +82,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
             f("subtitle", "Ineluctably, Flashman."),
             f("corrolary_txt", "Forsooth thou bringeth Flashman."),
             f("notes_txt", "Yes Flashman."),
-            f("summary", "Many aspire to be Flashman."),
+            f("summary", "Many aspire to be Flashman in London."),
             f("descs", "Courage, Flashman.", "Ain't he Flashman."),
             f("descriptions", "Flashman. Flashman. Flashman.")));
 
@@ -91,6 +91,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
     assertEquals(Arrays.asList("Flashman", "Flashman"), doc.getFieldValues("key_desc_people"));
     assertEquals(Arrays.asList("Flashman", "Flashman", "Flashman"), doc.getFieldValues("key_description_people"));
     assertEquals("Flashman", doc.getFieldValue("summary_person_s")); // {EntityType} field name interpolation
+    assertEquals("London", doc.getFieldValue("summary_location_s")); // {EntityType} field name interpolation
   }
 
   public void testEquivalentExtraction() throws Exception {
@@ -182,11 +183,13 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
   public void testExtractFieldRegexReplaceAllWithEntityType() throws Exception {
     SolrInputDocument d = processAdd("extract-regex-replaceall-with-entity-type",
         doc(f("id", "1111"),
-            f("foo_x2_s", "Infrequently Flashman.", "In the words of Flashman."),
-            f("foo_x3_x7_s", "Flashman. Whoa.")));
+            f("foo_x2_s", "Infrequently Flashman in London.", "In the words of Flashman in London."),
+            f("foo_x3_x7_s", "Flashman in London. Whoa.")));
 
     assertNotNull(d);
     assertEquals(d.getFieldNames().toString(), Arrays.asList("Flashman", "Flashman"), d.getFieldValues("foo_person_y2_s"));
+    assertEquals(d.getFieldNames().toString(), Arrays.asList("London", "London"), d.getFieldValues("foo_location_y2_s"));
     assertEquals(d.getFieldNames().toString(),"Flashman", d.getFieldValue("foo_person_y3_person_y7_s"));
+    assertEquals(d.getFieldNames().toString(),"London", d.getFieldValue("foo_location_y3_location_y7_s"));
   }
 }

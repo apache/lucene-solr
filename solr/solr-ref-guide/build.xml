@@ -101,7 +101,7 @@
   <!-- for the PDF guide, we always use absolute javadoc urls -->
   <property name="pdf-solr-javadocs" value="https://lucene.apache.org/solr/${solr-docs-version-path}/" />
   <property name="pdf-lucene-javadocs" value="https://lucene.apache.org/core/${solr-docs-version-path}/" />
-  
+
   <property name="build.content.dir" location="${build.dir}/content" />
   <property name="main-page" value="index" />
   <property name="pdf-filename" value="apache-solr-ref-guide-${solr-guide-version}.pdf" />
@@ -192,7 +192,7 @@
     <attribute name="outputDirectory"/>
     <attribute name="backend"/>
     <attribute name="solr-javadocs" default="${pdf-solr-javadocs}" />
-    <attribute name="lucene-javadocs" default="#{pdf-lucene-javadocs}" />
+    <attribute name="lucene-javadocs" default="${pdf-lucene-javadocs}" />
     <attribute name="headerFooter" default="true" />
     <sequential>
       <!-- NOTE: we have our own variant on the asciidoctor-ant task, so that sourceDocumentName=""
@@ -247,7 +247,7 @@
     </sequential>
   </macrodef>
 
-  
+
   <!-- ====== PDF Build ======= -->
   <target name="build-pdf" depends="bare-bones-html-validation,-build-pdf-and-reduce-pdf"
           description="Builds the PDF (after building &amp; validating a bare-bones html version)" />
@@ -265,7 +265,7 @@
                          />
     <move file="${build.dir}/pdf-tmp/SolrRefGuide-all.pdf" tofile="${build.dir}/pdf-tmp/RAW-${pdf-filename}" />
   </target>
-  
+
   <target name="-reduce-pdf-size" depends="build-init,build-tools-jar">
     <java classname="ReducePDFSize"
           failonerror="true"
@@ -296,20 +296,20 @@
   <target name="-build-site"
           depends="build-init,build-nav-data-files" >
     <echo>Running Jekyll...</echo>
-    <exec executable="jekyll" dir="${build.content.dir}">
+    <exec executable="jekyll" dir="${build.content.dir}" failonerror="true">
       <arg value="build"/>
     </exec>
   </target>
-  
+
   <!-- ======= HTML Bare Bones Conversion =======
        Does a very raw converstion of the adoc files to HTML for the purpose of link & anchor checking
-       
+
        Unlike the "HTML Site Build" above, this does *NOT* require Jekyll, and can be done entirely
        With ivy deps fetched automatically (just like the PDF)
        -->
   <target name="bare-bones-html-validation" depends="build-init,build-nav-data-files"
           description="Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it">
-    
+
     <delete dir="${build.dir}/bare-bones-html"/>
     <mkdir dir="${build.dir}/bare-bones-html"/>
     <asciidoctor-convert sourceDirectory="${build.content.dir}"
@@ -341,6 +341,6 @@
     <echo>SITE: ${build.dir}/html-site/${main-page}.html</echo>
   </target>
 
-  
-  
+
+
 </project>

@@ -40,7 +40,6 @@
     <module>phonetic</module>
     <module>smartcn</module>
     <module>stempel</module>
-    <module>uima</module>
   </modules>
   <build>
     <plugins>

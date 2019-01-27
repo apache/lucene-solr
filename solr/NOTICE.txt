@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2018 The Apache Software Foundation
+ Copyright 2006-2019 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -46,6 +46,12 @@ Copyright (c) 2008-2014, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
 This product includes require.js Javascript library created by James Burke
 Copyright (C) 2010-2014 James Burke, https://github.com/jrburke/requirejs
 
+This product includes angular-utf8-base64.js Javascript library created by Andrey Bezyazychniy
+Copyright (c) 2014 Andrey Bezyazychniy, https://github.com/stranger82/angular-utf8-base64
+
+This product includes code copied and modified from the www-authenticate Javascript library 
+Copyright (c) 2013 Randy McLaughlin, MIT-license, https://github.com/randymized/www-authenticate
+
 This product includes fugue icons created by Yusuke Kamiyamane
 Copyright (C) 2013-2014 Yusuke Kamiyamane, https://github.com/yusukekamiyamane/fugue-icons
 
@@ -73,6 +79,10 @@ Copyright (c) 2000-2005 INRIA, France Telecom
 This project includes portions of the Jekyll Documentation Theme
 Copyright (c) 2016 Tom Johnson
 License: MIT https://github.com/tomjohnson1492/documentation-theme-jekyll/blob/gh-pages/licenses/LICENSE
+
+This project includes templates from the Asciidoctor HTML5 backend converter
+Copyright (c) 2014-2018 Jakub Jirutka
+License: MIT https://github.com/jirutka/asciidoctor-html5s/blob/master/LICENSE
 
 This project includes the Navgoco JQuery plugin
 Copyright (c) 2013 Christopher Tsoulloftas, http://www.komposta.net
@@ -119,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2018 The Apache Software Foundation
+Copyright 2001-2019 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -310,6 +320,18 @@ grants independently of ICOT any specific warranty to the user in
 writing, such person, organization or entity, will also be exempted
 from and not be held liable to the user for any such damages as noted
 above as far as the program is concerned.
+
+===========================================================================
+Nori Korean Morphological Analyzer - Apache Lucene Integration
+===========================================================================
+
+This software includes a binary and/or source version of data from
+
+  mecab-ko-dic-2.0.3-20170922
+
+which can be obtained from
+
+  https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.0.3-20170922.tar.gz
 ---
 
 This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
@@ -537,3 +559,35 @@ See http://www.restlet.org/
 Protocol Buffers - Google's data interchange format
 Copyright 2008 Google Inc.
 http://code.google.com/apis/protocolbuffers/
+
+=========================================================================
+==     SolrTextTagger Notice                                           ==
+=========================================================================
+
+The TaggerRequestHandler and related classes in its package came from the
+OpenSextant Solr Text Tagger,
+Copyright 2013 The MITRE Corporation. All Rights Reserved.
+
+  This software was produced for the U. S. Government
+  under Contract No. W15P7T-11-C-F600, and is
+  subject to the Rights in Noncommercial Computer Software
+  and Noncommercial Computer Software Documentation
+  Clause 252.227-7014 (JUN 1995)
+
+=========================================================================
+==     Jose4j Notice                                                   ==
+=========================================================================
+
+jose4j
+Copyright 2012-2015 Brian Campbell
+
+EcdsaUsingShaAlgorithm contains code for converting the concatenated
+R & S values of the signature to and from DER, which was originally
+derived from the Apache Santuario XML Security library's SignatureECDSA
+implementation. http://santuario.apache.org/
+
+The Base64 implementation in this software was derived from the
+Apache Commons Codec project. http://commons.apache.org/proper/commons-codec/
+
+JSON processing in this software was derived from the JSON.simple toolkit.
+https://code.google.com/p/json-simple/

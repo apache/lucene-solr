@@ -176,13 +176,16 @@ public interface CommonParams {
   String OMIT_HEADER = "omitHeader";
   String CORES_HANDLER_PATH = "/admin/cores";
   String COLLECTIONS_HANDLER_PATH = "/admin/collections";
-  String HEALTH_CHECK_HANDLER_PATH = "/admin/health";
   String INFO_HANDLER_PATH = "/admin/info";
+  String HEALTH_CHECK_HANDLER_PATH = INFO_HANDLER_PATH + "/health";
   String CONFIGSETS_HANDLER_PATH = "/admin/configs";
   String AUTHZ_PATH = "/admin/authorization";
   String AUTHC_PATH = "/admin/authentication";
   String ZK_PATH = "/admin/zookeeper";
+  String ZK_STATUS_PATH = "/admin/zookeeper/status";
+  String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
+  String METRICS_HISTORY_PATH = "/admin/metrics/history";
   String AUTOSCALING_PATH = "/admin/autoscaling";
   String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
@@ -198,9 +201,11 @@ public interface CommonParams {
       COLLECTIONS_HANDLER_PATH,
       HEALTH_CHECK_HANDLER_PATH,
       CONFIGSETS_HANDLER_PATH,
+      SYSTEM_INFO_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
       METRICS_PATH,
+      METRICS_HISTORY_PATH,
       AUTOSCALING_PATH,
       AUTOSCALING_HISTORY_PATH,
       AUTOSCALING_DIAGNOSTICS_PATH,
@@ -288,5 +293,6 @@ public interface CommonParams {
   String JSON_MIME = "application/json";
 
   String JAVABIN_MIME = "application/javabin";
+
 }
 

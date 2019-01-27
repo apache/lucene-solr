@@ -88,13 +88,17 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .process(cluster.getSolrClient());
+
     }
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish
-        (collectionName, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+    
+    if (createNodeSet != null && createNodeSet.equals(OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY)) {
+      cluster.waitForActiveCollection(collectionName, numShards, 0);
+    } else {
+      cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
+    }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testCollectionCreateSearchDelete() throws Exception {
     final CloudSolrClient client = cluster.getSolrClient();
     final String collectionName = "testcollection";
@@ -108,11 +112,15 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // shut down a server
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
+    
+    cluster.waitForJettyToStop(stoppedServer);
+    
     assertTrue(stoppedServer.isStopped());
     assertEquals(nodeCount - 1, cluster.getJettySolrRunners().size());
 
     // create a server
     JettySolrRunner startedServer = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     assertTrue(startedServer.isRunning());
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
@@ -153,6 +161,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // re-create a server (to restore original nodeCount count)
     startedServer = cluster.startJettySolrRunner(jettyToStop);
+    cluster.waitForAllNodes(30);
     assertTrue(startedServer.isRunning());
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
@@ -162,6 +171,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // create it again
     createCollection(collectionName, null);
+    
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // check that there's no left-over state
     assertEquals(0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
@@ -172,7 +183,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
 
     final String collectionName = "testSolrCloudCollectionWithoutCores";
@@ -205,7 +216,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     final CloudSolrClient client = cluster.getSolrClient();
 
     assertNotNull(cluster.getZkServer());
-    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    List<JettySolrRunner> jettys = new ArrayList<>(cluster.getJettySolrRunners()); // make a copy
     assertEquals(nodeCount, jettys.size());
     for (JettySolrRunner jetty : jettys) {
       assertTrue(jetty.isRunning());
@@ -289,7 +300,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         assertTrue(jetty.isRunning());
       }
     }
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
+    cluster.waitForAllNodes(30);
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     zkStateReader.forceUpdateCollection(collectionName);
 

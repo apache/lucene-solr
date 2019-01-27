@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -121,10 +120,10 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     writer.commit();
     addDocs2(writer, 10);
     writer.commit();
-    assertEquals(30, writer.maxDoc());
+    assertEquals(30, writer.getDocStats().maxDoc);
     TestUtil.checkIndex(dir);
     writer.forceMerge(1);
-    assertEquals(30, writer.maxDoc());
+    assertEquals(30, writer.getDocStats().maxDoc);
     writer.close();
     dir.close();
   }
@@ -165,7 +164,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
-    iwconf.setCodec(new MockCodec2()); // uses standard for field content
+    iwconf.setCodec(new MockCodec()); // uses standard for field content
     writer = newWriter(dir, iwconf);
     // swap in new codec for currently written segments
     if (VERBOSE) {
@@ -174,7 +173,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     codec = iwconf.getCodec();
-    assertEquals(30, writer.maxDoc());
+    assertEquals(30, writer.getDocStats().maxDoc);
     assertQuery(new Term("content", "bbb"), dir, 10);
     assertQuery(new Term("content", "ccc"), dir, 10);   ////
     assertQuery(new Term("content", "aaa"), dir, 10);
@@ -187,13 +186,13 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "bbb"), dir, 20);
     assertQuery(new Term("content", "aaa"), dir, 10);
-    assertEquals(40, writer.maxDoc());
+    assertEquals(40, writer.getDocStats().maxDoc);
 
     if (VERBOSE) {
       System.out.println("TEST: now optimize");
     }
     writer.forceMerge(1);
-    assertEquals(40, writer.maxDoc());
+    assertEquals(40, writer.getDocStats().maxDoc);
     writer.close();
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "bbb"), dir, 20);
@@ -210,7 +209,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
-    assertEquals(num, search.totalHits);
+    assertEquals(num, search.totalHits.value);
     reader.close();
 
   }
@@ -218,24 +217,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   public static class MockCodec extends AssertingCodec {
     final PostingsFormat luceneDefault = TestUtil.getDefaultPostingsFormat();
     final PostingsFormat direct = new DirectPostingsFormat();
-    final PostingsFormat memory = new MemoryPostingsFormat();
-    
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      if (field.equals("id")) {
-        return direct;
-      } else if (field.equals("content")) {
-        return memory;
-      } else {
-        return luceneDefault;
-      }
-    }
-  }
 
-  public static class MockCodec2 extends AssertingCodec {
-    final PostingsFormat luceneDefault = TestUtil.getDefaultPostingsFormat();
-    final PostingsFormat direct = new DirectPostingsFormat();
-    
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
@@ -276,7 +258,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
         writer.forceMerge(1);
       }
       writer.commit();
-      assertEquals((i + 1) * docsPerRound, writer.maxDoc());
+      assertEquals((i + 1) * docsPerRound, writer.getDocStats().maxDoc);
       writer.close();
     }
     dir.close();
@@ -287,9 +269,9 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
-          return new MemoryPostingsFormat();
+          return new DirectPostingsFormat();
         } else if ("date".equals(field)) {
-          return new MemoryPostingsFormat();
+          return new DirectPostingsFormat();
         } else {
           return super.getPostingsFormatForField(field);
         }

@@ -20,9 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.SimpleCollector;
 
 /** Verifies in collect() that all child subScorers are on
@@ -31,17 +30,17 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
 
   // TODO: allow wrapping another Collector
 
-  List<Scorer> allScorers;
+  List<Scorable> allScorers;
 
   @Override
-  public void setScorer(Scorer s) throws IOException {
+  public void setScorer(Scorable s) throws IOException {
     // Gathers all scorers, including s and "under":
     allScorers = new ArrayList<>();
     allScorers.add(s);
     int upto = 0;
     while(upto < allScorers.size()) {
       s = allScorers.get(upto++);
-      for (ChildScorer sub : s.getChildren()) {
+      for (Scorable.ChildScorable sub : s.getChildren()) {
         allScorers.add(sub.child);
       }
     }
@@ -49,7 +48,7 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
 
   @Override
   public void collect(int docID) {
-    for(Scorer s : allScorers) {
+    for(Scorable s : allScorers) {
       if (docID != s.docID()) {
         throw new IllegalStateException("subScorer=" + s + " has docID=" + s.docID() + " != collected docID=" + docID);
       }

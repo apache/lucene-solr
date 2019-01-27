@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -100,6 +101,7 @@ public class ImplicitSnitchTest extends LuceneTestCase {
   }
 
   @Test
+  @Ignore("SOLR-12360: local DNS resolver may return some address for a host named '192.168.1.2.1'")
   public void testGetTags_with_wrong_ipv4_format_ip_returns_nothing() throws Exception {
     String node = "192.168.1.2.1:8983_solr";
 

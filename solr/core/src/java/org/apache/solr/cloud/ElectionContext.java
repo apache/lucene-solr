@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -75,6 +73,7 @@ public abstract class ElectionContext implements Closeable {
 
   public ElectionContext(final String coreNodeName,
       final String electionPath, final String leaderPath, final ZkNodeProps leaderProps, final SolrZkClient zkClient) {
+    assert zkClient != null;
     this.id = coreNodeName;
     this.electionPath = electionPath;
     this.leaderPath = leaderPath;
@@ -118,6 +117,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected String collection;
   protected LeaderElector leaderElector;
   protected ZkStateReader zkStateReader;
+  protected ZkController zkController;
   private Integer leaderZkNodeParentVersion;
 
   // Prevents a race between cancelling and becoming leader.
@@ -125,15 +125,29 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   public ShardLeaderElectionContextBase(LeaderElector leaderElector,
       final String shardId, final String collection, final String coreNodeName,
-      ZkNodeProps props, ZkStateReader zkStateReader) {
+      ZkNodeProps props, ZkController zkController) {
     super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
         + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
-        collection, shardId), props, zkStateReader.getZkClient());
+        collection, shardId), props, zkController.getZkClient());
     this.leaderElector = leaderElector;
+    this.zkStateReader = zkController.getZkStateReader();
     this.zkClient = zkStateReader.getZkClient();
-    this.zkStateReader = zkStateReader;
+    this.zkController = zkController;
     this.shardId = shardId;
     this.collection = collection;
+    
+    String parent = new Path(leaderPath).getParent().toString();
+    ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
+    // only if /collections/{collection} exists already do we succeed in creating this path
+    log.info("make sure parent is created {}", parent);
+    try {
+      zcmd.ensureExists(parent, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
+    } catch (KeeperException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
   
   @Override
@@ -173,21 +187,12 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
-    
-    if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
-      log.info("Will not register as leader because collection appears to be gone.");
-      return;
-    }
-    
-    String parent = new Path(leaderPath).getParent().toString();
-    ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
-    // only if /collections/{collection} exists already do we succeed in creating this path
-    zcmd.ensureExists(parent, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
 
+    String parent = new Path(leaderPath).getParent().toString();
     try {
       RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
         synchronized (lock) {
-          log.debug("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
+          log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
           List<Op> ops = new ArrayList<>(2);
 
           // We use a multi operation to get the parent nodes version, which will
@@ -212,6 +217,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           assert leaderZkNodeParentVersion != null;
         }
       });
+    } catch (NoNodeException e) {
+      log.info("Will not register as leader because it seems the election is no longer taking place.");
+      return;
     } catch (Throwable t) {
       if (t instanceof OutOfMemoryError) {
         throw (OutOfMemoryError) t;
@@ -237,7 +245,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
           ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
-      Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
+      assert zkController != null;
+      assert zkController.getOverseer() != null;
+      zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
     }
   }
 
@@ -256,7 +266,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private final ZkController zkController;
   private final CoreContainer cc;
   private final SyncStrategy syncStrategy;
 
@@ -266,8 +275,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       final String shardId, final String collection,
       final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
     super(leaderElector, shardId, collection, coreNodeName, props,
-        zkController.getZkStateReader());
-    this.zkController = zkController;
+        zkController);
     this.cc = cc;
     syncStrategy = new SyncStrategy(cc);
   }
@@ -306,11 +314,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null ) {
-        if (cc.isShutDown()) {
-          return;
-        } else {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
-        }
+        // shutdown or removed
+        return;
       }
       MDCLoggingContext.setCore(core);
       lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
@@ -328,7 +333,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
             ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-        Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
+        zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
       }
 
       boolean allReplicasInLine = false;
@@ -351,13 +356,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       try (SolrCore core = cc.getCore(coreName)) {
         
         if (core == null) {
-          if (!zkController.getCoreContainer().isShutDown())  {
-            cancelElection();
-            throw new SolrException(ErrorCode.SERVER_ERROR,
-                "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
-          } else  {
-            return;
-          }
+          return;
         }
         
         replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
@@ -437,7 +436,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             SolrIndexSearcher searcher = searchHolder.get();
             try {
               log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
-                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
+                  + searcher.count(new MatchAllDocsQuery()));
             } finally {
               searchHolder.decref();
             }
@@ -455,8 +454,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       boolean isLeader = true;
       if (!isClosed) {
         try {
-          // we must check LIR before registering as leader
-          checkLIR(coreName, allReplicasInLine);
           if (replicaType == Replica.Type.TLOG) {
             // stop replicate from old leader
             zkController.stopReplicationFromLeader(coreName);
@@ -509,16 +506,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             rejoinLeaderElection(core);
           }
         }
-
-        if (isLeader) {
-          // check for any replicas in my shard that were set to down by the previous leader
-          try {
-            startLeaderInitiatedRecoveryOnReplicas(coreName);
-          } catch (Exception exc) {
-            // don't want leader election to fail because of
-            // an error trying to tell others to recover
-          }
-        }
       } else {
         cancelElection();
       }
@@ -536,6 +523,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
     while (!isClosed && !cc.isShutDown()) {
       if (System.nanoTime() > timeoutAt) {
+        log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (" +
+                "core_term:{}, highest_term:{})",
+            timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
         return true;
       }
       if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
@@ -594,110 +584,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     if (docCollection == null) return null;
     return docCollection.getReplica(replicaName);
   }
-
-  @Deprecated
-  public void checkLIR(String coreName, boolean allReplicasInLine)
-      throws InterruptedException, KeeperException, IOException {
-    if (allReplicasInLine) {
-      log.info("Found all replicas participating in election, clear LIR");
-      // SOLR-8075: A bug may allow the proper leader to get marked as LIR DOWN and
-      // if we are marked as DOWN but were able to become the leader, we remove
-      // the DOWN entry here so that we don't fail publishing ACTIVE due to being in LIR.
-      // We only do this if all the replicas participated in the election just in case
-      // this was a valid LIR entry and the proper leader replica is missing.
-      try (SolrCore core = cc.getCore(coreName)) {
-        final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(collection, shardId,
-            core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-        if (lirState == Replica.State.DOWN) {
-          // We can do this before registering as leader because only setting DOWN requires that
-          // we are already registered as leader, and here we are setting ACTIVE
-          // The fact that we just won the zk leader election provides a quasi lock on setting this state, but
-          // we should improve this: see SOLR-8075 discussion
-          zkController.updateLeaderInitiatedRecoveryState(collection, shardId,
-              leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP), Replica.State.ACTIVE, core.getCoreDescriptor(), true);
-        }
-      }
-
-    } else {
-      try (SolrCore core = cc.getCore(coreName)) {
-        if (core != null) {
-          final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(collection, shardId,
-              core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-          if (lirState == Replica.State.DOWN || lirState == Replica.State.RECOVERING) {
-            log.warn("The previous leader marked me " + core.getName()
-                + " as " + lirState.toString() + " and I haven't recovered yet, so I shouldn't be the leader.");
-
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Leader Initiated Recovery prevented leadership");
-          }
-        }
-      }
-    }
-  }
-
-  @Deprecated
-  private void startLeaderInitiatedRecoveryOnReplicas(String coreName) throws Exception {
-    try (SolrCore core = cc.getCore(coreName)) {
-      CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
-      String coll = cloudDesc.getCollectionName();
-      String shardId = cloudDesc.getShardId();
-      String coreNodeName = cloudDesc.getCoreNodeName();
-
-      if (coll == null || shardId == null) {
-        log.error("Cannot start leader-initiated recovery on new leader (core="+
-            coreName+",coreNodeName=" + coreNodeName + ") because collection and/or shard is null!");
-        return;
-      }
-
-      String znodePath = zkController.getLeaderInitiatedRecoveryZnodePath(coll, shardId);
-      List<String> replicas = null;
-      try {
-        replicas = zkClient.getChildren(znodePath, null, false);
-      } catch (NoNodeException nne) {
-        // this can be ignored
-      }
-
-      if (replicas != null && replicas.size() > 0) {
-        // set of replicas which is running in new LIR but lirState=DOWN
-        Set<String> replicasMustBeInLowerTerm = new HashSet<>();
-        for (String replicaCoreNodeName : replicas) {
-
-          if (coreNodeName.equals(replicaCoreNodeName))
-            continue; // added safe-guard so we don't mark this core as down
-
-          final Replica.State lirState = zkController.getLeaderInitiatedRecoveryState(coll, shardId, replicaCoreNodeName);
-          if (lirState == Replica.State.DOWN || lirState == Replica.State.RECOVERY_FAILED) {
-            log.info("After core={} coreNodeName={} was elected leader, a replica coreNodeName={} was found in state: "
-                + lirState.toString() + " and needing recovery.", coreName, coreNodeName, replicaCoreNodeName);
-            List<Replica> replicasProps =
-                zkController.getZkStateReader().getClusterState().getCollection(collection)
-                    .getSlice(shardId).getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-
-            if (replicasProps != null && replicasProps.size() > 0) {
-              ZkCoreNodeProps coreNodeProps = null;
-              for (Replica p : replicasProps) {
-                if (p.getName().equals(replicaCoreNodeName)) {
-                  coreNodeProps = new ZkCoreNodeProps(p);
-                  break;
-                }
-              }
-
-              if (zkController.getShardTerms(collection, shardId).registered(replicaCoreNodeName)) {
-                replicasMustBeInLowerTerm.add(replicaCoreNodeName);
-              } else {
-                zkController.ensureReplicaInLeaderInitiatedRecovery(cc,
-                    collection, shardId, coreNodeProps, core.getCoreDescriptor(),
-                    false /* forcePublishState */);
-              }
-            }
-          }
-        }
-        // these replicas registered their terms so it is running with the new LIR implementation
-        // we can put this replica into recovery by increase our terms
-        zkController.getShardTerms(collection, shardId).ensureTermsIsHigher(coreNodeName, replicasMustBeInLowerTerm);
-      }
-    } // core gets closed automagically
-  }
-
 
   // returns true if all replicas are found to be up, false if not
   private boolean waitForReplicasToComeUp(int timeoutms) throws InterruptedException {
@@ -813,7 +699,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 final class OverseerElectionContext extends ElectionContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
-  private Overseer overseer;
+  private final Overseer overseer;
+  private volatile boolean isClosed = false;
 
   public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
     super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", null, zkClient);
@@ -847,8 +734,10 @@ final class OverseerElectionContext extends ElectionContext {
         log.warn("Wait interrupted ", e);
       }
     }
-    if (overseer.getZkController() == null || overseer.getZkController().getCoreContainer() == null || !overseer.getZkController().getCoreContainer().isShutDown()) {
-      overseer.start(id);
+    synchronized (this) {
+      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
+        overseer.start(id);
+      }
     }
   }
   
@@ -859,7 +748,8 @@ final class OverseerElectionContext extends ElectionContext {
   }
   
   @Override
-  public void close() {
+  public synchronized void close() {
+    this.isClosed  = true;
     overseer.close();
   }
 

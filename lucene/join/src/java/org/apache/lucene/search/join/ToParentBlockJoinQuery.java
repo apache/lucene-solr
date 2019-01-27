@@ -29,6 +29,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
@@ -172,7 +173,7 @@ public class ToParentBlockJoinQuery extends Query {
           return null;
         }
       }
-      return Matches.MATCH_WITH_NO_TERMS;
+      return MatchesUtils.MATCH_WITH_NO_TERMS;
     }
   }
 
@@ -279,8 +280,8 @@ public class ToParentBlockJoinQuery extends Query {
     }
 
     @Override
-    public Collection<ChildScorer> getChildren() {
-      return Collections.singleton(new ChildScorer(childScorer, "BLOCK_JOIN"));
+    public Collection<ChildScorable> getChildren() {
+      return Collections.singleton(new ChildScorable(childScorer, "BLOCK_JOIN"));
     }
 
     @Override
@@ -311,13 +312,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-      switch(scoreMode) {
-        case Max:
-        case Min:
-          return childScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
-        default:
-          return Float.POSITIVE_INFINITY;
-      }
+      return Float.POSITIVE_INFINITY;
     }
 
     private void setScoreAndFreq() throws IOException {

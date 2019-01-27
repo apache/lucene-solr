@@ -70,6 +70,84 @@
         "val"
       ]
     },
+    "set-obj-property": {
+      "type": "object",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#clusterprop",
+      "description": "Add, edit, or delete a cluster-wide property.",
+      "properties": {
+        "legacyCloud": {
+          "type": "boolean"
+        },
+        "urlScheme": {
+          "type": "string"
+        },
+        "autoAddReplicas": {
+          "type": "boolean"
+        },
+        "maxCoresPerNode": {
+          "type": "boolean"
+        },
+        "location": {
+          "type": "string"
+        },
+        "defaults" : {
+          "type" : "object",
+          "properties": {
+            "cluster": {
+              "type" : "object",
+              "properties": {
+                "useLegacyReplicaAssignment": {
+                  "type" : "boolean",
+                  "description" : "Decides wheyher to use the deprecated legacy replica assignment strategy or not"
+                }
+              }
+            },
+            "collection": {
+              "type": "object",
+              "properties": {
+                "numShards": {
+                  "type": "integer",
+                  "description": "Default number of shards for a collection"
+                },
+                "tlogReplicas": {
+                  "type": "integer",
+                  "description": "Default number of TLOG replicas"
+                },
+                "pullReplicas": {
+                  "type": "integer",
+                  "description": "Default number of PULL replicas"
+                },
+                "nrtReplicas": {
+                  "type": "integer",
+                  "description": "Default number of NRT replicas"
+                }
+              }
+            }
+          }
+        },
+        "collectionDefaults": {
+          "type": "object",
+          "properties": {
+            "numShards": {
+              "type": "integer",
+              "description": "Default number of shards for a collection"
+            },
+            "tlogReplicas": {
+              "type": "integer",
+              "description": "Default number of TLOG replicas"
+            },
+            "pullReplicas": {
+              "type": "integer",
+              "description": "Default number of PULL replicas"
+            },
+            "nrtReplicas": {
+              "type": "integer",
+              "description": "Default number of NRT replicas"
+            }
+          }
+        }
+      }
+    },
     "utilize-node": {
       "type": "object",
       "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#utilizenode",

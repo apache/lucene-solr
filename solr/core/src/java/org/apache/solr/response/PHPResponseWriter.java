@@ -16,8 +16,8 @@
  */
 package org.apache.solr.response;
 
-import java.io.Writer;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.List;
 
 import org.apache.solr.common.util.NamedList;
@@ -93,7 +93,7 @@ class PHPWriter extends JSONWriter {
   }
 
   @Override
-  protected void writeKey(String fname, boolean needsEscaping) throws IOException {
+  public void writeKey(String fname, boolean needsEscaping) throws IOException {
     writeStr(null, fname, needsEscaping);
     writer.write('=');
     writer.write('>');

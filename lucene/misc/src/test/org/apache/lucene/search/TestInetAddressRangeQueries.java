@@ -22,13 +22,13 @@ import java.util.Arrays;
 
 import org.apache.lucene.document.InetAddressPoint;
 import org.apache.lucene.document.InetAddressRange;
-import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs; 
+import org.apache.lucene.util.FutureArrays;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * Random testing for {@link InetAddressRange}
  */
-@SuppressCodecs({"Direct", "Memory"})
+@SuppressCodecs({"Direct"})
 public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "ipRangeField";
 
@@ -38,7 +38,7 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
     byte[] bMin = InetAddressPoint.encode(min);
     InetAddress max = nextInetaddress();
     byte[] bMax = InetAddressPoint.encode(max);
-    if (StringHelper.compare(bMin.length, bMin, 0, bMax, 0) > 0) {
+    if (FutureArrays.compareUnsigned(bMin, 0, bMin.length, bMax, 0, bMin.length) > 0) {
       return new IpRange(max, min);
     }
     return new IpRange(min, max);
@@ -142,7 +142,7 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
       InetAddress v = (InetAddress)val;
       byte[] e = InetAddressPoint.encode(v);
 
-      if (StringHelper.compare(e.length, min, 0, e, 0) < 0) {
+      if (FutureArrays.compareUnsigned(min, 0, e.length, e, 0, e.length) < 0) {
         max = e;
         maxAddress = v;
       } else {
@@ -161,7 +161,7 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
       InetAddress v = (InetAddress)val;
       byte[] e = InetAddressPoint.encode(v);
 
-      if (StringHelper.compare(e.length, max, 0, e, 0) > 0) {
+      if (FutureArrays.compareUnsigned(max, 0, e.length, e, 0, e.length) > 0) {
         min = e;
         minAddress = v;
       } else {
@@ -179,22 +179,22 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
     @Override
     protected boolean isDisjoint(Range o) {
       IpRange other = (IpRange)o;
-      return StringHelper.compare(min.length, min, 0, other.max, 0) > 0 ||
-          StringHelper.compare(max.length, max, 0, other.min, 0) < 0;
+      return FutureArrays.compareUnsigned(min, 0, min.length, other.max, 0, min.length) > 0 ||
+          FutureArrays.compareUnsigned(max, 0, max.length, other.min, 0, max.length) < 0;
     }
 
     @Override
     protected boolean isWithin(Range o) {
       IpRange other = (IpRange)o;
-      return StringHelper.compare(min.length, min, 0, other.min, 0) >= 0 &&
-          StringHelper.compare(max.length, max, 0, other.max, 0) <= 0;
+      return FutureArrays.compareUnsigned(min, 0, min.length, other.min, 0, min.length) >= 0 &&
+          FutureArrays.compareUnsigned(max, 0, max.length, other.max, 0, max.length) <= 0;
     }
 
     @Override
     protected boolean contains(Range o) {
       IpRange other = (IpRange)o;
-      return StringHelper.compare(min.length, min, 0, other.min, 0) <= 0 &&
-          StringHelper.compare(max.length, max, 0, other.max, 0) >= 0;
+      return FutureArrays.compareUnsigned(min, 0, min.length, other.min, 0, min.length) <= 0 &&
+          FutureArrays.compareUnsigned(max, 0, max.length, other.max, 0, max.length) >= 0;
     }
 
     @Override

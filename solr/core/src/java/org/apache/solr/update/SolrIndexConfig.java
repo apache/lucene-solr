@@ -31,7 +31,6 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
@@ -49,7 +48,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.Config.assertWarnOrFail;
+import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 /**
  * This config object encapsulates IndexWriter config params,
@@ -62,7 +61,6 @@ public class SolrIndexConfig implements MapSerializable {
 
   private static final String DEFAULT_MERGE_POLICY_FACTORY_CLASSNAME = DefaultMergePolicyFactory.class.getName();
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
-  public final Version luceneVersion;
 
   public final boolean useCompoundFile;
 
@@ -84,7 +82,6 @@ public class SolrIndexConfig implements MapSerializable {
    * Internal constructor for setting defaults based on Lucene Version
    */
   private SolrIndexConfig(SolrConfig solrConfig) {
-    luceneVersion = solrConfig.luceneMatchVersion;
     useCompoundFile = false;
     maxBufferedDocs = -1;
     ramBufferSizeMB = 100;
@@ -116,8 +113,6 @@ public class SolrIndexConfig implements MapSerializable {
     // sanity check: this will throw an error for us if there is more then one
     // config section
     Object unused = solrConfig.getNode(prefix, false);
-
-    luceneVersion = solrConfig.luceneMatchVersion;
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above

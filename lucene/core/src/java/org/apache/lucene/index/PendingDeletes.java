@@ -20,31 +20,26 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MutableBits;
 
 /**
  * This class handles accounting and applying pending deletes for live segment readers
  */
 class PendingDeletes {
   protected final SegmentCommitInfo info;
-  // True if the current liveDocs is referenced by an
-  // external NRT reader:
-  protected boolean liveDocsShared;
-  // Holds the current shared (readable and writable)
-  // liveDocs.  This is null when there are no deleted
-  // docs, and it's copy-on-write (cloned whenever we need
-  // to change it but it's been shared to an external NRT
-  // reader).
+  // Read-only live docs, null until live docs are initialized or if all docs are alive
   private Bits liveDocs;
+  // Writeable live docs, null if this instance is not ready to accept writes, in which
+  // case getMutableBits needs to be called
+  private FixedBitSet writeableLiveDocs;
   protected int pendingDeleteCount;
-  private boolean liveDocsInitialized;
+  boolean liveDocsInitialized;
 
   PendingDeletes(SegmentReader reader, SegmentCommitInfo info) {
     this(info, reader.getLiveDocs(), true);
@@ -58,35 +53,32 @@ class PendingDeletes {
     // For segments that were published we enforce a reader in the BufferedUpdatesStream.SegmentState ctor
   }
 
-  private PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
+  PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
     this.info = info;
-    liveDocsShared = true;
     this.liveDocs = liveDocs;
     pendingDeleteCount = 0;
     this.liveDocsInitialized = liveDocsInitialized;
   }
 
 
-  protected MutableBits getMutableBits() throws IOException {
+  protected FixedBitSet getMutableBits() {
     // if we pull mutable bits but we haven't been initialized something is completely off.
     // this means we receive deletes without having the bitset that is on-disk ready to be cloned
     assert liveDocsInitialized : "can't delete if liveDocs are not initialized";
-    if (liveDocsShared) {
+    if (writeableLiveDocs == null) {
       // Copy on write: this means we've cloned a
       // SegmentReader sharing the current liveDocs
       // instance; must now make a private clone so we can
       // change it:
-      LiveDocsFormat liveDocsFormat = info.info.getCodec().liveDocsFormat();
-      MutableBits mutableBits;
-      if (liveDocs == null) {
-        mutableBits = liveDocsFormat.newLiveDocs(info.info.maxDoc());
+      if (liveDocs != null) {
+        writeableLiveDocs = FixedBitSet.copyOf(liveDocs);
       } else {
-        mutableBits = liveDocsFormat.newLiveDocs(liveDocs);
+        writeableLiveDocs = new FixedBitSet(info.info.maxDoc());
+        writeableLiveDocs.set(0, info.info.maxDoc());
       }
-      liveDocs = mutableBits;
-      liveDocsShared = false;
+      liveDocs = writeableLiveDocs.asReadOnlyBits();
     }
-    return (MutableBits) liveDocs;
+    return writeableLiveDocs;
   }
 
 
@@ -96,10 +88,9 @@ class PendingDeletes {
    */
   boolean delete(int docID) throws IOException {
     assert info.info.maxDoc() > 0;
-    MutableBits mutableBits = getMutableBits();
+    FixedBitSet mutableBits = getMutableBits();
     assert mutableBits != null;
     assert docID >= 0 && docID < mutableBits.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + mutableBits.length() + " seg=" + info.info.name + " maxDoc=" + info.info.maxDoc();
-    assert !liveDocsShared;
     final boolean didDelete = mutableBits.get(docID);
     if (didDelete) {
       mutableBits.clear(docID);
@@ -109,26 +100,25 @@ class PendingDeletes {
   }
 
   /**
-   * Should be called if the live docs returned from {@link #getLiveDocs()} are shared outside of the
-   * {@link ReadersAndUpdates}
+   * Returns a snapshot of the current live docs.
    */
-  void liveDocsShared() {
-    liveDocsShared = true;
+  Bits getLiveDocs() {
+    // Prevent modifications to the returned live docs
+    writeableLiveDocs = null;
+    return liveDocs;
   }
 
   /**
-   * Returns the current live docs or null if all docs are live. The returned instance might be mutable or is mutated behind the scenes.
-   * If the returned live docs are shared outside of the ReadersAndUpdates {@link #liveDocsShared()} should be called
-   * first.
+   * Returns a snapshot of the hard live docs.
    */
-  Bits getLiveDocs() {
-    return liveDocs;
+  Bits getHardLiveDocs() {
+    return getLiveDocs();
   }
 
   /**
    * Returns the number of pending deletes that are not written to disk.
    */
-  int numPendingDeletes() {
+  protected int numPendingDeletes() {
     return pendingDeleteCount;
   }
 
@@ -137,6 +127,7 @@ class PendingDeletes {
    */
   void onNewReader(CodecReader reader, SegmentCommitInfo info) throws IOException {
     if (liveDocsInitialized == false) {
+      assert writeableLiveDocs == null;
       if (reader.hasDeletions()) {
         // we only initialize this once either in the ctor or here
         // if we use the live docs from a reader it has to be in a situation where we don't
@@ -144,8 +135,6 @@ class PendingDeletes {
         assert pendingDeleteCount == 0 : "pendingDeleteCount: " + pendingDeleteCount;
         liveDocs = reader.getLiveDocs();
         assert liveDocs == null || assertCheckLiveDocs(liveDocs, info.info.maxDoc(), info.getDelCount());
-        liveDocsShared = true;
-
       }
       liveDocsInitialized = true;
     }
@@ -175,7 +164,7 @@ class PendingDeletes {
     StringBuilder sb = new StringBuilder();
     sb.append("PendingDeletes(seg=").append(info);
     sb.append(" numPendingDeletes=").append(pendingDeleteCount);
-    sb.append(" liveDocsShared=").append(liveDocsShared);
+    sb.append(" writeable=").append(writeableLiveDocs != null);
     return sb.toString();
   }
 
@@ -203,7 +192,7 @@ class PendingDeletes {
     boolean success = false;
     try {
       Codec codec = info.info.getCodec();
-      codec.liveDocsFormat().writeLiveDocs((MutableBits)liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
+      codec.liveDocsFormat().writeLiveDocs(liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
       success = true;
     } finally {
       if (!success) {
@@ -231,25 +220,72 @@ class PendingDeletes {
    * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
    */
   boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-    return info.getDelCount() + numPendingDeletes() == info.info.maxDoc();
+    return getDelCount() == info.info.maxDoc();
   }
 
   /**
-   * Called before the given DocValuesFieldUpdates are written to disk
-   * @param info the field to apply
-   */
-  void onDocValuesUpdate(FieldInfo info) {
-  }
-
-  /**
-   * Called for every field update for the given field
-   * @param field the field that's updated
+   * Called for every field update for the given field at flush time
+   * @param info the field info of the field that's updated
    * @param iterator the values to apply
    */
-  void onDocValuesUpdate(String field, DocValuesFieldUpdates.Iterator iterator) throws IOException {
+  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
   }
 
   int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-    return policy.numDeletesToMerge(info, numPendingDeletes(), readerIOSupplier);
+    return policy.numDeletesToMerge(info, getDelCount(), readerIOSupplier);
+  }
+
+  /**
+   * Returns true if the given reader needs to be refreshed in order to see the latest deletes
+   */
+  final boolean needsRefresh(CodecReader reader) {
+    return reader.getLiveDocs() != getLiveDocs() || reader.numDeletedDocs() != getDelCount();
+  }
+
+  /**
+   * Returns the number of deleted docs in the segment.
+   */
+  final int getDelCount() {
+    int delCount = info.getDelCount() + info.getSoftDelCount() + numPendingDeletes();
+    return delCount;
+  }
+
+  /**
+   * Returns the number of live documents in this segment
+   */
+  final int numDocs() {
+    return info.info.maxDoc() - getDelCount();
+  }
+
+  // Call only from assert!
+  boolean verifyDocCounts(CodecReader reader) {
+    int count = 0;
+    Bits liveDocs = getLiveDocs();
+    if (liveDocs != null) {
+      for(int docID = 0; docID < info.info.maxDoc(); docID++) {
+        if (liveDocs.get(docID)) {
+          count++;
+        }
+      }
+    } else {
+      count = info.info.maxDoc();
+    }
+    assert numDocs() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() +
+        " info.getSoftDelCount()=" + info.getSoftDelCount() +
+        " pendingDeletes=" + toString() + " count=" + count + " numDocs: " + numDocs();
+    assert reader.numDocs() == numDocs() : "reader.numDocs() = " + reader.numDocs() + " numDocs() " + numDocs();
+    assert reader.numDeletedDocs() <= info.info.maxDoc(): "delCount=" + reader.numDeletedDocs() + " info.maxDoc=" +
+        info.info.maxDoc() + " rld.pendingDeleteCount=" + numPendingDeletes() +
+        " info.getDelCount()=" + info.getDelCount();
+    return true;
+  }
+
+  /**
+   * Returns {@code true} if we have to initialize this PendingDeletes before {@link #delete(int)};
+   * otherwise this PendingDeletes is ready to accept deletes. A PendingDeletes can be initialized
+   * by providing it a reader via {@link #onNewReader(CodecReader, SegmentCommitInfo)}.
+   */
+  boolean mustInitOnDelete() {
+    return false;
   }
 }

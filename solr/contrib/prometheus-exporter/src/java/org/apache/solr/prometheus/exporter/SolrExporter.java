@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.prometheus.collector.SolrCollector;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  * SolrExporter
  */
 public class SolrExporter {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String[] ARG_PORT_FLAGS = { "-p", "--port" };
   private static final String ARG_PORT_METAVAR = "PORT";
@@ -84,7 +84,7 @@ public class SolrExporter {
 
   private int port;
   private SolrClient solrClient;
-  private Config config;
+  private XmlConfigFile config;
   private int numThreads;
 
   CollectorRegistry registry = new CollectorRegistry();
@@ -115,7 +115,7 @@ public class SolrExporter {
 
     this.port = port;
     this.solrClient = solrClient;
-    this.config = new Config(this.loader, configPath.getFileName().toString());
+    this.config = new XmlConfigFile(this.loader, configPath.getFileName().toString());
     this.numThreads = numThreads;
   }
 
@@ -243,9 +243,9 @@ public class SolrExporter {
 
       SolrExporter solrExporter = new SolrExporter(port, connStr, configPath, numThreads);
       solrExporter.start();
-      logger.info("Start server");
+      log.info("Start server");
     } catch (ParserConfigurationException | SAXException | IOException e) {
-      logger.error("Start server failed: " + e.toString());
+      log.error("Start server failed: " + e.toString());
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }

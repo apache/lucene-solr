@@ -171,7 +171,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   private void duellReaders(CompositeReader other, LeafReader memIndexReader)
       throws IOException {
     Fields memFields = memIndexReader.getTermVectors(0);
-    for (String field : MultiFields.getFields(other)) {
+    for (String field : FieldInfos.getIndexedFields(other)) {
       Terms memTerms = memFields.terms(field);
       Terms iwTerms = memIndexReader.terms(field);
       if (iwTerms == null) {
@@ -246,7 +246,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     for (String query : queries) {
       TopDocs ramDocs = ram.search(qp.parse(query), 1);
       TopDocs memDocs = mem.search(qp.parse(query), 1);
-      assertEquals(query, ramDocs.totalHits, memDocs.totalHits);
+      assertEquals(query, ramDocs.totalHits.value, memDocs.totalHits.value);
     }
     reader.close();
   }
@@ -652,7 +652,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     memory.addField("foo", new CannedTokenStream(new Token("", 0, 5)));
     IndexSearcher searcher = memory.createSearcher();
     TopDocs docs = searcher.search(new TermQuery(new Term("foo", "")), 10);
-    assertEquals(1, docs.totalHits);
+    assertEquals(1, docs.totalHits.value);
     TestUtil.checkReader(searcher.getIndexReader());
   }
 

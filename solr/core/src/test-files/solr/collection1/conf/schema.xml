@@ -120,7 +120,6 @@
   <fieldType name="text" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -130,7 +129,6 @@
   <fieldtype name="text_payload_tv" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory"/>
       <filter class="solr.PorterStemFilterFactory"/>
@@ -144,22 +142,17 @@
 
   <fieldType name="teststop" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
 
   <!-- fieldTypes in this section isolate tokenizers and tokenfilters for testing -->
-  <fieldType name="lowertok" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-    </analyzer>
-  </fieldType>
   <fieldType name="keywordtok" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
@@ -195,13 +188,11 @@
   <fieldType name="standardtokfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="standardfilt" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.StandardFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="lowerfilt" class="solr.TextField">
@@ -508,7 +499,7 @@
   </fieldType>
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
-  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="signatureField" type="string" indexed="true" stored="false"/>
@@ -580,7 +571,7 @@
 
   <!-- fields to test individual tokenizers and tokenfilters -->
   <field name="teststop" type="teststop" indexed="true" stored="true"/>
-  <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
+  <field name="lowertok" type="lowerfilt" indexed="true" stored="true"/>
   <field name="keywordtok" type="keywordtok" indexed="true" stored="true"/>
   <field name="standardtok" type="standardtok" indexed="true" stored="true"/>
   <field name="HTMLstandardtok" type="HTMLstandardtok" indexed="true" stored="true"/>
@@ -642,11 +633,13 @@
 
   <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
 
-  <field name="lower" type="lowertok" indexed="false" stored="true" multiValued="true"/>
+  <field name="lower" type="lowerfilt" indexed="false" stored="true" multiValued="true"/>
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
 
   <field name="payloadDelimited" type="payloadDelimited"/>
 
+  <field name="sortabuse_not_uninvertible" type="string" indexed="true" multiValued="false" uninvertible="false" />
+  
   <!-- EnumType -->
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
@@ -762,7 +755,13 @@
   <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
                 
-                
+  <!-- Indexed, but NOT uninvertible -->
+  <dynamicField name="*_s_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" />
+  <!-- docValues, but NOT uninvertible -->
+  <dynamicField name="*_s_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" />
+
+
+  
   <!-- Only Stored numerics -->
   <dynamicField name="*_i_os" type="int" indexed="false" stored="true" docValues="false"/>
   <dynamicField name="*_l_os" type="long" indexed="false" stored="true" docValues="false"/>
@@ -832,6 +831,10 @@
   <copyField source="range_facet_f" dest="range_facet_d_dv"/>
   <copyField source="bday" dest="range_facet_dt_dv"/>
 
+  <copyField source="trait_s" dest="trait_s_not_uninvert"/>
+  <copyField source="trait_s" dest="trait_s_not_uninvert_dv"/>
+  <copyField source="trait_s" dest="trait_s_not_indexed_sS"/>
+  
   <!-- dynamic destination -->
   <copyField source="*_dynamic" dest="dynamic_*"/>
   <copyField source="*_path" dest="*_ancestor"/>

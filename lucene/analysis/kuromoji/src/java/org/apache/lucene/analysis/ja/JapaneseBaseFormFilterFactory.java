@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ja;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**

@@ -36,7 +36,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -363,7 +363,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: verify prefix=" + (prefixRef==null ? "null" : prefixRef.utf8ToString()));
       System.out.println("TEST: all TERMS:");
-      TermsEnum allTE = MultiFields.getTerms(r, "field").iterator();
+      TermsEnum allTE = MultiTerms.getTerms(r, "field").iterator();
       int ord = 0;
       while(allTE.next() != null) {
         System.out.println("  ord=" + (ord++) + " term=" + allTE.term().utf8ToString());
@@ -374,9 +374,9 @@ public class TestDocTermOrds extends LuceneTestCase {
     final TermsEnum te = dto.getOrdTermsEnum(r);
     if (dto.numTerms() == 0) {
       if (prefixRef == null) {
-        assertNull(MultiFields.getTerms(r, "field"));
+        assertNull(MultiTerms.getTerms(r, "field"));
       } else {
-        Terms terms = MultiFields.getTerms(r, "field");
+        Terms terms = MultiTerms.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
           TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef);

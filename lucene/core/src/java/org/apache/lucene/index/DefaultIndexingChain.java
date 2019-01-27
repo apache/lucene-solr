@@ -36,8 +36,11 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -198,7 +201,7 @@ final class DefaultIndexingChain extends DocConsumer {
         PerField perField = fieldHash[i];
         while (perField != null) {
           if (perField.pointValuesWriter != null) {
-            if (perField.fieldInfo.getPointDimensionCount() == 0) {
+            if (perField.fieldInfo.getPointDataDimensionCount() == 0) {
               // BUG
               throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no points but wrote them");
             }
@@ -213,7 +216,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
             perField.pointValuesWriter.flush(state, sortMap, pointsWriter);
             perField.pointValuesWriter = null;
-          } else if (perField.fieldInfo.getPointDimensionCount() != 0) {
+          } else if (perField.fieldInfo.getPointDataDimensionCount() != 0) {
             // BUG
             throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has points but did not write them");
           }
@@ -474,7 +477,7 @@ final class DefaultIndexingChain extends DocConsumer {
       }
       indexDocValue(fp, dvType, field);
     }
-    if (fieldType.pointDimensionCount() != 0) {
+    if (fieldType.pointDataDimensionCount() != 0) {
       if (fp == null) {
         fp = getOrAddField(fieldName, fieldType, false);
       }
@@ -505,22 +508,65 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Called from processDocument to index one field's point */
   private void indexPoint(PerField fp, IndexableField field) throws IOException {
-    int pointDimensionCount = field.fieldType().pointDimensionCount();
+    int pointDataDimensionCount = field.fieldType().pointDataDimensionCount();
+    int pointIndexDimensionCount = field.fieldType().pointIndexDimensionCount();
 
     int dimensionNumBytes = field.fieldType().pointNumBytes();
 
     // Record dimensions for this field; this setter will throw IllegalArgExc if
     // the dimensions were already set to something different:
-    if (fp.fieldInfo.getPointDimensionCount() == 0) {
-      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, pointDimensionCount, dimensionNumBytes);
+    if (fp.fieldInfo.getPointDataDimensionCount() == 0) {
+      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, pointDataDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
     }
 
-    fp.fieldInfo.setPointDimensions(pointDimensionCount, dimensionNumBytes);
+    fp.fieldInfo.setPointDimensions(pointDataDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
 
     if (fp.pointValuesWriter == null) {
       fp.pointValuesWriter = new PointValuesWriter(docWriter, fp.fieldInfo);
     }
     fp.pointValuesWriter.addPackedValue(docState.docID, field.binaryValue());
+  }
+
+  private void validateIndexSortDVType(Sort indexSort, String fieldName, DocValuesType dvType) {
+    for (SortField sortField : indexSort.getSort()) {
+      if (sortField.getField().equals(fieldName)) {
+        switch (dvType) {
+          case NUMERIC:
+            if (sortField.getType().equals(SortField.Type.INT) == false &&
+                  sortField.getType().equals(SortField.Type.LONG) == false &&
+                  sortField.getType().equals(SortField.Type.FLOAT) == false &&
+                  sortField.getType().equals(SortField.Type.DOUBLE) == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          case BINARY:
+            throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+
+          case SORTED:
+            if (sortField.getType().equals(SortField.Type.STRING) == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          case SORTED_NUMERIC:
+            if (sortField instanceof SortedNumericSortField == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          case SORTED_SET:
+            if (sortField instanceof SortedSetSortField == false) {
+              throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+            }
+            break;
+
+          default:
+            throw new IllegalArgumentException("invalid doc value type:" + dvType + " for sortField:" + sortField);
+        }
+        break;
+      }
+    }
   }
 
   /** Called from processDocument to index one field's doc value */
@@ -530,7 +576,12 @@ final class DefaultIndexingChain extends DocConsumer {
       // This is the first time we are seeing this field indexed with doc values, so we
       // now record the DV type so that any future attempt to (illegally) change
       // the DV type of this field, will throw an IllegalArgExc:
+      if (docWriter.getSegmentInfo().getIndexSort() != null) {
+        final Sort indexSort = docWriter.getSegmentInfo().getIndexSort();
+        validateIndexSortDVType(indexSort, fp.fieldInfo.name, dvType);
+      }
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
+
     }
     fp.fieldInfo.setDocValuesType(dvType);
 
@@ -541,6 +592,9 @@ final class DefaultIndexingChain extends DocConsumer {
       case NUMERIC:
         if (fp.docValuesWriter == null) {
           fp.docValuesWriter = new NumericDocValuesWriter(fp.fieldInfo, bytesUsed);
+        }
+        if (field.numericValue() == null) {
+          throw new IllegalArgumentException("field=\"" + fp.fieldInfo.name + "\": null value not allowed");
         }
         ((NumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
         break;
@@ -607,6 +661,11 @@ final class DefaultIndexingChain extends DocConsumer {
 
       FieldInfo fi = fieldInfos.getOrAdd(name);
       initIndexOptions(fi, fieldType.indexOptions());
+      Map<String, String> attributes = fieldType.getAttributes();
+      if (attributes != null) {
+        attributes.forEach((k, v) -> fi.putAttribute(k, v));
+      }
+
       fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert);
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;
@@ -837,5 +896,20 @@ final class DefaultIndexingChain extends DocConsumer {
         invertState.offset += docState.analyzer.getOffsetGap(fieldInfo.name);
       }
     }
+  }
+
+  @Override
+  DocIdSetIterator getHasDocValues(String field) {
+    PerField perField = getPerField(field);
+    if (perField != null) {
+      if (perField.docValuesWriter != null) {
+        if (perField.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
+          return null;
+        }
+
+        return perField.docValuesWriter.getDocIdSet();
+      }
+    }
+    return null;
   }
 }

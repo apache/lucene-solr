@@ -23,7 +23,6 @@ import java.util.function.DoubleConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.FloatValue.CastingFloatValue;
@@ -51,7 +50,7 @@ public class FloatField extends AnalyticsField implements CastingFloatValue {
   public void collect(int doc) throws IOException {
     exists = docValues.advanceExact(doc);
     if (exists) {
-      value = NumericUtils.sortableIntToFloat((int)docValues.longValue());
+      value = Float.intBitsToFloat((int)docValues.longValue());
     }
   }
 

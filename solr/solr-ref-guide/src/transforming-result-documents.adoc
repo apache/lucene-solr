@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Document Transformers can be used to modify the information returned about each documents in the results of a query.
+Document Transformers modify the information returned about documents in the results of a query.
 
 == Using Document Transformers
 
@@ -67,7 +67,7 @@ The above query would produce results like the following:
   ...
 ----
 
-By default, values are returned as a String, but a "```t```" parameter can be specified using a value of int, float, double, or date to force a specific return type:
+By default, values are returned as a String, but a `t` parameter can be specified using a value of `int`, `float`, `double`, or `date` to force a specific return type:
 
 [source,plain]
 ----
@@ -86,7 +86,7 @@ In addition to using these request parameters, you can configure additional name
 </transformer>
 ----
 
-The "```value```" option forces an explicit value to always be used, while the "```defaultValue```" option provides a default that can still be overridden using the "```v```" and "```t```" local parameters.
+The `value` option forces an explicit value to always be used, while the `defaultValue` option provides a default that can still be overridden using the `v` and `t` local parameters.
 
 
 === [explain] - ExplainAugmenterFactory
@@ -98,7 +98,7 @@ Augments each document with an inline explanation of its score exactly like the 
 q=features:cache&fl=id,[explain style=nl]
 ----
 
-Supported values for `style` are `text`, and `html`, and `nl` which returns the information as structured data:
+Supported values for `style` are `text`, `html`, and `nl` which returns the information as structured data. Here is the output of the above request using `style=nl`:
 
 [source,json]
 ----
@@ -113,7 +113,7 @@ Supported values for `style` are `text`, and `html`, and `nl` which returns the 
 }]}}]}}
 ----
 
-A default style can be configured by specifying an "args" parameter in your configuration:
+A default style can be configured by specifying an `args` parameter in your `solrconfig.xml` configuration:
 
 [source,xml]
 ----
@@ -133,10 +133,18 @@ fl=id,[child parentFilter=doc_type:book childFilter=doc_type:chapter limit=100]
 
 Note that this transformer can be used even though the query itself is not a <<other-parsers.adoc#block-join-query-parsers,Block Join query>>.
 
-When using this transformer, the `parentFilter` parameter must be specified, and works the same as in all Block Join Queries, additional optional parameters are:
+When using this transformer, the `parentFilter` parameter must be specified, and works the same as in all Block Join Queries. Additional optional parameters are:
 
-* `childFilter` - query to filter which child documents should be included, this can be particularly useful when you have multiple levels of hierarchical documents (default: all children)
-* `limit` - the maximum number of child documents to be returned per parent document (default: 10)
+`childFilter`::
+A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.
+
+`limit`::
+The maximum number of child documents to be returned per parent document. The default is `10`.
+
+`fl`::
+The field list which the transformer is to return. The default is the top level `fl`).
++
+There is a further limitation in which the fields here should be a subset of those specified by the top level `fl` parameter.
 
 
 === [shard] - ShardAugmenterFactory
@@ -186,7 +194,7 @@ fl=id,[elevated],[excluded]&excludeIds=GB18030TEST&elevateIds=6H500F0&markExclud
 
 === [json] / [xml]
 
-These transformers replace field value containing a string representation of a valid XML or JSON structure with the actual raw XML or JSON structure rather than just the string value. Each applies only to the specific writer, such that `[json]` only applies to `wt=json` and `[xml]` only applies to `wt=xml`.
+These transformers replace a field value containing a string representation of a valid XML or JSON structure with the actual raw XML or JSON structure instead of just the string value. Each applies only to the specific writer, such that `[json]` only applies to `wt=json` and `[xml]` only applies to `wt=xml`.
 
 [source,plain]
 ----
@@ -201,9 +209,11 @@ This transformer executes a separate query per transforming document passing doc
 * It must be given an unique name: `fl=*,children:[subquery]`
 * There might be a few of them, e.g., `fl=*,sons:[subquery],daughters:[subquery]`.
 * Every `[subquery]` occurrence adds a field into a result document with the given name, the value of this field is a document list, which is a result of executing subquery using document fields as an input.
+* Subquery will use the `/select` search handler by default, and will return an error if `/select` is not configured. This can be changed by supplying `foo.qt` parameter.
 
-Here is how it looks like in various formats:
+Here is how it looks like using various formats:
 
+.XML
 [source,xml]
 ----
   <result name="response" numFound="2" start="0">
@@ -224,6 +234,7 @@ Here is how it looks like in various formats:
   ...
 ----
 
+.JSON
 [source,json]
 ----
 { "response":{
@@ -243,6 +254,7 @@ Here is how it looks like in various formats:
       }}]}}
 ----
 
+.SolrJ
 [source,java]
 ----
  SolrDocumentList subResults = (SolrDocumentList)doc.getFieldValue("children");
@@ -250,39 +262,53 @@ Here is how it looks like in various formats:
 
 ==== Subquery Result Fields
 
-To appear in subquery document list, a field should be specified in subquery's `fl` parameter e.g., `foo.fl` (it is not necessary to specify in main one's `fl`). Of course, you can use wildcard in this parameter. For example, if field title should appear in categories subquery, it can be done via one of these ways.
+To appear in subquery document list, a field should be specified in both `fl` parameters: in the main `fl` (despite the main result documents have no this field), and in subquery's `fl` (e.g., `foo.fl`).
+
+Wildcards can be used in one or both of these parameters. For example, if field `title` should appear in categories subquery, it can be done via one of these ways:
 
 [source,plain]
 ----
-fl=...id,categories:[subquery]&categories.fl=title&categories.q=...
-fl=...id,categories:[subquery]&categories.fl=*&categories.q=...
+fl=...title,categories:[subquery]&categories.fl=title&categories.q=...
+fl=...title,categories:[subquery]&categories.fl=*&categories.q=...
+fl=...*,categories:[subquery]&categories.fl=title&categories.q=...
+fl=...*,categories:[subquery]&categories.fl=*&categories.q=...
 ----
 
 ==== Subquery Parameters Shift
 
 If a subquery is declared as `fl=*,foo:[subquery]`, subquery parameters are prefixed with the given name and period. For example:
 
-`q=*:*&fl=*,**foo**:[subquery]&**foo.**q=to be continued&**foo.**rows=10&**foo.**sort=id desc`
+[source,plain]
+q=*:*&fl=*,**foo**:[subquery]&**foo.**q=to be continued&**foo.**rows=10&**foo.**sort=id desc
 
 ==== Document Field as an Input for Subquery Parameters
 
-It's necessary to pass some document field values as a parameter for subquery. It's supported via implicit *`row.__fieldname__`* parameter, and can be (but might not only) referred via Local Parameters syntax: `q=namne:john&fl=name,id,depts:[subquery]&depts.q={!terms f=id **v=$row.dept_id**}&depts.rows=10`
+It's necessary to pass some document field values as a parameter for subquery. It's supported via an implicit *`row.__fieldname__`* parameter, and can be (but might not only) referred via local parameters syntax:
+
+[source,plain,subs="quotes"]
+q=name:john&fl=name,id,depts:[subquery]&depts.q={!terms f=id **v=$row.dept_id**}&depts.rows=10
 
 Here departments are retrieved per every employee in search result. We can say that it's like SQL `join ON emp.dept_id=dept.id`.
 
 Note, when a document field has multiple values they are concatenated with a comma by default. This can be changed with the local parameter `foo:[subquery separator=' ']`, this mimics *`{!terms}`* to work smoothly with it.
 
-To log substituted subquery request parameters, add the corresponding parameter names, as in `depts.logParamsList=q,fl,rows,**row.dept_id**`
+To log substituted subquery request parameters, add the corresponding parameter names, as in: `depts.logParamsList=q,fl,rows,**row.dept_id**`
 
 ==== Cores and Collections in SolrCloud
 
-Use `foo:[subquery fromIndex=departments]` to invoke subquery on another core on the same node, it's what *`{!join}`* does for non-SolrCloud mode. But in case of SolrCloud just (and only) explicitly specify its native parameters like `collection, shards` for subquery, e.g.:
+Use `foo:[subquery fromIndex=departments]` to invoke subquery on another core on the same node. This is what `{!join}` does for non-SolrCloud mode. But with SolrCloud, just (and only) explicitly specify its native parameters like `collection, shards` for subquery, for example:
 
-`q=*:*&fl=*,foo:[subquery]&foo.q=cloud&**foo.collection**=departments`
+[source,plain,subs="quotes"]
+q=\*:*&fl=\*,foo:[subquery]&foo.q=cloud&**foo.collection**=departments
 
 [IMPORTANT]
 ====
-If subquery collection has a different unique key field name (let's say `foo_id` at contrast to `id` in primary collection), add the following parameters to accommodate this difference: `foo.fl=id:foo_id&foo.distrib.singlePass=true`. Otherwise you'll get `NullPoniterException` from `QueryComponent.mergeIds`.
+If subquery collection has a different unique key field name (such as `foo_id` instead of `id` in the primary collection), add the following parameters to accommodate this difference:
+
+[source,plain]
+foo.fl=id:foo_id&foo.distrib.singlePass=true
+
+Otherwise you'll get `NullPointerException` from `QueryComponent.mergeIds`.
 ====
 
 

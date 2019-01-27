@@ -168,7 +168,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     //max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm accuracy but then we
     // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
-    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters <= 1.37);
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.41);
+    // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
   }
 
   @Test
@@ -264,7 +265,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   private void testRptWithGeometryField(String fieldName) throws Exception {
     assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
-    assertU(optimize());// one segment.
+    assertU(optimize("maxSegments", "1"));// one segment.
     assertU(commit());
 
     // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom validation to

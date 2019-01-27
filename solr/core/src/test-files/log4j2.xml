@@ -31,6 +31,7 @@
     <Logger name="org.apache.hadoop" level="WARN"/>
     <Logger name="org.apache.directory" level="WARN"/>
     <Logger name="org.apache.solr.hadoop" level="INFO"/>
+    <Logger name="org.eclipse.jetty" level="INFO"/>
 
     <Root level="INFO">
       <AppenderRef ref="STDERR"/>

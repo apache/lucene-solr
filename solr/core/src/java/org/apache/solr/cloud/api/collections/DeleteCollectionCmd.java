@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +32,7 @@ import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -40,12 +42,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.handler.admin.MetricsHistoryHandler;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -66,6 +72,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
     checkNotReferencedByAlias(zkStateReader, collection);
+    checkNotColocatedWith(zkStateReader, collection);
+
+    final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
 
     boolean removeCounterNode = true;
     try {
@@ -82,10 +91,19 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           return;
         }
       }
+      // remove collection-level metrics history
+      if (deleteHistory) {
+        MetricsHistoryHandler historyHandler = ocmh.overseer.getCoreContainer().getMetricsHistoryHandler();
+        if (historyHandler != null) {
+          String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collection);
+          historyHandler.removeHistory(registry);
+        }
+      }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
+      params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
       String asyncId = message.getStr(ASYNC);
       Map<String, String> requestMap = null;
@@ -108,25 +126,26 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-      boolean removed = false;
-      while (! timeout.hasTimedOut()) {
-        timeout.sleep(100);
-        removed = !zkStateReader.getClusterState().hasCollection(collection);
-        if (removed) {
-          timeout.sleep(500); // just a bit of time so it's more likely other
-          // readers see on return
-          break;
-        }
-      }
-      if (!removed) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not fully remove collection: " + collection);
-      }
-
+      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null);
+      
+//      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);
+//      boolean removed = false;
+//      while (! timeout.hasTimedOut()) {
+//        timeout.sleep(100);
+//        removed = !zkStateReader.getClusterState().hasCollection(collection);
+//        if (removed) {
+//          timeout.sleep(500); // just a bit of time so it's more likely other
+//          // readers see on return
+//          break;
+//        }
+//      }
+//      if (!removed) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//            "Could not fully remove collection: " + collection);
+//      }
     } finally {
 
       try {
@@ -163,9 +182,27 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   private String referencedByAlias(String collection, Aliases aliases) {
+    Objects.requireNonNull(aliases);
     return aliases.getCollectionAliasListMap().entrySet().stream()
         .filter(e -> e.getValue().contains(collection))
         .map(Map.Entry::getKey) // alias name
         .findFirst().orElse(null);
+  }
+
+  private void checkNotColocatedWith(ZkStateReader zkStateReader, String collection) throws Exception {
+    DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+    if (docCollection != null)  {
+      String colocatedWith = docCollection.getStr(COLOCATED_WITH);
+      if (colocatedWith != null) {
+        DocCollection colocatedCollection = zkStateReader.getClusterState().getCollectionOrNull(colocatedWith);
+        if (colocatedCollection != null && collection.equals(colocatedCollection.getStr(WITH_COLLECTION))) {
+          // todo how do we clean up if reverse-link is not present?
+          // can't delete this collection because it is still co-located with another collection
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Collection: " + collection + " is co-located with collection: " + colocatedWith
+                  + " remove the link using modify collection API or delete the co-located collection: " + colocatedWith);
+        }
+      }
+    }
   }
 }

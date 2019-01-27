@@ -46,7 +46,7 @@ function assert_output_contains() {
   local actual_output="$1"
   local needle="$2"
 
-  if echo "$actual_output" | grep -q "$needle"; then
+  if [[ "$actual_output" == *"$needle"* ]]; then
     return $ASSERT_SUCCESS
   fi
 

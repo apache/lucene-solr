@@ -18,9 +18,11 @@ package org.apache.lucene.spatial.spatial4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import org.apache.lucene.spatial.SpatialTestData;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -39,7 +41,6 @@ import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.junit.Test;
-import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
@@ -96,7 +97,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     points.add(new GeoPoint(planetModel, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(planetModel, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
 
-    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(planetModel, points),ctx);
+    final Shape triangle = new Geo3dShape<>(GeoPolygonFactory.makeGeoPolygon(planetModel, points),ctx);
     final Rectangle rect = ctx.makeRectangle(-49, -45, 73, 86);
     testOperation(rect,SpatialOperation.Intersects,triangle, false);
   }
@@ -116,7 +117,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
         new GeoPoint(planetModel, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
         new GeoPoint(planetModel, -90.0 * DEGREES_TO_RADIANS, 0.0)};
     final GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 29 * DEGREES_TO_RADIANS, pathPoints);
-    final Shape shape = new Geo3dShape(path,ctx);
+    final Shape shape = new Geo3dShape<>(path,ctx);
     final Rectangle rect = ctx.makeRectangle(131, 143, 39, 54);
     testOperation(rect,SpatialOperation.Intersects,shape,true);
   }
@@ -146,43 +147,20 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     return new Geo3dShape<>(areaShape, ctx);
   }
 
-  //TODO move to a new test class?
   @Test
-  public void testWKT() throws Exception {
-    Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
-    SpatialContext ctx = factory.newSpatialContext();
-    String wkt = "POLYGON ((20.0 -60.4, 20.1 -60.4, 20.1 -60.3, 20.0  -60.3,20.0 -60.4))";
-    Shape s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "POINT (30 10)";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "LINESTRING (30 10, 10 30, 40 40)";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "MULTIPOINT ((10 40), (40 30), (20 20), (30 10))";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "MULTILINESTRING ((10 10, 20 20, 10 40),(40 40, 30 30, 40 20, 30 10))";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35),(30 20, 20 15, 20 25, 30 20)))";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "ENVELOPE(1, 2, 4, 3)";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    wkt = "BUFFER(POINT(-10 30), 5.2)";
-    s = ctx.getFormats().getWktReader().read(wkt);
-    assertTrue(s instanceof  Geo3dShape<?>);
-    //wkt = "BUFFER(LINESTRING(1 2, 3 4), 0.5)";
-    //s = ctx.getFormats().getWktReader().read(wkt);
-    //assertTrue(s instanceof  Geo3dShape<?>);
+  public void testOperationsFromFile() throws IOException {
+    setupStrategy();
+    final Iterator<SpatialTestData> indexedSpatialData = getSampleData( "states-poly.txt");
+    final List<Shape> indexedShapes = new ArrayList<>();
+    while(indexedSpatialData.hasNext()) {
+      indexedShapes.add(indexedSpatialData.next().shape);
+    }
+    final Iterator<SpatialTestData> querySpatialData = getSampleData( "states-bbox.txt");
+    final List<Shape> queryShapes = new ArrayList<>();
+    while(querySpatialData.hasNext()) {
+      queryShapes.add(querySpatialData.next().shape);
+      queryShapes.add(randomQueryShape());
+    }
+    testOperation(SpatialOperation.Intersects, indexedShapes, queryShapes, random().nextBoolean());
   }
 }

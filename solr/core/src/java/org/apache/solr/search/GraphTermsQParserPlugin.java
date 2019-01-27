@@ -37,8 +37,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BulkScorer;
@@ -48,6 +48,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -55,13 +56,12 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -305,7 +305,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           if (disi == null) {
             return null;
           }
-          return new ConstantScoreScorer(this, score(), disi);
+          return new ConstantScoreScorer(this, score(), scoreMode, disi);
         }
 
         @Override
@@ -548,22 +548,17 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   }
 
   private FixedBitSet getLiveDocs(IndexSearcher searcher) throws IOException {
+    if (!searcher.getIndexReader().hasDeletions()) {
+      return null;
+    }
     if (searcher instanceof SolrIndexSearcher) {
-      BitDocSet liveDocs = ((SolrIndexSearcher) searcher).getLiveDocs();
-      FixedBitSet liveBits = liveDocs.size() == ((SolrIndexSearcher) searcher).maxDoc() ? null : liveDocs.getBits();
-      return liveBits;
+      return ((SolrIndexSearcher) searcher).getLiveDocSet().getBits();
     } else {
-      if (searcher.getTopReaderContext().reader().maxDoc() == searcher.getTopReaderContext().reader().numDocs()) return null;
-      FixedBitSet bs = new FixedBitSet(searcher.getTopReaderContext().reader().maxDoc());
-      for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
-        Bits liveDocs = ctx.reader().getLiveDocs();
-        int max = ctx.reader().maxDoc();
-        int base = ctx.docBase;
-        for (int i=0; i<max; i++) {
-          if (liveDocs.get(i)) bs.set(i + base);
-        }
-      }
-      return bs;
+      // TODO Does this ever happen?  In Solr should always be SolrIndexSearcher?
+      //smallSetSize==0 thus will always produce a BitDocSet (FixedBitSet)
+      DocSetCollector docSetCollector = new DocSetCollector(0, searcher.getIndexReader().maxDoc());
+      searcher.search(new MatchAllDocsQuery(), docSetCollector);
+      return ((BitDocSet) docSetCollector.getDocSet()).getBits();
     }
   }
 
@@ -629,7 +624,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
         if (readerSetIterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), readerSetIterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
       }
 
       @Override
@@ -698,12 +693,12 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim*bytesPerDim;
 
-        int cmpMin = StringHelper.compare(bytesPerDim, minPackedValue, offset, pointBytes, offset);
+        int cmpMin = FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
         if (cmpMin > 0) {
           return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }
 
-        int cmpMax = StringHelper.compare(bytesPerDim, maxPackedValue, offset, pointBytes, offset);
+        int cmpMax = FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
         if (cmpMax < 0) {
           return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }

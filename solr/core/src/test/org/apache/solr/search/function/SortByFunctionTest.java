@@ -159,14 +159,14 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
     // then we lose precision in sorting; so lets sanity check that our JVM isn't doing something wacky
     // in converstion that violates the principle of the test
     
-    assertEquals("WTF? small longs cast to double aren't equivilent?",
+    assertEquals("WTF? small longs cast to double aren't equivalent?",
                  (double)A, (double)B, 0.0D);
-    assertEquals("WTF? small longs cast to double aren't equivilent?",
+    assertEquals("WTF? small longs cast to double aren't equivalent?",
                  (double)A, (double)C, 0.0D);
     
-    assertEquals("WTF? big longs cast to double aren't equivilent?",
+    assertEquals("WTF? big longs cast to double aren't equivalent?",
                  (double)Z, (double)Y, 0.0D);
-    assertEquals("WTF? big longs cast to double aren't equivilent?",
+    assertEquals("WTF? big longs cast to double aren't equivalent?",
                  (double)Z, (double)X, 0.0D);
     
     int docId = 0;

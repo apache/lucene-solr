@@ -74,8 +74,8 @@ public class DataImporter {
     IDLE, RUNNING_FULL_DUMP, RUNNING_DELTA_DUMP, JOB_FAILED
   }
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(log);
 
   private Status status = Status.IDLE;
   private DIHConfiguration config;
@@ -125,7 +125,7 @@ public class DataImporter {
         } else if(dataconfigFile!=null) {
           is = new InputSource(core.getResourceLoader().openResource(dataconfigFile));
           is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(dataconfigFile));
-          LOG.info("Loading DIH Configuration: " + dataconfigFile);
+          log.info("Loading DIH Configuration: " + dataconfigFile);
         }
         if(is!=null) {          
           config = loadDataConfig(is);
@@ -143,12 +143,12 @@ public class DataImporter {
             if (name.equals("datasource")) {
               success = true;
               NamedList dsConfig = (NamedList) defaultParams.getVal(position);
-              LOG.info("Getting configuration for Global Datasource...");              
+              log.info("Getting configuration for Global Datasource...");
               Map<String,String> props = new HashMap<>();
               for (int i = 0; i < dsConfig.size(); i++) {
                 props.put(dsConfig.getName(i), dsConfig.getVal(i).toString());
               }
-              LOG.info("Adding properties to datasource: " + props);
+              log.info("Adding properties to datasource: " + props);
               dsProps.put((String) dsConfig.get("name"), props);
             }
             position++;
@@ -201,7 +201,7 @@ public class DataImporter {
           dbf.setXIncludeAware(true);
           dbf.setNamespaceAware(true);
         } catch( UnsupportedOperationException e ) {
-          LOG.warn( "XML parser doesn't support XInclude option" );
+          log.warn( "XML parser doesn't support XInclude option" );
         }
       }
       
@@ -224,7 +224,7 @@ public class DataImporter {
       }
 
       dihcfg = readFromXml(document);
-      LOG.info("Data Configuration loaded successfully");
+      log.info("Data Configuration loaded successfully");
     } catch (Exception e) {
       throw new DataImportHandlerException(SEVERE,
               "Data Config problem: " + e.getMessage(), e);
@@ -414,7 +414,7 @@ public class DataImporter {
   }
 
   public void doFullImport(DIHWriter writer, RequestInfo requestParams) {
-    LOG.info("Starting Full Import");
+    log.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
@@ -425,7 +425,7 @@ public class DataImporter {
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Exception e) {
-      SolrException.log(LOG, "Full Import failed", e);
+      SolrException.log(log, "Full Import failed", e);
       docBuilder.handleError("Full Import failed", e);
     } finally {
       setStatus(Status.IDLE);
@@ -442,7 +442,7 @@ public class DataImporter {
   }
 
   public void doDeltaImport(DIHWriter writer, RequestInfo requestParams) {
-    LOG.info("Starting Delta Import");
+    log.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
@@ -453,7 +453,7 @@ public class DataImporter {
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Exception e) {
-      LOG.error("Delta Import Failed", e);
+      log.error("Delta Import Failed", e);
       docBuilder.handleError("Delta Import Failed", e);
     } finally {
       setStatus(Status.IDLE);
@@ -475,7 +475,7 @@ public class DataImporter {
       return;
     }
     if (!importLock.tryLock()){
-      LOG.warn("Import command failed . another import is running");      
+      log.warn("Import command failed . another import is running");
       return;
     }
     try {

@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -30,11 +29,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SchemaApiFailureTest extends SolrCloudTestCase {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String COLLECTION = "schema-api-failure";
 
@@ -49,6 +45,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testAddTheSameFieldTwice() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     SchemaRequest.Update fieldAddition = new SchemaRequest.AddField

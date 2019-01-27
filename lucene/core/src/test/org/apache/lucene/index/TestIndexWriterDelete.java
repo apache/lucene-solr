@@ -477,7 +477,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private long getHitCount(Directory dir, Term term) throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    long hitCount = searcher.search(new TermQuery(term), 1000).totalHits;
+    long hitCount = searcher.search(new TermQuery(term), 1000).totalHits.value;
     reader.close();
     return hitCount;
   }
@@ -947,7 +947,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.deleteDocuments(new TermQuery(new Term("nada", "nada")));
     modifier.commit();
-    assertEquals(5, modifier.numDocs());
+    assertEquals(5, modifier.getDocStats().numDocs);
     modifier.close();
     dir.close();
   }
@@ -994,7 +994,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
     final String fieldFormat = TestUtil.getPostingsFormat("field");
-    assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
     assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
     assumeFalse("This test cannot run with Direct codec", fieldFormat.equals("Direct"));
     final Random r = random();
@@ -1147,6 +1146,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeletesCheckIndexOutput() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setMaxBufferedDocs(2);
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
@@ -1215,7 +1215,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     r = DirectoryReader.open(d);
     assertEquals(2, r.numDeletedDocs());
-    assertNotNull(MultiFields.getLiveDocs(r));
+    assertNotNull(MultiBits.getLiveDocs(r));
     r.close();
     d.close();
   }

@@ -40,6 +40,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     checkSchema("core.config.Commands");
     checkSchema("core.SchemaEdit");
     checkSchema("cluster.configs.Commands");
+    checkSchema("cluster.Commands");
   }
 
 
@@ -174,6 +175,13 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
         "{'a':'val'}"));
     assertNull(errs);
 
+  }
+
+  public void testNullObjectValue() {
+    ValidatingJsonMap spec = Utils.getSpec("cluster.Commands").getSpec();
+    JsonSchemaValidator validator = new JsonSchemaValidator((Map) Utils.getObjectByPath(spec, false, "/commands/set-obj-property"));
+    List<String> object = validator.validateJson(Utils.fromJSONString("{collectionDefaults: null}"));
+    assertNull(object);
   }
 
   private void checkSchema(String name) {

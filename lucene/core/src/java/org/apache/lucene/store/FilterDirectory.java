@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Set;
 
 /** Directory implementation that delegates calls to another directory.
  *  This class can be used to add limitations on top of an existing
@@ -115,7 +116,7 @@ public abstract class FilterDirectory extends Directory {
   }
 
   @Override
-  public boolean checkPendingDeletions() throws IOException {
-    return in.checkPendingDeletions();
+  public Set<String> getPendingDeletions() throws IOException {
+    return super.getPendingDeletions();
   }
 }

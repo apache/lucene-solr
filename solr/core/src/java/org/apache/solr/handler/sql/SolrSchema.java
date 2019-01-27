@@ -53,7 +53,7 @@ class SolrSchema extends AbstractSchema {
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zk), Optional.empty()).build()) {
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zk), Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build()) {
       cloudSolrClient.connect();
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
@@ -77,7 +77,7 @@ class SolrSchema extends AbstractSchema {
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zk), Optional.empty()).build()) {
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zk), Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build()) {
       cloudSolrClient.connect();
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
@@ -108,12 +108,16 @@ class SolrSchema extends AbstractSchema {
         case "tlong":
         case "int":
         case "long":
+        case "pint":
+        case "plong":
           type = typeFactory.createJavaType(Long.class);
           break;
         case "tfloat":
         case "tdouble":
         case "float":
         case "double":
+        case "pfloat":
+        case "pdouble":
           type = typeFactory.createJavaType(Double.class);
           break;
         default:

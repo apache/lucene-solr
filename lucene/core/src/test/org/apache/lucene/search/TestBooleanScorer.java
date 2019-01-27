@@ -23,8 +23,8 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -105,7 +105,7 @@ public class TestBooleanScorer extends LuceneTestCase {
             @Override
             public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
               assert min == 0;
-              collector.setScorer(new FakeScorer());
+              collector.setScorer(new ScoreAndDoc());
               collector.collect(0);
               return DocIdSetIterator.NO_MORE_DOCS;
             }
@@ -149,7 +149,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     q2.add(q1.build(), BooleanClause.Occur.SHOULD);
     q2.add(new CrazyMustUseBulkScorerQuery(), BooleanClause.Occur.SHOULD);
 
-    assertEquals(1, s.search(q2.build(), 10).totalHits);
+    assertEquals(1, s.count(q2.build()));
     r.close();
     dir.close();
   }
