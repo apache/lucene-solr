@@ -183,6 +183,8 @@ Optimizations
   This gives a lower absolute score but doesn't affect ordering, as this is a constant factor which is the same 
   for every document. Use LegacyBM25SimilarityFactory if you need the old 6.x/7.x scoring. See also upgrade notes (janhoy)
 
+* SOLR-13130: during the ResponseBuilder.STAGE_GET_FIELDS directly copy string bytes and avoid creating String Objects (noble)
+
 Other Changes
 ----------------------
 

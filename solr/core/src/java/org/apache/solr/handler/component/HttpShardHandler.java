@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -53,6 +54,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
@@ -61,6 +63,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import static org.apache.solr.handler.component.ShardRequest.PURPOSE_GET_FIELDS;
 
 public class HttpShardHandler extends ShardHandler {
   
@@ -132,6 +136,13 @@ public class HttpShardHandler extends ShardHandler {
     return urls;
   }
 
+  private static final BinaryResponseParser READ_STR_AS_CHARSEQ_PARSER = new BinaryResponseParser() {
+    @Override
+    protected JavaBinCodec createCodec() {
+      return new JavaBinCodec(null, stringCache).setReadStringAsCharSeq(true);
+    }
+  };
+
   @Override
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
@@ -158,6 +169,9 @@ public class HttpShardHandler extends ShardHandler {
         SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
         if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
 
+        if (sreq.purpose == PURPOSE_GET_FIELDS) {
+          req.setResponseParser(READ_STR_AS_CHARSEQ_PARSER);
+        }
         // no need to set the response parser as binary is the default
         // req.setResponseParser(new BinaryResponseParser());
 
