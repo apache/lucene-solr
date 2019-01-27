@@ -109,7 +109,7 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
         // no conf was found
         return;
       }
-      TimeRoutedAlias alias = createTimeRouteAlias(aliasName, aliasConf);
+      TimeRoutedAlias alias = new TimeRoutedAlias(aliasName, aliasConf);
 
       final int rows = Integer.valueOf(params.get("rows", "10"));
       if( rb.getResponseDocs().getNumFound() <= rows) {
@@ -164,10 +164,6 @@ public class RoutedAliasOptimizeQueryComponent extends SearchComponent {
   @Override
   public String getDescription() {
     return "Routed Alias Query Optimizer";
-  }
-
-  private TimeRoutedAlias createTimeRouteAlias(String aliasName, Map<String, String> aliasConf) {
-    return new TimeRoutedAlias(aliasName, aliasConf);
   }
 
   /**
