@@ -27,6 +27,12 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.update.AddUpdateCommand;
 
 public interface RoutedAlias {
+
+  String ROUTER_PREFIX = "router.";
+  String ROUTER_TYPE_NAME = ROUTER_PREFIX + "name";
+  String ROUTER_FIELD = ROUTER_PREFIX + "field";
+  String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
+  String CREATE_COLLECTION_PREFIX = "create-collection.";
   String ROUTED_ALIAS_NAME_CORE_PROP = "routedAliasName"; // core prop
 
   static SolrException newAliasMustExistException(String aliasName) {
