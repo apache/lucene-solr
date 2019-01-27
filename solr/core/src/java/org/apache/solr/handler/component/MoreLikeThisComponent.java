@@ -374,22 +374,22 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
 
     SimpleOrderedMap<Object> interestingTermsResponse = null;
-    MoreLikeThisParams.TermStyle termStyle = MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
-    List<MoreLikeThisHandler.InterestingTerm> interestingTerms = (termStyle == MoreLikeThisParams.TermStyle.NONE)
+    MoreLikeThisParams.TermStyle interestingTermsConfig = MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
+    List<MoreLikeThisHandler.InterestingTerm> interestingTerms = (interestingTermsConfig == MoreLikeThisParams.TermStyle.NONE)
         ? null : new ArrayList<>(mltHelper.getMoreLikeThis().getMaxQueryTerms());
-    
-    if (interestingTerms!=null) {
+
+    if (interestingTerms != null) {
       interestingTermsResponse = new SimpleOrderedMap<>();
     }
     
     while (iterator.hasNext()) {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
-      
-      DocListAndSet sim = mltHelper.getMoreLikeThis(id, 0, rows, null, interestingTerms,
+
+      DocListAndSet similarDocuments = mltHelper.getMoreLikeThis(id, 0, rows, null, interestingTerms,
           flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
-      mltResponse.add(name, sim.docList);
+      mltResponse.add(name, similarDocuments.docList);
       
       if (dbg != null) {
         SimpleOrderedMap<Object> docDbg = new SimpleOrderedMap<>();
@@ -398,9 +398,9 @@ public class MoreLikeThisComponent extends SearchComponent {
             .add("boostedMLTQuery", mltHelper.getBoostedMLTQuery().toString());
         docDbg.add("realMLTQuery", mltHelper.getRealMLTQuery().toString());
         SimpleOrderedMap<Object> explains = new SimpleOrderedMap<>();
-        DocIterator mltIte = sim.docList.iterator();
-        while (mltIte.hasNext()) {
-          int mltid = mltIte.nextDoc();
+        DocIterator similarDocumentsIterator = similarDocuments.docList.iterator();
+        while (similarDocumentsIterator.hasNext()) {
+          int mltid = similarDocumentsIterator.nextDoc();
           String key = schema.printableUniqueKey(searcher.doc(mltid));
           explains.add(key,
               searcher.explain(mltHelper.getRealMLTQuery(), mltid));
@@ -410,15 +410,15 @@ public class MoreLikeThisComponent extends SearchComponent {
       }
 
       if (interestingTermsResponse != null) {
-        if (termStyle == MoreLikeThisParams.TermStyle.DETAILS) {
-          NamedList<Float> interestingTermsWithScore = new NamedList<>();
+        if (interestingTermsConfig == MoreLikeThisParams.TermStyle.DETAILS) {
+          SimpleOrderedMap<Float> interestingTermsWithScore = new SimpleOrderedMap<>();
           for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
             interestingTermsWithScore.add(interestingTerm.term.toString(), interestingTerm.boost);
           }
           interestingTermsResponse.add(name, interestingTermsWithScore);
         } else {
           List<String> interestingTermsString = new ArrayList<>(interestingTerms.size());
-          for(MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms){
+          for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
             interestingTermsString.add(interestingTerm.term.toString());
           }
           interestingTermsResponse.add(name, interestingTermsString);
