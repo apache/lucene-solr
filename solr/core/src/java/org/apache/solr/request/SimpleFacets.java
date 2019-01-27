@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -861,22 +863,39 @@ public class SimpleFacets {
   }
 
   /**
-   * Computes the term-&gt;count counts for the specified term values relative to the 
+   * Computes the term-&gt;count counts for the specified term values relative to the
+   *
    * @param field the name of the field to compute term counts against
    * @param parsed contains the docset to compute term counts relative to
-   * @param terms a list of term values (in the specified field) to compute the counts for 
+   * @param terms a list of term values (in the specified field) to compute the counts for
    */
-  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms) throws IOException {
-    SchemaField sf = searcher.getSchema().getField(field);
-    FieldType ft = sf.getType();
-    NamedList<Integer> res = new NamedList<>();
-    for (String term : terms) {
-      int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
-      res.add(term, count);
+  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms)
+      throws IOException {
+    final String sort = parsed.params.getFieldParam(field, FacetParams.FACET_SORT, "empty");
+    final SchemaField sf = searcher.getSchema().getField(field);
+    final FieldType ft = sf.getType();
+    final DocSet baseDocset = parsed.docs;
+    final NamedList<Integer> res = new NamedList<>();
+    Stream<String> inputStream = terms.stream();
+    if (sort.equals(FacetParams.FACET_SORT_INDEX)) { // it might always make sense
+      inputStream = inputStream.sorted();
     }
-    return res;    
+    Stream<SimpleImmutableEntry<String,Integer>> termCountEntries = inputStream
+        .map((term) -> new SimpleImmutableEntry<>(term, numDocs(term, sf, ft, baseDocset)));
+    if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
+      termCountEntries = termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+    }
+    termCountEntries.forEach(e -> res.add(e.getKey(), e.getValue()));
+    return res;
   }
 
+  private int numDocs(String term, final SchemaField sf, final FieldType ft, final DocSet baseDocset) {
+    try {
+      return searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
+    } catch (IOException e1) {
+      throw new RuntimeException(e1);
+    }
+  }
 
   /**
    * Returns a count of the documents in the set which do not have any 
