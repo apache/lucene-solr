@@ -41,7 +41,7 @@ import org.apache.solr.util.DateMathParser;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
-public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
+public class CreateAliasCmd extends AliasCmd {
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -121,7 +121,7 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
 
     // Create the collection
-    MaintainRoutedAliasCmd.createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
+    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
     validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
 
     // Create/update the alias
