@@ -289,6 +289,14 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     );
   }
 
+  public void testInterpunct() throws IOException {
+    assertAnalyzesTo(analyzer, "도로ㆍ지반ㆍ수자원ㆍ건설환경ㆍ건축ㆍ화재설비연구",
+        new String[]{"도로", "지반", "수자원", "건설", "환경", "건축", "화재", "설비", "연구"},
+        new int[]{0, 3, 6, 10, 12, 15, 18, 20, 22},
+        new int[]{2, 5, 9, 12, 14, 17, 20, 22, 24},
+        new int[]{1, 1, 1, 1,   1,  1,  1,  1,  1}
+    );
+  }
 
   /** blast some random strings through the tokenizer */
   public void testRandomStrings() throws Exception {
@@ -318,6 +326,44 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     };
     checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
+  }
+
+  public void testCombining() throws IOException {
+    assertAnalyzesTo(analyzer, "Ба̀лтичко мо̑ре",
+        new String[]{"Ба̀лтичко", "мо̑ре"},
+        new int[]{0, 10},
+        new int[]{9, 15},
+        new int[]{1, 1}
+    );
+    assertPartsOfSpeech(analyzer, "Ба̀лтичко мо̑ре",
+        new POS.Type[]{POS.Type.MORPHEME, POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL, POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL, POS.Tag.SL}
+    );
+
+    assertAnalyzesTo(analyzer, "ka̠k̚t͡ɕ͈a̠k̚",
+        new String[]{"ka̠k̚t͡ɕ͈a̠k̚"},
+        new int[]{0},
+        new int[]{13},
+        new int[]{1}
+    );
+    assertPartsOfSpeech(analyzer, "ka̠k̚t͡ɕ͈a̠k̚",
+        new POS.Type[]{POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL}
+    );
+
+    assertAnalyzesTo(analyzer, "εἰμί",
+        new String[]{"εἰμί"},
+        new int[]{0},
+        new int[]{4},
+        new int[]{1}
+    );
+    assertPartsOfSpeech(analyzer, "εἰμί",
+        new POS.Type[]{POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL}
+    );
   }
 
   private void assertReadings(Analyzer analyzer, String input, String... readings) throws IOException {

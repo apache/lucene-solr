@@ -38,7 +38,8 @@ public class TestDocTermOrdsUninvertLimit extends LuceneTestCase {
    * New limit is 2^31, which is not very realistic to unit-test. */
   @SuppressWarnings({"ConstantConditions", "PointlessBooleanExpression"})
   @Nightly
-// commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  // commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testTriggerUnInvertLimit() throws IOException {
     final boolean SHOULD_TRIGGER = false; // Set this to true to use the test with the old implementation
 

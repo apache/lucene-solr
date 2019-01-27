@@ -64,8 +64,11 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
 
   @Override
   public void init(Map<String, Object> pluginConfig) {
-    if (pluginConfig.get("realm") != null) this.realm = (String) pluginConfig.get("realm");
-    else this.realm = "solr";
+    if (pluginConfig.containsKey(BasicAuthPlugin.PROPERTY_REALM)) {
+      this.realm = (String) pluginConfig.get(BasicAuthPlugin.PROPERTY_REALM);
+    } else {
+      this.realm = "solr";
+    }
     
     promptHeader = Collections.unmodifiableMap(Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
     credentials = new LinkedHashMap<>();

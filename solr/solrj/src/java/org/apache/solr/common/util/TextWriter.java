@@ -48,7 +48,7 @@ public interface TextWriter extends PushWriter {
     // go in order of most common to least common, however some of the more general types like Map belong towards the end
     if (val == null) {
       writeNull(name);
-    } else if (val instanceof String) {
+    } else if (val instanceof CharSequence) {
       writeStr(name, val.toString(), true);
       // micro-optimization... using toString() avoids a cast first
     } else if (val instanceof Number) {

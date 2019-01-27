@@ -22,7 +22,6 @@ import java.util.Random;
 
 import junit.framework.Assert;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -207,7 +206,7 @@ public class QueryUtils {
 
       @Override
       public FieldInfos getFieldInfos() {
-        return new FieldInfos(new FieldInfo[0]);
+        return FieldInfos.EMPTY;
       }
 
       final Bits liveDocs = new Bits.MatchNoBits(maxDoc);

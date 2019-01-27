@@ -183,7 +183,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   long id = -1;
-  protected State state = State.ACTIVE;
+  protected volatile State state = State.ACTIVE;
 
   protected TransactionLog bufferTlog;
   protected TransactionLog tlog;
@@ -1351,8 +1351,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public void close(boolean committed, boolean deleteOnClose) {
+    recoveryExecutor.shutdown(); // no new tasks
+
     synchronized (this) {
-      recoveryExecutor.shutdown(); // no new tasks
 
       // Don't delete the old tlogs, we want to be able to replay from them and retrieve old versions
 
@@ -1373,11 +1374,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         bufferTlog.forceClose();
       }
 
-      try {
-        ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
-      } catch (Exception e) {
-        SolrException.log(log, e);
-      }
+    }
+
+    try {
+      ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
+    } catch (Exception e) {
+      SolrException.log(log, e);
     }
   }
 
@@ -1537,7 +1539,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             numUpdates++;
           }
 
-        } catch (IOException e) {
+        } catch (IOException | AssertionError e) { // catch AssertionError to handle certain test failures correctly
           // failure to read a log record isn't fatal
           log.error("Exception reading versions from log",e);
         } finally {

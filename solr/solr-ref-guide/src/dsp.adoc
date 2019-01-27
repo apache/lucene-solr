@@ -21,19 +21,44 @@ Digital Signal Processing (DSP).
 
 == Dot Product
 
-The `dotProduct` function is used to calculate the dot product of two arrays.
+The `dotProduct` function is used to calculate the dot product of two numeric arrays.
 The dot product is a fundamental calculation for the DSP functions discussed in this section. Before diving into
-the more advanced DSP functions, its useful to get a better understanding of how the dot product calculation works.
+the more advanced DSP functions its useful to develop a deeper intuition of the dot product.
 
-=== Combining Two Arrays
+The dot product operation is performed in two steps:
 
-The `dotProduct` function can be used to combine two arrays into a single product. A simple example can help
-illustrate this concept.
+. Element-by-element multiplication of two vectors which produces a vector of products.
+
+. Sum the vector of products to produce a scalar result.
+
+This simple bit of math has a number of important applications.
+
+=== Representing Linear Combinations
+
+The `dotProduct` performs the math of a _linear combination_. A linear combination has the following form:
+
+[source,text]
+----
+(a1*v1)+(a2*v2)...
+----
+
+In the above example `a1` and `a2` are random variables that change. `v1` and `v2` are constant values.
+
+When computing the dot product the elements of two vectors are multiplied together and the results are added.
+If the first vector contains random variables and the second vector contains constant values
+then the dot product is performing a linear combination.
+
+This scenario comes up again and again in machine learning. For example both linear and logistic regression
+solve for a vector of constant weights. In order to perform a prediction, a dot product is calculated
+between a random observation vector and the constant weight vector. That dot product is a linear combination because
+one of the vectors holds constant weights.
+
+Lets look at simple example of how a linear combination can be used to find the mean of a vector of numbers.
 
 In the example below two arrays are set to variables *`a`* and *`b`* and then operated on by the `dotProduct` function.
 The output of the `dotProduct` function is set to variable *`c`*.
 
-Then the `mean` function is then used to compute the mean of the first array which is set to the variable *`d`*.
+The `mean` function is then used to compute the mean of the first array which is set to the variable *`d`*.
 
 Both the dot product and the mean are included in the output.
 
@@ -122,7 +147,8 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 In the example above two arrays were combined in a way that produced the mean of the first. In the second array
-each value was set to ".2". Another way of looking at this is that each value in the second array has the same weight.
+each value was set to .2. Another way of looking at this is that each value in the second array is
+applying the same weight to the values in the first array.
 By varying the weights in the second array we can produce a different result.
 For example if the first array represents a time series,
 the weights in the second array can be set to add more weight to a particular element in the first array.
@@ -525,6 +551,44 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+== Oscillate (Sine Wave)
+
+The `oscillate` function generates a periodic oscillating signal which can be used to model and study sine waves.
+
+The `oscillate` function takes three parameters: *amplitude*, *angular frequency*
+and *phase* and returns a vector containing the y-axis points of a sine wave.
+
+The y-axis points were generated from an x-axis sequence of 0-127.
+
+Below is an example of the `oscillate` function called with an amplitude of
+1, and angular frequency of .28 and phase of 1.57.
+
+[source,text]
+----
+oscillate(1, 0.28, 1.57)
+----
+
+The result of the `oscillate` function is plotted below:
+
+image::images/math-expressions/sinewave.png[]
+
+=== Sine Wave Interpolation, Extrapolation
+
+The `oscillate` function returns a function which can be used by the `predict` function to interpolate or extrapolate a sine wave.
+The example below extrapolates the sine wave to an x-axis sequence of 0-256.
+
+
+[source,text]
+----
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)))
+----
+
+The extrapolated sine wave is plotted below:
+
+image::images/math-expressions/sinewave256.png[]
+
+
 == Autocorrelation
 
 Autocorrelation measures the degree to which a signal is correlated with itself. Autocorrelation is used to determine
@@ -532,15 +596,16 @@ if a vector contains a signal or is purely random.
 
 A few examples, with plots, will help to understand the concepts.
 
-In the first example the `sin` function is wrapped around a `sequence` function to generate a sine wave. The result of this
+The first example simply revisits the example above of an extrapolated sine wave. The result of this
 is plotted in the image below. Notice that there is a structure to the plot that is clearly not random.
 
 [source,text]
 ----
-sin(sequence(256, 0, 6))
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)))
 ----
 
-image::images/math-expressions/signal.png[]
+image::images/math-expressions/sinewave256.png[]
 
 
 In the next example the `sample` function is used to draw 256 samples from a `uniformDistribution` to create a
@@ -562,9 +627,10 @@ becomes more dense it can become harder to see a pattern hidden within noise.
 
 [source,text]
 ----
-let(a=sin(sequence(256, 0, 6)),
-    b=sample(uniformDistribution(-1.5, 1.5), 256),
-    c=ebeAdd(a, b))
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)),
+    c=sample(uniformDistribution(-1.5, 1.5), 256),
+    d=ebeAdd(b,c))
 ----
 
 image::images/math-expressions/hidden-signal.png[]
@@ -585,8 +651,9 @@ This is the autocorrelation plot of a pure signal.
 
 [source,text]
 ----
-let(a=sin(sequence(256, 0, 6)),
-    b=conv(a, rev(a)),
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)),
+    c=conv(b, rev(b)))
 ----
 
 image::images/math-expressions/signal-autocorrelation.png[]
@@ -615,10 +682,11 @@ strongly that there is an underlying signal hidden within the noise.
 
 [source,text]
 ----
-let(a=sin(sequence(256, 0, 6)),
-    b=sample(uniformDistribution(-1.5, 1.5), 256),
-    c=ebeAdd(a, b),
-    d=conv(c, rev(c))
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)),
+    c=sample(uniformDistribution(-1.5, 1.5), 256),
+    d=ebeAdd(b, c),
+    e=conv(d, rev(d)))
 ----
 
 image::images/math-expressions/hidden-signal-autocorrelation.png[]
@@ -675,9 +743,10 @@ associated with them. This `fft` shows a clear signal with very low levels of no
 
 [source,text]
 ----
-let(a=sin(sequence(256, 0, 6)),
-    b=fft(a),
-    c=rowAt(b, 0))
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)),
+    c=fft(b),
+    d=rowAt(c, 0))
 ----
 
 
@@ -709,11 +778,12 @@ shows that there is considerable noise along with the signal.
 
 [source,text]
 ----
-let(a=sin(sequence(256, 0, 6)),
-    b=sample(uniformDistribution(-1.5, 1.5), 256),
-    c=ebeAdd(a, b),
-    d=fft(c),
-    e=rowAt(d, 0))
+let(a=oscillate(1, 0.28, 1.57),
+    b=predict(a, sequence(256, 0, 1)),
+    c=sample(uniformDistribution(-1.5, 1.5), 256),
+    d=ebeAdd(b, c),
+    e=fft(d),
+    f=rowAt(e, 0))
 ----
 
 image::images/math-expressions/hidden-signal-fft.png[]

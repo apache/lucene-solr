@@ -21,40 +21,62 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.NamedList; 
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
-
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.httpclient.retries", "4");
+    System.setProperty("solr.retries.on.forward", "1");
+    System.setProperty("solr.retries.to.followers", "1"); 
+
+  }
+  
+  @Before
+  public void beforeTest() throws Exception {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+
+    new V2Request.Builder("/cluster")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}}")
+        .build()
+        .process(cluster.getSolrClient());
+  }
+  
+  @After 
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //Commented out 11-Dec-2018 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13028")
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
@@ -78,7 +100,11 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
         .setAutoAddReplicas(false)
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
-
+    
+    cluster.waitForActiveCollection(collection1, 2, 4);
+    cluster.waitForActiveCollection(collection2, 1, 2);
+    cluster.waitForActiveCollection("testSimple3", 3, 3);
+    
     // we remove the implicit created trigger, so the replicas won't be moved
     String removeTriggerCommand = "{" +
         "'remove-trigger' : {" +
@@ -86,7 +112,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
         "'removeListeners': true" +
         "}" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeTriggerCommand);
     NamedList response = cluster.getSolrClient().request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -95,34 +121,71 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     List<CloudDescriptor> cloudDescriptors = lostJetty.getCoreContainer().getCores().stream()
         .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor())
         .collect(Collectors.toList());
+    
+    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+
     lostJetty.stop();
-    waitForNodeLeave(lostNodeName);
+    
+    cluster.waitForJettyToStop(lostJetty);
+
+    reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName));
+
 
     List<SolrRequest> operations = getOperations(jetty3, lostNodeName);
     assertOperations(collection1, operations, lostNodeName, cloudDescriptors,  null);
 
     lostJetty.start();
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000);
+    cluster.waitForAllNodes(30);
+    
+    cluster.waitForActiveCollection(collection1, 2, 4);
+    cluster.waitForActiveCollection(collection2, 1, 2);
+    cluster.waitForActiveCollection("testSimple3", 3, 3);
+    
+    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000));
+    
     String setClusterPreferencesCommand = "{" +
         "'set-cluster-preferences': [" +
         "{'minimize': 'cores','precision': 0}]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
-    response = cluster.getSolrClient().request(req);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
+    
+    // you can hit a stale connection from pool when restarting jetty
+    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()),
+        Optional.empty())
+            .withSocketTimeout(45000).withConnectionTimeout(15000).build()) {
+      response = cloudClient.request(req);
+    }
+
     assertEquals(response.get("result").toString(), "success");
 
     lostJetty = random().nextBoolean()? jetty1 : jetty2;
-    lostNodeName = lostJetty.getNodeName();
+    String lostNodeName2 = lostJetty.getNodeName();
     cloudDescriptors = lostJetty.getCoreContainer().getCores().stream()
         .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor())
         .collect(Collectors.toList());
-    lostJetty.stop();
-    waitForNodeLeave(lostNodeName);
+    
 
-    operations = getOperations(jetty3, lostNodeName);
-    assertOperations(collection1, operations, lostNodeName, cloudDescriptors, jetty3);
+    
+    lostJetty.stop();
+   
+    reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName2));
+
+    try {
+      operations = getOperations(jetty3, lostNodeName2);
+    } catch (SolrException e) {
+      // we might get a stale connection from the pool after jetty restarts
+      operations = getOperations(jetty3, lostNodeName2);
+    }
+    
+    assertOperations(collection1, operations, lostNodeName2, cloudDescriptors, jetty3);
 
     lostJetty.start();
+    cluster.waitForAllNodes(30);
+    
+    cluster.waitForActiveCollection(collection1, 2, 4);
+    cluster.waitForActiveCollection(collection2, 1, 2);
+    cluster.waitForActiveCollection("testSimple3", 3, 3);
+    
     assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000));
 
     new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
@@ -135,20 +198,14 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
       }
     }.process(cluster.getSolrClient());
     lostJetty = jetty1;
-    lostNodeName = lostJetty.getNodeName();
+    String lostNodeName3 = lostJetty.getNodeName();
+    
     lostJetty.stop();
-    waitForNodeLeave(lostNodeName);
-    operations = getOperations(jetty3, lostNodeName);
+    
+    reader.waitForLiveNodes(30, TimeUnit.SECONDS, missingLiveNode(lostNodeName3));
+    
+    operations = getOperations(jetty3, lostNodeName3);
     assertNull(operations);
-  }
-
-  private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
-      Thread.sleep(100);
-      if (timeOut.hasTimedOut()) fail("Wait for " + lostNodeName + " to leave failed!");
-    }
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to create unique id")

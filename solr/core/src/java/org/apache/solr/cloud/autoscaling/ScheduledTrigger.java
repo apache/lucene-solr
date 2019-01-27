@@ -151,8 +151,8 @@ public class ScheduledTrigger extends TriggerBase {
   public void run() {
     synchronized (this) {
       if (isClosed) {
-        log.warn("ScheduledTrigger ran but was already closed");
-        throw new RuntimeException("Trigger has been closed");
+        log.debug("ScheduledTrigger ran but was already closed");
+        return;
       }
     }
 

@@ -47,8 +47,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -426,7 +426,7 @@ public class SimCloudManager implements SolrCloudManager {
     // initialize history handler if this is the first node
     if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
       metricsHandler = new MetricsHandler(metricManager);
-      metricsHistoryHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, Collections.emptyMap());
+      metricsHistoryHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, new HashMap<>());
       metricsHistoryHandler.initializeMetrics(metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag, CommonParams.METRICS_HISTORY_PATH);
     }
     return nodeId;
@@ -532,10 +532,12 @@ public class SimCloudManager implements SolrCloudManager {
   }
 
   /**
-   * Simulate the effect of restarting Overseer leader - in this case this means restarting the
-   * OverseerTriggerThread and optionally killing a node. All background tasks currently in progress
-   * will be interrupted.
+   * Simulate the effect of restarting Overseer leader - in this case this means closing the current
+   * {@link OverseerTriggerThread} (and optionally killing a node) then starting a new 
+   * {@link OverseerTriggerThread}.
+   * All background tasks currently in progress will be interrupted.
    * @param killNodeId optional nodeId to kill. If null then don't kill any node, just restart the thread
+   * @see #getOverseerTriggerThread
    */
   public void simRestartOverseer(String killNodeId) throws Exception {
     log.info("=== Restarting OverseerTriggerThread and clearing object cache...");
@@ -693,11 +695,13 @@ public class SimCloudManager implements SolrCloudManager {
         LocalSolrQueryRequest queryRequest = new LocalSolrQueryRequest(null, params);
         if (autoscaling) {
           RequestWriter.ContentWriter cw = req.getContentWriter("application/json");
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          cw.write(baos);
-          String payload = baos.toString("UTF-8");
-          log.trace("-- payload: {}", payload);
-          queryRequest.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(payload)));
+          if (null != cw) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            cw.write(baos);
+            String payload = baos.toString("UTF-8");
+            log.trace("-- payload: {}", payload);
+            queryRequest.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(payload)));
+          }
         }
         queryRequest.getContext().put("httpMethod", req.getMethod().toString());
         SolrQueryResponse queryResponse = new SolrQueryResponse();
@@ -838,7 +842,7 @@ public class SimCloudManager implements SolrCloudManager {
           results.add("success", "");
           break;
         case ADDROLE:
-          nodeStateProvider.simAddNodeValue(req.getParams().get("node"), "nodeRole", req.getParams().get("role"));
+          nodeStateProvider.simSetNodeValue(req.getParams().get("node"), "nodeRole", req.getParams().get("role"));
           break;
         case CREATESHARD:
           try {
@@ -889,7 +893,21 @@ public class SimCloudManager implements SolrCloudManager {
     IOUtils.closeQuietly(stateManager);
     triggerThread.interrupt();
     IOUtils.closeQuietly(triggerThread);
+    triggerThread.interrupt();
+    try {
+      triggerThread.join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
     IOUtils.closeQuietly(objectCache);
     simCloudManagerPool.shutdownNow();
+  }
+
+  /**
+   * Direct access to the current {@link OverseerTriggerThread}
+   * @see #simRestartOverseer
+   */
+  public OverseerTriggerThread getOverseerTriggerThread() {
+    return ((OverseerTriggerThread) triggerThread.getThread());
   }
 }

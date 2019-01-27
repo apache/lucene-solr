@@ -26,12 +26,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -51,9 +51,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @BeforeClass
   public static void startCluster() throws Exception {
-    configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
-        .configure();
+
   }
 
   @AfterClass
@@ -63,11 +61,14 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Before
   public void prepareCluster() throws Exception {
-    int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();
-    for (int i = 0; i < missingServers; i++) {
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(30);
+    configureCluster(CLUSTER_SIZE)
+    .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+    .configure();
+  }
+  
+  @After
+  public void tearDownCluster() throws Exception {
+    shutdownCluster();
   }
 
   private static Future<Boolean> waitInBackground(String collection, long timeout, TimeUnit unit,
@@ -109,7 +110,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testSimpleCollectionWatch() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -137,7 +138,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
       return false;
     });
 
-    cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
+    JettySolrRunner j = cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
+    cluster.waitForJettyToStop(j);
     assertTrue("CollectionStateWatcher was never notified of cluster change", latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
 
     waitFor("CollectionStateWatcher wasn't cleared after completion", 1, TimeUnit.SECONDS,
@@ -199,6 +201,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Test
   // commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testCanWaitForNonexistantCollection() throws Exception {
 
     Future<Boolean> future = waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
@@ -224,7 +227,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -238,6 +241,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     // stop a node, then add a watch waiting for all nodes to be back up
     JettySolrRunner node1 = cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
+    
+    cluster.waitForJettyToStop(node1);
 
     Future<Boolean> future = waitInBackground("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
           firstCall.countDown();
@@ -286,7 +291,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
   public void testWatchesWorkForStateFormat1() throws Exception {
 
     final CloudSolrClient client = cluster.getSolrClient();

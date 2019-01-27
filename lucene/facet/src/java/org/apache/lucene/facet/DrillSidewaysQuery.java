@@ -123,7 +123,7 @@ class DrillSidewaysQuery extends Query {
           Scorer scorer = drillDowns[dim].scorer(context);
           if (scorer == null) {
             nullCount++;
-            scorer = new ConstantScoreScorer(drillDowns[dim], 0f, DocIdSetIterator.empty());
+            scorer = new ConstantScoreScorer(drillDowns[dim], 0f, scoreMode, DocIdSetIterator.empty());
           }
 
           dims[dim] = new DrillSidewaysScorer.DocsAndCost(scorer, drillSidewaysCollectors[dim]);

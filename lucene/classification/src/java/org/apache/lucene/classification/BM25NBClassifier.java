@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -128,7 +128,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
   private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
 
-    Terms classes = MultiFields.getTerms(indexReader, classFieldName);
+    Terms classes = MultiTerms.getTerms(indexReader, classFieldName);
     TermsEnum classesEnum = classes.iterator();
     BytesRef next;
     String[] tokenizedText = tokenize(inputDocument);
@@ -194,7 +194,7 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
         tokenStream.end();
       }
     }
-    return result.toArray(new String[result.size()]);
+    return result.toArray(new String[0]);
   }
 
   private double calculateLogLikelihood(String[] tokens, Term term) throws IOException {

@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadZookeeperThreadsFilter.class // hdfs currently leaks thread(s)
+    BadZookeeperThreadsFilter.class
 })
 public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
@@ -114,8 +115,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13075")
   public void testSaslZkACLProvider() throws Exception {
     // Test with Sasl enabled
     SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
@@ -178,18 +178,18 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     private String kdcDir;
     private KerberosTestServices kerberosTestServices;
 
-    public SaslZkTestServer(String zkDir, String kdcDir) {
+    public SaslZkTestServer(String zkDir, String kdcDir) throws Exception {
       super(zkDir);
       this.kdcDir = kdcDir;
     }
 
-    public SaslZkTestServer(String zkDir, int port, String kdcDir) {
+    public SaslZkTestServer(String zkDir, int port, String kdcDir) throws KeeperException, InterruptedException {
       super(zkDir, port);
       this.kdcDir = kdcDir;
     }
 
     @Override
-    public void run() throws InterruptedException {
+    public void run() throws InterruptedException, IOException {
       try {
         // Don't require that credentials match the entire principal string, e.g.
         // can match "solr" rather than "solr/host@DOMAIN"
@@ -197,11 +197,12 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
         File keytabFile = new File(kdcDir, "keytabs");
         String zkClientPrincipal = "solr";
-        String zkServerPrincipal = "zookeeper/127.0.0.1";
+        String zkServerPrincipal = "zookeeper/localhost";
 
         kerberosTestServices = KerberosTestServices.builder()
             .withKdc(new File(kdcDir))
             .withJaasConfiguration(zkClientPrincipal, keytabFile, zkServerPrincipal, keytabFile)
+           
             .build();
         kerberosTestServices.start();
 
@@ -209,15 +210,15 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       } catch (Exception ex) {
         throw new RuntimeException(ex);
       }
-      super.run();
+      super.run(false);
     }
 
     @Override
     public void shutdown() throws IOException, InterruptedException {
-      super.shutdown();
       System.clearProperty("zookeeper.authProvider.1");
       System.clearProperty("zookeeper.kerberos.removeRealmFromPrincipal");
       System.clearProperty("zookeeper.kerberos.removeHostFromPrincipal");
+      super.shutdown();
       kerberosTestServices.stop();
     }
   }

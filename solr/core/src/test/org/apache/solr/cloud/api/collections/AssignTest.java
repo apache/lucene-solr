@@ -16,7 +16,13 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.io.IOException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,17 +48,9 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class AssignTest extends SolrTestCaseJ4 {
   
@@ -109,14 +107,13 @@ public class AssignTest extends SolrTestCaseJ4 {
 
       try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
         assertTrue(zkClient.isConnected());
-        zkClient.makePath("/", true);
         for (String c : collections) {
-          zkClient.makePath("/collections/"+c, true);
+          zkClient.makePath("/collections/" + c, true);
         }
         // TODO: fix this to be independent of ZK
         ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
         List<Future<?>> futures = new ArrayList<>();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 73; i++) {
           futures.add(executor.submit(() -> {
             String collection = collections[random().nextInt(collections.length)];
             int id = Assign.incAndGetId(stateManager, collection, 0);
@@ -130,7 +127,7 @@ public class AssignTest extends SolrTestCaseJ4 {
           future.get();
         }
       }
-      assertEquals(1000, (long) collectionUniqueIds.values().stream()
+      assertEquals(73, (long) collectionUniqueIds.values().stream()
           .map(ConcurrentHashMap::size)
           .reduce((m1, m2) -> m1 + m2).get());
     } finally {
@@ -141,12 +138,11 @@ public class AssignTest extends SolrTestCaseJ4 {
 
 
   @Test
-  public void testBuildCoreName() throws IOException, InterruptedException, KeeperException {
+  public void testBuildCoreName() throws Exception {
     String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
     try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
-      zkClient.makePath("/", true);
       // TODO: fix this to be independent of ZK
       ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
       Map<String, Slice> slices = new HashMap<>();
@@ -169,13 +165,13 @@ public class AssignTest extends SolrTestCaseJ4 {
     ClusterStateProvider clusterStateProvider = mock(ClusterStateProvider.class);
     when(solrCloudManager.getClusterStateProvider()).thenReturn(clusterStateProvider);
     // first we set useLegacyReplicaAssignment=false, so autoscaling should always be used
-    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("collection", Utils.makeMap("useLegacyReplicaAssignment", false))));
+    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("cluster", Utils.makeMap("useLegacyReplicaAssignment", false))));
     // verify
     boolean usePolicyFramework = Assign.usePolicyFramework(solrCloudManager);
     assertTrue(usePolicyFramework);
 
     // now we set useLegacyReplicaAssignment=true, so autoscaling can only be used if an explicit policy or preference exists
-    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("collection", Utils.makeMap("useLegacyReplicaAssignment", true))));
+    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("cluster", Utils.makeMap("useLegacyReplicaAssignment", true))));
     DistribStateManager distribStateManager = mock(DistribStateManager.class);
     when(solrCloudManager.getDistribStateManager()).thenReturn(distribStateManager);
     when(distribStateManager.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));

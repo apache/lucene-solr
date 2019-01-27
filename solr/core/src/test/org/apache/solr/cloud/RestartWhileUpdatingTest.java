@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.TestInjection;
@@ -32,7 +31,6 @@ import org.junit.Test;
 
 @Slow
 @Nightly
-@SuppressObjectReleaseTracker(bugUrl="this is a purposely leaky test")
 public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
@@ -76,7 +74,8 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);

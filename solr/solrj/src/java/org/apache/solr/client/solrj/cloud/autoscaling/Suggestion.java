@@ -32,10 +32,11 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 
 public class Suggestion {
   static class Ctx {
+    long endTime = -1;
     int max = Integer.MAX_VALUE;
     public Policy.Session session;
     public Violation violation;
-    private List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
+    List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
     SolrRequest addSuggestion(Suggester suggester) {
       return addSuggestion(suggester, "violation");
     }
@@ -60,14 +61,20 @@ public class Suggestion {
       return suggestions;
     }
 
+    public boolean hasTimedOut() {
+      return session.cloudManager.getTimeSource().getTimeNs() >= endTime;
+
+    }
+
     public boolean needMore() {
-      return suggestions.size() < max;
+      return suggestions.size() < max && !hasTimedOut();
     }
   }
 
   static void suggestNegativeViolations(Suggestion.Ctx ctx, Function<Set<String>, List<String>> shardSorter) {
     if (ctx.violation.coll == null) return;
     Set<String> shardSet = new HashSet<>();
+    if (!ctx.needMore()) return;
     for (Row node : ctx.session.matrix)
       node.forEachShard(ctx.violation.coll, (s, ri) -> {
         if (Policy.ANY.equals(ctx.violation.shard) || s.equals(ctx.violation.shard)) shardSet.add(s);
@@ -76,6 +83,7 @@ public class Suggestion {
     List<String> shards = shardSorter.apply(shardSet);
     outer:
     for (int i = 0; i < 5; i++) {
+      if (!ctx.needMore()) break;
       int totalSuggestions = 0;
       for (String shard : shards) {
         Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
@@ -102,6 +110,7 @@ public class Suggestion {
     if (ctx.violation == null) return;
     Double currentDelta = ctx.violation.replicaCountDelta;
     for (ReplicaInfoAndErr e : ctx.violation.getViolatingReplicas()) {
+      if (!ctx.needMore()) break;
       if (currentDelta <= 0) break;
       Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
           .forceOperation(true)

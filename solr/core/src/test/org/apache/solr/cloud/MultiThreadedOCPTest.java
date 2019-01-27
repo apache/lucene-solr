@@ -51,16 +51,18 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   private static final int REQUEST_STATUS_TIMEOUT = 5 * 60;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int NUM_COLLECTIONS = 4;
+  private static final int NUM_COLLECTIONS = 3;
 
   public MultiThreadedOCPTest() {
     sliceCount = 2;
+    
+    fixShardCount(3);
   }
 
   @Test
 // commented 20-July-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
-  @ShardsFixed(num = 4)
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     testParallelCollectionAPICalls();
     testTaskExclusivity();
@@ -74,7 +76,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       DistributedQueue distributedQueue = new ZkDistributedQueue(cloudClient.getZkStateReader().getZkClient(),
           "/overseer/collection-queue-work", new Stats());
       //fill the work queue with blocked tasks by adding more than the no:of parallel tasks
-      for (int i = 0; i < MAX_PARALLEL_TASKS+5; i++) {
+      for (int i = 0; i < MAX_PARALLEL_TASKS + 15; i++) {
         distributedQueue.offer(Utils.toJSON(Utils.makeMap(
             "collection", "A_COLL",
             QUEUE_OPERATION, MOCK_COLL_TASK.toLower(),
@@ -86,7 +88,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         log.info("MOCK task added {}", i);
 
       }
-      Thread.sleep(10);//wait and post the next message
+      Thread.sleep(100);//wait and post the next message
 
       //this is not going to be blocked because it operates on another collection
       distributedQueue.offer(Utils.toJSON(Utils.makeMap(
@@ -98,7 +100,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
 
       Long acoll = null, bcoll = null;
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 500; i++) {
         if (bcoll == null) {
           CollectionAdminResponse statusResponse = getStatusResponse("200", client);
           bcoll = (Long) statusResponse.getResponse().get("MOCK_FINISHED");
@@ -111,7 +113,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         Thread.sleep(100);
       }
       assertTrue(acoll != null && bcoll != null);
-      assertTrue(acoll > bcoll);
+      assertTrue("acoll: " + acoll + " bcoll: " + bcoll, acoll > bcoll);
     }
 
   }
@@ -119,7 +121,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-        CollectionAdminRequest.createCollection("ocptest" + i,"conf1",4,1).processAsync(String.valueOf(i), client);
+        CollectionAdminRequest.createCollection("ocptest" + i,"conf1",3,1).processAsync(String.valueOf(i), client);
       }
   
       boolean pass = false;
@@ -209,7 +211,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      CollectionAdminRequest.createCollection("ocptest_shardsplit2","conf1",4,1).processAsync("3000",client);
+      CollectionAdminRequest.createCollection("ocptest_shardsplit2","conf1",3,1).processAsync("3000",client);
   
       SplitShard splitShardRequest = CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD1);
       splitShardRequest.processAsync("3001",client);

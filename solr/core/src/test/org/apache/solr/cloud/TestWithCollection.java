@@ -17,11 +17,12 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,25 +35,23 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
  * Tests for co-locating a collection with another collection such that any Collection API
@@ -68,30 +67,16 @@ public class TestWithCollection extends SolrCloudTestCase {
 
   private static final int NUM_JETTIES = 2;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NUM_JETTIES)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-  }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
     if (zkClient().exists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true))  {
       zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(StandardCharsets.UTF_8), true);
     }
-    ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
-    for (Map.Entry<String, ClusterState.CollectionRef> entry : clusterState.getCollectionStates().entrySet()) {
-      if (entry.getKey().contains("_xyz"))  {
-        try {
-          CollectionAdminRequest.deleteCollection(entry.getKey()).process(cluster.getSolrClient());
-        } catch (Exception e) {
-          log.error("Exception while deleting collection: " + entry.getKey());
-        }
-      }
-    }
-    cluster.deleteAllCollections();
+
     cluster.getSolrClient().setDefaultCollection(null);
 
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
@@ -100,18 +85,11 @@ public class TestWithCollection extends SolrCloudTestCase {
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
     LATCH = new CountDownLatch(1);
-
-    int jettys = cluster.getJettySolrRunners().size();
-    if (jettys < NUM_JETTIES) {
-      for (int i = jettys; i < NUM_JETTIES; i++) {
-        cluster.startJettySolrRunner();
-      }
-    } else  {
-      for (int i = jettys; i > NUM_JETTIES; i--) {
-        cluster.stopJettySolrRunner(i - 1);
-      }
-    }
-    cluster.waitForAllNodes(30);
+  }
+  
+  @After
+  public void teardownCluster() throws Exception {
+    shutdownCluster();
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
@@ -155,7 +133,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'cores':'<10', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -176,7 +154,7 @@ public class TestWithCollection extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testDeleteWithCollection() throws IOException, SolrServerException, InterruptedException {
     String prefix = "testDeleteWithCollection";
     String xyz = prefix + "_xyz";
@@ -274,7 +252,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -315,7 +293,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -351,7 +329,7 @@ public class TestWithCollection extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testMoveReplicaWithCollection() throws Exception {
     String prefix = "testMoveReplicaWithCollection";
     String xyz = prefix + "_xyz";
@@ -365,7 +343,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -427,7 +405,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getRandomJetty(random()).getNodeName();
@@ -453,7 +431,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "{'name' : 'compute', 'class' : '" + CapturingAction.class.getName() + "'}" +
         "]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     solrClient.request(req);
 
     Optional<JettySolrRunner> other = cluster.getJettySolrRunners()
@@ -544,7 +522,7 @@ public class TestWithCollection extends SolrCloudTestCase {
         "      {'replica':'<2', 'node':'#ANY'}," +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     String chosenNode = cluster.getJettySolrRunner(0).getNodeName();

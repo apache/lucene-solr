@@ -33,6 +33,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 
 public class MultiContentWriterRequest extends AbstractUpdateRequest {
@@ -92,7 +93,7 @@ public class MultiContentWriterRequest extends AbstractUpdateRequest {
     byte[] bytes = null;
     if (o instanceof byte[]) bytes = (byte[]) o;
     else if (o instanceof ByteBuffer) bytes = ((ByteBuffer) o).array();
-    rdr = new InputStreamReader(new ByteArrayInputStream(bytes));
+    rdr = new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8);
     String detectedContentType = null;
     for (;;) {
       int ch = rdr.read();

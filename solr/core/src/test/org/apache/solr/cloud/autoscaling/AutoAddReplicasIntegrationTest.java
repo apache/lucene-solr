@@ -17,16 +17,20 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
@@ -39,28 +43,36 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.solr.common.util.Utils.makeMap;
-
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;")
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION1 =  "testSimple1";
   private static final String COLLECTION2 =  "testSimple2";
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
+
+    new V2Request.Builder("/cluster")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}}")
+        .build()
+        .process(cluster.getSolrClient());
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    shutdownCluster();
+    super.tearDown();
   }
 
   @Test
-  // This apparently fails in both subclasses.
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
@@ -70,11 +82,17 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .setAutoAddReplicas(true)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION1, 2, 4);
+    
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 2)
         .setCreateNodeSet(jetty2.getNodeName()+","+jetty3.getNodeName())
         .setAutoAddReplicas(false)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION2, 2, 4);
+    
     // the number of cores in jetty1 (5) will be larger than jetty3 (1)
     CollectionAdminRequest.createCollection("testSimple3", "conf", 3, 1)
         .setCreateNodeSet(jetty1.getNodeName())
@@ -82,6 +100,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection("testSimple3", 3, 3);
+    
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
 
     // start the tests
@@ -89,25 +109,36 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     String lostNodeName = lostJetty.getNodeName();
     List<Replica> replacedHdfsReplicas = getReplacedSharedFsReplicas(COLLECTION1, zkStateReader, lostNodeName);
     lostJetty.stop();
+    
+    cluster.waitForJettyToStop(lostJetty);
+    
     waitForNodeLeave(lostNodeName);
+    
     // ensure that 2 shards have 2 active replicas and only 4 replicas in total
     // i.e. old replicas have been deleted.
     // todo remove the condition for total replicas == 4 after SOLR-11591 is fixed
-    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, (liveNodes, collectionState) -> clusterShape(2, 2).matches(liveNodes, collectionState)
-        && collectionState.getReplicas().size() == 4);
+    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, (liveNodes, collectionState) -> clusterShape(2, 4).matches(liveNodes, collectionState)
+        && collectionState.getReplicas().size() == 4, 90, TimeUnit.SECONDS);
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION1);
     lostJetty.start();
+    
+    cluster.waitForAllNodes(30);
+    
     assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 90000));
 
     // check cluster property is considered
     disableAutoAddReplicasInCluster();
     lostNodeName = jetty3.getNodeName();
     jetty3.stop();
+    
+    cluster.waitForJettyToStop(jetty3);
+    
     waitForNodeLeave(lostNodeName);
-    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 1));
-    jetty3.start();
+    
     waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 2));
-    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 2));
+    jetty3.start();
+    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 4));
+    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 4));
     enableAutoAddReplicasInCluster();
 
 
@@ -124,10 +155,14 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
 
     lostNodeName = jetty2.getNodeName();
     replacedHdfsReplicas = getReplacedSharedFsReplicas(COLLECTION2, zkStateReader, lostNodeName);
+    
     jetty2.stop();
+    
+    cluster.waitForJettyToStop(jetty2);
+    
     waitForNodeLeave(lostNodeName);
-    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 2));
-    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 2));
+    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 4), 45, TimeUnit.SECONDS);
+    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 4), 45, TimeUnit.SECONDS);
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION2);
 
     // overseer failover test..

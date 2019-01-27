@@ -19,6 +19,7 @@ package org.apache.solr.highlight;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,7 +44,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -80,6 +80,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;bool name="hl.usePhraseHighlighter"&gt;true&lt;/bool&gt;
  * &lt;int name="hl.cacheFieldValCharsThreshold"&gt;524288&lt;/int&gt;
  * &lt;str name="hl.offsetSource"&gt;&lt;/str&gt;
+ * &lt;bool name="hl.weightMatches"&gt;true&lt;/bool&gt;
  * &lt;/lst&gt;
  * &lt;/requestHandler&gt;
  * </pre>
@@ -109,6 +110,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <li>hl.usePhraseHighlighter (bool) enables phrase highlighting. default is true
  * <li>hl.cacheFieldValCharsThreshold (int) controls how many characters from a field are cached. default is 524288 (1MB in 2 byte chars)
  * <li>hl.offsetSource (string) specifies which offset source to use, prefers postings, but will use what's available if not specified
+ * <li>hl.weightMatches (bool) enables Lucene Weight Matches mode</li>
  * </ul>
  *
  * @lucene.experimental
@@ -241,12 +243,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       this.setCacheFieldValCharsThreshold(
           params.getInt(HighlightParams.CACHE_FIELD_VAL_CHARS_THRESHOLD, DEFAULT_CACHE_CHARS_THRESHOLD));
 
-      // SolrRequestInfo is a thread-local singleton providing access to the ResponseBuilder to code that
-      //   otherwise can't get it in a nicer way.
-      SolrQueryRequest request = SolrRequestInfo.getRequestInfo().getReq();
       final RTimerTree timerTree;
-      if (request.getRequestTimer() != null) { //It may be null if not used in a search context.
-        timerTree = request.getRequestTimer();
+      if (req.getRequestTimer() != null) { //It may be null if not used in a search context.
+        timerTree = req.getRequestTimer();
       } else {
         timerTree = new RTimerTree(); // since null checks are annoying
       }
@@ -394,20 +393,28 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     @Override
-    protected boolean shouldHandleMultiTermQuery(String field) {
-      return params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, true);
-    }
+    protected Set<HighlightFlag> getFlags(String field) {
+      Set<HighlightFlag> flags = EnumSet.noneOf(HighlightFlag.class);
+      if (params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, true)) {
+        flags.add(HighlightFlag.MULTI_TERM_QUERY);
+      }
+      if (params.getFieldBool(field, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
+        flags.add(HighlightFlag.PHRASES);
+      }
+      flags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
 
-    @Override
-    protected boolean shouldHighlightPhrasesStrictly(String field) {
-      return params.getFieldBool(field, HighlightParams.USE_PHRASE_HIGHLIGHTER, true);
+      if (params.getFieldBool(field, HighlightParams.WEIGHT_MATCHES, true)
+          && flags.contains(HighlightFlag.PHRASES) && flags.contains(HighlightFlag.MULTI_TERM_QUERY)) {
+        flags.add(HighlightFlag.WEIGHT_MATCHES);
+      }
+      return flags;
     }
 
     @Override
     protected Predicate<String> getFieldMatcher(String field) {
       // TODO define hl.queryFieldPattern as a more advanced alternative to hl.requireFieldMatch.
 
-      // note that the UH & PH at Lucene level default to effectively "true"
+      // note that the UH at Lucene level default to effectively "true"
       if (params.getFieldBool(field, HighlightParams.FIELD_MATCH, false)) {
         return field::equals; // requireFieldMatch
       } else {

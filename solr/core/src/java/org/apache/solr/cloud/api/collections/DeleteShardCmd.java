@@ -17,6 +17,13 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,12 +33,10 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -41,17 +46,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -85,13 +82,12 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (state == Slice.State.RECOVERY)  {
       // mark the slice as 'construction' and only then try to delete the cores
       // see SOLR-9455
-      DistributedQueue inQueue = Overseer.getStateUpdateQueue(ocmh.zkStateReader.getZkClient());
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
       propMap.put(sliceId, Slice.State.CONSTRUCTION.toString());
       propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
       ZkNodeProps m = new ZkNodeProps(propMap);
-      inQueue.offer(Utils.toJSON(m));
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
     }
 
     String asyncId = message.getStr(ASYNC);
@@ -129,29 +125,14 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
       log.debug("Waiting for delete shard action to complete");
-      cleanupLatch.await(5, TimeUnit.MINUTES);
+      cleanupLatch.await(1, TimeUnit.MINUTES);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
       ZkStateReader zkStateReader = ocmh.zkStateReader;
-      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
-      // wait for a while until we don't see the shard
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-      boolean removed = false;
-      while (!timeout.hasTimedOut()) {
-        timeout.sleep(100);
-        DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
-        removed = collection.getSlice(sliceId) == null;
-        if (removed) {
-          timeout.sleep(100); // just a bit of time so it's more likely other readers see on return
-          break;
-        }
-      }
-      if (!removed) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not fully remove collection: " + collectionName + " shard: " + sliceId);
-      }
+      zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (l, c) -> c.getSlice(sliceId) == null);
 
       log.info("Successfully deleted collection: " + collectionName + ", shard: " + sliceId);
     } catch (SolrException e) {

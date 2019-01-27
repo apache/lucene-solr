@@ -32,9 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
@@ -70,14 +67,17 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 
 /**
@@ -86,6 +86,8 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private static final String COLLECTION = "collection1";
   private static final String COLLECTION2 = "2nd_collection";
 
@@ -96,23 +98,20 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static CloudSolrClient httpBasedCloudSolrClient = null;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NODE_COUNT)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
-    
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
     httpBasedCloudSolrClient = new CloudSolrClient.Builder(solrUrls).build();
   }
 
-  @AfterClass
-  public static void afterClass() {
+  
+  @After 
+  public void tearDown() throws Exception {
     if (httpBasedCloudSolrClient != null) {
       try {
         httpBasedCloudSolrClient.close();
@@ -120,14 +119,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         throw new RuntimeException(e);
       }
     }
-  }
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Before
-  public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTION);
+    
+    shutdownCluster();
+    super.tearDown();
   }
 
   /**
@@ -139,6 +133,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
     UpdateRequest req = new UpdateRequest();
     for (int i=0; i<10; i++)  {
       SolrInputDocument doc = new SolrInputDocument();
@@ -155,8 +151,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("overwrite", "conf", 1, 1)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("overwrite", cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
-
+    cluster.waitForActiveCollection("overwrite", 1, 1);
+    
     new UpdateRequest()
         .add("id", "0", "a_t", "hello1")
         .add("id", "0", "a_t", "hello2")
@@ -177,10 +173,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION2, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
     CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
@@ -224,6 +221,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testRouting() throws Exception {
+    CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("routing_collection", 2, 2);
     
     AbstractUpdateRequest request = new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -231,7 +230,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     
     // Test single threaded routed updates for UpdateRequest
-    NamedList<Object> response = getRandomClient().request(request, COLLECTION);
+    NamedList<Object> response = getRandomClient().request(request, "routing_collection");
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(response);
     }
@@ -262,12 +261,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final UpdateResponse uResponse = new UpdateRequest()
         .deleteById("0")
         .deleteById("2")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), "routing_collection");
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(uResponse.getResponse());
     }
 
-    QueryResponse qResponse = getRandomClient().query(COLLECTION, new SolrQuery("*:*"));
+    QueryResponse qResponse = getRandomClient().query("routing_collection", new SolrQuery("*:*"));
     SolrDocumentList docs = qResponse.getResults();
     assertEquals(0, docs.getNumFound());
     
@@ -276,7 +275,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         (Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withParallelUpdates(true)
         .build()) {
-      threadedClient.setDefaultCollection(COLLECTION);
+      threadedClient.setDefaultCollection("routing_collection");
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
         checkSingleServer(response);
@@ -308,12 +307,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
-    DocCollection col = clusterState.getCollection(COLLECTION);
+    DocCollection col = clusterState.getCollection("routing_collection");
     Map<String, Long> requestCountsMap = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
-        requestCountsMap.put(baseURL, getNumRequests(baseURL, COLLECTION));
+        requestCountsMap.put(baseURL, getNumRequests(baseURL, "routing_collection"));
       }
     }
 
@@ -358,7 +357,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(CommonParams.Q, "*:*");
       solrParams.set(ShardParams._ROUTE_, sameShardRoutes.get(random().nextInt(sameShardRoutes.size())));
-      log.info("output: {}", getRandomClient().query(COLLECTION, solrParams));
+      log.info("output: {}", getRandomClient().query("routing_collection", solrParams));
     }
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
@@ -371,7 +370,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
 
         Long prevNumRequests = requestCountsMap.get(baseURL);
-        Long curNumRequests = getNumRequests(baseURL, COLLECTION);
+        Long curNumRequests = getNumRequests(baseURL, "routing_collection");
 
         long delta = curNumRequests - prevNumRequests;
         if (expectedBaseURLs.contains(baseURL)) {
@@ -405,10 +404,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
-        .setMaxShardsPerNode(liveNodes)
+        .setMaxShardsPerNode(liveNodes * liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
-
+    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
     new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -514,7 +512,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // important to have one replica on each node
       RequestStatusState state = CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT).processAndWait(client, 60);
       if (state == RequestStatusState.COMPLETED) {
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("foo", client.getZkStateReader(), true, true, TIMEOUT);
+        cluster.waitForActiveCollection("foo", 1, NODE_COUNT);
         client.setDefaultCollection("foo");
 
         Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
@@ -567,9 +565,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
       CollectionAdminRequest.waitForAsyncRequest(async1, client, TIMEOUT);
       CollectionAdminRequest.waitForAsyncRequest(async2, client, TIMEOUT);
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish("multicollection1", client.getZkStateReader(), false, true, TIMEOUT);
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish("multicollection2", client.getZkStateReader(), false, true, TIMEOUT);
-
+      cluster.waitForActiveCollection("multicollection1", 2, 2);
+      cluster.waitForActiveCollection("multicollection2", 2, 2);
       client.setDefaultCollection("multicollection1");
 
       List<SolrInputDocument> docs = new ArrayList<>(3);
@@ -603,6 +600,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void stateVersionParamTest() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
@@ -705,6 +704,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testVersionsAreReturned() throws Exception {
+    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("versions_collection", 2, 2);
     
     // assert that "adds" are returned
     UpdateRequest updateRequest = new UpdateRequest()
@@ -712,7 +713,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add("id", "2", "a_t", "hello2");
     updateRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
 
-    NamedList<Object> response = updateRequest.commit(getRandomClient(), COLLECTION).getResponse();
+    NamedList<Object> response = updateRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object addsObject = response.get("adds");
     
     assertNotNull("There must be a adds parameter", addsObject);
@@ -731,7 +732,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertTrue("Version for id 2 must be a long", object instanceof Long);
     versions.put("2", (Long) object);
 
-    QueryResponse resp = getRandomClient().query(COLLECTION, new SolrQuery("*:*"));
+    QueryResponse resp = getRandomClient().query("versions_collection", new SolrQuery("*:*"));
     assertEquals("There should be one document because overwrite=true", 2, resp.getResults().getNumFound());
 
     for (SolrDocument doc : resp.getResults()) {
@@ -742,7 +743,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // assert that "deletes" are returned
     UpdateRequest deleteRequest = new UpdateRequest().deleteById("1");
     deleteRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
-    response = deleteRequest.commit(getRandomClient(), COLLECTION).getResponse();
+    response = deleteRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
     NamedList deletes = (NamedList) deletesObject;
@@ -751,6 +752,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
     CloudSolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(COLLECTION, doc);
@@ -786,8 +789,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                  CollectionAdminRequest.createCollection(COL, "conf", 1, 1)
                  .setCreateNodeSet(old_leader_node.getNodeName())
                  .process(cluster.getSolrClient()).getStatus());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish
-      (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+    cluster.waitForActiveCollection(COL, 1, 1);
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
@@ -863,11 +865,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // For these tests we need to have multiple replica types.
     // Hence the below configuration for our collection
-    CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, Math.max(1, liveNodes - 2))
+    int pullReplicas = Math.max(1, liveNodes - 2);
+    CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
         .setMaxShardsPerNode(liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
-
+    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * (2 + pullReplicas));
+    
     // Add some new documents
     new UpdateRequest()
         .add(id, "0", "a_t", "hello1")

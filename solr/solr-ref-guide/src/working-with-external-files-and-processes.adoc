@@ -200,7 +200,7 @@ Token positions are tracked and implicitly added to the token stream - the start
 
 ==== Example Token Streams
 
-// TODO: in cwiki each of these examples was in it's own "panel" ... do we want something like that here?
+// TODO: in cwiki each of these examples was in its own "panel" ... do we want something like that here?
 // TODO: these examples match what was in cwiki, but I'm honestly not sure if the formatting there was correct to start?
 
 [source,text]

@@ -28,10 +28,14 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+
+@Nightly // test is too long for non nightly
 public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -42,13 +46,18 @@ public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
   private static String TARGET_COLLECTION = "cdcr-target";
   private static String ALL_Q = "*:*";
 
+  @BeforeClass
+  public static void beforeClass() {
+    System.clearProperty("solr.httpclient.retries");
+    System.clearProperty("solr.retries.on.forward");
+    System.clearProperty("solr.retries.to.followers"); 
+  }
+  
   @Before
   public void before() throws Exception {
     target = new MiniSolrCloudCluster(2, createTempDir(TARGET_COLLECTION), buildJettyConfig("/solr"));
-    target.waitForAllNodes(30);
     System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
     source = new MiniSolrCloudCluster(2, createTempDir(SOURCE_COLLECTION), buildJettyConfig("/solr"));
-    source.waitForAllNodes(30);
   }
 
   @After
@@ -195,6 +204,7 @@ public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testReplicationAfterLeaderChange() throws Exception {
     createCollections();
     CdcrTestsUtil.cdcrStart(sourceSolrClient);

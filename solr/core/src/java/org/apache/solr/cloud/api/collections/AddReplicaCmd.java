@@ -141,10 +141,17 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
-    List<CreateReplica> createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount, sessionWrapper)
-        .stream()
-        .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, clusterState, message, replicaPosition))
-        .collect(Collectors.toList());
+    List<CreateReplica> createReplicas;
+    try {
+      createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount, sessionWrapper)
+          .stream()
+          .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, clusterState, message, replicaPosition))
+          .collect(Collectors.toList());
+    } finally {
+      if (sessionWrapper.get() != null) {
+        sessionWrapper.get().release();
+      }
+    }
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -161,10 +168,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       ocmh.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica", asyncId, requestMap);
       for (CreateReplica replica : createReplicas) {
         ocmh.waitForCoreNodeName(collectionName, replica.node, replica.coreName);
-      }
-
-      if (sessionWrapper.get() != null) {
-        sessionWrapper.get().release();
       }
       if (onComplete != null) onComplete.run();
     };
@@ -242,7 +245,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
         }
         try {
-          Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
         }
@@ -325,6 +328,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
     }
+    log.info("Returning CreateReplica command.");
     return new CreateReplica(collection, shard, node, replicaType, coreName, coreNodeName);
   }
 

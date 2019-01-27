@@ -24,9 +24,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.util.ArrayUtil;
 
@@ -35,6 +38,10 @@ import org.apache.lucene.util.ArrayUtil;
  *  @lucene.experimental
  */
 public class FieldInfos implements Iterable<FieldInfo> {
+
+  /** An instance without any fields. */
+  public final static FieldInfos EMPTY = new FieldInfos(new FieldInfo[0]);
+
   private final boolean hasFreq;
   private final boolean hasProx;
   private final boolean hasPayloads;
@@ -122,7 +129,43 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
     values = Collections.unmodifiableCollection(Arrays.asList(valuesTemp.toArray(new FieldInfo[0])));
   }
-  
+
+  /** Call this to get the (merged) FieldInfos for a
+   *  composite reader.
+   *  <p>
+   *  NOTE: the returned field numbers will likely not
+   *  correspond to the actual field numbers in the underlying
+   *  readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
+   *  will be unavailable.
+   */
+  public static FieldInfos getMergedFieldInfos(IndexReader reader) {
+    final List<LeafReaderContext> leaves = reader.leaves();
+    if (leaves.isEmpty()) {
+      return FieldInfos.EMPTY;
+    } else if (leaves.size() == 1) {
+      return leaves.get(0).reader().getFieldInfos();
+    } else {
+      final String softDeletesField = leaves.stream()
+          .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
+          .filter(Objects::nonNull)
+          .findAny().orElse(null);
+      final Builder builder = new Builder(new FieldNumbers(softDeletesField));
+      for (final LeafReaderContext ctx : leaves) {
+        builder.add(ctx.reader().getFieldInfos());
+      }
+      return builder.finish();
+    }
+  }
+
+  /** Returns a set of names of fields that have a terms index.  The order is undefined. */
+  public static Collection<String> getIndexedFields(IndexReader reader) {
+    return reader.leaves().stream()
+        .flatMap(l -> StreamSupport.stream(l.reader().getFieldInfos().spliterator(), false)
+        .filter(fi -> fi.getIndexOptions() != IndexOptions.NONE))
+        .map(fi -> fi.name)
+        .collect(Collectors.toSet());
+  }
+
   /** Returns true if any fields have freqs */
   public boolean hasFreq() {
     return hasFreq;
@@ -463,12 +506,18 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                           boolean storeTermVector,
                                           boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
                                           DocValuesType docValues, long dvGen,
+                                          Map<String, String> attributes,
                                           int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes,
                                           boolean isSoftDeletesField) {
       assert assertNotFinished();
       if (docValues == null) {
         throw new NullPointerException("DocValuesType must not be null");
       }
+      if (attributes != null) {
+        // original attributes is UnmodifiableMap
+        attributes = new HashMap<>(attributes);
+      }
+
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
         // This field wasn't yet added to this in-RAM
@@ -477,12 +526,12 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, indexOptions, docValues, dataDimensionCount, indexDimensionCount, dimensionNumBytes, isSoftDeletesField);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, new HashMap<>(), dataDimensionCount, indexDimensionCount, dimensionNumBytes, isSoftDeletesField);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, attributes, dataDimensionCount, indexDimensionCount, dimensionNumBytes, isSoftDeletesField);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
       } else {
-        fi.update(storeTermVector, omitNorms, storePayloads, indexOptions, dataDimensionCount, indexDimensionCount, dimensionNumBytes);
+        fi.update(storeTermVector, omitNorms, storePayloads, indexOptions, attributes, dataDimensionCount, indexDimensionCount, dimensionNumBytes);
 
         if (docValues != DocValuesType.NONE) {
           // Only pay the synchronization cost if fi does not already have a DVType
@@ -510,6 +559,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                                  fi.omitsNorms(), fi.hasPayloads(),
                                  fi.getIndexOptions(), fi.getDocValuesType(), dvGen,
+                                 fi.attributes(),
                                  fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
                                  fi.isSoftDeletesField());
     }

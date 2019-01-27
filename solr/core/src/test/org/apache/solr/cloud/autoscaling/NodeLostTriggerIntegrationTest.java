@@ -18,19 +18,21 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -40,43 +42,28 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.cloud.autoscaling.ScheduledTriggers.DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS;
 import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_DELTA_NANOS;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+
+// TODO: this class shares duplicated code with NodeAddedTriggerIntegrationTest ... merge?
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static CountDownLatch actionConstructorCalled;
-  private static CountDownLatch actionInitCalled;
-  private static CountDownLatch triggerFiredLatch;
-  private static int waitForSeconds = 1;
-  private static AtomicBoolean triggerFired;
-  private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
-  private static SolrCloudManager cloudManager;
-
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-  }
+  private static volatile CountDownLatch actionConstructorCalled;
+  private static volatile CountDownLatch actionInitCalled;
+  private static volatile CountDownLatch triggerFiredLatch;
+  private static volatile int waitForSeconds = 1;
+  private static volatile AtomicBoolean triggerFired;
+  private static volatile Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
+  private static volatile SolrCloudManager cloudManager;
 
   private static CountDownLatch getTriggerFiredLatch() {
     return triggerFiredLatch;
@@ -84,46 +71,30 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    // ensure that exactly 2 jetty nodes are running
-    int numJetties = cluster.getJettySolrRunners().size();
-    log.info("Found {} jetty instances running", numJetties);
-    for (int i = 2; i < numJetties; i++) {
-      int r = random().nextInt(cluster.getJettySolrRunners().size());
-      log.info("Shutdown extra jetty instance at port {}", cluster.getJettySolrRunner(r).getLocalPort());
-      cluster.stopJettySolrRunner(r);
-    }
-    for (int i = cluster.getJettySolrRunners().size(); i < 2; i++) {
-      // start jetty instances
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(5);
+    
+    configureCluster(4)
+    .addConfig("conf", configset("cloud-minimal"))
+    .configure();
+    
+    final Overseer overseer = cluster.getOpenOverseer();
+    assertNotNull(overseer);
+    cloudManager = overseer.getSolrCloudManager();
+    assertNotNull(cloudManager);
+      
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cloudManager, ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cloudManager, ".scheduled_maintenance");
 
-    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
-    String overseerLeader = (String) overSeerStatus.get("leader");
-    int overseerLeaderIndex = 0;
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      JettySolrRunner jetty = cluster.getJettySolrRunner(i);
-      if (jetty.getNodeName().equals(overseerLeader)) {
-        overseerLeaderIndex = i;
-        break;
-      }
-    }
-    Overseer overseer = cluster.getJettySolrRunner(overseerLeaderIndex).getCoreContainer().getZkController().getOverseer();
-    ScheduledTriggers scheduledTriggers = ((OverseerTriggerThread) overseer.getTriggerThread().getThread()).getScheduledTriggers();
     // aggressively remove all active scheduled triggers
+    final ScheduledTriggers scheduledTriggers = ((OverseerTriggerThread) overseer.getTriggerThread().getThread()).getScheduledTriggers();
+    // TODO: is this really safe? is it possible overseer is still in process of adding some to schedule?
     scheduledTriggers.removeAll();
 
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
 
-    cluster.deleteAllCollections();
     cluster.getSolrClient().setDefaultCollection(null);
-
-    // restart Overseer. Even though we reset the autoscaling config some already running
-    // trigger threads may still continue to execute and produce spurious events
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
-    Thread.sleep(5000);
 
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
@@ -132,19 +103,17 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     triggerFired = new AtomicBoolean(false);
     events.clear();
 
-    while (cluster.getJettySolrRunners().size() < 2) {
-      // perhaps a test stopped a node but didn't start it back
-      // lets start a node
-      cluster.startJettySolrRunner();
-    }
-
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     // clear any events or markers
     // todo: consider the impact of such cleanup on regular cluster restarts
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
     deleteChildrenRecursively(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+  }
+  
+  @After
+  public void cleanUpTest() throws Exception {
+    shutdownCluster();
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {
@@ -153,70 +122,114 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testNodeLostTriggerRestoreState() throws Exception {
-    // for this test we want to update the trigger so we must assert that the actions were created twice
-    actionInitCalled = new CountDownLatch(2);
+
+    final String triggerName = "node_lost_restore_trigger";
 
     // start a new node
-    JettySolrRunner newNode = cluster.startJettySolrRunner();
-    String nodeName = newNode.getNodeName();
+    final JettySolrRunner newNode = cluster.startJettySolrRunner();
+    final String nodeName = newNode.getNodeName();
 
-    CloudSolrClient solrClient = cluster.getSolrClient();
-    waitForSeconds = 5;
-    String setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_restore_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '5s'," + // should be enough for us to update the trigger
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    // should be enough to ensure trigger doesn't fire any actions until we replace the trigger
+    waitForSeconds = 500000;
+    CloudTestUtils.assertAutoScalingRequest
+      (cloudManager,
+       "{" +
+       "'set-trigger' : {" +
+       "'name' : '"+triggerName+"'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '"+waitForSeconds+"s'," + 
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+    
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
-    TimeOut timeOut = new TimeOut(2, TimeUnit.SECONDS, cloudManager.getTimeSource());
-    while (actionInitCalled.getCount() == 0 && !timeOut.hasTimedOut()) {
-      Thread.sleep(200);
-    }
-    assertTrue("The action specified in node_lost_restore_trigger was not instantiated even after 2 seconds", actionInitCalled.getCount() > 0);
+    // poll the internal state of the trigger until it run()s at least once and updates
+    // it's internal state to know the node we added is live
+    //
+    // (this should run roughly once a second)
+    (new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource()))
+    .waitFor("initial trigger never ran to detect new live node", () ->
+             (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
+              .contains(nodeName)));
 
-    List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
-    int index = -1;
-    for (int i = 0; i < jettySolrRunners.size(); i++) {
-      JettySolrRunner runner = jettySolrRunners.get(i);
-      if (runner == newNode) index = i;
-    }
-    assertFalse(index == -1);
-    cluster.stopJettySolrRunner(index);
+    // kill our node
+    cluster.stopJettySolrRunner(newNode);
+    cluster.waitForJettyToStop(newNode);
 
-    // ensure that the old trigger sees the stopped node, todo find a better way to do this
-    Thread.sleep(500 + TimeUnit.SECONDS.toMillis(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS));
+    // poll the internal state of the trigger until it run()s at least once (more) and updates
+    // it's internal state to know the node we killed is no longer alive
+    //
+    // (this should run roughly once a second of simulated time)
+    (new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource()))
+    .waitFor("initial trigger never ran to detect lost node", () ->
+             ! (((Collection<String>) getTriggerState(triggerName).get("lastLiveNodes"))
+                .contains(nodeName)));
 
-    waitForSeconds = 0;
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_restore_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '0s'," + // update a property so that it replaces the old trigger, also we want it to fire immediately
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    // since we know the nodeLost event has been detected, we can recored the current timestamp
+    // (relative to the cluster's time source) and later assert that (restored state) correctly
+    // tracked that the event happened prior to "now"
+    final long maxEventTimeNs = cloudManager.getTimeSource().getTimeNs();
+    
+    // even though our trigger has detected a lost node, the *action* we registered should not have
+    // been run yet, due to the large waitFor configuration...
+    assertEquals("initial trigger action should not have fired", false, triggerFired.get());
+    assertEquals("initial trigger action latch should not have counted down",
+                 1, triggerFiredLatch.getCount());
+    assertEquals("initial trigger action should not have recorded any events: " + events.toString(),
+                 0, events.size());
 
-    // wait until the second instance of action is created
-    if (!actionInitCalled.await(3, TimeUnit.SECONDS)) {
-      fail("Two TriggerAction instances should have been created by now");
-    }
+    //
+    // now replace the trigger with a new instance to test that the state gets copied over correctly
+    //
+    
+    // reset the actionInitCalled counter so we can confirm the second instances is inited
+    actionInitCalled = new CountDownLatch(1);
+    // use a low waitTime to ensure it processes the event quickly.
+    // (this updated property also ensures the set-trigger won't be treated as a No-Op)
+    waitForSeconds = 0 + random().nextInt(3);
+    CloudTestUtils.assertAutoScalingRequest
+      (cloudManager,
+       "{" +
+       "'set-trigger' : {" +
+       "'name' : '"+triggerName+"'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '"+waitForSeconds+"s'," + 
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
+    
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
+    
+    // the trigger actions should now (eventually) record that the node is lost
+    assertTrue("Second instance of our trigger never fired the action to process the event",
+               triggerFiredLatch.await(30, TimeUnit.SECONDS));
+    
+    assertEquals("Wrong number of events recorded: " + events.toString(),
+                 1, events.size());
+    
+    final TriggerEvent event = events.iterator().next();
+    assertNotNull("null event???", event);
+    assertTrue("Event should have been a nodeLost event: " + event.getClass(),
+               event instanceof NodeLostTrigger.NodeLostEvent);
 
-    boolean await = triggerFiredLatch.await(5, TimeUnit.SECONDS);
-    assertTrue("The trigger did not fire at all", await);
-    assertTrue(triggerFired.get());
-    NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) events.iterator().next();
-    assertNotNull(nodeLostEvent);
-    List<String> nodeNames = (List<String>) nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
-    assertTrue(nodeNames.contains(nodeName));
+    assertNotNull("event is missing NODE_NAMES: " + event, event.getProperty(TriggerEvent.NODE_NAMES));
+    assertEquals("event has incorrect NODE_NAMES: " + event,
+                 Collections.singletonList(nodeName),
+                 event.getProperty(TriggerEvent.NODE_NAMES));
+    
+    assertTrue("event TS is too late, should be before (max) expected TS @ "
+               + maxEventTimeNs + ": " + event,
+               event.getEventTime() < maxEventTimeNs);
+    
+    assertNotNull("event is missing EVENT_TIMES: " + event, event.getProperty(TriggerEvent.EVENT_TIMES));
+    assertEquals("event has unexpeted number of EVENT_TIMES: " + event,
+                 1, ((Collection)event.getProperty(TriggerEvent.EVENT_TIMES)).size());
+    assertEquals("event's TS doesn't match EVENT_TIMES: " + event,
+                 event.getEventTime(),
+                 ((Collection)event.getProperty(TriggerEvent.EVENT_TIMES)).iterator().next());
   }
 
   @Test
@@ -239,9 +252,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
         nonOverseerLeaderIndex = i;
       }
     }
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    CloudTestUtils.assertAutoScalingRequest(cloudManager, setTriggerCommand); 
 
     if (!actionInitCalled.await(3, TimeUnit.SECONDS)) {
       fail("The TriggerAction should have been created by now");
@@ -250,7 +261,8 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     triggerFired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     String lostNodeName = cluster.getJettySolrRunner(nonOverseerLeaderIndex).getNodeName();
-    cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
     assertTrue(triggerFired.get());
@@ -264,17 +276,16 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     actionInitCalled = new CountDownLatch(1);
 
     // update the trigger with exactly the same data
-    setTriggerCommand = "{" +
-        "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger'," +
-        "'event' : 'nodeLost'," +
-        "'waitFor' : '" + waitForSeconds + "s'," +
-        "'enabled' : true," +
-        "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
-        "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+    CloudTestUtils.assertAutoScalingRequest
+      (cloudManager,
+       "{" +
+       "'set-trigger' : {" +
+       "'name' : 'node_lost_trigger'," +
+       "'event' : 'nodeLost'," +
+       "'waitFor' : '" + waitForSeconds + "s'," +
+       "'enabled' : true," +
+       "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
+       "}}");
 
     // this should be a no-op so the action should have been created but init should not be called
     if (!actionConstructorCalled.await(3, TimeUnit.SECONDS)) {
@@ -295,7 +306,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true)) {
           events.add(event);
-          long currentTimeNanos = TriggerIntegrationTest.timeSource.getTimeNs();
+          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -318,4 +329,18 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
       super.init();
     }
   }
+
+  /** 
+   * Helper method for getting a copy of the current (internal) trigger state of a scheduled trigger. 
+   */
+  private Map<String, Object> getTriggerState(final String name) {
+    final Overseer overseer = cluster.getOpenOverseer();
+    final ScheduledTriggers scheduledTriggers = ((OverseerTriggerThread) overseer.getTriggerThread().getThread()).getScheduledTriggers();
+    final AutoScaling.Trigger t = scheduledTriggers.getTrigger(name);
+    assertNotNull(name + " is not a currently scheduled trigger", t);
+    assertTrue(name + " is not a TriggerBase w/state: " + t.getClass(),
+               t instanceof TriggerBase);
+    return ((TriggerBase)t).deepCopyState();
+  }
+  
 }

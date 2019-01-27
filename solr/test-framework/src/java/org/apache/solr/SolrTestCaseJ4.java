@@ -60,6 +60,8 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -87,6 +89,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -106,7 +109,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -167,7 +172,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 @RandomizeSSL()
-@ThreadLeakLingering(linger = 80000)
+@ThreadLeakLingering(linger = 10000)
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -186,11 +191,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
 
-  private static String coreName = DEFAULT_TEST_CORENAME;
+  @Deprecated // For backwards compatibility only. Please do not use in new tests.
+  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
+
+  protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
   
   private static String initialRootLogLevel;
+  
+  protected volatile static ExecutorService testExecutor;
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
@@ -199,7 +209,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");
 
-    writeCoreProperties(coreDirectory, props, this.getTestName());
+    writeCoreProperties(coreDirectory, props, this.getSaferTestName());
   }
 
   public static void writeCoreProperties(Path coreDirectory, Properties properties, String testname) throws IOException {
@@ -221,18 +231,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public @interface SuppressSSL {
     /** Point to JIRA entry. */
     public String bugUrl() default "None";
-  }
-  
-  /**
-   * Annotation for test classes that want to disable ObjectReleaseTracker
-   */
-  @Documented
-  @Inherited
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.TYPE)
-  public @interface SuppressObjectReleaseTracker {
-    /** Point to JIRA entry. */
-    public String bugUrl();
   }
   
   /**
@@ -266,10 +264,22 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
     initClassLogLevels();
     resetExceptionIgnores();
+    
+    testExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
+        15L, TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+        new SolrjNamedThreadFactory("testExecutor"),
+        true);
 
     initCoreDataDir = createTempDir("init-core-data").toFile();
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
 
+    System.setProperty("solr.zkclienttimeout", "90000"); 
+    
+    System.setProperty("solr.httpclient.retries", "1");
+    System.setProperty("solr.retries.on.forward", "1");
+    System.setProperty("solr.retries.to.followers", "1"); 
+    
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
@@ -281,10 +291,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
-    
+
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");
@@ -293,18 +304,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   @AfterClass
   public static void teardownTestCases() throws Exception {
+    TestInjection.notifyPauseForeverDone();
     try {
-      deleteCore();
-      resetExceptionIgnores();
+      try {
+        deleteCore();
+      } catch (Exception e) {
+        log.error("Error deleting SolrCore.");
+      }
       
+      ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+
+      resetExceptionIgnores();
+
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
-        if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-          String orr = clearObjectTrackerAndCheckEmpty(20, false);
-          assertNull(orr, orr);
-        } else {
-          clearObjectTrackerAndCheckEmpty(20, true);
-        }
+        String orr = clearObjectTrackerAndCheckEmpty(60, false);
+        assertNull(orr, orr);
+      } else {
+        ObjectReleaseTracker.tryClose();
       }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
@@ -321,20 +338,22 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("urlScheme");
       System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
+      System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
+      Http2SolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
-      
+
       // clean up static
       sslConfig = null;
       testSolrHome = null;
-    }
-    
-    IpTables.unblockAllPorts();
 
-    LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
-    savedClassLogLevels.clear();
-    StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
+      IpTables.unblockAllPorts();
+
+      LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
+      savedClassLogLevels.clear();
+      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
+    }
   }
   
   /** Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if Java version is too new). */
@@ -387,12 +406,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     
     log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
-    
-    if (tryClose && result != null && RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-      log.warn(
-          "Some resources were not closed, shutdown, or released. This has been ignored due to the SuppressObjectReleaseTracker annotation, trying to close them now.");
-      ObjectReleaseTracker.tryClose();
-    }
     
     ObjectReleaseTracker.clear();
     
@@ -480,7 +493,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   protected static JettyConfig buildJettyConfig(String context) {
-    return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig).build();
+    return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
   
   protected static String buildUrl(final int port, final String context) {
@@ -2648,6 +2661,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     waitForWarming(h.getCore());
   }
 
+  protected String getSaferTestName() {
+    // test names can hold additional info, like the test seed
+    // only take to first space
+    String testName = getTestName();
+    int index = testName.indexOf(' ');
+    if (index > 0) {
+      testName = testName.substring(0, index);
+    }
+    return testName;
+  }
+  
   @BeforeClass
   public static void assertNonBlockingRandomGeneratorAvailable() throws InterruptedException {
     final String EGD = "java.security.egd";
@@ -2697,6 +2721,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
   }
   
+  @Deprecated // For backwards compatibility only. Please do not use in new tests.
+  protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
+    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
+  }
+
+  @Deprecated // For backwards compatibility only. Please do not use in new tests.
+  protected static void systemClearPropertySolrDisableShardsWhitelist() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
+  }
+
   protected <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }

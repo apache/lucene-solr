@@ -46,7 +46,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DisMaxParams;
@@ -1411,10 +1411,11 @@ public class ExtendedDismaxQParser extends QParser {
             // Boolean query on a whitespace-separated string
             // If these were synonyms we would have a SynonymQuery
             if (query instanceof BooleanQuery) {
-              BooleanQuery bq = (BooleanQuery) query;
-              query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
-            }
-            if (query instanceof PhraseQuery) {
+              if (type == QType.FIELD) { // Don't set mm for boolean query containing phrase queries
+                BooleanQuery bq = (BooleanQuery) query;
+                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
+              }
+            } else if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
               PhraseQuery.Builder builder = new PhraseQuery.Builder();
@@ -1431,6 +1432,8 @@ public class ExtendedDismaxQParser extends QParser {
               if (slop != mpq.getSlop()) {
                 query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
               }
+            } else if (query instanceof SpanQuery) {
+              return query;
             } else if (minClauseSize > 1) {
               // if it's not a type of phrase query, it doesn't meet the minClauseSize requirements
               return null;
@@ -1515,7 +1518,7 @@ public class ExtendedDismaxQParser extends QParser {
     private DynamicField[] dynamicUserFields;
     private DynamicField[] negativeDynamicUserFields;
     
-    UserFields(Map<String, Float> ufm, boolean forbidSubQueryByDefault) {
+    UserFields(Map<String, Float> ufm) {
       userFieldsMap = ufm;
       if (0 == userFieldsMap.size()) {
         userFieldsMap.put("*", null);
@@ -1533,7 +1536,7 @@ public class ExtendedDismaxQParser extends QParser {
         }
       }
       // unless "_query_" was expressly allowed, we forbid it.
-      if (forbidSubQueryByDefault && !userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
+      if (!userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
       Collections.sort(dynUserFields);
@@ -1687,8 +1690,7 @@ public class ExtendedDismaxQParser extends QParser {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       schema = req.getSchema();
       minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams); // req.getSearcher() here causes searcher refcount imbalance
-      final boolean forbidSubQueryByDefault = req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0);
-      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)), forbidSubQueryByDefault);
+      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
         queryFields = DisMaxQParser.parseQueryFields(schema, solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
@@ -1719,9 +1721,7 @@ public class ExtendedDismaxQParser extends QParser {
       
       altQ = solrParams.get( DisMaxParams.ALTQ );
 
-      // lowercaseOperators defaults to true for luceneMatchVersion < 7.0 and to false for >= 7.0
-      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS,
-          !req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
+      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS, false);
       
       /* * * Boosting Query * * */
       boostParams = solrParams.getParams(DisMaxParams.BQ);

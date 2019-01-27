@@ -36,6 +36,7 @@ import junit.framework.Assert;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -69,14 +70,15 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
+import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.CoreMatchers.is;
 
 /**
  * This should include tests against the example solr config
@@ -94,6 +96,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   static {
     ignoreException("uniqueKey");
   }
+
+  @Before
+  public void emptyCollection() throws Exception {
+    SolrClient client = getSolrClient();
+    // delete everything!
+    client.deleteByQuery("*:*");
+    client.commit();
+  }
+
   /**
    * query the example
    */
@@ -1690,11 +1701,16 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
-      } else {
+      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
         client.commit(); //just to be sure the client has sent the doc
         ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("Conflict"));
+      } else if (client instanceof SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) {
+        client.commit(); //just to be sure the client has sent the doc
+        SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
+        assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
+        assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("conflict"));
       }
     } catch (SolrException se) {
       assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));
@@ -2179,5 +2195,85 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       }
     }
     return sdoc;
+  }
+
+  @Test
+  public void testAddChildToChildFreeDoc() throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException, SecurityException, NoSuchFieldException {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+
+    SolrInputDocument docToUpdate = new SolrInputDocument();
+    docToUpdate.addField("id", "p0");
+    docToUpdate.addField("title_s", "i am a child free doc");
+    client.add(docToUpdate);
+    client.commit();
+
+    SolrQuery q = new SolrQuery("*:*");
+    q.set( CommonParams.FL, "id,title_s" );
+    q.addSort("id", SolrQuery.ORDER.desc);
+
+    SolrDocumentList results = client.query(q).getResults();
+    assertThat(results.getNumFound(), is(1L));
+    SolrDocument foundDoc = results.get(0);
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
+
+    // Rewrite child free doc
+    docToUpdate.setField("title_s", "i am a parent");
+
+    SolrInputDocument child = new SolrInputDocument();
+    child.addField("id", "c0");
+    child.addField("title_s", "i am a child");
+
+    docToUpdate.addChildDocument(child);
+
+    client.add(docToUpdate);
+    client.commit();
+
+    results = client.query(q).getResults();
+
+    assertThat(results.getNumFound(), is(2L));
+    foundDoc = results.get(0);
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
+    foundDoc = results.get(1);
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
+  }
+
+  @Test
+  public void testDeleteParentDoc() throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException, SecurityException, NoSuchFieldException {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+
+    SolrInputDocument docToDelete = new SolrInputDocument();
+    docToDelete.addField("id", "p0");
+    docToDelete.addField("title_s", "parent doc");
+
+    SolrInputDocument child = new SolrInputDocument();
+    child.addField("id", "c0");
+    child.addField("title_s", "i am a child 0");
+    docToDelete.addChildDocument(child);
+
+    child = new SolrInputDocument();
+    child.addField("id", "c1");
+    child.addField("title_s", "i am a child 1");
+    docToDelete.addChildDocument(child);
+
+    child = new SolrInputDocument();
+    child.addField("id", "c2");
+    child.addField("title_s", "i am a child 2");
+    docToDelete.addChildDocument(child);
+
+    client.add(docToDelete);
+    client.commit();
+
+    SolrQuery q = new SolrQuery("*:*");
+    SolrDocumentList results = client.query(q).getResults();
+    assertThat(results.getNumFound(), is(4L));
+
+    client.deleteById("p0");
+    client.commit();
+
+    results = client.query(q).getResults();
+    assertThat("All the children are expected to be deleted together with parent",
+        results.getNumFound(), is(0L));
   }
 }

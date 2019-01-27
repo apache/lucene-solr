@@ -31,7 +31,7 @@ import org.junit.Test;
 public class TestV1toV2ApiMapper extends LuceneTestCase {
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testCreate() throws IOException {
     Create cmd = CollectionAdminRequest
         .createCollection("mycoll", "conf1", 3, 2)
@@ -49,7 +49,7 @@ public class TestV1toV2ApiMapper extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testAddReplica() throws IOException {
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard("mycoll", "shard1");
     V2Request v2r = V1toV2ApiMapper.convert(addReplica).build();
@@ -60,7 +60,7 @@ public class TestV1toV2ApiMapper extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSetCollectionProperty() throws IOException {
     CollectionAdminRequest.CollectionProp collectionProp = CollectionAdminRequest.setCollectionProperty("mycoll", "prop", "value");
     V2Request v2r = V1toV2ApiMapper.convert(collectionProp).build();

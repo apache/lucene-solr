@@ -44,8 +44,8 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
   }
 
   @Override
-  public void sortBuckets() {
-    // regardless of mincount, every shard returns a consistent set of buckets which are already in the correct order
+  public void sortBuckets(final FacetRequest.FacetSort sort) {
+    // regardless of sort or mincount, every shard returns a consistent set of buckets which are already in the correct order
     sortedBuckets = new ArrayList<>( buckets.values() );
   }
 

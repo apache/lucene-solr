@@ -135,7 +135,7 @@ public class TestCrash extends LuceneTestCase {
 
     writer.close();
     writer = initIndex(random(), dir, false, true);
-    assertEquals(314, writer.maxDoc());
+    assertEquals(314, writer.getDocStats().maxDoc);
     crash(writer);
 
     /*

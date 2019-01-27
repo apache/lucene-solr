@@ -58,14 +58,17 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 public class Clause implements MapWriter, Comparable<Clause> {
   private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
 
+  private final int hashCode;
   final boolean hasComputedValue;
   final Map<String, Object> original;
+  final Clause derivedFrom;
   Condition collection, shard, replica, tag, globalTag;
   final Replica.Type type;
   boolean strict;
 
   protected Clause(Clause clause, Function<Condition, Object> computedValueEvaluator) {
     this.original = clause.original;
+    this.hashCode = original.hashCode();
     this.type = clause.type;
     this.collection = clause.collection;
     this.shard = clause.shard;
@@ -74,10 +77,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.globalTag = evaluateValue(clause.globalTag, computedValueEvaluator);
     this.hasComputedValue = clause.hasComputedValue;
     this.strict = clause.strict;
+    derivedFrom = clause.derivedFrom;
   }
 
   // internal use only
   Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict)  {
+    this.hashCode = original.hashCode();
     this.original = original;
     this.tag = tag;
     this.globalTag = globalTag;
@@ -85,10 +90,13 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.type = null;
     this.hasComputedValue = false;
     this.strict = isStrict;
+    derivedFrom = null;
   }
 
   private Clause(Map<String, Object> m) {
+    derivedFrom = (Clause) m.remove(Clause.class.getName());
     this.original = Utils.getDeepCopy(m, 10);
+    this.hashCode = original.hashCode();
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
@@ -123,6 +131,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
     hasComputedValue = hasComputedValue();
   }
 
+  public Condition getThirdTag() {
+    return globalTag == null ? tag : globalTag;
+  }
   private void doPostValidate(Condition... conditions) {
     for (Condition condition : conditions) {
       if (condition == null) continue;
@@ -371,10 +382,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       Condition tag = this.tag;
       if (tag.computedType != null) tag = evaluateValue(tag, eval);
       Object val = row.getVal(tag.name);
-      if (val != null && tag.isPass(val)) {
+      if (val != null) {
         if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
           tags.add(this.tag);
-        } else {
+        } else if (tag.isPass(val)) {
           tags.add(val);
         }
       }
@@ -413,21 +424,15 @@ public class Clause implements MapWriter, Comparable<Clause> {
               t);
           ctx.resetAndAddViolation(t, replicaCountCopy, violation);
           sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, tag.name, t, violation, session);
+          if (!this.strict && deviations != null) {
+            tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+          }
         } else {
-          computeDeviation(deviations, replicaCount, sealedClause);
+          if (replica.op == RANGE_EQUAL) tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
         }
       }
     }
     return ctx.allViolations;
-  }
-
-  private void computeDeviation(double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
-    if (deviations != null && sealedClause.replica.op == RANGE_EQUAL) {
-      Number actualCount = replicaCount.getVal(type);
-      Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
-      realDelta = this.isReplicaZero() ? -1 * realDelta : realDelta;
-      deviations[0] += Math.abs(realDelta);
-    }
   }
 
   void addViolatingReplicas(Condition tag,
@@ -448,12 +453,27 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   }
 
+  public static long addReplicaCountsForNode = 0;
+  public static long addReplicaCountsForNodeCacheMiss = 0;
+  public static final String PERSHARD_REPLICAS = Clause.class.getSimpleName() + ".perShardReplicas";
   private void addReplicaCountsForNode(ComputedValueEvaluator computedValueEvaluator, ReplicaCount replicaCount, Row node) {
-    node.forEachReplica((String) collection.getValue(), ri -> {
-      if (Policy.ANY.equals(computedValueEvaluator.shardName)
-          || computedValueEvaluator.shardName.equals(ri.getShard()))
-        replicaCount.increment(ri);
-    });
+    addReplicaCountsForNode++;
+
+    ReplicaCount rc = node.computeCacheIfAbsent(computedValueEvaluator.collName, computedValueEvaluator.shardName, PERSHARD_REPLICAS,
+        this, o -> {
+          addReplicaCountsForNodeCacheMiss++;
+          ReplicaCount result = new ReplicaCount();
+          node.forEachReplica((String) collection.getValue(), ri -> {
+            if (Policy.ANY.equals(computedValueEvaluator.shardName)
+                || computedValueEvaluator.shardName.equals(ri.getShard()))
+              result.increment(ri);
+          });
+          return result;
+        });
+    if (rc != null)
+      replicaCount.increment(rc);
+
+
   }
 
   List<Violation> testPerNode(Policy.Session session, double[] deviations) {
@@ -485,8 +505,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
               eval.node);
           ctx.resetAndAddViolation(row.node, replicaCountCopy, violation);
           sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, NODE, row.node, violation, session);
+          if (!this.strict && deviations != null) {
+            tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+          }
         } else {
-          computeDeviation(deviations, replicaCount, sealedClause);
+          if (replica.op == RANGE_EQUAL) tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
         }
       }
     }
@@ -627,6 +650,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
     throw new RuntimeException(name + ": " + val + "not a valid number");
   }
 
+  @Override
+  public int hashCode() {
+    return hashCode;
+  }
 
   public static Double parseDouble(String name, Object val) {
     if (val == null) return null;

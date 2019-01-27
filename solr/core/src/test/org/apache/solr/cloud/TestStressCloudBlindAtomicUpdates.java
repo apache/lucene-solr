@@ -51,6 +51,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
@@ -154,7 +155,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     TestInjection.reset();
     ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
     EXEC_SERVICE = null;
-    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
+    IOUtils.closeQuietly(CLOUD_CLIENT);
+    CLOUD_CLIENT = null;
     for (HttpSolrClient client : CLIENTS) {
       client.close();
     }
@@ -186,7 +188,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test_dv() throws Exception {
     String field = "long_dv";
     checkExpectedSchemaField(map("name", field,

@@ -28,8 +28,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -44,8 +46,8 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.ChaosMonkey;
+import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -60,10 +62,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -75,7 +79,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 @Slow
 @LogLevel("org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
-public class ShardSplitTest extends AbstractFullDistribZkTestBase {
+public class ShardSplitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -93,7 +97,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @Nightly
   public void test() throws Exception {
 
     waitForThingsToLevelOut(15);
@@ -140,6 +144,9 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
     create.process(cloudClient);
+    
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
+    
     try (CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
       client.setDefaultCollection(collectionName);
       StoppableIndexingThread thread = new StoppableIndexingThread(controlClient, client, "i1", true);
@@ -182,12 +189,14 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
           int liveNodeCount = client.getZkStateReader().getClusterState().getLiveNodes().size();
 
           // restart the sub-shard leader node
+          String stoppedNodeName = null;
           boolean restarted = false;
           for (JettySolrRunner jetty : jettys) {
             int port = jetty.getBaseUrl().getPort();
             if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
-              ChaosMonkey.kill(jetty);
-              ChaosMonkey.start(jetty);
+              stoppedNodeName = jetty.getNodeName();
+              jetty.stop();
+              jetty.start();
               restarted = true;
               break;
             }
@@ -196,6 +205,8 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
             // sanity check
             fail("We could not find a jetty to kill for replica: " + replica.getCoreUrl());
           }
+          
+          cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(stoppedNodeName));
 
           // add a new replica for the sub-shard
           CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
@@ -205,6 +216,9 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
           try (HttpSolrClient control = new HttpSolrClient.Builder(control_collection).withHttpClient(client.getLbClient().getHttpClient()).build())  {
             state = addReplica.processAndWait(control, 30);
           }
+          
+          cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 4));
+          
           if (state == RequestStatusState.COMPLETED)  {
             CountDownLatch newReplicaLatch = new CountDownLatch(1);
             client.getZkStateReader().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
@@ -267,7 +281,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
    */
   @Test
   //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15);
 
@@ -316,6 +330,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @Nightly
   public void testSplitAfterFailedSplit2() throws Exception {
     waitForThingsToLevelOut(15);
 
@@ -334,6 +349,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSplitMixedReplicaTypesLink() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.LINK);
   }
@@ -341,9 +357,12 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   private void doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     waitForThingsToLevelOut(15);
     String collectionName = "testSplitMixedReplicaTypes_" + splitMethod.toLower();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 2, 2);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.process(cloudClient);
+    
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 4));
+    
     waitForRecoveriesToFinish(collectionName, false);
 
     for (int i = 0; i < 100; i++) {
@@ -356,6 +375,8 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
     splitShard.setSplitMethod(splitMethod.toLower());
     CollectionAdminResponse rsp = splitShard.process(cloudClient);
     waitForThingsToLevelOut(30);
+   
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
 
     cloudClient.getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
@@ -363,10 +384,10 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
     log.info("coll: " + coll);
 
     // verify the original shard
-    verifyShard(coll, SHARD1, Slice.State.INACTIVE, 2, 2, 2);
+    verifyShard(coll, SHARD1, Slice.State.INACTIVE, 2, 0, 2);
     // verify new sub-shards
-    verifyShard(coll, SHARD1_0, Slice.State.ACTIVE, 2, 2, 2);
-    verifyShard(coll, SHARD1_1, Slice.State.ACTIVE, 2, 2, 2);
+    verifyShard(coll, SHARD1_0, Slice.State.ACTIVE, 2, 0, 2);
+    verifyShard(coll, SHARD1_1, Slice.State.ACTIVE, 2, 0, 2);
   }
 
   private void verifyShard(DocCollection coll, String shard, Slice.State expectedState, int numNrt, int numTlog, int numPull) throws Exception {
@@ -388,6 +409,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  @Nightly
   public void testSplitWithChaosMonkey() throws Exception {
     waitForThingsToLevelOut(15);
 
@@ -431,7 +453,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
             CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
             try {
               Thread.sleep(1000 + random().nextInt(500));
-              ChaosMonkey.kill(cjetty);
+              cjetty.jetty.stop();
               stop.set(true);
               return true;
             } catch (Exception e) {
@@ -474,7 +496,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
 
       CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
       log.info("Starting shard1 leader jetty at port {}", cjetty.jetty.getLocalPort());
-      ChaosMonkey.start(cjetty.jetty);
+      cjetty.jetty.start();
       cloudClient.getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
       log.info("Current collection state: {}", printClusterStateInfo(AbstractDistribZkTestBase.DEFAULT_COLLECTION));
 
@@ -541,6 +563,67 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  public void testSplitLocking() throws Exception {
+    waitForThingsToLevelOut(15);
+    String collectionName = "testSplitLocking";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2);
+    create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
+    create.process(cloudClient);
+    
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
+    
+    waitForRecoveriesToFinish(collectionName, false);
+
+    TestInjection.splitLatch = new CountDownLatch(1); // simulate a long split operation
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" + SHARD1 + "-splitting";
+    final AtomicReference<Exception> exc = new AtomicReference<>();
+    try {
+      Runnable r = () -> {
+        try {
+          trySplit(collectionName, null, SHARD1, 1);
+        } catch (Exception e) {
+          exc.set(e);
+        }
+      };
+      Thread t = new Thread(r);
+      t.start();
+      // wait for the split to start executing
+      TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeOut.hasTimedOut()) {
+        timeOut.sleep(500);
+        if (cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+          log.info("=== found lock node");
+          break;
+        }
+      }
+      assertFalse("timed out waiting for the lock znode to appear", timeOut.hasTimedOut());
+      assertNull("unexpected exception: " + exc.get(), exc.get());
+      log.info("=== trying second split");
+      try {
+        trySplit(collectionName, null, SHARD1, 1);
+        fail("expected to fail due to locking but succeeded");
+      } catch (Exception e) {
+        log.info("Expected failure: " + e.toString());
+      }
+
+      // make sure the lock still exists
+      assertTrue("lock znode expected but missing", cloudClient.getZkStateReader().getZkClient().exists(path, true));
+      // let the first split proceed
+      TestInjection.splitLatch.countDown();
+      timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeOut.hasTimedOut()) {
+        timeOut.sleep(500);
+        if (!cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+          break;
+        }
+      }
+      assertFalse("timed out waiting for the lock znode to disappear", timeOut.hasTimedOut());
+    } finally {
+      TestInjection.reset();
+    }
+  }
+
+  @Test
   public void testSplitShardWithRule() throws Exception {
     doSplitShardWithRule(SolrIndexSplitter.SplitMethod.REWRITE);
   }
@@ -563,8 +646,15 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
     String collectionName = "shardSplitWithRule_" + splitMethod.toLower();
     CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2)
         .setRule("shard:*,replica:<2,node:*");
+
     CollectionAdminResponse response = createRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
+    
+    try {
+      cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
+    } catch (TimeoutException e) {
+      new RuntimeException("Timeout waiting for 1shards and 2 replicas.", e);
+    }
 
     CollectionAdminRequest.SplitShard splitShardRequest = CollectionAdminRequest.splitShard(collectionName)
         .setShardName("shard1").setSplitMethod(splitMethod.toLower());
@@ -722,7 +812,7 @@ public class ShardSplitTest extends AbstractFullDistribZkTestBase {
           OverseerCollectionMessageHandler.NUM_SLICES, numShards,
           "router.field", shard_fld);
 
-      createCollection(collectionInfos, collectionName,props,client);
+      createCollection(collectionInfos, collectionName, props, client);
     }
 
     List<Integer> list = collectionInfos.get(collectionName);

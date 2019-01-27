@@ -22,7 +22,6 @@ import static org.apache.solr.common.cloud.Replica.State.RECOVERING;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,15 +30,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -51,7 +49,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -59,10 +56,11 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +72,7 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
 public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -88,6 +86,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
+  @BeforeClass
+  public static void setupSysProps() {
+    System.setProperty("socketTimeout", "10000");
+    System.setProperty("distribUpdateSoTimeout", "10000");
+    System.setProperty("solr.httpclient.retries", "0");
+    System.setProperty("solr.retries.on.forward", "0");
+    System.setProperty("solr.retries.to.followers", "0"); 
+  }
+  
   public HttpPartitionTest() {
     super();
     sliceCount = 2;
@@ -96,7 +103,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   @Override
   protected boolean useTlogReplicas() {
-    return onlyLeaderIndexes;
+    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
   }
 
   /**
@@ -106,8 +113,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
         .sendDirectUpdatesToAnyShardReplica()
-        .withConnectionTimeout(30000)
-        .withSocketTimeout(60000)
+        .withConnectionTimeout(5000)
+        .withSocketTimeout(10000)
         .build();
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
@@ -125,11 +132,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     waitForThingsToLevelOut(30000);
-
-    testLeaderInitiatedRecoveryCRUD();
 
     testDoRecoveryOnRestart();
 
@@ -139,8 +144,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(30000);
 
     // now do similar for a 1x3 collection while taking 2 replicas on-and-off
-    // each time
-    testRf3();
+    if (TEST_NIGHTLY) {
+      // each time
+      testRf3();
+    }
 
     waitForThingsToLevelOut(30000);
 
@@ -152,68 +159,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("HttpPartitionTest succeeded ... shutting down now!");
   }
 
-  /**
-   * Tests handling of different format of lir nodes
-   */
-  //TODO remove in SOLR-11812
-  protected void testLeaderInitiatedRecoveryCRUD() throws Exception {
-    String testCollectionName = "c8n_crud_1x2";
-    String shardId = "shard1";
-    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
-    cloudClient.setDefaultCollection(testCollectionName);
-
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
-    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
-
-    CoreContainer cores = leaderJetty.getCoreContainer();
-    ZkController zkController = cores.getZkController();
-    assertNotNull("ZkController is null", zkController);
-
-    Replica notLeader =
-        ensureAllReplicasAreActive(testCollectionName, shardId, 1, 2, maxWaitSecsToSeeAllActive).get(0);
-
-    ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
-    String replicaUrl = replicaCoreNodeProps.getCoreUrl();
-
-    MockCoreDescriptor cd = new MockCoreDescriptor() {
-      public CloudDescriptor getCloudDescriptor() {
-        return new CloudDescriptor(leader.getStr(ZkStateReader.CORE_NAME_PROP), new Properties(), this) {
-          @Override
-          public String getCoreNodeName() {
-            return leader.getName();
-          }
-          @Override
-          public boolean isLeader() {
-            return true;
-          }
-        };
-      }
-    };
-
-    zkController.updateLeaderInitiatedRecoveryState(testCollectionName, shardId, notLeader.getName(), DOWN, cd, true);
-    Map<String,Object> lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
-    assertNotNull(lirStateMap);
-    assertSame(DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
-
-    // test old non-json format handling
-    SolrZkClient zkClient = zkController.getZkClient();
-    String znodePath = zkController.getLeaderInitiatedRecoveryZnodePath(testCollectionName, shardId, notLeader.getName());
-    zkClient.setData(znodePath, "down".getBytes(StandardCharsets.UTF_8), true);
-    lirStateMap = zkController.getLeaderInitiatedRecoveryStateObject(testCollectionName, shardId, notLeader.getName());
-    assertNotNull(lirStateMap);
-    assertSame(DOWN, Replica.State.getState((String) lirStateMap.get(ZkStateReader.STATE_PROP)));
-    zkClient.delete(znodePath, -1, false);
-
-    // try to clean up
-    attemptCollectionDelete(cloudClient, testCollectionName);
-  }
-
   private void testDoRecoveryOnRestart() throws Exception {
     String testCollectionName = "collDoRecoveryOnRestart";
     try {
       // Inject pausing in recovery op, hence the replica won't be able to finish recovery
-      System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", String.valueOf(Integer.MAX_VALUE));
 
+      TestInjection.prepRecoveryOpPauseForever = "true:100";
+      
       createCollection(testCollectionName, "conf1", 1, 2, 1);
       cloudClient.setDefaultCollection(testCollectionName);
 
@@ -244,15 +196,19 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
       waitForState(testCollectionName, notLeaders.get(0).getName(), RECOVERING, 10000);
 
-      System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
+      System.clearProperty("solrcloud.skip.autorecovery");
       JettySolrRunner notLeaderJetty = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
-      ChaosMonkey.stop(notLeaderJetty);
+      String notLeaderNodeName = notLeaderJetty.getNodeName();
+      notLeaderJetty.stop();
+      
+      cloudClient.getZkStateReader().waitForLiveNodes(15, TimeUnit.SECONDS, SolrCloudTestCase.missingLiveNode(notLeaderNodeName));
 
-      ChaosMonkey.start(notLeaderJetty);
-      ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, 100);
+      notLeaderJetty.start();
+      ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, 130);
       assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 2);
     } finally {
-      System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
+      TestInjection.prepRecoveryOpPauseForever = null;
+      TestInjection.notifyPauseForeverDone();
     }
 
     // try to clean up
@@ -314,7 +270,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("Looked up max version bucket seed "+maxVersionBefore+" for core "+coreName);
 
     // now up the stakes and do more docs
-    int numDocs = TEST_NIGHTLY ? 1000 : 100;
+    int numDocs = TEST_NIGHTLY ? 1000 : 105;
     boolean hasPartition = false;
     for (int d = 0; d < numDocs; d++) {
       // create / restore partition every 100 docs
@@ -362,7 +318,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected void waitForState(String collection, String replicaName, Replica.State state, long ms) throws KeeperException, InterruptedException {
-    TimeOut timeOut = new TimeOut(ms, TimeUnit.MILLISECONDS, TimeSource.CURRENT_TIME);
+    TimeOut timeOut = new TimeOut(ms, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     Replica.State replicaState = Replica.State.ACTIVE;
     while (!timeOut.hasTimedOut()) {
       ZkStateReader zkr = cloudClient.getZkStateReader();
@@ -506,7 +462,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Set<String> replicasToCheck = new HashSet<>();
     for (Replica stillUp : participatingReplicas)
       replicasToCheck.add(stillUp.getName());
-    waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 20);
+    waitToSeeReplicasActive(testCollectionName, "shard1", replicasToCheck, 30);
     assertDocsExistInAllReplicas(participatingReplicas, testCollectionName, 1, 2);
 
     log.info("testLeaderZkSessionLoss succeeded ... deleting the "+testCollectionName+" collection");

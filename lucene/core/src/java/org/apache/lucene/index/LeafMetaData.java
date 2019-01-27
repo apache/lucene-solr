@@ -38,9 +38,6 @@ public final class LeafMetaData {
     if (createdVersionMajor < 6) {
       throw new IllegalArgumentException("createdVersionMajor must be >= 6, got: " + createdVersionMajor);
     }
-    if (minVersion != null && minVersion.onOrAfter(Version.LUCENE_7_0_0) == false) {
-      throw new IllegalArgumentException("minVersion must be >= 7.0.0: " + minVersion);
-    }
     if (createdVersionMajor >= 7 && minVersion == null) {
       throw new IllegalArgumentException("minVersion must be set when createdVersionMajor is >= 7");
     }

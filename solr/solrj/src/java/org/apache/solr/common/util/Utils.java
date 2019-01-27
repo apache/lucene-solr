@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,6 +45,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -81,6 +83,10 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class Utils {
+  public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
+  public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
+  public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
+  public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static Map getDeepCopy(Map map, int maxDepth) {
@@ -98,7 +104,7 @@ public class Utils {
     if (sorted) {
       copy = new TreeMap();
     } else {
-      copy = new LinkedHashMap();
+      copy = map instanceof LinkedHashMap?  new LinkedHashMap(map.size()): new HashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
@@ -107,14 +113,14 @@ public class Utils {
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
 
-  public static void forEachMapEntry(MapWriter mw, String path, BiConsumer fun) {
-    Object o = Utils.getObjectByPath(mw, false, path);
-    forEachMapEntry(o, fun);
+  public static void forEachMapEntry(Object o, String path, BiConsumer fun) {
+    Object val = Utils.getObjectByPath(o, false, path);
+    forEachMapEntry(val, fun);
   }
 
-  public static void forEachMapEntry(MapWriter mw, List<String> path, BiConsumer fun) {
-    Object o = Utils.getObjectByPath(mw, false, path);
-    forEachMapEntry(o, fun);
+  public static void forEachMapEntry(Object o, List<String> path, BiConsumer fun) {
+    Object val = Utils.getObjectByPath(o, false, path);
+    forEachMapEntry(val, fun);
   }
 
   public static void forEachMapEntry(Object o, BiConsumer fun) {
@@ -123,7 +129,7 @@ public class Utils {
       try {
         m.writeMap(new MapWriter.EntryWriter() {
           @Override
-          public MapWriter.EntryWriter put(String k, Object v) {
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
             fun.accept(k, v);
             return this;
           }
@@ -286,6 +292,19 @@ public class Utils {
         @Override
         public Object newObject() {
           return new LinkedHashMapWriter();
+        }
+      };
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+
+  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser){
+        @Override
+        public Object newObject() {
+          return new HashMap();
         }
       };
     } catch (IOException e) {
@@ -471,8 +490,8 @@ public class Utils {
 
   }
 
-  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<String, V> implements MapWriter, Map.Entry<String, V> {
-    MapWriterEntry(String key, V value) {
+  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V> implements MapWriter, Map.Entry<CharSequence, V> {
+    MapWriterEntry(CharSequence key, V value) {
       super(key, value);
     }
 
@@ -495,7 +514,7 @@ public class Utils {
         ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
           int count = -1;
           @Override
-          public MapWriter.EntryWriter put(String k, Object v) {
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
             if (result[0] != null) return this;
             if (idx < 0) {
               if (k.equals(key)) result[0] = v;

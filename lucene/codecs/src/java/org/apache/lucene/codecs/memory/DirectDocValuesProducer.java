@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;

@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -252,7 +253,7 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
-    return executeMethod(method, processor, isV2ApiRequest(request));
+    return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
   private boolean isV2ApiRequest(final SolrRequest request) {
@@ -296,7 +297,7 @@ public class HttpSolrClient extends SolrClient {
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = pool.submit(() -> executeMethod(method, processor, isV2ApiRequest(request)));
+      mrr.future = pool.submit(() -> executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request)));
  
     } finally {
       pool.shutdown();
@@ -517,7 +518,7 @@ public class HttpSolrClient extends SolrClient {
 
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
 
-  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
+  protected NamedList<Object> executeMethod(HttpRequestBase method, Principal userPrincipal, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
@@ -539,6 +540,12 @@ public class HttpSolrClient extends SolrClient {
     try {
       // Execute the method.
       HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+      if (userPrincipal != null) {
+        // Normally the context contains a static userToken to enable reuse resources.
+        // However, if a personal Principal object exists, we use that instead, also as a means
+        // to transfer authentication information to Auth plugins that wish to intercept the request later
+        httpClientRequestContext.setUserToken(userPrincipal);
+      }
       final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
 
       int httpStatus = response.getStatusLine().getStatusCode();
@@ -926,6 +933,12 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
       return this;
     }
 
+    /**
+     * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
+     *
+     * @param params a set of parameters to add to the invariant-params list.  These params must be unique and may not
+     *               duplicate a param already in the invariant list.
+     */
     public Builder withInvariantParams(ModifiableSolrParams params) {
       Objects.requireNonNull(params, "params must be non null!");
 

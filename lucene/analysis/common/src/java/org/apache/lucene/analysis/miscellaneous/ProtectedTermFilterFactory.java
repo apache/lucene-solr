@@ -75,6 +75,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * <p>See related {@link org.apache.lucene.analysis.custom.CustomAnalyzer.Builder#whenTerm(Predicate)}
+ *
+ * @since 7.4.0
  */
 public class ProtectedTermFilterFactory extends ConditionalTokenFilterFactory implements ResourceLoaderAware {
 

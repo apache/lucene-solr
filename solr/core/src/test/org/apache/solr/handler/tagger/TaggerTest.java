@@ -83,7 +83,8 @@ public class TaggerTest extends TaggerTestCase {
         "<result name=\"response\" numFound=\"1\" start=\"0\">\n" +
         "  <doc>\n" +
         "    <str name=\"id\">1</str>\n" +
-        "    <str name=\"name\">London Business School</str></doc>\n" +
+        "    <str name=\"name\">London Business School</str>\n" +
+        "    <str name=\"_root_\">1</str></doc>\n" +
         "</result>\n" +
         "</response>\n";
     assertEquals(expected, rspStr);
@@ -111,7 +112,8 @@ public class TaggerTest extends TaggerTestCase {
         "<result name=\"response\" numFound=\"1\" start=\"0\">\n" +
         "  <doc>\n" +
         "    <str name=\"id\">1</str>\n" +
-        "    <str name=\"name\">London Business School</str></doc>\n" +
+        "    <str name=\"name\">London Business School</str>\n" +
+        "    <str name=\"_root_\">1</str></doc>\n" +
         "</result>\n" +
         "</response>\n";
     assertEquals(expected, rspStr);

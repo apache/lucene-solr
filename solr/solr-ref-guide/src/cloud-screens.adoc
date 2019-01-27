@@ -26,7 +26,7 @@ This screen provides status information about each collection & node in your clu
 The "Cloud" menu option is only available on Solr instances running in <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,SolrCloud mode>>. Single node or master/slave replication instances of Solr will not display this option.
 ====
 
-Click on the "Cloud" option in the left-hand navigation, and a small sub-menu appears with options called "Nodes", "Tree", "Graph" and "Graph (Radial)". The sub-view selected by default is "Graph".
+Click on the "Cloud" option in the left-hand navigation, and a small sub-menu appears with options called "Nodes", "Tree", "ZK Status" and "Graph". The sub-view selected by default is "Nodes".
 
 == Nodes View
 The "Nodes" view shows a list of the hosts and nodes in the cluster along with key information for each: "CPU", "Heap", "Disk usage", "Requests", "Collections" and "Replicas".
@@ -43,11 +43,11 @@ image::images/cloud-screens/cloud-tree.png[image,width=487,height=250]
 As an aid to debugging, the data shown in the "Tree" view can be exported locally using the following command `bin/solr zk ls -r /`
 
 == ZK Status View
-The "ZK Status" view gives an overview over the Zookeepers used by Solr. It lists whether running in `standalone` or `ensemble` mode, shows how many zookeepers are configured, and then displays a table listing detailed monitoring status for each of the zookeepers, including who is the leader, configuration parameters and more.
+The "ZK Status" view gives an overview over the ZooKeeper servers or ensemble used by Solr. It lists whether running in `standalone` or `ensemble` mode, shows how many zookeepers are configured, and then displays a table listing detailed monitoring status for each of the zookeepers, including who is the leader, configuration parameters and more.
 
 image::images/cloud-screens/cloud-zkstatus.png[image,width=512,height=509]
 
-== Graph Views
+== Graph View
 The "Graph" view shows a graph of each collection, the shards that make up those collections, and the addresses and type ("NRT", "TLOG" or "PULL") of each replica for each shard.
 
 This example shows a simple cluster. In addition to the 2 shard, 2 replica "gettingstarted" collection, there is an additional "tlog" collection consisting of mixed TLOG and PULL replica types.
@@ -57,7 +57,3 @@ image::images/cloud-screens/cloud-graph.png[image,width=512,height=250]
 Tooltips appear when hovering over each replica giving additional information.
 
 image::images/cloud-screens/cloud-hover.png[image,width=512,height=250]
-
-The "Graph (Radial)" option provides a different visual view of each node. Using the same example cluster, the radial graph view looks like:
-
-image::images/cloud-screens/cloud-radial.png[image,width=478,height=250]

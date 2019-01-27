@@ -264,8 +264,7 @@ public abstract class PointRangeQuery extends Query {
           return new ScorerSupplier() {
             @Override
             public Scorer get(long leadCost) {
-              return new ConstantScoreScorer(weight, score(),
-                  DocIdSetIterator.all(reader.maxDoc()));
+              return new ConstantScoreScorer(weight, score(), scoreMode, DocIdSetIterator.all(reader.maxDoc()));
             }
             
             @Override
@@ -293,12 +292,12 @@ public abstract class PointRangeQuery extends Query {
                 int[] cost = new int[] { reader.maxDoc() };
                 values.intersect(getInverseIntersectVisitor(result, cost));
                 final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
-                return new ConstantScoreScorer(weight, score(), iterator);
+                return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
               }
 
               values.intersect(visitor);
               DocIdSetIterator iterator = result.build().iterator();
-              return new ConstantScoreScorer(weight, score(), iterator);
+              return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
             }
             
             @Override

@@ -41,6 +41,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
@@ -61,6 +62,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
+    systemClearPropertySolrDisableShardsWhitelist();
   }
 
 
@@ -426,6 +428,133 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  
     
   }
+
+  /** 
+   * When <code>prelim_sort</code> is used, all 'top bucket' choices for refinement should still be based on
+   * it, not the <code>sort</code> param, so this test is just some sanity checks that the presence of the 
+   * these params doesn't break anything in the refine / logic.
+   */
+  @Test
+  public void testRefinementMergingWithPrelimSort() throws Exception {
+
+    doTestRefine("{x : { type:terms, field:X, limit:2, refine:true, prelim_sort:'count desc', sort:'y asc'," +
+                 "       facet:{ y:'sum(y_i)' } } }",
+                 // shard0 response
+                 "{x: {buckets:[{val:x1, count:5, y:73}, {val:x2, count:3, y:13}], more:true } }",
+                 // shard1 response
+                 "{x: {buckets:[{val:x2, count:4, y:4}, {val:x3, count:2, y:22}], more:true } }",
+                 // shard0 expected refinement info
+                 null,
+                 // shard1 expected refinement info
+                 "=={x:{_l:[x1]}}");
+
+    // same test as above, but shard1 indicates it doesn't have any more results,
+    // so there shouldn't be any refinement
+    doTestRefine("{x : { type:terms, field:X, limit:2, refine:true, prelim_sort:'count desc', sort:'y asc'," +
+                 "       facet:{ y:'sum(y_i)' } } }",
+                 // shard0 response
+                 "{x: {buckets:[{val:x1, count:5, y:73}, {val:x2, count:3, y:13}], more:true } }",
+                 // shard1 response
+                 "{x: {buckets:[{val:x2, count:4, y:4}, {val:x3, count:2, y:22}] } }",
+                 // shard0 expected refinement info
+                 null,
+                 // shard1 expected refinement info
+                 null);
+  }
+
+  @Test
+  public void testPrelimSortingWithRefinement() throws Exception {
+    // NOTE: distributed prelim_sort testing in TestJsonFacets uses identical shards, so never needs
+    // refinement, so here we focus on the (re)sorting of different topN refined buckets
+    // after the prelim_sorting from diff shards
+  
+    initServers();
+    final Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    assertTrue(clients.size() >= 3); // we only use 2, but assert 3 to also test empty shard
+    final SolrClient c0 = clients.get(0);
+    final SolrClient c1 = clients.get(1);
+
+    client.deleteByQuery("*:*", null);
+    int id = 0;
+
+    // client 0 // shard1: A=1,B=1,C=2 ...
+    c0.add(sdoc("id", id++, "cat_s","A", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","B", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","C", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","C", "price_i","1"));
+    // ... X=3,Y=3
+    c0.add(sdoc("id", id++, "cat_s","X", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","X", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","X", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","Y", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","Y", "price_i","1"));
+    c0.add(sdoc("id", id++, "cat_s","Y", "price_i","1"));
+    
+    // client 1 // shard2: X=1,Y=2,Z=2 ...
+    c1.add(sdoc("id", id++, "cat_s","X", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","Y", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","Y", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","Z", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","Z", "price_i","1"));
+    // ... C=4
+    c1.add(sdoc("id", id++, "cat_s","C", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","C", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","C", "price_i","1"));
+    c1.add(sdoc("id", id++, "cat_s","C", "price_i","1"));
+    
+    // Whole Collection: A=1,B=1,Z=2,X=4,Y=5,C=6
+    client.commit();
+    
+    // in both cases, neither C nor Z make the cut for the top3 buckets in phase#1 (due to tie breaker), 
+    // so they aren't refined -- after refinement the re-sorting re-orders the buckets
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                         + " cat_1 : { type:terms, field:cat_s, limit:3, overrequest:0"
+                         + "           , refine:true, prelim_sort:'count asc', sort:'index desc' }, "
+                         + " cat_2 : { type:terms, field:cat_s, limit:3, overrequest:0"
+                         + "           , refine:true, prelim_sort:'sum_p asc', sort:'count desc' "
+                         + "           , facet: { sum_p: 'sum(price_i)' } }"
+                         + "}")
+                  , "facets=={ count: "+id+","
+                  + "  cat_1:{ buckets:[ "
+                  + "            {val:X,count:4}," // index desc
+                  + "            {val:B,count:1}," 
+                  + "            {val:A,count:1}," 
+                  + "  ] },"
+                  + "  cat_2:{ buckets:[ "
+                  + "            {val:X,count:4,sum_p:4.0}," // count desc
+                  + "            {val:A,count:1,sum_p:1.0}," // index order tie break
+                  + "            {val:B,count:1,sum_p:1.0},"
+                  + "  ] }"
+                  + "}"
+                  );
+
+    // with some explicit overrefinement=2, we also refine C and Y, giving us those additional
+    // (fully populated) buckets to consider during re-sorting...
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                         + " cat_1 : { type:terms, field:cat_s, limit:3, overrequest:0, overrefine:2"
+                         + "           , refine:true, prelim_sort:'count asc', sort:'index desc' }, "
+                         + " cat_2 : { type:terms, field:cat_s, limit:3, overrequest:0, overrefine:2"
+                         + "           , refine:true, prelim_sort:'sum_p asc', sort:'count desc' "
+                         + "           , facet: { sum_p: 'sum(price_i)' } }"
+                         + "}")
+                  , "facets=={ count: "+id+","
+                  + "  cat_1:{ buckets:[ "
+                  + "            {val:Y,count:5}," // index desc
+                  + "            {val:X,count:4}," 
+                  + "            {val:C,count:6}," 
+                  + "  ] },"
+                  + "  cat_2:{ buckets:[ "
+                  + "            {val:C,count:6,sum_p:6.0}," // count desc
+                  + "            {val:Y,count:5,sum_p:5.0},"
+                  + "            {val:X,count:4,sum_p:4.0},"
+                  + "  ] }"
+                  + "}"
+                  );
+  }
+
   
   @Test
   public void testSortedFacetRefinementPushingNonRefinedBucketBackIntoTopN() throws Exception {
@@ -828,7 +957,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     //   - why aren't we just specifying all the buckets (and child buckets) chosen in phase#1 using "_p" ?
     //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble up"
     //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen in
-    //     phase#1, and request that the shard fill them in in addition to returning it's own top buckets?
+    //     phase#1, and request that the shard fill them in in addition to returning its own top buckets?
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                          + "processEmpty:true,"
                          + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:true, facet:{"

@@ -17,14 +17,24 @@
 package org.apache.lucene.analysis;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.English;
 
 public class TestStopFilter extends BaseTokenStreamTestCase {
+
+  private final static int MAX_NUMBER_OF_TOKENS = 50;
   
   // other StopFilter functionality is already tested by TestStopAnalyzer
 
@@ -37,7 +47,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(stream, new String[] { "Now", "The" });
   }
 
-  public void testStopFilt() throws IOException {
+  public void testStopFilter() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     CharArraySet stopSet = StopFilter.makeStopSet(stopWords);
@@ -47,49 +57,99 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(stream, new String[] { "Now", "The" });
   }
 
+
+  private static void logStopwords(String name, Collection<String> stopwords){
+    log(String.format(Locale.ROOT, "stopword list [%s]: %s", name, stopwords.isEmpty() ? "Empty" : stopwords.toString()));
+  }
+
   /**
-   * Test Position increments applied by StopFilter with and without enabling this option.
+   * Randomly generate a document and a list of stopwords to apply
+   * @param numberOfTokens max number of tokens in the document
+   * @param sb will contain the text at the end of the method
+   * @param stopwords will contain the list of the stopwords at the end of the method
+   * @param stopwordPositions will contain the position of the stopwords at the end of the method
    */
-  public void testStopPositons() throws IOException {
-    StringBuilder sb = new StringBuilder();
-    ArrayList<String> a = new ArrayList<>();
-    for (int i=0; i<20; i++) {
-      String w = English.intToEnglish(i).trim();
-      sb.append(w).append(" ");
-      if (i%3 != 0) a.add(w);
+  private static void generateTestSetWithStopwordsAndStopwordPositions(int numberOfTokens, StringBuilder sb, List<String> stopwords, List<Integer> stopwordPositions){
+    Random rand = random();
+    for (int i = 0; i < numberOfTokens; i++) {
+      String token = English.intToEnglish(i).trim();
+      sb.append(token).append(' ');
+      if (i == 0 || rand.nextBoolean()) {
+        // with probability 0.5 will tell if this is a stopword or
+        // no - adding always the first token to make sure that the
+        // list of stopwords is not empty;
+        stopwords.add(token);
+        stopwordPositions.add(i);
+      }
     }
-    log(sb.toString());
-    String stopWords[] = a.toArray(new String[0]);
-    for (int i=0; i<a.size(); i++) log("Stop: "+stopWords[i]);
-    CharArraySet stopSet = StopFilter.makeStopSet(stopWords);
+    log("Number of tokens : "+numberOfTokens);
+    log("Document : "+sb.toString());
+    logStopwords("Stopwords", stopwords);
+  }
+
+  /**
+   * Check that the positions of the terms in a document keep into account the fact
+   * that some of the words were filtered by the StopwordFilter
+   */
+  public void testTokenPositionWithStopwordFilter() throws IOException {
+    // at least 1 token
+    final int numberOfTokens = random().nextInt(MAX_NUMBER_OF_TOKENS-1)+1;
+    StringBuilder sb = new StringBuilder();
+    List<String> stopwords = new ArrayList<>(numberOfTokens);
+    List<Integer> stopwordPositions = new ArrayList<>(numberOfTokens);
+    generateTestSetWithStopwordsAndStopwordPositions(numberOfTokens, sb, stopwords, stopwordPositions);
+
+    CharArraySet stopSet = StopFilter.makeStopSet(stopwords);
+    logStopwords("All stopwords", stopwords);
     // with increments
     StringReader reader = new StringReader(sb.toString());
     final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     in.setReader(reader);
-    StopFilter stpf = new StopFilter(in, stopSet);
-    doTestStopPositons(stpf);
-    // with increments, concatenating two stop filters
-    ArrayList<String> a0 = new ArrayList<>();
-    ArrayList<String> a1 = new ArrayList<>();
-    for (int i=0; i<a.size(); i++) {
-      if (i%2==0) { 
-        a0.add(a.get(i));
-      } else {
-        a1.add(a.get(i));
-      }
-    }
-    String stopWords0[] =  a0.toArray(new String[0]);
-    for (int i=0; i<a0.size(); i++) log("Stop0: "+stopWords0[i]);
-    String stopWords1[] =  a1.toArray(new String[0]);
-    for (int i=0; i<a1.size(); i++) log("Stop1: "+stopWords1[i]);
-    CharArraySet stopSet0 = StopFilter.makeStopSet(stopWords0);
-    CharArraySet stopSet1 = StopFilter.makeStopSet(stopWords1);
-    reader = new StringReader(sb.toString());
+    StopFilter stopfilter = new StopFilter(in, stopSet);
+    doTestStopwordsPositions(stopfilter, stopwordPositions, numberOfTokens);
+  }
+
+  /**
+   * Check that the positions of the terms in a document keep into account the fact
+   * that some of the words were filtered by two StopwordFilters concatenated together.
+   */
+  public void testTokenPositionsWithConcatenatedStopwordFilters() throws IOException {
+    // at least 1 token
+    final int numberOfTokens = random().nextInt(MAX_NUMBER_OF_TOKENS-1)+1;
+    StringBuilder sb = new StringBuilder();
+    List<String> stopwords = new ArrayList<>(numberOfTokens);
+    List<Integer> stopwordPositions = new ArrayList<>();
+    generateTestSetWithStopwordsAndStopwordPositions(numberOfTokens, sb, stopwords, stopwordPositions);
+
+    // we want to make sure that concatenating two list of stopwords
+    // produce the same results of using one unique list of stopwords.
+    // So we first generate a list of stopwords:
+    // e.g.: [a, b, c, d, e]
+    // and then we split the list in two disjoint partitions
+    // e.g. [a, c, e] [b, d]
+    int partition = random().nextInt(stopwords.size());
+    Collections.shuffle(stopwords, random());
+    final List<String> stopwordsRandomPartition = stopwords.subList(0, partition);
+    final Set<String> stopwordsRemaining = new HashSet<>(stopwords);
+    stopwordsRemaining.removeAll(stopwordsRandomPartition); // remove the first partition from all the stopwords
+
+    CharArraySet firstStopSet = StopFilter.makeStopSet(stopwordsRandomPartition);
+    logStopwords("Stopwords-first", stopwordsRandomPartition);
+    CharArraySet secondStopSet = StopFilter.makeStopSet(new ArrayList<>(stopwordsRemaining), false);
+    logStopwords("Stopwords-second", stopwordsRemaining);
+
+    Reader reader = new StringReader(sb.toString());
     final MockTokenizer in1 = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     in1.setReader(reader);
-    StopFilter stpf0 = new StopFilter(in1, stopSet0); // first part of the set
-    StopFilter stpf01 = new StopFilter(stpf0, stopSet1); // two stop filters concatenated!
-    doTestStopPositons(stpf01);
+
+    // Here we create a stopFilter with the stopwords in the first partition and then we
+    // concatenate it with the stopFilter created with the stopwords in the second partition
+    StopFilter stopFilter = new StopFilter(in1, firstStopSet); // first part of the set
+    StopFilter concatenatedStopFilter = new StopFilter(stopFilter, secondStopSet); // two stop filters concatenated!
+
+    // ... and finally we check that the positions of the filtered tokens matched using the concatenated
+    // stopFilters match the positions of the filtered tokens using the unique original list of stopwords
+    doTestStopwordsPositions(concatenatedStopFilter, stopwordPositions, numberOfTokens);
   }
 
   // LUCENE-3849: make sure after .end() we see the "ending" posInc
@@ -97,8 +157,8 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     CharArraySet stopSet = StopFilter.makeStopSet("of");
     final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     in.setReader(new StringReader("test of"));
-    StopFilter stpf = new StopFilter(in, stopSet);
-    assertTokenStreamContents(stpf, new String[] { "test" },
+    StopFilter stopfilter = new StopFilter(in, stopSet);
+    assertTokenStreamContents(stopfilter, new String[] { "test" },
                               new int[] {0},
                               new int[] {4},
                               null,
@@ -111,20 +171,25 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
                               null);
   }
 
-  private void doTestStopPositons(StopFilter stpf) throws IOException {
-    CharTermAttribute termAtt = stpf.getAttribute(CharTermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = stpf.getAttribute(PositionIncrementAttribute.class);
-    stpf.reset();
-    for (int i=0; i<20; i+=3) {
-      assertTrue(stpf.incrementToken());
-      log("Token "+i+": "+stpf);
-      String w = English.intToEnglish(i).trim();
-      assertEquals("expecting token "+i+" to be "+w,w,termAtt.toString());
-      assertEquals("all but first token must have position increment of 3",i==0?1:3,posIncrAtt.getPositionIncrement());
+  private void doTestStopwordsPositions(StopFilter stopfilter, List<Integer> stopwordPositions, final int numberOfTokens) throws IOException {
+    CharTermAttribute termAtt = stopfilter.getAttribute(CharTermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = stopfilter.getAttribute(PositionIncrementAttribute.class);
+    stopfilter.reset();
+    log("Test stopwords positions:");
+    for (int i=0; i<numberOfTokens; i++) {
+      if (stopwordPositions.contains(i)){
+        // if i is in stopwordPosition it is a stopword and we skip this position
+        continue;
+      }
+      assertTrue(stopfilter.incrementToken());
+      log(String.format(Locale.ROOT, "token %d: %s", i, termAtt.toString()));
+      String token = English.intToEnglish(i).trim();
+      assertEquals(String.format(Locale.ROOT, "expecting token %d to be %s", i, token), token, termAtt.toString());
     }
-    assertFalse(stpf.incrementToken());
-    stpf.end();
-    stpf.close();
+    assertFalse(stopfilter.incrementToken());
+    stopfilter.end();
+    stopfilter.close();
+    log("----------");
   }
   
   // print debug info depending on VERBOSE

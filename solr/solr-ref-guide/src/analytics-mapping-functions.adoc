@@ -278,7 +278,7 @@ All parameters must be the same type after implicit casting is done.
 
 === Fill Missing
 If the 1^st^ expression does not have values, fill it with the values for the 2^nd^ expression.
-Both expressions must be of the same type and cardinality after implicit casting is done
+Both expressions must be of the same type and cardinality after implicit casting is done.
 
 `fill_missing(< T >, < T >)` \=> `< T >`::
     * `fill_missing([], 3)` \=> `[3]`
@@ -287,7 +287,7 @@ Both expressions must be of the same type and cardinality after implicit casting
 
 === Remove
 Remove all occurrences of the 2^nd^ expression's value from the values of the 1^st^ expression.
-Both expressions must be of the same type after implicit casting is done
+Both expressions must be of the same type after implicit casting is done.
 
 `remove(< T >, < _Single_ T >)` \=> `< T >`::
     * `remove([1,2,3,2], 2)` \=> `[1, 3]`

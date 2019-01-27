@@ -59,7 +59,7 @@ public final class CommitTracker implements Runnable {
   private long tLogFileSizeUpperBound;
   
   private final ScheduledExecutorService scheduler = 
-      Executors.newScheduledThreadPool(1, new DefaultSolrThreadFactory("commitScheduler"));
+      Executors.newScheduledThreadPool(0, new DefaultSolrThreadFactory("commitScheduler"));
   private ScheduledFuture pending;
   
   // state
@@ -325,5 +325,10 @@ public final class CommitTracker implements Runnable {
   // only for testing - not thread safe
   public void setOpenSearcher(boolean openSearcher) {
     this.openSearcher = openSearcher;
+  }
+
+  // only for testing - not thread safe
+  public boolean hasPending() {
+    return (null != pending && !pending.isDone());
   }
 }

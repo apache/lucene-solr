@@ -47,6 +47,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       }
 
       cluster.startJettySolrRunner();
+      cluster.waitForAllNodes(30);
       client.connect(20, TimeUnit.SECONDS);
 
       // should work now!
@@ -75,6 +76,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       }
 
       cluster.startJettySolrRunner();
+      cluster.waitForAllNodes(30);
       client.connect(20, TimeUnit.SECONDS);
 
       ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");

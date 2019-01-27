@@ -43,17 +43,27 @@ import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
 
 public class HdfsBackupRepository implements BackupRepository {
   private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";
+  private static final String HDFS_COPY_BUFFER_SIZE_PARAM = "solr.hdfs.buffer.size";
 
   private HdfsDirectoryFactory factory;
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
   private NamedList config = null;
+  protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 
   @SuppressWarnings("rawtypes")
   @Override
   public void init(NamedList args) {
     this.config = args;
+
+    // Configure the size of the buffer used for copying index files to/from HDFS, if specified.
+    if (args.get(HDFS_COPY_BUFFER_SIZE_PARAM) != null) {
+      this.copyBufferSize = (Integer)args.get(HDFS_COPY_BUFFER_SIZE_PARAM);
+      if (this.copyBufferSize <= 0) {
+        throw new IllegalArgumentException("Value of " + HDFS_COPY_BUFFER_SIZE_PARAM + " must be > 0");
+      }
+    }
 
     // We don't really need this factory instance. But we want to initialize it here to
     // make sure that all HDFS related initialization is at one place (and not duplicated here).
@@ -174,7 +184,7 @@ public class HdfsBackupRepository implements BackupRepository {
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
     try (HdfsDirectory dir = new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE,
-        hdfsConfig, HdfsDirectory.DEFAULT_BUFFER_SIZE)) {
+        hdfsConfig, copyBufferSize)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
@@ -182,7 +192,7 @@ public class HdfsBackupRepository implements BackupRepository {
   @Override
   public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
     try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
-        hdfsConfig, HdfsDirectory.DEFAULT_BUFFER_SIZE)) {
+        hdfsConfig, copyBufferSize)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }

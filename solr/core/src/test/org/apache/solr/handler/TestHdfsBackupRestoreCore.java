@@ -139,7 +139,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
     .withSolrXml(HDFS_REPO_SOLR_XML)
     .configure();
-
+    
     docsSeed = random().nextLong();
   }
 

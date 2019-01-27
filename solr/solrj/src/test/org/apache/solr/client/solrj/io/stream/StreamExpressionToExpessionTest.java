@@ -107,7 +107,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testDaemonStream() throws Exception {
     String expressionString;
 
@@ -220,7 +220,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testUpdateStream() throws Exception {
     StreamExpression expression = StreamExpressionParser.parse("update("
                                                                + "collection2, "
@@ -247,17 +247,17 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     
     // Basic test
     try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
-                                                        +   "collection1, "
-                                                        +   "q=\"*:*\", "
-                                                        +   "buckets=\"a_s\", "
-                                                        +   "bucketSorts=\"sum(a_i) asc\", "
-                                                        +   "bucketSizeLimit=100, "
-                                                        +   "sum(a_i), sum(a_f), "
-                                                        +   "min(a_i), min(a_f), "
-                                                        +   "max(a_i), max(a_f), "
-                                                        +   "avg(a_i), avg(a_f), "
-                                                        +   "count(*)"
-                                                        + ")"), factory)){
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) asc\", "
+        +   "bucketSizeLimit=100, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")"), factory)){
       expressionString = stream.toExpression(factory).toString();
       assertTrue(expressionString.contains("facet(collection1"));
       assertTrue(expressionString.contains("q=\"*:*\""));
@@ -273,7 +273,158 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
       assertTrue(expressionString.contains("avg(a_i,false)"));
       assertTrue(expressionString.contains("avg(a_f,false)"));
       assertTrue(expressionString.contains("count(*)"));
+      assertEquals(stream.getBucketSizeLimit(), 100);
+      assertEquals(stream.getRows(), 100);
+      assertEquals(stream.getOffset(), 0);
     }
+
+    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) asc\", "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")"), factory)){
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("facet(collection1"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("buckets=a_s"));
+      assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
+      assertTrue(expressionString.contains("rows=10"));
+      assertTrue(expressionString.contains("offset=0"));
+      assertTrue(expressionString.contains("overfetch=150"));
+      assertTrue(expressionString.contains("sum(a_i)"));
+      assertTrue(expressionString.contains("sum(a_f)"));
+      assertTrue(expressionString.contains("min(a_i)"));
+      assertTrue(expressionString.contains("min(a_f)"));
+      assertTrue(expressionString.contains("max(a_i)"));
+      assertTrue(expressionString.contains("max(a_f)"));
+      assertTrue(expressionString.contains("avg(a_i,false)"));
+      assertTrue(expressionString.contains("avg(a_f,false)"));
+      assertTrue(expressionString.contains("count(*)"));
+      assertEquals(stream.getOverfetch(), 150);
+      assertEquals(stream.getBucketSizeLimit(), 160);
+      assertEquals(stream.getRows(), 10);
+      assertEquals(stream.getOffset(), 0);
+    }
+
+    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) asc\", "
+        +   "rows=10, method=dvhash, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")"), factory)){
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("facet(collection1"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("buckets=a_s"));
+      assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
+      assertTrue(!expressionString.contains("bucketSizeLimit"));
+      assertTrue(expressionString.contains("rows=10"));
+      assertTrue(expressionString.contains("offset=0"));
+      assertTrue(expressionString.contains("overfetch=150"));
+      assertTrue(expressionString.contains("method=dvhash"));
+      assertTrue(expressionString.contains("sum(a_i)"));
+      assertTrue(expressionString.contains("sum(a_f)"));
+      assertTrue(expressionString.contains("min(a_i)"));
+      assertTrue(expressionString.contains("min(a_f)"));
+      assertTrue(expressionString.contains("max(a_i)"));
+      assertTrue(expressionString.contains("max(a_f)"));
+      assertTrue(expressionString.contains("avg(a_i,false)"));
+      assertTrue(expressionString.contains("avg(a_f,false)"));
+      assertTrue(expressionString.contains("count(*)"));
+      assertEquals(stream.getBucketSizeLimit(), 160);
+      assertEquals(stream.getRows(), 10);
+      assertEquals(stream.getOffset(), 0);
+      assertEquals(stream.getOverfetch(), 150);
+
+    }
+
+    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) asc\", "
+        +   "rows=10, offset=100, overfetch=30, method=dvhash, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")"), factory)){
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("facet(collection1"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("buckets=a_s"));
+      assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
+      assertTrue(!expressionString.contains("bucketSizeLimit"));
+      assertTrue(expressionString.contains("rows=10"));
+      assertTrue(expressionString.contains("offset=100"));
+      assertTrue(expressionString.contains("overfetch=30"));
+      assertTrue(expressionString.contains("method=dvhash"));
+      assertTrue(expressionString.contains("sum(a_i)"));
+      assertTrue(expressionString.contains("sum(a_f)"));
+      assertTrue(expressionString.contains("min(a_i)"));
+      assertTrue(expressionString.contains("min(a_f)"));
+      assertTrue(expressionString.contains("max(a_i)"));
+      assertTrue(expressionString.contains("max(a_f)"));
+      assertTrue(expressionString.contains("avg(a_i,false)"));
+      assertTrue(expressionString.contains("avg(a_f,false)"));
+      assertTrue(expressionString.contains("count(*)"));
+      assertEquals(stream.getBucketSizeLimit(), 140);
+      assertEquals(stream.getRows(), 10);
+      assertEquals(stream.getOffset(), 100);
+      assertEquals(stream.getOverfetch(), 30);
+
+    }
+
+    try (FacetStream stream = new FacetStream(StreamExpressionParser.parse("facet("
+        +   "collection1, "
+        +   "q=\"*:*\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"sum(a_i) asc\", "
+        +   "rows=-1, offset=100, overfetch=-1, method=dvhash, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")"), factory)){
+      expressionString = stream.toExpression(factory).toString();
+      assertTrue(expressionString.contains("facet(collection1"));
+      assertTrue(expressionString.contains("q=\"*:*\""));
+      assertTrue(expressionString.contains("buckets=a_s"));
+      assertTrue(expressionString.contains("bucketSorts=\"sum(a_i) asc\""));
+      assertTrue(!expressionString.contains("bucketSizeLimit"));
+      assertTrue(expressionString.contains("rows=-1"));
+      assertTrue(expressionString.contains("offset=100"));
+      assertTrue(expressionString.contains("overfetch=-1"));
+      assertTrue(expressionString.contains("method=dvhash"));
+      assertTrue(expressionString.contains("sum(a_i)"));
+      assertTrue(expressionString.contains("sum(a_f)"));
+      assertTrue(expressionString.contains("min(a_i)"));
+      assertTrue(expressionString.contains("min(a_f)"));
+      assertTrue(expressionString.contains("max(a_i)"));
+      assertTrue(expressionString.contains("max(a_f)"));
+      assertTrue(expressionString.contains("avg(a_i,false)"));
+      assertTrue(expressionString.contains("avg(a_f,false)"));
+      assertTrue(expressionString.contains("count(*)"));
+      assertEquals(stream.getBucketSizeLimit(), Integer.MAX_VALUE);
+      assertEquals(stream.getRows(), Integer.MAX_VALUE);
+      assertEquals(stream.getOffset(), 100);
+      assertEquals(stream.getOverfetch(), -1);
+    }
+
   }
   
   @Test

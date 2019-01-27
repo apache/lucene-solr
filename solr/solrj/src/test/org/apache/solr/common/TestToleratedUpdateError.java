@@ -17,7 +17,7 @@
 package org.apache.solr.common;
 
 import java.util.EnumSet;
-import org.apache.solr.common.ToleratedUpdateError;
+
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -51,7 +51,7 @@ public class TestToleratedUpdateError extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testParseMapErrorChecking() {
     SimpleOrderedMap<String> bogus = new SimpleOrderedMap<String>();
     try {

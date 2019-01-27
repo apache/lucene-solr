@@ -43,11 +43,11 @@ public final class UserDictionary implements Dictionary {
   public static final short LEFT_ID = 1781;
 
   // NNG right
-  public static final short RIGHT_ID = 3534;
+  public static final short RIGHT_ID = 3533;
   // NNG right with hangul and a coda on the last char
-  public static final short RIGHT_ID_T = 3534;
+  public static final short RIGHT_ID_T = 3535;
   // NNG right with hangul and no coda on the last char
-  public static final short RIGHT_ID_F = 3535;
+  public static final short RIGHT_ID_F = 3534;
 
   // length, length... indexed by compound ID or null for simple noun
   private final int segmentations[][];
