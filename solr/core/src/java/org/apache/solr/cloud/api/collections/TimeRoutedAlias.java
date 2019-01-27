@@ -80,15 +80,10 @@ public class TimeRoutedAlias implements RoutedAlias {
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
 
   // These are parameter names to routed alias creation, AND are stored as metadata with the alias.
-  public static final String ROUTER_PREFIX = "router.";
-  public static final String ROUTER_TYPE_NAME = ROUTER_PREFIX + "name";
-  public static final String ROUTER_FIELD = ROUTER_PREFIX + "field";
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
   public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
   public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
-  public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
-  public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
   // plus TZ and NAME
 
   /**
