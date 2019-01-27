@@ -1,0 +1,299 @@
+= Nested Child Documents
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr supports indexing nested documents such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents.
+The parent with all children is referred to as a "block" and it explains some of the nomenclature of related features.
+At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
+ and the `[child]` <<transforming-result-documents.adoc#transforming-result-documents,Document Transformer>> can attach child documents to the result documents.
+In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "query time join",
+ since the relationships are already stored in the index and do not need to be computed.
+However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
+
+.Note
+[NOTE]
+====
+A big limitation is that the whole block of parent-children documents must be updated or deleted together, not separately.
+In other words, even if a single child document or the parent document is changed, the whole block of parent-child documents must be indexed together.
+_Solr does not enforce this rule_; if it's violated, you may get sporadic query failures or incorrect results.
+====
+
+Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
+
+=== Schema Notes
+
+ * The schema must include indexed fields field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
+ Fields `\_nest_path_`, `\_nest_parent_` can be configured to store the path of the document in the hierarchy, and the unique `id` of the parent in the previous level.
+ These 2 fields will be used by NestedUpdateProcessor URP, which is implicitly configured under Solr 8, when `\_root_` field is defined.
+ * Nested documents are very much documents in their own right even if certain nested documents hold different information from the parent.
+   Therefore:
+ ** the schema must be able to represent the fields of any document
+ ** it may be infeasible to use `required`
+ ** even child documents need a unique `id`
+
+
+=== Legacy Schema Notes
+ * The schema must include an indexed, non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
+ * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
+ * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
+   shouldn't be as it would be confusing.  There is no child document field type.
+
+=== XML Examples
+
+For example, here are two documents and their child documents.
+It illustrates two styles of adding child documents; the first is associated via a field "comment" (preferred),
+and the second is done in the classic way now referred to as an "anonymous" or "unlabelled" child document.
+This field label relationship is available to the URP chain in Solr but is ultimately discarded.
+Solr 8 will save the relationship.
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">1</field>
+    <field name="title">Solr adds block join support</field>
+    <field name="content_type">parentDocument</field>
+    <field name="content">
+      <doc>
+        <field name="id">2</field>
+        <field name="comments">SolrCloud supports it too!</field>
+      </doc>
+    </field>
+  </doc>
+  <doc>
+    <field name="id">3</field>
+    <field name="title">New Lucene and Solr release is out</field>
+    <field name="content_type">parentDocument</field>
+    <doc>
+      <field name="id">4</field>
+      <field name="comments">Lots of new features</field>
+    </doc>
+  </doc>
+</add>
+----
+
+In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument".
+We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
+
+=== JSON Examples
+
+This example is equivalent to the XML example above.
+Again, the field labelled relationship is preferred.
+The labelled relationship here is one child document but could have been wrapped in array brackets.
+For the anonymous relationship, note the special `\_childDocuments_` key whose contents must be an array of child documents.
+
+[source,json]
+----
+[
+  {
+    "id": "1",
+    "title": "Solr adds block join support",
+    "content_type": "parentDocument",
+    "comments": [{
+        "id": "2",
+        "content": "SolrCloud supports it too!"
+      },
+      {
+        "id": "3",
+        "content": "New filter syntax"
+      }
+    ]
+  },
+  {
+    "id": "4",
+    "title": "New Lucene and Solr release is out",
+    "content_type": "parentDocument",
+    "_childDocuments_": [
+      {
+        "id": "5",
+        "comments": "Lots of new features"
+      }
+    ]
+  }
+]
+----
+
+.Legacy Mode
+[NOTE]
+====
+ In legacy mode, these two documents will result in the same docs being indexed(legacy mode does not honor nested relationships).
+ When quried, child docs will be appended to _childDocuments_ key.
+====
+
+
+=== Querying Nested Documents
+
+ * `<<transforming-result-documents.adoc#transforming-result-documents,[child]>>` Document Transformer
+ * <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>>
+
+=== Query Examples
+
+For the upcoming examples, assume the following documents have been indexed:
+
+====
+[source,json]
+----
+[
+  {
+    "id": "1",
+    "title": "Cooking Recommendations",
+    "tags": ["cooking", "meetup"],
+    "posts": [{
+        "id": "2",
+        "title": "Cookies",
+        "comments": [{
+            "id": "3",
+            "content": "Lovely recipe"
+          },
+          {
+            "id": "4",
+            "content": "A-"
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Cakes"
+      }
+    ]
+  },
+  {
+    "id": "6",
+    "title": "For Hire",
+    "tags": ["professional", "jobs"],
+    "posts": [{
+        "id": "7",
+        "title": "Search Engineer",
+        "comments": [{
+           "id": "8",
+           "content": "I am interested"
+         },
+         {
+           "id": "9",
+           "content": "How large is the team?"
+         }
+        ]
+      },
+      {
+        "id": "10",
+        "title": "Low level Engineer"
+      }
+    ]
+  }
+]
+----
+====
+
+==== `<<transforming-result-documents.adoc#transforming-result-documents, Child Doc Transformer>>`
+ * Can be used enrich query results with the documents' descendsnts.
+ `q=id:1, +
+ fl=id,[child childFilter=/comments/content:recipe]` +
+ The child Filter will only match the first comment of doc(id:1),
+ therefore only that particular comment will be appended to the result.
+
+[source,json]
+----
+ { "response":{"numFound":1,"start":0,"docs":[
+       {
+           "id": "1",
+           "title": "Cooking Recommendations",
+           "tags": ["cooking", "meetup"],
+           "posts": [{
+               "id": "2",
+               "title": "Cookies",
+               "comments": [{
+                   "id": "3",
+                   "content": "Lovely recipe"
+               }]
+             }]
+        }]
+    }
+ }
+----
+
+==== <<other-parsers.adoc#block-join-children-query-parser,Block Join Children Query Parser>>
+ * Can be used to retrieve children of a matching document.
+
+ * `q={!child of='_nest_path_:/posts}content:"Search Engineer"` +
+     This query returns the parent at the root(since all parents filter returns root documents).
+
+[source,json]
+----
+     { "response":{"numFound":2,"start":0,"docs":[
+           {
+              "id": "8",
+              "content": "I am interested"
+           },
+           {
+              "id": "9",
+              "content": "How large is the team?"
+           }
+        ]}
+     }
+----
+
+==== <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>
+ * Can be used to retrieve parents of a child document.
+
+ * Can be used to query the doc in JSON example,
+  `q={!parent which='-_nest_path_:* \*:*'}content:"Search Engineer"` +
+  This query returns the parent at the root(since all parents filter returns root documents).
+
+[source,json]
+----
+  { "response":{"numFound":1,"start":0,"docs":[{
+         "id": "6",
+         "title": "For Hire",
+         "tags": ["professional", "jobs"]
+         }
+    ]}
+  }
+----
+
+==== Combining Block Join Query Parser with Child Doc Transformer
+  * The combination of these two features enable seamless creation of powerful queries. +
+  For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
+  The comments for matching posts can also be fetched, all done in a single Solr Query.
+  `q=+{!child of='-\_nest_path_:* *:*'}+tags:"jobs" &fl=*,[child]
+  &fq=\_nest_path_:/posts` +
+  This query returns all posts and their comments, which had "Search Engineer" in their title,
+  and were under a page tagged with "jobs".
+
+[source,json]
+----
+  { "response":{"numFound":1,"start":0,"docs":[
+        {
+          "id": "7",
+          "title": "Search Engineer",
+          "comments": [{
+             "id": "8",
+             "content": "I am interested"
+           },
+           {
+             "id": "9",
+             "content": "How large is the team?"
+           }
+          ]
+        },
+        {
+          "id": "10",
+          "title": "Low level Engineer"
+        }]
+     }
+  }
+----
+
