@@ -336,6 +336,8 @@ Improvements
 
 * SOLR-13029: solr.hdfs.buffer.size can be configured for HdfsBackupRepository for better performance (Tim Owen via Mikhail Khludnev)
 
+* SOLR-13156: support facet.sort for facet.field={!terms=foo,bar}field. (Konstantin Perikov via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
