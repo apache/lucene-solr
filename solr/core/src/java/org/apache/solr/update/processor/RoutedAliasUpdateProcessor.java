@@ -25,9 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
-import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -95,23 +93,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       return next;
     } else {
       try {
-        final Map<String, String> aliasProperties = getAliasProps(req, aliasName);
-        String routerType = aliasProperties.get("router.name");
-        RoutedAlias alias;
-        switch (routerType) {
-          case "time": {
-            log.debug("Time Routed Alias detected for {}", aliasName );
-            alias = new TimeRoutedAlias(aliasName, aliasProperties);
-            break;
-          }
-          case "category":{
-            log.debug("Category Routed Alias detected for {}", aliasName );
-            alias = new CategoryRoutedAlias(aliasName, aliasProperties);
-            break;
-          }
-          default:
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown router type " + routerType);
-        }
+        RoutedAlias alias = RoutedAlias.fromProps(aliasName, getAliasProps(req, aliasName));
         return new RoutedAliasUpdateProcessor(req, next, aliasDistribPhase, alias);
       } catch (Exception e) { // ensure we throw SERVER_ERROR not BAD_REQUEST at this stage
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Routed alias has invalid properties: " + e, e);

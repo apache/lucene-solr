@@ -18,8 +18,11 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.Aliases;
@@ -29,10 +32,9 @@ public class CategoryRoutedAlias implements RoutedAlias {
   private final String aliasName;
   private final Map<String, String> aliasProperties;
 
-  public CategoryRoutedAlias(String aliasName, Map<String, String> aliasProperties) {
-
+  CategoryRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
     this.aliasName = aliasName;
-    this.aliasProperties = aliasProperties;
+    this.aliasProperties = aliasMetadata;
   }
 
   @Override
@@ -61,12 +63,22 @@ public class CategoryRoutedAlias implements RoutedAlias {
   }
 
   @Override
-  public String computeInitialCollectionName(String collection) {
+  public Optional<String> computeInitialCollectionName() {
     return null;
   }
 
   @Override
   public Map<String, String> getAliasMetadata() {
     return aliasProperties;
+  }
+
+  @Override
+  public Set<String> getRequiredParams() {
+    return new HashSet<>();
+  }
+
+  @Override
+  public Set<String> getOptionalParams() {
+    return new HashSet<>();
   }
 }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,6 +53,7 @@ import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
@@ -115,9 +117,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARD_UNIQUE;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CREATE_COLLECTION_PREFIX;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.OPTIONAL_ROUTER_PARAMS;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.REQUIRED_ROUTER_PARAMS;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
@@ -551,20 +551,39 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String alias = req.getParams().get(NAME);
       SolrIdentifierValidator.validateAliasName(alias);
       String collections = req.getParams().get("collections");
-      Map<String, Object> result = copy(req.getParams(), null, REQUIRED_ROUTER_PARAMS);
-      copy(req.getParams(), result, OPTIONAL_ROUTER_PARAMS);
+      RoutedAlias routedAlias = null;
+      Exception ex = null;
+      try {
+        // note that RA specific validation occurs here.
+        routedAlias = RoutedAlias.fromProps(alias, req.getParams().toMap(new HashMap<>()));
+      } catch (SolrException e) {
+        // we'll throw this later if we are in fact creating a routed alias.
+        ex = e;
+      }
       if (collections != null) {
-        if (result.size() > 1) { // (NAME should be there, and if it's not we will fail below)
+        if (routedAlias != null) {
           throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a time routed alias.");
+        } else {
+          //////////////////////////////////////
+          // Regular alias creation indicated //
+          //////////////////////////////////////
+          return copy(req.getParams().required(), null, NAME, "collections");
         }
-        // regular alias creation...
-        return copy(req.getParams().required(), null, NAME, "collections");
       }
 
-      // Ok so we are creating a time routed alias from here
+      /////////////////////////////////////////////////
+      // We are creating a routed alias from here on //
+      /////////////////////////////////////////////////
 
-      // for validation....
-      copy(req.getParams().required(), null, REQUIRED_ROUTER_PARAMS);
+      // If our prior creation attempt had issues expose them now.
+      if (ex != null) {
+        throw ex;
+      }
+
+      // Now filter out just the parameters we care about from the request
+      Map<String, Object> result = copy(req.getParams(), null, routedAlias.getRequiredParams());
+      copy(req.getParams(), result, routedAlias.getOptionalParams());
+
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
 
       // add to result params that start with "create-collection.".

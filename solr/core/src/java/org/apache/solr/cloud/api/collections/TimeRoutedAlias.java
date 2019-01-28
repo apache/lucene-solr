@@ -30,19 +30,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import com.google.common.base.Objects;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
@@ -58,7 +58,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.*;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.ASYNC_PREEMPTIVE;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.NONE;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.SYNCHRONOUS;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CommonParams.TZ;
 
@@ -86,33 +88,30 @@ public class TimeRoutedAlias implements RoutedAlias {
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
   public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
+  public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
   // plus TZ and NAME
 
   /**
    * Parameters required for creating a routed alias
    */
-  public static final List<String> REQUIRED_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
+  public static final Set<String> REQUIRED_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       CommonParams.NAME,
       ROUTER_TYPE_NAME,
       ROUTER_FIELD,
       ROUTER_START,
-      ROUTER_INTERVAL));
+      ROUTER_INTERVAL)));
 
   /**
    * Optional parameters for creating a routed alias excluding parameters for collection creation.
    */
   //TODO lets find a way to remove this as it's harder to maintain than required list
-  public static final List<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableList(Arrays.asList(
+  public static final Set<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       ROUTER_MAX_FUTURE,
       ROUTER_AUTO_DELETE_AGE,
       ROUTER_PREEMPTIVE_CREATE_MATH,
-      TZ)); // kinda special
+      TZ))); // kinda special
 
-  static Predicate<String> PARAM_IS_PROP =
-      key -> key.equals(TZ) ||
-          (key.startsWith(ROUTER_PREFIX) && !key.equals(ROUTER_START)) || //TODO reconsider START special case
-          key.startsWith(CREATE_COLLECTION_PREFIX);
 
   // This format must be compatible with collection name limitations
   private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
@@ -121,58 +120,6 @@ public class TimeRoutedAlias implements RoutedAlias {
       .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
       .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
       .toFormatter(Locale.ROOT).withZone(ZoneOffset.UTC); // deliberate -- collection names disregard TZ
-
-  @Override
-  public String computeInitialCollectionName(String dateStr) {
-    return formatCollectionNameFromInstant(aliasName, parseStringAsInstant(dateStr, timeZone));
-  }
-
-  public static Instant parseInstantFromCollectionName(String aliasName, String collection) {
-    final String dateTimePart = collection.substring(aliasName.length() + 1);
-    return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
-  }
-
-  public static String formatCollectionNameFromInstant(String aliasName, Instant timestamp) {
-    String nextCollName = DATE_TIME_FORMATTER.format(timestamp);
-    for (int i = 0; i < 3; i++) { // chop off seconds, minutes, hours
-      if (nextCollName.endsWith("_00")) {
-        nextCollName = nextCollName.substring(0, nextCollName.length()-3);
-      }
-    }
-    assert DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
-    return aliasName + "_" + nextCollName;
-  }
-
-  Instant parseStringAsInstant(String str, TimeZone zone) {
-    Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
-    checkMilis(start);
-    return start;
-  }
-
-  private void checkMilis(Instant date) {
-    if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
-      throw new SolrException(BAD_REQUEST,
-          "Date or date math for start time includes milliseconds, which is not supported. " +
-              "(Hint: 'NOW' used without rounding always has this problem)");
-    }
-  }
-
-
-  @Override
-  public boolean updateParsedCollectionAliases(ZkController zkController) {
-    final Aliases aliases = zkController.getZkStateReader().getAliases(); // note: might be different from last request
-    if (this.parsedCollectionsAliases != aliases) {
-      if (this.parsedCollectionsAliases != null) {
-        log.debug("Observing possibly updated alias: {}", getAliasName());
-      }
-      this.parsedCollectionsDesc = parseCollections(aliases );
-      this.parsedCollectionsAliases = aliases;
-      return true;
-    }
-    return false;
-  }
-
-
 
   //
   // Instance data and methods
@@ -186,11 +133,20 @@ public class TimeRoutedAlias implements RoutedAlias {
   private final String preemptiveCreateMath;
   private final String autoDeleteAgeMath; // ex: /DAY-30DAYS  *optional*
   private final TimeZone timeZone;
+  private String start;
 
-  public TimeRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
-    this.aliasName = aliasName;
+  TimeRoutedAlias(String aliasName, Map<String, String> aliasMetadata) throws SolrException {
+    // Validate we got everything we need
+    if (!aliasMetadata.keySet().containsAll(TimeRoutedAlias.REQUIRED_ROUTER_PARAMS)) {
+      throw new SolrException(BAD_REQUEST, "A time routed alias requires these params: " + TimeRoutedAlias.REQUIRED_ROUTER_PARAMS
+          + " plus some create-collection prefixed ones.");
+    }
+
     this.aliasMetadata = aliasMetadata;
-    final MapSolrParams params = new MapSolrParams(aliasMetadata); // for convenience
+
+    this.start = this.aliasMetadata.get(ROUTER_START);
+    this.aliasName = aliasName;
+    final MapSolrParams params = new MapSolrParams(this.aliasMetadata); // for convenience
     final RequiredSolrParams required = params.required();
     if (!"time".equals(required.get(ROUTER_TYPE_NAME))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only 'time' routed aliases is supported right now.");
@@ -204,7 +160,7 @@ public class TimeRoutedAlias implements RoutedAlias {
     String pcmTmp = params.get(ROUTER_PREEMPTIVE_CREATE_MATH);
     preemptiveCreateMath = pcmTmp != null ? (pcmTmp.startsWith("-") ? pcmTmp : "-" + pcmTmp) : null;
     autoDeleteAgeMath = params.get(ROUTER_AUTO_DELETE_AGE); // no default
-    timeZone = TimeZoneUtils.parseTimezone(aliasMetadata.get(CommonParams.TZ));
+    timeZone = TimeZoneUtils.parseTimezone(this.aliasMetadata.get(CommonParams.TZ));
 
     // More validation:
 
@@ -240,6 +196,55 @@ public class TimeRoutedAlias implements RoutedAlias {
     if (maxFutureMs < 0) {
       throw new SolrException(BAD_REQUEST, ROUTER_MAX_FUTURE + " must be >= 0");
     }
+  }
+
+  @Override
+  public Optional<String> computeInitialCollectionName() {
+    return Optional.of(formatCollectionNameFromInstant(aliasName, parseStringAsInstant(this.start, timeZone)));
+  }
+
+  public static Instant parseInstantFromCollectionName(String aliasName, String collection) {
+    final String dateTimePart = collection.substring(aliasName.length() + 1);
+    return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
+  }
+
+  public static String formatCollectionNameFromInstant(String aliasName, Instant timestamp) {
+    String nextCollName = DATE_TIME_FORMATTER.format(timestamp);
+    for (int i = 0; i < 3; i++) { // chop off seconds, minutes, hours
+      if (nextCollName.endsWith("_00")) {
+        nextCollName = nextCollName.substring(0, nextCollName.length()-3);
+      }
+    }
+    assert DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
+    return aliasName + "_" + nextCollName;
+  }
+
+  Instant parseStringAsInstant(String str, TimeZone zone) {
+    Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
+    checkMilis(start);
+    return start;
+  }
+
+  private void checkMilis(Instant date) {
+    if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
+      throw new SolrException(BAD_REQUEST,
+          "Date or date math for start time includes milliseconds, which is not supported. " +
+              "(Hint: 'NOW' used without rounding always has this problem)");
+    }
+  }
+
+  @Override
+  public boolean updateParsedCollectionAliases(ZkController zkController) {
+    final Aliases aliases = zkController.getZkStateReader().getAliases(); // note: might be different from last request
+    if (this.parsedCollectionsAliases != aliases) {
+      if (this.parsedCollectionsAliases != null) {
+        log.debug("Observing possibly updated alias: {}", getAliasName());
+      }
+      this.parsedCollectionsDesc = parseCollections(aliases );
+      this.parsedCollectionsAliases = aliases;
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -321,8 +326,6 @@ public class TimeRoutedAlias implements RoutedAlias {
     }
   }
 
-
-
   @Override
   public String createCollectionsIfRequired(AddUpdateCommand cmd) {
     SolrQueryRequest req = cmd.getReq();
@@ -381,19 +384,14 @@ public class TimeRoutedAlias implements RoutedAlias {
     return aliasMetadata;
   }
 
-  static RoutedAlias fromZkProps(String aliasName, ZkNodeProps aliasProps) throws SolrException {
-    // Validate we got everything we need
-    if (!aliasProps.getProperties().keySet().containsAll(TimeRoutedAlias.REQUIRED_ROUTER_PARAMS)) {
-      throw new SolrException(BAD_REQUEST, "A time routed alias requires these params: " + TimeRoutedAlias.REQUIRED_ROUTER_PARAMS
-          + " plus some create-collection prefixed ones.");
-    }
+  @Override
+  public Set<String> getRequiredParams() {
+    return REQUIRED_ROUTER_PARAMS;
+  }
 
-    Map<String, String> aliasProperties = new LinkedHashMap<>();
-    aliasProps.getProperties().entrySet().stream()
-        .filter(entry -> TimeRoutedAlias.PARAM_IS_PROP.test(entry.getKey()))
-        .forEach(entry -> aliasProperties.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
-
-    return new TimeRoutedAlias(aliasName, aliasProperties); // validates as well
+  @Override
+  public Set<String> getOptionalParams() {
+    return OPTIONAL_ROUTER_PARAMS;
   }
 
   /**
@@ -469,8 +467,6 @@ public class TimeRoutedAlias implements RoutedAlias {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
-
-
 
   private void preemptiveAsync(Runnable r, SolrCore core) {
     preemptiveCreateOnceAlready = true;
@@ -558,6 +554,4 @@ public class TimeRoutedAlias implements RoutedAlias {
     ASYNC_PREEMPTIVE,
     SYNCHRONOUS
   }
-
-
 }

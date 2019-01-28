@@ -19,11 +19,12 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
@@ -97,36 +98,29 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
-    // Validate we got everything we need
+    // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
       throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + RoutedAlias.MINIMAL_REQUIRED_PARAMS
       + " plus some create-collection prefixed ones.");
     }
 
-    String aliasType = message.getStr(RoutedAlias.ROUTER_TYPE_NAME);
+    // convert values to strings
+    Map<String, String> props = new LinkedHashMap<>();
+    message.getProperties().forEach((key, value) -> props.put(key, String.valueOf(value)));
 
-    BiFunction<String, ZkNodeProps, RoutedAlias> aliasConstructor = RoutedAlias.constructorFactory.get(aliasType);
+    // Further validation happens here
+    RoutedAlias routedAlias = RoutedAlias.fromProps(aliasName, props);
 
-    if (aliasConstructor == null) {
-      throw new SolrException(BAD_REQUEST, "Router name: " + aliasType + " is not in supported types, "
-          + String.join(", ", RoutedAlias.constructorFactory.keySet()));
-    }
-
-
-
-    RoutedAlias routedAlias = aliasConstructor.apply(aliasName, message);
-
-    String start = message.getStr(RoutedAlias.ROUTER_START);
-    if (start != null) {
-      String initialCollectionName = routedAlias.computeInitialCollectionName(start);
-      if (initialCollectionName != null) {
-        ensureCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialCollectionName);
-        // Create/update the alias
-        zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
-            .cloneWithCollectionAlias(aliasName, initialCollectionName)
-            .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
-        return;
-      }
+    // If we can, create the first collection.
+    Optional<String> initialCollectionName = routedAlias.computeInitialCollectionName();
+    if (initialCollectionName.isPresent()) {
+      String initialColl = initialCollectionName.get();
+      ensureAliasCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialColl);
+      // Create/update the alias
+      zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
+          .cloneWithCollectionAlias(aliasName, initialColl)
+          .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
+      return;
     }
 
     // Create/update the alias
@@ -134,7 +128,7 @@ public class CreateAliasCmd extends AliasCmd {
         .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 
-  private void ensureCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
+  private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
     // Create the collection
     createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
     validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
