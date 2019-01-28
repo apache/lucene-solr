@@ -19,7 +19,7 @@
   <fieldType name="string_direct" class="solr.StrField" postingsFormat="Direct" docValuesFormat="Direct"/>
   <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene50"/>
 
-  <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene70"/>
+  <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene80"/>
 
   <fieldType name="string" class="solr.StrField"/>
 

@@ -1291,7 +1291,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&val=bar&wt=xml
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&propertyValue=bar&wt=xml
 ----
 
 *Output*
@@ -2145,7 +2145,7 @@ For example, if 10 reassignments are to take place and `maxAtOnce` is `1` and `m
 
 === REBALANCELEADERS Response
 
-The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+The response will include the status of the request. A status of "0" indicates the request was _processed_, not that all assignments were successful. Examine the "Summary" section for that information.
 
 === Examples using REBALANCELEADERS
 
@@ -2155,69 +2155,48 @@ Either of these commands would cause all the active replicas that had the `prefe
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&wt=xml
-http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30&wt=xml
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&wt=json
+
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30&wt=json
 ----
 
 *Output*
 
-In this example, two replicas in the "alreadyLeaders" section already had the leader assigned to the same node as the `preferredLeader` property so no action was taken.
+In this example:
 
-The replica in the "inactivePreferreds" section had the `preferredLeader` property set but the node was down and no action was taken. The three nodes in the "successes" section were made leaders because they had the `preferredLeader` property set but were not leaders and they were active.
+* In the "alreadyLeaders" section, core_node5 was already the leader, so there were no changes in leadership for shard1.
+* In the "inactivePreferreds" section, core_node57 had the preferredLeader property set, but the node was not active, the leader for shard7 was not changed. This is considered successful.
+* In the "successes" section, core_node23 was _not_ the leader for shard3, so leadership was assigned to that replica.
 
-[source,xml]
+The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried. If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
+
+[source,json]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">123</int>
-  </lst>
-  <lst name="alreadyLeaders">
-    <lst name="core_node1">
-      <str name="status">success</str>
-      <str name="msg">Already leader</str>
-      <str name="nodeName">192.168.1.167:7400_solr</str>
-    </lst>
-    <lst name="core_node17">
-      <str name="status">success</str>
-      <str name="msg">Already leader</str>
-      <str name="nodeName">192.168.1.167:7600_solr</str>
-    </lst>
-  </lst>
-  <lst name="inactivePreferreds">
-    <lst name="core_node4">
-      <str name="status">skipped</str>
-      <str name="msg">Node is a referredLeader, but it's inactive. Skipping</str>
-      <str name="nodeName">192.168.1.167:7500_solr</str>
-    </lst>
-  </lst>
-  <lst name="successes">
-    <lst name="_collection1_shard3_replica1">
-      <str name="status">success</str>
-      <str name="msg">
-        Assigned 'Collection: 'collection1', Shard: 'shard3', Core: 'collection1_shard3_replica1', BaseUrl:
-        'http://192.168.1.167:8983/solr'' to be leader
-      </str>
-    </lst>
-    <lst name="_collection1_shard5_replica3">
-      <str name="status">success</str>
-      <str name="msg">
-        Assigned 'Collection: 'collection1', Shard: 'shard5', Core: 'collection1_shard5_replica3', BaseUrl:
-        'http://192.168.1.167:7200/solr'' to be leader
-      </str>
-    </lst>
-    <lst name="_collection1_shard4_replica2">
-      <str name="status">success</str>
-      <str name="msg">
-        Assigned 'Collection: 'collection1', Shard: 'shard4', Core: 'collection1_shard4_replica2', BaseUrl:
-        'http://192.168.1.167:7300/solr'' to be leader
-      </str>
-    </lst>
-  </lst>
-</response>
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":3054},
+  "Summary":{
+    "Success":"All active replicas with the preferredLeader property set are leaders"},
+  "alreadyLeaders":{
+    "core_node5":{
+      "status":"skipped",
+      "msg":"Replica core_node5 is already the leader for shard shard1. No change necessary"}},
+  "inactivePreferreds":{
+    "core_node57":{
+      "status":"skipped",
+      "msg":"Replica core_node57 is a referredLeader for shard shard7, but is inactive. No change necessary"}},
+  "successes":{
+    "shard3":{
+      "status":"success",
+      "msg":"Successfully changed leader of slice shard3 to core_node23"}}}
 ----
 
-Examining the clusterstate after issuing this call should show that every live node that has the `preferredLeader` property should also have the "leader" property set to _true_.
+Examining the clusterstate after issuing this call should show that every active replica that has the `preferredLeader` property should also have the "leader" property set to _true_.
+
+NOTE: The added work done by an NRT leader is quite small and only present when indexing. The primary use-case is to redistribute the leader role if there are a large number of leaders concentrated on a small number of nodes. Rebalancing will likely not improve performance unless the imbalance of leadership roles is measured in multiples of 10.
+
+NOTE: The BALANCESHARDUNIQUE command that distributes the preferredLeader property does not guarantee perfect distribution and in some collection topologies it is impossible to make that guarantee.
 
 [[forceleader]]
 == FORCELEADER: Force Shard Leader

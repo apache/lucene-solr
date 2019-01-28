@@ -44,14 +44,17 @@ public class OscillateEvaluator extends RecursiveNumericEvaluator implements Man
 
 
     HarmonicOscillator pf = new HarmonicOscillator(amp, om, phase);
+    double[] x = new double[128];
 
     List list = new ArrayList();
     for(int i=0; i<128; i++) {
       double yvalue= pf.value(i);
       list.add(yvalue);
+      x[i] = i;
     }
 
-    return new VectorFunction(pf, list);
-
+    VectorFunction func = new VectorFunction(pf, list);
+    func.addToContext("x", x);
+    return func;
   }
 }

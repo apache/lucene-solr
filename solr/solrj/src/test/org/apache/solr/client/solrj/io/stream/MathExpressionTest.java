@@ -2782,7 +2782,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               e=harmfit(a)," +
         "               f=getAmplitude(e)," +
         "               g=getAngularFrequency(e)," +
-        "               h=getPhase(e))";
+        "               h=getPhase(e)," +
+        "               i=derivative(a))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2810,6 +2811,11 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(amp.doubleValue(), 10, .1);
     assertEquals(freq.doubleValue(), .3, .1);
     assertEquals(pha.doubleValue(), 2.9, .1);
+
+    List<Number> der = (List<Number>)tuples.get(0).get("i");
+    assertEquals(der.size(), 128);
+    assertEquals(der.get(0).doubleValue(), -0.7177479876419472, 0);
+    assertEquals(der.get(127).doubleValue(), 0.47586800641412696, 0);
   }
 
   @Test
@@ -4305,6 +4311,27 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals((double) out.get(1), 3.5, .0);
     assertEquals((double) out.get(2), 4.5, .0);
     assertEquals((double) out.get(3), 5.5, .0);
+  }
+
+  @Test
+  public void testMovingMAD() throws Exception {
+    String cexpr = "movingMAD(array(1,2,3,4,5,6,9.25), 4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size()==4);
+    System.out.println("MAD:"+out);
+    assertEquals((double) out.get(0).doubleValue(), 1, .0);
+    assertEquals((double) out.get(1).doubleValue(), 1, .0);
+    assertEquals((double) out.get(2).doubleValue(), 1, .0);
+    assertEquals((double) out.get(3).doubleValue(), 1.59375, .0);
   }
 
   @Test

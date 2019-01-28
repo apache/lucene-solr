@@ -704,4 +704,62 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(2, source.minExtent());
   }
 
+  public void testFixedField() throws IOException {
+
+    IntervalsSource source = Intervals.phrase(
+        Intervals.term("alph"),
+        Intervals.fixField("field1", Intervals.term("hot")));
+
+    // We search in field2, but 'hot' will report intervals from field1
+    checkIntervals(source, "field2", 1, new int[][]{
+        {},
+        { 1, 2 },
+        {},
+        {},
+        {},
+        {}
+    });
+
+    MatchesIterator mi = getMatches(source, 1, "field2");
+    assertNotNull(mi);
+    assertMatch(mi, 1, 2, 6, 18);
+
+  }
+
+  public void testPrefix() throws IOException {
+    IntervalsSource source = Intervals.prefix("p");
+    checkIntervals(source, "field1", 5, new int[][]{
+        {},
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
+        { 7, 7 },
+        { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10 },
+        { 0, 0 }
+    });
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertNotNull(mi);
+    assertMatch(mi, 0, 0, 0, 5);
+    assertMatch(mi, 1, 1, 6, 14);
+
+    IntervalsSource noSuch = Intervals.prefix("qqq");
+    checkIntervals(noSuch, "field1", 0, new int[][]{});
+  }
+
+  public void testWildcard() throws IOException {
+    IntervalsSource source = Intervals.wildcard("?ot");
+    checkIntervals(source, "field1", 4, new int[][]{
+        {},
+        { 2, 2, 10, 10, 17, 17, 27, 27 },
+        { 5, 5, 10, 10, 21, 21 },
+        { 3, 3 },
+        { 2, 2, 10, 10, 17, 17 },
+        {}
+    });
+    MatchesIterator mi = getMatches(source, 4, "field1");
+    assertNotNull(mi);
+    assertMatch(mi, 2, 2, 15, 18);
+    assertMatch(mi, 10, 10, 63, 66);
+    assertMatch(mi, 17, 17, 97, 100);
+  }
+
 }
