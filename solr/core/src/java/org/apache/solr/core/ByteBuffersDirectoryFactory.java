@@ -34,7 +34,7 @@ public class ByteBuffersDirectoryFactory extends EphemeralDirectoryFactory {
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (!(rawLockType == null || DirectoryFactory.LOCK_TYPE_SINGLE.equalsIgnoreCase(rawLockType.trim()))) {
       throw new SolrException(ErrorCode.FORBIDDEN,
-          "ByteBuffersDirectory can only be used with the '"+DirectoryFactory.LOCK_TYPE_SINGLE+"' lock constructorFactory type.");
+          "ByteBuffersDirectory can only be used with the '"+DirectoryFactory.LOCK_TYPE_SINGLE+"' lock factory type.");
     }
     return new SingleInstanceLockFactory();
   }

@@ -430,9 +430,9 @@ public class PhrasesIdentificationComponent extends SearchComponent {
         if (this.maxQueryPositionLength < this.maxIndexedPositionLength) {
           throw new SolrException
             (ErrorCode.BAD_REQUEST,
-             "Effective value of " + PHRASE_INDEX_MAXLEN + " (either from index analyzer shingle constructorFactory, " +
+             "Effective value of " + PHRASE_INDEX_MAXLEN + " (either from index analyzer shingle factory, " +
              " or expert param override) must be less then or equal to the effective value of " +
-             PHRASE_QUERY_MAXLEN + " (either from query analyzer shingle constructorFactory, or expert param override)");
+             PHRASE_QUERY_MAXLEN + " (either from query analyzer shingle factory, or expert param override)");
         }
       }
       
@@ -1114,10 +1114,10 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     for (TokenFilterFactory tff : factories) {
       if (ShingleFilterFactory.class.isInstance(tff)) {
         if (0 < result) {
-          // more then one shingle constructorFactory in our analyzer, which is weird, so make no assumptions...
+          // more then one shingle factory in our analyzer, which is weird, so make no assumptions...
           return -1;
         }
-        // would be nice if there was an easy way to just ask a constructorFactory for the effective value
+        // would be nice if there was an easy way to just ask a factory for the effective value
         // of an arguement...
         final Map<String,String> args = tff.getOriginalArgs();
         result = args.containsKey("maxShingleSize")

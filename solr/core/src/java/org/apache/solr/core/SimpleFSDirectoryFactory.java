@@ -31,7 +31,7 @@ public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    // we pass NoLockFactory, because the real lock constructorFactory is set later by injectLockFactory:
+    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
     return new SimpleFSDirectory(new File(path).toPath(), lockFactory);
   }
 

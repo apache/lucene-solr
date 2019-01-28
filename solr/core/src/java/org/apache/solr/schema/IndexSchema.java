@@ -494,7 +494,7 @@ public class IndexSchema {
         isExplicitSimilarity = true;
       }
       if ( ! (similarityFactory instanceof SolrCoreAware)) {
-        // if the sim constructorFactory isn't SolrCoreAware (and hence schema aware),
+        // if the sim factory isn't SolrCoreAware (and hence schema aware),
         // then we are responsible for erroring if a field type is trying to specify a sim.
         for (FieldType ft : fieldTypes.values()) {
           if (null != ft.getSimilarity()) {
@@ -976,7 +976,7 @@ public class IndexSchema {
       final String classArg = ((Element) node).getAttribute(SimilarityFactory.CLASS_NAME);
       final Object obj = loader.newInstance(classArg, Object.class, "search.similarities.");
       if (obj instanceof SimilarityFactory) {
-        // configure a constructorFactory, get a similarity back
+        // configure a factory, get a similarity back
         final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
         namedList.add(SimilarityFactory.CLASS_NAME, classArg);
         SolrParams params = namedList.toSolrParams();

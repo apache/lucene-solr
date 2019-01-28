@@ -59,7 +59,7 @@ public abstract class ParseNumericFieldUpdateProcessorFactory extends FieldMutat
   }
 
   /**
-   * Returns true if the given FieldType is compatible with this parsing constructorFactory.
+   * Returns true if the given FieldType is compatible with this parsing factory.
    */
   protected abstract boolean isSchemaFieldTypeCompatible(FieldType type);  
 

@@ -620,11 +620,11 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * Gets the constructorFactory for the Similarity used when scoring fields of this type
+   * Gets the factory for the Similarity used when scoring fields of this type
    *
    * <p>
    * The default implementation returns null, which means this type
-   * has no custom similarity constructorFactory associated with it.
+   * has no custom similarity factory associated with it.
    * </p>
    *
    * @lucene.internal
@@ -1093,7 +1093,7 @@ public abstract class FieldType extends FieldProperties {
   /** 
    * Returns a description of the given analyzer, by either reporting the Analyzer class
    * name (and optionally luceneMatchVersion) if it's not a TokenizerChain, or if it is,
-   * querying each analysis constructorFactory for its name and args.
+   * querying each analysis factory for its name and args.
    */
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<>();

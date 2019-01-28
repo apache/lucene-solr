@@ -24,14 +24,14 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Token filter constructorFactory that misbehaves on command.
+ * Token filter factory that misbehaves on command.
  */
 public class ThrowingMockTokenFilterFactory extends TokenFilterFactory {
 
   private Class<? extends RuntimeException> exceptionClass;
 
   /**
-   * Initialize this constructorFactory via a set of key-value pairs.
+   * Initialize this factory via a set of key-value pairs.
    *
    * @param args the options.
    */

@@ -450,7 +450,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static boolean changedFactory = false;
   private static String savedFactory;
-  /** Use a different directory constructorFactory.  Passing "null" sets to an FS-based constructorFactory */
+  /** Use a different directory factory.  Passing "null" sets to an FS-based factory */
   public static void useFactory(String factory) throws Exception {
     // allow calling more than once so a subclass can override a base class
     if (!changedFactory) {

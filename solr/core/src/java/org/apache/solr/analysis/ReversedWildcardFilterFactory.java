@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
- * Factory for {@link ReversedWildcardFilter}-s. When this constructorFactory is
+ * Factory for {@link ReversedWildcardFilter}-s. When this factory is
  * added to an analysis chain, it will be used both for filtering the
  * tokens during indexing, and to determine the query processing of
  * this field during search.

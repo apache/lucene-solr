@@ -529,7 +529,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
             return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
           } else {
-            log.warn("'{}' looks like an analysis constructorFactory, but caller requested different class type: {}", cname, expectedType.getName());
+            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
           }
         } catch (IllegalArgumentException ex) { 
           // ok, we fall back to legacy loading

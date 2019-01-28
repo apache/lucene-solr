@@ -299,7 +299,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   @Test
   public void testReloadCoreAfterFailure() throws Exception {
     cores.shutdown();
-    useFactory(null); // use FS constructorFactory
+    useFactory(null); // use FS factory
 
     try {
       cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());

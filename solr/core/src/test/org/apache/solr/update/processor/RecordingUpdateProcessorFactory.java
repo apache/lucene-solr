@@ -33,7 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * This Factory can optionally save references to the commands it receives in 
  * BlockingQueues that tests can poll from to observe that the expected commands 
- * are executed.  By default, this constructorFactory does nothing except return the "next"
+ * are executed.  By default, this factory does nothing except return the "next"
  * processor from the chain unless it's told to {@link #startRecording()}
  */
 public final class RecordingUpdateProcessorFactory 

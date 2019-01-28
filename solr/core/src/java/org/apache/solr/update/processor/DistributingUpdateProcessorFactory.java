@@ -17,7 +17,7 @@
 package org.apache.solr.update.processor;
 
 /**
- * A marker interface for denoting that a constructorFactory is responsible for handling
+ * A marker interface for denoting that a factory is responsible for handling
  * distributed communication of updates across a SolrCloud cluster.
  * 
  * @see UpdateRequestProcessorChain#init

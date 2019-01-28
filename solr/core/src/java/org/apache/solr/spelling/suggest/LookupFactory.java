@@ -26,7 +26,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
 
 /**
- * Suggester constructorFactory for creating {@link Lookup} instances.
+ * Suggester factory for creating {@link Lookup} instances.
  */
 public abstract class LookupFactory {
   

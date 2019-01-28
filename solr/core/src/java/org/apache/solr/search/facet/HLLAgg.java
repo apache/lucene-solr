@@ -40,7 +40,7 @@ public class HLLAgg extends StrAggValueSource {
     factory = new HLLFactory();
   }
 
-  // constructorFactory for the hyper-log-log algorithm.
+  // factory for the hyper-log-log algorithm.
   // TODO: make stats component HllOptions inherit from this?
   public static class HLLFactory {
     int log2m = 13;

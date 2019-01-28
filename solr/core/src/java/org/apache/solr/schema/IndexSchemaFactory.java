@@ -57,7 +57,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     return schema;
   }
 
-  /** Instantiates the configured schema constructorFactory, then calls create on it. */
+  /** Instantiates the configured schema factory, then calls create on it. */
   public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
     PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
     IndexSchemaFactory factory;
@@ -73,11 +73,11 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   /** 
    * Returns the resource name that will be used: if the schema is managed, the resource
-   * name will be drawn from the schema constructorFactory configuration in the given SolrConfig.
+   * name will be drawn from the schema factory configuration in the given SolrConfig.
    * Otherwise, the given resourceName will be returned.
    * 
    * @param resourceName The name to use if the schema is not managed
-   * @param config The SolrConfig from which to get the schema constructorFactory config
+   * @param config The SolrConfig from which to get the schema factory config
    * @return If the schema is managed, the resource name from the given SolrConfig,
    *         otherwise the given resourceName. 
    */

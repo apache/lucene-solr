@@ -35,7 +35,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
   private final String[] props;
 
   /**
-   * Create ObjectName constructorFactory.
+   * Create ObjectName factory.
    * @param reporterName name of the reporter
    * @param domain JMX domain name
    * @param additionalProperties additional properties as key, value pairs.

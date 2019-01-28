@@ -25,7 +25,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
-/** a fake shardhandler constructorFactory that does nothing. */
+/** a fake shardhandler factory that does nothing. */
 public class MockShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
   NamedList args;
   

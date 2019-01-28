@@ -41,7 +41,7 @@ public class TestPerFieldSimilarityWithDefaultOverride extends BaseSimilarityTes
     assertNotNull(getSimilarity("text_sim1", SweetSpotSimilarity.class));
   }
   
-  /** test a field where a configurable sim constructorFactory is explicitly defined */
+  /** test a field where a configurable sim factory is explicitly defined */
   public void testDirectFactory() throws Exception {
     MockConfigurableSimilarity sim = getSimilarity("sim2text", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());

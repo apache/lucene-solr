@@ -80,7 +80,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler-loadBalancerRequests.xml"));
       factory = cc.getShardHandlerFactory();
 
-      // test that constructorFactory is HttpShardHandlerFactory with expected url reserve fraction
+      // test that factory is HttpShardHandlerFactory with expected url reserve fraction
       assertTrue(factory instanceof HttpShardHandlerFactory);
       final HttpShardHandlerFactory httpShardHandlerFactory = ((HttpShardHandlerFactory)factory);
       assertEquals(expectedLoadBalancerRequestsMinimumAbsolute, httpShardHandlerFactory.permittedLoadBalancerRequestsMinimumAbsolute, 0.0);

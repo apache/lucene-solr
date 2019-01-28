@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
-// TODO: add a low-level test for this constructorFactory
+// TODO: add a low-level test for this factory
 public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
 
   @BeforeClass

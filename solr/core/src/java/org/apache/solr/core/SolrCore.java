@@ -304,7 +304,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /** 
    * Sets the latest schema snapshot to be used by this core instance. 
    * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is 
-   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that constructorFactory about
+   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about
    * this SolrCore prior to using the <code>replacementSchema</code>
    * @see #getLatestSchema
    */
@@ -1012,7 +1012,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // from the core.
       resourceLoader.inform(infoRegistry);
 
-      // Allow the directory constructorFactory to report metrics
+      // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
         ((SolrMetricProducer) directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(),
             metricTag, "directoryFactory");
@@ -1135,7 +1135,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   
   /**
    * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code> 
-   * if non-null, or a new instance build via the constructorFactory identified in the specified <code>config</code>
+   * if non-null, or a new instance build via the factory identified in the specified <code>config</code>
    * @see IndexSchemaFactory
    * @see #setLatestSchema
    */
@@ -1243,7 +1243,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * Locate the data directory for a given config and core descriptor.
    *
    * @param directoryFactory
-   *          The directory constructorFactory to use if necessary to calculate an absolute path. Should be the same as what will
+   *          The directory factory to use if necessary to calculate an absolute path. Should be the same as what will
    *          be used to open the data directory later.
    * @param dataDir
    *          An optional hint to the data directory location. Will be normalized and used if not null.

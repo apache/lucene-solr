@@ -47,7 +47,7 @@ import org.apache.lucene.index.Term; // for javadocs
  * you should use {@link TermRangeQuery}.</p>
  *
  * <p>You create a new LegacyNumericRangeQuery with the static
- * constructorFactory methods, eg:
+ * factory methods, eg:
  *
  * <pre class="prettyprint">
  * Query q = LegacyNumericRangeQuery.newFloatRange("weight", 0.03f, 0.10f, true, true);

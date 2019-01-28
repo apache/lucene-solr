@@ -71,7 +71,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
     // first one should be log, and it should be configured properly
     UpdateRequestProcessorFactory first = chained.getProcessors().get(0);
-    assertEquals("wrong constructorFactory at front of chain",
+    assertEquals("wrong factory at front of chain",
                  LogUpdateProcessorFactory.class, first.getClass());
     LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)first;
     assertEquals("wrong config for LogUpdateProcessorFactory.maxNumToLog",
@@ -94,7 +94,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because it
     // is a @RunAlways processor -- but in order for that to work, we have to sanity check that the log
-    // level is at least "INFO" otherwise the constructorFactory won't even produce a processor and all our assertions
+    // level is at least "INFO" otherwise the factory won't even produce a processor and all our assertions
     // are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //
     // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is evil.

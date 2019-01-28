@@ -65,7 +65,7 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 
 /**
- * A constructorFactory to parse and create expressions, and capture information about those expressions along the way.
+ * A factory to parse and create expressions, and capture information about those expressions along the way.
  * 
  * <p>
  * In order to use, first call {@link #startRequest()} and create all ungrouped expressions,
@@ -121,7 +121,7 @@ public class ExpressionFactory {
   }
   
   /**
-   * Get the index schema used by this constructorFactory.
+   * Get the index schema used by this factory.
    * 
    * @return the index schema
    */
@@ -130,7 +130,7 @@ public class ExpressionFactory {
   }
   
   /**
-   * Prepare the constructorFactory to start building the request.
+   * Prepare the factory to start building the request.
    */
   public void startRequest() {
     reductionFunctions = new LinkedHashMap<>();
@@ -146,7 +146,7 @@ public class ExpressionFactory {
   }
   
   /**
-   * Prepare the constructorFactory to start building the next grouping.
+   * Prepare the factory to start building the next grouping.
    * <br>
    * NOTE: MUST be called before each new grouping.
    */
@@ -158,12 +158,12 @@ public class ExpressionFactory {
   }
 
   /**
-   * Add a system function to the expression constructorFactory.
+   * Add a system function to the expression factory.
    * This will be treated as a native function and not a variable function.
    * 
    * @param functionName the unique name for the function
    * @param functionCreator the creator function to generate an expression
-   * @return this constructorFactory, to easily chain function adds
+   * @return this factory, to easily chain function adds
    * @throws SolrException if the functionName is not unique
    */
   public ExpressionFactory addSystemFunction(final String functionName, final CreatorFunction functionCreator) throws SolrException {
@@ -180,7 +180,7 @@ public class ExpressionFactory {
    * @param functionName the function's name
    * @param functionParams the comma separated and ordered parameters of the function (e.g. {@code "a,b"} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
-   * @return this constructorFactory, to easily chain function adds
+   * @return this factory, to easily chain function adds
    * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
    */
   public ExpressionFactory addSystemVariableFunction(final String functionName, final String functionParams, final String returnSignature) throws SolrException {
@@ -195,7 +195,7 @@ public class ExpressionFactory {
    * 
    * @param functionSignature the function signature of the variable function (e.g. {@code func(a,b)} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
-   * @return this constructorFactory, to easily chain function adds
+   * @return this factory, to easily chain function adds
    * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
    */
   public ExpressionFactory addUserDefinedVariableFunction(final String functionSignature, final String returnSignature) throws SolrException {
@@ -208,7 +208,7 @@ public class ExpressionFactory {
    * @param functionSignature the function signature of the variable function (e.g. {@code func(a,b)} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
    * @param variableFunctions the map of variable functions to add the new function to
-   * @return this constructorFactory, to easily chain function adds
+   * @return this factory, to easily chain function adds
    * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
    */
   private ExpressionFactory addVariableFunction(final String functionSignature,
@@ -225,7 +225,7 @@ public class ExpressionFactory {
    * @param functionParams the parameters of the function (this is ordered)
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
    * @param variableFunctions the map of variable functions to add the new function to
-   * @return this constructorFactory, to easily chain function adds
+   * @return this factory, to easily chain function adds
    * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
    */
   private ExpressionFactory addVariableFunction(final String functionName,

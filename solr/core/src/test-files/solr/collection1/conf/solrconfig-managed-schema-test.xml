@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<!-- a basic solrconfig that tests when no schema constructorFactory is defined then ManagedSchemaFactory will be the default.
+<!-- a basic solrconfig that tests when no schema factory is defined then ManagedSchemaFactory will be the default.
      DO NOT ADD THINGS TO THIS CONFIG! -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>

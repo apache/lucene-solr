@@ -162,7 +162,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 5);
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
-      // full constructorFactory w/multi comp
+      // full factory w/multi comp
       stream = factory.constructStream("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -363,7 +363,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 5);
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
-      // full constructorFactory w/multi comp
+      // full factory w/multi comp
       stream = factory.constructStream("merge("
           + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
           + "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
@@ -374,7 +374,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 5);
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
-      // full constructorFactory w/multi streams
+      // full factory w/multi streams
       stream = factory.constructStream("merge("
           + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
           + "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
@@ -440,7 +440,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 2);
       assertOrder(tuples, 4, 3);
 
-      // full constructorFactory
+      // full factory
       stream = factory.constructStream("top("
           + "n=4,"
           + "unique("
@@ -453,7 +453,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 4);
       assertOrder(tuples, 0, 1, 3, 4);
 
-      // full constructorFactory, switch order
+      // full factory, switch order
       stream = factory.constructStream("top("
           + "n=4,"
           + "unique("

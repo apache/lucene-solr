@@ -349,7 +349,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     /**
      * Creates a new ListBasedTokenStream which uses the given tokens as its token source.
      *
-     * @param attributeSource source of the attribute constructorFactory and attribute impls
+     * @param attributeSource source of the attribute factory and attribute impls
      * @param tokens Source of tokens to be used
      */
     ListBasedTokenStream(AttributeSource attributeSource, List<AttributeSource> tokens) {

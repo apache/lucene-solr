@@ -67,7 +67,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
   Properties props = new Properties();
 
-  String sysProp = System.getProperty("java.naming.constructorFactory.initial");
+  String sysProp = System.getProperty("java.naming.factory.initial");
 
   @BeforeClass
   public static void beforeClass() {
@@ -78,7 +78,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("java.naming.constructorFactory.initial",
+    System.setProperty("java.naming.factory.initial",
             MockInitialContextFactory.class.getName());
     
     driver = mock(Driver.class);
@@ -91,9 +91,9 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   @After
   public void tearDown() throws Exception {
     if (sysProp == null) {
-      System.getProperties().remove("java.naming.constructorFactory.initial");
+      System.getProperties().remove("java.naming.factory.initial");
     } else {
-      System.setProperty("java.naming.constructorFactory.initial", sysProp);
+      System.setProperty("java.naming.factory.initial", sysProp);
     }
     super.tearDown();
     reset(driver, dataSource, connection);

@@ -54,11 +54,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * RRD backend constructorFactory using Solr documents as underlying storage.
+ * RRD backend factory using Solr documents as underlying storage.
  * <p>RRD databases are identified by paths in the format <code>solr:dbName</code>.
  * Typically the path will correspond to the name of metric or a group of metrics, eg:
  * <code>solr:QUERY./select.requests</code></p>
- * <p>NOTE: Solr doesn't register instances of this constructorFactory in the static
+ * <p>NOTE: Solr doesn't register instances of this factory in the static
  * registry {@link RrdBackendFactory#registerFactory(RrdBackendFactory)} because
  * it's then impossible to manage its life-cycle.</p>
  */
@@ -88,7 +88,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
   private final Map<String, SolrRrdBackend> backends = new ConcurrentHashMap<>();
 
   /**
-   * Create a constructorFactory.
+   * Create a factory.
    * @param solrClient SolrClient to use
    * @param collection collection name where documents are stored (typically this is
    *                   {@link CollectionAdminParams#SYSTEM_COLL})

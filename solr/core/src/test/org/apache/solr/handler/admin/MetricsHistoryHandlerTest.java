@@ -71,7 +71,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
       assertFalse("autoscaling config is empty", cfg.isEmpty());
       metricManager = ((SimCloudManager)cloudManager).getMetricManager();
       solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
-      // need to register the constructorFactory here, before we start the real cluster
+      // need to register the factory here, before we start the real cluster
       metricsHandler = new MetricsHandler(metricManager);
       handler = new MetricsHistoryHandler(cloudManager.getClusterStateProvider().getLiveNodes().iterator().next(),
           metricsHandler, solrClient, cloudManager, args);

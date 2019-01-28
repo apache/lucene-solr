@@ -89,9 +89,9 @@ class SolrSchema extends AbstractSchema {
   }
 
   RelProtoDataType getRelDataType(String collection) {
-    // Temporary type constructorFactory, just for the duration of this method. Allowable
+    // Temporary type factory, just for the duration of this method. Allowable
     // because we're creating a proto-type, not a type; before being used, the
-    // proto-type will be copied into a real type constructorFactory.
+    // proto-type will be copied into a real type factory.
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.FieldInfoBuilder fieldInfo = typeFactory.builder();
     Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap = getFieldInfo(collection);

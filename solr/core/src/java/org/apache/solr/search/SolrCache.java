@@ -50,7 +50,7 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    *
    */
   public Object init(Map args, Object persistence, CacheRegenerator regenerator);
-  // I don't think we need a constructorFactory for faster creation given that these
+  // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
 

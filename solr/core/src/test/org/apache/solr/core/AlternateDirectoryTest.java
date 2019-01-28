@@ -58,7 +58,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
       openCalled = true;
 
-      // we pass NoLockFactory, because the real lock constructorFactory is set later by injectLockFactory:
+      // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
       return dir = newFSDirectory(new File(path).toPath(), lockFactory);
     }
 

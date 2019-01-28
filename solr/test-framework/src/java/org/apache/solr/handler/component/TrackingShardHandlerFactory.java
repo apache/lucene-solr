@@ -55,8 +55,8 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   private Queue<ShardRequestAndParams> queue;
 
   /**
-   * Set the tracking queue for this constructorFactory. All the ShardHandler instances
-   * created from this constructorFactory will share the queue and call {@link java.util.Queue#offer(Object)}
+   * Set the tracking queue for this factory. All the ShardHandler instances
+   * created from this factory will share the queue and call {@link java.util.Queue#offer(Object)}
    * with a {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
    * instance whenever
    * {@link org.apache.solr.handler.component.ShardHandler#submit(ShardRequest, String, org.apache.solr.common.params.ModifiableSolrParams)}

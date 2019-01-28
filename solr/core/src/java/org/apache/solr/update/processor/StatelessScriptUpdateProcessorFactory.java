@@ -53,13 +53,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * An update request processor constructorFactory that enables the use of update
+ * An update request processor factory that enables the use of update
  * processors implemented as scripts which can be loaded by the 
  * {@link SolrResourceLoader} (usually via the <code>conf</code> dir for 
  * the SolrCore).
  * </p>
  * <p>
- * This constructorFactory requires at least one configuration parameter named
+ * This factory requires at least one configuration parameter named
  * <code>script</code> which may be the name of a script file as a string, 
  * or an array of multiple script files.  If multiple script files are 
  * specified, they are executed sequentially in the order specified in the 
@@ -74,12 +74,12 @@ import org.slf4j.LoggerFactory;
  * cleanly terminate processing of the command and return, without forwarding 
  * the command on to the next script or processor in the chain.
  * Due to limitations in the {@link ScriptEngine} API used by 
- * this constructorFactory, it can not enforce that all functions exist on initialization,
+ * this factory, it can not enforce that all functions exist on initialization,
  * so errors from missing functions will only be generated at runtime when
  * the chain attempts to use them.
  * </p>
  * <p>
- * The constructorFactory may also be configured with an optional "params" argument,
+ * The factory may also be configured with an optional "params" argument,
  * which can be an {@link NamedList} (or array, or any other simple Java 
  * object) which will be put into the global scope for each script.
  * </p>
@@ -89,7 +89,7 @@ import org.slf4j.LoggerFactory;
  *  <li>req - The {@link SolrQueryRequest}</li>
  *  <li>rsp - The {@link SolrQueryResponse}</li>
  *  <li>logger - A {@link Logger} that can be used for logging purposes in the script</li>
- *  <li>params - The "params" init argument in the constructorFactory configuration (if any)</li>
+ *  <li>params - The "params" init argument in the factory configuration (if any)</li>
  * </ul>
  * <p>
  * Internally this update processor uses JDK 6 scripting engine support, 
@@ -98,7 +98,7 @@ import org.slf4j.LoggerFactory;
  * By default, the engine used for each script is determined by the filed 
  * extension (ie: a *.js file will be treated as a JavaScript script) but 
  * this can be overridden by specifying an explicit "engine" name init 
- * param for the constructorFactory, which identifies a registered name of a
+ * param for the factory, which identifies a registered name of a
  * {@link ScriptEngineFactory}. 
  * (This may be particularly useful if multiple engines are available for 
  * the same scripting language, and you wish to force the usage of a 
