@@ -64,7 +64,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     return VALIDATOR;
   }
 
-  protected class PolygonValidator extends Validator {
+  protected static class PolygonValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Polygon p = (Polygon)shape;

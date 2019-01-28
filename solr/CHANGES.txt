@@ -163,6 +163,8 @@ Optimizations
   This gives a lower absolute score but doesn't affect ordering, as this is a constant factor which is the same 
   for every document. Use LegacyBM25SimilarityFactory if you need the old 6.x/7.x scoring. See also upgrade notes (janhoy)
 
+* SOLR-13130: during the ResponseBuilder.STAGE_GET_FIELDS directly copy string bytes and avoid creating String Objects (noble)
+
 Other Changes
 ----------------------
 
@@ -230,6 +232,11 @@ New Features
 * SOLR-12770: Make it possible to configure a host whitelist for distributed search
   (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
+* SOLR-12373: Add a "tombstoneConfig" option to DocBasedVersionConstraintsProcessor that allows
+  users to configure which fields/values to add to tombstone documents. This can be useful to
+  make sure tombstone documents include fields that are marked as required in the schema
+  (Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
@@ -268,6 +275,15 @@ Bug Fixes
 
 * SOLR-13137: NPE when /admin/zookeeper/status endpoint hit in standalone mode (janhoy)
 
+* SOLR-13091: REBALANCELEADERS is broken (Erick Erickson)
+
+* SOLR-11998: RebalanceLeaders API broken response format with wt=JSON (Erick Erickson)
+
+* SOLR-9735: Fix v2 API for AutoscalingHistoryHandler. (ab)
+
+* SOLR-13168: Fixed a bug in TestInjection that caused test only code to be invoked when TLOG replicas
+  recieved commits if java assertions were enabled. (hossman)
+
 Improvements
 ----------------------
 
@@ -297,6 +313,10 @@ Improvements
 * SOLR-12983: JavabinLoader should avoid creating String Objects and create UTF8CharSequence fields from byte[] (noble)
 
 * SOLR-13016: Computing suggestions when policy have "#EQUAL" or "#ALL" rules take too long (noble)
+
+* SOLR-13029: solr.hdfs.buffer.size can be configured for HdfsBackupRepository for better performance (Tim Owen via Mikhail Khludnev)
+
+* SOLR-13156: support facet.sort for facet.field={!terms=foo,bar}field. (Konstantin Perikov via Mikhail Khludnev)
 
 Other Changes
 ----------------------

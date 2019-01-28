@@ -22,6 +22,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.IOUtils;
@@ -39,10 +40,13 @@ public final class ConcatenatingTokenStream extends TokenStream {
 
   private final TokenStream[] sources;
   private final OffsetAttribute[] sourceOffsets;
+  private final PositionIncrementAttribute[] sourceIncrements;
   private final OffsetAttribute offsetAtt;
+  private final PositionIncrementAttribute posIncAtt;
 
   private int currentSource;
   private int offsetIncrement;
+  private int initialPositionIncrement = 1;
 
   /**
    * Create a new ConcatenatingTokenStream from a set of inputs
@@ -52,9 +56,12 @@ public final class ConcatenatingTokenStream extends TokenStream {
     super(combineSources(sources));
     this.sources = sources;
     this.offsetAtt = addAttribute(OffsetAttribute.class);
+    this.posIncAtt = addAttribute(PositionIncrementAttribute.class);
     this.sourceOffsets = new OffsetAttribute[sources.length];
+    this.sourceIncrements = new PositionIncrementAttribute[sources.length];
     for (int i = 0; i < sources.length; i++) {
       this.sourceOffsets[i] = sources[i].addAttribute(OffsetAttribute.class);
+      this.sourceIncrements[i] = sources[i].addAttribute(PositionIncrementAttribute.class);
     }
   }
 
@@ -78,19 +85,26 @@ public final class ConcatenatingTokenStream extends TokenStream {
 
   @Override
   public boolean incrementToken() throws IOException {
+    boolean newSource = false;
     while (sources[currentSource].incrementToken() == false) {
       if (currentSource >= sources.length - 1)
         return false;
       sources[currentSource].end();
+      initialPositionIncrement = sourceIncrements[currentSource].getPositionIncrement();
       OffsetAttribute att = sourceOffsets[currentSource];
       if (att != null)
         offsetIncrement += att.endOffset();
       currentSource++;
+      newSource = true;
     }
 
     clearAttributes();
     sources[currentSource].copyTo(this);
     offsetAtt.setOffset(offsetAtt.startOffset() + offsetIncrement, offsetAtt.endOffset() + offsetIncrement);
+    if (newSource) {
+      int posInc = posIncAtt.getPositionIncrement();
+      posIncAtt.setPositionIncrement(posInc + initialPositionIncrement);
+    }
 
     return true;
   }
@@ -98,7 +112,11 @@ public final class ConcatenatingTokenStream extends TokenStream {
   @Override
   public void end() throws IOException {
     sources[currentSource].end();
+    int finalOffset = sourceOffsets[currentSource].endOffset() + offsetIncrement;
+    int finalPosInc = sourceIncrements[currentSource].getPositionIncrement();
     super.end();
+    offsetAtt.setOffset(finalOffset, finalOffset);
+    posIncAtt.setPositionIncrement(finalPosInc);
   }
 
   @Override
@@ -107,6 +125,8 @@ public final class ConcatenatingTokenStream extends TokenStream {
       source.reset();
     }
     super.reset();
+    currentSource = 0;
+    offsetIncrement = 0;
   }
 
   @Override

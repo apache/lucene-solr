@@ -296,7 +296,7 @@
   <target name="-build-site"
           depends="build-init,build-nav-data-files" >
     <echo>Running Jekyll...</echo>
-    <exec executable="jekyll" dir="${build.content.dir}">
+    <exec executable="jekyll" dir="${build.content.dir}" failonerror="true">
       <arg value="build"/>
     </exec>
   </target>
