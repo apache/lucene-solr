@@ -1649,7 +1649,7 @@ public abstract class LuceneTestCase extends Assert {
       
       // the remaining dirs are no longer filesystem based, so we must check that the passedLockFactory is not file based:
       if (!(lf instanceof FSLockFactory)) {
-        // try ctor with only LockFactory (e.g. RAMDirectory)
+        // try ctor with only LockFactory
         try {
           return clazz.getConstructor(LockFactory.class).newInstance(lf);
         } catch (NoSuchMethodException nsme) {

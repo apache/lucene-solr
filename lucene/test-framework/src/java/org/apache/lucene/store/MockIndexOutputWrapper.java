@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Used by MockRAMDirectory to create an output stream that
+ * Used to create an output stream that
  * will throw an IOException on fake disk full, track max
  * disk space actually used, and maybe throw random
  * IOExceptions.

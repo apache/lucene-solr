@@ -156,11 +156,12 @@ import org.apache.lucene.util.Version;
  * <p>
  * This class performs very well for very small texts (e.g. 10 chars) 
  * as well as for large texts (e.g. 10 MB) and everything in between. 
- * Typically, it is about 10-100 times faster than <code>RAMDirectory</code>.
- * Note that <code>RAMDirectory</code> has particularly 
+ * Typically, it is about 10-100 times faster than RAM-resident directory.
+ *
+ * Note that other <code>Directory</code> implementations have particularly
  * large efficiency overheads for small to medium sized texts, both in time and space.
  * Indexing a field with N tokens takes O(N) in the best case, and O(N logN) in the worst 
- * case. Memory consumption is probably larger than for <code>RAMDirectory</code>.
+ * case.
  * <p>
  * Example throughput of many simple term queries over a single MemoryIndex: 
  * ~500000 queries/sec on a MacBook Pro, jdk 1.5.0_06, server VM. 
@@ -707,7 +708,7 @@ public class MemoryIndex {
       });
       float score = scores[0];
       return score;
-    } catch (IOException e) { // can never happen (RAMDirectory)
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }

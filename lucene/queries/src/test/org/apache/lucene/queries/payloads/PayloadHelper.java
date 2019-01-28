@@ -104,7 +104,7 @@ public class PayloadHelper {
   }
 
   /**
-   * Sets up a RAMDirectory, and adds documents (using English.intToEnglish()) with two fields: field and multiField
+   * Sets up a RAM-resident Directory, and adds documents (using English.intToEnglish()) with two fields: field and multiField
    * and analyzes them using the PayloadAnalyzer
    * @param similarity The Similarity class to use in the Searcher
    * @param numDocs The num docs to add

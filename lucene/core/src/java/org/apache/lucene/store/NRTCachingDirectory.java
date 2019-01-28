@@ -223,7 +223,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
 
   /** Subclass can override this to customize logic; return
-   *  true if this file should be written to the RAMDirectory. */
+   *  true if this file should be written to the RAM-based cache first. */
   protected boolean doCacheWrite(String name, IOContext context) {
     //System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + " size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
 
