@@ -488,7 +488,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
       checkDelimeter(str, offset-1, ':');
       //minute:
 
-      parsedVal = parseAndCheck( str, offset, 1, 60);
+      parsedVal = parseAndCheck( str, offset, 0, 59);
       cal.set(Calendar.MINUTE, parsedVal);
       offset += 3;
       if (lastOffset < offset)
@@ -496,7 +496,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
       checkDelimeter(str, offset-1, ':');
       //second:
 
-      parsedVal = parseAndCheck( str, offset, 1, 60);
+      parsedVal = parseAndCheck( str, offset, 0, 59);
       cal.set(Calendar.SECOND, parsedVal);
       offset += 3;
       if (lastOffset < offset)
