@@ -30,6 +30,9 @@ Other
 
 API Changes
 
+* LUCENE-8662: TermsEnum.seekExact(BytesRef) to abstract and delegate seekExact(BytesRef)
+  in FilterLeafReader.FilterTermsEnum. (Jeffery Yuan via Tomás Fernández Löbbe, Simon Willnauer)
+
 * LUCENE-8469: Deprecated StringHelper.compare has been removed. (Dawid Weiss)
 
 * LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This

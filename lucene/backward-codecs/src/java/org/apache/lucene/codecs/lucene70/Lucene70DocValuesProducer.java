@@ -1032,6 +1032,11 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     }
 
     @Override
+    public boolean seekExact(BytesRef text) throws IOException {
+      return seekCeil(text) == SeekStatus.FOUND;
+    }
+    
+    @Override
     public void seekExact(long ord) throws IOException {
       if (ord < 0 || ord >= entry.termsDictSize) {
         throw new IndexOutOfBoundsException();

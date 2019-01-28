@@ -1507,6 +1507,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
+      
+      @Override
+      public boolean seekExact(BytesRef text) throws IOException {
+        return seekCeil(text) == SeekStatus.FOUND;
+      }
     }
   }
 
