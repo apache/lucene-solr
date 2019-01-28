@@ -19,11 +19,11 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
@@ -98,34 +98,40 @@ public class CreateAliasCmd extends AliasCmd {
 
   private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
     // Validate we got everything we need
-    if (!message.getProperties().keySet().containsAll(TimeRoutedAlias.REQUIRED_ROUTER_PARAMS)) {
-      throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + TimeRoutedAlias.REQUIRED_ROUTER_PARAMS
+    if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
+      throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + RoutedAlias.MINIMAL_REQUIRED_PARAMS
       + " plus some create-collection prefixed ones.");
     }
 
-    Map<String, String> aliasProperties = new LinkedHashMap<>();
-    message.getProperties().entrySet().stream()
-        .filter(entry -> TimeRoutedAlias.PARAM_IS_PROP.test(entry.getKey()))
-        .forEach(entry -> aliasProperties.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
+    String aliasType = message.getStr(RoutedAlias.ROUTER_TYPE_NAME);
 
-    RoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasProperties); // validates as well
+    BiFunction<String, ZkNodeProps, RoutedAlias> aliasConstructor = RoutedAlias.constructorFactory.get(aliasType);
+
+    if (aliasConstructor == null) {
+      throw new SolrException(BAD_REQUEST, "Router name: " + aliasType + " is not in supported types, "
+          + String.join(", ", RoutedAlias.constructorFactory.keySet()));
+    }
+
+
+
+    RoutedAlias routedAlias = aliasConstructor.apply(aliasName, message);
 
     String start = message.getStr(RoutedAlias.ROUTER_START);
     if (start != null) {
-      String initialCollectionName = timeRoutedAlias.computeInitialCollectionName(start);
+      String initialCollectionName = routedAlias.computeInitialCollectionName(start);
       if (initialCollectionName != null) {
-        ensureCollection(aliasName, zkStateReader, state, aliasProperties, initialCollectionName);
+        ensureCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialCollectionName);
         // Create/update the alias
         zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
             .cloneWithCollectionAlias(aliasName, initialCollectionName)
-            .cloneWithCollectionAliasProperties(aliasName, aliasProperties));
+            .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
         return;
       }
     }
 
     // Create/update the alias
     zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
-        .cloneWithCollectionAliasProperties(aliasName, aliasProperties));
+        .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 
   private void ensureCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {

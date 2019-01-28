@@ -21,14 +21,21 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.update.AddUpdateCommand;
 
 public interface RoutedAlias {
+
+  Map<String, BiFunction<String, ZkNodeProps, RoutedAlias>> constructorFactory = ImmutableMap.<String, BiFunction<String, ZkNodeProps, RoutedAlias>>builder()
+      .put("time", TimeRoutedAlias::fromZkProps)
+      .build();
 
   String ROUTER_PREFIX = "router.";
   String ROUTER_TYPE_NAME = ROUTER_PREFIX + "name";
@@ -81,4 +88,10 @@ public interface RoutedAlias {
    *         newly created collection
    */
   String createCollectionsIfRequired( AddUpdateCommand cmd);
+
+  /**
+   *
+   * @return get alias related metadata
+   */
+  Map<String, String> getAliasMetadata();
 }

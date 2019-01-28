@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,6 +42,7 @@ import com.google.common.base.Objects;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
@@ -177,6 +179,7 @@ public class TimeRoutedAlias implements RoutedAlias {
   //
 
   private final String aliasName;
+  private final Map<String, String> aliasMetadata;
   private final String routeField;
   private final String intervalMath; // ex: +1DAY
   private final long maxFutureMs;
@@ -186,6 +189,7 @@ public class TimeRoutedAlias implements RoutedAlias {
 
   public TimeRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
     this.aliasName = aliasName;
+    this.aliasMetadata = aliasMetadata;
     final MapSolrParams params = new MapSolrParams(aliasMetadata); // for convenience
     final RequiredSolrParams required = params.required();
     if (!"time".equals(required.get(ROUTER_TYPE_NAME))) {
@@ -371,6 +375,27 @@ public class TimeRoutedAlias implements RoutedAlias {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
+
+  @Override
+  public Map<String, String> getAliasMetadata() {
+    return aliasMetadata;
+  }
+
+  static RoutedAlias fromZkProps(String aliasName, ZkNodeProps aliasProps) throws SolrException {
+    // Validate we got everything we need
+    if (!aliasProps.getProperties().keySet().containsAll(TimeRoutedAlias.REQUIRED_ROUTER_PARAMS)) {
+      throw new SolrException(BAD_REQUEST, "A time routed alias requires these params: " + TimeRoutedAlias.REQUIRED_ROUTER_PARAMS
+          + " plus some create-collection prefixed ones.");
+    }
+
+    Map<String, String> aliasProperties = new LinkedHashMap<>();
+    aliasProps.getProperties().entrySet().stream()
+        .filter(entry -> TimeRoutedAlias.PARAM_IS_PROP.test(entry.getKey()))
+        .forEach(entry -> aliasProperties.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
+
+    return new TimeRoutedAlias(aliasName, aliasProperties); // validates as well
+  }
+
   /**
    * Create as many collections as required. This method loops to allow for the possibility that the docTimestamp
    * requires more than one collection to be created. Since multiple threads may be invoking maintain on separate
