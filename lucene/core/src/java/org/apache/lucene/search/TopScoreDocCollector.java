@@ -72,7 +72,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           totalHits++;
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits >= totalHitsThreshold) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits > totalHitsThreshold) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -133,7 +133,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits >= totalHitsThreshold) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits > totalHitsThreshold) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -161,12 +161,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * Creates a new {@link TopScoreDocCollector} given the number of hits to
    * collect and the number of hits to count accurately.
    *
-   * <p><b>NOTE</b>: If the total hit count of the top docs is less than
+   * <p><b>NOTE</b>: If the total hit count of the top docs is less than or exactly
    * {@code totalHitsThreshold} then this value is accurate. On the other hand,
-   * if the {@link TopDocs#totalHits} value is greater than or equal to
-   * {@code totalHitsThreshold} then its value is a lower bound of the hit
-   * count. A value of {@link Integer#MAX_VALUE} will make the hit count
-   * accurate but will also likely make query processing slower.
+   * if the {@link TopDocs#totalHits} value is greater than {@code totalHitsThreshold}
+   * then its value is a lower bound of the hit count. A value of {@link Integer#MAX_VALUE}
+   * will make the hit count accurate but will also likely make query processing slower.
    * <p><b>NOTE</b>: The instances returned by this method
    * pre-allocate a full array of length
    * <code>numHits</code>, and fill the array with sentinel
@@ -181,12 +180,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * collect, the bottom of the previous page, and the number of hits to count
    * accurately.
    *
-   * <p><b>NOTE</b>: If the total hit count of the top docs is less than
+   * <p><b>NOTE</b>: If the total hit count of the top docs is less than or exactly
    * {@code totalHitsThreshold} then this value is accurate. On the other hand,
-   * if the {@link TopDocs#totalHits} value is greater than or equal to
-   * {@code totalHitsThreshold} then its value is a lower bound of the hit
-   * count. A value of {@link Integer#MAX_VALUE} will make the hit count
-   * accurate but will also likely make query processing slower.
+   * if the {@link TopDocs#totalHits} value is greater than {@code totalHitsThreshold}
+   * then its value is a lower bound of the hit count. A value of {@link Integer#MAX_VALUE}
+   * will make the hit count accurate but will also likely make query processing slower.
    * <p><b>NOTE</b>: The instances returned by this method
    * pre-allocate a full array of length
    * <code>numHits</code>, and fill the array with sentinel
@@ -198,8 +196,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
 
-    if (totalHitsThreshold <= 0) {
-      throw new IllegalArgumentException("totalHitsThreshold must be > 0, got " + totalHitsThreshold);
+    if (totalHitsThreshold < 0) {
+      throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
     if (after == null) {
@@ -236,7 +234,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (totalHits >= totalHitsThreshold
+    if (totalHits > totalHitsThreshold
           && pqTop != null
           && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
       // since we tie-break on doc id and collect in doc id order, we can require

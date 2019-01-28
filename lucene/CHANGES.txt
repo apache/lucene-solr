@@ -216,6 +216,9 @@ Improvements
 
 * LUCENE-8279: CheckIndex now cross-checks terms with norms. (Adrien Grand)
 
+* LUCENE-8660: TopDocsCollectors now return an accurate count (instead of a lower bound)
+  if the total hit count is equal to the provided threshold. (Adrien Grand, Jim Ferenczi)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
