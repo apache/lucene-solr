@@ -204,9 +204,8 @@ public class PerfRunData implements Closeable {
       return FSDirectory.open(indexDir);
     }
 
-    if ("ByteBuffersDirectory".equals(dirImpl)) {
-      System.err.println("Change ByteBuffersDirectory to ByteBuffersDirectory.");
-      throw new IOException("ByteBuffersDirectory has been removed, use ByteBuffersDirectory.");
+    if ("RAMDirectory".equals(dirImpl)) {
+      throw new IOException("RAMDirectory has been removed, use ByteBuffersDirectory.");
     }
 
     if ("ByteBuffersDirectory".equals(dirImpl)) {
