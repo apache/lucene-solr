@@ -30,7 +30,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * Test utility - slow directory
  */
 // TODO: move to test-framework and sometimes use in tests?
-public class SlowRAMDirectory extends FilterDirectory {
+public class SlowDirectory extends FilterDirectory {
 
   private static final int IO_SLEEP_THRESHOLD = 50;
   
@@ -41,7 +41,7 @@ public class SlowRAMDirectory extends FilterDirectory {
     this.sleepMillis = sleepMillis;
   }
   
-  public SlowRAMDirectory(int sleepMillis, Random random) {
+  public SlowDirectory(int sleepMillis, Random random) {
     super(new ByteBuffersDirectory());
     this.sleepMillis = sleepMillis;
     this.random = random;
