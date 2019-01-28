@@ -121,6 +121,11 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     assertEquals(0, listener.addedNodes.size());
     // wait until the new overseer is up
     Thread.sleep(5000);
+    String newOverseerLeader;
+    do {
+      overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+      newOverseerLeader = (String) overSeerStatus.get("leader");
+    } while (newOverseerLeader == null || newOverseerLeader.equals(overseerLeader));
     
     assertEquals(1, listener.lostNodes.size());
     assertEquals(overseerLeader, listener.lostNodes.iterator().next());
