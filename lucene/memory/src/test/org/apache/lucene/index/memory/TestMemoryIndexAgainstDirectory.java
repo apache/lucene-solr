@@ -64,8 +64,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.BytesRef;
@@ -77,10 +77,10 @@ import org.apache.lucene.util.TestUtil;
 import static org.hamcrest.CoreMatchers.equalTo;
 
 /**
- * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
+ * Verifies that Lucene MemoryIndex and RAM-resident Directory have the same behaviour,
  * returning the same results for queries on some randomish indexes.
  */
-public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
+public class TestMemoryIndexAgainstDirectory extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<>();
   
   public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
@@ -116,15 +116,15 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   public void testRandomQueries() throws Exception {
     MemoryIndex index = randomMemoryIndex();
     for (int i = 0; i < ITERATIONS; i++) {
-      assertAgainstRAMDirectory(index);
+      assertAgainstDirectory(index);
     }
   }
   
   /**
-   * Build a randomish document for both RAMDirectory and MemoryIndex,
+   * Build a randomish document for both Directory and MemoryIndex,
    * and run all the queries against it.
    */
-  public void assertAgainstRAMDirectory(MemoryIndex memory) throws Exception {
+  public void assertAgainstDirectory(MemoryIndex memory) throws Exception {
     memory.reset();
     StringBuilder fooField = new StringBuilder();
     StringBuilder termField = new StringBuilder();
@@ -143,9 +143,9 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       termField.append(randomTerm());
     }
     
-    Directory ramdir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     Analyzer analyzer = randomAnalyzer();
-    IndexWriter writer = new IndexWriter(ramdir,
+    IndexWriter writer = new IndexWriter(dir,
                                          new IndexWriterConfig(analyzer).setCodec(
                                              TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
     Document doc = new Document();
@@ -161,11 +161,11 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     
     LeafReader reader = (LeafReader) memory.createSearcher().getIndexReader();
     TestUtil.checkReader(reader);
-    DirectoryReader competitor = DirectoryReader.open(ramdir);
+    DirectoryReader competitor = DirectoryReader.open(dir);
     duellReaders(competitor, reader);
     IOUtils.close(reader, competitor);
-    assertAllQueries(memory, ramdir, analyzer);  
-    ramdir.close();    
+    assertAllQueries(memory, dir, analyzer);
+    dir.close();
   }
 
   private void duellReaders(CompositeReader other, LeafReader memIndexReader)
@@ -236,10 +236,10 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
   }
   
   /**
-   * Run all queries against both the RAMDirectory and MemoryIndex, ensuring they are the same.
+   * Run all queries against both the Directory and MemoryIndex, ensuring they are the same.
    */
-  public void assertAllQueries(MemoryIndex memory, Directory ramdir, Analyzer analyzer) throws Exception {
-    IndexReader reader = DirectoryReader.open(ramdir);
+  public void assertAllQueries(MemoryIndex memory, Directory directory, Analyzer analyzer) throws Exception {
+    IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher ram = newSearcher(reader);
     IndexSearcher mem = memory.createSearcher();
     QueryParser qp = new QueryParser("foo", analyzer);

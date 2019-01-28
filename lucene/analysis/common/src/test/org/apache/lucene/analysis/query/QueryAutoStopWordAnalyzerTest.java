@@ -24,7 +24,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +33,7 @@ import java.util.Collections;
 public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   String variedFieldValues[] = {"the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "boring", "dog"};
   String repetitiveFieldValues[] = {"boring", "boring", "vaguelyboring"};
-  RAMDirectory dir;
+  Directory dir;
   Analyzer appAnalyzer;
   IndexReader reader;
   QueryAutoStopWordAnalyzer protectedAnalyzer;
@@ -40,7 +41,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    dir = new RAMDirectory();
+    dir = new ByteBuffersDirectory();
     appAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(appAnalyzer));
     int numDocs = 200;
