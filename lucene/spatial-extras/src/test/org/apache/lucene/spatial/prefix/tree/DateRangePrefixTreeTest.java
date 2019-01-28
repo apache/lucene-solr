@@ -94,7 +94,7 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     roundTrip(cal);
   }
 
-  public void testToStringISO8601() {
+  public void testToStringISO8601() throws ParseException {
     Calendar cal = tree.newCal();
     cal.setTimeInMillis(random().nextLong());
     //  create ZonedDateTime from the calendar, then get toInstant.toString which is the ISO8601 we emulate
@@ -110,6 +110,7 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
             .toInstant().toString();
     String resultToString = tree.toString(cal) + 'Z';
     assertEquals(expectedISO8601, resultToString);
+    assertEquals(cal, tree.parseCalendar(expectedISO8601));
   }
 
   //copies from DateRangePrefixTree
@@ -211,7 +212,11 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
   }
 
   public void testInvalidDateException() throws ParseException {
-    
+    {
+      Calendar jurasic = tree.parseCalendar("-187183959-07-06T11:00:57.156");
+      assertEquals(187183960, jurasic.get(Calendar.YEAR));
+      assertEquals(0, jurasic.get(Calendar.ERA));
+    }
     expectThrows(ParseException.class, () -> {
       tree.parseCalendar("2000-11T13");
     });
