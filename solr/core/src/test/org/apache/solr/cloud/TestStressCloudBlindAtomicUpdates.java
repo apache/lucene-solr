@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -136,7 +137,10 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      assertNotNull("Cluster contains null jetty?", jetty);
+      final URL baseUrl = jetty.getBaseUrl();
+      assertNotNull("Jetty has null baseUrl: " + jetty.toString(), baseUrl);
+      CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
     }
 
     final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
@@ -158,7 +162,10 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     IOUtils.closeQuietly(CLOUD_CLIENT);
     CLOUD_CLIENT = null;
     for (HttpSolrClient client : CLIENTS) {
-      client.close();
+      if (null == client) {
+        log.error("CLIENTS contains a null SolrClient???");
+      }
+      IOUtils.closeQuietly(client);
     }
     CLIENTS = null;
   }
