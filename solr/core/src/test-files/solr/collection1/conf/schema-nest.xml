@@ -29,9 +29,9 @@
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
-  <!-- required for NestedUpdateProcessor -->
+  <!-- populated by for NestedUpdateProcessor -->
   <field name="_nest_parent_" type="string" indexed="true" stored="true"/>
-  <field name="_nest_path_" type="descendants_path" indexed="true" multiValued="false" docValues="true" stored="false" useDocValuesAsStored="false"/>
+  <field name="_nest_path_" type="_nest_path_" />
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -39,26 +39,14 @@
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
+  <fieldType name="_nest_path_" class="solr.NestPathField" />
+
   <!-- Point Fields -->
   <fieldType name="int" class="solr.IntPointField" docValues="true"/>
   <fieldType name="long" class="solr.LongPointField" docValues="true"/>
   <fieldType name="double" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="float" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="date" class="solr.DatePointField" docValues="true"/>
-
-  <fieldType name="descendants_path" class="solr.SortableTextField">
-    <analyzer type="index">
-      <!--char filter to append / to path in the indexed form e.g. toppings/ingredients turns to toppings/ingredients/ -->
-      <charFilter class="solr.PatternReplaceCharFilterFactory" pattern="(^.*.*$)" replacement="$0/"/>
-      <!--tokenize the path so path queries are optimized -->
-      <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
-      <!--remove the # and digit index of array from path toppings#1/ingredients#/ turns to toppings/ingredients/ -->
-      <filter class="solr.PatternReplaceFilterFactory" pattern="[#*\d]*" replace="all"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.KeywordTokenizerFactory"/>
-    </analyzer>
-  </fieldType>
 
   <uniqueKey>id</uniqueKey>
 
