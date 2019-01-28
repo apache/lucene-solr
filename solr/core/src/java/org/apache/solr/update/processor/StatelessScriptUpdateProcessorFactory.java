@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * An update request processor factory that enables the use of update
+ * An update request processor factory that enables the use of update 
  * processors implemented as scripts which can be loaded by the 
  * {@link SolrResourceLoader} (usually via the <code>conf</code> dir for 
  * the SolrCore).
@@ -79,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * the chain attempts to use them.
  * </p>
  * <p>
- * The factory may also be configured with an optional "params" argument,
+ * The factory may also be configured with an optional "params" argument, 
  * which can be an {@link NamedList} (or array, or any other simple Java 
  * object) which will be put into the global scope for each script.
  * </p>
@@ -98,7 +98,7 @@ import org.slf4j.LoggerFactory;
  * By default, the engine used for each script is determined by the filed 
  * extension (ie: a *.js file will be treated as a JavaScript script) but 
  * this can be overridden by specifying an explicit "engine" name init 
- * param for the factory, which identifies a registered name of a
+ * param for the factory, which identifies a registered name of a 
  * {@link ScriptEngineFactory}. 
  * (This may be particularly useful if multiple engines are available for 
  * the same scripting language, and you wish to force the usage of a 

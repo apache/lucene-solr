@@ -494,7 +494,7 @@ public class IndexSchema {
         isExplicitSimilarity = true;
       }
       if ( ! (similarityFactory instanceof SolrCoreAware)) {
-        // if the sim factory isn't SolrCoreAware (and hence schema aware),
+        // if the sim factory isn't SolrCoreAware (and hence schema aware), 
         // then we are responsible for erroring if a field type is trying to specify a sim.
         for (FieldType ft : fieldTypes.values()) {
           if (null != ft.getSimilarity()) {

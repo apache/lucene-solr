@@ -24,9 +24,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * A factory to generate an UpdateRequestProcessor for each request.
+ * A factory to generate an UpdateRequestProcessor for each request.  
  * 
- * If the factory needs access to {@link SolrCore} in initialization, it could
+ * If the factory needs access to {@link SolrCore} in initialization, it could 
  * implement {@link SolrCoreAware}
  * 
  * @since solr 1.3

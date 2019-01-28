@@ -304,7 +304,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /** 
    * Sets the latest schema snapshot to be used by this core instance. 
    * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is 
-   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about
+   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about 
    * this SolrCore prior to using the <code>replacementSchema</code>
    * @see #getLatestSchema
    */

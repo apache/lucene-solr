@@ -73,8 +73,8 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * <p>
  * Documents with expiration field values computed from a TTL can be be excluded from 
  * searchers using simple date based filters relative to <code>NOW</code>, or completely 
- * removed from the index using the periodic delete function of this factory.  Alternatively,
- * the periodic delete function of this factory can be used to remove any document with an
+ * removed from the index using the periodic delete function of this factory.  Alternatively, 
+ * the periodic delete function of this factory can be used to remove any document with an 
  * expiration value - even if that expiration was explicitly set with-out leveraging the TTL 
  * feature of this factory.
  * </p>
@@ -105,7 +105,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *      <code>&lt;null name="ttlParamName"/&gt;</code> to disable this feature.
  *  </li>
  *  <li><code>autoDeletePeriodSeconds</code> - Optional numeric value indicating how 
- *      often this factory should trigger a delete to remove documents.  If this option is
+ *      often this factory should trigger a delete to remove documents.  If this option is 
  *      used, and specifies a non-negative numeric value, a background thread will be 
  *      created that will execute recurring <code>deleteByQuery</code> commands using the 
  *      specified period.  The delete query will remove all documents with an 
@@ -350,7 +350,7 @@ public final class DocExpirationUpdateProcessorFactory
   /**
    * <p>
    * Runnable that uses the the <code>deleteChainName</code> configured for 
-   * this factory to execute a delete by query (using the configured
+   * this factory to execute a delete by query (using the configured 
    * <code>expireField</code>) followed by a soft commit to re-open searchers (if needed)
    * </p>
    * <p>
@@ -442,7 +442,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   /**
    * <p>
-   * Helper method that returns true if the Runnable managed by this factory
+   * Helper method that returns true if the Runnable managed by this factory 
    * should be responsible of doing periodical deletes.
    * </p>
    * <p>
@@ -466,7 +466,7 @@ public final class DocExpirationUpdateProcessorFactory
     //   a) we already have a per shard leader
     //   b) shard names must be unique
     //   c) ClusterState is already being "watched" by ZkController, no additional zk hits
-    //   d) there might be multiple instances of this factory (in multiple chains) per
+    //   d) there might be multiple instances of this factory (in multiple chains) per 
     //      collection, so picking an ephemeral node name for our election would be tricky
 
     CloudDescriptor desc = core.getCoreDescriptor().getCloudDescriptor();

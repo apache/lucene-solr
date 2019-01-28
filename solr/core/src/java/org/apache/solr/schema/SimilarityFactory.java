@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 
 /**
- * A factory interface for configuring a {@link Similarity} in the Solr
+ * A factory interface for configuring a {@link Similarity} in the Solr 
  * schema.xml.  
  * 
  * <p>

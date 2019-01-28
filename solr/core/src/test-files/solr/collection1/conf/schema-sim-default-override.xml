@@ -33,7 +33,7 @@
     <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
   </fieldType>
 
-  <!--  specify a Similarity factory -->
+  <!--  specify a Similarity factory -->  
   <fieldType name="sim-used-as-default-override" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory"/>

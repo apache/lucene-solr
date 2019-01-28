@@ -68,7 +68,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </p>
  * 
  * <p>
- * <b>NOTE:</b> Users should be aware that even when this factory uses a single default
+ * <b>NOTE:</b> Users should be aware that even when this factory uses a single default 
  * <code>Similarity</code> for some or all fields in a Query, the behavior can be inconsistent 
  * with the behavior of explicitly configuring that same <code>Similarity</code> globally, because 
  * of differences in how some multi-field / multi-clause behavior is defined in 
