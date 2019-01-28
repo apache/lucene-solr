@@ -20,7 +20,9 @@ package org.apache.solr.cloud.api.collections;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -32,7 +34,9 @@ public interface RoutedAlias {
   String ROUTER_TYPE_NAME = ROUTER_PREFIX + "name";
   String ROUTER_FIELD = ROUTER_PREFIX + "field";
   String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
+  String ROUTER_START = ROUTER_PREFIX + "start";
   String CREATE_COLLECTION_PREFIX = "create-collection.";
+  Set<String> MINIMAL_REQUIRED_PARAMS = Sets.newHashSet(ROUTER_TYPE_NAME, ROUTER_FIELD);
   String ROUTED_ALIAS_NAME_CORE_PROP = "routedAliasName"; // core prop
 
   static SolrException newAliasMustExistException(String aliasName) {
@@ -46,6 +50,13 @@ public interface RoutedAlias {
    * are spurious and the caller should be written to be tolerant of no material changes.
    */
   boolean updateParsedCollectionAliases(ZkController zkController);
+
+  /**
+   *
+   * @param startParam the start parameter passed to create alias cmd
+   * @return optional string of initial collection name
+   */
+  String computeInitialCollectionName(String startParam);
 
   String getAliasName();
 

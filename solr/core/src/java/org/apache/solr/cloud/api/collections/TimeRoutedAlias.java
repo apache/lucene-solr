@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,6 +120,11 @@ public class TimeRoutedAlias implements RoutedAlias {
       .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
       .toFormatter(Locale.ROOT).withZone(ZoneOffset.UTC); // deliberate -- collection names disregard TZ
 
+  @Override
+  public String computeInitialCollectionName(String dateStr) {
+    return formatCollectionNameFromInstant(aliasName, parseStringAsInstant(dateStr, timeZone));
+  }
+
   public static Instant parseInstantFromCollectionName(String aliasName, String collection) {
     final String dateTimePart = collection.substring(aliasName.length() + 1);
     return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
@@ -133,6 +139,20 @@ public class TimeRoutedAlias implements RoutedAlias {
     }
     assert DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
     return aliasName + "_" + nextCollName;
+  }
+
+  Instant parseStringAsInstant(String str, TimeZone zone) {
+    Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
+    checkMilis(start);
+    return start;
+  }
+
+  private void checkMilis(Instant date) {
+    if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
+      throw new SolrException(BAD_REQUEST,
+          "Date or date math for start time includes milliseconds, which is not supported. " +
+              "(Hint: 'NOW' used without rounding always has this problem)");
+    }
   }
 
 

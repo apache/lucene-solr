@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.Aliases;
@@ -57,6 +58,11 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
   @Override
   public String createCollectionsIfRequired(AddUpdateCommand cmd) {
+    return null;
+  }
+
+  @Override
+  public String computeInitialCollectionName(String collection) {
     return null;
   }
 }
