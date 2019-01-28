@@ -47,7 +47,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
 
   // properties in effect in all tests here
   static final String propPart = 
-    INDENT + "directory=RAMDirectory" + NEW_LINE +
+    INDENT + "directory=ByteBuffersDirectory" + NEW_LINE +
     INDENT + "print.props=false" + NEW_LINE;
 
   /** Test the repetiotion parsing for parallel tasks */

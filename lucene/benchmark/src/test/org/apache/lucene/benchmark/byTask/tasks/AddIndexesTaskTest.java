@@ -66,7 +66,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
     Properties props = new Properties();
     props.setProperty("writer.version", Version.LATEST.toString());
     props.setProperty("print.props", "false"); // don't print anything
-    props.setProperty("directory", "RAMDirectory");
+    props.setProperty("directory", "ByteBuffersDirectory");
     props.setProperty(AddIndexesTask.ADDINDEXES_INPUT_DIR, inputDir.toAbsolutePath().toString());
     Config config = new Config(props);
     return new PerfRunData(config);
