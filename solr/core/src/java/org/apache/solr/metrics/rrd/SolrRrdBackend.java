@@ -130,7 +130,7 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     super.close();
     closed = true;
     if (factory != null) {
-      // unregister myself from the factory
+      // unregister myself from the constructorFactory
       factory.unregisterBackend(getPath());
     }
     // close

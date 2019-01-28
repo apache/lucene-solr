@@ -49,7 +49,7 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     SolrTestCaseJ4.assumeWorkingMockito();
   }
 
-  // Tests for logic in the factory
+  // Tests for logic in the constructorFactory
 
   @Test(expected=SolrException.class)
   public void testExceptionIfSkipInsertParamNonBoolean() {

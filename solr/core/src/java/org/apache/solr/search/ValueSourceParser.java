@@ -87,7 +87,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
- * A factory that parses user queries to generate ValueSource instances.
+ * A constructorFactory that parses user queries to generate ValueSource instances.
  * Intended usage is to create pluggable, named functions for use in function queries.
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {

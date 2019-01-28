@@ -33,7 +33,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.*;
  * <p>
  * In addition to the <code>discountOverlaps</code> init param supported by 
  * {@link ClassicSimilarityFactory} The following sets of init params are 
- * supported by this factory:
+ * supported by this constructorFactory:
  * </p>
  * <ul>
  *   <li>Length Norm Settings: <ul>
@@ -142,7 +142,7 @@ public class SweetSpotSimilarityFactory extends ClassicSimilarityFactory {
       : new SweetSpotSimilarity();
     
     if (null != ln_min) {
-      // overlaps already handled by super factory
+      // overlaps already handled by super constructorFactory
       sim.setLengthNormFactors(ln_min, ln_max, ln_steep, this.discountOverlaps);
     }
 

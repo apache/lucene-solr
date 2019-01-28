@@ -44,9 +44,9 @@ import org.slf4j.LoggerFactory;
  * tracking requests across multiple collections/shards/replicas in a {@link SolrCloudTestCase}.
  * It can optionally save references to the commands it receives inm a single global
  * Map&lt;String,BlockingQueue&gt; keys in the map are arbitrary, but the intention is that tests
- * generate a key that is unique to that test, and configure the factory with the key as "group name"
+ * generate a key that is unique to that test, and configure the constructorFactory with the key as "group name"
  * to avoid cross talk between tests. Tests can poll for requests from a group to observe that the expected
- * commands are executed.  By default, this factory does nothing except return the "next"
+ * commands are executed.  By default, this constructorFactory does nothing except return the "next"
  * processor from the chain unless it's told to {@link #startRecording(String)} in which case all factories
  * with the same group will begin recording.
  *

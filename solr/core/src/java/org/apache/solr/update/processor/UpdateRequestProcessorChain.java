@@ -184,9 +184,9 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * Uses the factories in this chain to creates a new 
    * <code>UpdateRequestProcessor</code> instance specific for this request.  
    * If the <code>DISTRIB_UPDATE_PARAM</code> is present in the request and is 
-   * non-blank, then any factory in this chain prior to the instance of 
+   * non-blank, then any constructorFactory in this chain prior to the instance of
    * <code>{@link DistributingUpdateProcessorFactory}</code> will be skipped, 
-   * except for the log update processor factory.
+   * except for the log update processor constructorFactory.
    *
    * @see UpdateRequestProcessorFactory#getInstance
    * @see DistributingUpdateProcessorFactory#DISTRIB_UPDATE_PARAM

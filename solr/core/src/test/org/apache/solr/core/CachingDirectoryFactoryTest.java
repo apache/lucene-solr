@@ -204,7 +204,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
           }
           
         } catch (AlreadyClosedException e) {
-          log.warn("Cannot get dir, factory is already closed");
+          log.warn("Cannot get dir, constructorFactory is already closed");
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

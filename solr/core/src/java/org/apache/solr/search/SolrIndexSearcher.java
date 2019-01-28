@@ -218,7 +218,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
       boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
-    // We don't need to reserve the directory because we get it from the factory
+    // We don't need to reserve the directory because we get it from the constructorFactory
     this(core, path, schema, name, getReader(core, config, directoryFactory, path), true, enableCache, false,
         directoryFactory);
     // Release the directory at close.

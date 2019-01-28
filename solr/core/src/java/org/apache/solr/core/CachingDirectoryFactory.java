@@ -190,7 +190,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           for (CacheValue v : val.closeEntries) {
             assert v.refCnt == 0 : val.refCnt;
-            log.debug("Closing directory when closing factory: " + v.path);
+            log.debug("Closing directory when closing constructorFactory: " + v.path);
             boolean cl = closeCacheValue(v);
             if (cl) {
               closedDirs.add(v);

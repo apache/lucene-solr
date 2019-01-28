@@ -21,7 +21,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
 /**
- * A factory for creating a {@link MergePolicy}.
+ * A constructorFactory for creating a {@link MergePolicy}.
  */
 public abstract class MergePolicyFactory {
 

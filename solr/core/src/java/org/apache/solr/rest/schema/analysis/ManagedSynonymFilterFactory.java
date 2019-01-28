@@ -410,7 +410,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     for (Map.Entry<String,?> entry : args) {
       filtArgs.put(entry.getKey(), entry.getValue().toString());
     }
-    // create the actual filter factory that pulls the synonym mappings
+    // create the actual filter constructorFactory that pulls the synonym mappings
     // from synonymMappings using a custom parser implementation
     delegate = new SynonymFilterFactory(filtArgs) {
       @Override

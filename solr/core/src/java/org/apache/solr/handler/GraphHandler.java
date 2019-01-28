@@ -64,7 +64,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
 
   public void inform(SolrCore core) {
 
-    /* The stream factory will always contain the zkUrl for the given collection
+    /* The stream constructorFactory will always contain the zkUrl for the given collection
      * Adds default streams with their corresponding function names. These
      * defaults can be overridden or added to in the solrConfig in the stream
      * RequestHandler def. Example config override

@@ -408,7 +408,7 @@
     <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
   </fieldType>
   -->
-  <!--  specify a Similarity factory -->
+  <!--  specify a Similarity constructorFactory -->
   <!--
   <fieldType name="sim2" class="solr.TextField">
     <analyzer>

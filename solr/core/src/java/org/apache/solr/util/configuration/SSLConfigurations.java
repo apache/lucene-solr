@@ -41,7 +41,7 @@ public class SSLConfigurations {
   }
 
   /**
-   * @param sslCredentialProviderFactory Credential provider factory to use for providers
+   * @param sslCredentialProviderFactory Credential provider constructorFactory to use for providers
    */
   public SSLConfigurations(SSLCredentialProviderFactory sslCredentialProviderFactory) {
     credentialProviders = sslCredentialProviderFactory.getProviders();

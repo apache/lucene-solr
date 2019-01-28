@@ -34,7 +34,7 @@ public class TestSimpleTextCodec extends SolrTestCaseJ4 {
   public void test() throws Exception {
     SolrConfig config = h.getCore().getSolrConfig();
     String codecFactory =  config.get("codecFactory/@class");
-    assertEquals("Unexpected solrconfig codec factory", "solr.SimpleTextCodecFactory", codecFactory);
+    assertEquals("Unexpected solrconfig codec constructorFactory", "solr.SimpleTextCodecFactory", codecFactory);
 
     assertEquals("Unexpected core codec", "SimpleText", h.getCore().getCodec().getName());
 

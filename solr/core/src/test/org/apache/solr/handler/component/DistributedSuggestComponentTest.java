@@ -51,7 +51,7 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    useFactory(null); // need an FS factory
+    useFactory(null); // need an FS constructorFactory
   }
 
   @Override

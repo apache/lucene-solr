@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 
 /**
- * A factory interface for configuring a {@link Similarity} in the Solr 
+ * A constructorFactory interface for configuring a {@link Similarity} in the Solr
  * schema.xml.  
  * 
  * <p>
@@ -48,7 +48,7 @@ public abstract class SimilarityFactory {
   public abstract Similarity getSimilarity();
 
 
-  /** Returns a serializable description of this similarity(factory) */
+  /** Returns a serializable description of this similarity(constructorFactory) */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
     SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
     props.add(CLASS_NAME, getClassArg());

@@ -40,7 +40,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 /**
  * Contains the knowledge of how cache config is
  * stored in the solrconfig.xml file, and implements a
- * factory to create caches.
+ * constructorFactory to create caches.
  *
  *
  */

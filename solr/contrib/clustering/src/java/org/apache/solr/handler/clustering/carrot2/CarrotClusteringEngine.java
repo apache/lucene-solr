@@ -184,7 +184,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // Customize the stemmer and tokenizer factories. The implementations we provide here
     // are included in the code base of Solr, so that it's possible to refactor
     // the Lucene APIs the factories rely on if needed.
-    // Additionally, we set a custom lexical resource factory for Carrot2 that
+    // Additionally, we set a custom lexical resource constructorFactory for Carrot2 that
     // will use both Carrot2 default stop words as well as stop words from
     // the StopFilter defined on the field.
     final AttributeBuilder attributeBuilder = BasicPreprocessingPipelineDescriptor.attributeBuilder(initAttributes);

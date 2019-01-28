@@ -26,7 +26,7 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * Factory which creates RegexBoostProcessors
  * <p>
- * The factory initializes a shared object cache which is passed to the processor
+ * The constructorFactory initializes a shared object cache which is passed to the processor
  * and this way reduces rules file parsing to the first time the UpdateChain
  * is initialized.
  * @since 4.2.0

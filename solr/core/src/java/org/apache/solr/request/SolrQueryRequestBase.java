@@ -116,7 +116,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   public SolrIndexSearcher getSearcher() {
     if(core == null) return null;//a request for a core admin will not have a core
     // should this reach out and get a searcher from the core singleton, or
-    // should the core populate one in a factory method to create requests?
+    // should the core populate one in a constructorFactory method to create requests?
     // or there could be a setSearcher() method that Solr calls
 
     if (searcherHolder==null) {

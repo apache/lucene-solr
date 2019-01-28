@@ -24,9 +24,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * A factory to generate an UpdateRequestProcessor for each request.  
+ * A constructorFactory to generate an UpdateRequestProcessor for each request.
  * 
- * If the factory needs access to {@link SolrCore} in initialization, it could 
+ * If the constructorFactory needs access to {@link SolrCore} in initialization, it could
  * implement {@link SolrCoreAware}
  * 
  * @since solr 1.3
@@ -35,7 +35,7 @@ public abstract class UpdateRequestProcessorFactory implements NamedListInitiali
 {
 
   /** A marker interface for UpdateRequestProcessorFactory implementations indicating that
-   * the factory should be used even if the update.distrib parameter would otherwise cause
+   * the constructorFactory should be used even if the update.distrib parameter would otherwise cause
    * it to not be run.
    */
   public interface RunAlways {}

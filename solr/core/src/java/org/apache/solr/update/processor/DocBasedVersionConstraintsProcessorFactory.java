@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * In addition to the mandatory <code>versionField</code> init param, two additional
- * optional init params affect the behavior of this factory:
+ * optional init params affect the behavior of this constructorFactory:
  * </p>
  * <ul>
  *   <li><code>deleteVersionParam</code> - This string parameter controls whether this

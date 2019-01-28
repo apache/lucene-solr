@@ -41,7 +41,7 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("text_sim1").getClass());
   }
   
-  /** test a field where a configurable sim factory is defined */
+  /** test a field where a configurable sim constructorFactory is defined */
   public void testFactory() throws Exception {
     Similarity sim = getSimilarity("sim2text");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());

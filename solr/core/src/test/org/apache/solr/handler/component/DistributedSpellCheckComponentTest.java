@@ -54,7 +54,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    useFactory(null); // need an FS factory
+    useFactory(null); // need an FS constructorFactory
   }
 
   private void q(Object... q) throws Exception {

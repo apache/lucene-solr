@@ -59,7 +59,7 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
   }
 
   /**
-   * Returns the default wrapped {@link MergePolicy}. This is called if the factory settings do not explicitly specify
+   * Returns the default wrapped {@link MergePolicy}. This is called if the constructorFactory settings do not explicitly specify
    * the wrapped policy.
    */
   protected MergePolicy getDefaultWrappedMergePolicy() {

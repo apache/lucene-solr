@@ -576,13 +576,13 @@ public class SolrRequestParsers
     public MultipartRequestParser(int limit) {
       uploadLimitKB = limit;
 
-      // Set factory constraints
+      // Set constructorFactory constraints
       FileCleaningTracker fct = fileCleaningTracker;
       if (fct != null) {
         factory.setFileCleaningTracker(fileCleaningTracker);
       }
-      // TODO - configure factory.setSizeThreshold(yourMaxMemorySize);
-      // TODO - configure factory.setRepository(yourTempDirectory);
+      // TODO - configure constructorFactory.setSizeThreshold(yourMaxMemorySize);
+      // TODO - configure constructorFactory.setRepository(yourTempDirectory);
     }
     
     @Override

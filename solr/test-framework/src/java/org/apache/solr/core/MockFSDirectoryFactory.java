@@ -34,7 +34,7 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
+    // we pass NoLockFactory, because the real lock constructorFactory is set later by injectLockFactory:
     Directory dir = LuceneTestCase.newFSDirectory(new File(path).toPath(), lockFactory);
     // we can't currently do this check because of how
     // Solr has to reboot a new Directory sometimes when replicating

@@ -43,7 +43,7 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
   /*
   @Test(expected = IOException.class)
   public void twoFieldsWithMissingField() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b)");
+    StreamEvaluator evaluator = constructorFactory.constructEvaluator("coalesce(a,b)");
     Object result;
     
     values.clear();
@@ -87,7 +87,7 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
 
   @Test(expected = IOException.class)
   public void twoFieldsWithValues() throws Exception{
-    StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b)");
+    StreamEvaluator evaluator = constructorFactory.constructEvaluator("coalesce(a,b)");
     Object result;
     
     values.clear();

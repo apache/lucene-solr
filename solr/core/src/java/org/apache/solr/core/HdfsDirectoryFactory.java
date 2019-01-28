@@ -191,7 +191,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @SuppressWarnings("resource")
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     assert params != null : "init must be called before create";
-    log.info("creating directory factory for path {}", path);
+    log.info("creating directory constructorFactory for path {}", path);
     Configuration conf = getConf();
     
     if (metrics == null) {

@@ -250,7 +250,7 @@ public class SolrIndexConfig implements MapSerializable {
 
   /**
    * Builds a MergePolicy using the configured MergePolicyFactory
-   * or if no factory is configured uses the configured mergePolicy PluginInfo.
+   * or if no constructorFactory is configured uses the configured mergePolicy PluginInfo.
    */
   @SuppressWarnings("unchecked")
   private MergePolicy buildMergePolicy(final IndexSchema schema) {

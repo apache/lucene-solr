@@ -59,7 +59,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   @BeforeClass
   public static void beforeThisClass() throws Exception {
-    // Only For Manual Testing: this will force an fs based dir factory
+    // Only For Manual Testing: this will force an fs based dir constructorFactory
     //useFactory(null);
   }
 

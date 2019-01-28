@@ -53,7 +53,7 @@ public final class LowerCaseTokenizer extends Tokenizer {
    * {@link org.apache.lucene.util.AttributeFactory}.
    *
    * @param factory
-   *          the attribute factory to use for this {@link Tokenizer}
+   *          the attribute constructorFactory to use for this {@link Tokenizer}
    */
   public LowerCaseTokenizer(AttributeFactory factory) {
     this(factory, DEFAULT_MAX_WORD_LEN);
@@ -63,7 +63,7 @@ public final class LowerCaseTokenizer extends Tokenizer {
    * Construct a new LowerCaseTokenizer using a given
    * {@link org.apache.lucene.util.AttributeFactory}.
    *
-   * @param factory the attribute factory to use for this {@link Tokenizer}
+   * @param factory the attribute constructorFactory to use for this {@link Tokenizer}
    * @param maxTokenLen maximum token length the tokenizer will emit.
    *        Must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024)
    * @throws IllegalArgumentException if maxTokenLen is invalid.

@@ -103,7 +103,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * Creates a new LockFactory for a given path.
-   * @param rawLockType A string value as passed in config. Every factory should at least support 'none' to disable locking.
+   * @param rawLockType A string value as passed in config. Every constructorFactory should at least support 'none' to disable locking.
    * @throws IOException If there is a low-level I/O error.
    */
   protected abstract LockFactory createLockFactory(String rawLockType) throws IOException;
@@ -140,7 +140,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * This remove is special in that it may be called even after
-   * the factory has been closed. Remove only makes sense for
+   * the constructorFactory has been closed. Remove only makes sense for
    * persistent directory factories.
    * 
    * @param path to remove
@@ -151,7 +151,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * This remove is special in that it may be called even after
-   * the factory has been closed. Remove only makes sense for
+   * the constructorFactory has been closed. Remove only makes sense for
    * persistent directory factories.
    * 
    * @param path to remove
@@ -318,7 +318,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * or throws an exception when trying to remove a file in use, return
    * false (eg NFS). Otherwise, return true. Defaults to returning false.
    * 
-   * @return true if factory impl requires that Searcher's explicitly
+   * @return true if constructorFactory impl requires that Searcher's explicitly
    * reserve commit points.
    */
   public boolean searchersReserveCommitPoints() {

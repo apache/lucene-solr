@@ -68,7 +68,7 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
   /**
    * Creates tokenizers that adapt Lucene's Smart Chinese Tokenizer to Carrot2's
    * {@link ITokenizer}. If Smart Chinese is not available in the classpath, the
-   * factory will fall back to the default white space tokenizer.
+   * constructorFactory will fall back to the default white space tokenizer.
    */
   private static final class ChineseTokenizerFactory {
     static {

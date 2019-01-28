@@ -120,7 +120,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     super.setUp();
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
-    // useFactory(null); // force an FS factory.
+    // useFactory(null); // force an FS constructorFactory.
     master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     masterJetty = createAndStartJetty(master);

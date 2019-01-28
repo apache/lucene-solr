@@ -46,7 +46,7 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     Directory dir;
     if (useMockDirectoryWrapper) dir = LuceneTestCase.newMockDirectory();
-    else dir = LuceneTestCase.newDirectory(); // we ignore the given lock factory
+    else dir = LuceneTestCase.newDirectory(); // we ignore the given lock constructorFactory
     
     Directory cdir = reduce(dir);
     cdir = reduce(cdir);

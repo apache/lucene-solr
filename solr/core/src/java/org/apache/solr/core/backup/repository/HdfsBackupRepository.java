@@ -65,7 +65,7 @@ public class HdfsBackupRepository implements BackupRepository {
       }
     }
 
-    // We don't really need this factory instance. But we want to initialize it here to
+    // We don't really need this constructorFactory instance. But we want to initialize it here to
     // make sure that all HDFS related initialization is at one place (and not duplicated here).
     factory = new HdfsDirectoryFactory();
     factory.init(args);
