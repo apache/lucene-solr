@@ -627,6 +627,11 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
 
       @Override
+      public boolean seekExact(BytesRef text) throws IOException {
+        return seekCeil(text) == SeekStatus.FOUND;
+      }
+      
+      @Override
       public SeekStatus seekCeil(BytesRef target) throws IOException {
         throw new UnsupportedOperationException();
       }
