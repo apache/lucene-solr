@@ -17,17 +17,13 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
@@ -37,7 +33,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.util.DateMathParser;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
@@ -46,7 +41,7 @@ public class CreateAliasCmd extends AliasCmd {
   private final OverseerCollectionMessageHandler ocmh;
 
   private static boolean anyRoutingParams(ZkNodeProps message) {
-    return message.keySet().stream().anyMatch(k -> k.startsWith(TimeRoutedAlias.ROUTER_PREFIX));
+    return message.keySet().stream().anyMatch(k -> k.startsWith(RoutedAlias.ROUTER_PREFIX));
   }
 
   public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
@@ -113,35 +108,30 @@ public class CreateAliasCmd extends AliasCmd {
         .filter(entry -> TimeRoutedAlias.PARAM_IS_PROP.test(entry.getKey()))
         .forEach(entry -> aliasProperties.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
 
-    TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasProperties); // validates as well
+    RoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasProperties); // validates as well
 
-    String start = message.getStr(TimeRoutedAlias.ROUTER_START);
-    Instant startTime = parseStart(start, timeRoutedAlias.getTimeZone());
-
-    String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
-
-    // Create the collection
-    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
-    validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
+    String start = message.getStr(RoutedAlias.ROUTER_START);
+    if (start != null) {
+      String initialCollectionName = timeRoutedAlias.computeInitialCollectionName(start);
+      if (initialCollectionName != null) {
+        ensureCollection(aliasName, zkStateReader, state, aliasProperties, initialCollectionName);
+        // Create/update the alias
+        zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
+            .cloneWithCollectionAlias(aliasName, initialCollectionName)
+            .cloneWithCollectionAliasProperties(aliasName, aliasProperties));
+        return;
+      }
+    }
 
     // Create/update the alias
     zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
-        .cloneWithCollectionAlias(aliasName, initialCollectionName)
         .cloneWithCollectionAliasProperties(aliasName, aliasProperties));
   }
 
-  private Instant parseStart(String str, TimeZone zone) {
-    Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
-    checkMilis(start);
-    return start;
-  }
-
-  private void checkMilis(Instant date) {
-    if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
-      throw new SolrException(BAD_REQUEST,
-          "Date or date math for start time includes milliseconds, which is not supported. " +
-              "(Hint: 'NOW' used without rounding always has this problem)");
-    }
+  private void ensureCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
+    // Create the collection
+    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
+    validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
   }
 
   private void validateAllCollectionsExistAndNoDups(List<String> collectionList, ZkStateReader zkStateReader) {
