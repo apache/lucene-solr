@@ -1,5 +1,12 @@
 # Apache Lucene Migration Guide
 
+## TermsEnum.seekExact(BytesRef) is abstract (LUCENE-8662) ##
+
+TermsEnum.seekExact has been changed to abstract, so non-abstract subclass must implement it.
+The default implementation can be seekCeil(text) == SeekStatus.FOUND.
+This method is performance critical, so subclass SHOULD have its own implementation
+if possible instead of using the default implementation.
+
 ## Similarity.SimScorer.computeXXXFactor methods removed (LUCENE-8014) ##
 
 SpanQuery and PhraseQuery now always calculate their slops as (1.0 / (1.0 +
