@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -34,7 +33,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-public interface RoutedAlias {
+public interface RoutedAlias<K> {
 
   /**
    * Types supported. Every entry here must have a case in the switch statement in {@link #fromProps(String, Map)}
@@ -117,18 +116,20 @@ public interface RoutedAlias {
    */
   String getAliasName();
 
+  String getRouteField();
+
   /**
    * Parses the elements of the collection list. Result is returned them in sorted order (desc) if there
    * is a natural order for this type of routed alias
    */
-  List<Map.Entry<Instant, String>> parseCollections(Aliases aliases);
+  List<Map.Entry<K, String>> parseCollections(Aliases aliases);
 
   /**
    * Check that the value we will be routing on is legal for this type of routed alias.
    *
    * @param cmd the command containing the document
    */
-  void validateRouteValue(AddUpdateCommand cmd);
+  void validateRouteValue(AddUpdateCommand cmd) throws SolrException;
 
   /**
    * Create any required collections and return the name of the collection to which the current document should be sent.
@@ -147,4 +148,5 @@ public interface RoutedAlias {
   Set<String> getRequiredParams();
 
   Set<String> getOptionalParams();
+
 }

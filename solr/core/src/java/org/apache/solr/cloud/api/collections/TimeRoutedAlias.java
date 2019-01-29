@@ -71,7 +71,7 @@ import static org.apache.solr.common.params.CommonParams.TZ;
  * @see MaintainTimeRoutedAliasCmd
  * @see RoutedAliasUpdateProcessor
  */
-public class TimeRoutedAlias implements RoutedAlias {
+public class TimeRoutedAlias implements RoutedAlias<Instant> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // This class is created once per request and the overseer methods prevent duplicate create requests
@@ -252,6 +252,7 @@ public class TimeRoutedAlias implements RoutedAlias {
     return aliasName;
   }
 
+  @Override
   public String getRouteField() {
     return routeField;
   }
@@ -314,7 +315,7 @@ public class TimeRoutedAlias implements RoutedAlias {
   }
 
   @Override
-  public void validateRouteValue(AddUpdateCommand cmd) {
+  public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
     final Instant docTimestamp =
         parseRouteKey(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
 
@@ -554,4 +555,5 @@ public class TimeRoutedAlias implements RoutedAlias {
     ASYNC_PREEMPTIVE,
     SYNCHRONOUS
   }
+
 }
