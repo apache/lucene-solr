@@ -11,6 +11,9 @@ API Changes
   removed. (Dawid Weiss)
 
 
+======================= Lucene 8.1.0 =======================
+(No Changes)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
