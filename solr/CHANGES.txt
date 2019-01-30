@@ -136,6 +136,9 @@ New Features
   value as Solr will supply one automatically by concatenating a path to that of the parent document's key.
   (David Smiley, Moshe Bla).
 
+* SOLR-13134: Allow the knnRegress Stream Evaluator to more easily perform bivariate regression.
+  (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
