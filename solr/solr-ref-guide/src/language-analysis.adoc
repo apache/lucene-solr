@@ -577,6 +577,7 @@ Perform model-based lemmatization only, preserving the original token and emitti
 These factories are each designed to work with specific languages. The languages covered here are:
 
 * <<Arabic>>
+* <<Bengali>>
 * <<Brazilian Portuguese>>
 * <<Bulgarian>>
 * <<Catalan>>
@@ -632,6 +633,31 @@ This algorithm defines both character normalization and stemming, so these are s
   <filter class="solr.ArabicStemFilterFactory"/>
 </analyzer>
 ----
+
+=== Bengali
+
+There are two filters written specifically for dealing with Bengali language. They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationFilter` and `org.apache.lucene.analysis.bn.BengaliStemFilter`.
+
+*Factory classes:* `solr.BengaliStemFilterFactory`, `solr.BengaliNormalizationFilterFactory`
+
+*Arguments:* None
+
+*Example:*
+
+[source,xml]
+----
+<analyzer> 
+  <tokenizer class="solr.StandardTokenizerFactory"/> 
+  <filter class="solr.BengaliNormalizationFilterFactory"/> 
+  <filter class="solr.BengaliStemFilterFactory"/>       
+</analyzer>
+
+----
+
+*Normalisation* - `মানুষ` -> `মানুস`
+
+*Stemming* - `সমস্ত` -> `সমস্` 
+
 
 === Brazilian Portuguese
 
