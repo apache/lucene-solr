@@ -139,6 +139,8 @@ New Features
 * SOLR-13134: Allow the knnRegress Stream Evaluator to more easily perform bivariate regression.
   (Joel Bernstein)
 
+* SOLR-13104: Add natural and repeat Stream Evaluators (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
