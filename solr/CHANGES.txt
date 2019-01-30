@@ -141,6 +141,8 @@ New Features
 
 * SOLR-13104: Add natural and repeat Stream Evaluators (Joel Bernstein)
 
+* SOLR-13147: Add movingMAD Stream Evaluator (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
