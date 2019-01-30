@@ -283,6 +283,8 @@ New Features
 * SOLR-12984: The search Streaming Expression should properly support and push down paging
   when using the /select handler (Joel Bernstein)
 
+* SOLR-13088: Add zplot Stream Evaluator to plot math expressions in Apache Zeppelin (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
