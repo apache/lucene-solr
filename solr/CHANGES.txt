@@ -69,6 +69,9 @@ New Features
   make sure tombstone documents include fields that are marked as required in the schema
   (Tomás Fernández Löbbe)
 
+* SOLR-12984: The search Streaming Expression should properly support and push down paging
+  when using the /select handler (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 * SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
