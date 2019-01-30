@@ -10,6 +10,10 @@ API Changes
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been 
   removed. (Dawid Weiss)
 
+Bug fixes:
+
+* LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
+  it's inaccessible. (Dawid Weiss)
 
 ======================= Lucene 8.1.0 =======================
 (No Changes)
