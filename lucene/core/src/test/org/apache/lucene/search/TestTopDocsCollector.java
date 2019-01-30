@@ -315,7 +315,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
       TopDocs topDocs = collector.topDocs();
       assertEquals(4, topDocs.totalHits.value);
       assertEquals(totalHitsThreshold < 4, scorer.minCompetitiveScore != null);
-      assertEquals(totalHitsThreshold < 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
+      assertEquals(new TotalHits(4, totalHitsThreshold < 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO), topDocs.totalHits);
     }
 
     reader.close();

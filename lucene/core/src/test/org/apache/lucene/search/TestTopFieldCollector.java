@@ -172,8 +172,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
         if (totalHitsThreshold < 3) {
           expectThrows(CollectionTerminatedException.class, () -> leafCollector2.collect(1));
           TopDocs topDocs = collector.topDocs();
-          assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, topDocs.totalHits.relation);
-          assertEquals(3, topDocs.totalHits.value);
+          assertEquals(new TotalHits(3, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
           continue;
         } else {
           leafCollector2.collect(1);
@@ -184,16 +183,14 @@ public class TestTopFieldCollector extends LuceneTestCase {
         if (totalHitsThreshold == 3) {
           expectThrows(CollectionTerminatedException.class, () -> leafCollector2.collect(1));
           TopDocs topDocs = collector.topDocs();
-          assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, topDocs.totalHits.relation);
-          assertEquals(4, topDocs.totalHits.value);
+          assertEquals(new TotalHits(4, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
           continue;
         } else {
           leafCollector2.collect(1);
         }
 
         TopDocs topDocs = collector.topDocs();
-        assertEquals(TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
-        assertEquals(4, topDocs.totalHits.value);
+        assertEquals(new TotalHits(4, TotalHits.Relation.EQUAL_TO), topDocs.totalHits);
       }
     }
 
@@ -324,9 +321,8 @@ public class TestTopFieldCollector extends LuceneTestCase {
       leafCollector.collect(1);
 
       TopDocs topDocs = collector.topDocs();
-      assertEquals(4, topDocs.totalHits.value);
       assertEquals(totalHitsThreshold < 4, scorer.minCompetitiveScore != null);
-      assertEquals(totalHitsThreshold < 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
+      assertEquals(new TotalHits(4, totalHitsThreshold < 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO), topDocs.totalHits);
     }
 
     reader.close();
