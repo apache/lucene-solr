@@ -800,4 +800,47 @@ public class TestLatLonShape extends LuceneTestCase {
     assertTrue(encoded[5] == alonEnc);
   }
 
+  public void testLUCENE8669() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+
+    Polygon indexPoly1 = new Polygon(
+        new double[] {-7.5d, 15d, 15d, 0d, -7.5d},
+        new double[] {-180d, -180d, -176d, -176d, -180d}
+    );
+
+    Polygon indexPoly2 = new Polygon(
+        new double[] {15d, -7.5d, -15d, -10d, 15d, 15d},
+        new double[] {180d, 180d, 176d, 174d, 176d, 180d}
+    );
+
+    Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+    fields = LatLonShape.createIndexableFields("test", indexPoly2);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Polygon[] searchPoly = new Polygon[] {
+        new Polygon(new double[] {-20d, 20d, 20d, -20d, -20d},
+            new double[] {-180d, -180d, -170d, -170d, -180d}),
+        new Polygon(new double[] {20d, -20d, -20d, 20d, 20d},
+            new double[] {180d, 180d, 170d, 170d, 180d})
+    };
+
+    Query q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
 }

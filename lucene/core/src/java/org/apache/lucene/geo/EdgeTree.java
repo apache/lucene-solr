@@ -22,7 +22,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
-import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
+import static org.apache.lucene.geo.GeoUtils.lineRelateLine;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
@@ -147,8 +147,8 @@ public abstract class EdgeTree {
     }
 
     // we cross
-    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-      return Relation.CELL_CROSSES_QUERY;
+    if ((shapeRelation = tree.relateTriangle(ax, ay, bx, by, cx, cy)) != Relation.CELL_OUTSIDE_QUERY) {
+      return shapeRelation;
     }
 
     if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
@@ -257,13 +257,14 @@ public abstract class EdgeTree {
     }
 
     /** Returns true if the triangle crosses any edge in this edge subtree */
-    boolean crossesTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
       // compute bounding box of triangle
       double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
       double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
       double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
       double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
 
+      Relation r = Relation.CELL_OUTSIDE_QUERY;
       if (minLat <= max) {
         double dy = lat1;
         double ey = lat2;
@@ -278,38 +279,48 @@ public abstract class EdgeTree {
             (dx > maxLon && ex > maxLon);
 
         if (outside == false) {
+          int insideEdges = 0;
           // does triangle's first edge intersect polyline?
           // ax, ay -> bx, by
-          if (lineCrossesLine(ax, ay, bx, by, dx, dy, ex, ey)) {
-            return true;
+          if ((r = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey)) == Relation.CELL_CROSSES_QUERY) {
+            return r;
+          } else if (r == Relation.CELL_INSIDE_QUERY) {
+            ++insideEdges;
           }
 
           // does triangle's second edge intersect polyline?
           // bx, by -> cx, cy
-          if (lineCrossesLine(bx, by, cx, cy, dx, dy, ex, ey)) {
-            return true;
+          if ((r = lineRelateLine(bx, by, cx, cy, dx, dy, ex, ey)) == Relation.CELL_CROSSES_QUERY) {
+            return r;
+          } else if (r == Relation.CELL_INSIDE_QUERY) {
+            ++insideEdges;
           }
 
           // does triangle's third edge intersect polyline?
           // cx, cy -> ax, ay
-          if (lineCrossesLine(cx, cy, ax, ay, dx, dy, ex, ey)) {
-            return true;
+          if ((r = lineRelateLine(cx, cy, ax, ay, dx, dy, ex, ey)) == Relation.CELL_CROSSES_QUERY) {
+            return r;
+          } else if (r == Relation.CELL_INSIDE_QUERY) {
+            ++insideEdges;
+          }
+          if (insideEdges == 3) {
+            return Relation.CELL_INSIDE_QUERY;
           }
         }
 
         if (left != null) {
-          if (left.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-            return true;
+          if ((r = left.relateTriangle(ax, ay, bx, by, cx, cy)) != Relation.CELL_OUTSIDE_QUERY) {
+            return r;
           }
         }
 
         if (right != null && maxLat >= low) {
-          if (right.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-            return true;
+          if ((r = right.relateTriangle(ax, ay, bx, by, cx, cy)) != Relation.CELL_OUTSIDE_QUERY) {
+            return r;
           }
         }
       }
-      return false;
+      return r;
     }
 
     /** Returns true if the box crosses any edge in this edge subtree */
