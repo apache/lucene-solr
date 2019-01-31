@@ -29,7 +29,7 @@ import org.apache.lucene.util.IntroSelector;
  *
  *  @lucene.internal
  * */
-public class BKDRadixSelector {
+public final class BKDRadixSelector {
   //size of the histogram
   private static final int HISTOGRAM_SIZE = 256;
   // we store one histogram per recursion level
