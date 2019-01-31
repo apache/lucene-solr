@@ -26,33 +26,18 @@ public final class HeapPointReader extends PointReader {
   final List<byte[]> blocks;
   final int valuesPerBlock;
   final int packedBytesLength;
-  final long[] ordsLong;
-  final int[] ords;
   final int[] docIDs;
   final int end;
   final byte[] scratch;
-  final boolean singleValuePerDoc;
 
-  public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] ords, long[] ordsLong, int[] docIDs, int start, int end, boolean singleValuePerDoc) {
+  public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] docIDs, int start, int end) {
     this.blocks = blocks;
     this.valuesPerBlock = valuesPerBlock;
-    this.singleValuePerDoc = singleValuePerDoc;
-    this.ords = ords;
-    this.ordsLong = ordsLong;
     this.docIDs = docIDs;
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
     scratch = new byte[packedBytesLength];
-  }
-
-  void writePackedValue(int index, byte[] bytes) {
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    while (blocks.size() <= block) {
-      blocks.add(new byte[valuesPerBlock*packedBytesLength]);
-    }
-    System.arraycopy(bytes, 0, blocks.get(blockIndex), blockIndex * packedBytesLength, packedBytesLength);
   }
 
   void readPackedValue(int index, byte[] bytes) {
@@ -79,14 +64,14 @@ public final class HeapPointReader extends PointReader {
   }
 
   @Override
-  public long ord() {
-    if (singleValuePerDoc) {
-      return docIDs[curRead];
-    } else if (ordsLong != null) {
-      return ordsLong[curRead];
-    } else {
-      return ords[curRead];
+  public void buildHistogram(int bytePosition, int[] histogram) {
+    //We only support this method for dimensions
+    if (bytePosition > packedBytesLength) {
+      throw new IllegalStateException("dimensions have " + packedBytesLength + " bytes , but " + bytePosition + " were requested");
     }
+   while (next()) {
+     histogram[packedValue()[bytePosition] & 0xff]++;
+   }
   }
 
   @Override

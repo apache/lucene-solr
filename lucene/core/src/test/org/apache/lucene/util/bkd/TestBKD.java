@@ -924,7 +924,7 @@ public class TestBKD extends LuceneTestCase {
         @Override
         public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
           IndexOutput out = in.createTempOutput(prefix, suffix, context);
-          if (corrupted == false && prefix.equals("_0_bkd1") && suffix.equals("sort")) {
+          if (corrupted == false && prefix.equals("_0") && suffix.equals("bkd_left0")) {
             corrupted = true;
             return new CorruptingIndexOutput(dir0, 22, out);
           } else {
@@ -1046,11 +1046,9 @@ public class TestBKD extends LuceneTestCase {
   public void test2DLongOrdsOffline() throws Exception {
     try (Directory dir = newDirectory()) {
       int numDocs = 100000;
-      boolean singleValuePerDoc = false;
-      boolean longOrds = true;
       int offlineSorterMaxTempFiles = TestUtil.nextInt(random(), 2, 20);
       BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 2, 2, Integer.BYTES, 2, 0.01f, numDocs,
-                                  singleValuePerDoc, longOrds, 1, offlineSorterMaxTempFiles);
+                                   1, offlineSorterMaxTempFiles);
       byte[] buffer = new byte[2*Integer.BYTES];
       for(int i=0;i<numDocs;i++) {
         random().nextBytes(buffer);
