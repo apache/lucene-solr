@@ -36,9 +36,9 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
 
 === Schema Notes
 
- * The schema must include indexed fields field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
- Fields `\_nest_path_`, `\_nest_parent_` can be configured to store the path of the document in the hierarchy, and the unique `id` of the parent in the previous level.
- These 2 fields will be used by NestedUpdateProcessor URP, which is implicitly configured under Solr 8, when `\_root_` field is defined.
+ * The schema must include indexed field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth. The id of the top document in every nested hierarchy is populated in this field.
+ * `\_nest_path_` can be configured to store the path of the document in the hierarchy
+ * `\_nest_parent_` can be configured to store the `id` of the parent in the previous level
  * Nested documents are very much documents in their own right even if certain nested documents hold different information from the parent.
    Therefore:
  ** the schema must be able to represent the fields of any document
@@ -46,7 +46,10 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
  ** even child documents need a unique `id`
 
 
-=== Legacy Schema Notes
+=== Rudimentary Root-only schemas
+ * These schemas do not contain any other nested related fields apart for `\_root_`. +
+   In this mode relationship types(field names) between parents and their children are not saved.
+   All children are indexed under the `\_childDocuments_` field.
  * The schema must include an indexed, non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
  * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
  * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
@@ -127,18 +130,20 @@ For the anonymous relationship, note the special `\_childDocuments_` key whose c
 ]
 ----
 
-.Legacy Mode
+.Root Only Mode
 [NOTE]
 ====
- In legacy mode, these two documents will result in the same docs being indexed(legacy mode does not honor nested relationships).
+ In Root-only schemas, these two documents will result in the same docs being indexed(Root-only schemas do not honor nested relationships).
  When quried, child docs will be appended to _childDocuments_ key.
 ====
 
 
 === Querying Nested Documents
 
- * `<<transforming-result-documents.adoc#transforming-result-documents,[child]>>` Document Transformer
- * <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>>
+ * `<<nested-documents.adoc#child-doc-transformer,[child]>>` Document Transformer
+ * <<nested-documents.adoc#children-query-parser,Block Join Children Query Parser>>
+ * <<nested-documents.adoc#parents-query-parser,Block Join Parent Query Parser>>
+ * <<nested-documents.adoc#combining-block-join-query-parsers-with-child-doc-transformer,Advanced Queries>>
 
 === Query Examples
 
@@ -198,9 +203,11 @@ For the upcoming examples, assume the following documents have been indexed:
 ----
 ====
 
-==== `<<transforming-result-documents.adoc#transforming-result-documents, Child Doc Transformer>>`
- * Can be used enrich query results with the documents' descendsnts.
- `q=id:1, +
+==== Child Doc Transformer
+Can be used enrich query results with the documents' descendants. +
+For a detailed explanation of this parser, click <<transforming-result-documents.adoc#child-childdoctransformerfactory, here>>.
+
+* `q=id:1,
  fl=id,[child childFilter=/comments/content:recipe]` +
  The child Filter will only match the first comment of doc(id:1),
  therefore only that particular comment will be appended to the result.
@@ -225,8 +232,9 @@ For the upcoming examples, assume the following documents have been indexed:
  }
 ----
 
-==== <<other-parsers.adoc#block-join-children-query-parser,Block Join Children Query Parser>>
- * Can be used to retrieve children of a matching document.
+==== Children Query Parser
+Can be used to retrieve children of a matching document. +
+For a detailed explanation of this parser, click <<other-parsers.adoc#block-join-children-query-parser, here>>.
 
  * `q={!child of='_nest_path_:/posts}content:"Search Engineer"` +
      This query returns the parent at the root(since all parents filter returns root documents).
@@ -246,8 +254,9 @@ For the upcoming examples, assume the following documents have been indexed:
      }
 ----
 
-==== <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>
- * Can be used to retrieve parents of a child document.
+==== Parents Query Parser
+Can be used to retrieve parents of a child document. +
+For a detailed explanation of this parser, click <<other-parsers.adoc#block-join-parent-query-parser,here>>.
 
  * Can be used to query the doc in JSON example,
   `q={!parent which='-_nest_path_:* \*:*'}content:"Search Engineer"` +
@@ -264,11 +273,12 @@ For the upcoming examples, assume the following documents have been indexed:
   }
 ----
 
-==== Combining Block Join Query Parser with Child Doc Transformer
-  * The combination of these two features enable seamless creation of powerful queries. +
-  For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
-  The comments for matching posts can also be fetched, all done in a single Solr Query.
-  `q=+{!child of='-\_nest_path_:* *:*'}+tags:"jobs" &fl=*,[child]
+==== Combining Block Join Query Parsers with Child Doc Transformer
+The combination of these two features enable seamless creation of powerful queries. +
+For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
+The comments for matching posts can also be fetched, all done in a single Solr Query.
+
+ * `q=+{!child of='-\_nest_path_:* *:*'}+tags:"jobs" &fl=*,[child]
   &fq=\_nest_path_:/posts` +
   This query returns all posts and their comments, which had "Search Engineer" in their title,
   and were under a page tagged with "jobs".

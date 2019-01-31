@@ -96,7 +96,7 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 [sidebar.col-sm-6.col-md-4]
 ****
 * <<nested-documents.adoc#schema-notes,Config>>: Detailed information about index configuration for nested documents.
-* <<nested-documents.adoc#querying-nested-documents,Queries>>: Detailed information about nested documents.
+* <<nested-documents.adoc#querying-nested-documents,Queries>>: Querying nested documents how to guide.
 ****
 --
 
