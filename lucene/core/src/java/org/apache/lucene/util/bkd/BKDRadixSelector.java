@@ -45,7 +45,7 @@ public final class BKDRadixSelector {
   //holder for partition bytes
   private byte[] partitionBytes;
   //re-usable on-heap selector
-  private HeapRadixSelector heapRadixSelector;
+  private HeapSelector heapSelector;
   // scratch object to move bytes around
   BytesRef bytesRef = new BytesRef();
 
@@ -60,7 +60,7 @@ public final class BKDRadixSelector {
     this.partitionBytes =  new byte[bytesPerDim];
     this.histogram = new int[bytesPerDim][HISTOGRAM_SIZE];
     this.bytesRef.length = numDim * bytesPerDim;
-    this.heapRadixSelector = new HeapRadixSelector(numDim, bytesPerDim);
+    this.heapSelector = new HeapSelector(numDim, bytesPerDim);
   }
 
   /**
@@ -70,9 +70,9 @@ public final class BKDRadixSelector {
   public byte[] select(PointWriter data, PointWriter left, PointWriter right, int from, int to, int middle, int dim) throws IOException {
     checkArgs(from, to, middle);
 
-    //If we are on heap then we just sort on heap
+    //If we are on heap then we just select on heap
     if (data instanceof HeapPointWriter) {
-      return heapSort((HeapPointWriter) data, left, right, dim, middle, 0, 0);
+      return heapSelect((HeapPointWriter) data, left, right, dim, middle, 0, 0);
     }
 
     //reset histogram
@@ -216,7 +216,7 @@ public final class BKDRadixSelector {
     if (sorted != null) {
       // make sure we are just not soring all data
       assert sorted.count() != data.count();
-      return heapSort(sorted, left, right, dim, middle, leftCounter, commonPrefix);
+      return heapSelect(sorted, left, right, dim, middle, leftCounter, commonPrefix);
     }
     // We did not have any points to sort on memory,
     // compute the partition point from the common prefix
@@ -227,11 +227,11 @@ public final class BKDRadixSelector {
     return partition;
   }
 
-  private byte[] heapSort(HeapPointWriter writer, PointWriter left, PointWriter right, int dim, int k, int leftCounter, int commonPrefix) throws IOException {
+  private byte[] heapSelect(HeapPointWriter writer, PointWriter left, PointWriter right, int dim, int k, int leftCounter, int commonPrefix) throws IOException {
 
     assert writer.count() != k - leftCounter;
-    heapRadixSelector.setHeapPointWriter(writer, dim, commonPrefix);
-    heapRadixSelector.select(0, Math.toIntExact(writer.count()), k - leftCounter);
+    heapSelector.setHeapPointWriter(writer, dim, commonPrefix);
+    heapSelector.select(0, Math.toIntExact(writer.count()), k - leftCounter);
 
     byte[] partition = new byte[bytesPerDim];
     Arrays.fill(partition, (byte) 0xff);
@@ -271,7 +271,7 @@ public final class BKDRadixSelector {
   /**
    * Reusable on-heap intro  selector.
    */
-  private static class HeapRadixSelector extends IntroSelector {
+  private static class HeapSelector extends IntroSelector {
     //fixed from the beginning
     private final int bytesPerDim;
     //writer that must be set before running
@@ -291,7 +291,7 @@ public final class BKDRadixSelector {
     //holds the current pivot docID
     private int pivotDoc;
 
-    public HeapRadixSelector(int numDim, int bytesPerDim) {
+    public HeapSelector(int numDim, int bytesPerDim) {
       this.bytesPerDim = bytesPerDim;
       this.bytesRef1.length = numDim * bytesPerDim;
       this.bytesRef2.length = numDim * bytesPerDim;
@@ -324,9 +324,9 @@ public final class BKDRadixSelector {
 
     @Override
     protected int compare(int i, int j) {
-      writer.getPackedValueSlice(i, bytesRef1);
-      writer.getPackedValueSlice(j, bytesRef2);
       if (commonPrefix < bytesPerDim) {
+        writer.getPackedValueSlice(i, bytesRef1);
+        writer.getPackedValueSlice(j, bytesRef2);
         int cmp = FutureArrays.compareUnsigned(bytesRef1.bytes, bytesRef1.offset + start, bytesRef1.offset + end, bytesRef2.bytes, bytesRef2.offset + start, bytesRef2.offset + end);
         if (cmp != 0) {
           return cmp;
@@ -337,8 +337,8 @@ public final class BKDRadixSelector {
 
     @Override
     protected int comparePivot(int j) {
-      writer.getPackedValueSlice(j, bytesRef1);
       if (commonPrefix < bytesPerDim) {
+        writer.getPackedValueSlice(j, bytesRef1);
         int cmp = FutureArrays.compareUnsigned(pivot.bytes, pivot.offset + start, pivot.offset + end, bytesRef1.bytes, bytesRef1.offset + start, bytesRef1.offset + end);
         if (cmp != 0) {
           return cmp;
