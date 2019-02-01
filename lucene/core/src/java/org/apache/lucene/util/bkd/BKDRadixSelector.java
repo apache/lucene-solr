@@ -110,7 +110,7 @@ public final class BKDRadixSelector {
       for (int i =from + 1; i< to; i++) {
         reader.next();
         packedValue = reader.packedValue();
-        int j = FutureArrays.mismatch(commonPrefix, 0, commonPrefixPosition, packedValue.bytes, packedValue.offset + dim * bytesPerDim, dim * bytesPerDim + commonPrefixPosition);
+        int j = FutureArrays.mismatch(commonPrefix, 0, commonPrefixPosition, packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefixPosition);
         if (j == 0) {
           return 0;
         } else if (j != -1) {
@@ -253,11 +253,11 @@ public final class BKDRadixSelector {
   }
 
   private boolean hasCommonPrefix(BytesRef packedValue, int dim, int commonPrefix) {
-    return FutureArrays.compareUnsigned(partitionBytes, 0, commonPrefix, packedValue.bytes, packedValue.offset + dim * bytesPerDim, dim * bytesPerDim + commonPrefix) == 0;
+    return FutureArrays.compareUnsigned(partitionBytes, 0, commonPrefix, packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefix) == 0;
   }
 
   private int getCommonPrefix(BytesRef packedValue, int dim, int maxCommmonPrefix) {
-    int commonPrefix = FutureArrays.mismatch(packedValue.bytes, packedValue.offset + dim * bytesPerDim, dim * bytesPerDim + maxCommmonPrefix, partitionBytes, 0, maxCommmonPrefix);
+    int commonPrefix = FutureArrays.mismatch(packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + maxCommmonPrefix, partitionBytes, 0, maxCommmonPrefix);
     if ( commonPrefix == -1) {
       return maxCommmonPrefix;
     }
