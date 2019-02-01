@@ -19,6 +19,7 @@ package org.apache.lucene.util.bkd;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IntroSelector;
@@ -47,12 +48,17 @@ public final class BKDRadixSelector {
   //re-usable on-heap selector
   private HeapSelector heapSelector;
   // scratch object to move bytes around
-  BytesRef bytesRef = new BytesRef();
+  private BytesRef bytesRef = new BytesRef();
+  //Directory to create new Offline writer
+  private Directory tempDir;
+  // prefix for temp files
+  private String tempFileNamePrefix;
+
 
   /**
    * Sole constructor.
    */
-  public BKDRadixSelector(int numDim, int bytesPerDim, int maxPointsSortedOffHeap) {
+  public BKDRadixSelector(int numDim, int bytesPerDim, int maxPointsSortedOffHeap, Directory tempDir, String tempFileNamePrefix) {
     this.bytesPerDim = bytesPerDim;
     this.packedByteLength = numDim * bytesPerDim;
     this.maxPointsSortedOffHeap = maxPointsSortedOffHeap;
@@ -61,6 +67,8 @@ public final class BKDRadixSelector {
     this.histogram = new int[bytesPerDim][HISTOGRAM_SIZE];
     this.bytesRef.length = numDim * bytesPerDim;
     this.heapSelector = new HeapSelector(numDim, bytesPerDim);
+    this.tempDir = tempDir;
+    this.tempFileNamePrefix = tempFileNamePrefix;
   }
 
   /**
@@ -87,7 +95,7 @@ public final class BKDRadixSelector {
       return partition(data, left, right, from, to, middle, dim, null, commonPrefix - 1, middle);
     }
     //let's rock'n'roll
-    return buildHistogramAndPartition(data, left, right, from, to, middle, 0, commonPrefix, dim,0, 0);
+    return buildHistogramAndPartition(data, null, left, right, from, to, middle, 0, commonPrefix, dim,0, 0);
   }
 
   void checkArgs(int from, int to, int middle) {
@@ -127,10 +135,13 @@ public final class BKDRadixSelector {
     return commonPrefixPosition;
   }
 
-  private byte[] buildHistogramAndPartition(PointWriter data, PointWriter left, PointWriter right, int from, int to, int middle,
+  private byte[] buildHistogramAndPartition(PointWriter points, PointWriter deltaPoints, PointWriter left, PointWriter right, int from, int to, int middle,
                                             int iteration,  int commonPrefix, int dim, int leftCount, int rightCount) throws IOException {
+
+    PointWriter currentPoints = (deltaPoints == null) ? points : deltaPoints;
     //build histogram at the commonPrefix byte
-    try (PointReader reader = data.getReader(from, to)) {
+    try (PointReader reader = currentPoints.getReader(0, currentPoints.count());
+         PointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedByteLength, "delta", 0)) {
       if (iteration == 0) {
         // we specialise this case
         reader.buildHistogram(dim * bytesPerDim + commonPrefix, histogram[commonPrefix]);
@@ -140,8 +151,13 @@ public final class BKDRadixSelector {
           if (hasCommonPrefix(packedValue, dim, commonPrefix)) {
             int bucket = packedValue.bytes[packedValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
             histogram[commonPrefix][bucket]++;
+            deltaPointsWriter.append(packedValue, reader.docID());
           }
         }
+        if (deltaPoints != null) {
+          deltaPoints.destroy();
+        }
+        deltaPoints = deltaPointsWriter;
       }
     }
     //Count left points and record the partition point
@@ -162,25 +178,31 @@ public final class BKDRadixSelector {
     assert leftCount + rightCount + histogram[commonPrefix][partitionBucket[commonPrefix]] == to - from;
 
     if (commonPrefix == bytesPerDim - 1) {
+      if (deltaPoints != null) {
+        deltaPoints.destroy();
+      }
       // we are done, lets break data around. No need to sort on heap, maybe we need to sort by docID?
-      return partition(data, left, right, from, to, middle, dim, null, commonPrefix, middle - leftCount);
+      return partition(points, left, right, from, to, middle, dim, null, commonPrefix, middle - leftCount);
     } else if (histogram[commonPrefix][partitionBucket[commonPrefix]] <= maxPointsSortedOffHeap) {
+      if (deltaPoints != null) {
+        deltaPoints.destroy();
+      }
       // last points are done on heap
       int size = histogram[commonPrefix][partitionBucket[commonPrefix]];
       HeapPointWriter writer = new HeapPointWriter(size, size, packedByteLength);
-      return partition(data, left, right, from, to, middle, dim, writer, commonPrefix, 0);
+      return partition(points, left, right, from, to, middle, dim, writer, commonPrefix, 0);
     } else {
       // iterate next common prefix
-      return buildHistogramAndPartition(data, left, right, from, to, middle, ++iteration, ++commonPrefix, dim,  leftCount, rightCount);
+      return buildHistogramAndPartition(points, deltaPoints, left, right, from, to, middle, ++iteration, ++commonPrefix, dim,  leftCount, rightCount);
     }
   }
 
-  private byte[] partition(PointWriter data, PointWriter left, PointWriter right, int from, int to, int middle, int dim,
+  private byte[] partition(PointWriter points, PointWriter left, PointWriter right, int from, int to, int middle, int dim,
                            HeapPointWriter sorted, int commonPrefix, int numDocsTiebreak) throws IOException {
     int leftCounter = 0;
     int tiebreakCounter = 0;
 
-    try (PointReader reader = data.getReader(from, to)) {
+    try (PointReader reader = points.getReader(from, to)) {
       while(reader.next()) {
         assert leftCounter <= middle;
         BytesRef packedValue = reader.packedValue();
@@ -215,7 +237,7 @@ public final class BKDRadixSelector {
     // we might need still have work to do
     if (sorted != null) {
       // make sure we are just not soring all data
-      assert sorted.count() != data.count();
+      assert sorted.count() != points.count();
       return heapSelect(sorted, left, right, dim, middle, leftCounter, commonPrefix);
     }
     // We did not have any points to sort on memory,

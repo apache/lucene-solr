@@ -51,7 +51,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int partitionDim = random().nextInt(dimensions);
     PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
     PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, 0);
+    BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, 0, dir, "test");
     byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, partitionDim);
     leftPointWriter.close();
     rightPointWriter.close();
@@ -81,7 +81,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     for (int splitDim =0; splitDim < dimensions; splitDim++) {
       PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
       PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
-      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep);
+      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep, dir, "test");
       byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, splitDim);
       leftPointWriter.close();
       rightPointWriter.close();
@@ -113,7 +113,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     for (int splitDim =0; splitDim < dimensions; splitDim++) {
       PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
       PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
-      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep);
+      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep, dir, "test");
       byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, splitDim);
       leftPointWriter.close();
       rightPointWriter.close();
@@ -146,7 +146,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     for (int splitDim =0; splitDim < dimensions; splitDim++) {
       PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
       PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
-      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep);
+      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep, dir, "test");
       byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, splitDim);
       leftPointWriter.close();
       rightPointWriter.close();
@@ -185,7 +185,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       byte[] value = new byte[bytesPerDimension];
       while (reader.next()) {
         BytesRef packedValue = reader.packedValue();
-        System.arraycopy(packedValue.length, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
+        System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
         if (min == null || FutureArrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
           System.arraycopy(value, 0, min, 0, bytesPerDimension);
         }
