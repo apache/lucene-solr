@@ -24,6 +24,7 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 
 /** Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
  *
@@ -32,9 +33,12 @@ public final class OfflinePointReader extends PointReader {
   long countLeft;
   final IndexInput in;
   private final byte[] packedValue;
+  private final BytesRef docValue;
   final int bytesPerDoc;
-  private int docID;
+  //private int docID;
   private boolean checked;
+
+  private final int packedValueLength;
 
   // File name we are reading
   final String name;
@@ -42,6 +46,7 @@ public final class OfflinePointReader extends PointReader {
   public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length) throws IOException {
     int bytesPerDoc = packedBytesLength + Integer.BYTES;
     this.bytesPerDoc = bytesPerDoc;
+    this.packedValueLength = packedBytesLength;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
       throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
@@ -65,7 +70,10 @@ public final class OfflinePointReader extends PointReader {
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     countLeft = length;
-    packedValue = new byte[packedBytesLength];
+    packedValue = new byte[bytesPerDoc];
+    docValue = new BytesRef();
+    docValue.bytes = packedValue;
+    docValue.length = packedBytesLength;
   }
 
   @Override
@@ -77,23 +85,25 @@ public final class OfflinePointReader extends PointReader {
       countLeft--;
     }
     try {
-      in.readBytes(packedValue, 0, packedValue.length);
+      in.readBytes(packedValue, 0, bytesPerDoc);
     } catch (EOFException eofe) {
       assert countLeft == -1;
       return false;
     }
-    docID = in.readInt();
+    //docID = in.readInt();
     return true;
   }
 
   @Override
-  public byte[] packedValue() {
-    return packedValue;
+  public BytesRef packedValue() {
+    return docValue;
   }
 
   @Override
   public int docID() {
-    return docID;
+    int position = packedValueLength;
+    return ((packedValue[position++] & 0xFF) << 24) | ((packedValue[position++] & 0xFF) << 16)
+        | ((packedValue[position++] & 0xFF) <<  8) |  (packedValue[position++] & 0xFF);
   }
 
   @Override

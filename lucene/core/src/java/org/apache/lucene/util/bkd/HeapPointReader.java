@@ -18,6 +18,8 @@ package org.apache.lucene.util.bkd;
 
 import java.util.List;
 
+import org.apache.lucene.util.BytesRef;
+
 /** Utility class to read buffered points from in-heap arrays.
  *
  * @lucene.internal */
@@ -28,7 +30,7 @@ public final class HeapPointReader extends PointReader {
   final int packedBytesLength;
   final int[] docIDs;
   final int end;
-  final byte[] scratch;
+  final BytesRef scratch;
 
   public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] docIDs, int start, int end) {
     this.blocks = blocks;
@@ -37,7 +39,8 @@ public final class HeapPointReader extends PointReader {
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
-    scratch = new byte[packedBytesLength];
+    scratch = new BytesRef();
+    scratch.length = packedBytesLength;
   }
 
   void readPackedValue(int index, byte[] bytes) {
@@ -53,9 +56,18 @@ public final class HeapPointReader extends PointReader {
   }
 
   @Override
-  public byte[] packedValue() {
-    readPackedValue(curRead, scratch);
+  public BytesRef packedValue() {
+    getPackedValueSlice(curRead, scratch);
     return scratch;
+  }
+
+  /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
+  void getPackedValueSlice(int index, BytesRef result) {
+    int block = index / valuesPerBlock;
+    int blockIndex = index % valuesPerBlock;
+    result.bytes = blocks.get(block);
+    result.offset = blockIndex * packedBytesLength;
+    assert result.length == packedBytesLength;
   }
 
   @Override
@@ -70,7 +82,8 @@ public final class HeapPointReader extends PointReader {
       throw new IllegalStateException("dimensions have " + packedBytesLength + " bytes , but " + bytePosition + " were requested");
     }
    while (next()) {
-     histogram[packedValue()[bytePosition] & 0xff]++;
+     BytesRef packedValue = packedValue();
+     histogram[packedValue.bytes[packedValue.offset + bytePosition] & 0xff]++;
    }
   }
 

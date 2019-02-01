@@ -20,6 +20,8 @@ package org.apache.lucene.util.bkd;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.util.BytesRef;
+
 /** One pass iterator through all points previously written with a
  *  {@link PointWriter}, abstracting away whether points a read
  *  from (offline) disk or simple arrays in heap.
@@ -31,7 +33,7 @@ public abstract class PointReader implements Closeable {
   public abstract boolean next() throws IOException;
 
   /** Returns the packed byte[] value */
-  public abstract byte[] packedValue();
+  public abstract BytesRef packedValue();
 
   /** DocID for this point */
   public abstract int docID();

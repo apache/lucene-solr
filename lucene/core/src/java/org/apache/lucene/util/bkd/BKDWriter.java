@@ -1493,7 +1493,7 @@ public class BKDWriter implements Closeable {
         }
       }
 
-      //sort the chosen dimension
+      // sort the chosen dimension
       sortHeapPointWriter(heapSource, Math.toIntExact(heapSource.count()), sortedDim, commonPrefixLengths[sortedDim]);
 
       // Save the block file pointer:
@@ -1550,11 +1550,11 @@ public class BKDWriter implements Closeable {
       PointWriter leftPointWriter;
       PointWriter rightPointWriter;
       byte[] splitValue;
-      try (PointWriter leftPointWriter2 = getPointWriter(leftCount, "left" + splitDim);
-           PointWriter rightPointWriter2 = getPointWriter(rightCount, "right" + splitDim)) {
-        splitValue = radixSelector.select(data, leftPointWriter2, rightPointWriter2, 0, Math.toIntExact(data.count()),  Math.toIntExact(leftCount), splitDim);
-        leftPointWriter = leftPointWriter2;
-        rightPointWriter = rightPointWriter2;
+      try (PointWriter tempLeftPointWriter = getPointWriter(leftCount, "left" + splitDim);
+           PointWriter tempRightPointWriter = getPointWriter(rightCount, "right" + splitDim)) {
+        splitValue = radixSelector.select(data, tempLeftPointWriter, tempRightPointWriter, 0, Math.toIntExact(data.count()),  Math.toIntExact(leftCount), splitDim);
+        leftPointWriter = tempLeftPointWriter;
+        rightPointWriter = tempRightPointWriter;
         data.destroy();
       } catch (Throwable t) {
         throw verifyChecksum(t, data);

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -51,38 +52,6 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
     PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
     BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, 0);
-    byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, partitionDim);
-    leftPointWriter.close();
-    rightPointWriter.close();
-    byte[] max = getMax(leftPointWriter, middle, bytesPerDimensions, partitionDim);
-    byte[] min = getMin(rightPointWriter, values - middle, bytesPerDimensions, partitionDim);
-    assertTrue(FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions) <= 0);
-    assertTrue(Arrays.equals(partitionPoint, min));
-    dir.close();
-  }
-
-  public void testRandomInt() throws IOException {
-    int values = atLeast(15000);
-    Directory dir = getDirectory(values);
-    int middle = random().nextInt(values);
-    int sortedOnHep = random().nextInt(values /4) + 1;
-    int dimensions = random().nextInt(8) + 1;
-    int bytesPerDimensions = Integer.BYTES;
-    int packedLength = dimensions * bytesPerDimensions;
-    PointWriter pointWriter = getRandomPointWriter(dir, values, packedLength);
-    byte[] value = new byte[packedLength];
-    for (int i =0; i < values; i++) {
-      for (int j =0;j < dimensions; j++) {
-        int mult = (random().nextBoolean() ? 1 : -1);
-        NumericUtils.intToSortableBytes(mult * random().nextInt(), value, j * Integer.BYTES);
-      }
-      pointWriter.append(value, i);
-    }
-    pointWriter.close();
-    int partitionDim = random().nextInt(dimensions);
-    PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
-    PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep);
     byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, partitionDim);
     leftPointWriter.close();
     rightPointWriter.close();
@@ -189,6 +158,8 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     dir.close();
   }
 
+
+
   private PointWriter getRandomPointWriter(Directory dir, int numPoints, int packedBytesLength) throws IOException {
     if (random().nextBoolean() && random().nextBoolean()) {
       return new HeapPointWriter(numPoints, numPoints, packedBytesLength);
@@ -213,8 +184,8 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     try (PointReader reader = p.getReader(0, size)) {
       byte[] value = new byte[bytesPerDimension];
       while (reader.next()) {
-        byte[] packedValue = reader.packedValue();
-        System.arraycopy(packedValue, dimension * bytesPerDimension, value, 0, bytesPerDimension);
+        BytesRef packedValue = reader.packedValue();
+        System.arraycopy(packedValue.length, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
         if (min == null || FutureArrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
           System.arraycopy(value, 0, min, 0, bytesPerDimension);
         }
@@ -229,8 +200,8 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     try (PointReader reader = p.getReader(0, size)) {
       byte[] value = new byte[bytesPerDimension];
       while (reader.next()) {
-        byte[] packedValue = reader.packedValue();
-        System.arraycopy(packedValue, dimension * bytesPerDimension, value, 0, bytesPerDimension);
+        BytesRef packedValue = reader.packedValue();
+        System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
         if (max == null || FutureArrays.compareUnsigned(max, 0, bytesPerDimension, value, 0, bytesPerDimension) < 0) {
           System.arraycopy(value, 0, max, 0, bytesPerDimension);
         }
