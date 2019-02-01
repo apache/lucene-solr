@@ -133,7 +133,13 @@ Upgrade Notes
 
 * SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. 
   If you have a custom language identifier implementation you will need to adapt your code.
-  
+
+* SOLR-5211: Deleting (or updating) documents by their uniqueKey is now scoped to only consider root documents, not
+  child/nested documents.  Thus a delete-by-id won't work on a child doc (no-op), and an attempt to update a child doc
+  by providing a new doc with the same ID would add a new doc (probably erroneous).  Both these actions were and still
+  are problematic.  In-place-updates are safe though.  If you want to delete certain child documents and if you know
+  they don't themselves have nested children then you must do so with a delete-by-query technique.
+
 New Features
 ----------------------
 
