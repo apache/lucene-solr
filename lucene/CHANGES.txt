@@ -283,6 +283,9 @@ Build
 
 Bug fixes:
 
+* LUCENE-8669: Fix LatLonShape WITHIN queries that fail with Multiple search Polygons
+  that share the dateline. (Nick Knize)
+
 * LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
   (Yoo Jeongin via Jim Ferenczi)
 
@@ -304,6 +307,9 @@ Bug fixes:
 * LUCENE-8650: ConcatenatingTokenStream did not correctly clear its state in reset(), and
   was not propagating final position increments from its child streams correctly.
   (Dan Meehl, Alan Woodward)
+
+* LUCENE-8676: The Korean tokenizer does not update the last position if the backtrace is caused
+  by a big buffer (1024 chars). (Jim Ferenczi)
 
 New Features
 
