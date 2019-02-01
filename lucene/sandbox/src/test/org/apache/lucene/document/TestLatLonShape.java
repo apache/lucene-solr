@@ -843,4 +843,94 @@ public class TestLatLonShape extends LuceneTestCase {
 
     IOUtils.close(w, reader, dir);
   }
+
+  public void testLUCENE8679() {
+    double alat = 1.401298464324817E-45;
+    double alon = 24.76789767911785;
+    double blat = 34.26468306870807;
+    double blon = -52.67048754768767;
+    Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
+                                  new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
+    Polygon2D polygon2D = Polygon2D.create(polygon);
+    PointValues.Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(blon)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(alat)));
+
+    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, rel);
+
+    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(alat)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(blon)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)));
+
+    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, rel);
+  }
+
+  public void testTriangleTouchingEdges() {
+    Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
+    Polygon2D polygon2D = Polygon2D.create(p);
+    //3 shared points
+    PointValues.Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    //2 shared points
+    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.75)));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    //1 shared point
+    rel = polygon2D.relateTriangle(
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.75)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.75)));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    // 1 shared point but out
+    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(2)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(2)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(2)));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    // 1 shared point but crossing
+    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(2)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    //share one edge
+    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    //share one edge outside
+    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1.5)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+  }
+
 }
