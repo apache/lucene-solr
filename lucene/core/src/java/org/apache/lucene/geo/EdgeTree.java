@@ -304,7 +304,11 @@ public abstract class EdgeTree {
             ++insideEdges;
           }
           if (insideEdges == 3) {
+            // fully inside, we can return
             return Relation.CELL_INSIDE_QUERY;
+          } else {
+            //reset relation to not crossing
+            r =  Relation.CELL_OUTSIDE_QUERY;
           }
         }
 
