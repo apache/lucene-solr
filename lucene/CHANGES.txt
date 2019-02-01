@@ -308,6 +308,9 @@ Bug fixes:
   was not propagating final position increments from its child streams correctly.
   (Dan Meehl, Alan Woodward)
 
+* LUCENE-8676: The Korean tokenizer does not update the last position if the backtrace is caused
+  by a big buffer (1024 chars). (Jim Ferenczi)
+
 New Features
 
 * LUCENE-8026: ExitableDirectoryReader may now time out queries that run on
