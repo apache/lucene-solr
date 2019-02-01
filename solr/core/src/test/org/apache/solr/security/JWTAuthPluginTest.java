@@ -44,6 +44,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mortbay.util.ajax.JSON;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
@@ -397,7 +398,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     String headerBase64 = plugin.generateAuthDataHeader();
     String headerJson = new String(Base64.base64ToByteArray(headerBase64), StandardCharsets.UTF_8);
-    Map<String,String> parsed = (Map<String, String>) Utils.fromJSONString(headerJson);
+    Map<String,String> parsed = (Map<String, String>) JSON.parse(headerJson);
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
     assertEquals("solr-cluster", parsed.get("client_id"));
