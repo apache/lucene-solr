@@ -38,21 +38,21 @@ public final class BKDRadixSelector {
   //bytes we are sorting
   private final int bytesPerDim;
   //data size
-  private int packedByteLength;
+  private final int packedByteLength;
   //flag to when we are moving to sort on heap
   private final int maxPointsSortedOffHeap;
   //holder for partition points
-  private int[] partitionBucket;
+  private final int[] partitionBucket;
   //holder for partition bytes
-  private byte[] partitionBytes;
+  private final byte[] partitionBytes;
   //re-usable on-heap selector
-  private HeapSelector heapSelector;
+  private final HeapSelector heapSelector;
   // scratch object to move bytes around
-  private BytesRef bytesRef = new BytesRef();
+  private final BytesRef bytesRef = new BytesRef();
   //Directory to create new Offline writer
-  private Directory tempDir;
+  private final Directory tempDir;
   // prefix for temp files
-  private String tempFileNamePrefix;
+  private final String tempFileNamePrefix;
 
 
   /**
