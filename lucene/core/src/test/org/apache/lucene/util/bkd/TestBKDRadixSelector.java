@@ -51,7 +51,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int partitionDim = random().nextInt(dimensions);
     PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
     PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, 0, dir, "test");
+    BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, 1, dir, "test");
     byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, partitionDim);
     leftPointWriter.close();
     rightPointWriter.close();

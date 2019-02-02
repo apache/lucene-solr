@@ -51,12 +51,15 @@ public final class OfflinePointReader extends PointReader {
   public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
     this.bytesPerDoc = packedBytesLength + Integer.BYTES;;
     this.packedValueLength = packedBytesLength;
-    this.maxPointOnHeap = maxPointsOnHeap;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
       throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
     }
+    if (maxPointsOnHeap == 0) {
+      throw new IllegalArgumentException("[maxPointsOnHeap] must be bigger that 0");
+    }
 
+    this.maxPointOnHeap =  maxPointsOnHeap;
     // Best-effort checksumming:
     if (start == 0 && length*bytesPerDoc == tempDir.fileLength(tempFileName) - CodecUtil.footerLength()) {
       // If we are going to read the entire file, e.g. because BKDWriter is now
@@ -76,13 +79,10 @@ public final class OfflinePointReader extends PointReader {
     in.seek(seekFP);
     countLeft = length;
     if (reusableBuffer != null) {
-      assert reusableBuffer.length >= maxPointsOnHeap * bytesPerDoc;
+      assert reusableBuffer.length >= this.maxPointOnHeap * bytesPerDoc;
       this.onHeapBuffer = reusableBuffer;
     } else {
-      if (maxPointsOnHeap == 0) {
-        maxPointsOnHeap = 1;
-      }
-      this.onHeapBuffer = new byte[maxPointsOnHeap * bytesPerDoc];
+      this.onHeapBuffer = new byte[this.maxPointOnHeap * bytesPerDoc];
     }
     this.packedValue = new BytesRef();
     this.packedValue.bytes = onHeapBuffer;
