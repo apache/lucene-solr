@@ -33,6 +33,7 @@ public final class OfflinePointReader extends PointReader {
   long countLeft;
   final IndexInput in;
 
+  byte[] onHeapBuffer;
   private final BytesRef packedValue;
   private final BytesRef docValue;
   final int bytesPerDoc;
@@ -41,13 +42,17 @@ public final class OfflinePointReader extends PointReader {
 
   private final int packedValueLength;
 
+  private int bufferSize;
+  private final int maxPointOnHeap;
+
   // File name we are reading
   final String name;
 
-  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length) throws IOException {
+  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
     int bytesPerDoc = packedBytesLength + Integer.BYTES;
     this.bytesPerDoc = bytesPerDoc;
     this.packedValueLength = packedBytesLength;
+    this.maxPointOnHeap = maxPointsOnHeap;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
       throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
@@ -71,30 +76,49 @@ public final class OfflinePointReader extends PointReader {
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     countLeft = length;
-    byte[] packedValue = new byte[bytesPerDoc];
+    if (reusableBuffer != null) {
+      assert reusableBuffer.length >= maxPointsOnHeap * bytesPerDoc;
+      this.onHeapBuffer = reusableBuffer;
+    } else {
+      this.onHeapBuffer = new byte[maxPointsOnHeap * bytesPerDoc];
+    }
     this.packedValue = new BytesRef();
-    this.packedValue.bytes = packedValue;
+    this.packedValue.bytes = onHeapBuffer;
     this.packedValue.length = packedBytesLength;
     this.docValue = new BytesRef();
-    this.docValue.bytes = packedValue;
+    this.docValue.bytes = onHeapBuffer;
     this.docValue.length = bytesPerDoc;
+    docValue.offset = 0;
   }
 
   @Override
   public boolean next() throws IOException {
-    if (countLeft >= 0) {
-      if (countLeft == 0) {
+    if (docValue.offset == bufferSize) {
+      if (countLeft >= 0) {
+        if (countLeft == 0) {
+          return false;
+        }
+      }
+      try {
+        if (countLeft > maxPointOnHeap) {
+          in.readBytes(onHeapBuffer, 0, maxPointOnHeap * bytesPerDoc);
+          bufferSize = ( maxPointOnHeap -1) * bytesPerDoc;
+          countLeft -= maxPointOnHeap;
+        } else {
+          in.readBytes(onHeapBuffer, 0, (int) countLeft * bytesPerDoc);
+          bufferSize = (int) (countLeft - 1) * bytesPerDoc;
+          countLeft = 0;
+        }
+        docValue.offset = 0;
+        packedValue.offset = 0;
+      } catch (EOFException eofe) {
+        assert countLeft == -1;
         return false;
       }
-      countLeft--;
+    } else {
+      docValue.offset += bytesPerDoc;
+      packedValue.offset += bytesPerDoc;
     }
-    try {
-      in.readBytes(packedValue.bytes, 0, bytesPerDoc);
-    } catch (EOFException eofe) {
-      assert countLeft == -1;
-      return false;
-    }
-    //docID = in.readInt();
     return true;
   }
 
@@ -109,19 +133,19 @@ public final class OfflinePointReader extends PointReader {
 
   @Override
   public int docID() {
-    int position = packedValueLength;
-    return ((docValue.bytes[position++] & 0xFF) << 24) | ((docValue.bytes[position++] & 0xFF) << 16)
-        | ((docValue.bytes[position++] & 0xFF) <<  8) |  (docValue.bytes[position++] & 0xFF);
+    int position = docValue.offset + packedValueLength;
+    return ((onHeapBuffer[position++] & 0xFF) << 24) | ((onHeapBuffer[position++] & 0xFF) << 16)
+        | ((onHeapBuffer[position++] & 0xFF) <<  8) |  (onHeapBuffer[position++] & 0xFF);
   }
 
-  public void getByteCountAtPosition(int bytePosition, int[] count) throws IOException {
+  public void getByteCountAtPosition(int bytePosition, int[] histogram) throws IOException {
     if (bytePosition > bytesPerDoc) {
       throw new IllegalStateException("document has " + bytesPerDoc + " bytes , but " + bytePosition + " were requested");
     }
     long fp = in.getFilePointer() + bytePosition;
     for(long i = countLeft; i > 0 ;i--) {
       in.seek(fp);
-      count[in.readByte() & 0xff]++;
+      histogram[in.readByte() & 0xff]++;
       fp += bytesPerDoc;
     }
   }

@@ -75,11 +75,17 @@ public final class OfflinePointWriter implements PointWriter<OfflinePointReader>
   }
 
   @Override
-  public OfflinePointReader getReader(long start, long length) throws IOException {
+  public OfflinePointReader getReader(long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
     assert closed;
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
     assert expectedCount == 0 || count == expectedCount;
-    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length);
+    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, maxPointsOnHeap, reusableBuffer);
+  }
+
+  @Override
+  public OfflinePointReader getReader(long start, long length) throws IOException {
+    byte[] buffer  = new byte[packedBytesLength + Integer.BYTES];
+    return getReader(start, length, 1, buffer);
   }
 
   @Override

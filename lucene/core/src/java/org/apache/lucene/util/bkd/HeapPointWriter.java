@@ -158,6 +158,11 @@ public final class HeapPointWriter implements PointWriter<HeapPointReader> {
     return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, docIDs, (int) start, Math.toIntExact(start+length));
   }
 
+  public HeapPointReader getReader(long start, long length, int maxPointsOnHeap, byte[] resusableBuffer) {
+    assert maxPointsOnHeap >= count();
+    return getReader(start, length);
+  }
+
   @Override
   public void close() {
     closed = true;

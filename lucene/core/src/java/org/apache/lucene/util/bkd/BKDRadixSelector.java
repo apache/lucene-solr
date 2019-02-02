@@ -41,6 +41,8 @@ public final class BKDRadixSelector {
   private final int packedBytesLength;
   //flag to when we are moving to sort on heap
   private final int maxPointsSortedOffHeap;
+  //reusable buffer
+  private final byte[] offlineBuffer;
   //holder for partition points
   private final int[] partitionBucket;
   //holder for partition bytes
@@ -65,6 +67,7 @@ public final class BKDRadixSelector {
     this.packedBytesLength = numDim * bytesPerDim;
     this.bytesSorted = bytesPerDim + Integer.BYTES;
     this.maxPointsSortedOffHeap = maxPointsSortedOffHeap;
+    this.offlineBuffer = new byte[maxPointsSortedOffHeap * (packedBytesLength + Integer.BYTES)];
     this.partitionBucket = new int[bytesSorted];
     this.partitionBytes =  new byte[bytesSorted];
     this.histogram = new int[bytesSorted][HISTOGRAM_SIZE];
@@ -116,7 +119,7 @@ public final class BKDRadixSelector {
     //find common prefix
     byte[] commonPrefix = new byte[bytesSorted];
     int commonPrefixPosition = bytesSorted;
-    try (OfflinePointReader reader = points.getReader(from, to)) {
+    try (OfflinePointReader reader = points.getReader(from, to, maxPointsSortedOffHeap, offlineBuffer)) {
       reader.next();
       BytesRef packedValue = reader.docValue();
       // copy dimension
@@ -159,7 +162,7 @@ public final class BKDRadixSelector {
 
     OfflinePointWriter currentPoints = (deltaPoints == null) ? points : deltaPoints;
     //build histogram at the commonPrefix byte
-    try (OfflinePointReader reader = currentPoints.getReader(0, currentPoints.count());
+    try (OfflinePointReader reader = currentPoints.getReader(0, currentPoints.count(), maxPointsSortedOffHeap, offlineBuffer);
          OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
       if (iteration == 0) {
         // we specialise this case
@@ -230,7 +233,7 @@ public final class BKDRadixSelector {
     int leftCounter = 0;
     int tiebreakCounter = 0;
 
-    try (OfflinePointReader reader = points.getReader(from, to)) {
+    try (OfflinePointReader reader = points.getReader(from, to, maxPointsSortedOffHeap, offlineBuffer)) {
       while(reader.next()) {
         assert leftCounter <= middle;
         BytesRef docValue = reader.docValue();

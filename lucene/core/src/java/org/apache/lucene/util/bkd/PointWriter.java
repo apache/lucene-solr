@@ -35,6 +35,9 @@ public interface PointWriter<T extends PointReader> extends Closeable {
   void append(BytesRef packedValue, int docID) throws IOException;
 
   /** Returns a {@link PointReader} iterator to step through all previously added points */
+  T getReader(long startPoint, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException;
+
+  /** Returns a {@link PointReader} iterator to step through all previously added points */
   T getReader(long startPoint, long length) throws IOException;
 
   /** Return the number of points in this writer */
