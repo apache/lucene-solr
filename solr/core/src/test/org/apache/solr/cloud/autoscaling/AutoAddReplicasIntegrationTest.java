@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cloud.autoscaling;
 
 import static org.apache.solr.common.util.Utils.makeMap;
@@ -41,21 +40,23 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;")
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION1 =  "testSimple1";
   private static final String COLLECTION2 =  "testSimple2";
 
+  protected String getConfigSet() {
+    return "cloud-minimal";
+  }
+
   @Before
   public void setupCluster() throws Exception {
     configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", configset(getConfigSet()))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
 
@@ -68,8 +69,11 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   
   @After
   public void tearDown() throws Exception {
-    shutdownCluster();
-    super.tearDown();
+    try {
+      shutdownCluster();
+    } finally {
+      super.tearDown();
+    }
   }
 
   @Test
