@@ -24,7 +24,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -32,16 +31,12 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Test 5 nodes Solr cluster with Kerberos plugin enabled.
- * This test is Ignored right now as Mini KDC has a known bug that
- * doesn't allow us to run multiple nodes on the same host.
- * https://issues.apache.org/jira/browse/HADOOP-9893
  */
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
@@ -61,11 +56,6 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   private static final String collectionName = "testkerberoscollection";
   
   private KerberosTestServices kerberosTestServices;
-
-  @BeforeClass
-  public static void betterNotBeJava9() {
-    assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
-  }
 
   @Override
   public void setUp() throws Exception {
@@ -123,7 +113,6 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   }
   
   @Test
-  //2018-06-18 (commented)  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testBasics() throws Exception {
     testCollectionCreateSearchDelete();
     // sometimes run a second test e.g. to test collection create-delete-create scenario
@@ -139,7 +128,6 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // modify/query collection
-
     new UpdateRequest().add("id", "1").commit(client, collectionName);
     QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));
     assertEquals(1, rsp.getResults().getNumFound());
