@@ -23,17 +23,18 @@ import java.io.IOException;
 import org.apache.lucene.util.BytesRef;
 
 /** One pass iterator through all points previously written with a
- *  {@link PointWriter}, abstracting away whether points a read
+ *  {@link PointWriter}, abstracting away whether points are read
  *  from (offline) disk or simple arrays in heap.
  *
- * @lucene.internal */
+ * @lucene.internal
+ * */
 public abstract class PointReader implements Closeable {
 
   /** Returns false once iteration is done, else true. */
   public abstract boolean next() throws IOException;
 
-  /** Returns the packed byte[] value */
-  public abstract BytesRef packedValue();
+  /** Sets the packed value in the provided ByteRef */
+  public abstract void packedValue(BytesRef bytesRef);
 
   /** DocID for this point */
   public abstract int docID();

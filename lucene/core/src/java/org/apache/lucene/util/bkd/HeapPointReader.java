@@ -20,9 +20,11 @@ import java.util.List;
 
 import org.apache.lucene.util.BytesRef;
 
-/** Utility class to read buffered points from in-heap arrays.
+/**
+ * Utility class to read buffered points from in-heap arrays.
  *
- * @lucene.internal */
+ * @lucene.internal
+ * */
 public final class HeapPointReader extends PointReader {
   private int curRead;
   final List<byte[]> blocks;
@@ -30,7 +32,6 @@ public final class HeapPointReader extends PointReader {
   final int packedBytesLength;
   final int[] docIDs;
   final int end;
-  final BytesRef scratch;
 
   public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] docIDs, int start, int end) {
     this.blocks = blocks;
@@ -39,8 +40,6 @@ public final class HeapPointReader extends PointReader {
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
-    scratch = new BytesRef();
-    scratch.length = packedBytesLength;
   }
 
   @Override
@@ -50,18 +49,12 @@ public final class HeapPointReader extends PointReader {
   }
 
   @Override
-  public BytesRef packedValue() {
-    getPackedValueSlice(curRead, scratch);
-    return scratch;
-  }
-
-  /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
-  void getPackedValueSlice(int index, BytesRef result) {
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    result.bytes = blocks.get(block);
-    result.offset = blockIndex * packedBytesLength;
-    assert result.length == packedBytesLength;
+  public void packedValue(BytesRef bytesRef) {
+    int block = curRead / valuesPerBlock;
+    int blockIndex = curRead % valuesPerBlock;
+    bytesRef.bytes = blocks.get(block);
+    bytesRef.offset = blockIndex * packedBytesLength;
+    bytesRef.length = packedBytesLength;
   }
 
   @Override

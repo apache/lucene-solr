@@ -254,8 +254,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     Arrays.fill(min, (byte) 0xff);
     try (PointReader reader = p.getReader(0, size)) {
       byte[] value = new byte[bytesPerDimension];
+      BytesRef packedValue = new BytesRef();
       while (reader.next()) {
-        BytesRef packedValue = reader.packedValue();
+        reader.packedValue(packedValue);
         System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
         if (min == null || FutureArrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
           System.arraycopy(value, 0, min, 0, bytesPerDimension);
@@ -268,8 +269,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   private int getMinDocId(PointWriter p, int size, int bytesPerDimension, int dimension, byte[] partitionPoint) throws  IOException {
    int docID = Integer.MAX_VALUE;
     try (PointReader reader = p.getReader(0, size)) {
+      BytesRef packedValue = new BytesRef();
       while (reader.next()) {
-        BytesRef packedValue = reader.packedValue();
+        reader.packedValue(packedValue);
         int offset = dimension * bytesPerDimension;
         if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
           int newDocID = reader.docID();
@@ -287,8 +289,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     Arrays.fill(max, (byte) 0);
     try (PointReader reader = p.getReader(0, size)) {
       byte[] value = new byte[bytesPerDimension];
+      BytesRef packedValue = new BytesRef();
       while (reader.next()) {
-        BytesRef packedValue = reader.packedValue();
+        reader.packedValue(packedValue);
         System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
         if (max == null || FutureArrays.compareUnsigned(max, 0, bytesPerDimension, value, 0, bytesPerDimension) < 0) {
           System.arraycopy(value, 0, max, 0, bytesPerDimension);
@@ -301,8 +304,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   private int getMaxDocId(PointWriter p, int size, int bytesPerDimension, int dimension, byte[] partitionPoint) throws  IOException {
     int docID = Integer.MIN_VALUE;
     try (PointReader reader = p.getReader(0, size)) {
+      BytesRef packedValue = new BytesRef();
       while (reader.next()) {
-        BytesRef packedValue = reader.packedValue();
+        reader.packedValue(packedValue);
         int offset = dimension * bytesPerDimension;
         if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
           int newDocID = reader.docID();

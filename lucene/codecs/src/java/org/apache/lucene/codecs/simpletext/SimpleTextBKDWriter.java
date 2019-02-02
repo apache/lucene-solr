@@ -238,7 +238,8 @@ final class SimpleTextBKDWriter implements Closeable {
     for(int i=0;i<pointCount;i++) {
       boolean hasNext = reader.next();
       assert hasNext;
-      offlinePointWriter.append(reader.packedValue(), heapPointWriter.docIDs[i]);
+      reader.packedValue(scratchBytesRef1);
+      offlinePointWriter.append(scratchBytesRef1, heapPointWriter.docIDs[i]);
     }
 
     heapPointWriter = null;
@@ -884,7 +885,8 @@ final class SimpleTextBKDWriter implements Closeable {
       for(int i=0;i<count;i++) {
         boolean hasNext = reader.next();
         assert hasNext;
-        writer.append(reader.packedValue(), reader.docID());
+        reader.packedValue(scratchBytesRef1);
+        writer.append(scratchBytesRef1, reader.docID());
       }
       return writer;
     } catch (Throwable t) {

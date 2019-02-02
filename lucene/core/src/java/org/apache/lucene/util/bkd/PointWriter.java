@@ -26,16 +26,14 @@ import org.apache.lucene.util.BytesRef;
  *  those points.  This abstracts away whether we write to disk, or use simple arrays
  *  in heap.
  *
- *  @lucene.internal */
+ *  @lucene.internal
+ *  */
 public interface PointWriter<T extends PointReader> extends Closeable {
   /** Add a new point from byte array*/
   void append(byte[] packedValue, int docID) throws IOException;
 
   /** Add a new point from byteRef */
   void append(BytesRef packedValue, int docID) throws IOException;
-
-  /** Returns a {@link PointReader} iterator to step through all previously added points */
-  T getReader(long startPoint, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException;
 
   /** Returns a {@link PointReader} iterator to step through all previously added points */
   T getReader(long startPoint, long length) throws IOException;

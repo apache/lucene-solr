@@ -1277,7 +1277,8 @@ public class BKDWriter implements Closeable {
       for(int i=0;i<count;i++) {
         boolean hasNext = reader.next();
         assert hasNext;
-        writer.append(reader.packedValue(), reader.docID());
+        reader.packedValue(scratchBytesRef1);
+        writer.append(scratchBytesRef1, reader.docID());
       }
       source.destroy();
       return writer;

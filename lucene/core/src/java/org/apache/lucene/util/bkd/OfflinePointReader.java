@@ -26,30 +26,27 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 
-/** Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
+/**
+ * Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
  *
- * @lucene.internal */
+ * @lucene.internal
+ * */
 public final class OfflinePointReader extends PointReader {
+
   long countLeft;
   final IndexInput in;
-
   byte[] onHeapBuffer;
-  private final BytesRef packedValue;
-  private final BytesRef docValue;
+  private int offset;
   final int bytesPerDoc;
-  //private int docID;
   private boolean checked;
-
   private final int packedValueLength;
-
   private int bufferSize;
   private final int maxPointOnHeap;
-
   // File name we are reading
   final String name;
 
   public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
-    this.bytesPerDoc = packedBytesLength + Integer.BYTES;;
+    this.bytesPerDoc = packedBytesLength + Integer.BYTES;
     this.packedValueLength = packedBytesLength;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
@@ -84,18 +81,12 @@ public final class OfflinePointReader extends PointReader {
     } else {
       this.onHeapBuffer = new byte[this.maxPointOnHeap * bytesPerDoc];
     }
-    this.packedValue = new BytesRef();
-    this.packedValue.bytes = onHeapBuffer;
-    this.packedValue.length = packedBytesLength;
-    this.docValue = new BytesRef();
-    this.docValue.bytes = onHeapBuffer;
-    this.docValue.length = bytesPerDoc;
-    docValue.offset = 0;
+    this.offset = 0;
   }
 
   @Override
   public boolean next() throws IOException {
-    if (docValue.offset == bufferSize) {
+    if (this.offset == bufferSize) {
       if (countLeft >= 0) {
         if (countLeft == 0) {
           return false;
@@ -104,38 +95,40 @@ public final class OfflinePointReader extends PointReader {
       try {
         if (countLeft > maxPointOnHeap) {
           in.readBytes(onHeapBuffer, 0, maxPointOnHeap * bytesPerDoc);
-          bufferSize = ( maxPointOnHeap -1) * bytesPerDoc;
+          bufferSize = (maxPointOnHeap -1) * bytesPerDoc;
           countLeft -= maxPointOnHeap;
         } else {
           in.readBytes(onHeapBuffer, 0, (int) countLeft * bytesPerDoc);
           bufferSize = (int) (countLeft - 1) * bytesPerDoc;
           countLeft = 0;
         }
-        docValue.offset = 0;
-        packedValue.offset = 0;
+        this.offset = 0;
       } catch (EOFException eofe) {
         assert countLeft == -1;
         return false;
       }
     } else {
-      docValue.offset += bytesPerDoc;
-      packedValue.offset += bytesPerDoc;
+      this.offset += bytesPerDoc;
     }
     return true;
   }
 
   @Override
-  public BytesRef packedValue() {
-    return packedValue;
+  public void packedValue(BytesRef bytesRef) {
+    bytesRef.bytes = onHeapBuffer;
+    bytesRef.offset = offset;
+    bytesRef.length = packedValueLength;
   }
 
-  public BytesRef docValue() {
-    return docValue;
+  protected void docValue(BytesRef bytesRef) {
+    bytesRef.bytes = onHeapBuffer;
+    bytesRef.offset = offset;
+    bytesRef.length = bytesPerDoc;
   }
 
   @Override
   public int docID() {
-    int position = docValue.offset + packedValueLength;
+    int position = this.offset + packedValueLength;
     return ((onHeapBuffer[position++] & 0xFF) << 24) | ((onHeapBuffer[position++] & 0xFF) << 16)
         | ((onHeapBuffer[position++] & 0xFF) <<  8) |  (onHeapBuffer[position++] & 0xFF);
   }

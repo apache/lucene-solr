@@ -37,7 +37,9 @@ public final class BKDRadixSelector {
   private final int[][] histogram;
   //bytes we are sorting
   private final int bytesPerDim;
-  //data size
+  // number of bytes to be sorted: bytesPerDim + Integer.BYTES
+  private final int bytesSorted;
+  //data dimensions size
   private final int packedBytesLength;
   //flag to when we are moving to sort on heap
   private final int maxPointsSortedOffHeap;
@@ -50,13 +52,14 @@ public final class BKDRadixSelector {
   //re-usable on-heap selector
   private final HeapSelector heapSelector;
   // scratch object to move bytes around
-  private final BytesRef bytesRef = new BytesRef();
+  private final BytesRef bytesRef1 = new BytesRef();
+  // scratch object to move bytes around
+  private final BytesRef bytesRef2 = new BytesRef();
   //Directory to create new Offline writer
   private final Directory tempDir;
   // prefix for temp files
   private final String tempFileNamePrefix;
-  // number of bytes to be sorted: bytesPerDim + Integer.BYTES
-  private final int bytesSorted;
+
 
 
   /**
@@ -71,7 +74,7 @@ public final class BKDRadixSelector {
     this.partitionBucket = new int[bytesSorted];
     this.partitionBytes =  new byte[bytesSorted];
     this.histogram = new int[bytesSorted][HISTOGRAM_SIZE];
-    this.bytesRef.length = numDim * bytesPerDim;
+    this.bytesRef1.length = numDim * bytesPerDim;
     this.heapSelector = new HeapSelector(numDim, bytesPerDim);
     this.tempDir = tempDir;
     this.tempFileNamePrefix = tempFileNamePrefix;
@@ -121,23 +124,23 @@ public final class BKDRadixSelector {
     int commonPrefixPosition = bytesSorted;
     try (OfflinePointReader reader = points.getReader(from, to, maxPointsSortedOffHeap, offlineBuffer)) {
       reader.next();
-      BytesRef packedValue = reader.docValue();
+      reader.docValue(bytesRef1);
       // copy dimension
-      System.arraycopy(packedValue.bytes, packedValue.offset + dim * bytesPerDim, commonPrefix, 0, bytesPerDim);
+      System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, commonPrefix, 0, bytesPerDim);
       // copy docID
-      System.arraycopy(packedValue.bytes, packedValue.offset + packedBytesLength, commonPrefix, bytesPerDim, Integer.BYTES);
+      System.arraycopy(bytesRef1.bytes, bytesRef1.offset + packedBytesLength, commonPrefix, bytesPerDim, Integer.BYTES);
       for (int i =from + 1; i< to; i++) {
         reader.next();
-        packedValue = reader.docValue();
+        reader.docValue(bytesRef1);
         int startIndex =  dim * bytesPerDim;
         int endIndex  = (commonPrefixPosition > bytesPerDim) ? startIndex + bytesPerDim :  startIndex + commonPrefixPosition;
-        int j = FutureArrays.mismatch(commonPrefix, 0, endIndex - startIndex, packedValue.bytes, packedValue.offset + startIndex, packedValue.offset + endIndex);
+        int j = FutureArrays.mismatch(commonPrefix, 0, endIndex - startIndex, bytesRef1.bytes, bytesRef1.offset + startIndex, bytesRef1.offset + endIndex);
         if (j == 0) {
           return 0;
         } else if (j == -1) {
           if (commonPrefixPosition > bytesPerDim) {
             //tie-break on docID
-            int k = FutureArrays.mismatch(commonPrefix, bytesPerDim, commonPrefixPosition, packedValue.bytes, packedValue.offset + packedBytesLength, packedValue.offset + packedBytesLength + commonPrefixPosition - bytesPerDim );
+            int k = FutureArrays.mismatch(commonPrefix, bytesPerDim, commonPrefixPosition, bytesRef1.bytes, bytesRef1.offset + packedBytesLength, bytesRef1.offset + packedBytesLength + commonPrefixPosition - bytesPerDim );
             if (k != -1) {
               commonPrefixPosition = bytesPerDim + k;
             }
@@ -165,17 +168,18 @@ public final class BKDRadixSelector {
     try (OfflinePointReader reader = currentPoints.getReader(0, currentPoints.count(), maxPointsSortedOffHeap, offlineBuffer);
          OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
       while (reader.next()) {
-        BytesRef docValue = reader.docValue();
-        if (iteration == 0 || hasCommonPrefix(docValue, dim, commonPrefix)) {
+        reader.docValue(bytesRef1);
+        if (iteration == 0 || hasCommonPrefix(bytesRef1, dim, commonPrefix)) {
           int bucket;
           if (commonPrefix < bytesPerDim) {
-            bucket = docValue.bytes[docValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
+            bucket = bytesRef1.bytes[bytesRef1.offset + dim * bytesPerDim + commonPrefix] & 0xff;
           } else {
-            bucket = docValue.bytes[docValue.offset + packedBytesLength + commonPrefix - bytesPerDim] & 0xff;
+            bucket = bytesRef1.bytes[bytesRef1.offset + packedBytesLength + commonPrefix - bytesPerDim] & 0xff;
           }
           histogram[commonPrefix][bucket]++;
           if (deltaPointsWriter != null) {
-            deltaPointsWriter.append(reader.packedValue(), reader.docID());
+            reader.packedValue(bytesRef2);
+            deltaPointsWriter.append(bytesRef2, reader.docID());
           }
         }
       }
@@ -229,32 +233,32 @@ public final class BKDRadixSelector {
     try (OfflinePointReader reader = points.getReader(from, to, maxPointsSortedOffHeap, offlineBuffer)) {
       while(reader.next()) {
         assert leftCounter <= middle;
-        BytesRef docValue = reader.docValue();
-        BytesRef packedValue = reader.packedValue();
+       reader.docValue(bytesRef1);
+       reader.packedValue(bytesRef2);
         int docID = reader.docID();
-        int thisCommonPrefix = getCommonPrefix(docValue, dim, commonPrefix);
-        int bucket = getBucket(docValue, dim, thisCommonPrefix);
+        int thisCommonPrefix = getCommonPrefix(bytesRef1, dim, commonPrefix);
+        int bucket = getBucket(bytesRef1, dim, thisCommonPrefix);
 
         if (bucket < this.partitionBucket[thisCommonPrefix]) {
           // to the left side
-          left.append(packedValue, docID);
+          left.append(bytesRef2, docID);
           leftCounter++;
         } else if (bucket > this.partitionBucket[thisCommonPrefix]) {
           // to the right side
-          right.append(packedValue, docID);
+          right.append(bytesRef2, docID);
         } else {
           assert thisCommonPrefix == commonPrefix;
           //we should be at the common prefix, if we are at the end of the array
           //then use the  tie-break value, else store for sorting later
           if (thisCommonPrefix == bytesSorted - 1) {
             if (tiebreakCounter < numDocsTiebreak) {
-              left.append(packedValue, docID);
+              left.append(bytesRef2, docID);
               tiebreakCounter++;
             } else {
-              right.append(packedValue, docID);
+              right.append(bytesRef2, docID);
             }
           } else {
-            sorted.append(packedValue, docID);
+            sorted.append(bytesRef2, docID);
           }
         }
       }
@@ -283,15 +287,15 @@ public final class BKDRadixSelector {
     byte[] partition = new byte[bytesPerDim];
     Arrays.fill(partition, (byte) 0xff);
     for (int i = 0; i < writer.count(); i++) {
-      writer.getPackedValueSlice(i, bytesRef);
+      writer.getPackedValueSlice(i, bytesRef1);
       int docID = writer.docIDs[i];
       if (leftCounter < k) {
-        left.append(bytesRef, docID);
+        left.append(bytesRef1, docID);
         leftCounter++;
       } else {
-        right.append(bytesRef, docID);
-        if (FutureArrays.compareUnsigned(bytesRef.bytes, bytesRef.offset + dim * bytesPerDim, bytesRef.offset + (dim + 1) * bytesPerDim, partition, 0, bytesPerDim) < 0) {
-          System.arraycopy(bytesRef.bytes, bytesRef.offset + dim * bytesPerDim, partition, 0, bytesPerDim);
+        right.append(bytesRef1, docID);
+        if (FutureArrays.compareUnsigned(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, bytesRef1.offset + (dim + 1) * bytesPerDim, partition, 0, bytesPerDim) < 0) {
+          System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, partition, 0, bytesPerDim);
         }
       }
     }

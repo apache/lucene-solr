@@ -27,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Writes points to disk in a fixed-with format.
  *
- * @lucene.internal */
+ * @lucene.internal
+ * */
 public final class OfflinePointWriter implements PointWriter<OfflinePointReader> {
 
   final Directory tempDir;
@@ -67,25 +68,17 @@ public final class OfflinePointWriter implements PointWriter<OfflinePointReader>
     assert expectedCount == 0 || count <= expectedCount;
   }
 
-  public void append(BytesRef packedValue) throws IOException {
-    assert packedValue.length ==  + Integer.BYTES;
-    out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length + Integer.BYTES);
-    count++;
-    assert expectedCount == 0 || count <= expectedCount;
-  }
-
-  @Override
-  public OfflinePointReader getReader(long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
-    assert closed;
-    assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
-    assert expectedCount == 0 || count == expectedCount;
-    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, maxPointsOnHeap, reusableBuffer);
-  }
-
   @Override
   public OfflinePointReader getReader(long start, long length) throws IOException {
     byte[] buffer  = new byte[packedBytesLength + Integer.BYTES];
     return getReader(start, length, 1, buffer);
+  }
+
+  protected OfflinePointReader getReader(long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
+    assert closed;
+    assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
+    assert expectedCount == 0 || count == expectedCount;
+    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, maxPointsOnHeap, reusableBuffer);
   }
 
   @Override

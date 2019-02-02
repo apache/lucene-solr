@@ -22,9 +22,11 @@ import java.util.List;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
-/** Utility class to write new points into in-heap arrays.
+/**
+ * Utility class to write new points into in-heap arrays.
  *
- *  @lucene.internal */
+ *  @lucene.internal
+ *  */
 public final class HeapPointWriter implements PointWriter<HeapPointReader> {
   public int[] docIDs;
   private int nextWrite;
@@ -57,20 +59,13 @@ public final class HeapPointWriter implements PointWriter<HeapPointReader> {
     nextWrite = other.nextWrite;
   }
 
-  public void readPackedValue(int index, byte[] bytes) {
-    assert bytes.length == packedBytesLength;
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    System.arraycopy(blocks.get(block), blockIndex * packedBytesLength, bytes, 0, packedBytesLength);
-  }
-
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
   public void getPackedValueSlice(int index, BytesRef result) {
     int block = index / valuesPerBlock;
     int blockIndex = index % valuesPerBlock;
     result.bytes = blocks.get(block);
     result.offset = blockIndex * packedBytesLength;
-    assert result.length == packedBytesLength;
+    result.length = packedBytesLength;
   }
 
   void writePackedValue(int index, byte[] bytes) {
@@ -156,11 +151,6 @@ public final class HeapPointWriter implements PointWriter<HeapPointReader> {
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
     assert start + length <= nextWrite: "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
     return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, docIDs, (int) start, Math.toIntExact(start+length));
-  }
-
-  public HeapPointReader getReader(long start, long length, int maxPointsOnHeap, byte[] resusableBuffer) {
-    assert maxPointsOnHeap >= count();
-    return getReader(start, length);
   }
 
   @Override
