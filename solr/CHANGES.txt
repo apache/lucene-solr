@@ -103,6 +103,8 @@ Other Changes
 
 * SOLR-9763: Remove the workaround implemented for HADOOP-12767 (Kevin Risden)
 
+* SOLR-13060: Improve HdfsAutoAddReplicasIntegrationTest and HdfsCollectionsAPIDistributedZkTest (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
