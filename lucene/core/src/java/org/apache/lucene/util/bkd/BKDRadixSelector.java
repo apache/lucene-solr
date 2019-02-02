@@ -209,7 +209,7 @@ public final class BKDRadixSelector {
       if (deltaPoints != null) {
         deltaPoints.destroy();
       }
-      // we are done, lets break data around. No need to sort on heap, maybe we need to sort by docID?
+      // we are done, lets break data around. No need to sort on heap
       return partition(points, left, right, from, to, middle, dim, null, commonPrefix, middle - leftCount);
     } else if (histogram[commonPrefix][partitionBucket[commonPrefix]] <= maxPointsSortedOffHeap) {
       if (deltaPoints != null) {
@@ -263,7 +263,7 @@ public final class BKDRadixSelector {
         }
       }
     }
-    // we might need still have work to do
+    // do have work to do?
     if (sorted != null) {
       // make sure we are just not soring all data
       assert sorted.count() != points.count();

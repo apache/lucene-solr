@@ -24,10 +24,11 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 
-/** Writes points to disk in a fixed-with format.
+/**
+ * Writes points to disk in a fixed-with format.
  *
  * @lucene.internal */
-public final class OfflinePointWriter implements PointWriter {
+public final class OfflinePointWriter implements PointWriter<OfflinePointReader> {
 
   final Directory tempDir;
   public final IndexOutput out;
@@ -46,17 +47,6 @@ public final class OfflinePointWriter implements PointWriter {
     this.packedBytesLength = packedBytesLength;
 
     this.expectedCount = expectedCount;
-  }
-
-  /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
-  public OfflinePointWriter(Directory tempDir, String name, int packedBytesLength, long count) {
-    this.out = null;
-    this.name = name;
-    this.tempDir = tempDir;
-    this.packedBytesLength = packedBytesLength;
-    this.count = count;
-    closed = true;
-    this.expectedCount = 0;
   }
     
   @Override
@@ -85,7 +75,7 @@ public final class OfflinePointWriter implements PointWriter {
   }
 
   @Override
-  public PointReader getReader(long start, long length) throws IOException {
+  public OfflinePointReader getReader(long start, long length) throws IOException {
     assert closed;
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
     assert expectedCount == 0 || count == expectedCount;

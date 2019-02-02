@@ -57,13 +57,27 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     rightPointWriter.close();
     byte[] max = getMax(leftPointWriter, middle, bytesPerDimensions, partitionDim);
     byte[] min = getMin(rightPointWriter, values - middle, bytesPerDimensions, partitionDim);
-    assertTrue(FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions) <= 0);
+    int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
+    assertTrue(cmp <= 0);
     assertTrue(Arrays.equals(partitionPoint, min));
     dir.close();
   }
 
-  public void testRandom() throws IOException {
-    int values = atLeast(15000);
+  public void testRandomBinaryTiny() throws Exception {
+    doTestRandomBinary(10);
+  }
+
+  public void testRandomBinaryMedium() throws Exception {
+    doTestRandomBinary(25000);
+  }
+
+  @Nightly
+  public void testRandomBinaryBig() throws Exception {
+    doTestRandomBinary(500000);
+  }
+
+  private void doTestRandomBinary(int count) throws IOException {
+    int values = TestUtil.nextInt(random(), count, count*2);
     Directory dir = getDirectory(values);
     int middle = random().nextInt(values);
     int sortedOnHep = random().nextInt(values /4) + 1;
@@ -87,15 +101,21 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       rightPointWriter.close();
       byte[] max = getMax(leftPointWriter, middle, bytesPerDimensions, splitDim);
       byte[] min = getMin(rightPointWriter, values - middle, bytesPerDimensions, splitDim);
-      assertTrue(FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions) <= 0);
+      int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
+      assertTrue(cmp <= 0);
+      if (cmp == 0) {
+        int maxDocID = getMaxDocId(leftPointWriter, middle, bytesPerDimensions, splitDim, partitionPoint);
+        int minDocId = getMinDocId(rightPointWriter, values - middle, bytesPerDimensions, splitDim, partitionPoint);
+        assertTrue(minDocId >= maxDocID);
+      }
       assertTrue(Arrays.equals(partitionPoint, min));
     }
     dir.close();
   }
 
 
-  public void testRandomAllEquals() throws IOException {
-    int values = atLeast(15000);
+  public void testRandomAllDimensionsEquals() throws IOException {
+    int values = random().nextInt(15000) + 1;
     Directory dir = getDirectory(values);
     int middle = random().nextInt(values);
     int sortedOnHep = random().nextInt(values /4) + 1;
@@ -106,8 +126,11 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     byte[] value = new byte[packedLength];
     random().nextBytes(value);
     for (int i =0; i < values; i++) {
-
-      pointWriter.append(value, i);
+      if (random().nextBoolean()) {
+        pointWriter.append(value, i);
+      } else {
+        pointWriter.append(value, random().nextInt(values));
+      }
     }
     pointWriter.close();
     for (int splitDim =0; splitDim < dimensions; splitDim++) {
@@ -119,7 +142,49 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       rightPointWriter.close();
       byte[] max = getMax(leftPointWriter, middle, bytesPerDimensions, splitDim);
       byte[] min = getMin(rightPointWriter, values - middle, bytesPerDimensions, splitDim);
-      assertTrue(FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions) <= 0);
+      int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
+      assertTrue(cmp <= 0);
+      if (cmp == 0) {
+        int maxDocID = getMaxDocId(leftPointWriter, middle, bytesPerDimensions, splitDim, partitionPoint);
+        int minDocId = getMinDocId(rightPointWriter, values - middle, bytesPerDimensions, splitDim, partitionPoint);
+        assertTrue(minDocId >= maxDocID);
+      }
+      assertTrue(Arrays.equals(partitionPoint, max));
+    }
+    dir.close();
+  }
+
+  public void testRandomAllDocsEquals() throws IOException {
+    int values = random().nextInt(15000) + 1;
+    Directory dir = getDirectory(values);
+    int middle = random().nextInt(values);
+    int sortedOnHep = random().nextInt(values /4) + 1;
+    int dimensions =  TestUtil.nextInt(random(), 1, 8);
+    int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
+    int packedLength = dimensions * bytesPerDimensions;
+    PointWriter pointWriter = getRandomPointWriter(dir, values, packedLength);
+    byte[] value = new byte[packedLength];
+    random().nextBytes(value);
+    for (int i =0; i < values; i++) {
+      pointWriter.append(value, 0);
+    }
+    pointWriter.close();
+    for (int splitDim =0; splitDim < dimensions; splitDim++) {
+      PointWriter leftPointWriter = getRandomPointWriter(dir, middle, packedLength);
+      PointWriter rightPointWriter = getRandomPointWriter(dir, values - middle, packedLength);
+      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHep, dir, "test");
+      byte[] partitionPoint = radixSelector.select(pointWriter, leftPointWriter, rightPointWriter, 0, values, middle, splitDim);
+      leftPointWriter.close();
+      rightPointWriter.close();
+      byte[] max = getMax(leftPointWriter, middle, bytesPerDimensions, splitDim);
+      byte[] min = getMin(rightPointWriter, values - middle, bytesPerDimensions, splitDim);
+      int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
+      assertTrue(cmp <= 0);
+      if (cmp == 0) {
+        int maxDocID = getMaxDocId(leftPointWriter, middle, bytesPerDimensions, splitDim, partitionPoint);
+        int minDocId = getMinDocId(rightPointWriter, values - middle, bytesPerDimensions, splitDim, partitionPoint);
+        assertTrue(minDocId >= maxDocID);
+      }
       assertTrue(Arrays.equals(partitionPoint, max));
     }
     dir.close();
@@ -152,7 +217,13 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       rightPointWriter.close();
       byte[] max = getMax(leftPointWriter, middle, bytesPerDimensions, splitDim);
       byte[] min = getMin(rightPointWriter, values - middle, bytesPerDimensions, splitDim);
-      assertTrue(FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions) <= 0);
+      int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
+      assertTrue(cmp <= 0);
+      if (cmp == 0) {
+        int maxDocID = getMaxDocId(leftPointWriter, middle, bytesPerDimensions, splitDim, partitionPoint);
+        int minDocId = getMinDocId(rightPointWriter, values - middle, bytesPerDimensions, splitDim, partitionPoint);
+        assertTrue(minDocId >= maxDocID);
+      }
       assertTrue(Arrays.equals(partitionPoint, max));
     }
     dir.close();
@@ -194,6 +265,23 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return min;
   }
 
+  private int getMinDocId(PointWriter p, int size, int bytesPerDimension, int dimension, byte[] partitionPoint) throws  IOException {
+   int docID = Integer.MAX_VALUE;
+    try (PointReader reader = p.getReader(0, size)) {
+      while (reader.next()) {
+        BytesRef packedValue = reader.packedValue();
+        int offset = dimension * bytesPerDimension;
+        if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
+          int newDocID = reader.docID();
+          if (newDocID < docID) {
+            docID = newDocID;
+          }
+        }
+      }
+    }
+    return docID;
+  }
+
   private byte[] getMax(PointWriter p, int size, int bytesPerDimension, int dimension) throws  IOException {
     byte[] max = new byte[bytesPerDimension];
     Arrays.fill(max, (byte) 0);
@@ -208,6 +296,23 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       }
     }
     return max;
+  }
+
+  private int getMaxDocId(PointWriter p, int size, int bytesPerDimension, int dimension, byte[] partitionPoint) throws  IOException {
+    int docID = Integer.MIN_VALUE;
+    try (PointReader reader = p.getReader(0, size)) {
+      while (reader.next()) {
+        BytesRef packedValue = reader.packedValue();
+        int offset = dimension * bytesPerDimension;
+        if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
+          int newDocID = reader.docID();
+          if (newDocID > docID) {
+            docID = newDocID;
+          }
+        }
+      }
+    }
+    return docID;
   }
 
 }

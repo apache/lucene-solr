@@ -43,12 +43,6 @@ public final class HeapPointReader extends PointReader {
     scratch.length = packedBytesLength;
   }
 
-  void readPackedValue(int index, byte[] bytes) {
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    System.arraycopy(blocks.get(block), blockIndex * packedBytesLength, bytes, 0, packedBytesLength);
-  }
-
   @Override
   public boolean next() {
     curRead++;
@@ -73,18 +67,6 @@ public final class HeapPointReader extends PointReader {
   @Override
   public int docID() {
     return docIDs[curRead];
-  }
-
-  @Override
-  public void buildHistogram(int bytePosition, int[] histogram) {
-    //We only support this method for dimensions
-    if (bytePosition > packedBytesLength) {
-      throw new IllegalStateException("dimensions have " + packedBytesLength + " bytes , but " + bytePosition + " were requested");
-    }
-   while (next()) {
-     BytesRef packedValue = packedValue();
-     histogram[packedValue.bytes[packedValue.offset + bytePosition] & 0xff]++;
-   }
   }
 
   @Override

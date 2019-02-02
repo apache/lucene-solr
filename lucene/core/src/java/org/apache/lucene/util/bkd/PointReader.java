@@ -38,8 +38,5 @@ public abstract class PointReader implements Closeable {
   /** DocID for this point */
   public abstract int docID();
 
-  /** Build histogram of the document at the provided byte position */
-  public abstract void buildHistogram(int bytePosition, int[] histogram) throws IOException;
-
 }
 

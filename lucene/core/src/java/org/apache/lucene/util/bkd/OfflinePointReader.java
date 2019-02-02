@@ -114,15 +114,14 @@ public final class OfflinePointReader extends PointReader {
         | ((docValue.bytes[position++] & 0xFF) <<  8) |  (docValue.bytes[position++] & 0xFF);
   }
 
-  @Override
-  public void buildHistogram(int bytePosition, int[] histogram) throws IOException {
+  public void getByteCountAtPosition(int bytePosition, int[] count) throws IOException {
     if (bytePosition > bytesPerDoc) {
       throw new IllegalStateException("document has " + bytesPerDoc + " bytes , but " + bytePosition + " were requested");
     }
     long fp = in.getFilePointer() + bytePosition;
     for(long i = countLeft; i > 0 ;i--) {
       in.seek(fp);
-      histogram[in.readByte() & 0xff]++;
+      count[in.readByte() & 0xff]++;
       fp += bytesPerDoc;
     }
   }
