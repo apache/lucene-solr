@@ -49,8 +49,7 @@ public final class OfflinePointReader extends PointReader {
   final String name;
 
   public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
-    int bytesPerDoc = packedBytesLength + Integer.BYTES;
-    this.bytesPerDoc = bytesPerDoc;
+    this.bytesPerDoc = packedBytesLength + Integer.BYTES;;
     this.packedValueLength = packedBytesLength;
     this.maxPointOnHeap = maxPointsOnHeap;
 
@@ -80,6 +79,9 @@ public final class OfflinePointReader extends PointReader {
       assert reusableBuffer.length >= maxPointsOnHeap * bytesPerDoc;
       this.onHeapBuffer = reusableBuffer;
     } else {
+      if (maxPointsOnHeap == 0) {
+        maxPointsOnHeap = 1;
+      }
       this.onHeapBuffer = new byte[maxPointsOnHeap * bytesPerDoc];
     }
     this.packedValue = new BytesRef();
