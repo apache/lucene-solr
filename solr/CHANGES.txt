@@ -105,6 +105,8 @@ Other Changes
 
 * SOLR-13060: Improve HdfsAutoAddReplicasIntegrationTest and HdfsCollectionsAPIDistributedZkTest (Kevin Risden)
 
+* SOLR-13074: MoveReplicaHDFSTest leaks threads, falls into an endless loop, logging like crazy (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
