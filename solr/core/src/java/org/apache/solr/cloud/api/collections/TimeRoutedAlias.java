@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.params.CommonParams;
@@ -217,7 +217,7 @@ public class TimeRoutedAlias {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("aliasName", aliasName)
         .add("routeField", routeField)
         .add("intervalMath", intervalMath)
