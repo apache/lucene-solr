@@ -32,7 +32,8 @@ import org.apache.lucene.util.BytesRef;
 public final class OfflinePointReader extends PointReader {
   long countLeft;
   final IndexInput in;
-  private final byte[] packedValue;
+
+  private final BytesRef packedValue;
   private final BytesRef docValue;
   final int bytesPerDoc;
   //private int docID;
@@ -70,10 +71,13 @@ public final class OfflinePointReader extends PointReader {
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     countLeft = length;
-    packedValue = new byte[bytesPerDoc];
-    docValue = new BytesRef();
-    docValue.bytes = packedValue;
-    docValue.length = packedBytesLength;
+    byte[] packedValue = new byte[bytesPerDoc];
+    this.packedValue = new BytesRef();
+    this.packedValue.bytes = packedValue;
+    this.packedValue.length = packedBytesLength;
+    this.docValue = new BytesRef();
+    this.docValue.bytes = packedValue;
+    this.docValue.length = bytesPerDoc;
   }
 
   @Override
@@ -85,7 +89,7 @@ public final class OfflinePointReader extends PointReader {
       countLeft--;
     }
     try {
-      in.readBytes(packedValue, 0, bytesPerDoc);
+      in.readBytes(packedValue.bytes, 0, bytesPerDoc);
     } catch (EOFException eofe) {
       assert countLeft == -1;
       return false;
@@ -96,14 +100,18 @@ public final class OfflinePointReader extends PointReader {
 
   @Override
   public BytesRef packedValue() {
+    return packedValue;
+  }
+
+  public BytesRef docValue() {
     return docValue;
   }
 
   @Override
   public int docID() {
     int position = packedValueLength;
-    return ((packedValue[position++] & 0xFF) << 24) | ((packedValue[position++] & 0xFF) << 16)
-        | ((packedValue[position++] & 0xFF) <<  8) |  (packedValue[position++] & 0xFF);
+    return ((docValue.bytes[position++] & 0xFF) << 24) | ((docValue.bytes[position++] & 0xFF) << 16)
+        | ((docValue.bytes[position++] & 0xFF) <<  8) |  (docValue.bytes[position++] & 0xFF);
   }
 
   @Override

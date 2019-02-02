@@ -38,7 +38,7 @@ public final class BKDRadixSelector {
   //bytes we are sorting
   private final int bytesPerDim;
   //data size
-  private final int packedByteLength;
+  private final int packedBytesLength;
   //flag to when we are moving to sort on heap
   private final int maxPointsSortedOffHeap;
   //holder for partition points
@@ -53,17 +53,21 @@ public final class BKDRadixSelector {
   private final Directory tempDir;
   // prefix for temp files
   private final String tempFileNamePrefix;
+  // number of bytes to be sorted: bytesPerDim + Integer.BYTES
+  private final int bytesSorted;
+
 
   /**
    * Sole constructor.
    */
   public BKDRadixSelector(int numDim, int bytesPerDim, int maxPointsSortedOffHeap, Directory tempDir, String tempFileNamePrefix) {
     this.bytesPerDim = bytesPerDim;
-    this.packedByteLength = numDim * bytesPerDim;
+    this.packedBytesLength = numDim * bytesPerDim;
+    this.bytesSorted = bytesPerDim + Integer.BYTES;
     this.maxPointsSortedOffHeap = maxPointsSortedOffHeap;
-    this.partitionBucket = new int[bytesPerDim];
-    this.partitionBytes =  new byte[bytesPerDim];
-    this.histogram = new int[bytesPerDim][HISTOGRAM_SIZE];
+    this.partitionBucket = new int[bytesSorted];
+    this.partitionBytes =  new byte[bytesSorted];
+    this.histogram = new int[bytesSorted][HISTOGRAM_SIZE];
     this.bytesRef.length = numDim * bytesPerDim;
     this.heapSelector = new HeapSelector(numDim, bytesPerDim);
     this.tempDir = tempDir;
@@ -74,27 +78,29 @@ public final class BKDRadixSelector {
    * Method to partition the input data. It returns the value of the dimension where
    * the split happens.
    */
-  public byte[] select(PointWriter data, PointWriter left, PointWriter right, int from, int to, int middle, int dim) throws IOException {
+  public byte[] select(PointWriter points, PointWriter left, PointWriter right, int from, int to, int middle, int dim) throws IOException {
     checkArgs(from, to, middle);
 
     //If we are on heap then we just select on heap
-    if (data instanceof HeapPointWriter) {
-      return heapSelect((HeapPointWriter) data, left, right, dim, middle, 0, 0);
+    if (points instanceof HeapPointWriter) {
+      return heapSelect((HeapPointWriter) points, left, right, dim, middle, 0, 0);
     }
 
     //reset histogram
-    for (int i = 0; i < bytesPerDim; i++) {
+    for (int i = 0; i < bytesSorted; i++) {
       Arrays.fill(histogram[i], 0);
     }
+    OfflinePointWriter offlinePointWriter = (OfflinePointWriter) points;
+
     //find common prefix, it does already set histogram values if needed
-    int commonPrefix = findCommonPrefix(data, from, to, dim);
+    int commonPrefix = findCommonPrefix(offlinePointWriter, from, to, dim);
 
     //if all equals we just partition the data
-    if (commonPrefix == bytesPerDim) {
-      return partition(data, left, right, from, to, middle, dim, null, commonPrefix - 1, middle);
+    if (commonPrefix ==  bytesSorted) {
+      return partition(offlinePointWriter, left, right, from, to, middle, dim, null, commonPrefix - 1, middle);
     }
     //let's rock'n'roll
-    return buildHistogramAndPartition(data, null, left, right, from, to, middle, 0, commonPrefix, dim,0, 0);
+    return buildHistogramAndPartition(offlinePointWriter, null, left, right, from, to, middle, 0, commonPrefix, dim,0, 0);
   }
 
   void checkArgs(int from, int to, int middle) {
@@ -106,25 +112,39 @@ public final class BKDRadixSelector {
     }
   }
 
-  private int findCommonPrefix(PointWriter data, int from, int to, int dim) throws IOException{
+  private int findCommonPrefix(OfflinePointWriter points, int from, int to, int dim) throws IOException{
     //find common prefix
-    byte[] commonPrefix = new byte[bytesPerDim];
-    int commonPrefixPosition = bytesPerDim;
-    try (PointReader reader = data.getReader(from, to)) {
+    byte[] commonPrefix = new byte[bytesSorted];
+    int commonPrefixPosition = bytesSorted;
+    try (OfflinePointReader reader = points.getReader(from, to)) {
       reader.next();
-      BytesRef packedValue = reader.packedValue();
+      BytesRef packedValue = reader.docValue();
+      // copy dimension
       System.arraycopy(packedValue.bytes, packedValue.offset + dim * bytesPerDim, commonPrefix, 0, bytesPerDim);
+      // copy docID
+      System.arraycopy(packedValue.bytes, packedValue.offset + packedBytesLength, commonPrefix, bytesPerDim, Integer.BYTES);
       for (int i =from + 1; i< to; i++) {
         reader.next();
-        packedValue = reader.packedValue();
-        int j = FutureArrays.mismatch(commonPrefix, 0, commonPrefixPosition, packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefixPosition);
+        packedValue = reader.docValue();
+        int startIndex =  dim * bytesPerDim;
+        int endIndex  = (commonPrefixPosition > bytesPerDim) ? startIndex + bytesPerDim :  startIndex + commonPrefixPosition;
+        int j = FutureArrays.mismatch(commonPrefix, 0, endIndex - startIndex, packedValue.bytes, packedValue.offset + startIndex, packedValue.offset + endIndex);
         if (j == 0) {
           return 0;
-        } else if (j != -1) {
+        } else if (j == -1) {
+          if (commonPrefixPosition > bytesPerDim) {
+            //tie-break on docID
+            int k = FutureArrays.mismatch(commonPrefix, bytesPerDim, commonPrefixPosition, packedValue.bytes, packedValue.offset + packedBytesLength, packedValue.offset + packedBytesLength + commonPrefixPosition - bytesPerDim );
+            if (k != -1) {
+              commonPrefixPosition = bytesPerDim + k;
+            }
+          }
+        } else {
           commonPrefixPosition = j;
         }
       }
     }
+
     //build histogram up to the common prefix
     for (int i=0; i < commonPrefixPosition; i++) {
       partitionBucket[i] = commonPrefix[i] & 0xff;
@@ -134,23 +154,32 @@ public final class BKDRadixSelector {
     return commonPrefixPosition;
   }
 
-  private byte[] buildHistogramAndPartition(PointWriter points, PointWriter deltaPoints, PointWriter left, PointWriter right, int from, int to, int middle,
+  private byte[] buildHistogramAndPartition(OfflinePointWriter points, OfflinePointWriter deltaPoints, PointWriter left, PointWriter right, int from, int to, int middle,
                                             int iteration,  int commonPrefix, int dim, int leftCount, int rightCount) throws IOException {
 
-    PointWriter currentPoints = (deltaPoints == null) ? points : deltaPoints;
+    OfflinePointWriter currentPoints = (deltaPoints == null) ? points : deltaPoints;
     //build histogram at the commonPrefix byte
-    try (PointReader reader = currentPoints.getReader(0, currentPoints.count());
-         PointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedByteLength, "delta", 0)) {
+    try (OfflinePointReader reader = currentPoints.getReader(0, currentPoints.count());
+         OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
       if (iteration == 0) {
         // we specialise this case
-        reader.buildHistogram(dim * bytesPerDim + commonPrefix, histogram[commonPrefix]);
+        if ((commonPrefix < bytesPerDim)) {
+          reader.getByteCountAtPosition(dim * bytesPerDim + commonPrefix, histogram[commonPrefix]);
+        } else {
+          reader.getByteCountAtPosition(packedBytesLength + commonPrefix - bytesPerDim, histogram[commonPrefix]);
+        }
       } else {
         while (reader.next()) {
-          BytesRef packedValue = reader.packedValue();
-          if (hasCommonPrefix(packedValue, dim, commonPrefix)) {
-            int bucket = packedValue.bytes[packedValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
+          BytesRef docValue = reader.docValue();
+          if (hasCommonPrefix(docValue, dim, commonPrefix)) {
+            int bucket;
+            if (commonPrefix < bytesPerDim) {
+               bucket = docValue.bytes[docValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
+            } else {
+              bucket = docValue.bytes[docValue.offset + packedBytesLength + commonPrefix - bytesPerDim] & 0xff;
+            }
             histogram[commonPrefix][bucket]++;
-            deltaPointsWriter.append(packedValue, reader.docID());
+            deltaPointsWriter.append(reader.packedValue(), reader.docID());
           }
         }
         if (deltaPoints != null) {
@@ -176,7 +205,7 @@ public final class BKDRadixSelector {
 
     assert leftCount + rightCount + histogram[commonPrefix][partitionBucket[commonPrefix]] == to - from;
 
-    if (commonPrefix == bytesPerDim - 1) {
+    if (commonPrefix == bytesSorted - 1) {
       if (deltaPoints != null) {
         deltaPoints.destroy();
       }
@@ -188,7 +217,7 @@ public final class BKDRadixSelector {
       }
       // last points are done on heap
       int size = histogram[commonPrefix][partitionBucket[commonPrefix]];
-      HeapPointWriter writer = new HeapPointWriter(size, size, packedByteLength);
+      HeapPointWriter writer = new HeapPointWriter(size, size, packedBytesLength);
       return partition(points, left, right, from, to, middle, dim, writer, commonPrefix, 0);
     } else {
       // iterate next common prefix
@@ -196,18 +225,19 @@ public final class BKDRadixSelector {
     }
   }
 
-  private byte[] partition(PointWriter points, PointWriter left, PointWriter right, int from, int to, int middle, int dim,
+  private byte[] partition(OfflinePointWriter points, PointWriter left, PointWriter right, int from, int to, int middle, int dim,
                            HeapPointWriter sorted, int commonPrefix, int numDocsTiebreak) throws IOException {
     int leftCounter = 0;
     int tiebreakCounter = 0;
 
-    try (PointReader reader = points.getReader(from, to)) {
+    try (OfflinePointReader reader = points.getReader(from, to)) {
       while(reader.next()) {
         assert leftCounter <= middle;
+        BytesRef docValue = reader.docValue();
         BytesRef packedValue = reader.packedValue();
         int docID = reader.docID();
-        int thisCommonPrefix = getCommonPrefix(packedValue, dim, commonPrefix);
-        int bucket = getBucket(packedValue, dim, thisCommonPrefix);
+        int thisCommonPrefix = getCommonPrefix(docValue, dim, commonPrefix);
+        int bucket = getBucket(docValue, dim, thisCommonPrefix);
 
         if (bucket < this.partitionBucket[thisCommonPrefix]) {
           // to the left side
@@ -220,7 +250,7 @@ public final class BKDRadixSelector {
           assert thisCommonPrefix == commonPrefix;
           //we should be at the common prefix, if we are at the end of the array
           //then use the  tie-break value, else store for sorting later
-          if (thisCommonPrefix == bytesPerDim - 1) {
+          if (thisCommonPrefix == bytesSorted - 1) {
             if (tiebreakCounter < numDocsTiebreak) {
               left.append(packedValue, docID);
               tiebreakCounter++;
@@ -274,19 +304,44 @@ public final class BKDRadixSelector {
   }
 
   private boolean hasCommonPrefix(BytesRef packedValue, int dim, int commonPrefix) {
-    return FutureArrays.compareUnsigned(partitionBytes, 0, commonPrefix, packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefix) == 0;
+    if (commonPrefix < bytesPerDim) {
+      return FutureArrays.compareUnsigned(partitionBytes, 0, commonPrefix, packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefix) == 0;
+    } else {
+      if (FutureArrays.compareUnsigned(partitionBytes, 0, bytesPerDim, packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + bytesPerDim) == 0) {
+        int docIdBytes = commonPrefix - bytesPerDim;
+        return FutureArrays.compareUnsigned(partitionBytes, bytesPerDim, bytesPerDim + docIdBytes, packedValue.bytes, packedValue.offset + packedBytesLength, packedValue.offset + packedBytesLength + docIdBytes) == 0;
+      }
+      return false;
+    }
   }
 
   private int getCommonPrefix(BytesRef packedValue, int dim, int maxCommmonPrefix) {
-    int commonPrefix = FutureArrays.mismatch(packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + maxCommmonPrefix, partitionBytes, 0, maxCommmonPrefix);
-    if ( commonPrefix == -1) {
+    if (maxCommmonPrefix < bytesPerDim) {
+      int commonPrefix = FutureArrays.mismatch(packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + maxCommmonPrefix, partitionBytes, 0, maxCommmonPrefix);
+      if (commonPrefix == -1) {
+        return maxCommmonPrefix;
+      }
+      return commonPrefix;
+    } else {
+      int commonPrefix = FutureArrays.mismatch(packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + bytesPerDim, partitionBytes, 0, bytesPerDim);
+      if (commonPrefix != -1) {
+        return commonPrefix;
+      }
+      int docBytes = maxCommmonPrefix - bytesPerDim;
+      int docCommonPrefix = FutureArrays.mismatch(packedValue.bytes, packedValue.offset + packedBytesLength, packedValue.offset + packedBytesLength + docBytes, partitionBytes, bytesPerDim, bytesPerDim + docBytes);
+      if (docCommonPrefix != -1) {
+        return bytesPerDim + docCommonPrefix;
+      }
       return maxCommmonPrefix;
     }
-    return commonPrefix;
   }
 
   private int getBucket(BytesRef packedValue, int dim, int commonPrefix) {
-    return packedValue.bytes[packedValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
+    if (commonPrefix < bytesPerDim) {
+      return packedValue.bytes[packedValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
+    } else {
+      return packedValue.bytes[packedValue.offset + packedBytesLength + commonPrefix - bytesPerDim] & 0xff;
+    }
   }
 
   /**

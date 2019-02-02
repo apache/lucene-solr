@@ -77,6 +77,13 @@ public final class OfflinePointWriter implements PointWriter {
     assert expectedCount == 0 || count <= expectedCount;
   }
 
+  public void append(BytesRef packedValue) throws IOException {
+    assert packedValue.length ==  + Integer.BYTES;
+    out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length + Integer.BYTES);
+    count++;
+    assert expectedCount == 0 || count <= expectedCount;
+  }
+
   @Override
   public PointReader getReader(long start, long length) throws IOException {
     assert closed;
