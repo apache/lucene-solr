@@ -164,32 +164,25 @@ public final class BKDRadixSelector {
     //build histogram at the commonPrefix byte
     try (OfflinePointReader reader = currentPoints.getReader(0, currentPoints.count(), maxPointsSortedOffHeap, offlineBuffer);
          OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
-      if (iteration == 0) {
-        // we specialise this case
-        if ((commonPrefix < bytesPerDim)) {
-          reader.getByteCountAtPosition(dim * bytesPerDim + commonPrefix, histogram[commonPrefix]);
-        } else {
-          reader.getByteCountAtPosition(packedBytesLength + commonPrefix - bytesPerDim, histogram[commonPrefix]);
-        }
-      } else {
-        while (reader.next()) {
-          BytesRef docValue = reader.docValue();
-          if (hasCommonPrefix(docValue, dim, commonPrefix)) {
-            int bucket;
-            if (commonPrefix < bytesPerDim) {
-               bucket = docValue.bytes[docValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
-            } else {
-              bucket = docValue.bytes[docValue.offset + packedBytesLength + commonPrefix - bytesPerDim] & 0xff;
-            }
-            histogram[commonPrefix][bucket]++;
+      while (reader.next()) {
+        BytesRef docValue = reader.docValue();
+        if (iteration == 0 || hasCommonPrefix(docValue, dim, commonPrefix)) {
+          int bucket;
+          if (commonPrefix < bytesPerDim) {
+            bucket = docValue.bytes[docValue.offset + dim * bytesPerDim + commonPrefix] & 0xff;
+          } else {
+            bucket = docValue.bytes[docValue.offset + packedBytesLength + commonPrefix - bytesPerDim] & 0xff;
+          }
+          histogram[commonPrefix][bucket]++;
+          if (deltaPointsWriter != null) {
             deltaPointsWriter.append(reader.packedValue(), reader.docID());
           }
         }
-        if (deltaPoints != null) {
-          deltaPoints.destroy();
-        }
-        deltaPoints = deltaPointsWriter;
       }
+      if (deltaPoints != null) {
+        deltaPoints.destroy();
+      }
+      deltaPoints = deltaPointsWriter;
     }
     //Count left points and record the partition point
     for(int i = 0; i < HISTOGRAM_SIZE; i++) {
