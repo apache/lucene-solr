@@ -82,8 +82,7 @@ class SimpleTextPointsWriter extends PointsWriter {
                                                               fieldInfo.getPointNumBytes(),
                                                               SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
                                                               SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
-                                                              values.size(),
-                                                              singleValuePerDoc)) {
+                                                              values.size())) {
 
       values.intersect(new IntersectVisitor() {
           @Override

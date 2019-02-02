@@ -143,22 +143,10 @@ public class BKDWriter implements Closeable {
   /** An upper bound on how many points the caller will add (includes deletions) */
   private final long totalPointCount;
 
-  /** How much heap OfflineSorter is allowed to use */
-  protected final OfflineSorter.BufferSize offlineSorterBufferMB;
-
-  /** How much heap OfflineSorter is allowed to use */
-  protected final int offlineSorterMaxTempFiles;
-
   private final int maxDoc;
 
   public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims, int bytesPerDim,
-                   int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount, boolean singleValuePerDoc) throws IOException {
-    this(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount, Math.max(1, (long) maxMBSortInHeap), OfflineSorter.MAX_TEMPFILES);
-  }
-
-  protected BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims, int bytesPerDim,
-                      int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount,
-                      long offlineSorterBufferMB, int offlineSorterMaxTempFiles) throws IOException {
+                      int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) throws IOException {
     verifyParams(numDataDims, numIndexDims, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
@@ -170,8 +158,6 @@ public class BKDWriter implements Closeable {
     this.bytesPerDim = bytesPerDim;
     this.totalPointCount = totalPointCount;
     this.maxDoc = maxDoc;
-    this.offlineSorterBufferMB = OfflineSorter.BufferSize.megabytes(offlineSorterBufferMB);
-    this.offlineSorterMaxTempFiles = offlineSorterMaxTempFiles;
     docsSeen = new FixedBitSet(maxDoc);
     packedBytesLength = numDataDims * bytesPerDim;
     packedIndexBytesLength = numIndexDims * bytesPerDim;

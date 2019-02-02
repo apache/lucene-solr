@@ -106,7 +106,6 @@ public class RandomCodec extends AssertingCodec {
           public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
             PointValues values = reader.getValues(fieldInfo.name);
-            boolean singleValuePerDoc = values.size() == values.getDocCount();
 
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
@@ -262,9 +261,7 @@ public class RandomCodec extends AssertingCodec {
     public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims,
                                       int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
                                       long totalPointCount, int randomSeed) throws IOException {
-      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount,
-            getRandomOfflineSorterBufferMB(randomSeed),
-            getRandomOfflineSorterMaxTempFiles(randomSeed));
+      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
       this.random = new Random(randomSeed);
     }
 

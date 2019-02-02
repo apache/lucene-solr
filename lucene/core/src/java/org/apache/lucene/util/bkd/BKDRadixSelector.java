@@ -54,7 +54,6 @@ public final class BKDRadixSelector {
   // prefix for temp files
   private final String tempFileNamePrefix;
 
-
   /**
    * Sole constructor.
    */
@@ -122,7 +121,7 @@ public final class BKDRadixSelector {
         if (j == 0) {
           return 0;
         } else if (j != -1) {
-          commonPrefixPosition =j;
+          commonPrefixPosition = j;
         }
       }
     }
