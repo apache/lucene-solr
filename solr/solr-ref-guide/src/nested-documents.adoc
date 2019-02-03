@@ -47,9 +47,9 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
 
 
 === Rudimentary Root-only schemas
- * These schemas do not contain any other nested related fields apart for `\_root_`. +
-   In this mode relationship types(field names) between parents and their children are not saved.
-   All children are indexed under the `\_childDocuments_` field.
+ * These schemas do not contain any other nested related fields apart from `\_root_`. +
+   In this mode relationship types(field names) between parents and their children are not saved. +
+   In this case <<nested-documents.adoc#child-doc-transformer,[child]>> transformer returns all children under the `\_childDocuments_` field.
  * The schema must include an indexed, non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
  * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
  * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
@@ -278,7 +278,7 @@ The combination of these two features enable seamless creation of powerful queri
 For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
 The comments for matching posts can also be fetched, all done in a single Solr Query.
 
- * `q=+{!child of='-\_nest_path_:* *:*'}+tags:"jobs" &fl=*,[child]
+ * `q=+{!child of='-\_nest_path_:* \*:*'}+tags:"jobs" &fl=*,[child]
   &fq=\_nest_path_:/posts` +
   This query returns all posts and their comments, which had "Search Engineer" in their title,
   and were under a page tagged with "jobs".
