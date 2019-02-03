@@ -65,8 +65,6 @@ import org.apache.lucene.util.PriorityQueue;
  *
  *  <p>The number of dimensions can be 1 to 8, but every byte[] value is fixed length.
  *
- *  <p>
- *
  *  <p>This consumes heap during writing: it allocates a <code>Long[numLeaves]</code>,
  *  a <code>byte[numLeaves*(1+bytesPerDim)]</code> and then uses up to the specified
  *  {@code maxMBSortInHeap} heap space for writing.
