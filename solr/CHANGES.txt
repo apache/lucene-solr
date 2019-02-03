@@ -347,6 +347,8 @@ Improvements
 
 * SOLR-13156: support facet.sort for facet.field={!terms=foo,bar}field. (Konstantin Perikov via Mikhail Khludnev)
 
+* SOLR-13146: Allow derivatives to be computed for the oscillate Stream Evaluator (Joel Bernstein)
+
 Other Changes
 ----------------------
 
