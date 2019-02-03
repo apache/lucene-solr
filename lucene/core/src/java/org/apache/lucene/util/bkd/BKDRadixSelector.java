@@ -34,7 +34,7 @@ public final class BKDRadixSelector {
   //size of the histogram
   private static final int HISTOGRAM_SIZE = 256;
   // we store one histogram per recursion level
-  private final int[][] histogram;
+  private final long[][] histogram;
   //bytes we are sorting
   private final int bytesPerDim;
   // number of bytes to be sorted: bytesPerDim + Integer.BYTES
@@ -73,7 +73,7 @@ public final class BKDRadixSelector {
     this.offlineBuffer = new byte[maxPointsSortedOffHeap * (packedBytesLength + Integer.BYTES)];
     this.partitionBucket = new int[bytesSorted];
     this.partitionBytes =  new byte[bytesSorted];
-    this.histogram = new int[bytesSorted][HISTOGRAM_SIZE];
+    this.histogram = new long[bytesSorted][HISTOGRAM_SIZE];
     this.bytesRef1.length = numDim * bytesPerDim;
     this.heapSelector = new HeapSelector(numDim, bytesPerDim);
     this.tempDir = tempDir;
@@ -84,7 +84,7 @@ public final class BKDRadixSelector {
    * Method to partition the input data. It returns the value of the dimension where
    * the split happens.
    */
-  public byte[] select(PointWriter points, PointWriter left, PointWriter right, int from, int to, int middle, int dim) throws IOException {
+  public byte[] select(PointWriter points, PointWriter left, PointWriter right, long from, long to, long middle, int dim) throws IOException {
     checkArgs(from, to, middle);
 
     //If we are on heap then we just select on heap
@@ -109,7 +109,7 @@ public final class BKDRadixSelector {
     return buildHistogramAndPartition(offlinePointWriter, null, left, right, from, to, middle, 0, commonPrefix, dim,0, 0);
   }
 
-  void checkArgs(int from, int to, int middle) {
+  void checkArgs(long from, long to, long middle) {
     if (middle < from) {
       throw new IllegalArgumentException("middle must be >= from");
     }
@@ -118,7 +118,7 @@ public final class BKDRadixSelector {
     }
   }
 
-  private int findCommonPrefix(OfflinePointWriter points, int from, int to, int dim) throws IOException{
+  private int findCommonPrefix(OfflinePointWriter points, long from, long to, int dim) throws IOException{
     //find common prefix
     byte[] commonPrefix = new byte[bytesSorted];
     int commonPrefixPosition = bytesSorted;
@@ -129,7 +129,7 @@ public final class BKDRadixSelector {
       System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, commonPrefix, 0, bytesPerDim);
       // copy docID
       System.arraycopy(bytesRef1.bytes, bytesRef1.offset + packedBytesLength, commonPrefix, bytesPerDim, Integer.BYTES);
-      for (int i =from + 1; i< to; i++) {
+      for (long i =from + 1; i< to; i++) {
         reader.next();
         reader.docValue(bytesRef1);
         int startIndex =  dim * bytesPerDim;
@@ -160,8 +160,8 @@ public final class BKDRadixSelector {
     return commonPrefixPosition;
   }
 
-  private byte[] buildHistogramAndPartition(OfflinePointWriter points, OfflinePointWriter deltaPoints, PointWriter left, PointWriter right, int from, int to, int middle,
-                                            int iteration,  int commonPrefix, int dim, int leftCount, int rightCount) throws IOException {
+  private byte[] buildHistogramAndPartition(OfflinePointWriter points, OfflinePointWriter deltaPoints, PointWriter left, PointWriter right, long from, long to, long middle,
+                                            int iteration,  int commonPrefix, int dim, long leftCount, long rightCount) throws IOException {
 
     OfflinePointWriter currentPoints = (deltaPoints == null) ? points : deltaPoints;
     //build histogram at the commonPrefix byte
@@ -190,7 +190,7 @@ public final class BKDRadixSelector {
     }
     //Count left points and record the partition point
     for(int i = 0; i < HISTOGRAM_SIZE; i++) {
-      int size = histogram[commonPrefix][i];
+      long size = histogram[commonPrefix][i];
       if (leftCount + size > middle) {
         partitionBucket[commonPrefix] = i;
         partitionBytes[commonPrefix] = (byte) i;
@@ -216,7 +216,7 @@ public final class BKDRadixSelector {
         deltaPoints.destroy();
       }
       // last points are done on heap
-      int size = histogram[commonPrefix][partitionBucket[commonPrefix]];
+      int size = Math.toIntExact(histogram[commonPrefix][partitionBucket[commonPrefix]]);
       HeapPointWriter writer = new HeapPointWriter(size, size, packedBytesLength);
       return partition(points, left, right, from, to, middle, dim, writer, commonPrefix, 0);
     } else {
@@ -225,10 +225,10 @@ public final class BKDRadixSelector {
     }
   }
 
-  private byte[] partition(OfflinePointWriter points, PointWriter left, PointWriter right, int from, int to, int middle, int dim,
-                           HeapPointWriter sorted, int commonPrefix, int numDocsTiebreak) throws IOException {
-    int leftCounter = 0;
-    int tiebreakCounter = 0;
+  private byte[] partition(OfflinePointWriter points, PointWriter left, PointWriter right, long from, long to, long middle, int dim,
+                           HeapPointWriter sorted, int commonPrefix, long numDocsTiebreak) throws IOException {
+    long leftCounter = 0;
+    long tiebreakCounter = 0;
 
     try (OfflinePointReader reader = points.getReader(from, to, maxPointsSortedOffHeap, offlineBuffer)) {
       while(reader.next()) {
@@ -278,11 +278,11 @@ public final class BKDRadixSelector {
     return partition;
   }
 
-  private byte[] heapSelect(HeapPointWriter writer, PointWriter left, PointWriter right, int dim, int k, int leftCounter, int commonPrefix) throws IOException {
+  private byte[] heapSelect(HeapPointWriter writer, PointWriter left, PointWriter right, int dim, long k, long leftCounter, int commonPrefix) throws IOException {
 
     assert writer.count() != k - leftCounter;
     heapSelector.setHeapPointWriter(writer, dim, commonPrefix);
-    heapSelector.select(0, Math.toIntExact(writer.count()), k - leftCounter);
+    heapSelector.select(0, Math.toIntExact(writer.count()), Math.toIntExact(k - leftCounter));
 
     byte[] partition = new byte[bytesPerDim];
     Arrays.fill(partition, (byte) 0xff);

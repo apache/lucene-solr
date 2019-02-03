@@ -1538,7 +1538,7 @@ public class BKDWriter implements Closeable {
       byte[] splitValue;
       try (PointWriter tempLeftPointWriter = getPointWriter(leftCount, "left" + splitDim);
            PointWriter tempRightPointWriter = getPointWriter(rightCount, "right" + splitDim)) {
-        splitValue = radixSelector.select(points, tempLeftPointWriter, tempRightPointWriter, 0, Math.toIntExact(points.count()),  Math.toIntExact(leftCount), splitDim);
+        splitValue = radixSelector.select(points, tempLeftPointWriter, tempRightPointWriter, 0, points.count(),  leftCount, splitDim);
         leftPointWriter = tempLeftPointWriter;
         rightPointWriter = tempRightPointWriter;
         points.destroy();
