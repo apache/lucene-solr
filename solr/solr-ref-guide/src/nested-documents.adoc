@@ -19,7 +19,7 @@
 Solr supports indexing nested documents such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents.
 The parent with all children is referred to as a "block" and it explains some of the nomenclature of related features.
 At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
- and the `[child]` <<transforming-result-documents.adoc#transforming-result-documents,Document Transformer>> can attach child documents to the result documents.
+ and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>` Document Transformer>> can attach child documents to the result documents.
 In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "query time join",
  since the relationships are already stored in the index and do not need to be computed.
 However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
