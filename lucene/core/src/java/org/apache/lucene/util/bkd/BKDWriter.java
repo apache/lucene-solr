@@ -56,7 +56,7 @@ import org.apache.lucene.util.PriorityQueue;
 //   - we could use threads while building; the higher nodes are very parallelizable
 
 /**
- * Recursively builds a block KD-tree to assign all incoming points in N-dim space to smaller
+ *  Recursively builds a block KD-tree to assign all incoming points in N-dim space to smaller
  *  and smaller N-dim rectangles (cells) until the number of points in a given
  *  rectangle is &lt;= <code>maxPointsInLeafNode</code>.  The tree is
  *  fully balanced, which means the leaf nodes will have between 50% and 100% of
