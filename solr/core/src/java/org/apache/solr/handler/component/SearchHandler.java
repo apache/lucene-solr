@@ -212,14 +212,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCore().getCoreContainer();
-    boolean isZkAware = cc.isZooKeeperAware();
-    rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
-    if (!rb.isDistrib) {
-      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
-      // search is distributed.
-      final String shards = req.getParams().get(ShardParams.SHARDS);
-      rb.isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
-    }
+    setIsDistrib(rb, req);
     
     if (rb.isDistrib) {
       shardHandler = shardHandlerFactory.getShardHandler();
@@ -229,7 +222,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
     }
 
-    if (isZkAware) {
+    if (cc.isZooKeeperAware()) {
       String shardsTolerant = req.getParams().get(ShardParams.SHARDS_TOLERANT);
       boolean requireZkConnected = shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
@@ -246,7 +239,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
     return shardHandler;
   }
-  
+
+  private void setIsDistrib(ResponseBuilder rb, SolrQueryRequest req) {
+    rb.isDistrib = req.getParams().getBool(DISTRIB, req.getCore().getCoreContainer().isZooKeeperAware());
+    if (!rb.isDistrib) {
+      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
+      // search is distributed.
+      final String shards = req.getParams().get(ShardParams.SHARDS);
+      rb.isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
+    }
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
@@ -264,7 +267,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
+    setIsDistrib(rb, req); // Some Search Components need to know if the request is distributed
     
     if (timer == null) {
       // non-debugging prepare phase
@@ -282,6 +285,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       subt.stop();
     }
 
+    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
+    
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
