@@ -43,7 +43,6 @@ import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MSBRadixSorter;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.PriorityQueue;
 
 // TODO
@@ -56,7 +55,8 @@ import org.apache.lucene.util.PriorityQueue;
 //     per leaf, and you can reduce that by putting more points per leaf
 //   - we could use threads while building; the higher nodes are very parallelizable
 
-/** Recursively builds a block KD-tree to assign all incoming points in N-dim space to smaller
+/**
+ * Recursively builds a block KD-tree to assign all incoming points in N-dim space to smaller
  *  and smaller N-dim rectangles (cells) until the number of points in a given
  *  rectangle is &lt;= <code>maxPointsInLeafNode</code>.  The tree is
  *  fully balanced, which means the leaf nodes will have between 50% and 100% of
@@ -66,13 +66,14 @@ import org.apache.lucene.util.PriorityQueue;
  *  <p>The number of dimensions can be 1 to 8, but every byte[] value is fixed length.
  *
  *  <p>
- *  See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
  *
- *  <p>This consumes heap during writing: it allocates a <code>LongBitSet(numPoints)</code>,
- *  and then uses up to the specified {@code maxMBSortInHeap} heap space for writing.
+ *  <p>This consumes heap during writing: it allocates a <code>Long[numLeaves]</code>,
+ *  a <code>byte[numLeaves*(1+bytesPerDim)]</code> and then uses up to the specified
+ *  {@code maxMBSortInHeap} heap space for writing.
  *
  *  <p>
- *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> total points.
+ *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> / (1+bytesPerDim)
+ *  total points.
  *
  * @lucene.experimental */
 
@@ -180,10 +181,10 @@ public class BKDWriter implements Closeable {
     // time in the recursion, we hold the number of points at that level, plus
     // all recursive halves (i.e. 16 + 8 + 4 + 2) so the memory usage is 2X
     // what that level would consume, so we multiply by 0.5 to convert from
-    // bytes to points here.  Each dimension has its own sorted partition, so
-    // we must divide by numDims as wel.
+    // bytes to points here.  In addition the radix partitioning can use up to
+    // two in-memory buffers so we multiply by another 0.5.
 
-    maxPointsSortInHeap = (int) (0.5 * (maxMBSortInHeap * 1024 * 1024) / (bytesPerDoc * numDataDims));
+    maxPointsSortInHeap = (int) (0.25 * (maxMBSortInHeap * 1024 * 1024) / (bytesPerDoc));
 
     // Finally, we must be able to hold at least the leaf node in heap during build:
     if (maxPointsSortInHeap < maxPointsInLeafNode) {
@@ -1428,7 +1429,7 @@ public class BKDWriter implements Closeable {
   /** The point writer contains the data that is going to be splitted using radix selection.
   /*  This method is used when we are merging previously written segments, in the numDims > 1 case. */
   private void build(int nodeID, int leafNodeOffset,
-                     PointWriter data,
+                     PointWriter points,
                      IndexOutput out,
                      BKDRadixSelector radixSelector,
                      byte[] minPackedValue, byte[] maxPackedValue,
@@ -1442,14 +1443,14 @@ public class BKDWriter implements Closeable {
       // We can write the block in any order so by default we write it sorted by the dimension that has the
       // least number of unique bytes at commonPrefixLengths[dim], which makes compression more efficient
 
-      if (data instanceof HeapPointWriter == false) {
+      if (points instanceof HeapPointWriter == false) {
         // Adversarial cases can cause this, e.g. very lopsided data, all equal points, such that we started
         // offline, but then kept splitting only in one dimension, and so never had to rewrite into heap writer
-        data = switchToHeap(data);
+        points = switchToHeap(points);
       }
 
       // We ensured that maxPointsSortInHeap was >= maxPointsInLeafNode, so we better be in heap at this point:
-      HeapPointWriter heapSource = (HeapPointWriter) data;
+      HeapPointWriter heapSource = (HeapPointWriter) points;
 
       //we store common prefix on scratch1
       computeCommonPrefixLength(heapSource, scratch1);
@@ -1531,20 +1532,20 @@ public class BKDWriter implements Closeable {
       assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
       // How many points will be in the left tree:
-      long rightCount = data.count() / 2;
-      long leftCount = data.count() - rightCount;
+      long rightCount = points.count() / 2;
+      long leftCount = points.count() - rightCount;
 
       PointWriter leftPointWriter;
       PointWriter rightPointWriter;
       byte[] splitValue;
       try (PointWriter tempLeftPointWriter = getPointWriter(leftCount, "left" + splitDim);
            PointWriter tempRightPointWriter = getPointWriter(rightCount, "right" + splitDim)) {
-        splitValue = radixSelector.select(data, tempLeftPointWriter, tempRightPointWriter, 0, Math.toIntExact(data.count()),  Math.toIntExact(leftCount), splitDim);
+        splitValue = radixSelector.select(points, tempLeftPointWriter, tempRightPointWriter, 0, Math.toIntExact(points.count()),  Math.toIntExact(leftCount), splitDim);
         leftPointWriter = tempLeftPointWriter;
         rightPointWriter = tempRightPointWriter;
-        data.destroy();
+        points.destroy();
       } catch (Throwable t) {
-        throw verifyChecksum(t, data);
+        throw verifyChecksum(t, points);
       }
 
       int address = nodeID * (1 + bytesPerDim);
