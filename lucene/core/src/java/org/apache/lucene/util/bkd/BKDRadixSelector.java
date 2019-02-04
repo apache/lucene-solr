@@ -81,8 +81,10 @@ public final class BKDRadixSelector {
   }
 
   /**
+   *
    * Method to partition the input data. It returns the value of the dimension where
    * the split happens.
+   *
    */
   public byte[] select(PointWriter points, PointWriter left, PointWriter right, long from, long to, long partitionPoint, int dim) throws IOException {
     checkArgs(from, to, partitionPoint);
@@ -278,7 +280,7 @@ public final class BKDRadixSelector {
       // make sure we are just not soring all data
       assert sorted.count() != points.count();
       int heapSelectPartitionPoint = (int) (partitionPoint - from - leftCounter);
-      assert heapSelectPartitionPoint >= 0 && heapSelectPartitionPoint <= sorted.count();
+      assert heapSelectPartitionPoint >= 0 && heapSelectPartitionPoint < sorted.count();
       return heapSelect(sorted, left, right, dim, 0, (int) sorted.count(), heapSelectPartitionPoint, commonPrefix);
     }
     // We did not have any points to sort on memory,

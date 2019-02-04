@@ -89,7 +89,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       points.append(value, i);
     }
     points.close();
-    verify(dir, points, dimensions, 0, values, partitionPoint, packedLength, bytesPerDimensions, sortedOnHeap);
+    verify(dir, points, dimensions, start, end, partitionPoint, packedLength, bytesPerDimensions, sortedOnHeap);
     dir.close();
   }
 
@@ -209,7 +209,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       while (reader.next()) {
         reader.packedValue(packedValue);
         System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
-        if (min == null || FutureArrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
+        if (FutureArrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
           System.arraycopy(value, 0, min, 0, bytesPerDimension);
         }
       }
@@ -244,7 +244,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       while (reader.next()) {
         reader.packedValue(packedValue);
         System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
-        if (max == null || FutureArrays.compareUnsigned(max, 0, bytesPerDimension, value, 0, bytesPerDimension) < 0) {
+        if (FutureArrays.compareUnsigned(max, 0, bytesPerDimension, value, 0, bytesPerDimension) < 0) {
           System.arraycopy(value, 0, max, 0, bytesPerDimension);
         }
       }
