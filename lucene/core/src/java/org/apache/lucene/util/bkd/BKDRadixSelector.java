@@ -49,8 +49,6 @@ public final class BKDRadixSelector {
   private final byte[] offlineBuffer;
   //holder for partition points
   private final int[] partitionBucket;
-  //holder for partition bytes
-  private final byte[] partitionBytes;
   //re-usable on-heap selector
   private final HeapSelector heapSelector;
   // scratch object to move bytes around
@@ -73,7 +71,6 @@ public final class BKDRadixSelector {
     int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / (packedBytesLength + Integer.BYTES);
     this.offlineBuffer = new byte[numberOfPointsOffline * (packedBytesLength + Integer.BYTES)];
     this.partitionBucket = new int[bytesSorted];
-    this.partitionBytes =  new byte[bytesSorted];
     this.histogram = new long[bytesSorted][HISTOGRAM_SIZE];
     this.bytesRef1.length = numDim * bytesPerDim;
     this.heapSelector = new HeapSelector(numDim, bytesPerDim);
@@ -158,7 +155,6 @@ public final class BKDRadixSelector {
     //build histogram up to the common prefix
     for (int i=0; i < commonPrefixPosition; i++) {
       partitionBucket[i] = commonPrefix[i] & 0xff;
-      partitionBytes[i] = commonPrefix[i];
       histogram[i][partitionBucket[i]] = to - from;
     }
     return commonPrefixPosition;
@@ -187,7 +183,6 @@ public final class BKDRadixSelector {
       long size = histogram[commonPrefix][i];
       if (leftCount + size > partitionPoint - from) {
         partitionBucket[commonPrefix] = i;
-        partitionBytes[commonPrefix] = (byte) i;
         break;
       }
       leftCount += size;
