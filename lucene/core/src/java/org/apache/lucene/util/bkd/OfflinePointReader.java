@@ -45,18 +45,21 @@ public final class OfflinePointReader extends PointReader {
   // File name we are reading
   final String name;
 
-  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, int maxPointsOnHeap, byte[] reusableBuffer) throws IOException {
+  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, byte[] reusableBuffer) throws IOException {
     this.bytesPerDoc = packedBytesLength + Integer.BYTES;
     this.packedValueLength = packedBytesLength;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
       throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
     }
-    if (maxPointsOnHeap == 0) {
-      throw new IllegalArgumentException("[maxPointsOnHeap] must be bigger that 0");
+    if (reusableBuffer == null) {
+      throw new IllegalArgumentException("[reusableBuffer] cannot be null");
+    }
+    if (reusableBuffer.length < bytesPerDoc) {
+      throw new IllegalArgumentException("Length of [reusableBuffer] must be bigger than " + bytesPerDoc);
     }
 
-    this.maxPointOnHeap =  maxPointsOnHeap;
+    this.maxPointOnHeap =  reusableBuffer.length / bytesPerDoc;
     // Best-effort checksumming:
     if (start == 0 && length*bytesPerDoc == tempDir.fileLength(tempFileName) - CodecUtil.footerLength()) {
       // If we are going to read the entire file, e.g. because BKDWriter is now
@@ -75,12 +78,7 @@ public final class OfflinePointReader extends PointReader {
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     countLeft = length;
-    if (reusableBuffer != null) {
-      assert reusableBuffer.length >= this.maxPointOnHeap * bytesPerDoc;
-      this.onHeapBuffer = reusableBuffer;
-    } else {
-      this.onHeapBuffer = new byte[this.maxPointOnHeap * bytesPerDoc];
-    }
+    this.onHeapBuffer = reusableBuffer;
   }
 
   @Override

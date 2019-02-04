@@ -179,8 +179,8 @@ public class BKDWriter implements Closeable {
     // time in the recursion, we hold the number of points at that level, plus
     // all recursive halves (i.e. 16 + 8 + 4 + 2) so the memory usage is 2X
     // what that level would consume, so we multiply by 0.5 to convert from
-    // bytes to points here.  In addition the radix partitioning can use up to
-    // two in-memory buffers so we multiply by another 0.5.
+    // bytes to points here.  In addition the radix partitioning may sort on memory
+    // double of this size so we multiply by another 0.5.
 
     maxPointsSortInHeap = (int) (0.25 * (maxMBSortInHeap * 1024 * 1024) / (bytesPerDoc));
 

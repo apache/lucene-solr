@@ -33,6 +33,8 @@ import org.apache.lucene.util.IntroSelector;
 public final class BKDRadixSelector {
   //size of the histogram
   private static final int HISTOGRAM_SIZE = 256;
+  //size of the online buffer: 8 KB
+  private static final int MAX_SIZE_OFFLINE_BUFFER = 1024 * 8;
   // we store one histogram per recursion level
   private final long[][] histogram;
   //bytes per dimension
@@ -60,8 +62,6 @@ public final class BKDRadixSelector {
   // prefix for temp files
   private final String tempFileNamePrefix;
 
-
-
   /**
    * Sole constructor.
    */
@@ -69,8 +69,9 @@ public final class BKDRadixSelector {
     this.bytesPerDim = bytesPerDim;
     this.packedBytesLength = numDim * bytesPerDim;
     this.bytesSorted = bytesPerDim + Integer.BYTES;
-    this.maxPointsSortInHeap = maxPointsSortInHeap;
-    this.offlineBuffer = new byte[maxPointsSortInHeap * (packedBytesLength + Integer.BYTES)];
+    this.maxPointsSortInHeap = 2 * maxPointsSortInHeap;
+    int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / (packedBytesLength + Integer.BYTES);
+    this.offlineBuffer = new byte[numberOfPointsOffline * (packedBytesLength + Integer.BYTES)];
     this.partitionBucket = new int[bytesSorted];
     this.partitionBytes =  new byte[bytesSorted];
     this.histogram = new long[bytesSorted][HISTOGRAM_SIZE];
@@ -124,7 +125,7 @@ public final class BKDRadixSelector {
     //find common prefix
     byte[] commonPrefix = new byte[bytesSorted];
     int commonPrefixPosition = bytesSorted;
-    try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortInHeap, offlineBuffer)) {
+    try (OfflinePointReader reader = points.getReader(from, to - from, offlineBuffer)) {
       reader.next();
       reader.packedValueWithDocId(bytesRef1);
       // copy dimension
@@ -178,7 +179,7 @@ public final class BKDRadixSelector {
       length = deltaPoints.count;
     }
     //build histogram at the commonPrefix byte
-    try (OfflinePointReader reader = currentPoints.getReader(start, length, maxPointsSortInHeap, offlineBuffer);
+    try (OfflinePointReader reader = currentPoints.getReader(start, length, offlineBuffer);
          OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
       while (reader.next()) {
         reader.packedValueWithDocId(bytesRef1);
@@ -243,7 +244,7 @@ public final class BKDRadixSelector {
     long leftCounter = 0;
     long tiebreakCounter = 0;
 
-    try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortInHeap, offlineBuffer)) {
+    try (OfflinePointReader reader = points.getReader(from, to - from, offlineBuffer)) {
       while (reader.next()) {
         assert leftCounter <= partitionPoint;
         reader.packedValueWithDocId(bytesRef1);
