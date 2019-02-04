@@ -32,28 +32,36 @@ In other words, even if a single child document or the parent document is change
 _Solr does not enforce this rule_; if it's violated, you may get sporadic query failures or incorrect results.
 ====
 
+== Indexing Nested Documents
+
 Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
 
-=== Schema Notes
+=== Schema Configuration
 
- * The schema must include indexed field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth. The id of the top document in every nested hierarchy is populated in this field.
- * `\_nest_path_` can be configured to store the path of the document in the hierarchy
- * `\_nest_parent_` can be configured to store the `id` of the parent in the previous level
+{nbsp} +
+*Fields:*
+
+ * The schema must include indexed field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth. The id of the top document in every nested hierarchy is populated in this field. +
+ `<field name="\_root_" type="string" indexed="true" stored="false" docValues="false" />`
+ * `\_nest_path_` is used to store the path of the document in the hierarchy. This field is optional. +
+ `<fieldType name="\_nest_path_" class="solr.NestPathField" />
+  <field name="\_nest_path_" type="_nest_path_" />`
+ * `\_nest_parent_` is used to store the `id` of the parent in the previous level. This field is optional. +
+ `<field name="\_nest_parent_" type="string" indexed="true" stored="true"/>`
  * Nested documents are very much documents in their own right even if certain nested documents hold different information from the parent.
    Therefore:
  ** the schema must be able to represent the fields of any document
  ** it may be infeasible to use `required`
  ** even child documents need a unique `id`
-
+ * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
+    shouldn't be as it would be confusing.  There is no child document field type.
 
 === Rudimentary Root-only schemas
+
  * These schemas do not contain any other nested related fields apart from `\_root_`. +
    In this mode relationship types(field names) between parents and their children are not saved. +
    In this case <<nested-documents.adoc#child-doc-transformer,[child]>> transformer returns all children under the `\_childDocuments_` field.
- * The schema must include an indexed, non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
- * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
- * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
-   shouldn't be as it would be confusing.  There is no child document field type.
+ * Typically you should have a field that differentiates a root doc from any nested children. However this isn't strictly necessary; so long as it's possible to write a query that can select only root documents somehow. Such a query is needed for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<nested-documents.adoc#child-doc-transformer,[child]>> doc transformer to function.
 
 === XML Examples
 
@@ -137,13 +145,13 @@ For the anonymous relationship, note the special `\_childDocuments_` key whose c
  When quried, child docs will be appended to _childDocuments_ key.
 ====
 
-
-=== Querying Nested Documents
+== Searching Nested Documents
 
  * `<<nested-documents.adoc#child-doc-transformer,[child]>>` Document Transformer
  * <<nested-documents.adoc#children-query-parser,Block Join Children Query Parser>>
  * <<nested-documents.adoc#parents-query-parser,Block Join Parent Query Parser>>
  * <<nested-documents.adoc#combining-block-join-query-parsers-with-child-doc-transformer,Advanced Queries>>
+ * <<blockjoin-faceting#blockjoin-faceting, Faceting using nested documents(blockChildren and blockParents)>>
 
 === Query Examples
 
@@ -204,6 +212,7 @@ For the upcoming examples, assume the following documents have been indexed:
 ====
 
 ==== Child Doc Transformer
+
 Can be used enrich query results with the documents' descendants. +
 For a detailed explanation of this parser, click <<transforming-result-documents.adoc#child-childdoctransformerfactory, here>>.
 
@@ -233,6 +242,7 @@ For a detailed explanation of this parser, click <<transforming-result-documents
 ----
 
 ==== Children Query Parser
+
 Can be used to retrieve children of a matching document. +
 For a detailed explanation of this parser, click <<other-parsers.adoc#block-join-children-query-parser, here>>.
 
@@ -255,6 +265,7 @@ For a detailed explanation of this parser, click <<other-parsers.adoc#block-join
 ----
 
 ==== Parents Query Parser
+
 Can be used to retrieve parents of a child document. +
 For a detailed explanation of this parser, click <<other-parsers.adoc#block-join-parent-query-parser,here>>.
 
@@ -274,6 +285,7 @@ For a detailed explanation of this parser, click <<other-parsers.adoc#block-join
 ----
 
 ==== Combining Block Join Query Parsers with Child Doc Transformer
+
 The combination of these two features enable seamless creation of powerful queries. +
 For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
 The comments for matching posts can also be fetched, all done in a single Solr Query.
