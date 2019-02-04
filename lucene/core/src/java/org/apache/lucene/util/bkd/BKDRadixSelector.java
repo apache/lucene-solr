@@ -42,7 +42,7 @@ public final class BKDRadixSelector {
   //data dimensions size
   private final int packedBytesLength;
   //flag to when we are moving to sort on heap
-  private final int maxPointsSortedOffHeap;
+  private final int maxPointsSortInHeap;
   //reusable buffer
   private final byte[] offlineBuffer;
   //holder for partition points
@@ -65,12 +65,12 @@ public final class BKDRadixSelector {
   /**
    * Sole constructor.
    */
-  public BKDRadixSelector(int numDim, int bytesPerDim, int maxPointsSortedOffHeap, Directory tempDir, String tempFileNamePrefix) {
+  public BKDRadixSelector(int numDim, int bytesPerDim, int maxPointsSortInHeap, Directory tempDir, String tempFileNamePrefix) {
     this.bytesPerDim = bytesPerDim;
     this.packedBytesLength = numDim * bytesPerDim;
     this.bytesSorted = bytesPerDim + Integer.BYTES;
-    this.maxPointsSortedOffHeap = maxPointsSortedOffHeap;
-    this.offlineBuffer = new byte[maxPointsSortedOffHeap * (packedBytesLength + Integer.BYTES)];
+    this.maxPointsSortInHeap = maxPointsSortInHeap;
+    this.offlineBuffer = new byte[maxPointsSortInHeap * (packedBytesLength + Integer.BYTES)];
     this.partitionBucket = new int[bytesSorted];
     this.partitionBytes =  new byte[bytesSorted];
     this.histogram = new long[bytesSorted][HISTOGRAM_SIZE];
@@ -124,7 +124,7 @@ public final class BKDRadixSelector {
     //find common prefix
     byte[] commonPrefix = new byte[bytesSorted];
     int commonPrefixPosition = bytesSorted;
-    try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortedOffHeap, offlineBuffer)) {
+    try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortInHeap, offlineBuffer)) {
       reader.next();
       reader.packedValueWithDocId(bytesRef1);
       // copy dimension
@@ -178,7 +178,7 @@ public final class BKDRadixSelector {
       length = deltaPoints.count;
     }
     //build histogram at the commonPrefix byte
-    try (OfflinePointReader reader = currentPoints.getReader(start, length, maxPointsSortedOffHeap, offlineBuffer);
+    try (OfflinePointReader reader = currentPoints.getReader(start, length, maxPointsSortInHeap, offlineBuffer);
          OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
       while (reader.next()) {
         reader.packedValueWithDocId(bytesRef1);
@@ -224,7 +224,7 @@ public final class BKDRadixSelector {
       }
       // we are done, lets break data around. No need to sort on heap
       return partition(points, left, right, from, to, partitionPoint, dim, null, commonPrefix, partitionPoint - from - leftCount);
-    } else if (histogram[commonPrefix][partitionBucket[commonPrefix]] <= maxPointsSortedOffHeap) {
+    } else if (histogram[commonPrefix][partitionBucket[commonPrefix]] <= maxPointsSortInHeap) {
       if (deltaPoints != null) {
         deltaPoints.destroy();
       }
@@ -243,7 +243,7 @@ public final class BKDRadixSelector {
     long leftCounter = 0;
     long tiebreakCounter = 0;
 
-    try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortedOffHeap, offlineBuffer)) {
+    try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortInHeap, offlineBuffer)) {
       while (reader.next()) {
         assert leftCounter <= partitionPoint;
         reader.packedValueWithDocId(bytesRef1);
