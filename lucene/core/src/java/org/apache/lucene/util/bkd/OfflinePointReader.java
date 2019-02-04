@@ -40,7 +40,7 @@ public final class OfflinePointReader extends PointReader {
   final int bytesPerDoc;
   private boolean checked;
   private final int packedValueLength;
-  private int bufferSize;
+  private int pointsInBuffer;
   private final int maxPointOnHeap;
   // File name we are reading
   final String name;
@@ -81,12 +81,11 @@ public final class OfflinePointReader extends PointReader {
     } else {
       this.onHeapBuffer = new byte[this.maxPointOnHeap * bytesPerDoc];
     }
-    this.offset = 0;
   }
 
   @Override
   public boolean next() throws IOException {
-    if (this.offset == bufferSize) {
+    if (this.pointsInBuffer == 0) {
       if (countLeft >= 0) {
         if (countLeft == 0) {
           return false;
@@ -95,11 +94,11 @@ public final class OfflinePointReader extends PointReader {
       try {
         if (countLeft > maxPointOnHeap) {
           in.readBytes(onHeapBuffer, 0, maxPointOnHeap * bytesPerDoc);
-          bufferSize = (maxPointOnHeap -1) * bytesPerDoc;
+          pointsInBuffer = maxPointOnHeap - 1;
           countLeft -= maxPointOnHeap;
         } else {
           in.readBytes(onHeapBuffer, 0, (int) countLeft * bytesPerDoc);
-          bufferSize = (int) (countLeft - 1) * bytesPerDoc;
+          pointsInBuffer = Math.toIntExact(countLeft - 1);
           countLeft = 0;
         }
         this.offset = 0;
@@ -108,6 +107,7 @@ public final class OfflinePointReader extends PointReader {
         return false;
       }
     } else {
+      this.pointsInBuffer--;
       this.offset += bytesPerDoc;
     }
     return true;
