@@ -244,10 +244,10 @@ public final class BKDRadixSelector {
     long tiebreakCounter = 0;
 
     try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortedOffHeap, offlineBuffer)) {
-      while(reader.next()) {
+      while (reader.next()) {
         assert leftCounter <= partitionPoint;
-       reader.packedValueWithDocId(bytesRef1);
-       reader.packedValue(bytesRef2);
+        reader.packedValueWithDocId(bytesRef1);
+        reader.packedValue(bytesRef2);
         int docID = reader.docID();
         int thisCommonPrefix = getCommonPrefix(bytesRef1, dim, commonPrefix);
         int bucket = getBucket(bytesRef1, dim, thisCommonPrefix);
