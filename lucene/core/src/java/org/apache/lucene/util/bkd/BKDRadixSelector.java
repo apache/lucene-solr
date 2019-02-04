@@ -126,14 +126,14 @@ public final class BKDRadixSelector {
     int commonPrefixPosition = bytesSorted;
     try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortedOffHeap, offlineBuffer)) {
       reader.next();
-      reader.docValue(bytesRef1);
+      reader.packedValueWithDocId(bytesRef1);
       // copy dimension
       System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, commonPrefix, 0, bytesPerDim);
       // copy docID
       System.arraycopy(bytesRef1.bytes, bytesRef1.offset + packedBytesLength, commonPrefix, bytesPerDim, Integer.BYTES);
       for (long i =from + 1; i< to; i++) {
         reader.next();
-        reader.docValue(bytesRef1);
+        reader.packedValueWithDocId(bytesRef1);
         int startIndex =  dim * bytesPerDim;
         int endIndex  = (commonPrefixPosition > bytesPerDim) ? startIndex + bytesPerDim :  startIndex + commonPrefixPosition;
         int j = FutureArrays.mismatch(commonPrefix, 0, endIndex - startIndex, bytesRef1.bytes, bytesRef1.offset + startIndex, bytesRef1.offset + endIndex);
@@ -181,7 +181,7 @@ public final class BKDRadixSelector {
     try (OfflinePointReader reader = currentPoints.getReader(start, length, maxPointsSortedOffHeap, offlineBuffer);
          OfflinePointWriter deltaPointsWriter = (iteration == 0) ? null : new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta", 0)) {
       while (reader.next()) {
-        reader.docValue(bytesRef1);
+        reader.packedValueWithDocId(bytesRef1);
         if (iteration == 0 || hasCommonPrefix(bytesRef1, dim, commonPrefix)) {
           int bucket;
           if (commonPrefix < bytesPerDim) {
@@ -246,7 +246,7 @@ public final class BKDRadixSelector {
     try (OfflinePointReader reader = points.getReader(from, to - from, maxPointsSortedOffHeap, offlineBuffer)) {
       while(reader.next()) {
         assert leftCounter <= partitionPoint;
-       reader.docValue(bytesRef1);
+       reader.packedValueWithDocId(bytesRef1);
        reader.packedValue(bytesRef2);
         int docID = reader.docID();
         int thisCommonPrefix = getCommonPrefix(bytesRef1, dim, commonPrefix);

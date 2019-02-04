@@ -120,7 +120,7 @@ public final class OfflinePointReader extends PointReader {
     bytesRef.length = packedValueLength;
   }
 
-  protected void docValue(BytesRef bytesRef) {
+  protected void packedValueWithDocId(BytesRef bytesRef) {
     bytesRef.bytes = onHeapBuffer;
     bytesRef.offset = offset;
     bytesRef.length = bytesPerDoc;
