@@ -28,7 +28,7 @@ Internally this feature uses the http://metrics.dropwizard.io[Dropwizard Metrics
 
 Each group of related metrics with unique names is managed in a *metric registry*. Solr maintains several such registries, each corresponding to a high-level group such as: `jvm`, `jetty`, `node`, and `core` (see <<Metric Registries>> below).
 
-For each group (and/or for each registry) there can be several *reporters*, which are components responsible for communication of metrics from selected registries to external systems. Currently implemented reporters support emitting metrics via JMX, Ganglia, Graphite and SLF4J.
+For each group (and/or for each registry) there can be several *reporters*, which are components responsible for communication of metrics from selected registries to external systems. Currently implemented reporters support emitting metrics via JMX, Graphite and SLF4J.
 
 There is also a dedicated `/admin/metrics` handler that can be queried to report all or a subset of the current metrics from multiple registries.
 
@@ -197,7 +197,7 @@ One or more of valid fully-qualified registry names.
 
 If both `group` and `registry` attributes are specified only the `group` attribute is considered. If neither attribute is specified then the plugin will be used for all groups and registries. Multiple group or registry names can be specified, separated by comma and/or space.
 
-Additionally, several implementation-specific initialization arguments can be specified in nested elements. There are some arguments that are common to SLF4J, Ganglia and Graphite reporters:
+Additionally, several implementation-specific initialization arguments can be specified in nested elements. There are some arguments that are common to SLF4J and Graphite reporters:
 
 `period`::
 The period in seconds between reports. Default value is `60`.
@@ -362,21 +362,6 @@ example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m15_rate 4.0623076220244245 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.mean_rate 0.5698031798408144 1482932097
 ----
-
-=== Ganglia Reporter
-
-The http://ganglia.info[Ganglia] reporter uses the `org.apache.solr.metrics.reporters.SolrGangliaReporter` class.
-
-It take the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
-
-`host`::
-The host name where Ganglia server is running (required).
-
-`port`::
-The port number for the server.
-
-`multicast`::
-When `true` use multicast UDP communication, otherwise use UDP unicast. Default is `false`.
 
 === Shard and Cluster Reporters
 These two reporters can be used for aggregation of metrics reported from replicas to shard leader (the "shard" reporter),

@@ -21,7 +21,7 @@ import javax.management.MBeanServer;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 
-import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.jmx.JmxReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 

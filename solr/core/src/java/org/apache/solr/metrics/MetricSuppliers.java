@@ -30,6 +30,7 @@ import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.SlidingWindowReservoir;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.UniformReservoir;
+import com.codahale.metrics.jvm.CpuTimeClock;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SolrPluginUtils;
@@ -38,8 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper class for constructing instances of {@link com.codahale.metrics.MetricRegistry.MetricSupplier}
- * based on plugin configuration. This allows us to customize eg. {@link com.codahale.metrics.Reservoir}
+ * Helper class for constructing instances of {@link MetricRegistry.MetricSupplier}
+ * based on plugin configuration. This allows us to customize eg. {@link Reservoir}
  * implementations and parameters for timers and histograms.
  * <p>Custom supplier implementations must provide a zero-args constructor, and may optionally implement
  * {@link org.apache.solr.util.plugin.PluginInfoInitialized} interface for configuration - if they don't then
@@ -58,7 +59,7 @@ public class MetricSuppliers {
     }
   }
 
-  private static final Clock CPU_CLOCK = new Clock.CpuTimeClock();
+  private static final Clock CPU_CLOCK = new CpuTimeClock();
   private static final Clock USER_CLOCK = new Clock.UserTimeClock();
 
   /** Clock type parameter. */
@@ -72,8 +73,8 @@ public class MetricSuppliers {
    * Default {@link Meter} supplier. The following configuration is available, either as attribute
    * or initArgs:
    * <ul>
-   *   <li>clock - (string) can be set to {@link #CLOCK_USER} for {@link com.codahale.metrics.Clock.UserTimeClock} or
-   *   {@link #CLOCK_CPU} for {@link com.codahale.metrics.Clock.CpuTimeClock}. If not set then the value of
+   *   <li>clock - (string) can be set to {@link #CLOCK_USER} for {@link Clock.UserTimeClock} or
+   *   {@link #CLOCK_CPU} for {@link com.codahale.metrics.jvm.CpuTimeClock}. If not set then the value of
    *   {@link Clock#defaultClock()} will be used.</li>
    * </ul>
    */
