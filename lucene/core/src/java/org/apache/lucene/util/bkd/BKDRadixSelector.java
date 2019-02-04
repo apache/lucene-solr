@@ -35,7 +35,7 @@ public final class BKDRadixSelector {
   private static final int HISTOGRAM_SIZE = 256;
   // we store one histogram per recursion level
   private final long[][] histogram;
-  //bytes we are sorting
+  //bytes per dimension
   private final int bytesPerDim;
   // number of bytes to be sorted: bytesPerDim + Integer.BYTES
   private final int bytesSorted;
