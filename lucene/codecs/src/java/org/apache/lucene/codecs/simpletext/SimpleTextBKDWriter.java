@@ -1127,7 +1127,6 @@ final class SimpleTextBKDWriter implements Closeable {
         splitValue = radixSelector.select(data, leftPointWriter2, rightPointWriter2, 0, Math.toIntExact(data.count()),  Math.toIntExact(leftCount), splitDim);
         leftPointWriter = leftPointWriter2;
         rightPointWriter = rightPointWriter2;
-        data.destroy();
       } catch (Throwable t) {
         throw verifyChecksum(t, data);
       }

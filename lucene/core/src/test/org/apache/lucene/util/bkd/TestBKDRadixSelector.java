@@ -94,7 +94,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   }
 
   public void testRandomAllDimensionsEquals() throws IOException {
-    int values = random().nextInt(15000) + 1;
+    int values =  TestUtil.nextInt(random(), 15000, 20000);
     Directory dir = getDirectory(values);
     int partitionPoint = random().nextInt(values);
     int sortedOnHeap = random().nextInt(values /4) + 1;
@@ -109,6 +109,29 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         points.append(value, i);
       } else {
         points.append(value, random().nextInt(values));
+      }
+    }
+    points.close();
+    verify(dir, points, dimensions, 0, values, partitionPoint, packedLength, bytesPerDimensions, sortedOnHeap);
+    dir.close();
+  }
+
+  public void testRandomLastByteTwoValues() throws IOException {
+    int values = random().nextInt(15000) + 1;
+    Directory dir = getDirectory(values);
+    int partitionPoint = random().nextInt(values);
+    int sortedOnHeap = random().nextInt(values /4) + 1;
+    int dimensions =  TestUtil.nextInt(random(), 1, 8);
+    int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
+    int packedLength = dimensions * bytesPerDimensions;
+    PointWriter points = getRandomPointWriter(dir, values, packedLength);
+    byte[] value = new byte[packedLength];
+    random().nextBytes(value);
+    for (int i =0; i < values; i++) {
+      if (random().nextBoolean()) {
+        points.append(value, 1);
+      } else {
+        points.append(value, 2);
       }
     }
     points.close();
@@ -159,10 +182,11 @@ public class TestBKDRadixSelector extends LuceneTestCase {
 
   private void verify(Directory dir, PointWriter points, int dimensions, long start, long end, long middle, int packedLength, int bytesPerDimensions, int sortedOnHeap) throws IOException{
     for (int splitDim =0; splitDim < dimensions; splitDim++) {
+      PointWriter copy = copyPoints(dir, points, packedLength);
       PointWriter leftPointWriter = getRandomPointWriter(dir, middle - start, packedLength);
       PointWriter rightPointWriter = getRandomPointWriter(dir, end - middle, packedLength);
       BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHeap, dir, "test");
-      byte[] partitionPoint = radixSelector.select(points, leftPointWriter, rightPointWriter, start, end, middle, splitDim);
+      byte[] partitionPoint = radixSelector.select(copy, leftPointWriter, rightPointWriter, start, end, middle, splitDim);
       leftPointWriter.close();
       rightPointWriter.close();
       byte[] max = getMax(leftPointWriter, middle - start, bytesPerDimensions, splitDim);
@@ -180,6 +204,19 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     }
     points.destroy();
     dir.close();
+  }
+
+  private PointWriter copyPoints(Directory dir, PointWriter points, int packedLength) throws IOException {
+    BytesRef bytesRef = new BytesRef();
+
+    try (PointWriter copy  = getRandomPointWriter(dir, points.count(), packedLength);
+         PointReader reader = points.getReader(0, points.count())) {
+      while (reader.next()) {
+        reader.packedValue(bytesRef);
+        copy.append(bytesRef, reader.docID());
+      }
+      return copy;
+    }
   }
 
   private PointWriter getRandomPointWriter(Directory dir, long numPoints, int packedBytesLength) throws IOException {

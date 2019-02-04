@@ -1541,7 +1541,6 @@ public class BKDWriter implements Closeable {
         splitValue = radixSelector.select(points, tempLeftPointWriter, tempRightPointWriter, 0, points.count(),  leftCount, splitDim);
         leftPointWriter = tempLeftPointWriter;
         rightPointWriter = tempRightPointWriter;
-        points.destroy();
       } catch (Throwable t) {
         throw verifyChecksum(t, points);
       }
