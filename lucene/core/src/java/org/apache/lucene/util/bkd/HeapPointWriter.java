@@ -27,7 +27,7 @@ import org.apache.lucene.util.BytesRef;
  *
  *  @lucene.internal
  *  */
-public final class HeapPointWriter implements PointWriter<HeapPointReader> {
+public final class HeapPointWriter implements PointWriter {
   public int[] docIDs;
   private int nextWrite;
   private boolean closed;
@@ -147,7 +147,7 @@ public final class HeapPointWriter implements PointWriter<HeapPointReader> {
   }
 
   @Override
-  public HeapPointReader getReader(long start, long length) {
+  public PointReader getReader(long start, long length) {
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
     assert start + length <= nextWrite: "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
     return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, docIDs, (int) start, Math.toIntExact(start+length));

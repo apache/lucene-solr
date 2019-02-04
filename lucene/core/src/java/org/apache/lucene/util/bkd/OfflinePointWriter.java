@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.internal
  * */
-public final class OfflinePointWriter implements PointWriter<OfflinePointReader> {
+public final class OfflinePointWriter implements PointWriter {
 
   final Directory tempDir;
   public final IndexOutput out;
@@ -69,7 +69,7 @@ public final class OfflinePointWriter implements PointWriter<OfflinePointReader>
   }
 
   @Override
-  public OfflinePointReader getReader(long start, long length) throws IOException {
+  public PointReader getReader(long start, long length) throws IOException {
     byte[] buffer  = new byte[packedBytesLength + Integer.BYTES];
     return getReader(start, length, 1, buffer);
   }
