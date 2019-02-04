@@ -180,6 +180,12 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
+  public void writeLongLong(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("longlong");
+    super.writeLongLong(name, val);
+  }
+
+  @Override
   public void writeFloat(String name, String val) throws IOException {
     ifNeededWriteTypeAndValueKey("float");
     super.writeFloat(name, val);

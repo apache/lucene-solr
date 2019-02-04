@@ -351,6 +351,10 @@ public class Row implements MapWriter {
     return cells;
   }
 
+  public boolean isLive() {
+    return isLive;
+  }
+
   public void forEachReplica(Consumer<ReplicaInfo> consumer) {
     forEachReplica(collectionVsShardVsReplicas, consumer);
   }

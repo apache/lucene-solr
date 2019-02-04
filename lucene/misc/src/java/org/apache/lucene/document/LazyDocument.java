@@ -59,7 +59,7 @@ public class LazyDocument {
    * <p>
    * <b>NOTE:</b> This method must be called once for each value of the field 
    * name specified in sequence that the values exist.  This method may not be 
-   * used to generate multiple, lazy, StorableField instances refering to 
+   * used to generate multiple, lazy, StorableField instances referring to 
    * the same underlying StorableField instance.
    * </p>
    * <p>

@@ -34,7 +34,7 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
  * subclasses can choose between.
  * </p>
  *
- * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations refrenced from each function.</a> 
+ * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations referenced from each function.</a> 
  */
 public class SweetSpotSimilarity extends ClassicSimilarity {
 

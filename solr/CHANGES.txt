@@ -34,8 +34,6 @@ Upgrade Notes
 New Features
 ----------------------
 
-* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
-
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -48,9 +46,27 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
+Upgrade Notes
+----------------------
 
-(No Changes)
+New Features
+----------------------
 
+* SOLR-13171 : A true streaming parser for javabin payload/stream without creating any objects (noble)
+
+Bug Fixes
+----------------------
+
+* SOLR-12330: 500 error code on json.facet syntax errors (Munendra S N, Mikhail Khludnev)
+
+* SOLR-13229: Cleanup replicasMetTragicEvent after all types of exception (Tomás Fernández Löbbe)
+
+Improvements
+----------------------
+* SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
+  disk space (noble)
+
+* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
 ==================  8.0.0 ==================
 
@@ -187,6 +203,10 @@ New Features
 
 * SOLR-13147: Add movingMAD Stream Evaluator (Joel Bernstein)
 
+* SOLR-13155: Add command-line option for testing autoscaling configurations. (ab)
+
+* SOLR-13241: Add 'autoscaling' tool support to solr.cmd (Jason Gerlowski)
+
 Bug Fixes
 ----------------------
 
@@ -194,6 +214,9 @@ Bug Fixes
 
 * SOLR-11774: langid.map.individual now works together with langid.map.keepOrig. Also the detectLanguage() API 
   is changed to accept a Reader allowing for more memory efficient implementations (janhoy)
+
+* SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
+  matched (Alan Woodward, Mikhail Khludnev)
 
 Improvements
 ----------------------

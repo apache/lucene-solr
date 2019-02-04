@@ -167,7 +167,7 @@ The following changes were made in SolrJ.
 * `HttpClientInterceptorPlugin` is now `HttpClientBuilderPlugin` and must work with a `SolrHttpClientBuilder` rather than an `HttpClientConfigurer`.
 * `HttpClientUtil` now allows configuring `HttpClient` instances via `SolrHttpClientBuilder` rather than an `HttpClientConfigurer`. Use of env variable `SOLR_AUTHENTICATION_CLIENT_CONFIGURER` no longer works, please use `SOLR_AUTHENTICATION_CLIENT_BUILDER`
 * `SolrClient` implementations now use their own internal configuration for socket timeouts, connect timeouts, and allowing redirects rather than what is set as the default when building the `HttpClient` instance. Use the appropriate setters on the `SolrClient` instance.
-* `HttpSolrClient#setAllowCompression` has been removed and compression must be enabled as a constructor param.
+* `HttpSolrClient#setAllowCompression` has been removed and compression must be enabled as a constructor parameter.
 * `HttpSolrClient#setDefaultMaxConnectionsPerHost` and `HttpSolrClient#setMaxTotalConnections` have been removed. These now default very high and can only be changed via parameter when creating an HttpClient instance.
 
 === Other Deprecations and Removals

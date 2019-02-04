@@ -616,6 +616,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
     String v = solrParams.required().get(GENERATION);
     long gen = Long.parseLong(v);
+    if (gen == -1) {
+      IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
+      if(commitPoint == null) {
+        rsp.add(CMD_GET_FILE_LIST, Collections.EMPTY_LIST);
+        return;
+      }
+      gen = commitPoint.getGeneration();
+    }
     IndexCommit commit = core.getDeletionPolicy().getCommitPoint(gen);
 
     if (commit == null) {
@@ -974,6 +982,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       addVal(slave, IndexFetcher.TIMES_FAILED, props, Integer.class);
       addVal(slave, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
       addVal(slave, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+      addVal(slave, IndexFetcher.CLEARED_LOCAL_IDX, props, Long.class);
 
       slave.add("currentDate", new Date().toString());
       slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));

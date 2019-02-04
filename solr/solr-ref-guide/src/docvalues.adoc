@@ -30,7 +30,7 @@ In Lucene 4.0, a new approach was introduced. DocValue fields are now column-ori
 
 To use docValues, you only need to enable it for a field that you will use it with. As with all schema design, you need to define a field type and then define fields of that type with docValues enabled. All of these actions are done in `schema.xml`.
 
-Enabling a field for docValues only requires adding `docValues="true"` to the field (or field type) definition, as in this example from the `schema.xml` of Solr's `sample_techproducts_configs` <<config-sets.adoc#config-sets,config set>>:
+Enabling a field for docValues only requires adding `docValues="true"` to the field (or field type) definition, as in this example from the `schema.xml` of Solr's `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>>:
 
 [source,xml]
 ----

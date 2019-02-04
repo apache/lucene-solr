@@ -31,9 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -63,7 +60,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -561,7 +557,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");
-                      SolrZkClient zkClient = zkController.getZkClient();
                       zkController.getOverseer().offerStateUpdate(Utils.toJSON(map));
                     } catch (KeeperException e) {
                       log.warn("Exception while removing routing rule for route key: " + routeKey, e);
@@ -1097,7 +1092,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               versionOnUpdate = 0;
             }
 
-            boolean updated = getUpdatedDocument(cmd, versionOnUpdate);
+            getUpdatedDocument(cmd, versionOnUpdate);
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
@@ -1895,7 +1890,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // if we aren't the leader, then we need to check that updates were not re-ordered
             if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
               // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occured.
+              // in this bucket so far, so we know that no reordering has yet occurred.
               bucket.updateHighest(versionOnUpdate);
             } else {
               // there have been updates higher than the current update. we need to check
@@ -1955,8 +1950,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
     }
     
-    CompletionService<Exception> completionService = new ExecutorCompletionService<>(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
-    Set<Future<Exception>> pending = new HashSet<>();
     if (!zkEnabled || (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas"))) {
       if (replicaType == Replica.Type.TLOG) {
 

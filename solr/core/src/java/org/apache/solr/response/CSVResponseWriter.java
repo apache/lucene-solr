@@ -475,6 +475,11 @@ class CSVWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeLongLong(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
   public void writeLong(String name, String val) throws IOException {
     printer.print(val, false);
   }

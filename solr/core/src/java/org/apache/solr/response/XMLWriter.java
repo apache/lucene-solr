@@ -309,6 +309,11 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeLongLong(String name, String val) throws IOException {
+    writePrim("longlong",name,val,false);
+  }
+
+  @Override
   public void writeLong(String name, String val) throws IOException {
     writePrim("long",name,val,false);
   }

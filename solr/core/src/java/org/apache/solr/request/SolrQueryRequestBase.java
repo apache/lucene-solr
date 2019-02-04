@@ -16,26 +16,26 @@
  */
 package org.apache.solr.request;
 
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.JsonSchemaValidator;
-import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.core.SolrCore;
-
 import java.io.Closeable;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RTimerTree;
+import org.apache.solr.util.RefCounted;
 
 
 /**
@@ -118,6 +118,10 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     // should this reach out and get a searcher from the core singleton, or
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
+
+    if(!core.isSearchEnabled()){
+      throw new SolrException( SolrException.ErrorCode.FORBIDDEN,"Search is temporarily disabled");
+    }
 
     if (searcherHolder==null) {
       searcherHolder = core.getSearcher();

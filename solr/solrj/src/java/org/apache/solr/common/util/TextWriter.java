@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
@@ -113,10 +114,11 @@ public interface TextWriter extends PushWriter {
   /** if this form of the method is called, val is the Java string form of a float */
   void writeFloat(String name, String val) throws IOException;
 
-
   /** if this form of the method is called, val is the Java string form of a double */
   void writeDouble(String name, String val) throws IOException;
 
+  /** if this form of the method is called, val is the Java string form of a bigInteger */
+  void writeLongLong(String name, String val) throws IOException;
 
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   void writeDate(String name, String val) throws IOException;
@@ -144,6 +146,8 @@ public interface TextWriter extends PushWriter {
       writeInt(name, ((AtomicInteger) val).get());
     } else if (val instanceof AtomicLong) {
       writeLong(name, ((AtomicLong) val).get());
+    } else if (val instanceof BigInteger) {
+      writeLongLong(name, ((BigInteger)val).toString());
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -169,6 +173,10 @@ public interface TextWriter extends PushWriter {
 
   default void writeInt(String name, int val) throws IOException {
     writeInt(name,Integer.toString(val));
+  }
+
+  default void writeLongLong(String name, BigInteger val) throws IOException {
+    writeLongLong(name,val.toString());
   }
 
   default void writeLong(String name, long val) throws IOException {

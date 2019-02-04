@@ -259,7 +259,7 @@ public class FSTTermsReader extends FieldsProducer {
     }
 
     // Only wraps common operations for PBF interact
-    abstract class BaseTermsEnum extends TermsEnum {
+    abstract class BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
 
       /* Current term stats + decoded metadata (customized by PBF) */
       final BlockTermState state;

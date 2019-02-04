@@ -43,13 +43,16 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
@@ -66,6 +69,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema.DynamicField;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.DateMathParser;
@@ -87,6 +91,12 @@ public class TestPointFields extends SolrTestCaseJ4 {
       "_sml", "_dv_sml", "_mv_sml", "_mv_dv_sml", "_ni_dv_sml", "_ni_mv_dv_sml"
   };
 
+  private enum NumberSize {
+    INT,
+    LONG,
+    LONG_LONG
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema-point.xml");
@@ -102,19 +112,19 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testIntPointFieldExactQuery() throws Exception {
-    doTestIntPointFieldExactQuery("number_p_i", false);
-    doTestIntPointFieldExactQuery("number_p_i_mv", false);
-    doTestIntPointFieldExactQuery("number_p_i_dv", false);
-    doTestIntPointFieldExactQuery("number_p_i_mv_dv", false);
-    doTestIntPointFieldExactQuery("number_p_i_ni_dv", false);
-    doTestIntPointFieldExactQuery("number_p_i_ni_ns_dv", false);
-    doTestIntPointFieldExactQuery("number_p_i_ni_mv_dv", false);
+    doTestIntPointFieldExactQuery("number_p_i", NumberSize.INT);
+    doTestIntPointFieldExactQuery("number_p_i_mv", NumberSize.INT);
+    doTestIntPointFieldExactQuery("number_p_i_dv", NumberSize.INT);
+    doTestIntPointFieldExactQuery("number_p_i_mv_dv", NumberSize.INT);
+    doTestIntPointFieldExactQuery("number_p_i_ni_dv", NumberSize.INT);
+    doTestIntPointFieldExactQuery("number_p_i_ni_ns_dv", NumberSize.INT);
+    doTestIntPointFieldExactQuery("number_p_i_ni_mv_dv", NumberSize.INT);
   }
   
   @Test
   public void testIntPointFieldNonSearchableExactQuery() throws Exception {
-    doTestIntPointFieldExactQuery("number_p_i_ni", false, false);
-    doTestIntPointFieldExactQuery("number_p_i_ni_ns", false, false);
+    doTestIntPointFieldExactQuery("number_p_i_ni", NumberSize.INT, false);
+    doTestIntPointFieldExactQuery("number_p_i_ni_ns", NumberSize.INT, false);
   }
   
   @Test
@@ -128,9 +138,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testIntPointFieldRangeQuery() throws Exception {
-    doTestIntPointFieldRangeQuery("number_p_i", "int", false);
-    doTestIntPointFieldRangeQuery("number_p_i_ni_ns_dv", "int", false);
-    doTestIntPointFieldRangeQuery("number_p_i_dv", "int", false);
+    doTestIntPointFieldRangeQuery("number_p_i", "int", NumberSize.INT);
+    doTestIntPointFieldRangeQuery("number_p_i_ni_ns_dv", "int", NumberSize.INT);
+    doTestIntPointFieldRangeQuery("number_p_i_dv", "int", NumberSize.INT);
   }
   
   @Test
@@ -1318,20 +1328,20 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testLongPointFieldExactQuery() throws Exception {
-    doTestIntPointFieldExactQuery("number_p_l", true);
-    doTestIntPointFieldExactQuery("number_p_l_mv", true);
-    doTestIntPointFieldExactQuery("number_p_l_dv", true);
-    doTestIntPointFieldExactQuery("number_p_l_mv_dv", true);
-    doTestIntPointFieldExactQuery("number_p_l_ni_dv", true);
-    doTestIntPointFieldExactQuery("number_p_l_ni_ns_dv", true);
-    doTestIntPointFieldExactQuery("number_p_l_ni_dv_ns", true);
-    doTestIntPointFieldExactQuery("number_p_l_ni_mv_dv", true);
+    doTestIntPointFieldExactQuery("number_p_l", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_mv", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_dv", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_mv_dv", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_ni_dv", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_ni_ns_dv", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_ni_dv_ns", NumberSize.LONG);
+    doTestIntPointFieldExactQuery("number_p_l_ni_mv_dv", NumberSize.LONG);
   }
   
   @Test
   public void testLongPointFieldNonSearchableExactQuery() throws Exception {
-    doTestIntPointFieldExactQuery("number_p_l_ni", true, false);
-    doTestIntPointFieldExactQuery("number_p_l_ni_ns", true, false);
+    doTestIntPointFieldExactQuery("number_p_l_ni", NumberSize.LONG, false);
+    doTestIntPointFieldExactQuery("number_p_l_ni_ns", NumberSize.LONG, false);
   }
   
   @Test
@@ -1344,9 +1354,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   @Test
   public void testLongPointFieldRangeQuery() throws Exception {
-    doTestIntPointFieldRangeQuery("number_p_l", "long", true);
-    doTestIntPointFieldRangeQuery("number_p_l_ni_ns_dv", "long", true);
-    doTestIntPointFieldRangeQuery("number_p_l_dv", "long", true);
+    doTestIntPointFieldRangeQuery("number_p_l", "long", NumberSize.LONG);
+    doTestIntPointFieldRangeQuery("number_p_l_ni_ns_dv", "long", NumberSize.LONG);
+    doTestIntPointFieldRangeQuery("number_p_l_dv", "long", NumberSize.LONG);
   }
   
   @Test
@@ -2144,10 +2154,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
   public void testInternals() throws IOException {
-    String[] types = new String[]{"i", "l", "f", "d", "dt"};
+    String[] types = new String[]{"i", "l", "ll", "f", "d", "dt"};
     String[][] values = new String[][] {
         toStringArray(getRandomInts(10, false)),
         toStringArray(getRandomLongs(10, false)),
+        toStringArray(getRandomLongLongs(10, false)),
         toStringArray(getRandomFloats(10, false)),
         toStringArray(getRandomDoubles(10, false)),
         toStringArray(getRandomInstants(10, false))
@@ -2156,7 +2167,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     Set<String> typesTested = new HashSet<>();
     for (int i = 0 ; i < types.length ; ++i) {
       for (String suffix:FIELD_SUFFIXES) {
-        doTestInternals("number_p_" + types[i] + suffix, values[i]);
+        if (types[i].equals("ll")) {
+          doTestInternalsBinary("number_p_" + types[i] + suffix, values[i]);
+        } else {
+          doTestInternals("number_p_" + types[i] + suffix, values[i]);
+        }
         typesTested.add("*_p_" + types[i] + suffix);
       }
     }
@@ -2235,6 +2250,16 @@ public class TestPointFields extends SolrTestCaseJ4 {
   private List<Instant> getRandomInstants(int length, boolean missingVals) {
     return getRandomList(length, missingVals, () -> Instant.ofEpochMilli(random().nextLong()));
   }
+
+  private BigInteger generateRandomLongLongs() {
+    byte[] randomBytes = new byte[LongLongPointField.BYTES];
+    random().nextBytes(randomBytes);
+    return new BigInteger(randomBytes);
+  }
+
+  private List<BigInteger> getRandomLongLongs(int length, boolean missingVals) {
+    return getRandomList(length, missingVals, () -> generateRandomLongLongs());
+  }
   
   private String[] getSequentialStringArrayWithInts(int length) {
     String[] arr = new String[length];
@@ -2282,8 +2307,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
   
    
-  private void doTestIntPointFieldExactQuery(final String field, final boolean testLong) throws Exception {
-    doTestIntPointFieldExactQuery(field, testLong, true);
+  private void doTestIntPointFieldExactQuery(final String field, final NumberSize numberSize) throws Exception {
+    doTestIntPointFieldExactQuery(field, numberSize, true);
   }
 
   private String getTestString(boolean searchable, int numFound) {
@@ -2292,14 +2317,26 @@ public class TestPointFields extends SolrTestCaseJ4 {
   
   /**
    * @param field the field to use for indexing and searching against
-   * @param testLong set to true if "field" is expected to support long values, false if only integers
+   * @param numberSize What size values the field is expected to handle
    * @param searchable set to true if searches against "field" should succeed, false if field is only stored and searches should always get numFound=0
    */
-  private void doTestIntPointFieldExactQuery(final String field, final boolean testLong, final boolean searchable) throws Exception {
+  private void doTestIntPointFieldExactQuery(final String field, final NumberSize numberSize, final boolean searchable) throws Exception {
     int numValues = 10 * RANDOM_MULTIPLIER;
     Map<String,Integer> randCount = new HashMap<>(numValues);
-    String[] rand = testLong ? toStringArray(getRandomLongs(numValues, false))
-                             : toStringArray(getRandomInts(numValues, false));
+    String[] rand = null;
+    String maxNum = "";
+    switch (numberSize)  {
+      case INT: rand = toStringArray(getRandomInts(numValues, false));
+        maxNum = Integer.toString(Integer.MAX_VALUE);
+        break;
+      case LONG: rand = toStringArray(getRandomLongs(numValues, false));
+        maxNum = Integer.toString(Integer.MAX_VALUE);
+        break;
+      case LONG_LONG:  rand = toStringArray(getRandomLongLongs(numValues, false));
+        maxNum = LongLongPointField.MAX_VALUE.toString();
+        break;
+    }
+
     for (int i = 0 ; i < numValues ; i++) {
       randCount.merge(rand[i], 1, (a, b) -> a + b); // count unique values
       assertU(adoc("id", String.valueOf(i), field, rand[i]));
@@ -2323,13 +2360,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     assertQ(req("debug", "true", "q", field + ":(" + builder.toString() + ")"), getTestString(searchable, numValues));
     
-    assertU(adoc("id", String.valueOf(Integer.MAX_VALUE), field, String.valueOf(Integer.MAX_VALUE)));
+    assertU(adoc("id", maxNum, field, maxNum));
     assertU(commit());
-    assertQ(req("q", field + ":"+Integer.MAX_VALUE, "fl", "id, " + field), getTestString(searchable, 1));
+    assertQ(req("q", field + ":"+maxNum, "fl", "id, " + field), getTestString(searchable, 1));
     
     clearIndex();
     assertU(commit());
   }
+
 
   private void doTestPointFieldReturn(String field, String type, String[] values) throws Exception {
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
@@ -2341,8 +2379,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // Check using RTG
     if (Boolean.getBoolean("enable.update.log")) {
       for (int i = 0; i < values.length; i++) {
-        assertQ(req("qt", "/get", "id", String.valueOf(i)),
-            "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
+        final SolrQueryRequest areq = req("qt", "/get", "id", String.valueOf(i));
+        assertQ(areq, "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
       }
     }
     assertU(commit());
@@ -2377,7 +2415,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
             "//*[@numFound='0']");
   }
 
-  private void doTestIntPointFieldRangeQuery(String fieldName, String type, boolean testLong) throws Exception {
+  private void doTestIntPointFieldRangeQuery(String fieldName, String type, NumberSize numberSize) throws Exception {
     for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, String.valueOf(i)));
     }
@@ -2448,12 +2486,16 @@ public class TestPointFields extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
     
-    String[] arr;
-    if (testLong) {
-      arr = toAscendingStringArray(getRandomLongs(100, false), true);
-    } else {
-      arr = toAscendingStringArray(getRandomInts(100, false), true);
+    String[] arr = null;
+    switch (numberSize) {
+      case INT: arr = toAscendingStringArray(getRandomInts(100, false), true);
+      break;
+      case LONG: arr = toAscendingStringArray(getRandomLongs(100, false), true);
+      break;
+      case LONG_LONG: arr = toAscendingStringArray(getRandomLongLongs(100, false), true);
+      break;
     }
+
     for (int i = 0; i < arr.length; i++) {
       assertU(adoc("id", String.valueOf(i), fieldName, arr[i]));
     }
@@ -2466,17 +2508,28 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertQ(req("q", fieldName + ":[" + arr[0] + " TO " + arr[i] + "] AND " + fieldName + ":" + arr[0].replace("-", "\\-"), "fl", "id, " + fieldName), 
           "//*[@numFound='1']");
     }
-    if (testLong) {
-      assertQ(req("q", fieldName + ":[" + Long.MIN_VALUE + " TO " + Long.MIN_VALUE + "}", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":{" + Long.MAX_VALUE + " TO " + Long.MAX_VALUE + "]", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-    } else {
-      assertQ(req("q", fieldName + ":[" + Integer.MIN_VALUE + " TO " + Integer.MIN_VALUE + "}", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":{" + Integer.MAX_VALUE + " TO " + Integer.MAX_VALUE + "]", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
+
+    switch (numberSize) {
+      case INT:
+        assertQ(req("q", fieldName + ":[" + Integer.MIN_VALUE + " TO " + Integer.MIN_VALUE + "}", "fl", "id, " + fieldName),
+              "//*[@numFound='0']");
+        assertQ(req("q", fieldName + ":{" + Integer.MAX_VALUE + " TO " + Integer.MAX_VALUE + "]", "fl", "id, " + fieldName),
+                "//*[@numFound='0']");
+        break;
+      case LONG:
+        assertQ(req("q", fieldName + ":[" + Long.MIN_VALUE + " TO " + Long.MIN_VALUE + "}", "fl", "id, " + fieldName),
+              "//*[@numFound='0']");
+        assertQ(req("q", fieldName + ":{" + Long.MAX_VALUE + " TO " + Long.MAX_VALUE + "]", "fl", "id, " + fieldName),
+                "//*[@numFound='0']");
+        break;
+      case LONG_LONG:
+        assertQ(req("q", fieldName + ":[" + LongLongPointField.MIN_VALUE + " TO " + LongLongPointField.MIN_VALUE + "}", "fl", "id, " + fieldName),
+              "//*[@numFound='0']");
+        assertQ(req("q", fieldName + ":{" + LongLongPointField.MAX_VALUE + " TO " + LongLongPointField.MAX_VALUE + "]", "fl", "id, " + fieldName),
+                "//*[@numFound='0']");
+        break;
     }
+
   }
   
   private void doTestPointFieldFacetField(String nonDocValuesField, String docValuesField, String[] numbers) throws Exception {
@@ -2588,6 +2641,48 @@ public class TestPointFields extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
   }
+
+  private void doTestNumberPointFunctionQuery(String field) throws Exception {
+    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof LongLongPointField);
+    int numVals = 10 * RANDOM_MULTIPLIER;
+    List<BigInteger> values = getRandomLongs(numVals, false)
+        .stream()
+        .map(BigInteger::valueOf)
+        .collect(Collectors.toList());
+    String assertNumFound = "//*[@numFound='" + numVals + "']";
+    String[] idAscXpathChecks = new String[numVals + 1];
+    String[] idAscNegXpathChecks = new String[numVals + 1];
+    idAscXpathChecks[0] = assertNumFound;
+    idAscNegXpathChecks[0] = assertNumFound;
+    for (int i = 0 ; i < values.size() ; ++i) {
+      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, String.valueOf(values.get(i).toString())));
+      // reminder: xpath array indexes start at 1
+      idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/longlong[@name='field(" + field + ")'][.='" + values.get(i) + "']";
+      idAscNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='product(-1," + field + ")'][.='"
+          + (-1.0f * values.get(i).floatValue()) + "']";
+    }
+    assertU(commit());
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
+        idAscXpathChecks);
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
+        idAscNegXpathChecks);
+
+    List<PosVal<BigInteger>> ascNegPosVals
+        = toAscendingPosVals(values.stream().map(v -> v.negate()).collect(Collectors.toList()), true);
+    String[] ascNegXpathChecks = new String[numVals + 1];
+    ascNegXpathChecks[0] = assertNumFound;
+    for (int i = 0 ; i < ascNegPosVals.size() ; ++i) {
+      PosVal<BigInteger> posVal = ascNegPosVals.get(i);
+      ascNegXpathChecks[i + 1]
+          = "//result/doc[" + (1 + i) + "]/longlong[@name='" + field + "'][.='" + values.get(posVal.pos) + "']";
+    }
+    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1," + field + ") asc"),
+        ascNegXpathChecks);
+
+    clearIndex();
+    assertU(commit());
+  }
+
 
   /** 
    * Checks that the specified field can not be used as a value source, even if there are documents 
@@ -3792,6 +3887,68 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  private void doTestInternalsBinary(String field, String[] values) throws IOException {
+    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+    for (int i=0; i < 10; i++) {
+      assertU(adoc("id", String.valueOf(i), field, values[i]));
+    }
+    assertU(commit());
+
+    SchemaField sf = h.getCore().getLatestSchema().getField(field);
+    boolean ignoredField = !(sf.indexed() || sf.stored() || sf.hasDocValues());
+    h.getCore().withSearcher(searcher -> {
+      DirectoryReader ir = searcher.getIndexReader();
+      // our own SlowCompositeReader to check DocValues on disk w/o the UninvertingReader added by SolrIndexSearcher
+      final LeafReader leafReaderForCheckingDVs = SlowCompositeReaderWrapper.wrap(searcher.getRawReader());
+
+      if (sf.indexed()) {
+        assertEquals("Field " + field + " should have point values", 10, PointValues.size(ir, field));
+      } else {
+        assertEquals("Field " + field + " should have no point values", 0, PointValues.size(ir, field));
+      }
+      if (ignoredField) {
+        assertTrue("Field " + field + " should not have docValues",
+            DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue("Field " + field + " should not have docValues",
+            DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue("Field " + field + " should not have docValues",
+            DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+        assertTrue("Field " + field + " should not have docValues",
+            DocValues.getBinary(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+      } else {
+        if (sf.hasDocValues()) {
+          if (sf.multiValued()) {
+            assertFalse("Field " + field + " should have docValues",
+                DocValues.getSortedSet(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+          } else {
+            assertFalse("Field " + field + " should have docValues",
+                DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+          }
+        } else {
+          expectThrows(IllegalStateException.class, ()->DocValues.getSortedSet(leafReaderForCheckingDVs, field));
+          expectThrows(IllegalStateException.class, ()->DocValues.getSorted(leafReaderForCheckingDVs, field));
+        }
+        expectThrows(IllegalStateException.class, ()->DocValues.getNumeric(leafReaderForCheckingDVs, field));
+        expectThrows(IllegalStateException.class, ()->DocValues.getSortedNumeric(leafReaderForCheckingDVs, field));
+      }
+      for (LeafReaderContext leave:ir.leaves()) {
+        LeafReader reader = leave.reader();
+        for (int i = 0; i < reader.numDocs(); i++) {
+          Document doc = reader.document(i);
+          if (sf.stored()) {
+            assertNotNull("Field " + field + " not found. Doc: " + doc, doc.getField(field));
+          } else {
+            assertNull(doc.getField(field));
+          }
+        }
+      }
+      return null;
+    });
+    clearIndex();
+    assertU(commit());
+  }
+
+
   public void testNonReturnable() throws Exception {
     String[] ints = toStringArray(getRandomInts(2, false));
     doTestReturnNonStored("foo_p_i_ni_ns", false, ints[0]);
@@ -3855,11 +4012,12 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   public void testWhiteboxCreateFields() throws Exception {
-    String[] typeNames = new String[]{"i", "l", "f", "d", "dt"};
-    Class<?>[] expectedClasses = new Class[]{IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class, LongPoint.class};
+    String[] typeNames = new String[]{"i", "l","ll",  "f", "d", "dt",};
+    Class<?>[] expectedClasses = new Class[]{IntPoint.class, LongPoint.class, BinaryPoint.class,  FloatPoint.class, DoublePoint.class, LongPoint.class};
     
     Date dateToTest = new Date();
     Object[][] values = new Object[][] {
+      {42, "42"},
       {42, "42"},
       {42, "42"},
       {42.123, "42.123"},
@@ -3895,7 +4053,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       // ideally we should require that all input values be diff forms of the same logical value
       // (ie '"42"' vs 'new Integer(42)') and assert that each produces an equivalent list of IndexableField objects
       // but that doesn't seem to work -- appears not all IndexableField classes override Object.equals?
-      final List<IndexableField> result = callAndCheckCreateFields(fieldName, pointType, value);
+      final List<IndexableField> result = callAndCheckCreateFields(fieldName, pointType, value, !pointType.equals(BinaryPoint.class));
       assertNotNull(value + " => null", result);
     }
   }
@@ -3906,7 +4064,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
    * that the results match the SchemaField propeties, with an additional check that the <code>pointType</code> 
    * is included if and only if the SchemaField is "indexed" 
    */
-  private List<IndexableField> callAndCheckCreateFields(final String fieldName, final Class<?> pointType, final Object value) throws Exception {
+  private List<IndexableField> callAndCheckCreateFields(final String fieldName,
+                                                        final Class<?> pointType,
+                                                        final Object value,
+                                                        final boolean numericDocValue
+                                                        ) throws Exception {
     final SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     final List<IndexableField> results = sf.createFields(value);
     final Set<IndexableField> resultSet = new LinkedHashSet<>(results);
@@ -3919,8 +4081,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
       
       if (!sf.hasDocValues() ) {
         assertFalse(f.toString(),
-                    (f instanceof NumericDocValuesField) ||
-                    (f instanceof SortedNumericDocValuesField));
+            numericDocValue ?
+            f instanceof NumericDocValuesField || f instanceof SortedNumericDocValuesField :
+            f instanceof SortedDocValuesField || f instanceof SortedSetDocValuesField
+        );
       }
     }
     assertEquals(fieldName + " stored? Result Fields: " + Arrays.toString(results.toArray()),
@@ -3929,14 +4093,213 @@ public class TestPointFields extends SolrTestCaseJ4 {
                  sf.indexed(), resultClasses.contains(pointType));
     if (sf.multiValued()) {
       assertEquals(fieldName + " docvalues? Result Fields: " + Arrays.toString(results.toArray()),
-                   sf.hasDocValues(), resultClasses.contains(SortedNumericDocValuesField.class));
+                   sf.hasDocValues(),
+          resultClasses.contains( numericDocValue ? SortedNumericDocValuesField.class  :
+              SortedSetDocValuesField.class));
     } else {
       assertEquals(fieldName + " docvalues? Result Fields: " + Arrays.toString(results.toArray()),
-                   sf.hasDocValues(), resultClasses.contains(NumericDocValuesField.class));
+                   sf.hasDocValues(),
+          resultClasses.contains( numericDocValue ? NumericDocValuesField.class  :
+              SortedDocValuesField.class));
     }
 
     return results;
   }
 
+  /**
+   * Calls {@link SchemaField#createFields} on the specified value for the specified field name, and asserts
+   * that the results match the SchemaField propeties, with an additional check that the <code>pointType</code>
+   * is included if and only if the SchemaField is "indexed"
+   */
+  private List<IndexableField> callAndCheckCreateLongLongFields(final String fieldName, final Class<?> pointType, final Object value) throws Exception {
+    final SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
+    final List<IndexableField> results = sf.createFields(value);
+    final Set<IndexableField> resultSet = new LinkedHashSet<>(results);
+    assertEquals("duplicates found in results? " + results.toString(),
+        results.size(), resultSet.size());
 
+    final Set<Class<?>> resultClasses = new HashSet<>();
+    for (IndexableField f : results) {
+      resultClasses.add(f.getClass());
+
+      if (!sf.hasDocValues() ) {
+        assertFalse(f.toString(),
+            (f instanceof SortedDocValuesField) ||
+                (f instanceof SortedSetDocValuesField));
+      }
+    }
+    assertEquals(fieldName + " stored? Result Fields: " + Arrays.toString(results.toArray()),
+        sf.stored(), resultClasses.contains(StoredField.class));
+    assertEquals(fieldName + " indexed? Result Fields: " + Arrays.toString(results.toArray()),
+        sf.indexed(), resultClasses.contains(pointType));
+    if (sf.multiValued()) {
+      assertEquals(fieldName + " docvalues? Result Fields: " + Arrays.toString(results.toArray()),
+          sf.hasDocValues(), resultClasses.contains(SortedSetDocValuesField.class));
+    } else {
+      assertEquals(fieldName + " docvalues? Result Fields: " + Arrays.toString(results.toArray()),
+          sf.hasDocValues(), resultClasses.contains(SortedDocValuesField.class));
+    }
+
+    return results;
+  }
+
+  // longlong tests
+
+  @Test
+  public void testLongLongPointFieldExactQuery() throws Exception {
+    doTestIntPointFieldExactQuery("number_p_ll", NumberSize.LONG_LONG);
+    doTestIntPointFieldExactQuery("number_p_ll_mv", NumberSize.LONG_LONG);
+    doTestIntPointFieldExactQuery("number_p_ll_dv", NumberSize.LONG_LONG);
+    doTestIntPointFieldExactQuery("number_p_ll_mv_dv", NumberSize.LONG_LONG);
+    doTestIntPointFieldExactQuery("number_p_ll_ni_dv", NumberSize.LONG_LONG);
+    doTestIntPointFieldExactQuery("number_p_ll_ni_ns_dv", NumberSize.LONG_LONG);
+    doTestIntPointFieldExactQuery("number_p_ll_ni_mv_dv", NumberSize.LONG_LONG);
+  }
+
+  @Test
+  public void testLongLongPointFieldNonSearchableExactQuery() throws Exception {
+    doTestIntPointFieldExactQuery("number_p_ll_ni", NumberSize.LONG_LONG, false);
+    doTestIntPointFieldExactQuery("number_p_ll_ni_ns", NumberSize.LONG_LONG, false);
+  }
+
+  @Test
+  public void testLongLongPointFieldReturn() throws Exception {
+    int numValues = 10 * RANDOM_MULTIPLIER;
+    String[] ints = toStringArray(getRandomLongLongs(numValues, false));
+    doTestPointFieldReturn("number_p_ll", "longlong", ints);
+    doTestPointFieldReturn("number_p_ll_dv_ns", "longlong", ints);
+    doTestPointFieldReturn("number_p_ll_ni", "longlong", ints);
+  }
+
+  @Test
+  public void testLongLongPointFieldRangeQuery() throws Exception {
+    doTestIntPointFieldRangeQuery("number_p_ll", "longlong", NumberSize.LONG_LONG);
+    doTestIntPointFieldRangeQuery("number_p_ll_ni_ns_dv", "longlong", NumberSize.LONG_LONG);
+    doTestIntPointFieldRangeQuery("number_p_ll_dv", "longlong", NumberSize.LONG_LONG);
+  }
+
+  @Test
+  public void testLongLongPointFieldNonSearchableRangeQuery() throws Exception {
+    doTestPointFieldNonSearchableRangeQuery("number_p_ll_ni", toStringArray(getRandomLongLongs(1, false)));
+    doTestPointFieldNonSearchableRangeQuery("number_p_ll_ni_ns", toStringArray(getRandomLongLongs(1, false)));
+    int numValues = 2 * RANDOM_MULTIPLIER;
+    doTestPointFieldNonSearchableRangeQuery("number_p_ll_ni_ns_mv", toStringArray(getRandomLongLongs(numValues, false)));
+  }
+
+  @Test
+  public void testLongLongPointFieldSortAndFunction() throws Exception {
+    // todo: Requires Field function support?
+
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(LongLongPointField.class);
+    final List<String> sequential = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+    final List<BigInteger> randomInts = getRandomLongLongs(10, false);
+    final List<BigInteger> randomIntsMissing = getRandomLongLongs(10, true);
+
+    for (String r : Arrays.asList("*_p_ll", "*_p_ll_dv", "*_p_ll_dv_ns", "*_p_ll_ni_dv",
+            "*_p_ll_ni_dv_ns", "*_p_ll_ni_ns_dv")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomInts);
+      //doTestNumberPointFunctionQuery(field);
+    }
+    for (String r : Arrays.asList("*_p_ll_smf", "*_p_ll_dv_smf", "*_p_ll_ni_dv_smf",
+            "*_p_ll_sml", "*_p_ll_dv_sml", "*_p_ll_ni_dv_sml")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      doTestPointFieldSort(field, sequential);
+      // todo: Requires sortField.missingValue functionality
+      //doTestPointFieldSort(field, randomIntsMissing);
+      //doTestIntPointFunctionQuery(field);
+    }
+
+    // no docvalues
+    for (String r : Arrays.asList("*_p_ll_ni", "*_p_ll_ni_ns")) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      // todo: Why can we sort here without an index?
+      // doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongLongs(1, false)));
+      //doTestPointFieldFunctionQueryError(field, "w/o docValues", toStringArray(getRandomLongLongs(1, false)));
+    }
+
+    // multivalued, no docvalues
+    for (String r : Arrays.asList("*_p_ll_mv", "*_p_ll_ni_mv", "*_p_ll_ni_ns_mv",
+            "*_p_ll_mv_smf", "*_p_ll_mv_sml")) {
+
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+      //doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongLongs(1, false)));
+      int numValues = 2 * RANDOM_MULTIPLIER;
+      // todo: Why can we sort here without an index?
+      //doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongLongs(numValues, false)));
+      //doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongLongs(1, false)));
+      //doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongLongs(numValues, false)));
+    }
+
+    // multivalued, w/ docValues
+    for (String r : Arrays.asList("*_p_ll_ni_mv_dv", "*_p_ll_ni_dv_ns_mv",
+            "*_p_ll_dv_ns_mv", "*_p_ll_mv_dv",
+            "*_p_ll_mv_dv_smf", "*_p_ll_ni_mv_dv_smf",
+            "*_p_ll_mv_dv_sml", "*_p_ll_ni_mv_dv_sml"
+    )) {
+      assertTrue(r, regexToTest.remove(r));
+      String field = r.replace("*", "number");
+
+      // NOTE: only testing one value per doc here, but TestMinMaxOnMultiValuedField
+      // covers this in more depth
+      doTestPointFieldSort(field, sequential);
+      doTestPointFieldSort(field, randomInts);
+
+      // value source (w/o field(...,min|max)) usuage should still error...
+      //int numValues = 2 * RANDOM_MULTIPLIER;
+      //doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongLongs(1, false)));
+      //doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongLongs(numValues, false)));
+    }
+
+    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+  }
+
+  @Test
+  public void testLongLongPointFieldMultiValuedExactQuery() throws Exception {
+    String[] ints = toStringArray(getRandomLongLongs(20, false));
+    doTestPointFieldMultiValuedExactQuery("number_p_ll_mv", ints);
+    doTestPointFieldMultiValuedExactQuery("number_p_ll_ni_mv_dv", ints);
+  }
+
+  @Test
+  public void testLongLongPointFieldMultiValuedNonSearchableExactQuery() throws Exception {
+    String[] ints = toStringArray(getRandomLongLongs(20, false));
+    doTestPointFieldMultiValuedExactQuery("number_p_ll_ni_mv", ints, false);
+    doTestPointFieldMultiValuedExactQuery("number_p_ll_ni_ns_mv", ints, false);
+  }
+
+  @Test
+  public void testLongLongPointFieldMultiValuedReturn() throws Exception {
+    String[] ints = toStringArray(getRandomLongLongs(20, false));
+    doTestPointFieldMultiValuedReturn("number_p_ll_mv", "longlong", ints);
+    doTestPointFieldMultiValuedReturn("number_p_ll_ni_mv_dv", "longlong", ints);
+    doTestPointFieldMultiValuedReturn("number_p_ll_dv_ns_mv", "longlong", ints);
+  }
+
+  @Test
+  public void testLongLongPointFieldMultiValuedRangeQuery() throws Exception {
+    String[] ints = toStringArray(getRandomLongLongs(20, false).stream().sorted().collect(Collectors.toList()));
+    doTestPointFieldMultiValuedRangeQuery("number_p_ll_mv", "longlong", ints);
+    doTestPointFieldMultiValuedRangeQuery("number_p_ll_ni_mv_dv", "longlong", ints);
+    doTestPointFieldMultiValuedRangeQuery("number_p_ll_mv_dv", "longlong", ints);
+  }
+
+  @Test
+  public void testLongLongPointFieldNotIndexed() throws Exception {
+    String[] ints = toStringArray(getRandomLongLongs(10, false));
+    doTestFieldNotIndexed("number_p_ll_ni", ints);
+    doTestFieldNotIndexed("number_p_ll_ni_mv", ints);
+  }
+
+  @Test
+  public void testLongLongPointMultiValuedFunctionQuery() throws Exception {
+    doTestPointMultiValuedFunctionQuery("number_p_ll_mv", "number_p_ll_mv_dv", "longlong", getSequentialStringArrayWithInts(20));
+    doTestPointMultiValuedFunctionQuery("number_p_ll_mv", "number_p_ll_mv_dv", "longlong",
+            toStringArray(getRandomLongLongs(20, false).stream().sorted().collect(Collectors.toList())));
+  }
 }

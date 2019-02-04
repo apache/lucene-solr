@@ -404,6 +404,11 @@ class XLSXWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeLongLong(String name, String val) throws IOException {
+    wb.writeCell(val);
+  }
+
+  @Override
   public void writeDate(String name, Date val) throws IOException {
     writeDate(name, val.toInstant().toString());
   }

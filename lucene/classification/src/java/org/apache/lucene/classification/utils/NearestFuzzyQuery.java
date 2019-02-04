@@ -62,7 +62,7 @@ public class NearestFuzzyQuery extends Query {
   /**
    * Default constructor
    *
-   * @param analyzer the analyzer used to proecss the query text
+   * @param analyzer the analyzer used to process the query text
    */
   public NearestFuzzyQuery(Analyzer analyzer) {
     this.analyzer = analyzer;

@@ -235,10 +235,16 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private String metricTag = Integer.toHexString(hashCode());
 
+  public boolean searchEnabled = true;
+  public boolean indexEnabled = true;
+
   public Set<String> getMetricNames() {
     return metricNames;
   }
 
+  public boolean isSearchEnabled(){
+    return searchEnabled;
+  }
 
   public Date getStartTimeStamp() { return startTime; }
 
