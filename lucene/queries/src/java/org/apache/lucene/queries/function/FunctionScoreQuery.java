@@ -65,6 +65,13 @@ public final class FunctionScoreQuery extends Query {
   }
 
   /**
+   * @return the underlying value source
+   */
+  public DoubleValuesSource getSource() {
+    return source;
+  }
+
+  /**
    * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by
    * the value of a DoubleValuesSource.
    *

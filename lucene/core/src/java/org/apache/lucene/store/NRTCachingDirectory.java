@@ -289,7 +289,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
    *  there's some unexpected error. */
   static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
+      dir.fileLength(fileName);
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;

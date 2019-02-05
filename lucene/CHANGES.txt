@@ -10,6 +10,13 @@ API Changes
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been 
   removed. (Dawid Weiss)
 
+Bug fixes:
+
+* LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
+  it's inaccessible. (Dawid Weiss)
+
+======================= Lucene 8.1.0 =======================
+(No Changes)
 
 ======================= Lucene 8.0.0 =======================
 
@@ -198,6 +205,9 @@ New Features
 * LUCENE-8646: New interval functions: Intervals.prefix() and Intervals.wildcard()
   (Alan Woodward)
 
+* LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
+  underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
@@ -215,6 +225,9 @@ Improvements
   order to speed up selection of top scored documents. (Adrien Grand)
 
 * LUCENE-8279: CheckIndex now cross-checks terms with norms. (Adrien Grand)
+
+* LUCENE-8660: TopDocsCollectors now return an accurate count (instead of a lower bound)
+  if the total hit count is equal to the provided threshold. (Adrien Grand, Jim Ferenczi)
 
 Optimizations
 
@@ -273,6 +286,9 @@ Build
 
 Bug fixes:
 
+* LUCENE-8669: Fix LatLonShape WITHIN queries that fail with Multiple search Polygons
+  that share the dateline. (Nick Knize)
+
 * LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
   (Yoo Jeongin via Jim Ferenczi)
 
@@ -294,6 +310,9 @@ Bug fixes:
 * LUCENE-8650: ConcatenatingTokenStream did not correctly clear its state in reset(), and
   was not propagating final position increments from its child streams correctly.
   (Dan Meehl, Alan Woodward)
+
+* LUCENE-8676: The Korean tokenizer does not update the last position if the backtrace is caused
+  by a big buffer (1024 chars). (Jim Ferenczi)
 
 New Features
 

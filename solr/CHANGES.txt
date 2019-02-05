@@ -36,6 +36,22 @@ New Features
 
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
+==================  8.1.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.13
+Jetty 9.4.14.v20181114
+
+
+(No Changes)
+
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -125,7 +141,15 @@ Upgrade Notes
 
 * SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. 
   If you have a custom language identifier implementation you will need to adapt your code.
-  
+
+* SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
+
+* SOLR-5211: Deleting (or updating) documents by their uniqueKey is now scoped to only consider root documents, not
+  child/nested documents.  Thus a delete-by-id won't work on a child doc (no-op), and an attempt to update a child doc
+  by providing a new doc with the same ID would add a new doc (probably erroneous).  Both these actions were and still
+  are problematic.  In-place-updates are safe though.  If you want to delete certain child documents and if you know
+  they don't themselves have nested children then you must do so with a delete-by-query technique.
+
 New Features
 ----------------------
 
@@ -155,6 +179,13 @@ New Features
   path is indexed for use in queries (can be disabled if not needed).  Also, child documents needn't provide a uniqueKey
   value as Solr will supply one automatically by concatenating a path to that of the parent document's key.
   (David Smiley, Moshe Bla).
+
+* SOLR-13134: Allow the knnRegress Stream Evaluator to more easily perform bivariate regression.
+  (Joel Bernstein)
+
+* SOLR-13104: Add natural and repeat Stream Evaluators (Joel Bernstein)
+
+* SOLR-13147: Add movingMAD Stream Evaluator (Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -224,6 +255,8 @@ Other Changes
 
 * SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
 
+* SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
+
 ==================  7.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -263,6 +296,11 @@ New Features
   users to configure which fields/values to add to tombstone documents. This can be useful to
   make sure tombstone documents include fields that are marked as required in the schema
   (Tomás Fernández Löbbe)
+
+* SOLR-12984: The search Streaming Expression should properly support and push down paging
+  when using the /select handler (Joel Bernstein)
+
+* SOLR-13088: Add zplot Stream Evaluator to plot math expressions in Apache Zeppelin (Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -344,6 +382,8 @@ Improvements
 * SOLR-13029: solr.hdfs.buffer.size can be configured for HdfsBackupRepository for better performance (Tim Owen via Mikhail Khludnev)
 
 * SOLR-13156: support facet.sort for facet.field={!terms=foo,bar}field. (Konstantin Perikov via Mikhail Khludnev)
+
+* SOLR-13146: Allow derivatives to be computed for the oscillate Stream Evaluator (Joel Bernstein)
 
 Other Changes
 ----------------------
