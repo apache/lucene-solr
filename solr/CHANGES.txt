@@ -38,6 +38,7 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-12330: 500 error code on json.facet syntax errors (Munendra S N, Mikhail Khludnev)
 
 Improvements
 ----------------------

@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
@@ -78,15 +79,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     // TODO: prevent parsing filters each time!
     for (Object rawFilter : filters) {
       if (rawFilter instanceof String) {
-        QParser parser = null;
-        try {
-          parser = QParser.getParser((String)rawFilter, fcontext.req);
-          parser.setIsFilter(true);
-          Query symbolicFilter = parser.getQuery();
-          qlist.add(symbolicFilter);
-        } catch (SyntaxError syntaxError) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-        }
+        qlist.add(parserFilter((String) rawFilter, fcontext.req));
       } else if (rawFilter instanceof Map) {
 
         Map<String,Object> m = (Map<String, Object>) rawFilter;
@@ -113,17 +106,11 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
         String[] qstrings = fcontext.req.getParams().getParams(tag);
 
+        // idea is to support multivalued parameter ie, 0 or more values
+        // so, when value not specified, it is ignored rather than throwing exception
         if (qstrings != null) {
           for (String qstring : qstrings) {
-            QParser parser = null;
-            try {
-              parser = QParser.getParser((String) qstring, fcontext.req);
-              parser.setIsFilter(true);
-              Query symbolicFilter = parser.getQuery();
-              qlist.add(symbolicFilter);
-            } catch (SyntaxError syntaxError) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-            }
+            qlist.add(parserFilter(qstring, fcontext.req));
           }
         }
 
@@ -133,6 +120,22 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
     }
     return qlist;
+  }
+
+  private static Query parserFilter(String rawFilter, SolrQueryRequest req) {
+    QParser parser = null;
+    try {
+      parser = QParser.getParser(rawFilter, req);
+      parser.setIsFilter(true);
+      Query symbolicFilter = parser.getQuery();
+      if (symbolicFilter == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "QParser yields null, perhaps unresolved parameter reference in: "+rawFilter);
+      }
+      return symbolicFilter;
+    } catch (SyntaxError syntaxError) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+    }
   }
 
   private void handleDomainChanges() throws IOException {
