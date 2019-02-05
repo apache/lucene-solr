@@ -190,6 +190,9 @@ New Features
 * LUCENE-8646: New interval functions: Intervals.prefix() and Intervals.wildcard()
   (Alan Woodward)
 
+* LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
+  underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
