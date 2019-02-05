@@ -22,7 +22,7 @@ import java.util.Arrays;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FutureArrays;
-import org.apache.lucene.util.IntroSelector;
+import org.apache.lucene.util.RadixSelector;
 
 /**
  *
@@ -49,8 +49,6 @@ public final class BKDRadixSelector {
   private final byte[] offlineBuffer;
   //holder for partition points
   private final int[] partitionBucket;
-  //re-usable on-heap selector
-  private final HeapSelector heapSelector;
   // scratch object to move bytes around
   private final BytesRef bytesRef1 = new BytesRef();
   // scratch object to move bytes around
@@ -73,7 +71,6 @@ public final class BKDRadixSelector {
     this.partitionBucket = new int[bytesSorted];
     this.histogram = new long[bytesSorted][HISTOGRAM_SIZE];
     this.bytesRef1.length = numDim * bytesPerDim;
-    this.heapSelector = new HeapSelector(numDim, bytesPerDim);
     this.tempDir = tempDir;
     this.tempFileNamePrefix = tempFileNamePrefix;
   }
@@ -271,8 +268,30 @@ public final class BKDRadixSelector {
   }
 
   private byte[] heapSelect(HeapPointWriter points, PointWriter left, PointWriter right, int dim, int from, int to, int partitionPoint, int commonPrefix) throws IOException {
-    heapSelector.setHeapPointWriter(points, dim, commonPrefix);
-    heapSelector.select(from, to, partitionPoint);
+    new RadixSelector(bytesSorted - commonPrefix) {
+
+      @Override
+      protected void swap(int i, int j) {
+        points.swap(i, j);
+
+      }
+
+      @Override
+      protected int byteAt(int i, int k) {
+        assert k >= 0;
+        if (k + commonPrefix < bytesPerDim) {
+          // dim bytes
+          int block = i / points.valuesPerBlock;
+          int index = i % points.valuesPerBlock;
+          return points.blocks.get(block)[index * packedBytesLength + dim * bytesPerDim + k + commonPrefix] & 0xff;
+        } else {
+          // doc id
+          int s = 3 - (k + commonPrefix - bytesPerDim);
+          return (points.docIDs[i] >>> (s * 8)) & 0xff;
+        }
+      }
+    }.select(from, to, partitionPoint);
+
     byte[] partition = new byte[bytesPerDim];
     Arrays.fill(partition, (byte) 0xff);
     for (int i = from; i < to; i++) {
@@ -288,86 +307,5 @@ public final class BKDRadixSelector {
       }
     }
     return partition;
-  }
-
-
-  /**
-   * Reusable on-heap intro  selector.
-   */
-  private static class HeapSelector extends IntroSelector {
-    //fixed from the beginning
-    private final int bytesPerDim;
-    //writer that must be set before running
-    private HeapPointWriter writer;
-    //byte start position for comparisons
-    private int start;
-    //byte end position for comparisons
-    private int end;
-    //common prefix
-    private int commonPrefix;
-    //scratch object
-    private final BytesRef bytesRef1 = new BytesRef();
-    //scratch object
-    private final BytesRef bytesRef2 = new BytesRef();
-    //holds the current pivot
-    private final BytesRef pivot = new BytesRef();
-    //holds the current pivot docID
-    private int pivotDoc;
-
-    public HeapSelector(int numDim, int bytesPerDim) {
-      this.bytesPerDim = bytesPerDim;
-      this.bytesRef1.length = numDim * bytesPerDim;
-      this.bytesRef2.length = numDim * bytesPerDim;
-      this.pivot.length = numDim * bytesPerDim;
-    }
-
-    /**
-     * Set the data to be sorted. It must be done before calling select.
-     * @param writer The data to be sorted
-     * @param dim the dimension to sort from
-     * @param commonPrefix byte we need to start from the comparisons
-     */
-    public void setHeapPointWriter(HeapPointWriter writer, int dim, int commonPrefix) {
-      this.writer = writer;
-      this.commonPrefix = commonPrefix;
-      start = dim * bytesPerDim + commonPrefix;
-      end = dim * bytesPerDim + bytesPerDim;
-    }
-
-    @Override
-    protected void swap(int i, int j){
-      writer.swap(i, j);
-    }
-
-    @Override
-    protected void setPivot(int i) {
-      writer.getPackedValueSlice(i, pivot);
-      pivotDoc = writer.docIDs[i];
-    }
-
-    @Override
-    protected int compare(int i, int j) {
-      if (commonPrefix < bytesPerDim) {
-        writer.getPackedValueSlice(i, bytesRef1);
-        writer.getPackedValueSlice(j, bytesRef2);
-        int cmp = FutureArrays.compareUnsigned(bytesRef1.bytes, bytesRef1.offset + start, bytesRef1.offset + end, bytesRef2.bytes, bytesRef2.offset + start, bytesRef2.offset + end);
-        if (cmp != 0) {
-          return cmp;
-        }
-      }
-      return writer.docIDs[i] - writer.docIDs[j];
-    }
-
-    @Override
-    protected int comparePivot(int j) {
-      if (commonPrefix < bytesPerDim) {
-        writer.getPackedValueSlice(j, bytesRef1);
-        int cmp = FutureArrays.compareUnsigned(pivot.bytes, pivot.offset + start, pivot.offset + end, bytesRef1.bytes, bytesRef1.offset + start, bytesRef1.offset + end);
-        if (cmp != 0) {
-          return cmp;
-        }
-      }
-      return pivotDoc - writer.docIDs[j];
-    }
   }
 }

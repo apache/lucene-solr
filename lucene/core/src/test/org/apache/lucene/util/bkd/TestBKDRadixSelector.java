@@ -49,6 +49,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     points.append(bytes, 3);
     points.close();
     verify(dir, points, dimensions, 0, values, middle, packedLength, bytesPerDimensions, 0);
+    verify(dir, points, dimensions, 0, values, 0, packedLength, bytesPerDimensions, 0);
     dir.close();
   }
 
@@ -203,7 +204,6 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       rightPointWriter.destroy();
     }
     points.destroy();
-    dir.close();
   }
 
   private PointWriter copyPoints(Directory dir, PointWriter points, int packedLength) throws IOException {
