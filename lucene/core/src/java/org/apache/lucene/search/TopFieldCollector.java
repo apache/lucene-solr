@@ -114,9 +114,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       final int[] reverseMul = queue.getReverseMul();
       final Sort indexSort = context.reader().getMetaData().getSort();
       final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+      final int leafHitsThreshold = prorateForSegment(Math.max(numHits, totalHitsThreshold), context);
 
       return new MultiComparatorLeafCollector(comparators, reverseMul) {
 
+        private int leafHits = 0;
         boolean collectedAllCompetitiveHits = false;
 
         @Override
@@ -127,14 +129,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
         @Override
         public void collect(int doc) throws IOException {
+          ++leafHits;
           ++totalHits;
           if (queueFull) {
             if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
               // since docs are visited in doc Id order, if compare is 0, it means
-              // this document is largest than anything else in the queue, and
+              // this document is larger than anything else in the queue, and
               // therefore not competitive.
               if (canEarlyTerminate) {
-                if (totalHits > totalHitsThreshold) {
+                if (totalHits > totalHitsThreshold || leafHits > leafHitsThreshold) {
                   totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                   throw new CollectionTerminatedException();
                 } else {
@@ -165,9 +168,33 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               updateMinCompetitiveScore(scorer);
             }
           }
+          if (canEarlyTerminate) {
+              // When early terminating, stop collecting hits from this leaf once we have its prorated hits.
+              if (leafHits >= leafHitsThreshold) {
+                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                  throw new CollectionTerminatedException();
+              }
+          }
         }
 
       };
+    }
+
+    /** The total number of documents that matched this query; may be a lower bound in case of early termination. */
+    @Override
+    public int getTotalHits() {
+      if (totalHitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO) {
+        return Math.max(totalHits, totalHitsThreshold);
+      }
+      return totalHits;
+    }
+
+    private int prorateForSegment(int topK, LeafReaderContext leafCtx) {
+        // prorate number of hits to collect based on proportion of documents in this leaf (segment).
+        // m := expected number of the topK results in this segment
+        double m = (topK * (double) leafCtx.reader().numDocs() / leafCtx.parent.reader().numDocs());
+        // Increase N to include a bound to ensure the probability of missing a doc is very small
+        return (int) Math.ceil(m + 1 * Math.sqrt(m));
     }
 
   }
@@ -485,7 +512,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
 
     // If this is a maxScoring tracking collector and there were no results,
-    return new TopFieldDocs(new TotalHits(totalHits, totalHitsRelation), results, ((FieldValueHitQueue<Entry>) pq).getFields());
+    return new TopFieldDocs(new TotalHits(getTotalHits(), totalHitsRelation), results, ((FieldValueHitQueue<Entry>) pq).getFields());
   }
 
   @Override
