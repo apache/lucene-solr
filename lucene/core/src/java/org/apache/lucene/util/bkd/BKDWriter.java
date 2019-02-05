@@ -1205,8 +1205,10 @@ public class BKDWriter implements Closeable {
     if (writer instanceof OfflinePointWriter) {
       // We are reading from a temp file; go verify the checksum:
       String tempFileName = ((OfflinePointWriter) writer).name;
-      try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
-        CodecUtil.checkFooter(in, priorException);
+      if (tempDir.getCreatedFiles().contains(tempFileName)) {
+        try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
+          CodecUtil.checkFooter(in, priorException);
+        }
       }
     }
     
