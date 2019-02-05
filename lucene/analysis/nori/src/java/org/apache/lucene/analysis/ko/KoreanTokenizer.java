@@ -535,7 +535,6 @@ public final class KoreanTokenizer extends Tokenizer {
       }
 
       if (pos > lastBackTracePos && posData.count == 1 && isFrontier) {
-        //  if (pos > lastBackTracePos && posData.count == 1 && isFrontier) {
         // We are at a "frontier", and only one node is
         // alive, so whatever the eventual best path is must
         // come through this node.  So we can safely commit
@@ -618,6 +617,7 @@ public final class KoreanTokenizer extends Tokenizer {
         } else {
           // This means the backtrace only produced
           // punctuation tokens, so we must keep parsing.
+          continue;
         }
       }
 

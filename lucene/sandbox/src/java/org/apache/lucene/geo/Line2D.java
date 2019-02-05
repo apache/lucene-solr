@@ -50,10 +50,7 @@ public final class Line2D extends EdgeTree {
 
   @Override
   protected PointValues.Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
-    }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+    return tree.relateTriangle(ax, ay, bx, by, cx, cy);
   }
 
   @Override

@@ -115,17 +115,6 @@ public class TestDirectory extends LuceneTestCase {
   }
 
   // LUCENE-1468
-  @SuppressWarnings("resource")
-  public void testCopySubdir() throws Throwable {
-    Path path = createTempDir("testsubdir");
-    Files.createDirectory(path.resolve("subdir"));
-    FSDirectory fsDir = new SimpleFSDirectory(path);
-    RAMDirectory ramDir = new RAMDirectory(fsDir, newIOContext(random()));
-    List<String> files = Arrays.asList(ramDir.listAll());
-    assertFalse(files.contains("subdir"));
-  }
-
-  // LUCENE-1468
   public void testNotDirectory() throws Throwable {
     Path path = createTempDir("testnotdir");
     Directory fsDir = new SimpleFSDirectory(path);

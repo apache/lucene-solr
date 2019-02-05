@@ -120,7 +120,7 @@ public class TestPayloads extends LuceneTestCase {
     ram.close();
   }
 
-  // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
+  // Tests if payloads are correctly stored and loaded.
   public void testPayloadsEncoding() throws Exception {
     Directory dir = newDirectory();
     performTest(dir);

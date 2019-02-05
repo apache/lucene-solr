@@ -4,6 +4,18 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 9.0.0 =======================
+
+API Changes
+
+* LUCENE-8474: RAMDirectory and associated deprecated classes have been 
+  removed. (Dawid Weiss)
+
+Bug fixes:
+
+* LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
+  it's inaccessible. (Dawid Weiss)
+
+======================= Lucene 8.1.0 =======================
 (No Changes)
 
 ======================= Lucene 8.0.0 =======================
@@ -211,6 +223,9 @@ Improvements
 
 * LUCENE-8279: CheckIndex now cross-checks terms with norms. (Adrien Grand)
 
+* LUCENE-8660: TopDocsCollectors now return an accurate count (instead of a lower bound)
+  if the total hit count is equal to the provided threshold. (Adrien Grand, Jim Ferenczi)
+
 Optimizations
 
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
@@ -268,6 +283,9 @@ Build
 
 Bug fixes:
 
+* LUCENE-8669: Fix LatLonShape WITHIN queries that fail with Multiple search Polygons
+  that share the dateline. (Nick Knize)
+
 * LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
   (Yoo Jeongin via Jim Ferenczi)
 
@@ -285,6 +303,13 @@ Bug fixes:
 
 * LUCENE-8654: Polygon2D#relateTriangle returns the wrong answer if polygon is inside
   the triangle. (Ignacio Vera)
+
+* LUCENE-8650: ConcatenatingTokenStream did not correctly clear its state in reset(), and
+  was not propagating final position increments from its child streams correctly.
+  (Dan Meehl, Alan Woodward)
+
+* LUCENE-8676: The Korean tokenizer does not update the last position if the backtrace is caused
+  by a big buffer (1024 chars). (Jim Ferenczi)
 
 New Features
 
@@ -323,6 +348,8 @@ Improvements
   
 * LUCENE-8527: Upgrade JFlex dependency to 1.7.0; in StandardTokenizer and UAX29URLEmailTokenizer,
   increase supported Unicode version from 6.3 to 9.0, and support Unicode UTS#51 v11.0 Emoji tokenization.
+
+* LUCENE-8640: Date Range format validation (Lucky Sharma, David Smiley via Mikhail Khludnev)
 
 Optimizations
 

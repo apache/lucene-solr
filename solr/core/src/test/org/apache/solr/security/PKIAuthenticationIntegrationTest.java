@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.security.TestAuthorizationFramework.verifySecurityStatus;
 
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 

@@ -103,7 +103,8 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
-    for (int i = 0; i < 500; i++) {
+    final int numDocs = 500;
+    for (int i = 0; i < numDocs; i++) {
       addDoc("doc" + i, iw);
     }
     IndexReader ir = DirectoryReader.open(iw);
@@ -114,7 +115,14 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     TopScoreDocCollector c = TopScoreDocCollector.create(10, null, totalHitsThreshold);
 
     is.search(new MatchAllDocsQuery(), c);
-    assertEquals(totalHitsThreshold, c.totalHits);
+    assertEquals(totalHitsThreshold+1, c.totalHits);
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
+
+    TopScoreDocCollector c1 = TopScoreDocCollector.create(10, null, numDocs);
+
+    is.search(new MatchAllDocsQuery(), c1);
+    assertEquals(numDocs, c1.totalHits);
+    assertEquals(TotalHits.Relation.EQUAL_TO, c1.totalHitsRelation);
 
     iw.close();
     ir.close();

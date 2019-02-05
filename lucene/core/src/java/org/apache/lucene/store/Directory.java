@@ -44,7 +44,7 @@ import org.apache.lucene.util.IOUtils;
  * </ul>
  *
  * @see FSDirectory
- * @see RAMDirectory
+ * @see ByteBuffersDirectory
  * @see FilterDirectory
  */
 public abstract class Directory implements Closeable {

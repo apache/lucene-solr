@@ -94,7 +94,7 @@ public final class Polygon2D extends EdgeTree {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
-      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
@@ -102,7 +102,7 @@ public final class Polygon2D extends EdgeTree {
       if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -128,21 +128,21 @@ public final class Polygon2D extends EdgeTree {
     }
     WithinRelation relation = WithinRelation.DISJOINT;
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
-    if (tree.crossesEdge(ax, ay, bx, by)) {
+    if (tree.relateLine(ax, ay, bx, by) == Relation.CELL_CROSSES_QUERY) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.crossesEdge(bx, by, cx, cy)) {
+    if (tree.relateLine(bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.crossesEdge(cx, cy, ax, ay)) {
+    if (tree.relateLine(cx, cy, ax, ay) == Relation.CELL_CROSSES_QUERY) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {
