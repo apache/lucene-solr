@@ -53,8 +53,8 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene70.Lucene70Codec;
-import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
+import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
+import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -63,41 +63,20 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SlowCodecReaderWrapper;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.*;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
@@ -355,6 +334,11 @@ public final class TestUtil {
         throw new IllegalStateException("invalid ramBytesUsed for reader: " + bytesUsed);
       }
       assert Accountables.toString(sr) != null;
+    }
+
+    // FieldInfos should be cached at the reader and always return the same instance
+    if (reader.getFieldInfos() != reader.getFieldInfos()) {
+      throw new RuntimeException("getFieldInfos() returned different instances for class: "+reader.getClass());
     }
   }
   
@@ -913,7 +897,7 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene70Codec();
+    return new Lucene80Codec();
   }
   
   /** 
@@ -946,7 +930,7 @@ public final class TestUtil {
    * Returns the actual default docvalues format (e.g. LuceneMNDocValuesFormat for this version of Lucene.
    */
   public static DocValuesFormat getDefaultDocValuesFormat() {
-    return new Lucene70DocValuesFormat();
+    return new Lucene80DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to
@@ -980,7 +964,7 @@ public final class TestUtil {
   // TODO: remove this, push this test to Lucene40/Lucene42 codec tests
   public static boolean fieldSupportsHugeBinaryDocValues(String field) {
     String dvFormat = getDocValuesFormat(field);
-    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42") || dvFormat.equals("Memory")) {
+    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42")) {
       return false;
     }
     return true;
@@ -1040,9 +1024,20 @@ public final class TestUtil {
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
   }
 
-  public static void assertEquals(TopDocs expected, TopDocs actual) {
-    Assert.assertEquals("wrong total hits", expected.totalHits, actual.totalHits);
-    Assert.assertEquals("wrong maxScore", expected.getMaxScore(), actual.getMaxScore(), 0.0);
+  /**
+   * Assert that the given {@link TopDocs} have the same top docs and consistent hit counts.
+   */
+  public static void assertConsistent(TopDocs expected, TopDocs actual) {
+    Assert.assertEquals("wrong total hits", expected.totalHits.value == 0, actual.totalHits.value == 0);
+    if (expected.totalHits.relation == TotalHits.Relation.EQUAL_TO) {
+      if (actual.totalHits.relation == TotalHits.Relation.EQUAL_TO) {
+        Assert.assertEquals("wrong total hits", expected.totalHits.value, actual.totalHits.value);
+      } else {
+        Assert.assertTrue("wrong total hits", expected.totalHits.value >= actual.totalHits.value);
+      }
+    } else if (actual.totalHits.relation == TotalHits.Relation.EQUAL_TO) {
+      Assert.assertTrue("wrong total hits", expected.totalHits.value <= actual.totalHits.value);
+    }
     Assert.assertEquals("wrong hit count", expected.scoreDocs.length, actual.scoreDocs.length);
     for(int hitIDX=0;hitIDX<expected.scoreDocs.length;hitIDX++) {
       final ScoreDoc expectedSD = expected.scoreDocs[hitIDX];
@@ -1070,7 +1065,7 @@ public final class TestUtil {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
-      final int dimCount = field1.fieldType().pointDimensionCount();
+      final int dimCount = field1.fieldType().pointDataDimensionCount();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:
@@ -1103,7 +1098,7 @@ public final class TestUtil {
   // DocsAndFreqsEnum, DocsAndPositionsEnum.  Returns null
   // if field/term doesn't exist:
   public static PostingsEnum docs(Random random, IndexReader r, String field, BytesRef term, PostingsEnum reuse, int flags) throws IOException {
-    final Terms terms = MultiFields.getTerms(r, field);
+    final Terms terms = MultiTerms.getTerms(r, field);
     if (terms == null) {
       return null;
     }
@@ -1286,9 +1281,12 @@ public final class TestUtil {
     }
   }
   
-  /** Returns a copy of directory, entirely in RAM */
-  public static RAMDirectory ramCopyOf(Directory dir) throws IOException {
-    RAMDirectory ram = new RAMDirectory();
+  /**
+   * Returns a copy of the source directory, with file contents stored
+   * in RAM.
+   */
+  public static Directory ramCopyOf(Directory dir) throws IOException {
+    Directory ram = new ByteBuffersDirectory();
     for (String file : dir.listAll()) {
       if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         ram.copyFrom(dir, file, file, IOContext.DEFAULT);

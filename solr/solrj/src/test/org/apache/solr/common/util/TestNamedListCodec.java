@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
@@ -30,10 +31,12 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class TestNamedListCodec  extends LuceneTestCase {
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimple() throws Exception{
 
     NamedList nl = new NamedList();
-    Float fval = new Float( 10.01f );
+    Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
     String sval = "12qwaszx";
 
@@ -92,10 +95,12 @@ public class TestNamedListCodec  extends LuceneTestCase {
     assertEquals(101, ((List)list.get(1).getFieldValue("f")).get(1));
   }
 
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterator() throws Exception{
     
     NamedList nl = new NamedList();
-    Float fval = new Float( 10.01f );
+    Float fval = 10.01f;
     Boolean bval = Boolean.TRUE;
     String sval = "12qwaszx";
 
@@ -131,6 +136,8 @@ public class TestNamedListCodec  extends LuceneTestCase {
     assertEquals(list.size(), l.size());
   }
 
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterable() throws Exception {
     
 
@@ -245,8 +252,8 @@ public class TestNamedListCodec  extends LuceneTestCase {
     }
   }
 
-
-
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRandom() throws Exception {
     // Random r = random;
     // let's keep it deterministic since just the wrong

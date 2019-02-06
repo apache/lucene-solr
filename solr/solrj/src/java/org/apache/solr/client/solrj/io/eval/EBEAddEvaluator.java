@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.util.MathArrays;
-import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -58,10 +57,10 @@ public class EBEAddEvaluator extends RecursiveObjectEvaluator implements TwoValu
     } else if(first instanceof Matrix && second instanceof Matrix) {
       double[][] data1 = ((Matrix) first).getData();
       double[][] data2 = ((Matrix) second).getData();
-      Array2DRowRealMatrix matrix1 = new Array2DRowRealMatrix(data1);
-      Array2DRowRealMatrix matrix2 = new Array2DRowRealMatrix(data2);
-      RealMatrix matrix3 = matrix1.add(matrix2);
-      return new Matrix(matrix3.getData());
+      Array2DRowRealMatrix matrix1 = new Array2DRowRealMatrix(data1, false);
+      Array2DRowRealMatrix matrix2 = new Array2DRowRealMatrix(data2, false);
+      Array2DRowRealMatrix matrix3 = matrix1.add(matrix2);
+      return new Matrix(matrix3.getDataRef());
     } else {
       throw new IOException("Parameters for ebeAdd must either be two numeric arrays or two matrices. ");
     }

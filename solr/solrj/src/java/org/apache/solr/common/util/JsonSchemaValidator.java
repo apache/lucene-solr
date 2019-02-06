@@ -74,9 +74,10 @@ public class JsonSchemaValidator {
     return errs.isEmpty() ? null : errs;
   }
 
-  boolean validate(Object data, List<String> errs){
+  boolean validate(Object data, List<String> errs) {
+    if (data == null) return true;
     for (Validator validator : validators) {
-      if(!validator.validate(data, errs)) {
+      if (!validator.validate(data, errs)) {
         return false;
       }
     }

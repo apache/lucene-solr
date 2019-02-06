@@ -69,6 +69,11 @@ As above, for custom InfoHandler implementations.
 `coreLoadThreads`::
 Specifies the number of threads that will be assigned to load cores in parallel.
 
+`replayUpdatesThreads`::
+Specifies the number of threads that will be assigned to replay updates in parallel.
+This pool is shared for all cores of the node.
+The default value is equal to the number of processors.
+
 `coreRootDirectory`::
 The root of the core discovery tree, defaults to `$SOLR_HOME` (by default, `server/solr`).
 
@@ -167,10 +172,7 @@ The connection timeout for intra-cluster query and administrative requests. Defa
 The URL scheme to be used in distributed search.
 
 `maxConnectionsPerHost`::
-Maximum connections allowed per host. Defaults to `20`.
-
-`maxConnections`::
-Maximum total connections allowed. Defaults to `10000`.
+Maximum connections allowed per host. Defaults to `100000`.
 
 `corePoolSize`::
 The initial core size of the threadpool servicing requests. Default is `0`.

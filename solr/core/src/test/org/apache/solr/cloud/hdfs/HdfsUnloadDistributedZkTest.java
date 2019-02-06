@@ -33,6 +33,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+//Commented  4-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
 public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
   private static MiniDFSCluster dfsCluster;
   

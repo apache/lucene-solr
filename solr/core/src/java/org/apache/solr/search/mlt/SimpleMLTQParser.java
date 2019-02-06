@@ -63,8 +63,8 @@ public class SimpleMLTQParser extends QParser {
     Map<String,Float> boostFields = new HashMap<>();
 
     try {
-      TopDocs td = searcher.search(docIdQuery, 1);
-      if (td.totalHits != 1) throw new SolrException(
+      TopDocs td = searcher.search(docIdQuery, 2);
+      if (td.totalHits.value != 1) throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;

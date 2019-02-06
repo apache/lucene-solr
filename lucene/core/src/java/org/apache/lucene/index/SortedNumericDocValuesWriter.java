@@ -231,4 +231,9 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
       return docsWithField.cost();
     }
   }
+
+  @Override
+  DocIdSetIterator getDocIdSet() {
+    return docsWithField.iterator();
+  }
 }

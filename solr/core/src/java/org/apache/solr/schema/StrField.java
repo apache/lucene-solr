@@ -31,6 +31,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -48,7 +49,7 @@ public class StrField extends PrimitiveFieldType {
 
     if (field.hasDocValues()) {
       IndexableField docval;
-      final BytesRef bytes = new BytesRef(value.toString());
+      final BytesRef bytes = getBytesRef(value);
       if (field.multiValued()) {
         docval = new SortedSetDocValuesField(field.getName(), bytes);
       } else {
@@ -66,6 +67,19 @@ public class StrField extends PrimitiveFieldType {
       fval = docval;
     }
     return Collections.singletonList(fval);
+  }
+
+  public static BytesRef getBytesRef(Object value) {
+    if (value instanceof ByteArrayUtf8CharSequence) {
+      ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
+      return new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
+    } else return new BytesRef(value.toString());
+  }
+
+
+  @Override
+  public boolean isUtf8Field() {
+    return true;
   }
 
   @Override

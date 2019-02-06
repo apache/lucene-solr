@@ -236,7 +236,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
         //TokenStream stream = new SopTokenFilter(tokenizer);
         TokenStream stream = new ShingleFilter(tokenizer, 5);
         //stream = new SopTokenFilter(stream);
-        stream = new NGramTokenFilter(stream, 55, 83);
+        stream = new NGramTokenFilter(stream, 55, 83, false);
         //stream = new SopTokenFilter(stream);
         return new TokenStreamComponents(tokenizer, stream);
       }  

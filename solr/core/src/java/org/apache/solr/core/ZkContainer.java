@@ -26,10 +26,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -173,19 +175,31 @@ public class ZkContainer {
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
+  public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
+
   public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
+    CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
     Runnable r = () -> {
       MDCLoggingContext.setCore(core);
       try {
         try {
-          zkController.register(core.getName(), core.getCoreDescriptor(), skipRecovery);
+          if (testing_beforeRegisterInZk != null) {
+            testing_beforeRegisterInZk.test(cd);
+          }
+          if (!core.getCoreContainer().isShutDown()) {
+            zkController.register(core.getName(), cd, skipRecovery);
+          }
         } catch (InterruptedException e) {
           // Restore the interrupted status
           Thread.currentThread().interrupt();
           SolrException.log(log, "", e);
+        } catch (KeeperException e) {
+          SolrException.log(log, "", e);
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           try {
-            zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
+            zkController.publish(cd, Replica.State.DOWN);
           } catch (InterruptedException e1) {
             Thread.currentThread().interrupt();
             log.error("", e1);
@@ -215,22 +229,6 @@ public class ZkContainer {
   
   public ZkController getZkController() {
     return zkController;
-  }
-  
-  public void publishCoresAsDown(List<SolrCore> cores) {
-    
-    for (SolrCore core : cores) {
-      try {
-        zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
-      } catch (KeeperException e) {
-        ZkContainer.log.error("", e);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        ZkContainer.log.error("", e);
-      } catch (Exception e) {
-        ZkContainer.log.error("", e);
-      }
-    }
   }
 
   public void close() {

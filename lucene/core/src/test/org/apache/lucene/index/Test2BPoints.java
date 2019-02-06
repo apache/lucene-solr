@@ -35,7 +35,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 // 
 //   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 6g -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BPoints.test2D -verbose
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct", "Compressing" })
+@SuppressCodecs({ "SimpleText", "Direct", "Compressing" })
 @TimeoutSuite(millis = 365 * 24 * TimeUnits.HOUR) // hopefully ~1 year is long enough ;)
 @Monster("takes at least 4 hours and consumes many GB of temp disk space")
 public class Test2BPoints extends LuceneTestCase {
@@ -135,6 +135,6 @@ public class Test2BPoints extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-    return Codec.forName("Lucene70");
+    return Codec.forName("Lucene80");
   }
 }

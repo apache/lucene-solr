@@ -79,7 +79,7 @@ public class TestConjunctions extends LuceneTestCase {
     bq.add(new TermQuery(new Term(F1, "nutch")), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(F2, "is")), BooleanClause.Occur.MUST);
     TopDocs td = searcher.search(bq.build(), 3);
-    assertEquals(1, td.totalHits);
+    assertEquals(1, td.totalHits.value);
     assertEquals(3F, td.scoreDocs[0].score, 0.001F); // f1:nutch + f2:is + f2:is
   }
   
@@ -101,7 +101,7 @@ public class TestConjunctions extends LuceneTestCase {
     @Override
     public SimScorer scorer(float boost,
         CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimScorer(collectionStats.field()) {
+      return new SimScorer() {
         @Override
         public float score(float freq, long norm) {
           return freq;
@@ -125,13 +125,13 @@ public class TestConjunctions extends LuceneTestCase {
     final boolean[] setScorerCalled = new boolean[1];
     s.search(q, new SimpleCollector() {
         @Override
-        public void setScorer(Scorer s) throws IOException {
-          Collection<Scorer.ChildScorer> childScorers = s.getChildren();
+        public void setScorer(Scorable s) throws IOException {
+          Collection<Scorer.ChildScorable> childScorers = s.getChildren();
           setScorerCalled[0] = true;
           assertEquals(2, childScorers.size());
           Set<String> terms = new HashSet<>();
-          for (Scorer.ChildScorer childScorer : childScorers) {
-            Query query = childScorer.child.getWeight().getQuery();
+          for (Scorer.ChildScorable childScorer : childScorers) {
+            Query query = ((Scorer)childScorer.child).getWeight().getQuery();
             assertTrue(query instanceof TermQuery);
             Term term = ((TermQuery) query).getTerm();
             assertEquals("field", term.field());

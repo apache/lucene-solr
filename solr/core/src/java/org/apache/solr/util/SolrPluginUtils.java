@@ -1018,6 +1018,10 @@ public class SolrPluginUtils {
         }
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
       }
+      catch (AssertionError ae) {
+        throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName()+
+            ". This might be a case of SOLR-12207", ae);
+      }
     }
   }
 

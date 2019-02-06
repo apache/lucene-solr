@@ -120,7 +120,7 @@ The CollapsingQParserPlugin fully supports the QueryElevationComponent.
 
 == Expand Component
 
-The ExpandComponent can be used to expand the groups that were collapsed by the http://heliosearch.org/the-collapsingqparserplugin-solrs-new-high-performance-field-collapsing-postfilter/[CollapsingQParserPlugin].
+The ExpandComponent can be used to expand the groups that were collapsed by the CollapsingQParserPlugin.
 
 Example usage with the CollapsingQParserPlugin:
 

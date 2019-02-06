@@ -25,7 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * Base implementation for a bit set.
  * @lucene.internal
  */
-public abstract class BitSet implements MutableBits, Accountable {
+public abstract class BitSet implements Bits, Accountable {
 
   /** Build a {@link BitSet} from the content of the provided {@link DocIdSetIterator}.
    *  NOTE: this will fully consume the {@link DocIdSetIterator}. */
@@ -44,6 +44,9 @@ public abstract class BitSet implements MutableBits, Accountable {
 
   /** Set the bit at <code>i</code>. */
   public abstract void set(int i);
+
+  /** Clear the bit at <code>i</code>. */
+  public abstract void clear(int i);
 
   /** Clears a range of bits.
    *

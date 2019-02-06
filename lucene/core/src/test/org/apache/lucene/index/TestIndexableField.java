@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -91,13 +92,23 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public int pointDimensionCount() {
+      public int pointDataDimensionCount() {
+        return 0;
+      }
+
+      @Override
+      public int pointIndexDimensionCount() {
         return 0;
       }
 
       @Override
       public int pointNumBytes() {
         return 0;
+      }
+
+      @Override
+      public Map<String, String> getAttributes() {
+        return null;
       }
     };
 
@@ -228,7 +239,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       final TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
-      assertEquals(1, hits.totalHits);
+      assertEquals(1, hits.totalHits.value);
       final int docID = hits.scoreDocs[0].doc;
       final Document doc = s.doc(docID);
       final int endCounter = counter + fieldsPerDoc[id];
@@ -298,14 +309,14 @@ public class TestIndexableField extends LuceneTestCase {
           bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
           bq.add(new TermQuery(new Term(name, "text")), BooleanClause.Occur.MUST);
           final TopDocs hits2 = s.search(bq.build(), 1);
-          assertEquals(1, hits2.totalHits);
+          assertEquals(1, hits2.totalHits.value);
           assertEquals(docID, hits2.scoreDocs[0].doc);
 
           bq = new BooleanQuery.Builder();
           bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
           bq.add(new TermQuery(new Term(name, ""+counter)), BooleanClause.Occur.MUST);
           final TopDocs hits3 = s.search(bq.build(), 1);
-          assertEquals(1, hits3.totalHits);
+          assertEquals(1, hits3.totalHits.value);
           assertEquals(docID, hits3.scoreDocs[0].doc);
         }
 

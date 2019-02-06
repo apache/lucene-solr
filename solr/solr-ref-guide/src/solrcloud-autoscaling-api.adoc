@@ -147,7 +147,7 @@ Suggestions are operations recommended by the system according to the policies a
 
 Suggestions are made only if there are `violations` to active policies. The `operation` section of the response uses the defined preferences to identify the target node.
 
-The API is available at `/admin/autoscaling/suggestion`. Here is an example output from a suggestion request:
+The API is available at `/admin/autoscaling/suggestions`. Here is an example output from a suggestion request:
 
 [source,json]
 ----
@@ -303,12 +303,6 @@ An `afterAction` stage.
 }
 ----
 
-.Broken v2 API support
-[WARNING]
-====
-Due to a bug in Solr 7.1.0, the History API is available only at the path `/admin/autoscaling/history`. Using the `/api/cluster/autoscaling/history` endpoint returns an error.
-====
-
 == Write API
 
 The Write API is available at the same `/admin/autoscaling` and `/api/cluster/autoscaling` endpoints as the Read API but can only be used with the *POST* HTTP verb.
@@ -387,7 +381,7 @@ We can remove all cluster preferences by setting preferences to an empty list.
   "set-cluster-preferences": []
 }
 ----
-
+[[cluster-specific-policies]]
 === Create and Modify Cluster Policies
 
 Cluster policies are set using the `set-cluster-policy` command.

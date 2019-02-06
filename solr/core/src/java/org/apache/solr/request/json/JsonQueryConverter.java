@@ -43,14 +43,27 @@ class JsonQueryConverter {
     return name;
   }
 
+  // when isQParser==true, "val" is a query object of the form {query_type:{param1:val1, param2:val2}}
+  // when isQParser==false, "val" is a parameter on an existing qparser (which could be a simple parameter like 42, or a sub-query)
   private void buildLocalParams(StringBuilder builder, Object val, boolean isQParser, Map<String, String[]> additionalParams) {
     if (!isQParser && !(val instanceof Map)) {
       // val is value of a query parser, and it is not a map
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Error when parsing json query, expect a json object here, but found : "+val);
+      // NOTE: a top-level query *can* be a String, so we should really allow it here.  This currently only works because
+      // we special-case String in toLocalParams() and don't call this method.
     }
+    // We don't want to introduce unnecessary variable at root level
+    boolean useSubBuilder = builder.length() > 0;
+
     if (val instanceof String) {
-      builder.append('$').append(putParam(val.toString(), additionalParams));
+      if (!useSubBuilder) {
+        // Top level, so just use the value.  NOTE: this case is also short-circuited in toLocalParams() for performance.
+        builder.append(val.toString());
+      } else {
+        // val is a parameter in a qparser, so use param deref and skip escaping: ...=$param1}&param1=<val>
+        builder.append('$').append(putParam(val.toString(), additionalParams));
+      }
       return;
     }
     if (val instanceof Number) {
@@ -68,20 +81,38 @@ class JsonQueryConverter {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Error when parsing json query, expect only one query parser here, but found : "+map.keySet());
       }
+
       String qtype = map.keySet().iterator().next();
+      String tagName = null;
+      if (qtype.startsWith("#")) {
+        Object taggedQueryObject = map.get(qtype);
+        tagName = qtype.substring(1);
+        if (taggedQueryObject instanceof String) {
+          StringBuilder sb = new StringBuilder();
+          sb.append("{!tag=").append(tagName).append("}");
+          sb.append(taggedQueryObject.toString());
+          buildLocalParams(builder, sb.toString(), true, additionalParams);
+          return;
+        } else if (taggedQueryObject instanceof Map) {
+          map = (Map<String, Object>) taggedQueryObject;
+          qtype = map.keySet().iterator().next();
+          // FUTURE: might want to recurse here instead to handle nested tags (and add tagName as a parameter?)
+        }
+      }
+
+      StringBuilder subBuilder = useSubBuilder ? new StringBuilder() : builder;
+
       Object subVal = map.get(qtype);
-
-      // We don't want to introduce unnecessary variable at root level
-      boolean useSubBuilder = builder.length() > 0;
-      StringBuilder subBuilder = builder;
-
-      if (useSubBuilder) subBuilder = new StringBuilder();
-
-      subBuilder = subBuilder.append("{!").append(qtype).append(' ');;
+      subBuilder = subBuilder.append("{!").append(qtype).append(' ');
+      if (tagName != null) {
+        subBuilder.append("tag=").append(tagName).append(' ');
+      }
       buildLocalParams(subBuilder, subVal, false, additionalParams);
       subBuilder.append("}");
 
-      if (useSubBuilder) builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
+      if (useSubBuilder) {
+        builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
+      }
     } else {
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         String key = entry.getKey();

@@ -29,10 +29,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -418,13 +418,15 @@ public final class MoreLikeThis {
    * Set the maximum percentage in which words may still appear. Words that appear
    * in more than this many percent of all docs will be ignored.
    *
+   * This method calls {@link #setMaxDocFreq(int)} internally (both conditions cannot
+   * be used at the same time).
+   *
    * @param maxPercentage the maximum percentage of documents (0-100) that a term may appear
-   * in to be still considered relevant
+   * in to be still considered relevant.
    */
   public void setMaxDocFreqPct(int maxPercentage) {
-    this.maxDocFreq = maxPercentage * ir.numDocs() / 100;
+    setMaxDocFreq(Math.toIntExact((long) maxPercentage * ir.maxDoc() / 100));
   }
-
 
   /**
    * Returns whether to boost terms in query based on "score" or not. The default is
@@ -575,7 +577,7 @@ public final class MoreLikeThis {
   public Query like(int docNum) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
+      Collection<String> fields = FieldInfos.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
 
@@ -590,7 +592,7 @@ public final class MoreLikeThis {
   public Query like(Map<String, Collection<Object>> filteredDocument) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
+      Collection<String> fields = FieldInfos.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
     return createQuery(retrieveTerms(filteredDocument));

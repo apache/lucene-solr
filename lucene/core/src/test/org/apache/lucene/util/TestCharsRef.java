@@ -125,4 +125,12 @@ public class TestCharsRef extends LuceneTestCase {
       c.subSequence(2, 1);
     });
   }
+  
+  public void testInvalidDeepCopy() {
+    CharsRef from = new CharsRef(new char[] { 'a', 'b' }, 0, 2);
+    from.offset += 1; // now invalid
+    expectThrows(IndexOutOfBoundsException.class, () -> {
+      CharsRef.deepCopyOf(from);
+    });
+  }
 }

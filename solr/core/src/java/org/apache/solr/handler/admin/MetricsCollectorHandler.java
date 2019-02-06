@@ -96,7 +96,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
   public void init(NamedList initArgs) {
     super.init(initArgs);
     if (initArgs != null) {
-      params = SolrParams.toSolrParams(initArgs);
+      params = initArgs.toSolrParams();
     } else {
       params = new ModifiableSolrParams();
     }

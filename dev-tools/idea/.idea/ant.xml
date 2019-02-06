@@ -15,7 +15,6 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/phonetic/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/smartcn/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/analysis/stempel/build.xml" />
-    <buildFile url="file://$PROJECT_DIR$/lucene/analysis/uima/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/benchmark/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/classification/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/codecs/build.xml" />
@@ -48,7 +47,6 @@
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/extraction/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/langid/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/prometheus-exporter/build.xml" />
-    <buildFile url="file://$PROJECT_DIR$/solr/contrib/uima/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/velocity/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/solrj/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/test-framework/build.xml" />

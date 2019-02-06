@@ -29,44 +29,42 @@
 
   <updateRequestProcessorChain name="parse-date">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-date-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-date-explicit-not-in-schema-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <bool name="fieldNameMatchesSchemaField">false</bool>
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-date-explicit-typeclass-point-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="typeClass">solr.DatePointField</str>
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-date-explicit-typeclass-selector-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="typeClass">solr.TrieDateField</str>
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-date-non-UTC-defaultTimeZone">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="defaultTimeZone">America/New_York</str>
-      <str name="locale">en_US</str>
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
-      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSS</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss.SSS[z]</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
@@ -75,40 +73,24 @@
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <str name="defaultTimeZone">America/Los_Angeles</str>
       <arr name="format">
-        <str>MM/dd/yyyy</str>
+        <str>M/d/yyyy</str>
       </arr>
     </processor>
   </updateRequestProcessorChain>
 
-  <updateRequestProcessorChain name="parse-date-UTC-defaultTimeZone-no-run-processor">
+  <updateRequestProcessorChain name="parse-date-many-formats-no-run-processor">
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
-      <str name="defaultTimeZone">UTC</str>
-      <str name="locale">en_US</str>
       <arr name="format">
-        <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
-        <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
-        <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
-        <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
-        <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
-        <str>yyyy-MM-dd'T'HH:mm:ss</str>
-        <str>yyyy-MM-dd'T'HH:mmZ</str>
-        <str>yyyy-MM-dd'T'HH:mm</str>
-        <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
-        <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
-        <str>yyyy-MM-dd HH:mm:ss.SSS</str>
-        <str>yyyy-MM-dd HH:mm:ss,SSS</str>
-        <str>yyyy-MM-dd HH:mm:ssZ</str>
-        <str>yyyy-MM-dd HH:mm:ss</str>
-        <str>yyyy-MM-dd HH:mmZ</str>
-        <str>yyyy-MM-dd HH:mm</str>
-        <str>yyyy-MM-dd hh:mm a</str>
-        <str>yyyy-MM-dd hh:mma</str>
+        <str>yyyy-MM-dd'T'HH:mm[:ss[.SSS]][z</str>
+        <str>yyyy-MM-dd'T'HH:mm[:ss[,SSS]][z</str>
+        <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>
+        <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>
         <str>yyyy-MM-dd</str>
-        <str>EEE MMM dd HH:mm:ss Z yyyy</str>
-        <str>EEE MMM dd HH:mm:ss yyyy Z</str>
-        <str>EEE MMM dd HH:mm:ss yyyy</str>
-        <str>EEE, dd MMM yyyy HH:mm:ss Z</str>
-        <str>EEEE, dd-MMM-yy HH:mm:ss Z</str>
+        <str>yyyy-MM-dd hh:mm[ ]a</str>
+        <str>EEE MMM dd HH:mm:ss ZZZ yyyy</str>
+        <str>EEE MMM dd HH:mm:ss yyyy[ z]</str>
+        <str>EEE, dd MMM yyyy HH:mm:ss z</str>
+        <str>EEEE, dd-MMM-yy HH:mm:ss z</str>
         <str>EEEE, MMMM dd, yyyy</str>
         <str>MMMM dd, yyyy</str>
         <str>MMM. dd, yyyy</str>
@@ -122,6 +104,21 @@
       <str name="locale">fr</str>
       <str name="format">'le' EEEE dd MMMM yyyy</str>
     </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="parse-date-patterns-default-config">
+    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+      <arr name="format">
+        <str>yyyy-MM-dd['T'[HH:mm[:ss[.SSS]][z</str>
+        <str>yyyy-MM-dd['T'[HH:mm[:ss[,SSS]][z</str>
+        <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>
+        <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>
+        <str>[EEE, ]dd MMM yyyy HH:mm[:ss] z</str>
+        <str>EEEE, dd-MMM-yy HH:mm:ss z</str>
+        <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>
+      </arr>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="parse-int">
@@ -229,7 +226,7 @@
     <processor class="solr.ParseDateFieldUpdateProcessorFactory">
       <arr name="format">
         <str>yyyy-MM-dd</str>
-        <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+        <str>yyyy-MM-dd'T'HH:mm:ss.SSSz</str>
         <str>yyyy-MM-dd'T'HH:mm</str>
       </arr>
     </processor>

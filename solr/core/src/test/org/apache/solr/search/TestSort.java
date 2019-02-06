@@ -45,8 +45,8 @@ import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -183,7 +183,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
 
   public void testSort() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     Field f = new StringField("f", "0", Field.Store.NO);
     Field f2 = new StringField("f2", "0", Field.Store.NO);
 
@@ -282,10 +282,8 @@ public class TestSort extends SolrTestCaseJ4 {
         final String nullRep = luceneSort || sortMissingFirst && !reverse || sortMissingLast && reverse ? "" : "zzz";
         final String nullRep2 = luceneSort2 || sortMissingFirst2 && !reverse2 || sortMissingLast2 && reverse2 ? "" : "zzz";
 
-        boolean trackScores = r.nextBoolean();
-        boolean trackMaxScores = r.nextBoolean();
         boolean scoreInOrder = r.nextBoolean();
-        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, true, trackScores, trackMaxScores, true);
+        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves

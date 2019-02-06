@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -42,15 +43,15 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatusResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.Stats;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -66,6 +67,7 @@ import static org.apache.solr.common.params.AutoScalingParams.ACTION_THROTTLE_PE
 import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS;
 import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_CORE_POOL_SIZE;
 import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS;
+import static org.apache.solr.common.util.ExecutorUtil.awaitTermination;
 
 /**
  * Responsible for scheduling active triggers, starting and stopping them and
@@ -85,6 +87,18 @@ public class ScheduledTriggers implements Closeable {
     DEFAULT_PROPERTIES.put(TRIGGER_COOLDOWN_PERIOD_SECONDS, DEFAULT_COOLDOWN_PERIOD_SECONDS);
     DEFAULT_PROPERTIES.put(TRIGGER_CORE_POOL_SIZE, DEFAULT_TRIGGER_CORE_POOL_SIZE);
     DEFAULT_PROPERTIES.put(ACTION_THROTTLE_PERIOD_SECONDS, DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS);
+  }
+
+  protected static final Random RANDOM;
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
   }
 
   private final Map<String, TriggerWrapper> scheduledTriggerWrappers = new ConcurrentHashMap<>();
@@ -135,7 +149,7 @@ public class ScheduledTriggers implements Closeable {
     queueStats = new Stats();
     listeners = new TriggerListeners();
     // initialize cooldown timer
-    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
+    cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
   }
 
   /**
@@ -148,6 +162,10 @@ public class ScheduledTriggers implements Closeable {
     if (this.autoScalingConfig != null) {
       currentProps.putAll(this.autoScalingConfig.getProperties());
     }
+
+    // reset listeners early in order to capture first execution of newly scheduled triggers
+    listeners.setAutoScalingConfig(autoScalingConfig);
+
     for (Map.Entry<String, Object> entry : currentProps.entrySet()) {
       Map<String, Object> newProps = autoScalingConfig.getProperties();
       String key = entry.getKey();
@@ -178,12 +196,10 @@ public class ScheduledTriggers implements Closeable {
         }
       }
     }
+
     this.autoScalingConfig = autoScalingConfig;
-
     // reset cooldown
-    cooldownStart.set(cloudManager.getTimeSource().getTime() - cooldownPeriod.get());
-
-    listeners.setAutoScalingConfig(autoScalingConfig);
+    cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
   }
 
   /**
@@ -194,7 +210,7 @@ public class ScheduledTriggers implements Closeable {
    * @param newTrigger the trigger to be managed
    * @throws AlreadyClosedException if this class has already been closed
    */
-  public synchronized void add(AutoScaling.Trigger newTrigger) {
+  public synchronized void add(AutoScaling.Trigger newTrigger) throws Exception {
     if (isClosed) {
       throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
     }
@@ -202,7 +218,7 @@ public class ScheduledTriggers implements Closeable {
     try {
       st = new TriggerWrapper(newTrigger, cloudManager, queueStats);
     } catch (Exception e) {
-      if (isClosed) {
+      if (isClosed || e instanceof AlreadyClosedException) {
         throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
       }
       if (cloudManager.isClosed()) {
@@ -226,16 +242,17 @@ public class ScheduledTriggers implements Closeable {
       scheduledTriggerWrappers.replace(newTrigger.getName(), triggerWrapper);
     }
     newTrigger.setProcessor(event -> {
+      TriggerListeners triggerListeners = listeners.copy();
       if (cloudManager.isClosed()) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because Solr has been shutdown.", event.toString());
         log.warn(msg);
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
         return false;
       }
       TriggerWrapper scheduledSource = scheduledTriggerWrappers.get(event.getSource());
       if (scheduledSource == null) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because the source trigger: %s doesn't exist.", event.toString(), event.getSource());
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, msg);
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, msg);
         log.warn(msg);
         return false;
       }
@@ -243,7 +260,7 @@ public class ScheduledTriggers implements Closeable {
       AutoScaling.Trigger source = scheduledSource.trigger;
       if (scheduledSource.isClosed || source.isClosed()) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because the source trigger: %s has already been closed", event.toString(), source);
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
         log.warn(msg);
         // we do not want to lose this event just because the trigger was closed, perhaps a replacement will need it
         return false;
@@ -251,18 +268,20 @@ public class ScheduledTriggers implements Closeable {
       if (event.isIgnored())  {
         log.debug("-------- Ignoring event: " + event);
         event.getProperties().put(TriggerEvent.IGNORED, true);
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Event was ignored.");
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Event was ignored.");
         return true; // always return true for ignored events
       }
       // even though we pause all triggers during action execution there is a possibility that a trigger was already
       // running at the time and would have already created an event so we reject such events during cooldown period
-      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTime()) {
+      if (cooldownStart.get() + cooldownPeriod.get() > cloudManager.getTimeSource().getTimeNs()) {
         log.debug("-------- Cooldown period - rejecting event: " + event);
         event.getProperties().put(TriggerEvent.COOLDOWN, true);
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "In cooldown period.");
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "In cooldown period.");
         return false;
       } else {
         log.debug("++++++++ Cooldown inactive - processing event: " + event);
+        // start cooldown here to immediately reject other events
+        cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
       }
       if (hasPendingActions.compareAndSet(false, true)) {
         // pause all triggers while we execute actions so triggers do not operate on a cluster in transition
@@ -275,19 +294,21 @@ public class ScheduledTriggers implements Closeable {
           enqueued = triggerWrapper.enqueue(event);
         }
         // fire STARTED event listeners after enqueuing the event is successful
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.STARTED);
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.STARTED);
         List<TriggerAction> actions = source.getActions();
         if (actions != null) {
           if (actionExecutor.isShutdown()) {
             String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s from trigger %s because the executor has already been closed", event.toString(), source);
-            listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
+            triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
             log.warn(msg);
+            hasPendingActions.set(false);
             // we do not want to lose this event just because the trigger was closed, perhaps a replacement will need it
             return false;
           }
           actionExecutor.submit(() -> {
             assert hasPendingActions.get();
-            long eventProcessingStart = cloudManager.getTimeSource().getTime();
+            long eventProcessingStart = cloudManager.getTimeSource().getTimeNs();
+            TriggerListeners triggerListeners1 = triggerListeners.copy();
             log.debug("-- processing actions for " + event);
             try {
               // in future, we could wait for pending tasks in a different thread and re-enqueue
@@ -298,32 +319,36 @@ public class ScheduledTriggers implements Closeable {
               for (TriggerAction action : actions) {
                 List<String> beforeActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
                 beforeActions.add(action.getName());
-                listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.BEFORE_ACTION, action.getName(), actionContext);
+                triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.BEFORE_ACTION, action.getName(), actionContext);
                 try {
                   action.process(event, actionContext);
                 } catch (Exception e) {
-                  listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, action.getName(), actionContext, e, null);
-                  throw new Exception("Error executing action: " + action.getName() + " for trigger event: " + event, e);
+                  triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED, action.getName(), actionContext, e, null);
+                  throw new TriggerActionException(event.getSource(), action.getName(), "Error processing action for trigger event: " + event, e);
                 }
                 List<String> afterActions = (List<String>) actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.AFTER_ACTION.toString(), k -> new ArrayList<String>());
                 afterActions.add(action.getName());
-                listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.AFTER_ACTION, action.getName(), actionContext);
+                triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.AFTER_ACTION, action.getName(), actionContext);
               }
               if (enqueued) {
                 TriggerEvent ev = triggerWrapper.dequeue();
                 assert ev.getId().equals(event.getId());
               }
-              listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.SUCCEEDED);
-            } catch (Exception e) {
+              triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.SUCCEEDED);
+            } catch (TriggerActionException e) {
               log.warn("Exception executing actions", e);
+            } catch (Exception e) {
+              triggerListeners1.fireListeners(event.getSource(), event, TriggerEventProcessorStage.FAILED);
+              log.warn("Unhandled exception executing actions", e);
             } finally {
-              cooldownStart.set(cloudManager.getTimeSource().getTime());
+              // update cooldown to the time when we actually finished processing the actions
+              cooldownStart.set(cloudManager.getTimeSource().getTimeNs());
               hasPendingActions.set(false);
               // resume triggers after cool down period
               resumeTriggers(cloudManager.getTimeSource().convertDelay(TimeUnit.NANOSECONDS, cooldownPeriod.get(), TimeUnit.MILLISECONDS));
             }
             log.debug("-- processing took {} ms for event id={}",
-                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTime() - eventProcessingStart), event.id);
+                TimeUnit.NANOSECONDS.toMillis(cloudManager.getTimeSource().getTimeNs() - eventProcessingStart), event.id);
           });
         } else {
           if (enqueued) {
@@ -333,15 +358,16 @@ public class ScheduledTriggers implements Closeable {
               + " is broken! Expected event=" + event + " but got " + ev);
             }
           }
-          listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.SUCCEEDED);
+          triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.SUCCEEDED);
           hasPendingActions.set(false);
           // resume triggers now
           resumeTriggers(0);
         }
         return true;
       } else {
+        log.debug("Ignoring event {}, already processing other actions.", event.id);
         // there is an action in the queue and we don't want to enqueue another until it is complete
-        listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Already processing another event.");
+        triggerListeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.IGNORED, "Already processing another event.");
         return false;
       }
     });
@@ -368,9 +394,13 @@ public class ScheduledTriggers implements Closeable {
    * @lucene.internal
    */
   public synchronized void resumeTriggers(long afterDelayMillis) {
-    scheduledTriggerWrappers.forEach((s, triggerWrapper) ->  {
+    List<Map.Entry<String, TriggerWrapper>> entries = new ArrayList<>(scheduledTriggerWrappers.entrySet());
+    Collections.shuffle(entries, RANDOM);
+    entries.forEach(e ->  {
+      String key = e.getKey();
+      TriggerWrapper triggerWrapper = e.getValue();
       if (triggerWrapper.scheduledFuture.isCancelled()) {
-        log.debug("Resuming trigger: {} after {}ms", s, afterDelayMillis);
+        log.debug("Resuming trigger: {} after {}ms", key, afterDelayMillis);
         triggerWrapper.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(triggerWrapper, afterDelayMillis,
             cloudManager.getTimeSource().convertDelay(TimeUnit.SECONDS, triggerDelay.get(), TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
       }
@@ -481,6 +511,19 @@ public class ScheduledTriggers implements Closeable {
     return Collections.unmodifiableSet(new HashSet<>(scheduledTriggerWrappers.keySet())); // shallow copy
   }
 
+  /**
+   * For use in white/grey box testing: The Trigger returned may be inspected, 
+   * but should not be modified in any way.
+   *
+   * @param name the name of an existing trigger
+   * @return the current scheduled trigger with that name, or null if none exists
+   * @lucene.internal
+   */
+  public synchronized AutoScaling.Trigger getTrigger(String name) {
+    TriggerWrapper w = scheduledTriggerWrappers.get(name);
+    return (null == w) ? null : w.trigger;
+  }
+  
   @Override
   public void close() throws IOException {
     synchronized (this) {
@@ -493,9 +536,21 @@ public class ScheduledTriggers implements Closeable {
     }
     // shutdown and interrupt all running tasks because there's no longer any
     // guarantee about cluster state
+    log.debug("Shutting down scheduled thread pool executor now");
     scheduledThreadPoolExecutor.shutdownNow();
+
+    log.debug("Shutting down action executor now");
     actionExecutor.shutdownNow();
+
     listeners.close();
+
+    log.debug("Awaiting termination for action executor");
+    awaitTermination(actionExecutor);
+
+    log.debug("Awaiting termination for scheduled thread pool executor");
+    awaitTermination(scheduledThreadPoolExecutor);
+
+    log.debug("ScheduledTriggers closed completely");
   }
 
   private class TriggerWrapper implements Runnable, Closeable {
@@ -539,7 +594,7 @@ public class ScheduledTriggers implements Closeable {
       // fire a trigger only if an action is not pending
       // note this is not fool proof e.g. it does not prevent an action being executed while a trigger
       // is still executing. There is additional protection against that scenario in the event listener.
-      if (!hasPendingActions.get())  {
+      if (!hasPendingActions.get()) {
         // this synchronization is usually never under contention
         // but the only reason to have it here is to ensure that when the set-properties API is used
         // to change the schedule delay, we can safely cancel the old scheduled task
@@ -547,28 +602,37 @@ public class ScheduledTriggers implements Closeable {
         // execution of the same trigger instance
         synchronized (TriggerWrapper.this) {
           // replay accumulated events on first run, if any
-          if (replay) {
-            TriggerEvent event;
-            // peek first without removing - we may crash before calling the listener
-            while ((event = queue.peekEvent()) != null) {
-              // override REPLAYING=true
-              event.getProperties().put(TriggerEvent.REPLAYING, true);
-              if (! trigger.getProcessor().process(event)) {
-                log.error("Failed to re-play event, discarding: " + event);
+
+          try {
+            if (replay) {
+              TriggerEvent event;
+              // peek first without removing - we may crash before calling the listener
+              while ((event = queue.peekEvent()) != null) {
+                // override REPLAYING=true
+                event.getProperties().put(TriggerEvent.REPLAYING, true);
+                if (!trigger.getProcessor().process(event)) {
+                  log.error("Failed to re-play event, discarding: " + event);
+                }
+                queue.pollEvent(); // always remove it from queue
               }
-              queue.pollEvent(); // always remove it from queue
+              // now restore saved state to possibly generate new events from old state on the first run
+              try {
+                trigger.restoreState();
+              } catch (Exception e) {
+                // log but don't throw - see below
+                log.error("Error restoring trigger state " + trigger.getName(), e);
+              }
+              replay = false;
             }
-            // now restore saved state to possibly generate new events from old state on the first run
-            try {
-              trigger.restoreState();
-            } catch (Exception e) {
-              // log but don't throw - see below
-              log.error("Error restoring trigger state " + trigger.getName(), e);
-            }
-            replay = false;
+          } catch (AlreadyClosedException e) {
+            
+          } catch (Exception e) {
+            log.error("Unexpected exception from trigger: " + trigger.getName(), e);
           }
           try {
             trigger.run();
+          } catch (AlreadyClosedException e) {
+
           } catch (Exception e) {
             // log but do not propagate exception because an exception thrown from a scheduled operation
             // will suppress future executions
@@ -595,6 +659,27 @@ public class ScheduledTriggers implements Closeable {
     Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage = new HashMap<>();
     Map<String, TriggerListener> listenersPerName = new HashMap<>();
     ReentrantLock updateLock = new ReentrantLock();
+
+    public TriggerListeners() {
+
+    }
+
+    private TriggerListeners(Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage,
+                             Map<String, TriggerListener> listenersPerName) {
+      this.listenersPerStage = new HashMap<>();
+      listenersPerStage.forEach((n, listeners) -> {
+        Map<TriggerEventProcessorStage, List<TriggerListener>> perStage = this.listenersPerStage.computeIfAbsent(n, name -> new HashMap<>());
+        listeners.forEach((s, lst) -> {
+          List<TriggerListener> newLst = perStage.computeIfAbsent(s, stage -> new ArrayList<>());
+          newLst.addAll(lst);
+        });
+      });
+      this.listenersPerName = new HashMap<>(listenersPerName);
+    }
+
+    public TriggerListeners copy() {
+      return new TriggerListeners(listenersPerStage, listenersPerName);
+    }
 
     void setAutoScalingConfig(AutoScalingConfig autoScalingConfig) {
       updateLock.lock();
@@ -647,7 +732,8 @@ public class ScheduledTriggers implements Closeable {
             }
             if (listener != null) {
               try {
-                listener.init(cloudManager, config);
+                listener.configure(loader, cloudManager, config);
+                listener.init();
                 listenersPerName.put(config.name, listener);
               } catch (Exception e) {
                 log.warn("Error initializing TriggerListener " + config, e);
@@ -731,6 +817,9 @@ public class ScheduledTriggers implements Closeable {
       updateLock.lock();
       try {
         for (TriggerListener listener : getTriggerListeners(trigger, stage)) {
+          if (!listener.isEnabled()) {
+            continue;
+          }
           if (actionName != null) {
             AutoScalingConfig.TriggerListenerConfig config = listener.getConfig();
             if (stage == TriggerEventProcessorStage.BEFORE_ACTION) {

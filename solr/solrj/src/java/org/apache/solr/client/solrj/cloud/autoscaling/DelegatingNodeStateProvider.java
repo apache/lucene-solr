@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+
 /**
  * Base class for overriding some behavior of {@link NodeStateProvider}.
  */

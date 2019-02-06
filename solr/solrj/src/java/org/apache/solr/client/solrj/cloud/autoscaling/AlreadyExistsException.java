@@ -21,15 +21,15 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
  */
 public class AlreadyExistsException extends Exception {
 
-  private final String path;
+  private final String id;
 
-  public AlreadyExistsException(String path) {
-    super("Path already exists: " + path);
-    this.path = path;
+  public AlreadyExistsException(String id) {
+    super("Already exists: " + id);
+    this.id = id;
   }
 
-  public String getPath() {
-    return path;
+  public String getId() {
+    return id;
   }
 
 }

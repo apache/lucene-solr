@@ -50,7 +50,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
 
   @Override
   public void init(final NamedList args) {
-    SolrParams params = (args != null) ? SolrParams.toSolrParams(args) : null;
+    SolrParams params = (args != null) ? args.toSolrParams() : null;
     if (params == null) {
       errorCode = ErrorCode.FORBIDDEN; // default is 403 error
       responseMsg = DEFAULT_RESPONSE_MSG;

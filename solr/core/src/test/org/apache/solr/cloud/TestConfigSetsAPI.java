@@ -16,11 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.BASE_CONFIGSET;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -92,13 +87,16 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
@@ -137,9 +135,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     CreateNoErrorChecking create = new CreateNoErrorChecking();
     verifyException(solrClient, create, NAME);
 
-    // no base ConfigSet name
+    // set ConfigSet
     create.setConfigSetName("configSetName");
-    verifyException(solrClient, create, BASE_CONFIGSET);
 
     // ConfigSet already exists
     Create alreadyExists = new Create();
@@ -157,7 +154,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   @Test
   public void testCreate() throws Exception {
     // no old, no new
-    verifyCreate("baseConfigSet1", "configSet1", null, null);
+    verifyCreate(null, "configSet1", null, null);
 
     // no old, new
     verifyCreate("baseConfigSet2", "configSet2",
@@ -320,9 +317,27 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testUploadDisabled() throws Exception {
+    try (SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
+        AbstractZkTestCase.TIMEOUT, 45000, null)) {
+
+      for (boolean enabled: new boolean[] {true, false}) {
+        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+        try {
+          long statusCode = uploadConfigSet("regular", "test-enabled-is-" + enabled, null, null, zkClient);
+          assertEquals("ConfigSet upload enabling/disabling not working as expected for enabled=" + enabled + ".",
+              enabled? 0l: 400l, statusCode);
+        } finally {
+          System.clearProperty("configset.upload.enabled");
+        }
+      }
+    }
+  }
+
+  @Test
   public void testUpload() throws Exception {
     String suffix = "-untrusted";
-    uploadConfigSet("regular", suffix, null, null);
+    uploadConfigSetWithAssertions("regular", suffix, null, null);
     // try to create a collection with the uploaded configset
     createCollection("newcollection", "regular" + suffix, 1, 1, solrCluster.getSolrClient());
   }
@@ -334,10 +349,10 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       if (withAuthorization) {
         suffix = "-trusted";
         protectConfigsHandler();
-        uploadConfigSet("with-script-processor", suffix, "solr", "SolrRocks");
+        uploadConfigSetWithAssertions("with-script-processor", suffix, "solr", "SolrRocks");
       } else {
         suffix = "-untrusted";
-        uploadConfigSet("with-script-processor", suffix, null, null);
+        uploadConfigSetWithAssertions("with-script-processor", suffix, null, null);
       }
       // try to create a collection with the uploaded configset
       CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor"+suffix,
@@ -391,23 +406,11 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     Thread.sleep(5000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
 
-  private void uploadConfigSet(String configSetName, String suffix, String username, String password) throws Exception {
-    // Read zipped sample config
-    ByteBuffer sampleZippedConfig = TestDynamicLoading
-        .getFileContent(
-            createTempZipFile("solr/configsets/upload/"+configSetName), false);
-
+  private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username, String password) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, 45000, null);
     try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(configSetName+suffix));
-
-      Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
-          solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
-          sampleZippedConfig, username, password);
-      assertNotNull(map);
-      long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      long statusCode = uploadConfigSet(configSetName, suffix, username, password, zkClient);
       assertEquals(0l, statusCode);
 
       assertTrue("managed-schema file should have been uploaded",
@@ -426,6 +429,24 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     } finally {
       zkClient.close();
     }
+  }
+
+  private long uploadConfigSet(String configSetName, String suffix, String username, String password,
+      SolrZkClient zkClient) throws IOException {
+    // Read zipped sample config
+    ByteBuffer sampleZippedConfig = TestDynamicLoading
+        .getFileContent(
+            createTempZipFile("solr/configsets/upload/"+configSetName), false);
+
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
+    assertFalse(configManager.configExists(configSetName+suffix));
+
+    Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
+        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
+        sampleZippedConfig, username, password);
+    assertNotNull(map);
+    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    return statusCode;
   }
   
   /**
@@ -608,13 +629,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void verifyException(SolrClient solrClient, ConfigSetAdminRequest request,
       String errorContains) throws Exception {
-    try {
-      solrClient.request(request);
-      Assert.fail("Expected exception");
-    } catch (Exception e) {
-      assertTrue("Expected exception message to contain: " + errorContains
-          + " got: " + e.getMessage(), e.getMessage().contains(errorContains));
-    }
+    Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
+    assertTrue("Expected exception message to contain: " + errorContains
+        + " got: " + e.getMessage(), e.getMessage().contains(errorContains));
   }
 
   @Test

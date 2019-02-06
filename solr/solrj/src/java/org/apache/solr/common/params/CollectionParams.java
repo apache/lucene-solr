@@ -77,7 +77,7 @@ public interface CollectionParams {
     SYNCSHARD(true, LockLevel.SHARD),
     CREATEALIAS(true, LockLevel.COLLECTION),
     DELETEALIAS(true, LockLevel.COLLECTION),
-    MODIFYALIAS(true, LockLevel.COLLECTION),
+    ALIASPROP(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
     MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION),
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
@@ -86,7 +86,7 @@ public interface CollectionParams {
     CREATESHARD(true, LockLevel.COLLECTION),
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
-    MIGRATE(true, LockLevel.SHARD),
+    MIGRATE(true, LockLevel.COLLECTION),
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
@@ -118,7 +118,10 @@ public interface CollectionParams {
     //TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
+    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    NONE(false, LockLevel.NONE),
+    // TODO: not implemented yet
+    MERGESHARDS(true, LockLevel.SHARD)
     ;
     public final boolean isWrite;
 

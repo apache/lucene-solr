@@ -1,0 +1,777 @@
+= Statistics
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+This section of the user guide covers the core statistical functions
+available in math expressions.
+
+== Descriptive Statistics
+
+The `describe` function can be used to return descriptive statistics about a
+numeric array. The `describe` function returns a single *tuple* with name/value
+pairs containing descriptive statistics.
+
+Below is a simple example that selects a random sample of documents,
+vectorizes the *price_f* field in the result set and uses the `describe` function to
+return descriptive statistics about the vector:
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="1500", fl="price_f"),
+    b=col(a, price_f),
+    c=describe(b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": {
+          "sumsq": 4999.041975263254,
+          "max": 0.99995726,
+          "var": 0.08344429493940454,
+          "geometricMean": 0.36696588922559575,
+          "sum": 7497.460565552007,
+          "kurtosis": -1.2000739963006035,
+          "N": 15000,
+          "min": 0.00012338161,
+          "mean": 0.49983070437013266,
+          "popVar": 0.08343873198640858,
+          "skewness": -0.001735537500095477,
+          "stdev": 0.28886726179926403
+        }
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 305
+      }
+    ]
+  }
+}
+----
+
+== Histograms and Frequency Tables
+
+Histograms and frequency tables are are tools for understanding the distribution
+of a random variable.
+
+The `hist` function creates a histogram designed for usage with continuous data. The
+`freqTable` function creates a frequency table for use with discrete data.
+
+=== histograms
+
+Below is an example that selects a random sample, creates a vector from the
+result set and uses the `hist` function to return a histogram with 5 bins.
+The `hist` function returns a list of tuples with summary statistics for each bin.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
+    b=col(a, price_f),
+    c=hist(b, 5))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          {
+            "prob": 0.2057939717603699,
+            "min": 0.000010371208,
+            "max": 0.19996578,
+            "mean": 0.10010319358402578,
+            "var": 0.003366805016271609,
+            "cumProb": 0.10293732468049072,
+            "sum": 309.0185585938884,
+            "stdev": 0.058024176136086666,
+            "N": 3087
+          },
+          {
+            "prob": 0.19381868629885585,
+            "min": 0.20007741,
+            "max": 0.3999073,
+            "mean": 0.2993590803885827,
+            "var": 0.003401644034068929,
+            "cumProb": 0.3025295802728267,
+            "sum": 870.5362057700005,
+            "stdev": 0.0583236147205309,
+            "N": 2908
+          },
+          {
+            "prob": 0.20565789836690007,
+            "min": 0.39995712,
+            "max": 0.5999038,
+            "mean": 0.4993620963792545,
+            "var": 0.0033158364923609046,
+            "cumProb": 0.5023006239697967,
+            "sum": 1540.5320673300018,
+            "stdev": 0.05758330046429177,
+            "N": 3085
+          },
+          {
+            "prob": 0.19437108496008693,
+            "min": 0.6000449,
+            "max": 0.79973197,
+            "mean": 0.7001752711861512,
+            "var": 0.0033895105082360185,
+            "cumProb": 0.7026537198687285,
+            "sum": 2042.4112660500066,
+            "stdev": 0.058219502816805456,
+            "N": 2917
+          },
+          {
+            "prob": 0.20019582213899467,
+            "min": 0.7999126,
+            "max": 0.99987316,
+            "mean": 0.8985428275824184,
+            "var": 0.003312360017780078,
+            "cumProb": 0.899450457219298,
+            "sum": 2698.3241112299997,
+            "stdev": 0.05755310606544253,
+            "N": 3003
+          }
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 322
+      }
+    ]
+  }
+}
+----
+
+The `col` function can be used to *vectorize* a column of data from the list of tuples
+returned by the `hist` function.
+
+In the example below, the *N* field,
+which is the number of observations in the each bin, is returned as a vector.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
+     b=col(a, price_f),
+     c=hist(b, 11),
+     d=col(c, N))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          1387,
+          1396,
+          1391,
+          1357,
+          1384,
+          1360,
+          1367,
+          1375,
+          1307,
+          1310,
+          1366
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 307
+      }
+    ]
+  }
+}
+----
+
+=== Frequency Tables
+
+The `freqTable` function returns a frequency distribution for a discrete data set.
+The `freqTable` function doesn't create bins like the histogram. Instead it counts
+the occurrence of each discrete data value and returns a list of tuples with the
+frequency statistics for each value. Fields from a frequency table can be vectorized using
+using the `col` function in the same manner as a histogram.
+
+Below is a simple example of a frequency table built from a random sample of
+a discrete variable.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="15000", fl="day_i"),
+     b=col(a, day_i),
+     c=freqTable(b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          {
+            "pct": 0.0318,
+            "count": 477,
+            "cumFreq": 477,
+            "cumPct": 0.0318,
+            "value": 0
+          },
+          {
+            "pct": 0.033133333333333334,
+            "count": 497,
+            "cumFreq": 974,
+            "cumPct": 0.06493333333333333,
+            "value": 1
+          },
+          {
+            "pct": 0.03426666666666667,
+            "count": 514,
+            "cumFreq": 1488,
+            "cumPct": 0.0992,
+            "value": 2
+          },
+          {
+            "pct": 0.0346,
+            "count": 519,
+            "cumFreq": 2007,
+            "cumPct": 0.1338,
+            "value": 3
+          },
+          {
+            "pct": 0.03133333333333333,
+            "count": 470,
+            "cumFreq": 2477,
+            "cumPct": 0.16513333333333333,
+            "value": 4
+          },
+          {
+            "pct": 0.03333333333333333,
+            "count": 500,
+            "cumFreq": 2977,
+            "cumPct": 0.19846666666666668,
+            "value": 5
+          }
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 281
+      }
+    ]
+  }
+}
+----
+
+== Percentiles
+
+The `percentile` function returns the estimated value for a specific percentile in
+a sample set. The example below returns the estimation for the 95th percentile
+of the *price_f* field.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
+     b=col(a, price_f),
+     c=percentile(b, 95))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+ {
+   "result-set": {
+     "docs": [
+       {
+         "c": 312.94
+       },
+       {
+         "EOF": true,
+         "RESPONSE_TIME": 286
+       }
+     ]
+   }
+ }
+----
+
+The `percentile` function also operates on an array of percentile values.
+The example below is computing the 20th, 40th, 60th and 80th percentiles for a random sample
+of the *response_d* field:
+
+[source,text]
+----
+let(a=random(collection2, q="*:*", rows="15000", fl="response_d"),
+    b=col(a, response_d),
+    c=percentile(b, array(20,40,60,80)))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "c": [
+          818.0835543394625,
+          843.5590348165282,
+          866.1789509894824,
+          892.5033386599067
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 291
+      }
+    ]
+  }
+}
+----
+
+== Covariance and Correlation
+
+Covariance and Correlation measure how random variables move
+together.
+
+=== Covariance and Covariance Matrices
+
+The `cov` function calculates the covariance of two sample sets of data.
+
+In the example below covariance is calculated for two numeric
+arrays.
+
+The example below uses arrays created by the `array` function. Its important to note that
+vectorized data from Solr Cloud collections can be used with any function that
+operates on arrays.
+
+[source,text]
+----
+let(a=array(1, 2, 3, 4, 5),
+    b=array(100, 200, 300, 400, 500),
+    c=cov(a, b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+ {
+   "result-set": {
+     "docs": [
+       {
+         "c": 0.9484775349999998
+       },
+       {
+         "EOF": true,
+         "RESPONSE_TIME": 286
+       }
+     ]
+   }
+ }
+----
+
+If a matrix is passed to the `cov` function it will automatically compute a covariance
+matrix for the columns of the matrix.
+
+Notice in the example three numeric arrays are added as rows
+in a matrix. The matrix is then transposed to turn the rows into
+columns, and the covariance matrix is computed for the columns of the
+matrix.
+
+[source,text]
+----
+let(a=array(1, 2, 3, 4, 5),
+     b=array(100, 200, 300, 400, 500),
+     c=array(30, 40, 80, 90, 110),
+     d=transpose(matrix(a, b, c)),
+     e=cov(d))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+ {
+   "result-set": {
+     "docs": [
+       {
+         "e": [
+           [
+             2.5,
+             250,
+             52.5
+           ],
+           [
+             250,
+             25000,
+             5250
+           ],
+           [
+             52.5,
+             5250,
+             1150
+           ]
+         ]
+       },
+       {
+         "EOF": true,
+         "RESPONSE_TIME": 2
+       }
+     ]
+   }
+ }
+----
+
+=== Correlation and Correlation Matrices
+
+Correlation is measure of covariance that has been scaled between
+-1 and 1.
+
+Three correlation types are supported:
+
+* *pearsons* (default)
+* *kendalls*
+* *spearmans*
+
+The type of correlation is specified by adding the *type* named parameter in the
+function call. The example below demonstrates the use of the *type*
+named parameter.
+
+[source,text]
+----
+let(a=array(1, 2, 3, 4, 5),
+    b=array(100, 200, 300, 400, 5000),
+    c=corr(a, b, type=spearmans))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+ {
+   "result-set": {
+     "docs": [
+       {
+         "c": 0.7432941462471664
+       },
+       {
+         "EOF": true,
+         "RESPONSE_TIME": 0
+       }
+     ]
+   }
+ }
+----
+
+Like the `cov` function, the `corr` function automatically builds a correlation matrix
+if a matrix is passed as a parameter. The correlation matrix is built by correlating the columns
+of the matrix passed in.
+
+== Statistical Inference Tests
+
+Statistical inference tests test a hypothesis on *random samples* and return p-values which
+can be used to infer the reliability of the test for the entire population.
+
+The following statistical inference tests are available:
+
+* `anova`: One-Way-Anova tests if there is a statistically significant difference in the
+means of two or more random samples.
+
+* `ttest`: The T-test tests if there is a statistically significant difference in the means of two
+random samples.
+
+* `pairedTtest`: The paired t-test tests if there is a statistically significant difference
+in the means of two random samples with paired data.
+
+* `gTestDataSet`: The G-test tests if two samples of binned discrete data were drawn
+from the same population.
+
+* `chiSquareDataset`: The Chi-Squared test tests if two samples of binned discrete data were
+drawn from the same population.
+
+* `mannWhitney`: The Mann-Whitney test is a non-parametric test that tests if two
+samples of continuous were pulled
+from the same population. The Mann-Whitney test is often used instead of the T-test when the
+underlying assumptions of the T-test are not
+met.
+
+* `ks`: The Kolmogorov-Smirnov test tests if two samples of continuous data were drawn from
+the same distribution.
+
+Below is a simple example of a T-test performed on two random samples.
+The returned p-value of .93 means we can accept the null hypothesis
+that the two samples do not have statistically significantly differences in the means.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="1500", fl="price_f"),
+    b=random(collection1, q="*:*", rows="1500", fl="price_f"),
+    c=col(a, price_f),
+    d=col(b, price_f),
+    e=ttest(c, d))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "e": {
+          "p-value": 0.9350135639249795,
+          "t-statistic": 0.081545541074817
+        }
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 48
+      }
+    ]
+  }
+}
+----
+
+== Transformations
+
+In statistical analysis its often useful to transform data sets before performing
+statistical calculations. The statistical function library includes the following
+commonly used transformations:
+
+* `rank`: Returns a numeric array with the rank-transformed value of each element of the original
+array.
+
+* `log`: Returns a numeric array with the natural log of each element of the original array.
+
+* `log10`: Returns a numeric array with the base 10 log of each element of the original array.
+
+* `sqrt`: Returns a numeric array with the square root of each element of the original array.
+
+* `cbrt`: Returns a numeric array with the cube root of each element of the original array.
+
+* `recip`: Returns a numeric array with the reciprocal of each element of the original array.
+
+Below is an example of a ttest performed on log transformed data sets:
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="1500", fl="price_f"),
+    b=random(collection1, q="*:*", rows="1500", fl="price_f"),
+    c=log(col(a, price_f)),
+    d=log(col(b, price_f)),
+    e=ttest(c, d))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "e": {
+          "p-value": 0.9655110070265056,
+          "t-statistic": -0.04324265449471238
+        }
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 58
+      }
+    ]
+  }
+}
+----
+
+== Back Transformations
+
+Vectors that have been transformed with the `log`, `log10`, `sqrt` and `cbrt` functions
+can be back transformed using the `pow` function.
+
+The example below shows how to back transform data that has been transformed by the
+`sqrt` function.
+
+
+[source,text]
+----
+let(echo="b,c",
+    a=array(100, 200, 300),
+    b=sqrt(a),
+    c=pow(b, 2))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          10,
+          14.142135623730951,
+          17.320508075688775
+        ],
+        "c": [
+          100,
+          200.00000000000003,
+          300.00000000000006
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+The example below shows how to back transform data that has been transformed by the
+`log10` function.
+
+
+[source,text]
+----
+let(echo="b,c",
+    a=array(100, 200, 300),
+    b=log10(a),
+    c=pow(10, b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          2,
+          2.3010299956639813,
+          2.4771212547196626
+        ],
+        "c": [
+          100,
+          200.00000000000003,
+          300.0000000000001
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Vectors that have been transformed with the `recip` function can be back-transformed by taking the reciprocal
+of the reciprocal.
+
+The example below shows an example of the back-transformation of the `recip` function.
+
+[source,text]
+----
+let(echo="b,c",
+    a=array(100, 200, 300),
+    b=recip(a),
+    c=recip(b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          0.01,
+          0.005,
+          0.0033333333333333335
+        ],
+        "c": [
+          100,
+          200,
+          300
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+== Z-scores
+
+The `zscores` function converts a numeric array to an array of z-scores. The z-score
+is the number of standard deviations a number is from the mean.
+
+The example below computes the z-scores for the values in an array.
+
+
+[source,text]
+----
+let(a=array(1,2,3),
+    b=zscores(a))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          -1,
+          0,
+          1
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 27
+      }
+    ]
+  }
+}
+----

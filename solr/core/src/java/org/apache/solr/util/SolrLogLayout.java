@@ -16,15 +16,18 @@
  */
 package org.apache.solr.util;
 
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.log4j.Layout;
-import org.apache.log4j.Level;
-import org.apache.log4j.spi.LoggingEvent;
-import org.apache.log4j.spi.ThrowableInformation;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginFactory;
+import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -42,8 +45,19 @@ import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
-@SuppressForbidden(reason = "class is specific to log4j")
-public class SolrLogLayout extends Layout {
+@SuppressForbidden(reason = "class is specific to log4j2")
+@Plugin(name = "SolrLogLayout", category = "Core", elementType = "layout", printObject = true)
+public class SolrLogLayout extends AbstractStringLayout {
+
+  protected SolrLogLayout(Charset charset) {
+    super(charset);
+  }
+
+  @PluginFactory
+  public static SolrLogLayout createLayout(@PluginAttribute(value = "charset", defaultString = "UTF-8") Charset charset) {
+    return new SolrLogLayout(charset);
+  }
+
   /**
    * Add this interface to a thread group and the string returned by getTag()
    * will appear in log statements of any threads under that group.
@@ -96,22 +110,8 @@ public class SolrLogLayout extends Layout {
   
   Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<>();
   
-  public Map<String,String> classAliases = new HashMap<>();
-  
-  public void appendThread(StringBuilder sb, LoggingEvent event) {
+  public void appendThread(StringBuilder sb) {
     Thread th = Thread.currentThread();
-    
-    /******
-     * sb.append(" T="); sb.append(th.getName()).append(' ');
-     * 
-     * // NOTE: tried creating a thread group around jetty but we seem to lose
-     * it and request // threads are in the normal "main" thread group
-     * ThreadGroup tg = th.getThreadGroup(); while (tg != null) {
-     * sb.append("(group_name=").append(tg.getName()).append(")");
-     * 
-     * if (tg instanceof TG) { sb.append(((TG)tg).getTag()); sb.append('/'); }
-     * try { tg = tg.getParent(); } catch (Throwable e) { tg = null; } }
-     ******/
     
     // NOTE: LogRecord.getThreadID is *not* equal to Thread.getId()
     sb.append(" T");
@@ -119,23 +119,21 @@ public class SolrLogLayout extends Layout {
   }
 
   @Override
-  public String format(LoggingEvent event) {
+  public String toSerializable(LogEvent event) {
     return _format(event);
   }
   
-  public String _format(LoggingEvent event) {
-    String message = (String) event.getMessage();
+  public String _format(LogEvent event) {
+    String message = event.getMessage().getFormattedMessage();
     if (message == null) {
       message = "";
     }
     StringBuilder sb = new StringBuilder(message.length() + 80);
     
-    long now = event.timeStamp;
+    long now = event.getTimeMillis();
     long timeFromStart = now - startTime;
-    long timeSinceLast = now - lastTime;
     lastTime = now;
-    String shortClassName = getShortClassName(event.getLocationInformation().getClassName(),
-        event.getLocationInformation().getMethodName());
+    String shortClassName = getShortClassName(event.getSource().getClassName(), event.getSource().getMethodName());
     
     /***
      * sb.append(timeFromStart).append(' ').append(timeSinceLast);
@@ -151,7 +149,7 @@ public class SolrLogLayout extends Layout {
     try (SolrQueryRequest req = (requestInfo == null) ? null : requestInfo.getReq()) {
       core = (req == null) ? null : req.getCore();
     }
-    ZkController zkController = null;
+    ZkController zkController;
     CoreInfo info = null;
     
     if (core != null) {
@@ -192,7 +190,7 @@ public class SolrLogLayout extends Layout {
     // sb.append("\nL").append(record.getSequenceNumber()); // log number is
     // useful for sequencing when looking at multiple parts of a log file, but
     // ms since start should be fine.
-    appendThread(sb, event);
+    appendThread(sb);
 
     appendMDC(sb);
 
@@ -212,20 +210,19 @@ public class SolrLogLayout extends Layout {
     
     sb.append(' ');
     appendMultiLineString(sb, message);
-    ThrowableInformation thInfo = event.getThrowableInformation();
-    if (thInfo != null) {
-      Throwable th = event.getThrowableInformation().getThrowable();
-      if (th != null) {
-        sb.append(' ');
-        String err = SolrException.toStr(th);
-        String ignoredMsg = SolrException.doIgnore(th, err);
-        if (ignoredMsg != null) {
-          sb.append(ignoredMsg);
-        } else {
-          sb.append(err);
-        }
+    Throwable th = event.getThrown();
+    
+    if (th != null) {
+      sb.append(' ');
+      String err = SolrException.toStr(th);
+      String ignoredMsg = SolrException.doIgnore(th, err);
+      if (ignoredMsg != null) {
+        sb.append(ignoredMsg);
+      } else {
+        sb.append(err);
       }
     }
+    
     
     sb.append('\n');
     
@@ -331,7 +328,7 @@ public class SolrLogLayout extends Layout {
     methodAlias.put(new Method(
         "org.apache.solr.update.processor.LogUpdateProcessor", "finish"), "");
   }
-  
+
   private Method classAndMethod = new Method(null, null); // don't need to be
                                                           // thread safe
   
@@ -361,14 +358,6 @@ public class SolrLogLayout extends Layout {
     }
     
     return sb.toString() + '.' + method;
-  }
-
-  @Override
-  public void activateOptions() {}
-
-  @Override
-  public boolean ignoresThrowable() {
-    return false;
   }
 
 

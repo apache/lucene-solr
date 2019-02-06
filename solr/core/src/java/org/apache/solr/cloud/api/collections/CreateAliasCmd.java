@@ -108,12 +108,12 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
       + " plus some create-collection prefixed ones.");
     }
 
-    Map<String, String> aliasMetadata = new LinkedHashMap<>();
+    Map<String, String> aliasProperties = new LinkedHashMap<>();
     message.getProperties().entrySet().stream()
-        .filter(entry -> TimeRoutedAlias.PARAM_IS_METADATA.test(entry.getKey()))
-        .forEach(entry -> aliasMetadata.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
+        .filter(entry -> TimeRoutedAlias.PARAM_IS_PROP.test(entry.getKey()))
+        .forEach(entry -> aliasProperties.put(entry.getKey(), (String) entry.getValue())); // way easier than .collect
 
-    TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata); // validates as well
+    TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasProperties); // validates as well
 
     String start = message.getStr(TimeRoutedAlias.ROUTER_START);
     Instant startTime = parseStart(start, timeRoutedAlias.getTimeZone());
@@ -121,13 +121,13 @@ public class CreateAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, startTime);
 
     // Create the collection
-    MaintainRoutedAliasCmd.createCollectionAndWait(state, aliasName, aliasMetadata, initialCollectionName, ocmh);
+    MaintainRoutedAliasCmd.createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
     validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
 
     // Create/update the alias
     zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
         .cloneWithCollectionAlias(aliasName, initialCollectionName)
-        .cloneWithCollectionAliasMetadata(aliasName, aliasMetadata));
+        .cloneWithCollectionAliasProperties(aliasName, aliasProperties));
   }
 
   private Instant parseStart(String str, TimeZone zone) {

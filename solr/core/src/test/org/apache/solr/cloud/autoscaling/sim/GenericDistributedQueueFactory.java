@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 
 /**
  * Factory for {@link GenericDistributedQueue}.

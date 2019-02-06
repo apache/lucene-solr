@@ -18,7 +18,7 @@
 
 Solr has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
 
-This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage. To use Hadoop MapReduce to process Solr data, see the MapReduceIndexerTool in the Solr contrib area.
+This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage.
 
 To use HDFS rather than a local filesystem, you must be using Hadoop 2.x and you will need to instruct Solr to use the `HdfsDirectoryFactory`. There are also several additional parameters to define. These can be set in one of three ways:
 
@@ -30,10 +30,10 @@ To use HDFS rather than a local filesystem, you must be using Hadoop 2.x and you
 
 === Standalone Solr Instances
 
-For standalone Solr instances, there are a few parameters you should be sure to modify before starting Solr. These can be set in `solrconfig.xml`(more on that <<HdfsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
+For standalone Solr instances, there are a few parameters you should modify before starting Solr. These can be set in `solrconfig.xml` (more on that <<HdfsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
 
-* You need to use an `HdfsDirectoryFactory` and a data dir of the form `hdfs://host:port/path`
-* You need to specify an UpdateLog location of the form `hdfs://host:port/path`
+* You need to use an `HdfsDirectoryFactory` and a data directory in the form `hdfs://host:port/path`
+* You need to specify an `updateLog` location in the form `hdfs://host:port/path`
 * You should specify a lock factory type of `'hdfs'` or none.
 
 If you do not modify `solrconfig.xml`, you can instead start Solr on HDFS with the following command:
@@ -81,7 +81,7 @@ For example, to set JVM arguments to always use HDFS when running in SolrCloud m
 
 == The Block Cache
 
-For performance, the HdfsDirectoryFactory uses a Directory that will cache HDFS blocks. This caching mechanism is meant to replace the standard file system cache that Solr utilizes so much. By default, this cache is allocated off heap. This cache will often need to be quite large and you may need to raise the off heap memory limit for the specific JVM you are running Solr in. For the Oracle/OpenJDK JVMs, the follow is an example command line parameter that you can use to raise the limit when starting Solr:
+For performance, the `HdfsDirectoryFactory` uses a Directory that will cache HDFS blocks. This caching mechanism replaces the standard file system cache that Solr utilizes. By default, this cache is allocated off-heap. This cache will often need to be quite large and you may need to raise the off-heap memory limit for the specific JVM you are running Solr in. For the Oracle/OpenJDK JVMs, the following is an example command-line parameter that you can use to raise the limit when starting Solr:
 
 [source,bash]
 ----
@@ -90,7 +90,7 @@ For performance, the HdfsDirectoryFactory uses a Directory that will cache HDFS 
 
 == HdfsDirectoryFactory Parameters
 
-The `HdfsDirectoryFactory` has a number of settings that are defined as part of the `directoryFactory` configuration.
+The `HdfsDirectoryFactory` has a number of settings defined as part of the `directoryFactory` configuration.
 
 === Solr HDFS Settings
 
@@ -176,67 +176,42 @@ If using Kerberos, you will need to add the three Kerberos related properties to
 </directoryFactory>
 ----
 
+// In Solr 8, this should be removed entirely;
+// it's here now only for back-compat for existing users
+
 == Automatically Add Replicas in SolrCloud
 
-One benefit to running Solr in HDFS is the ability to automatically add new replicas when the Overseer notices that a shard has gone down. Because the "gone" index shards are stored in HDFS, the a new core will be created and the new core will point to the existing indexes in HDFS.
+The ability to automatically add new replicas when the Overseer notices that a shard has gone down was previously only available to users running Solr in HDFS, but it is now available to all users via Solr's autoscaling framework. See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for details on how to enable and disable this feature.
 
-Collections created using `autoAddReplicas=true` on a shared file system have automatic addition of replicas enabled. The following settings can be used to override the defaults in the `<solrcloud>` section of `solr.xml`.
-
-`autoReplicaFailoverWorkLoopDelay`::
-The time (in ms) between clusterstate inspections by the Overseer to detect and possibly act on creation of a replacement replica. The default is `10000`.
-
-`autoReplicaFailoverWaitAfterExpiration`::
-The minimum time (in ms) to wait for initiating replacement of a replica after first noticing it not being live. This is important to prevent false positives while stoping or starting the cluster. The default is `30000`.
-
-`autoReplicaFailoverBadNodeExpiration`::
-The delay (in ms) after which a replica marked as down would be unmarked. The default is `60000`.
-
-=== Temporarily Disable autoAddReplicas for the Entire Cluster
-
-When doing offline maintenance on the cluster and for various other use cases where an admin would like to temporarily disable auto addition of replicas, the following APIs will disable and re-enable autoAddReplicas for *all collections in the cluster*:
-
-Disable automatic addition of replicas cluster-wide by setting the cluster property `autoAddReplicas` to `false`, as in these examples:
-
-[.dynamic-tabs]
---
-[example.tab-pane#v1disableautoadd]
+[WARNING]
 ====
-[.tab-label]*V1 API*
+The ability to enable or disable the autoAddReplicas feature with cluster properties has been deprecated and will be removed in a future version. All users of this feature who have previously used that approach are encouraged to change their configurations to use the autoscaling framework to ensure continued operation of this feature in their Solr installations.
+
+For users using this feature with the deprecated configuration, you can temporarily disable it cluster-wide by setting the cluster property `autoAddReplicas` to `false`, as in these examples:
+
+.V1 API
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas&val=false
 ----
-====
 
-[example.tab-pane#v2disableautoadd]
-====
-[.tab-label]*V2 API*
+.V2 API
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"autoAddReplicas", "val":false}}' http://localhost:8983/api/cluster
 ----
-====
---
 
-Re-enable automatic addition of replicas (for those collections created with `autoAddReplica=true`) by unsetting the `autoAddReplicas` cluster property. When no `val` parameter is provided, the cluster property is unset:
+Re-enable the feature by unsetting the `autoAddReplicas` cluster property. When no `val` parameter is provided, the cluster property is unset:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1enableautoadd]
-====
-[.tab-label]*V1 API*
+.V1 API
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas
 ----
-====
 
-[example.tab-pane#v2enableautoadd]
-====
-[.tab-label]*V2 API*
+.V2 API
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"autoAddReplicas"}}' http://localhost:8983/api/cluster
 ----
 ====
---

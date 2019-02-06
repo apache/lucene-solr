@@ -22,6 +22,7 @@
 >
   <xsl:param name="eclipse.fileset.sourcefolders"/>
   <xsl:param name="eclipse.fileset.libs"/>
+  <xsl:param name="eclipse.fileset.webfolders"/>
   
   <!--
     NOTE: This template matches the root element of any given input XML document!
@@ -54,7 +55,23 @@
           <classpathentry excluding="src" including="conf/**" kind="src" path="lucene/benchmark"/>
         </xsl:if>
       </xsl:for-each>
-      
+
+      <xsl:for-each select="str:split($eclipse.fileset.webfolders,'|')">
+        <xsl:sort select="text()" order="ascending" lang="en"/>
+        <classpathentry kind="src" path="{.}">
+          <xsl:attribute name="output">
+            <xsl:choose>
+              <xsl:when test="contains(.,'solr/webapp/web')">
+                <xsl:text>eclipse-build/solr-server/solr-webapp/webapp</xsl:text>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:text>eclipse-build/solr-server/</xsl:text><xsl:value-of select="substring(text(), 13)"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
+        </classpathentry>
+      </xsl:for-each>
+
       <!-- the main resources folder is here (see above), so it's listed after the test-framework resources, making preflex-override work: -->
       <classpathentry kind="output" path="eclipse-build/main"/>
       <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>

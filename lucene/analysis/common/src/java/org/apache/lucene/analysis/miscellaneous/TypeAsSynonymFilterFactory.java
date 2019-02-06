@@ -36,6 +36,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * If the optional {@code prefix} parameter is used, the specified value will be prepended
  * to the type, e.g. with prefix="_type_", for a token "example.com" with type "&lt;URL&gt;",
  * the emitted synonym will have text "_type_&lt;URL&gt;".
+ *
+ * @since 7.3.0
  */
 public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
   private final String prefix;

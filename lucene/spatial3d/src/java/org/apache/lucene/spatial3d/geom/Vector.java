@@ -509,6 +509,32 @@ public class Vector {
    * @return true if they are numerically identical.
    */
   public boolean isNumericallyIdentical(final double otherX, final double otherY, final double otherZ) {
+    final double deltaX = x - otherX;
+    final double deltaY = y - otherY;
+    final double deltaZ = z - otherZ;
+    return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ < MINIMUM_RESOLUTION_SQUARED;
+  }
+
+  /**
+   * Compute whether two vectors are numerically identical.
+   * @param other is the other vector.
+   * @return true if they are numerically identical.
+   */
+  public boolean isNumericallyIdentical(final Vector other) {
+    final double deltaX = x - other.x;
+    final double deltaY = y - other.y;
+    final double deltaZ = z - other.z;
+    return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ < MINIMUM_RESOLUTION_SQUARED;
+  }
+
+  /**
+   * Compute whether two vectors are parallel.
+   * @param otherX is the other vector X.
+   * @param otherY is the other vector Y.
+   * @param otherZ is the other vector Z.
+   * @return true if they are parallel.
+   */
+  public boolean isParallel(final double otherX, final double otherY, final double otherZ) {
     final double thisX = y * otherZ - z * otherY;
     final double thisY = z * otherX - x * otherZ;
     final double thisZ = x * otherY - y * otherX;
@@ -518,15 +544,15 @@ public class Vector {
   /**
    * Compute whether two vectors are numerically identical.
    * @param other is the other vector.
-   * @return true if they are numerically identical.
+   * @return true if they are parallel.
    */
-  public boolean isNumericallyIdentical(final Vector other) {
+  public boolean isParallel(final Vector other) {
     final double thisX = y * other.z - z * other.y;
     final double thisY = z * other.x - x * other.z;
     final double thisZ = x * other.y - y * other.x;
     return thisX * thisX + thisY * thisY + thisZ * thisZ < MINIMUM_RESOLUTION_SQUARED;
   }
-  
+
   /** Compute the desired magnitude of a unit vector projected to a given
    * planet model.
    * @param planetModel is the planet model.

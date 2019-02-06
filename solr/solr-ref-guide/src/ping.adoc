@@ -45,7 +45,7 @@ This command will ping the core name for a response.
 http://localhost:8983/solr/<collection-name>/admin/ping?distrib=true&wt=xml
 ----
 
-This command will ping all replicas of the given collection name for a response
+This command will ping all replicas of the given collection name for a response:
 
 *Sample Output*
 

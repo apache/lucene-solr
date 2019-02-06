@@ -16,7 +16,7 @@
    specific language governing permissions and limitations
    under the License.    
 -->
-<ivy-module version="2.0">
+<ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
   <info organisation="org.apache.solr" module="server"/>
   <configurations defaultconfmapping="metrics->master;jetty->master;start->master;servlet->master;logging->master">
     <conf name="metrics" description="metrics jars" transitive="true"/>
@@ -27,11 +27,14 @@
   </configurations>
 
   <dependencies>
-    <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" conf="logging"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="logging"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}" conf="logging"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="logging"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-1.2-api" rev="${/org.apache.logging.log4j/log4j-1.2-api}" conf="logging"/>
+    <dependency org="com.lmax" name="disruptor" rev="${/com.lmax/disruptor}" conf="logging"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="logging"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="logging"/>
-    <dependency org="org.slf4j" name="jul-to-slf4j" rev="${/org.slf4j/jul-to-slf4j}" conf="logging"/> 
-    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="logging"/>
+    <dependency org="org.slf4j" name="jul-to-slf4j" rev="${/org.slf4j/jul-to-slf4j}" conf="logging"/>
 
     <dependency org="io.dropwizard.metrics" name="metrics-core" rev="${/io.dropwizard.metrics/metrics-core}" conf="metrics" />
     <dependency org="io.dropwizard.metrics" name="metrics-jetty9" rev="${/io.dropwizard.metrics/metrics-jetty9}" conf="metrics" />
@@ -53,11 +56,18 @@
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${/org.eclipse.jetty/jetty-util}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${/org.eclipse.jetty/jetty-webapp}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${/org.eclipse.jetty/jetty-xml}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-java-server" rev="${/org.eclipse.jetty/jetty-alpn-java-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty" name="jetty-alpn-server" rev="${/org.eclipse.jetty/jetty-alpn-server}" conf="jetty"/>
+
+    <dependency org="org.eclipse.jetty.http2" name="http2-server" rev="${/org.eclipse.jetty.http2/http2-server}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-common" rev="${/org.eclipse.jetty.http2/http2-common}" conf="jetty"/>
+    <dependency org="org.eclipse.jetty.http2" name="http2-hpack" rev="${/org.eclipse.jetty.http2/http2-hpack}" conf="jetty"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="jetty"/>
 
-    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start"/>
-
+    <dependency org="org.eclipse.jetty" name="jetty-start" rev="${/org.eclipse.jetty/jetty-start}" conf="start">
+      <artifact name="jetty-start" type="jar" maven:classifier="shaded"/>
+    </dependency>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

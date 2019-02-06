@@ -115,7 +115,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
     properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
-    properties.put(OverseerCollectionMessageHandler.COLL_CONF, configName);
+    properties.put(CollectionAdminParams.COLL_CONF, configName);
     properties.put(BackupManager.START_TIME_PROP, startTime.toString());
     properties.put(BackupManager.INDEX_VERSION_PROP, Version.LATEST.toString());
     //TODO: Add MD5 of the configset. If during restore the same name configset exists then we can compare checksums to see if they are the same.
@@ -160,7 +160,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     Map<String, String> requestMap = new HashMap<>();
 
     String commitName = request.getStr(CoreAdminParams.COMMIT_NAME);
@@ -221,6 +221,6 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
 
-    ocmh.processResponses(results, shardHandler, true, "Could not backup all replicas", asyncId, requestMap);
+    ocmh.processResponses(results, shardHandler, true, "Could not backup all shards", asyncId, requestMap);
   }
 }

@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -356,42 +357,39 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // test that malformed numerics cause client error not server error
     for (String field : FIELDS) {
-      try {
-        h.update(add( doc("id","100", field, BAD_VALUE)));
-        fail("Didn't encounter an error trying to add a bad date: " + field);
-      } catch (SolrException e) {
-        String msg = e.toString();
-        assertTrue("not an (update) client error on field: " + field +" : "+ msg,
-                   400 <= e.code() && e.code() < 500);
-        assertTrue("(update) client error does not mention bad value: " + msg,
-                   msg.contains(BAD_VALUE));
-        assertTrue("client error does not mention document id: " + msg,
-                   msg.contains("[doc=100]"));
-      }
-      SchemaField sf = h.getCore().getLatestSchema().getField(field); 
+      SolrException e1 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a bad date: " + field,
+          () -> h.update(add( doc("id","100", field, BAD_VALUE))));
+      String msg1 = e1.getMessage();
+      assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
+          400 <= e1.code() && e1.code() < 500);
+      assertTrue("(update) client error does not mention bad value: " + msg1,
+          msg1.contains(BAD_VALUE));
+      assertTrue("client error does not mention document id: " + msg1,
+          msg1.contains("[doc=100]"));
+      SchemaField sf = h.getCore().getLatestSchema().getField(field);
       if (!sf.hasDocValues() && !sf.indexed()) {
         continue;
       }
-      try {
-        h.query(req("q",field + ":" + BAD_VALUE));
-        fail("Didn't encounter an error trying to query a bad date: " + field);
-      } catch (SolrException e) {
-        String msg = e.toString();
-        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
-                   400 <= e.code() && e.code() < 500);
-        assertTrue("(search) client error does not mention bad value: " + msg,
-                   msg.contains(BAD_VALUE));
-      }
-      try {
-        h.query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"));
-        fail("Didn't encounter an error trying to query a bad date: " + field);
-      } catch (SolrException e) {
-        String msg = e.toString();
-        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
-                   400 <= e.code() && e.code() < 500);
-        assertTrue("(search) client error does not mention bad value: " + msg,
-                   msg.contains(BAD_VALUE));
-      }
+      SolrException e2 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a bad date: " + field,
+          () -> h.query(req("q",field + ":" + BAD_VALUE))
+      );
+      String msg2 = e2.toString();
+      assertTrue("not a (search) client error on field: " + field +" : "+ msg2,
+          400 <= e2.code() && e2.code() < 500);
+      assertTrue("(search) client error does not mention bad value: " + msg2,
+          msg2.contains(BAD_VALUE));
+
+      SolrException e3 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a bad date: " + field,
+          () -> h.query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"))
+      );
+      String msg3 = e3.toString();
+      assertTrue("not a (search) client error on field: " + field +" : "+ msg3,
+          400 <= e3.code() && e3.code() < 500);
+      assertTrue("(search) client error does not mention bad value: " + msg3,
+          msg3.contains(BAD_VALUE));
     }
   }
 
@@ -414,42 +412,40 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // test that malformed numerics cause client error not server error
     for (String field : FIELDS) {
-      try {
-        h.update(add( doc("id","100", field, BAD_VALUE)));
-        fail("Didn't encounter an error trying to add a non-number: " + field);
-      } catch (SolrException e) {
-        String msg = e.toString();
-        assertTrue("not an (update) client error on field: " + field +" : "+ msg,
-                   400 <= e.code() && e.code() < 500);
-        assertTrue("(update) client error does not mention bad value: " + msg,
-                   msg.contains(BAD_VALUE));
-        assertTrue("client error does not mention document id",
-                   msg.contains("[doc=100]"));
-      }
+      SolrException e1 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a non-number: " + field,
+          () -> h.update(add( doc("id","100", field, BAD_VALUE))));
+      String msg1 = e1.toString();
+      assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
+          400 <= e1.code() && e1.code() < 500);
+      assertTrue("(update) client error does not mention bad value: " + msg1,
+          msg1.contains(BAD_VALUE));
+      assertTrue("client error does not mention document id",
+          msg1.contains("[doc=100]"));
       SchemaField sf = h.getCore().getLatestSchema().getField(field); 
       if (!sf.hasDocValues() && !sf.indexed()) {
         continue;
       }
-      try {
-        h.query(req("q",field + ":" + BAD_VALUE));
-        fail("Didn't encounter an error trying to query a non-number: " + field);
-      } catch (SolrException e) {
-        String msg = e.toString();
-        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
-                   400 <= e.code() && e.code() < 500);
-        assertTrue("(search) client error does not mention bad value: " + msg,
-                   msg.contains(BAD_VALUE));
-      }
-      try {
-        h.query(req("q",field + ":[10 TO " + BAD_VALUE + "]"));
-        fail("Didn't encounter an error trying to query a non-number: " + field);
-      } catch (SolrException e) {
-        String msg = e.toString();
-        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
-                   400 <= e.code() && e.code() < 500);
-        assertTrue("(search) client error does not mention bad value: " + msg,
-                   msg.contains(BAD_VALUE));
-      }
+
+      SolrException e2 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a non-number: " + field,
+          () -> h.query(req("q",field + ":" + BAD_VALUE))
+      );
+      String msg2 = e2.toString();
+      assertTrue("not a (search) client error on field: " + field +" : "+ msg2,
+          400 <= e2.code() && e2.code() < 500);
+      assertTrue("(search) client error does not mention bad value: " + msg2,
+          msg2.contains(BAD_VALUE));
+
+      SolrException e3 = expectThrows(SolrException.class,
+          "Didn't encounter an error trying to add a non-number: " + field,
+          () -> h.query(req("q",field + ":[10 TO " + BAD_VALUE + "]"))
+      );
+      String msg3 = e3.toString();
+      assertTrue("not a (search) client error on field: " + field +" : "+ msg3,
+          400 <= e3.code() && e3.code() < 500);
+      assertTrue("(search) client error does not mention bad value: " + msg3,
+          msg3.contains(BAD_VALUE));
     }
   }
   
@@ -661,7 +657,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     more.add("s", "ccc");
     more.add("ss","YYY");
     more.add("xx","XXX");
-    p = SolrParams.wrapAppended(p, SolrParams.toSolrParams(more));
+    p = SolrParams.wrapAppended(p, more.toSolrParams());
     assertEquals(3, p.getParams("s").length);
     assertEquals("bbb", p.getParams("s")[0]);
     assertEquals("aaa", p.getParams("s")[1]);
@@ -883,7 +879,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "6",  "bday", "NOW+2YEARS"));
     assertU(commit());
     
-    // a ridiculoulsy long date math expression that's still equivilent to july4
+    // a ridiculoulsy long date math expression that's still equivalent to july4
     final StringBuilder july4Long = new StringBuilder(july4);
     final int iters = atLeast(10);
     for (int i = 0; i < iters; i++) {
@@ -994,32 +990,31 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public void testAbuseOfSort() {
 
     assertU(adoc("id", "9999991",
-                 "sortabuse_b", "true",
+                 "sortabuse_not_uninvertible", "xxx",
                  "sortabuse_t", "zzz xxx ccc vvv bbb nnn aaa sss ddd fff ggg"));
     assertU(adoc("id", "9999992",
-                 "sortabuse_b", "true",
+                 "sortabuse_not_uninvertible", "yyy",
                  "sortabuse_t", "zzz xxx ccc vvv bbb nnn qqq www eee rrr ttt"));
 
     assertU(commit());
-  
-    try {
-      ignoreException("can not sort on multivalued field: sortabuse_t");
-      assertQ("sort on something that shouldn't work",
-              req("q", "sortabuse_b:true",
-                  "sort", "sortabuse_t asc"),
-              "*[count(//doc)=2]");
-      fail("no error encountered when sorting on sortabuse_t");
-    } catch (Exception outer) {
-      // EXPECTED
-      Throwable root = getRootCause(outer);
-      assertEquals("sort exception root cause", 
+
+    for (String f : Arrays.asList("sortabuse_not_uninvertible", "sortabuse_t")) {
+      RuntimeException outerEx = expectThrows(RuntimeException.class, () -> {
+          ignoreException("sortabuse");
+          assertQ("sort on something that shouldn't work",
+                  req("q", "*:*",
+                      "sort", f+ " asc"),
+                  "*[count(//doc)=2]");
+        });
+      Throwable root = getRootCause(outerEx);
+      assertEquals("sort exception root cause",
                    SolrException.class, root.getClass());
       SolrException e = (SolrException) root;
-      assertEquals("incorrect error type", 
+      assertEquals("incorrect error type",
                    SolrException.ErrorCode.BAD_REQUEST,
                    SolrException.ErrorCode.getErrorCode(e.code()));
       assertTrue("exception doesn't contain field name",
-                 -1 != e.getMessage().indexOf("sortabuse_t"));
+                 e.getMessage().contains(f));
     }
   }
 

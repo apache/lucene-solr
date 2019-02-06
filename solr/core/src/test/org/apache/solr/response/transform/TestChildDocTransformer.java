@@ -16,9 +16,15 @@
  */
 package org.apache.solr.response.transform;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,7 +36,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml","schema.xml"); // *not* the "nest" schema version
   }
 
   @After
@@ -61,9 +67,10 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     testSubQueryJSON();
 
     testChildDocNonStoredDVFields();
+    testChildReturnFields();
   }
 
-  private void testChildDoctransformerXML() {
+  private void testChildDoctransformerXML() throws Exception {
     String test1[] = new String[] {
         "//*[@numFound='1']",
         "/response/result/doc[1]/doc[1]/str[@name='id']='2'" ,
@@ -81,8 +88,9 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     String test3[] = new String[] {
         "//*[@numFound='1']",
+        "count(/response/result/doc[1]/doc)=2",
         "/response/result/doc[1]/doc[1]/str[@name='id']='3'" ,
-        "/response/result/doc[1]/doc[2]/str[@name='id']='5'" };
+        "/response/result/doc[1]/doc[2]/str[@name='id']='5'"};
 
 
 
@@ -90,10 +98,10 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
+        "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+        "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
   }
   
   private void testSubQueryXML() {
@@ -211,10 +219,10 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
+        "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+        "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=3]"), test3);
   }
 
   private void testChildDocNonStoredDVFields() throws Exception {
@@ -242,11 +250,39 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
+        "fl", "intDvoDefault, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
-        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+        "fl", "intDvoDefault, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
 
+  }
+
+  private void testChildReturnFields() throws Exception {
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault,child_fl:[value v='child_fl_test']\"]"),
+        "/response/docs/[0]/intDefault==42",
+        "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42",
+        "/response/docs/[0]/_childDocuments_/[0]/child_fl=='child_fl_test'");
+
+    try(SolrQueryRequest req = req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "intDefault,[child parentFilter=\"subject:parentDocument\" fl=\"intDvoDefault, [docid]\"]")) {
+      BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
+      Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
+      while (docsStreamer.hasNext()) {
+        SolrDocument doc = docsStreamer.next();
+        assertFalse("root docs should not contain fields specified in child return fields", doc.containsKey("intDvoDefault"));
+        assertTrue("root docs should contain fields specified in query return fields", doc.containsKey("intDefault"));
+        Collection<SolrDocument> childDocs = doc.getChildDocuments();
+        for(SolrDocument childDoc: childDocs) {
+          assertEquals("child doc should only have 2 keys", 2, childDoc.keySet().size());
+          assertTrue("child docs should contain fields specified in child return fields", childDoc.containsKey("intDvoDefault"));
+          assertEquals("child docs should contain fields specified in child return fields",
+              42, childDoc.getFieldValue("intDvoDefault"));
+          assertTrue("child docs should contain fields specified in child return fields", childDoc.containsKey("[docid]"));
+        }
+      }
+    }
   }
 
   private void createSimpleIndex() {
@@ -338,7 +374,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     assertJQ(req("q", "*:*", 
                  "sort", "id asc",
                  "fq", "subject:\"parentDocument\" ",
-                 "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+                 "fl", "id, cat, title, [child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"),
              tests);
 
   }
@@ -397,7 +433,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", 
                 "sort", "id asc",
                 "fq", "subject:\"parentDocument\" ",
-                "fl", "id,[child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"), 
+                "fl", "id, cat, title, [child childFilter='cat:childDocument' parentFilter=\"subject:parentDocument\"]"),
             tests);
   }
 

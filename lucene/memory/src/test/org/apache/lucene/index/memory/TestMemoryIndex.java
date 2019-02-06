@@ -76,7 +76,7 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestMemoryIndex extends LuceneTestCase {
 

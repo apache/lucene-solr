@@ -16,28 +16,35 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.schema.IndexSchema;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
-import org.junit.BeforeClass;
-
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.schema.IndexSchema;
+import org.junit.BeforeClass;
 /**
  * Tests for the field mutating update processors
  * that parse Dates, Longs, Doubles, and Booleans.
  */
 public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   private static final double EPSILON = 1E-15;
+  private static final DateTimeFormatter isoDateOptionalTimeFormatter =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm[:ss[.SSS]]][z", Locale.ROOT).withZone(ZoneOffset.UTC);
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -50,10 +57,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d = processAdd("parse-date", doc(f("id", "9"), f("date_dt", dateString)));
     assertNotNull(d);
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
     assertTrue(d.getFieldValue("date_dt") instanceof Date);
-    assertEquals(dateTime.getMillis(), ((Date) d.getFieldValue("date_dt")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_dt")).toInstant());
     assertU(commit());
     assertQ(req("id:9"), "//date[@name='date_dt'][.='" + dateString + "']");
   }
@@ -64,10 +69,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d = processAdd("parse-date", doc(f("id", "39"), f("date_tdt", dateString)));
     assertNotNull(d);
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
     assertTrue(d.getFieldValue("date_tdt") instanceof Date);
-    assertEquals(dateTime.getMillis(), ((Date) d.getFieldValue("date_tdt")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_tdt")).toInstant());
     assertU(commit());
     assertQ(req("id:39"), "//date[@name='date_tdt'][.='" + dateString + "']");
   }
@@ -77,14 +80,12 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String dateString = "2010-11-12T13:14:15.168Z";
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
 
     SolrInputDocument d = processAdd("parse-date-no-run-processor",
                                      doc(f("id", "18"), f("not_in_schema", dateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(dateTime.getMillis(), ((Date)d.getFieldValue("not_in_schema")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("not_in_schema")).toInstant());
     
     d = processAdd("parse-date-no-run-processor", 
                    doc(f("id", "36"), f("not_in_schema", "not a date", dateString)));
@@ -116,12 +117,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         ("parse-date-non-UTC-defaultTimeZone", doc(f("id", "99"), f("dateUTC_dt", dateStringUTC), 
                                                    f("dateNoTimeZone_dt", dateStringNoTimeZone)));
     assertNotNull(d);
-    String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-    DateTimeFormatter dateTimeFormatterUTC = DateTimeFormat.forPattern(pattern);
-    DateTime dateTimeUTC = dateTimeFormatterUTC.parseDateTime(dateStringUTC);
     assertTrue(d.getFieldValue("dateUTC_dt") instanceof Date);
     assertTrue(d.getFieldValue("dateNoTimeZone_dt") instanceof Date);
-    assertEquals(dateTimeUTC.getMillis(), ((Date) d.getFieldValue("dateUTC_dt")).getTime());
     assertU(commit());
     assertQ(req("id:99") 
         ,"//date[@name='dateUTC_dt'][.='" + dateStringUTC + "']"
@@ -132,22 +129,18 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String dateString = "2010-11-12T13:14:15.168Z";
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
 
     SolrInputDocument d = processAdd("parse-date-explicit-not-in-schema-selector-no-run-processor",
                                      doc(f("id", "88"), f("not_in_schema", dateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(dateTime.getMillis(), ((Date)d.getFieldValue("not_in_schema")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("not_in_schema")).toInstant());
   }
 
   public void testParseDateExplicitTypeClassSelector() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("date_dt"));
     String dateString = "2010-11-12T13:14:15.168Z";
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
     SolrInputDocument d;
     if (schema.getField("date_dt").getType().isPointField()) {
       d = processAdd("parse-date-explicit-typeclass-point-selector-no-run-processor",
@@ -159,71 +152,66 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
     assertTrue(d.getFieldValue("date_dt") instanceof Date);
-    assertEquals(dateTime.getMillis(), ((Date)d.getFieldValue("date_dt")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("date_dt")).toInstant());
   }
 
   public void testParseUSPacificDate() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String dateString = "8/9/2010";  // Interpreted as 00:00 US Pacific Daylight Time = UTC+07:00
-    String dateStringUTC = "2010-08-09T07:00:00.000Z";
     SolrInputDocument d = processAdd("US-Pacific-parse-date-no-run-processor",
                                      doc(f("id", "288"), f("not_in_schema", dateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(dateStringUTC, 
-                 (new DateTime(((Date)d.getFieldValue("not_in_schema")).getTime(),DateTimeZone.UTC)).toString());
+    assertEquals(Instant.parse("2010-08-09T07:00:00.000Z"), ((Date)d.getFieldValue("not_in_schema")).toInstant());
   }
   
-  public void testParseDateFormats() throws Exception {
+  public void testParseDateManyFormats() throws Exception {
     String[] formatExamples = { 
-        "yyyy-MM-dd'T'HH:mm:ss.SSSZ",  "2010-01-15T00:00:00.000Z",
-        "yyyy-MM-dd'T'HH:mm:ss,SSSZ",  "2010-01-15T00:00:00,000Z",
-        "yyyy-MM-dd'T'HH:mm:ss.SSS",   "2010-01-15T00:00:00.000",
-        "yyyy-MM-dd'T'HH:mm:ss,SSS",   "2010-01-15T00:00:00,000",
-        "yyyy-MM-dd'T'HH:mm:ssZ",      "2010-01-15T00:00:00Z",
-        "yyyy-MM-dd'T'HH:mm:ss",       "2010-01-15T00:00:00",
-        "yyyy-MM-dd'T'HH:mmZ",         "2010-01-15T00:00Z",
-        "yyyy-MM-dd'T'HH:mm",          "2010-01-15T00:00",
-        "yyyy-MM-dd HH:mm:ss.SSSZ",    "2010-01-15 00:00:00.000Z",
-        "yyyy-MM-dd HH:mm:ss,SSSZ",    "2010-01-15 00:00:00,000Z",
-        "yyyy-MM-dd HH:mm:ss.SSS",     "2010-01-15 00:00:00.000",
-        "yyyy-MM-dd HH:mm:ss,SSS",     "2010-01-15 00:00:00,000",
-        "yyyy-MM-dd HH:mm:ssZ",        "2010-01-15 00:00:00Z",
-        "yyyy-MM-dd HH:mm:ss",         "2010-01-15 00:00:00",
-        "yyyy-MM-dd HH:mmZ",           "2010-01-15 00:00Z",
-        "yyyy-MM-dd HH:mm",            "2010-01-15 00:00",
-        "yyyy-MM-dd hh:mm a",          "2010-01-15 12:00 AM",
-        "yyyy-MM-dd hh:mma",           "2010-01-15 12:00AM",
-        "yyyy-MM-dd",                  "2010-01-15",
-        "EEE MMM dd HH:mm:ss Z yyyy",  "Fri Jan 15 00:00:00 +0000 2010",
-        "EEE MMM dd HH:mm:ss yyyy Z",  "Fri Jan 15 00:00:00 2010 +00:00",
-        "EEE MMM dd HH:mm:ss yyyy",    "Fri Jan 15 00:00:00 2010",
-        "EEE, dd MMM yyyy HH:mm:ss Z", "Fri, 15 Jan 2010 00:00:00 +00:00",
-        "EEEE, dd-MMM-yy HH:mm:ss Z",  "Friday, 15-Jan-10 00:00:00 +00:00",
-        "EEEE, MMMM dd, yyyy",         "Friday, January 15, 2010",
-        "MMMM dd, yyyy",               "January 15, 2010",
-        "MMM. dd, yyyy",               "Jan. 15, 2010"
+        "2010-01-15T00:00:00.000Z",
+        "2010-01-15T00:00:00,000Z",
+        "2010-01-15T00:00:00.000",
+        "2010-01-15T00:00:00,000",
+        "2010-01-15T00:00:00Z",
+        "2010-01-15T00:00:00",
+        "2010-01-15T00:00Z",
+        "2010-01-15T00:00",
+        "2010-01-15 00:00:00.000Z",
+        "2010-01-15 00:00:00,000Z",
+        "2010-01-15 00:00:00.000",
+        "2010-01-15 00:00:00,000",
+        "2010-01-15 00:00:00Z",
+        "2010-01-15 00:00:00",
+        "2010-01-15 00:00Z",
+        "2010-01-15 00:00",
+        "2010-01-15 12:00 AM",
+        "2010-01-15 12:00AM",
+        "2010-01-15",
+        "Fri Jan 15 00:00:00 +0000 2010",
+        "Fri Jan 15 00:00:00 2010 +00:00",
+        "Fri Jan 15 00:00:00 2010",
+        "Fri, 15 Jan 2010 00:00:00 +00:00",
+        "Friday, 15-Jan-10 00:00:00 +00:00",
+        "Friday, January 15, 2010",
+        "January 15, 2010",
+        "Jan. 15, 2010"
     };
 
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("dateUTC_dt")); // should match "*_dt" dynamic field
 
-    String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-    DateTimeFormatter dateTimeFormatterUTC = DateTimeFormat.forPattern(dateTimePattern);
-    DateTime dateTimeUTC = dateTimeFormatterUTC.parseDateTime(formatExamples[1]);
+    Instant expectedInstant = Instant.parse(formatExamples[0]);
 
-    for (int i = 0 ; i < formatExamples.length ; i += 2) {
-      String format = formatExamples[i];
-      String dateString = formatExamples[i + 1];
+    for (int i = 0 ; i < formatExamples.length ; ++i) {
+      String dateString = formatExamples[i];
       String id = "95" + i;
-      SolrInputDocument d = processAdd("parse-date-UTC-defaultTimeZone-no-run-processor", 
+      SolrInputDocument d = processAdd("parse-date-many-formats-no-run-processor",
                                        doc(f("id", id), f("dateUTC_dt", dateString)));
       assertNotNull(d);
-      assertTrue("date '" + dateString + "' with format '" + format + "' is not mutated to a Date",
+      assertTrue("index: " + i + " date '" + dateString + "' is not mutated to a Date",
           d.getFieldValue("dateUTC_dt") instanceof Date);
-      assertEquals("date '" + dateString + "' with format '" + format + "' mismatched milliseconds",
-                   dateTimeUTC.getMillis(), ((Date)d.getFieldValue("dateUTC_dt")).getTime());
+      assertEquals("date '" + dateString + "' mismatched milliseconds",
+          expectedInstant, ((Date)d.getFieldValue("dateUTC_dt")).toInstant());
     }
   }
   
@@ -232,23 +220,20 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNull(schema.getFieldOrNull("not_in_schema"));
     String frenchDateString = "le vendredi 15 janvier 2010";
     String dateString = "2010-01-15T00:00:00.000Z";
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
-    DateTime dateTime = dateTimeFormatter.parseDateTime(dateString);
     SolrInputDocument d = processAdd("parse-french-date-UTC-defaultTimeZone-no-run-processor",
                                      doc(f("id", "88"), f("not_in_schema", frenchDateString)));
     assertNotNull(d);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
-    assertEquals(dateTime.getMillis(), ((Date)d.getFieldValue("not_in_schema")).getTime());
+    assertEquals(Instant.parse(dateString), ((Date)d.getFieldValue("not_in_schema")).toInstant());
   }
   
   public void testFailedParseMixedDate() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateOptionalTimeParser().withZoneUTC();
     Map<Object,Object> mixed = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
-      mixed.put(dateTimeFormatter.parseDateTime(dateString).toDate(), dateString);
+      mixed.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
     }
     Double extraDouble = 29.554d;
     mixed.put(extraDouble, extraDouble); // Double-typed field value
@@ -805,11 +790,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       longs.remove(o);
     }
 
-    DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateOptionalTimeParser().withZoneUTC();
     Map<Date,String> dates = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
-      dates.put(dateTimeFormatter.parseDateTime(dateString).toDate(), dateString);
+      dates.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
     }
     d = processAdd(chain, doc(f("id", "343"), f(fieldName, dates.values())));
     assertNotNull(d);
@@ -896,13 +880,12 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedBooleans.isEmpty());
 
-    dateTimeFormatter = ISODateTimeFormat.dateOptionalTimeParser().withZoneUTC();
     Map<Date,Object> mixedDates = new HashMap<>();
     dateStrings = new String[] { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
-      mixedDates.put(dateTimeFormatter.parseDateTime(dateString).toDate(), dateString);
+      mixedDates.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
     }
-    Date extraDate = dateTimeFormatter.parseDateTime("2003-04-24").toDate();
+    Date extraDate = parse(isoDateOptionalTimeFormatter, "2003-04-24");
     mixedDates.put(extraDate, extraDate); // Date-typed field value
     d = processAdd(chain, doc(f("id", "3395"), f(fieldName, mixedDates.values())));
     assertNotNull(d);
@@ -911,5 +894,160 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       mixedDates.remove(o);
     }
     assertTrue(mixedDates.isEmpty());
+  }
+
+  // tests that mimic the tests that were in TestExtractionDateUtil
+  public void testISO8601() throws IOException {
+    // dates with atypical years
+    // This test tries to mimic TestExtractionDateUtil#testISO8601
+
+    String[] dateStrings = {
+        "0001-01-01T01:01:01Z", "+12021-12-01T03:03:03Z",
+        "0000-04-04T04:04:04Z", "-0005-05-05T05:05:05Z",
+        "-2021-12-01T04:04:04Z", "-12021-12-01T02:02:02Z"
+    };
+
+    int id = 1;
+
+    // ensure strings are parsed
+    for(String notInFormatDateString: dateStrings) {
+      IndexSchema schema = h.getCore().getLatestSchema();
+      assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+      SolrInputDocument d = processAdd("parse-date-patterns-default-config", doc(f("id", id), f("date_dt", notInFormatDateString)));
+      assertNotNull(d);
+      assertTrue("Date string: " + notInFormatDateString + " was not parsed as a date", d.getFieldValue("date_dt") instanceof Date);
+      assertEquals(notInFormatDateString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
+      assertU(commit());
+      assertQ(req("id:" + id), "//date[@name='date_dt'][.='" + notInFormatDateString + "']");
+      ++id;
+    }
+
+    // odd values are date strings, even values are expected strings
+    String[] lenientDateStrings = {
+        "10995-12-31T23:59:59.990Z", "+10995-12-31T23:59:59.990Z",
+        "995-1-2T3:4:5Z", "0995-01-02T03:04:05Z",
+        "2021-01-01t03:04:05", "2021-01-01T03:04:05Z",
+        "2021-12-01 04:04:04", "2021-12-01T04:04:04Z"
+    };
+
+    // ensure sure strings that should be parsed using lenient resolver are properly parsed
+    for(int i = 0; i < lenientDateStrings.length; ++i) {
+      String lenientDateString = lenientDateStrings[i];
+      String expectedString = lenientDateStrings[++i];
+      IndexSchema schema = h.getCore().getLatestSchema();
+      assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+      SolrInputDocument d = processAdd("parse-date-patterns-default-config", doc(f("id", id), f("date_dt", lenientDateString)));
+      assertNotNull(d);
+      assertTrue("Date string: " + lenientDateString + " was not parsed as a date",
+          d.getFieldValue("date_dt") instanceof Date);
+      assertEquals(expectedString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
+      ++id;
+    }
+  }
+
+  // this test has had problems when the JDK timezone is Americas/Metlakatla
+  public void testAKSTZone() throws IOException {
+    final String dateFormat = "EEE MMM d HH:mm:ss z yyyy";
+    final String inputString = "Thu Nov 13 04:35:51 AKST 2008"; // asctime + timezone1
+
+    final long expectTs = 1226583351000L;
+    assertEquals(expectTs,
+        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+            .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
+
+    // ensure english locale and root locale return the same date
+    assertEquals(expectTs, DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+            .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli(),
+        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+            .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
+
+    assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-default-config");
+
+    // A bug in Java 9 (not in 8) causes this to fail!  (not fixed yet?!)
+    // see https://bugs.openjdk.java.net/browse/JDK-8189784
+    if (System.getProperty("java.version").startsWith("1.8.")) {
+      // with daylight savings time timezone
+      assertParsedDate("Fri Oct 7 05:14:15 AKDT 2005", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    } else {
+      System.err.println("Didn't test AKDT because only Java 1.8 does this right!  This Java version is: " + System.getProperty("java.version"));
+    }
+  }
+
+  public void testEDTZone() throws IOException {
+    //EDT is GMT-4
+    assertParsedDate("Fri Oct 7 09:14:15 EDT 2005", // asctime + timezone
+        Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+  }
+
+  public void testNoTime() throws IOException {
+    Instant instant = instant(2005, 10, 7, 0, 0, 0);
+    String inputString = "2005-10-07";
+    assertParsedDate(inputString, Date.from(instant), "parse-date-patterns-default-config");
+  }
+
+  public void testRfc1123() throws IOException {
+    assertParsedDate("Fri, 07 Oct 2005 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+  }
+
+  public void testRfc1036() throws IOException {
+    assertParsedDate("Friday, 07-Oct-05 13:14:15 GMT", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+  }
+
+  public void testAsctime() throws Exception {
+    assertParsedDate("Fri Oct 7 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    // also see testEDTZone
+  }
+
+  public void testAsctimeLeniency() throws Exception {
+    // test double digit day
+    assertParsedDate("Fri Oct 07 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    // test 2 spaces left of a single digit day
+    assertParsedDate("Fri Oct  7 13:14:15 2005" , Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+    // longer day of week
+    assertParsedDate("Friday Oct 7 13:14:15 2005", Date.from(inst20051007131415()), "parse-date-patterns-default-config");
+  }
+
+  public void testParseQuotedDate() throws IOException {
+    // also using 2 digit day
+    assertParsedDate("'Fri, 14 Oct 2005 13:14:15 GMT'",
+        Date.from(instant(2005, 10, 14, 13, 14, 15)), "parse-date-patterns-default-config");
+  }
+
+  private static Instant instant(final int year, final int month, final int day, int hour, int minute, int second) {
+    return LocalDate.of(year, month, day).atTime(hour, minute, second).toInstant(ZoneOffset.UTC);
+  }
+
+  private Instant inst20051007131415() {
+    return instant(2005, 10, 7, 13, 14, 15);
+  }
+
+  private void assertParsedDate(String inputDateString, Date expectedDate, String chain) throws IOException {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+    SolrInputDocument d = processAdd(chain, doc(f("id", "1"), f("date_dt", inputDateString)));
+    assertNotNull(d);
+    assertTrue("Date string: " + inputDateString + " was not parsed as a date",
+        d.getFieldValue("date_dt") instanceof Date);
+    assertEquals(expectedDate, d.getField("date_dt").getFirstValue());
+  }
+
+  private static Date parse(DateTimeFormatter dateTimeFormatter, String dateString) {
+    final TemporalAccessor temporalAccessor = dateTimeFormatter.parseBest(dateString, OffsetDateTime::from,
+        ZonedDateTime::from, LocalDateTime::from, LocalDate::from, Instant::from);
+    return temporalToDate(temporalAccessor, dateTimeFormatter.getZone());
+  }
+
+  private static Date temporalToDate(TemporalAccessor in, ZoneId timeZoneId) {
+    if (in instanceof OffsetDateTime) {
+      return Date.from(((OffsetDateTime) in).toInstant());
+    } else if (in instanceof ZonedDateTime) {
+      return Date.from(((ZonedDateTime) in).toInstant());
+    } else if (in instanceof LocalDateTime) {
+      return Date.from(((LocalDateTime) in).atZone(timeZoneId).toInstant());
+    } else if (in instanceof Instant) {
+      return Date.from((Instant) in);
+    } else {
+      return Date.from(((LocalDate) in).atStartOfDay(timeZoneId).toInstant());
+    }
   }
 }

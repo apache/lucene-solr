@@ -17,22 +17,21 @@
 
 package org.apache.solr.schema;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -46,6 +45,7 @@ import org.xml.sax.SAXException;
  */
 class FileExchangeRateProvider implements ExchangeRateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected static final String PARAM_CURRENCY_CONFIG       = "currencyConfig";
 
   // Exchange rate map, maps Currency Code -> Currency Code -> Rate
@@ -159,71 +159,49 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
 
   @Override
   public boolean reload() throws SolrException {
-    InputStream is = null;
     Map<String, Map<String, Double>> tmpRates = new HashMap<>();
-    try {
-      log.debug("Reloading exchange rates from file "+this.currencyConfigFile);
+    log.debug("Reloading exchange rates from file {}", currencyConfigFile);
 
-      is = loader.openResource(currencyConfigFile);
-      javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      try {
-        dbf.setXIncludeAware(true);
-        dbf.setNamespaceAware(true);
-      } catch (UnsupportedOperationException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "XML parser doesn't support XInclude option", e);
-      }
+    try {
+      Document doc = SafeXMLParsing.parseConfigXML(log, loader, currencyConfigFile);
+      XPathFactory xpathFactory = XPathFactory.newInstance();
+      XPath xpath = xpathFactory.newXPath();
       
-      try {
-        Document doc = dbf.newDocumentBuilder().parse(is);
-        XPathFactory xpathFactory = XPathFactory.newInstance();
-        XPath xpath = xpathFactory.newXPath();
+      // Parse exchange rates.
+      NodeList nodes = (NodeList) xpath.evaluate("/currencyConfig/rates/rate", doc, XPathConstants.NODESET);
+      
+      for (int i = 0; i < nodes.getLength(); i++) {
+        Node rateNode = nodes.item(i);
+        NamedNodeMap attributes = rateNode.getAttributes();
+        Node from = attributes.getNamedItem("from");
+        Node to = attributes.getNamedItem("to");
+        Node rate = attributes.getNamedItem("rate");
         
-        // Parse exchange rates.
-        NodeList nodes = (NodeList) xpath.evaluate("/currencyConfig/rates/rate", doc, XPathConstants.NODESET);
+        if (from == null || to == null || rate == null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exchange rate missing attributes (required: from, to, rate) " + rateNode);
+        }
         
-        for (int i = 0; i < nodes.getLength(); i++) {
-          Node rateNode = nodes.item(i);
-          NamedNodeMap attributes = rateNode.getAttributes();
-          Node from = attributes.getNamedItem("from");
-          Node to = attributes.getNamedItem("to");
-          Node rate = attributes.getNamedItem("rate");
-          
-          if (from == null || to == null || rate == null) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exchange rate missing attributes (required: from, to, rate) " + rateNode);
-          }
-          
-          String fromCurrency = from.getNodeValue();
-          String toCurrency = to.getNodeValue();
-          Double exchangeRate;
-          
-          if (null == CurrencyFieldType.getCurrency(fromCurrency)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'from' currency not supported in this JVM: " + fromCurrency);
-          }
-          if (null == CurrencyFieldType.getCurrency(toCurrency)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'to' currency not supported in this JVM: " + toCurrency);
-          }
-          
-          try {
-            exchangeRate = Double.parseDouble(rate.getNodeValue());
-          } catch (NumberFormatException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not parse exchange rate: " + rateNode, e);
-          }
-          
-          addRate(tmpRates, fromCurrency, toCurrency, exchangeRate);
+        String fromCurrency = from.getNodeValue();
+        String toCurrency = to.getNodeValue();
+        Double exchangeRate;
+        
+        if (null == CurrencyFieldType.getCurrency(fromCurrency)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'from' currency not supported in this JVM: " + fromCurrency);
         }
-      } catch (SAXException | XPathExpressionException | ParserConfigurationException | IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while opening Currency configuration file "+currencyConfigFile, e);
-    } finally {
-      try {
-        if (is != null) {
-          is.close();
+        if (null == CurrencyFieldType.getCurrency(toCurrency)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'to' currency not supported in this JVM: " + toCurrency);
         }
-      } catch (IOException e) {
-        e.printStackTrace();
+        
+        try {
+          exchangeRate = Double.parseDouble(rate.getNodeValue());
+        } catch (NumberFormatException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not parse exchange rate: " + rateNode, e);
+        }
+        
+        addRate(tmpRates, fromCurrency, toCurrency, exchangeRate);
       }
+    } catch (SAXException | IOException | XPathExpressionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while parsing currency configuration file "+currencyConfigFile, e);
     }
     // Atomically swap in the new rates map, if it loaded successfully
     this.rates = tmpRates;

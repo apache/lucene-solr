@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -63,14 +64,14 @@ public class SelectStream extends TupleStream implements Expressible {
       this.selectedFields.put(selectedField, selectedField);
     }
     operations = new ArrayList<>();
-    selectedEvaluators = new HashMap<>();
+    selectedEvaluators = new LinkedHashMap();
   }
   
   public SelectStream(TupleStream stream, Map<String,String> selectedFields) throws IOException {
     this.stream = stream;
     this.selectedFields = selectedFields;
     operations = new ArrayList<>();
-    selectedEvaluators = new HashMap<>();
+    selectedEvaluators = new LinkedHashMap();
   }
   
   public SelectStream(StreamExpression expression,StreamFactory factory) throws IOException {
@@ -100,7 +101,7 @@ public class SelectStream extends TupleStream implements Expressible {
     stream = factory.constructStream(streamExpressions.get(0));
     
     selectedFields = new HashMap<String,String>();
-    selectedEvaluators = new HashMap<StreamEvaluator, String>();
+    selectedEvaluators = new LinkedHashMap();
     for(StreamExpressionParameter parameter : selectAsFieldsExpressions){
       StreamExpressionValue selectField = (StreamExpressionValue)parameter;
       String value = selectField.getValue().trim();
@@ -281,7 +282,9 @@ public class SelectStream extends TupleStream implements Expressible {
     
     // Apply all evaluators
     for(Map.Entry<StreamEvaluator, String> selectedEvaluator : selectedEvaluators.entrySet()) {
-      workingToReturn.put(selectedEvaluator.getValue(), selectedEvaluator.getKey().evaluate(workingForEvaluators));
+      Object o = selectedEvaluator.getKey().evaluate(workingForEvaluators);
+      workingForEvaluators.put(selectedEvaluator.getValue(), o);
+      workingToReturn.put(selectedEvaluator.getValue(), o);
     }
     
     return workingToReturn;

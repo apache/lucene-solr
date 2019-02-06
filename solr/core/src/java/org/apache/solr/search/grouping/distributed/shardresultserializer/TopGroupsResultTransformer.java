@@ -30,6 +30,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
@@ -108,11 +109,11 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         ScoreDoc[] scoreDocs = transformToNativeShardDoc(documents, groupSort, shard, schema);
         final TopDocs topDocs;
         if (withinGroupSort.equals(Sort.RELEVANCE)) {
-          topDocs = new TopDocs(totalHits.longValue(), scoreDocs, maxScore);
+          topDocs = new TopDocs(new TotalHits(totalHits.longValue(), TotalHits.Relation.EQUAL_TO), scoreDocs);
         } else {
-          topDocs = new TopFieldDocs(totalHits.longValue(), scoreDocs, withinGroupSort.getSort(), maxScore);
+          topDocs = new TopFieldDocs(new TotalHits(totalHits.longValue(), TotalHits.Relation.EQUAL_TO), scoreDocs, withinGroupSort.getSort());
         }
-        result.put(key, new QueryCommandResult(topDocs, matches));
+        result.put(key, new QueryCommandResult(topDocs, matches, maxScore));
         continue;
       }
 
@@ -134,7 +135,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         ScoreDoc[] scoreDocs = transformToNativeShardDoc(documents, withinGroupSort, shard, schema);
 
         BytesRef groupValueRef = groupValue != null ? new BytesRef(groupValue) : null;
-        groupDocs.add(new GroupDocs<>(Float.NaN, maxScore, totalGroupHits.longValue(), scoreDocs, groupValueRef, null));
+        groupDocs.add(new GroupDocs<>(Float.NaN, maxScore, new TotalHits(totalGroupHits.longValue(), TotalHits.Relation.EQUAL_TO), scoreDocs, groupValueRef, null));
       }
 
       @SuppressWarnings("unchecked")
@@ -193,7 +194,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (GroupDocs<BytesRef> searchGroup : data.groups) {
       NamedList<Object> groupResult = new NamedList<>();
-      groupResult.add("totalHits", searchGroup.totalHits);
+      assert searchGroup.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+      groupResult.add("totalHits", searchGroup.totalHits.value);
       if (!Float.isNaN(searchGroup.maxScore)) {
         groupResult.add("maxScore", searchGroup.maxScore);
       }
@@ -240,10 +242,12 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   protected NamedList serializeTopDocs(QueryCommandResult result) throws IOException {
     NamedList<Object> queryResult = new NamedList<>();
     queryResult.add("matches", result.getMatches());
-    queryResult.add("totalHits", result.getTopDocs().totalHits);
+    TopDocs topDocs = result.getTopDocs();
+    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    queryResult.add("totalHits", topDocs.totalHits.value);
     // debug: assert !Float.isNaN(result.getTopDocs().getMaxScore()) == rb.getGroupingSpec().isNeedScore();
-    if (!Float.isNaN(result.getTopDocs().getMaxScore())) {
-      queryResult.add("maxScore", result.getTopDocs().getMaxScore());
+    if (!Float.isNaN(result.getMaxScore())) {
+      queryResult.add("maxScore", result.getMaxScore());
     }
     List<NamedList> documents = new ArrayList<>();
     queryResult.add("documents", documents);

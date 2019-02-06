@@ -165,38 +165,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
           b.length = bytes.length;
           doc.add(new BinaryDocValuesField("field", b));
           doc.add(new StringField("id", "" + docID, Field.Store.YES));
-          try {
-            w.addDocument(doc);
-          } catch (IllegalArgumentException iae) {
-            if (iae.getMessage().indexOf("is too large") == -1) {
-              throw iae;
-            } else {
-              // OK: some codecs can't handle binary DV > 32K
-              assertFalse(codecAcceptsHugeBinaryValues("field"));
-              w.rollback();
-              d.close();
-              return;
-            }
-          }
+          w.addDocument(doc);
         }
 
 
-        DirectoryReader r;
-        try {
-          r = DirectoryReader.open(w);
-        } catch (IllegalArgumentException iae) {
-          if (iae.getMessage().indexOf("is too large") == -1) {
-            throw iae;
-          } else {
-            assertFalse(codecAcceptsHugeBinaryValues("field"));
-
-            // OK: some codecs can't handle binary DV > 32K
-            w.rollback();
-            d.close();
-            return;
-          }
-        }
-
+        DirectoryReader r = DirectoryReader.open(w);
 
         try (LeafReader ar = SlowCompositeReaderWrapper.wrap(r)) {
           TestUtil.checkReader(ar);
@@ -210,86 +183,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
             assertEquals(expected.length, bytes.length);
             assertEquals(new BytesRef(expected), bytes);
           }
-
-          assertTrue(codecAcceptsHugeBinaryValues("field"));
         }
       }
     }
   }
 
-  private static final int LARGE_BINARY_FIELD_LENGTH = (1 << 15) - 2;
-
-  // TODO: get this out of here and into the deprecated codecs (4.0, 4.2)
-  public void testHugeBinaryValueLimit() throws Exception {
-    // We only test DVFormats that have a limit
-    assumeFalse("test requires codec with limits on max binary field length", codecAcceptsHugeBinaryValues("field"));
-    Analyzer analyzer = new MockAnalyzer(random());
-    // FSDirectory because SimpleText will consume gobbs of
-    // space when storing big binary values:
-    Directory d = newFSDirectory(createTempDir("hugeBinaryValues"));
-    boolean doFixed = random().nextBoolean();
-    int numDocs;
-    int fixedLength = 0;
-    if (doFixed) {
-      // Sometimes make all values fixed length since some
-      // codecs have different code paths for this:
-      numDocs = TestUtil.nextInt(random(), 10, 20);
-      fixedLength = LARGE_BINARY_FIELD_LENGTH;
-    } else {
-      numDocs = TestUtil.nextInt(random(), 100, 200);
-    }
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(analyzer));
-    List<byte[]> docBytes = new ArrayList<>();
-    long totalBytes = 0;
-    for(int docID=0;docID<numDocs;docID++) {
-      // we don't use RandomIndexWriter because it might add
-      // more docvalues than we expect !!!!
-
-      // Must be > 64KB in size to ensure more than 2 pages in
-      // PagedBytes would be needed:
-      int numBytes;
-      if (doFixed) {
-        numBytes = fixedLength;
-      } else if (docID == 0 || random().nextInt(5) == 3) {
-        numBytes = LARGE_BINARY_FIELD_LENGTH;
-      } else {
-        numBytes = TestUtil.nextInt(random(), 1, LARGE_BINARY_FIELD_LENGTH);
-      }
-      totalBytes += numBytes;
-      if (totalBytes > 5 * 1024*1024) {
-        break;
-      }
-      byte[] bytes = new byte[numBytes];
-      random().nextBytes(bytes);
-      docBytes.add(bytes);
-      Document doc = new Document();      
-      BytesRef b = new BytesRef(bytes);
-      b.length = bytes.length;
-      doc.add(new BinaryDocValuesField("field", b));
-      doc.add(new StringField("id", ""+docID, Field.Store.YES));
-      w.addDocument(doc);
-    }
-    
-    DirectoryReader r = DirectoryReader.open(w);
-    w.close();
-
-    LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
-    TestUtil.checkReader(ar);
-
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
-    for(int docID=0;docID<docBytes.size();docID++) {
-      assertEquals(docID, s.nextDoc());
-      Document doc = ar.document(docID);
-      BytesRef bytes = s.binaryValue();
-      byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
-      assertEquals(expected.length, bytes.length);
-      assertEquals(new BytesRef(expected), bytes);
-    }
-
-    ar.close();
-    d.close();
-  }
-  
   private void doTestSortedVsFieldCache(int minLength, int maxLength) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -615,10 +513,5 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
         assertEquals(expected.term(), actual.term());
       }
     }
-  }
-  
-  protected boolean codecAcceptsHugeBinaryValues(String field) {
-    String name = TestUtil.getDocValuesFormat(field);
-    return !(name.equals("Memory")); // Direct has a different type of limit
   }
 }

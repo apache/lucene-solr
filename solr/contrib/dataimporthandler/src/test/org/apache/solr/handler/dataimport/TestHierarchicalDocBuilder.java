@@ -108,6 +108,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12801") // this test fails easily under beasting
   public void testThreeLevelHierarchy() throws Exception {
     int parentsNum = 3; //fixed for simplicity of test
     int childrenNum = 0;
@@ -255,7 +256,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     /* The limit of search queue is doubled to catch the error in case when for some reason there are more docs than expected  */
     SolrIndexSearcher searcher = req.getSearcher();
     TopDocs result = searcher.search(query, values.length * 2);
-    assertEquals(values.length, result.totalHits);
+    assertEquals(values.length, result.totalHits.value);
     List<String> actualValues = new ArrayList<String>();
     for (int index = 0; index < values.length; ++index) {
       Document doc = searcher.doc(result.scoreDocs[index].doc);

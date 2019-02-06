@@ -50,8 +50,6 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
     SolrZkClient zc = null;
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
           .setLeaderConflictResolveWait(180000)

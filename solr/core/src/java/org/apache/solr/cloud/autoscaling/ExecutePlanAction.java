@@ -30,8 +30,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrException;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class is responsible for executing cluster operations read from the {@link ActionContext}'s properties
- * with the key name "operations"
+ * with the key name "operations".
  */
 public class ExecutePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

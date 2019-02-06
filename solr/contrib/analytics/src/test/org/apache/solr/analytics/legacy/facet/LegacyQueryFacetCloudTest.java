@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloudTest {
@@ -39,9 +39,8 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   private static ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
   private static ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    cleanIndex();
+  @Before
+  public void beforeTest() throws Exception {
     
     //INT
     int1TestStart.add(new ArrayList<Integer>());

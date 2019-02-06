@@ -40,7 +40,7 @@ public class AssertingScorer extends Scorer {
   IteratorState state = IteratorState.ITERATING;
   int doc;
   float minCompetitiveScore = 0;
-  int lastShallowTarget;
+  int lastShallowTarget = -1;
 
   private AssertingScorer(Random random, Scorer in, ScoreMode scoreMode) {
     super(in.weight);
@@ -66,7 +66,7 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     assert scoreMode == ScoreMode.TOP_SCORES;
     assert Float.isNaN(score) == false;
     assert score >= minCompetitiveScore;
@@ -76,6 +76,7 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public int advanceShallow(int target) throws IOException {
+    assert scoreMode.needsScores();
     assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
     assert target >= docID() : "target = " + target + " < docID = " + docID();
     int upTo = in.advanceShallow(target);
@@ -87,7 +88,9 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
+    assert scoreMode.needsScores();
     assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last target = " + lastShallowTarget;
+    assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
     float maxScore = in.getMaxScore(upTo);
     return maxScore;
   }
@@ -98,18 +101,18 @@ public class AssertingScorer extends Scorer {
     assert iterating() : state;
     final float score = in.score();
     assert !Float.isNaN(score) : "NaN score for in="+in;
-    assert score <= getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+    assert lastShallowTarget == -1 || score <= getMaxScore(docID());
     assert Float.compare(score, 0f) >= 0 : score;
     return score;
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
+  public Collection<ChildScorable> getChildren() {
     // We cannot hide that we hold a single child, else
     // collectors (e.g. ToParentBlockJoinCollector) that
     // need to walk the scorer tree will miss/skip the
     // Scorer we wrap:
-    return Collections.singletonList(new ChildScorer(in, "SHOULD"));
+    return Collections.singletonList(new ChildScorable(in, "SHOULD"));
   }
 
   @Override

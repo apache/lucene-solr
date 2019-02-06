@@ -38,7 +38,7 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   @Override
   public void init(NamedList args) {
     super.init(args);
-    SolrParams params = SolrParams.toSolrParams(args);
+    SolrParams params = args.toSolrParams();
     maxMergeSizeMB = params.getDouble("maxMergeSizeMB", DEFAULT_MAX_MERGE_SIZE_MB);
     if (maxMergeSizeMB <= 0){
       throw new IllegalArgumentException("maxMergeSizeMB must be greater than 0");

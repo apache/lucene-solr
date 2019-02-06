@@ -19,8 +19,9 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.MathUtil;
 
 /**
@@ -62,7 +63,7 @@ public abstract class MultiLevelSkipListWriter {
   private final int skipMultiplier;
   
   /** for every skip level a different buffer is used  */
-  private RAMOutputStream[] skipBuffer;
+  private ByteBuffersDataOutput[] skipBuffer;
 
   /** Creates a {@code MultiLevelSkipListWriter}. */
   protected MultiLevelSkipListWriter(int skipInterval, int skipMultiplier, int maxSkipLevels, int df) {
@@ -93,9 +94,9 @@ public abstract class MultiLevelSkipListWriter {
 
   /** Allocates internal skip buffers. */
   protected void init() {
-    skipBuffer = new RAMOutputStream[numberOfSkipLevels];
+    skipBuffer = new ByteBuffersDataOutput [numberOfSkipLevels];
     for (int i = 0; i < numberOfSkipLevels; i++) {
-      skipBuffer[i] = new RAMOutputStream();
+      skipBuffer[i] = ByteBuffersDataOutput.newResettableInstance();
     }
   }
 
@@ -116,7 +117,7 @@ public abstract class MultiLevelSkipListWriter {
    * @param level the level skip data shall be writing for
    * @param skipBuffer the skip buffer to write to
    */
-  protected abstract void writeSkipData(int level, IndexOutput skipBuffer) throws IOException;
+  protected abstract void writeSkipData(int level, DataOutput skipBuffer) throws IOException;
 
   /**
    * Writes the current skip data to the buffers. The current document frequency determines
@@ -142,7 +143,7 @@ public abstract class MultiLevelSkipListWriter {
     for (int level = 0; level < numLevels; level++) {
       writeSkipData(level, skipBuffer[level]);
       
-      long newChildPointer = skipBuffer[level].getFilePointer();
+      long newChildPointer = skipBuffer[level].size();
       
       if (level != 0) {
         // store child pointers for all levels except the lowest
@@ -166,13 +167,13 @@ public abstract class MultiLevelSkipListWriter {
     if (skipBuffer == null || skipBuffer.length == 0) return skipPointer;
     
     for (int level = numberOfSkipLevels - 1; level > 0; level--) {
-      long length = skipBuffer[level].getFilePointer();
+      long length = skipBuffer[level].size();
       if (length > 0) {
         output.writeVLong(length);
-        skipBuffer[level].writeTo(output);
+        skipBuffer[level].copyTo(output);
       }
     }
-    skipBuffer[0].writeTo(output);
+    skipBuffer[0].copyTo(output);
     
     return skipPointer;
   }

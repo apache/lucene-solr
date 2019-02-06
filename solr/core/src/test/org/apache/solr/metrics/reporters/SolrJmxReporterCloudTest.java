@@ -62,6 +62,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
   }
 
   @Test
+  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testJmxReporter() throws Exception {
     CollectionAdminRequest.reloadCollection(COLLECTION).processAndWait(cluster.getSolrClient(), 60);
     CloudSolrClient solrClient = cluster.getSolrClient();

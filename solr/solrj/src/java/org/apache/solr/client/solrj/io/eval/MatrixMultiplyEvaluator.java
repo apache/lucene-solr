@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.RealMatrix;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -42,24 +40,24 @@ public class MatrixMultiplyEvaluator extends RecursiveObjectEvaluator implements
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
 
-    RealMatrix realMatrix1 = getMatrix(first);
-    RealMatrix realMatrix2 = getMatrix(second);
-    RealMatrix realMatrix3 = realMatrix1.multiply(realMatrix2);
-    return new Matrix(realMatrix3.getData());
+    Array2DRowRealMatrix realMatrix1 = getMatrix(first);
+    Array2DRowRealMatrix realMatrix2 = getMatrix(second);
+    Array2DRowRealMatrix realMatrix3 = realMatrix1.multiply(realMatrix2);
+    return new Matrix(realMatrix3.getDataRef());
 
   }
 
-  private RealMatrix getMatrix(Object o) throws IOException {
+  private Array2DRowRealMatrix getMatrix(Object o) throws IOException {
     if(o instanceof Matrix) {
       Matrix matrix = (Matrix)o;
-      return new Array2DRowRealMatrix(matrix.getData());
+      return new Array2DRowRealMatrix(matrix.getData(), false);
     } else if(o instanceof List) {
       List<Number> vec = (List<Number>)o;
       double[][] data1 = new double[1][vec.size()];
       for(int i=0; i<vec.size(); i++) {
         data1[0][i] = vec.get(i).doubleValue();
       }
-      return new Array2DRowRealMatrix(data1);
+      return new Array2DRowRealMatrix(data1, false);
     } else {
       throw new IOException("The matrixMult function can only be applied to numeric arrays and matrices:"+o.getClass().toString());
     }

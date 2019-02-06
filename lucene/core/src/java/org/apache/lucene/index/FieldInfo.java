@@ -50,17 +50,21 @@ public final class FieldInfo {
 
   /** If both of these are positive it means this field indexed points
    *  (see {@link org.apache.lucene.codecs.PointsFormat}). */
-  private int pointDimensionCount;
+  private int pointDataDimensionCount;
+  private int pointIndexDimensionCount;
   private int pointNumBytes;
+
+  // whether this field is used as the soft-deletes field
+  private final boolean softDeletesField;
 
   /**
    * Sole constructor.
    *
    * @lucene.experimental
    */
-  public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, 
-                   boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
-                   long dvGen, Map<String,String> attributes, int pointDimensionCount, int pointNumBytes) {
+  public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, boolean storePayloads,
+                   IndexOptions indexOptions, DocValuesType docValues, long dvGen, Map<String,String> attributes,
+                   int pointDataDimensionCount, int pointIndexDimensionCount, int pointNumBytes, boolean softDeletesField) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType must not be null (field: \"" + name + "\")");
@@ -76,8 +80,10 @@ public final class FieldInfo {
     }
     this.dvGen = dvGen;
     this.attributes = Objects.requireNonNull(attributes);
-    this.pointDimensionCount = pointDimensionCount;
+    this.pointDataDimensionCount = pointDataDimensionCount;
+    this.pointIndexDimensionCount = pointIndexDimensionCount;
     this.pointNumBytes = pointNumBytes;
+    this.softDeletesField = softDeletesField;
     assert checkConsistency();
   }
 
@@ -103,20 +109,28 @@ public final class FieldInfo {
       }
     }
 
-    if (pointDimensionCount < 0) {
-      throw new IllegalStateException("pointDimensionCount must be >= 0; got " + pointDimensionCount);
+    if (pointDataDimensionCount < 0) {
+      throw new IllegalStateException("pointDataDimensionCount must be >= 0; got " + pointDataDimensionCount);
+    }
+
+    if (pointIndexDimensionCount < 0) {
+      throw new IllegalStateException("pointIndexDimensionCount must be >= 0; got " + pointIndexDimensionCount);
     }
 
     if (pointNumBytes < 0) {
       throw new IllegalStateException("pointNumBytes must be >= 0; got " + pointNumBytes);
     }
 
-    if (pointDimensionCount != 0 && pointNumBytes == 0) {
-      throw new IllegalStateException("pointNumBytes must be > 0 when pointDimensionCount=" + pointDimensionCount);
+    if (pointDataDimensionCount != 0 && pointNumBytes == 0) {
+      throw new IllegalStateException("pointNumBytes must be > 0 when pointDataDimensionCount=" + pointDataDimensionCount);
     }
 
-    if (pointNumBytes != 0 && pointDimensionCount == 0) {
-      throw new IllegalStateException("pointDimensionCount must be > 0 when pointNumBytes=" + pointNumBytes);
+    if (pointIndexDimensionCount != 0 && pointDataDimensionCount == 0) {
+      throw new IllegalStateException("pointIndexDimensionCount must be 0 when pointDataDimensionCount=0");
+    }
+
+    if (pointNumBytes != 0 && pointDataDimensionCount == 0) {
+      throw new IllegalStateException("pointDataDimensionCount must be > 0 when pointNumBytes=" + pointNumBytes);
     }
     
     if (dvGen != -1 && docValuesType == DocValuesType.NONE) {
@@ -128,7 +142,7 @@ public final class FieldInfo {
 
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
-              int dimensionCount, int dimensionNumBytes) {
+              Map<String, String> attributes, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
     if (indexOptions == null) {
       throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
     }
@@ -141,11 +155,12 @@ public final class FieldInfo {
       }
     }
 
-    if (this.pointDimensionCount == 0 && dimensionCount != 0) {
-      this.pointDimensionCount = dimensionCount;
+    if (this.pointDataDimensionCount == 0 && dataDimensionCount != 0) {
+      this.pointDataDimensionCount = dataDimensionCount;
+      this.pointIndexDimensionCount = indexDimensionCount;
       this.pointNumBytes = dimensionNumBytes;
-    } else if (dimensionCount != 0 && (this.pointDimensionCount != dimensionCount || this.pointNumBytes != dimensionNumBytes)) {
-      throw new IllegalArgumentException("cannot change field \"" + name + "\" from points dimensionCount=" + this.pointDimensionCount + ", numBytes=" + this.pointNumBytes + " to inconsistent dimensionCount=" + dimensionCount + ", numBytes=" + dimensionNumBytes);
+    } else if (dataDimensionCount != 0 && (this.pointDataDimensionCount != dataDimensionCount || this.pointIndexDimensionCount != indexDimensionCount || this.pointNumBytes != dimensionNumBytes)) {
+      throw new IllegalArgumentException("cannot change field \"" + name + "\" from points dataDimensionCount=" + this.pointDataDimensionCount + ", indexDimensionCount=" + this.pointIndexDimensionCount + ", numBytes=" + this.pointNumBytes + " to inconsistent dataDimensionCount=" + dataDimensionCount +", indexDimensionCount=" + indexDimensionCount + ", numBytes=" + dimensionNumBytes);
     }
 
     if (this.indexOptions != IndexOptions.NONE) { // if updated field data is not for indexing, leave the updates out
@@ -161,17 +176,23 @@ public final class FieldInfo {
       // cannot store payloads if we don't store positions:
       this.storePayloads = false;
     }
+    if (attributes != null) {
+      this.attributes.putAll(attributes);
+    }
     assert checkConsistency();
   }
 
   /** Record that this field is indexed with points, with the
    *  specified number of dimensions and bytes per dimension. */
-  public void setPointDimensions(int count, int numBytes) {
-    if (count <= 0) {
-      throw new IllegalArgumentException("point dimension count must be >= 0; got " + count + " for field=\"" + name + "\"");
+  public void setPointDimensions(int dataDimensionCount, int indexDimensionCount, int numBytes) {
+    if (dataDimensionCount <= 0) {
+      throw new IllegalArgumentException("point data dimension count must be >= 0; got " + dataDimensionCount + " for field=\"" + name + "\"");
     }
-    if (count > PointValues.MAX_DIMENSIONS) {
-      throw new IllegalArgumentException("point dimension count must be < PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + count + " for field=\"" + name + "\"");
+    if (dataDimensionCount > PointValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("point data dimension count must be < PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + dataDimensionCount + " for field=\"" + name + "\"");
+    }
+    if (indexDimensionCount > dataDimensionCount) {
+      throw new IllegalArgumentException("point index dimension count must be <= point data dimension count (= " + dataDimensionCount + "); got " + indexDimensionCount + " for field=\"" + name + "\"");
     }
     if (numBytes <= 0) {
       throw new IllegalArgumentException("point numBytes must be >= 0; got " + numBytes + " for field=\"" + name + "\"");
@@ -179,22 +200,31 @@ public final class FieldInfo {
     if (numBytes > PointValues.MAX_NUM_BYTES) {
       throw new IllegalArgumentException("point numBytes must be <= PointValues.MAX_NUM_BYTES (= " + PointValues.MAX_NUM_BYTES + "); got " + numBytes + " for field=\"" + name + "\"");
     }
-    if (pointDimensionCount != 0 && pointDimensionCount != count) {
-      throw new IllegalArgumentException("cannot change point dimension count from " + pointDimensionCount + " to " + count + " for field=\"" + name + "\"");
+    if (pointDataDimensionCount != 0 && pointDataDimensionCount != dataDimensionCount) {
+      throw new IllegalArgumentException("cannot change point data dimension count from " + pointDataDimensionCount + " to " + dataDimensionCount + " for field=\"" + name + "\"");
+    }
+    if (pointIndexDimensionCount != 0 && pointIndexDimensionCount != indexDimensionCount) {
+      throw new IllegalArgumentException("cannot change point index dimension count from " + pointIndexDimensionCount + " to " + indexDimensionCount + " for field=\"" + name + "\"");
     }
     if (pointNumBytes != 0 && pointNumBytes != numBytes) {
       throw new IllegalArgumentException("cannot change point numBytes from " + pointNumBytes + " to " + numBytes + " for field=\"" + name + "\"");
     }
 
-    pointDimensionCount = count;
+    pointDataDimensionCount = dataDimensionCount;
+    pointIndexDimensionCount = indexDimensionCount;
     pointNumBytes = numBytes;
 
     assert checkConsistency();
   }
 
-  /** Return point dimension count */
-  public int getPointDimensionCount() {
-    return pointDimensionCount;
+  /** Return point data dimension count */
+  public int getPointDataDimensionCount() {
+    return pointDataDimensionCount;
+  }
+
+  /** Return point data dimension count */
+  public int getPointIndexDimensionCount() {
+    return pointIndexDimensionCount;
   }
 
   /** Return number of bytes per dimension */
@@ -319,8 +349,9 @@ public final class FieldInfo {
    * to store additional metadata, and will be available to the codec
    * when reading the segment via {@link #getAttribute(String)}
    * <p>
-   * If a value already exists for the field, it will be replaced with 
-   * the new value.
+   * If a value already exists for the key in the field, it will be replaced with
+   * the new value. If the value of the attributes for a same field is changed between
+   * the documents, the behaviour after merge is undefined.
    */
   public String putAttribute(String key, String value) {
     return attributes.put(key, value);
@@ -331,5 +362,13 @@ public final class FieldInfo {
    */
   public Map<String,String> attributes() {
     return attributes;
+  }
+
+  /**
+   * Returns true if this field is configured and used as the soft-deletes field.
+   * See {@link IndexWriterConfig#softDeletesField}
+   */
+  public boolean isSoftDeletesField() {
+    return softDeletesField;
   }
 }

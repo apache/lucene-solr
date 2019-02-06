@@ -31,8 +31,8 @@ import org.apache.lucene.search.highlight.Encoder;
 public class FastVectorHighlighter {
   public static final boolean DEFAULT_PHRASE_HIGHLIGHT = true;
   public static final boolean DEFAULT_FIELD_MATCH = true;
-  private final boolean phraseHighlight;
-  private final boolean fieldMatch;
+  protected final boolean phraseHighlight;
+  protected final boolean fieldMatch;
   private final FragListBuilder fragListBuilder;
   private final FragmentsBuilder fragmentsBuilder;
   private int phraseLimit = Integer.MAX_VALUE;
@@ -80,7 +80,7 @@ public class FastVectorHighlighter {
     // TODO: should we deprecate this? 
     // because if there is no reader, then we cannot rewrite MTQ.
     try {
-      return new FieldQuery( query, null, phraseHighlight, fieldMatch );
+      return getFieldQuery(query, null);
     } catch (IOException e) {
       // should never be thrown when reader is null
       throw new RuntimeException (e);

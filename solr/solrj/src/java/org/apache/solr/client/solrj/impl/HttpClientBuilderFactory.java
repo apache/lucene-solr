@@ -38,4 +38,7 @@ public interface HttpClientBuilderFactory extends Closeable {
    */
   public SolrHttpClientBuilder getHttpClientBuilder(Optional<SolrHttpClientBuilder> builder);
 
+  public default void setup(Http2SolrClient client) {
+
+  }
 }

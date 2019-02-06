@@ -1,0 +1,402 @@
+= Probability Distributions
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section of the user guide covers the probability distribution
+framework included in the math expressions library.
+
+== Probability Distribution Framework
+
+The probability distribution framework includes many commonly used <<Real Distributions,real>>
+and <<Discrete,discrete>> probability distributions, including support for <<Empirical Distribution,empirical>>
+and <<Enumerated Distributions,enumerated>> distributions that model real world data.
+
+The probability distribution framework also includes a set of functions that use the probability distributions
+to support probability calculations and sampling.
+
+=== Real Distributions
+
+The probability distribution framework has the following functions
+which support well known real probability distributions:
+
+* `normalDistribution`: Creates a normal distribution function.
+
+* `logNormalDistribution`: Creates a log normal distribution function.
+
+* `gammaDistribution`: Creates a gamma distribution function.
+
+* `betaDistribution`: Creates a beta distribution function.
+
+* `uniformDistribution`: Creates a uniform real distribution function.
+
+* `weibullDistribution`: Creates a Weibull distribution function.
+
+* `triangularDistribution`: Creates a triangular distribution function.
+
+* `constantDistribution`: Creates constant real distribution function.
+
+=== Empirical Distribution
+
+The `empiricalDistribution` function creates a real probability
+distribution from actual data. An empirical distribution
+can be used interchangeably with any of the theoretical
+real distributions.
+
+=== Discrete
+
+The probability distribution framework has the following functions
+which support well known discrete probability distributions:
+
+* `poissonDistribution`: Creates a Poisson distribution function.
+
+* `binomialDistribution`: Creates a binomial distribution function.
+
+* `uniformIntegerDistribution`: Creates a uniform integer distribution function.
+
+* `geometricDistribution`: Creates a geometric distribution function.
+
+* `zipFDistribution`: Creates a Zipf distribution function.
+
+=== Enumerated Distributions
+
+The `enumeratedDistribution` function creates a discrete
+distribution function from a data set of discrete values,
+or from and enumerated list of values and probabilities.
+
+Enumerated distribution functions can be used interchangeably
+with any of the theoretical discrete distributions.
+
+=== Cumulative Probability
+
+The `cumulativeProbability` function can be used with all
+probability distributions to calculate the
+cumulative probability of encountering a specific
+random variable within a specific distribution.
+
+Below is example of calculating the cumulative probability
+of a random variable within a normal distribution.
+
+[source,text]
+----
+let(a=normalDistribution(10, 5),
+    b=cumulativeProbability(a, 12))
+----
+
+In this example a normal distribution function is created
+with a mean of 10 and a standard deviation of 5. Then
+the cumulative probability of the value 12 is calculated for this
+specific distribution.
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": 0.6554217416103242
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Below is an example of a cumulative probability calculation
+using an empirical distribution.
+
+In the example an empirical distribution is created from a random
+sample taken from the `price_f` field.
+
+The cumulative probability of the value `.75` is then calculated.
+The `price_f` field in this example was generated using a
+uniform real distribution between 0 and 1, so the output of the
+ `cumulativeProbability` function is very close to .75.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="30000", fl="price_f"),
+    b=col(a, price_f),
+    c=empiricalDistribution(b),
+    d=cumulativeProbability(c, .75))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": 0.7554217416103242
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+=== Discrete Probability
+
+The `probability` function can be used with any discrete
+distribution function to compute the probability of a
+discrete value.
+
+Below is an example which calculates the probability
+of a discrete value within a Poisson distribution.
+
+In the example a Poisson distribution function is created
+with a mean of `100`. Then the
+probability of encountering a sample of the discrete value 101 is calculated for this
+specific distribution.
+
+[source,text]
+----
+let(a=poissonDistribution(100),
+    b=probability(a, 101))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": 0.039466333474403106
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Below is an example of a probability calculation using an enumerated distribution.
+
+In the example an enumerated distribution is created from a random
+sample taken from the `day_i` field, which was created using a uniform integer distribution between 0 and 30.
+
+The probability of the discrete value 10 is then calculated.
+
+[source,text]
+----
+let(a=random(collection1, q="*:*", rows="30000", fl="day_i"),
+    b=col(a, day_i),
+    c=enumeratedDistribution(b),
+    d=probability(c, 10))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": 0.03356666666666666
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 488
+      }
+    ]
+  }
+}
+----
+
+=== Sampling
+
+All probability distributions support sampling. The `sample`
+function returns 1 or more random samples from a probability distribution.
+
+Below is an example drawing a single sample from a normal distribution.
+
+[source,text]
+----
+let(a=normalDistribution(10, 5),
+    b=sample(a))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": 11.24578055004963
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Below is an example drawing 10 samples from a normal distribution.
+
+[source,text]
+----
+let(a=normalDistribution(10, 5),
+    b=sample(a, 10))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "b": [
+          10.18444709339441,
+          9.466947971749377,
+          1.2420697166234458,
+          11.074501226984806,
+          7.659629052136225,
+          0.4440887839190708,
+          13.710925254778786,
+          2.089566359480239,
+          0.7907293097654424,
+          2.8184587681006734
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3
+      }
+    ]
+  }
+}
+----
+
+=== Multivariate Normal Distribution
+
+The multivariate normal distribution is a generalization of the
+univariate normal distribution to higher dimensions.
+
+The multivariate normal distribution models two or more random
+variables that are normally distributed. The relationship between the variables is defined by a covariance matrix.
+
+==== Sampling
+
+The `sample` function can be used to draw samples
+from a multivariate normal distribution in much the same
+way as a univariate normal distribution.
+
+The difference is that each sample will be an array containing a sample
+drawn from each of the underlying normal distributions.
+If multiple samples are drawn, the `sample` function returns a matrix with a
+sample in each row. Over the long term the columns of the sample
+matrix will conform to the covariance matrix used to parametrize the
+multivariate normal distribution.
+
+The example below demonstrates how to initialize and draw samples
+from a multivariate normal distribution.
+
+In this example 5000 random samples are selected from a collection of log records. Each sample contains
+the fields `filesize_d` and `response_d`. The values of both fields conform to a normal distribution.
+
+Both fields are then vectorized. The `filesize_d` vector is stored in
+variable *`b`* and the `response_d` variable is stored in variable *`c`*.
+
+An array is created that contains the means of the two vectorized fields.
+
+Then both vectors are added to a matrix which is transposed. This creates
+an observation matrix where each row contains one observation of
+`filesize_d` and `response_d`. A covariance matrix is then created from the columns of
+the observation matrix with the `cov` function. The covariance matrix describes the covariance between
+`filesize_d` and `response_d`.
+
+The `multivariateNormalDistribution` function is then called with the
+array of means for the two fields and the covariance matrix. The model for the
+multivariate normal distribution is assigned to variable *`g`*.
+
+Finally five samples are drawn from the multivariate normal distribution.
+
+[source,text]
+----
+let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
+    b=col(a, filesize_d),
+    c=col(a, response_d),
+    d=array(mean(b), mean(c)),
+    e=transpose(matrix(b, c)),
+    f=cov(e),
+    g=multiVariateNormalDistribution(d, f),
+    h=sample(g, 5))
+----
+
+The samples are returned as a matrix, with each row representing one sample. There are two
+columns in the matrix. The first column contains samples for `filesize_d` and the second
+column contains samples for `response_d`. Over the long term the covariance between
+the columns will conform to the covariance matrix used to instantiate the
+multivariate normal distribution.
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "h": [
+          [
+            41974.85669321393,
+            779.4097049705296
+          ],
+          [
+            42869.19876441414,
+            834.2599296790783
+          ],
+          [
+            38556.30444839889,
+            720.3683470060988
+          ],
+          [
+            37689.31290928216,
+            686.5549428100018
+          ],
+          [
+            40564.74398214547,
+            769.9328090774
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 162
+      }
+    ]
+  }
+}
+----

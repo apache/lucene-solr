@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -29,9 +30,15 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Expert-only.  Public for use by other weight implementations
@@ -103,7 +110,7 @@ public abstract class SpanWeight extends Weight {
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
     if (termUpTo > 0) {
-      return similarity.scorer(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
+      return similarity.scorer(boost, collectionStats, ArrayUtil.copyOfSubArray(termStats, 0, termUpTo));
     } else {
       return null; // no terms at all exist, we won't use similarity
     }
@@ -140,7 +147,7 @@ public abstract class SpanWeight extends Weight {
    * @throws IOException on error
    */
   public LeafSimScorer getSimScorer(LeafReaderContext context) throws IOException {
-    return simScorer == null ? null : new LeafSimScorer(simScorer, context.reader(), true, Float.MAX_VALUE);
+    return simScorer == null ? null : new LeafSimScorer(simScorer, context.reader(), field, true);
   }
 
   @Override
@@ -150,7 +157,7 @@ public abstract class SpanWeight extends Weight {
       int newDoc = scorer.iterator().advance(doc);
       if (newDoc == doc) {
         float freq = scorer.sloppyFreq();
-        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Float.MAX_VALUE);
+        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), field, true);
         Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
         Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
         return Explanation.match(scoreExplanation.getValue(),
@@ -160,5 +167,139 @@ public abstract class SpanWeight extends Weight {
     }
 
     return Explanation.noMatch("no matching term");
+  }
+
+  private static class TermMatch {
+    Term term;
+    int position;
+    int startOffset;
+    int endOffset;
+  }
+
+  @Override
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    return MatchesUtils.forField(field, () -> {
+      Spans spans = getSpans(context, Postings.OFFSETS);
+      if (spans == null || spans.advance(doc) != doc) {
+        return null;
+      }
+      return new MatchesIterator() {
+
+        int innerTermCount = 0;
+        TermMatch[] innerTerms = new TermMatch[0];
+
+        SpanCollector termCollector = new SpanCollector() {
+          @Override
+          public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
+            innerTermCount++;
+            if (innerTermCount > innerTerms.length) {
+              TermMatch[] temp = new TermMatch[innerTermCount];
+              System.arraycopy(innerTerms, 0, temp, 0, innerTermCount - 1);
+              innerTerms = temp;
+              innerTerms[innerTermCount - 1] = new TermMatch();
+            }
+            innerTerms[innerTermCount - 1].term = term;
+            innerTerms[innerTermCount - 1].position = position;
+            innerTerms[innerTermCount - 1].startOffset = postings.startOffset();
+            innerTerms[innerTermCount - 1].endOffset = postings.endOffset();
+          }
+
+          @Override
+          public void reset() {
+            innerTermCount = 0;
+          }
+        };
+
+        @Override
+        public boolean next() throws IOException {
+          innerTermCount = 0;
+          return spans.nextStartPosition() != Spans.NO_MORE_POSITIONS;
+        }
+
+        @Override
+        public int startPosition() {
+          return spans.startPosition();
+        }
+
+        @Override
+        public int endPosition() {
+          return spans.endPosition() - 1;
+        }
+
+        @Override
+        public int startOffset() throws IOException {
+          if (innerTermCount == 0) {
+            collectInnerTerms();
+          }
+          return innerTerms[0].startOffset;
+        }
+
+        @Override
+        public int endOffset() throws IOException {
+          if (innerTermCount == 0) {
+            collectInnerTerms();
+          }
+          return innerTerms[innerTermCount - 1].endOffset;
+        }
+
+        @Override
+        public MatchesIterator getSubMatches() throws IOException {
+          if (innerTermCount == 0) {
+            collectInnerTerms();
+          }
+          return new MatchesIterator() {
+
+            int upto = -1;
+
+            @Override
+            public boolean next() throws IOException {
+              upto++;
+              return upto < innerTermCount;
+            }
+
+            @Override
+            public int startPosition() {
+              return innerTerms[upto].position;
+            }
+
+            @Override
+            public int endPosition() {
+              return innerTerms[upto].position;
+            }
+
+            @Override
+            public int startOffset() throws IOException {
+              return innerTerms[upto].startOffset;
+            }
+
+            @Override
+            public int endOffset() throws IOException {
+              return innerTerms[upto].endOffset;
+            }
+
+            @Override
+            public MatchesIterator getSubMatches() throws IOException {
+              return null;
+            }
+
+            @Override
+            public Query getQuery() {
+              return new TermQuery(innerTerms[upto].term);
+            }
+          };
+        }
+
+        @Override
+        public Query getQuery() {
+          return SpanWeight.this.getQuery();
+        }
+
+        void collectInnerTerms() throws IOException {
+          termCollector.reset();
+          spans.collect(termCollector);
+          Arrays.sort(innerTerms, 0, innerTermCount, Comparator.comparing(a -> a.position));
+        }
+      };
+    });
   }
 }

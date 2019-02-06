@@ -36,20 +36,13 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+    final SolrParams params = it.req.getParams();
+    String cname = params.required().get(CoreAdminParams.CORE);
+    String name = params.required().get(NAME);
+
     ZkController zkController = it.handler.coreContainer.getZkController();
     if (zkController == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only valid for SolrCloud");
-    }
-
-    final SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.CORE);
-    if (cname == null) {
-      throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
-    }
-
-    String name = params.get(NAME);
-    if (name == null) {
-      throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
     }
 
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);

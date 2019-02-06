@@ -86,6 +86,10 @@ If the PULL replica cannot connect to ZooKeeper, it would be removed from the cl
 
 If the PULL replica dies or is unreachable for any other reason, it won't be query-able. When it rejoins the cluster, it would replicate from the leader and when that is complete, it would be ready to serve queries again.
 
+=== Queries with Preferred Replica Types
+
+By default all replicas serve queries. See the section <<distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details on how to indicate preferred replica types for queries.
+
 == Document Routing
 
 Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collections-api.adoc#create,creating your collection>>.

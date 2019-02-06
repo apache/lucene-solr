@@ -34,6 +34,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,31 +61,37 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 @Slow
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 public class TestPullReplica extends SolrCloudTestCase {
   
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private String collectionName = null;
-  private final static int REPLICATION_TIMEOUT_SECS = 10;
+  private final static int REPLICATION_TIMEOUT_SECS = 30;
   
   private String suggestedCollectionName() {
-    return (getTestClass().getSimpleName().replace("Test", "") + "_" + getTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
+    return (getTestClass().getSimpleName().replace("Test", "") + "_" + getSaferTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
   }
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     TestInjection.waitForReplicasInSync = null; // We'll be explicit about this in this test
-    configureCluster(2) // 2 + random().nextInt(3) 
+   //  cloudSolrClientMaxStaleRetries
+   System.setProperty("cloudSolrClientMaxStaleRetries", "1");
+   System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
+   
+   configureCluster(2) // 2 + random().nextInt(3) 
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     Boolean useLegacyCloud = rarely();
-    LOG.info("Using legacyCloud?: {}", useLegacyCloud);
+    log.info("Using legacyCloud?: {}", useLegacyCloud);
     CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
     CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
@@ -92,12 +99,15 @@ public class TestPullReplica extends SolrCloudTestCase {
   
   @AfterClass
   public static void tearDownCluster() {
+    System.clearProperty("cloudSolrClientMaxStaleRetries");
+    System.clearProperty("zkReaderGetLeaderRetryTimeoutMs");
     TestInjection.reset();
   }
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    
     collectionName = suggestedCollectionName();
     expectThrows(SolrException.class, () -> getCollectionState(collectionName));
   }
@@ -106,20 +116,21 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void tearDown() throws Exception {
     for (JettySolrRunner jetty:cluster.getJettySolrRunners()) {
       if (!jetty.isRunning()) {
-        LOG.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
-        ChaosMonkey.start(jetty);
+        log.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
+        jetty.start();
       }
     }
     if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
-      LOG.info("tearDown deleting collection");
+      log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-      LOG.info("Collection deleted");
+      log.info("Collection deleted");
       waitForDeletion(collectionName);
     }
     super.tearDown();
   }
   
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -213,7 +224,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -277,7 +288,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 0)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
-    waitForState("Expected collection to be created with 2 shards and 1 replica each", collectionName, clusterShape(2, 1));
+    waitForState("Expected collection to be created with 2 shards and 1 replica each", collectionName, clusterShape(2, 2));
     DocCollection docCollection = assertNumberOfReplicas(2, 0, 0, false, true);
     assertEquals(2, docCollection.getSlices().size());
     
@@ -286,7 +297,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     addReplicaToShard("shard2", Replica.Type.PULL);
     docCollection = assertNumberOfReplicas(2, 0, 2, true, false);
     
-    waitForState("Expecting collection to have 2 shards and 2 replica each", collectionName, clusterShape(2, 2));
+    waitForState("Expecting collection to have 2 shards and 2 replica each", collectionName, clusterShape(2, 4));
     
     //Delete pull replica from shard1
     CollectionAdminRequest.deleteReplica(
@@ -300,7 +311,9 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testRemoveAllWriterReplicas() throws Exception {
     doTestNoLeader(true);
   }
-  
+
+  @Test
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
   }
@@ -317,18 +330,18 @@ public class TestPullReplica extends SolrCloudTestCase {
     List<Replica.State> statesSeen = new ArrayList<>(3);
     cluster.getSolrClient().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
       Replica r = collectionState.getSlice("shard1").getReplica("core_node2");
-      LOG.info("CollectionStateWatcher state change: {}", r);
+      log.info("CollectionStateWatcher state change: {}", r);
       if (r == null) {
         return false;
       }
       statesSeen.add(r.getState());
-      LOG.info("CollectionStateWatcher saw state: {}", r.getState());
+      log.info("CollectionStateWatcher saw state: {}", r.getState());
       return r.getState() == Replica.State.ACTIVE;
     });
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     zkClient().printLayoutToStdOut();
-    LOG.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
+    log.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), 3, statesSeen.size());
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.DOWN, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.RECOVERING, statesSeen.get(0));
@@ -409,7 +422,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       .process(cluster.getSolrClient());
     } else {
       leaderJetty = cluster.getReplicaJetty(s.getLeader());
-      ChaosMonkey.kill(leaderJetty);
+      leaderJetty.stop();
       waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
       // Wait for cluster state to be updated
       waitForState("Replica state not updated in cluster state", 
@@ -459,7 +472,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     if (removeReplica) {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT).process(cluster.getSolrClient());
     } else {
-      ChaosMonkey.start(leaderJetty);
+      leaderJetty.stop();
     }
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
@@ -502,7 +515,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(1);
     
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
-    ChaosMonkey.kill(pullReplicaJetty);
+    pullReplicaJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(1, 0, 0));
     // Also wait for the replica to be placed in state="down"
     waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
@@ -511,7 +524,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
     waitForNumDocsInAllActiveReplicas(2);
     
-    ChaosMonkey.start(pullReplicaJetty);
+    pullReplicaJetty.start();
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     waitForNumDocsInAllActiveReplicas(2);
   }
@@ -553,7 +566,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
-      LOG.info("Collection not yet deleted");
+      log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {

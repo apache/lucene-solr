@@ -83,12 +83,10 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         "fq", "{!field f=" + fieldName + "}Intersectssss"), 400);
 
     ignoreException("NonexistentShape");
-    try {
-      assertU(adoc("id", "-1", fieldName, "NonexistentShape"));
-      fail();
-    } catch (SolrException e) {
-      assertEquals(400, e.code());
-    }
+    SolrException e = expectThrows(SolrException.class, "should throw exception on non existent shape",
+        () -> assertU(adoc("id", "-1", fieldName, "NonexistentShape"))
+    );
+    assertEquals(400, e.code());
     unIgnoreException("NonexistentShape");
   }
 

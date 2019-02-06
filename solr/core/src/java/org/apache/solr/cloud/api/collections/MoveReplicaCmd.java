@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -104,18 +105,33 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (shardId == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'" + SHARD_ID_PROP + "' is a required param");
       }
-      Slice slice = clusterState.getCollection(collection).getSlice(shardId);
-      List<Replica> sliceReplicas = new ArrayList<>(slice.getReplicas());
-      Collections.shuffle(sliceReplicas, OverseerCollectionMessageHandler.RANDOM);
-      // this picks up a single random replica from the sourceNode
-      for (Replica r : slice.getReplicas()) {
-        if (r.getNodeName().equals(sourceNode)) {
-          replica = r;
-        }
-      }
-      if (replica == null) {
+      Slice slice = coll.getSlice(shardId);
+      List<Replica> sliceReplicas = new ArrayList<>(slice.getReplicas(r -> sourceNode.equals(r.getNodeName())));
+      if (sliceReplicas.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Collection: " + collection + " node: " + sourceNode + " does not have any replica belonging to shard: " + shardId);
+      }
+      Collections.shuffle(sliceReplicas, OverseerCollectionMessageHandler.RANDOM);
+      replica = sliceReplicas.iterator().next();
+    }
+
+    if (coll.getStr(CollectionAdminParams.COLOCATED_WITH) != null) {
+      // we must ensure that moving this replica does not cause the co-location to break
+      String sourceNode = replica.getNodeName();
+      String colocatedCollectionName = coll.getStr(CollectionAdminParams.COLOCATED_WITH);
+      DocCollection colocatedCollection = clusterState.getCollectionOrNull(colocatedCollectionName);
+      if (colocatedCollection != null) {
+        if (colocatedCollection.getReplica((s, r) -> sourceNode.equals(r.getNodeName())) != null) {
+          // check if we have at least two replicas of the collection on the source node
+          // only then it is okay to move one out to another node
+          List<Replica> replicasOnSourceNode = coll.getReplicas(replica.getNodeName());
+          if (replicasOnSourceNode == null || replicasOnSourceNode.size() < 2) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Collection: " + collection + " is co-located with collection: " + colocatedCollectionName
+                    + " and has a single replica: " + replica.getName() + " on node: " + replica.getNodeName()
+                    + " so it is not possible to move it to another node");
+          }
+        }
       }
     }
 
@@ -151,9 +167,14 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       );
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_DATA_DIR, false);
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_INDEX, false);
-      if(async!=null) removeReplicasProps.getProperties().put(ASYNC, async);
+      if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
       NamedList deleteResult = new NamedList();
-      ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+      try {
+        ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+      } catch (SolrException e) {
+        // assume this failed completely so there's nothing to roll back
+        deleteResult.add("failure", e.toString());
+      }
       if (deleteResult.get("failure") != null) {
         String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
             coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));
@@ -247,7 +268,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
     ActiveReplicaWatcher watcher = null;
-    ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
+    ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null).get(0);
     log.debug("props " + props);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher = new ActiveReplicaWatcher(coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);
@@ -256,7 +277,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     if (addResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
-          " on node=%s, failure=", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
+          " on node=%s, failure=%s", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
       log.warn(errorString);
       results.add("failure", errorString);
       if (watcher != null) { // unregister
@@ -288,7 +309,11 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         REPLICA_PROP, replica.getName());
     if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
     NamedList deleteResult = new NamedList();
-    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+    try {
+      ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+    } catch (SolrException e) {
+      deleteResult.add("failure", e.toString());
+    }
     if (deleteResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
           coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));

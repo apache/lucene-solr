@@ -109,6 +109,7 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
 
   
   @Test
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testSimpleUpdateACLs() throws KeeperException, InterruptedException {
     assertTrue("Initial create was in secure mode; please check the test", canRead(defaultClient, PATH));
     assertTrue("Credentialed client should always be able to read", canRead(credentialsClient, PATH));

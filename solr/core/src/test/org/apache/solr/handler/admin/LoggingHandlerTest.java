@@ -16,17 +16,20 @@
  */
 package org.apache.solr.handler.admin;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.logging.log4j.Log4jInfo;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 
-@SuppressForbidden(reason = "test uses log4j because it tests output at a specific level")
+@SuppressForbidden(reason = "test uses log4j2 because it tests output at a specific level")
 public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
   // TODO: This only tests Log4j at the moment, as that's what's defined
@@ -42,21 +45,29 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLogLevelHandlerOutput() throws Exception {
-    Logger tst = Logger.getLogger("org.apache.solr.SolrTestCaseJ4");
-    tst.setLevel(Level.INFO);
-    Log4jInfo wrap = new Log4jInfo(tst.getName(), tst);
+    Logger tst = LogManager.getLogger("org.apache.solr.SolrTestCaseJ4");
+ 
+    LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    LoggerConfig loggerConfig = ctx.getConfiguration().getLoggerConfig(tst.getName());
+    loggerConfig.setLevel(Level.INFO);
+    ctx.updateLoggers();
     
     assertQ("Show Log Levels OK",
             req(CommonParams.QT,"/admin/logging")
-            ,"//arr[@name='loggers']/lst/str[.='"+wrap.getName()+"']/../str[@name='level'][.='"+wrap.getLevel()+"']"
+            ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='"+tst.getLevel()+"']"
             ,"//arr[@name='loggers']/lst/str[.='org.apache']/../null[@name='level']"
             );
 
-    assertQ("Set and remove a level",
+    assertQ("Set a level",
             req(CommonParams.QT,"/admin/logging",  
-                "set", "org.xxx.yyy.abc:null",
-                "set", "org.xxx.yyy.zzz:TRACE")
-            ,"//arr[@name='loggers']/lst/str[.='org.xxx.yyy.zzz']/../str[@name='level'][.='TRACE']"
+                "set", tst.getName()+":TRACE")
+            ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='TRACE']"
             );
+    
+    assertQ("Remove a level",
+        req(CommonParams.QT,"/admin/logging",  
+            "set", tst.getName()+":null")
+        ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='OFF']"
+        );
   }
 }

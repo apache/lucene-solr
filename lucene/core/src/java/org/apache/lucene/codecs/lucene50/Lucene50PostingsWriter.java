@@ -31,7 +31,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.CompetitiveFreqNormAccumulator;
+import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
@@ -101,7 +101,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   private boolean fieldHasNorms;
   private NumericDocValues norms;
-  private final CompetitiveFreqNormAccumulator competitiveFreqNormAccumulator = new CompetitiveFreqNormAccumulator();
+  private final CompetitiveImpactAccumulator competitiveFreqNormAccumulator = new CompetitiveImpactAccumulator();
 
   /** Creates a postings writer */
   public Lucene50PostingsWriter(SegmentWriteState state) throws IOException {

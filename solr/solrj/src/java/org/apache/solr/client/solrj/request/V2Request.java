@@ -66,7 +66,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     if (payload == null) return null;
     if (payload instanceof String) {
       return new RequestWriter.StringPayloadContentWriter((String) payload, JSON_MIME);
-
     }
     return new RequestWriter.ContentWriter() {
       @Override
@@ -74,8 +73,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
         if (useBinary) {
           new JavaBinCodec().marshal(payload, os);
         } else {
-          byte[] b = Utils.toJSON(payload);
-          os.write(b);
+          Utils.writeJson(payload, os, false);
         }
       }
 

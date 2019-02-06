@@ -31,13 +31,14 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 import org.tartarus.snowball.ext.NorwegianStemmer;
 
 /**
  * {@link Analyzer} for Norwegian.
+ *
+ * @since 3.1
  */
 public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -109,15 +110,14 @@ public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SnowballFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
+    TokenStream result = new LowerCaseFilter(source);
     result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
@@ -127,9 +127,7 @@ public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
-    return result;
+    return new LowerCaseFilter(in);
   }
 }
 

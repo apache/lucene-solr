@@ -15,8 +15,9 @@
  limitations under the License.
 */
 solrAdminApp.controller('ClusterSuggestionsController',
-function($scope,$http) {
-    $scope.data={}
+function($scope, $http, Constants) {
+    $scope.resetMenu("cluster-suggestion", Constants.IS_COLLECTION_PAGE);
+    $scope.data={};
     var dataArr =[];
     var dataJson = {};
     //function to display suggestion
@@ -42,10 +43,10 @@ function($scope,$http) {
             x.loading = false;
             x.done = true;
             x.run=true;
-            $scope.msg = "Post Data Submitted Successfully!";
+            $scope.msg = "Command Submitted Successfully!";
         }, function (response) {
             x.failed=true;
-            $scope.msg = "Service not Exists";
+            $scope.msg = "Service does not exist";
             $scope.statusval = response.status;
             $scope.statustext = response.statusText;
             $scope.headers = response.headers();

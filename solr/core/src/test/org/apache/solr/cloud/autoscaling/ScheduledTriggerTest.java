@@ -17,12 +17,12 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +57,8 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // this does not appear to be a good way to test this
   public void testTrigger() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
 
@@ -75,14 +77,15 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
     scheduledTriggerTest(container, properties);
   }
 
+  @Test
   public void testIgnoredEvent() throws Exception {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
     long threeDaysAgo = new Date().getTime() - TimeUnit.DAYS.toMillis(3);
     Map<String, Object> properties = createTriggerProperties(new Date(threeDaysAgo).toInstant().toString(),
         TimeZone.getDefault().getID(),
         "+2DAYS", "+1HOUR");
-    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1", properties,
-        container.getResourceLoader(), container.getZkController().getSolrCloudManager())) {
+    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1")) {
+      scheduledTrigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), properties);
       scheduledTrigger.init();
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       scheduledTrigger.setProcessor(event -> {
@@ -94,13 +97,13 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
     }
   }
 
-  private void scheduledTriggerTest(CoreContainer container, Map<String, Object> properties) throws IOException, InterruptedException {
-    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1", properties,
-        container.getResourceLoader(), container.getZkController().getSolrCloudManager())) {
+  private void scheduledTriggerTest(CoreContainer container, Map<String, Object> properties) throws Exception {
+    try (ScheduledTrigger scheduledTrigger = new ScheduledTrigger("sched1")) {
+      scheduledTrigger.configure(container.getResourceLoader(), container.getZkController().getSolrCloudManager(), properties);
       scheduledTrigger.init();
       scheduledTrigger.setProcessor(noFirstRunProcessor);
       scheduledTrigger.run();
-      final List<Long> eventTimes = new ArrayList<>();
+      final List<Long> eventTimes = Collections.synchronizedList(new ArrayList<>());
       scheduledTrigger.setProcessor(event -> {
         eventTimes.add(event.getEventTime());
         return true;
@@ -119,7 +122,7 @@ public class ScheduledTriggerTest extends SolrCloudTestCase {
 
   private Map<String, Object> createTriggerProperties(String startTime, String timeZone, String every, String graceTime) {
     Map<String, Object> properties = new HashMap<>();
-    properties.put("graceTime", graceTime);
+    properties.put("graceDuration", graceTime);
     properties.put("startTime", startTime);
     properties.put("timeZone", timeZone);
     properties.put("every", every);

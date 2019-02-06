@@ -19,20 +19,19 @@ package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SlowImpactsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -239,13 +238,12 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, SimScorer scorer, int flags) throws IOException {
-    Objects.requireNonNull(scorer);
+  public ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, int flags) throws IOException {
     if (state.docFreq <= BLOCK_SIZE || version < Lucene50PostingsFormat.VERSION_IMPACT_SKIP_DATA) {
       // no skip data
-      return new SlowImpactsEnum(postings(fieldInfo, state, null, flags), scorer.score(Float.MAX_VALUE, 1));
+      return new SlowImpactsEnum(postings(fieldInfo, state, null, flags));
     }
-    return new BlockImpactsEverythingEnum(fieldInfo, (IntBlockTermState) state, scorer, flags);
+    return new BlockImpactsEverythingEnum(fieldInfo, (IntBlockTermState) state, flags);
   }
 
   final class BlockDocsEnum extends PostingsEnum {
@@ -1367,7 +1365,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     
     private long seekTo = -1;
     
-    public BlockImpactsEverythingEnum(FieldInfo fieldInfo, IntBlockTermState termState, SimScorer scorer, int flags) throws IOException {
+    public BlockImpactsEverythingEnum(FieldInfo fieldInfo, IntBlockTermState termState, int flags) throws IOException {
       indexHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
@@ -1440,8 +1438,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
           MAX_SKIP_LEVELS,
           indexHasPos,
           indexHasOffsets,
-          indexHasPayloads,
-          scorer);
+          indexHasPayloads);
       skipper.init(docTermStartFP+termState.skipOffset, docTermStartFP, posTermStartFP, payTermStartFP, docFreq);
 
       if (indexHasFreq == false) {
@@ -1544,17 +1541,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      return advance(doc + 1);
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return skipper.getMaxScore(upTo);
-    }
-
-    @Override
-    public int advanceShallow(int target) throws IOException {
+    public void advanceShallow(int target) throws IOException {
       if (target > nextSkipDoc) {
         // always plus one to fix the result, since skip position in Lucene50SkipReader 
         // is a little different from MultiLevelSkipListReader
@@ -1580,7 +1567,17 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         nextSkipDoc = skipper.getNextSkipDoc();
       }
       assert nextSkipDoc >= target;
-      return nextSkipDoc;
+    }
+
+    @Override
+    public Impacts getImpacts() throws IOException {
+      advanceShallow(doc);
+      return skipper.getImpacts();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(doc + 1);
     }
 
     @Override

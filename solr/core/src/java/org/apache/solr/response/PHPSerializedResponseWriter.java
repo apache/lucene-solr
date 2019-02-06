@@ -225,7 +225,7 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   @Override
-  protected void writeKey(String fname, boolean needsEscaping) throws IOException {
+  public void writeKey(String fname, boolean needsEscaping) throws IOException {
     writeStr(null, fname, needsEscaping);
   }
   void writeKey(int val, boolean needsEscaping) throws IOException {

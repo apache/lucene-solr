@@ -307,7 +307,7 @@ public abstract class StringHelper {
     if (bits.length > ID_LENGTH) {
       assert bits.length == ID_LENGTH + 1;
       assert bits[0] == 0;
-      return Arrays.copyOfRange(bits, 1, bits.length);
+      return ArrayUtil.copyOfSubArray(bits, 1, bits.length);
     } else {
       byte[] result = new byte[ID_LENGTH];
       System.arraycopy(bits, 0, result, result.length - bits.length, bits.length);
@@ -350,16 +350,5 @@ public abstract class StringHelper {
     }
 
     return new BytesRef(bytes);
-  }
-
-  /** Compares a fixed length slice of two byte arrays interpreted as
-   *  big-endian unsigned values.  Returns positive int if a &gt; b,
-   *  negative int if a &lt; b and 0 if a == b 
-   *  
-   * @deprecated Use FutureArrays.compareUnsigned instead.
-   */
-  @Deprecated
-  public static int compare(int count, byte[] a, int aOffset, byte[] b, int bOffset) {
-    return FutureArrays.compareUnsigned(a, aOffset, aOffset + count, b, bOffset, bOffset + count);
   }
 }

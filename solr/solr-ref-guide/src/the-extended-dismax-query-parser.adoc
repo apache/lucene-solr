@@ -20,10 +20,10 @@ The Extended DisMax (eDisMax) query parser is an improved version of the <<the-d
 
 In addition to supporting all the DisMax query parser parameters, Extended Dismax:
 
-* supports the full Lucene query parser syntax with the same enhancements as <<the-standard-query-parser.adoc#the-standard-query-parser,Solr's standard query parser>>.
-** supports queries such as AND, OR, NOT, -, and +.
-** optionally treats "and" and "or" as "AND" and "OR" in Lucene syntax mode.
-** respects the 'magic field' names `\_val_` and `\_query_`. These are not a real fields in the Schema, but if used it helps do special things (like a function query in the case of `\_val_` or a nested query in the case of `\_query_`). If `\_val_` is used in a term or phrase query, the value is parsed as a function.
+* supports <<the-standard-query-parser.adoc#the-standard-query-parser,Solr's standard query parser>> syntax such as (non-exhaustive list):
+** boolean operators such as AND (+, &&), OR (||), NOT (-).
+** optionally treats lowercase "and" and "or" as "AND" and "OR" in Lucene syntax mode
+** optionally allows embedded queries using other query parsers or functions
 * includes improved smart partial escaping in the case of syntax errors; fielded queries, +/-, and phrase queries are still supported in this mode.
 * improves proximity boosting by using word shingles; you do not need the query to match all words in the document before proximity boosting is applied.
 * includes advanced stopword handling: stopwords are not required in the mandatory part of the query but are still used in the proximity boosting part. If a query consists of all stopwords, such as "to be or not to be", then all words are required.
@@ -37,6 +37,14 @@ In addition to all the <<the-dismax-query-parser.adoc#dismax-query-parser-parame
 
 `sow`::
 Split on whitespace. If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.  The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.
+
+`mm`::
+ Minimum should match.  See the <<the-dismax-query-parser.adoc#mm-minimum-should-match-parameter,DisMax mm parameter>> for a description of `mm`. The default eDisMax `mm` value differs from that of DisMax:
++
+* The default `mm` value is 0%:
+** if the query contains an explicit operator other than "AND" ("-", "+", "OR", "NOT"); or
+** if `q.op` is "OR" or is not specified.
+* The default `mm` value is 100% if `q.op` is "AND" and the query does not contain any explicit operators other than "AND".
 
 `mm.autoRelax`::
 If `true`, the number of clauses required (<<the-dismax-query-parser.adoc#mm-minimum-should-match-parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g., stopwords filter) from some but not all <<the-dismax-query-parser.adoc#qf-query-fields-parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.
@@ -55,13 +63,13 @@ Phrase Slop. The default amount of slop - distance between terms - on phrase que
 
 `pf2`::
 
-A multivalued list of fields with optional weights. Similar to `pf`, but based on _pairs_ of word shingles.
+A multivalued list of fields with optional weights. Similar to `pf`, but based on word _pair_ shingles.
 
 `ps2`::
 This is similar to `ps` but overrides the slop factor used for `pf2`. If not specified, `ps` is used.
 
 `pf3`::
-A multivalued list of fields with optional weights, based on triplets of word shingles. Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of each _triplet_ of word shingles.
+A multivalued list of fields with optional weights, based on triplets of word shingles. Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of word _triplet_ shingles.
 
 `ps3`::
 This is similar to `ps` but overrides the slop factor used for `pf3`. If not specified, `ps` is used.
@@ -70,7 +78,17 @@ This is similar to `ps` but overrides the slop factor used for `pf3`. If not spe
 A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query. If this is set to `false`, then the `StopFilterFactory` in the query analyzer is ignored.
 
 `uf`::
-Specifies which schema fields the end user is allowed to explicitly query. This parameter supports wildcards. The default is to allow all fields, equivalent to `uf=\*`. To allow only title field, use `uf=title`. To allow title and all fields ending with '_s', use `uf=title,*_s`. To allow all fields except title, use `uf=*,-title`. To disallow all fielded searches, use `uf=-*`.
+Specifies which schema fields the end user is allowed to explicitly query and to toggle whether embedded Solr queries are supported.
+This parameter supports wildcards. Multiple fields must be separated by a space.
++
+The default is to allow all fields and no embedded Solr queries, equivalent to `uf=* -\_query_`.
+
+* To allow only title field, use `uf=title`.
+* To allow title and all fields ending with '_s', use `uf=title *_s`.
+* To allow all fields except title, use `uf=* -title`.
+* To disallow all fielded searches, use `uf=-*`.
+* To allow embedded Solr queries (e.g., `\_query_:"..."` or `\_val_:"..."` or `{!lucene ...}`),
+ you _must_ expressly enable this by referring to the magic field `\_query_` in `uf`.
 
 === Field Aliasing using Per-Field qf Overrides
 
@@ -192,26 +210,13 @@ q="Hans Anderson"
 
 A document that contains "Hans Anderson" will match, but a document that contains the middle name "Christian" or where the name is written with the last name first ("Anderson, Hans") won't. For those cases one could configure the query field `qs`, so that even if the user searches for an explicit phrase query, a slop is applied.
 
-Finally, in addition to the phrase fields (`pf`) parameter, `edismax` also supports the `pf2` and `pf3` parameters, for fields over which to create bigram and trigram phrase queries. The phrase slop for these parameters' queries can be specified using the `ps2` and `ps3` parameters, respectively. If you use `pf2`/`pf3` but `ps2`/`ps3`, then the phrase slop for these parameters' queries will be taken from the `ps` parameter, if any.
+Finally, in addition to the phrase fields (`pf`) parameter, `edismax` also supports the `pf2` and `pf3` parameters, for fields over which to create bigram and trigram phrase queries. The phrase slop for these parameters' queries can be specified using the `ps2` and `ps3` parameters, respectively. If you use `pf2`/`pf3` but not `ps2`/`ps3`, then the phrase slop for these parameters' queries will be taken from the `ps` parameter, if any.
 
+=== Synonyms Expansion in Phrase Queries with Slop
 
-== Using the "Magic Fields" \_val_ and \_query_
+When a phrase query with slop (e.g., `pf` with `ps`) triggers synonym expansions, a separate clause will be generated for each combination of synonyms. For example, with configured synonyms `dog,canine` and `cat,feline`, the query `"dog chased cat"` will generate the following phrase query clauses:
 
-The Solr Query Parser's use of `\_val_` and `\_query_` differs from the Lucene Query Parser in the following ways:
-
-* If the magic field name `\_val_` is used in a term or phrase query, the value is parsed as a function.
-
-* It provides a hook into <<function-queries.adoc#function-queries,`FunctionQuery`>> syntax. Quotes are necessary to encapsulate the function when it includes parentheses. For example:
-+
-[source,text]
-----
-_val_:myfield
-_val_:"recip(rord(myfield),1,2,3)"
-----
-
-* The Solr Query Parser offers nested query support for any type of query parser (via QParserPlugin). Quotes are often necessary to encapsulate the nested query if it contains reserved characters. For example:
-+
-[source,text]
-----
-_query_:"{!dismax qf=myfield}how now brown cow"
-----
+* `"dog chased cat"`
+* `"canine chased cat"`
+* `"dog chased feline"`
+* `"canine chased feline"`

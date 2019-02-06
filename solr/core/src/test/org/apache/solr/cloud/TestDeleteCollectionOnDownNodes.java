@@ -17,19 +17,27 @@
 
 package org.apache.solr.cloud;
 
+import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.Slice;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .addConfig("conf2", configset("cloud-minimal"))
         .configure();
+  }
+  
+  @After
+  public void teardownCluster() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -39,20 +47,14 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection("halfdeletedcollection2", 60, TimeUnit.SECONDS, 4, 12);
+    
     // stop a couple nodes
-    cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
-    cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
+    JettySolrRunner j1 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
+    JettySolrRunner j2 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
 
-    // wait for leaders to settle out
-    waitForState("Timed out waiting for leader elections", "halfdeletedcollection2", (n, c) -> {
-      for (Slice slice : c) {
-        if (slice.getLeader() == null)
-          return false;
-        if (slice.getLeader().isActive(n) == false)
-          return false;
-      }
-      return true;
-    });
+    cluster.waitForJettyToStop(j1);
+    cluster.waitForJettyToStop(j2);
 
     // delete the collection
     CollectionAdminRequest.deleteCollection("halfdeletedcollection2").process(cluster.getSolrClient());

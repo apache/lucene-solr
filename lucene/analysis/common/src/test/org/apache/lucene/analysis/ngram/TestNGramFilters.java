@@ -56,12 +56,14 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   }
 
   /**
-   * Test the NGramFilterFactory
+   * Test the NGramFilterFactory with old defaults
    */
   public void testNGramFilter() throws Exception {
     Reader reader = new StringReader("test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("NGram").create(stream);
+    stream = tokenFilterFactory("NGram",
+        "minGramSize", "1",
+        "maxGramSize", "2").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te", "e", "es", "s", "st", "t" });
   }
@@ -126,12 +128,13 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   }
 
   /**
-   * Test EdgeNGramFilterFactory
+   * Test EdgeNGramFilterFactory with old defaults
    */
   public void testEdgeNGramFilter() throws Exception {
     Reader reader = new StringReader("test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("EdgeNGram").create(stream);
+    stream = tokenFilterFactory("EdgeNGram", "minGramSize", "1",
+        "maxGramSize", "1").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t" });
   }
@@ -173,7 +176,8 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+    IllegalArgumentException expected = null;
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenizerFactory("NGram", "bogusArg", "bogusValue");
     });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
@@ -184,12 +188,12 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
     assertTrue(expected.getMessage().contains("Unknown parameters"));
     
     expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("NGram", "bogusArg", "bogusValue");
+      tokenFilterFactory("NGram", "minGramSize", "2", "maxGramSize", "5", "bogusArg", "bogusValue");
     });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
     
     expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("EdgeNGram", "bogusArg", "bogusValue");
+      tokenFilterFactory("EdgeNGram", "minGramSize", "2", "maxGramSize", "5", "bogusArg", "bogusValue");
     });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }

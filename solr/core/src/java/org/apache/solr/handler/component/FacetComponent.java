@@ -650,7 +650,7 @@ public class FacetComponent extends SearchComponent {
       (fieldToOverRequest, FacetParams.FACET_SORT, defaultSort);
 
     int shardLimit = requestedLimit + offset;
-    int shardMinCount = requestedMinCount;
+    int shardMinCount = Math.min(requestedMinCount, 1);
 
     // per-shard mincount & overrequest
     if ( FacetParams.FACET_SORT_INDEX.equals(sort) && 
@@ -670,7 +670,6 @@ public class FacetComponent extends SearchComponent {
       if ( 0 < requestedLimit ) {
         shardLimit = doOverRequestMath(shardLimit, overRequestRatio, overRequestCount);
       }
-      shardMinCount = Math.min(requestedMinCount, 1);
     } 
     sreq.params.set(paramStart + FacetParams.FACET_LIMIT, shardLimit);
     sreq.params.set(paramStart + FacetParams.FACET_PIVOT_MINCOUNT, shardMinCount);
@@ -713,7 +712,7 @@ public class FacetComponent extends SearchComponent {
       try {
         facet_counts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
       } catch (Exception ex) {
-        if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+        if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
           continue; // looks like a shard did not return anything
         }
         throw new SolrException(ErrorCode.SERVER_ERROR,

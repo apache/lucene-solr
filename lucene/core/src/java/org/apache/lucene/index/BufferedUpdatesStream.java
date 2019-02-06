@@ -17,6 +17,7 @@
 
 package org.apache.lucene.index;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -48,7 +48,7 @@ import org.apache.lucene.util.InfoStream;
  * track which BufferedDeletes packets to apply to any given
  * segment. */
 
-class BufferedUpdatesStream implements Accountable {
+final class BufferedUpdatesStream implements Accountable {
 
   private final Set<FrozenBufferedUpdates> updates = new HashSet<>();
 
@@ -56,23 +56,19 @@ class BufferedUpdatesStream implements Accountable {
   // deletes applied (whose bufferedDelGen defaults to 0)
   // will be correct:
   private long nextGen = 1;
-
   private final FinishedSegments finishedSegments;
   private final InfoStream infoStream;
   private final AtomicLong bytesUsed = new AtomicLong();
   private final AtomicInteger numTerms = new AtomicInteger();
-  private final IndexWriter writer;
-  private boolean closed;
 
-  public BufferedUpdatesStream(IndexWriter writer) {
-    this.writer = writer;
-    this.infoStream = writer.infoStream;
+  BufferedUpdatesStream(InfoStream infoStream) {
+    this.infoStream = infoStream;
     this.finishedSegments = new FinishedSegments(infoStream);
   }
 
   // Appends a new packet of buffered deletes to the stream,
   // setting its generation:
-  public synchronized long push(FrozenBufferedUpdates packet) {
+  synchronized long push(FrozenBufferedUpdates packet) {
     /*
      * The insert operation must be atomic. If we let threads increment the gen
      * and push the packet afterwards we risk that packets are out of order.
@@ -95,12 +91,12 @@ class BufferedUpdatesStream implements Accountable {
     return packet.delGen();
   }
 
-  public synchronized int getPendingUpdatesCount() {
+  synchronized int getPendingUpdatesCount() {
     return updates.size();
   }
 
   /** Only used by IW.rollback */
-  public synchronized void clear() {
+  synchronized void clear() {
     updates.clear();
     nextGen = 1;
     finishedSegments.clear();
@@ -108,11 +104,11 @@ class BufferedUpdatesStream implements Accountable {
     bytesUsed.set(0);
   }
 
-  public boolean any() {
+  boolean any() {
     return bytesUsed.get() != 0;
   }
 
-  public int numTerms() {
+  int numTerms() {
     return numTerms.get();
   }
 
@@ -121,19 +117,13 @@ class BufferedUpdatesStream implements Accountable {
     return bytesUsed.get();
   }
 
-  private synchronized void ensureOpen() {
-    if (closed) {
-      throw new AlreadyClosedException("already closed");
-    }
-  }
-
-  public static class ApplyDeletesResult {
+  static class ApplyDeletesResult {
     
     // True if any actual deletes took place:
-    public final boolean anyDeletes;
+    final boolean anyDeletes;
 
     // If non-null, contains segments that are 100% deleted
-    public final List<SegmentCommitInfo> allDeleted;
+    final List<SegmentCommitInfo> allDeleted;
 
     ApplyDeletesResult(boolean anyDeletes, List<SegmentCommitInfo> allDeleted) {
       this.anyDeletes = anyDeletes;
@@ -144,26 +134,22 @@ class BufferedUpdatesStream implements Accountable {
   /** Waits for all in-flight packets, which are already being resolved concurrently
    *  by indexing threads, to finish.  Returns true if there were any 
    *  new deletes or updates.  This is called for refresh, commit. */
-  public void waitApplyAll() throws IOException {
-
+  void waitApplyAll(IndexWriter writer) throws IOException {
     assert Thread.holdsLock(writer) == false;
-    
-    final long t0 = System.nanoTime();
-
     Set<FrozenBufferedUpdates> waitFor;
     synchronized (this) {
       waitFor = new HashSet<>(updates);
     }
 
-    waitApply(waitFor);
+    waitApply(waitFor, writer);
   }
 
   /** Returns true if this delGen is still running. */
-  public boolean stillRunning(long delGen) {
+  boolean stillRunning(long delGen) {
     return finishedSegments.stillRunning(delGen);
   }
 
-  public void finishedSegment(long delGen) {
+  void finishedSegment(long delGen) {
     finishedSegments.finishedSegment(delGen);
   }
   
@@ -171,7 +157,7 @@ class BufferedUpdatesStream implements Accountable {
    *  delGen.  We track the completed delGens and record the maximum delGen for which all prior
    *  delGens, inclusive, are completed, so that it's safe for doc values updates to apply and write. */
 
-  public synchronized void finished(FrozenBufferedUpdates packet) {
+  synchronized void finished(FrozenBufferedUpdates packet) {
     // TODO: would be a bit more memory efficient to track this per-segment, so when each segment writes it writes all packets finished for
     // it, rather than only recording here, across all segments.  But, more complex code, and more CPU, and maybe not so much impact in
     // practice?
@@ -189,18 +175,14 @@ class BufferedUpdatesStream implements Accountable {
   }
 
   /** All frozen packets up to and including this del gen are guaranteed to be finished. */
-  public long getCompletedDelGen() {
+  long getCompletedDelGen() {
     return finishedSegments.getCompletedDelGen();
   }   
 
   /** Waits only for those in-flight packets that apply to these merge segments.  This is
    *  called when a merge needs to finish and must ensure all deletes to the merging
    *  segments are resolved. */
-  public void waitApplyForMerge(List<SegmentCommitInfo> mergeInfos) throws IOException {
-    assert Thread.holdsLock(writer) == false;
-
-    final long t0 = System.nanoTime();
-
+  void waitApplyForMerge(List<SegmentCommitInfo> mergeInfos, IndexWriter writer) throws IOException {
     long maxDelGen = Long.MIN_VALUE;
     for (SegmentCommitInfo info : mergeInfos) {
       maxDelGen = Math.max(maxDelGen, info.getBufferedDeletesGen());
@@ -221,10 +203,10 @@ class BufferedUpdatesStream implements Accountable {
       infoStream.message("BD", "waitApplyForMerge: " + waitFor.size() + " packets, " + mergeInfos.size() + " merging segments");
     }
     
-    waitApply(waitFor);
+    waitApply(waitFor, writer);
   }
 
-  private void waitApply(Set<FrozenBufferedUpdates> waitFor) throws IOException {
+  private void waitApply(Set<FrozenBufferedUpdates> waitFor, IndexWriter writer) throws IOException {
 
     long startNS = System.nanoTime();
 
@@ -241,13 +223,21 @@ class BufferedUpdatesStream implements Accountable {
       infoStream.message("BD", "waitApply: " + waitFor.size() + " packets: " + waitFor);
     }
 
+    ArrayList<FrozenBufferedUpdates> pendingPackets = new ArrayList<>();
     long totalDelCount = 0;
     for (FrozenBufferedUpdates packet : waitFor) {
       // Frozen packets are now resolved, concurrently, by the indexing threads that
       // create them, by adding a DocumentsWriter.ResolveUpdatesEvent to the events queue,
       // but if we get here and the packet is not yet resolved, we resolve it now ourselves:
-      packet.apply(writer);
+      if (packet.tryApply(writer) == false) {
+        // if somebody else is currently applying it - move on to the next one and force apply below
+        pendingPackets.add(packet);
+      }
       totalDelCount += packet.totalDelCount;
+    }
+    for (FrozenBufferedUpdates packet : pendingPackets) {
+      // now block on all the packets that were concurrently applied to ensure they are due before we continue.
+      packet.forceApply(writer);
     }
 
     if (infoStream.isEnabled("BD")) {
@@ -265,107 +255,34 @@ class BufferedUpdatesStream implements Accountable {
   }
 
   /** Holds all per-segment internal state used while resolving deletions. */
-  public static final class SegmentState {
+  static final class SegmentState implements Closeable {
     final long delGen;
     final ReadersAndUpdates rld;
     final SegmentReader reader;
     final int startDelCount;
+    private final IOUtils.IOConsumer<ReadersAndUpdates> onClose;
 
     TermsEnum termsEnum;
     PostingsEnum postingsEnum;
     BytesRef term;
 
-    public SegmentState(IndexWriter.ReaderPool pool, SegmentCommitInfo info) throws IOException {
-      rld = pool.get(info, true);
-      startDelCount = rld.getPendingDeleteCount();
+    SegmentState(ReadersAndUpdates rld, IOUtils.IOConsumer<ReadersAndUpdates> onClose, SegmentCommitInfo info) throws IOException {
+      this.rld = rld;
       reader = rld.getReader(IOContext.READ);
+      startDelCount = rld.getDelCount();
       delGen = info.getBufferedDeletesGen();
-    }
-
-    public void finish(IndexWriter.ReaderPool pool) throws IOException {
-      try {
-        rld.release(reader);
-      } finally {
-        pool.release(rld);
-      }
+      this.onClose = onClose;
     }
 
     @Override
     public String toString() {
       return "SegmentState(" + rld.info + ")";
     }
-  }
 
-  /** Opens SegmentReader and inits SegmentState for each segment. */
-  public SegmentState[] openSegmentStates(IndexWriter.ReaderPool pool, List<SegmentCommitInfo> infos,
-                                          Set<SegmentCommitInfo> alreadySeenSegments, long delGen) throws IOException {
-    ensureOpen();
-
-    List<SegmentState> segStates = new ArrayList<>();
-    boolean success = false;
-    try {
-      for (SegmentCommitInfo info : infos) {
-        if (info.getBufferedDeletesGen() <= delGen && alreadySeenSegments.contains(info) == false) {
-          segStates.add(new SegmentState(pool, info));
-          alreadySeenSegments.add(info);
-        }
-      }
-      success = true;
-    } finally {
-      if (success == false) {
-        for(SegmentState segState : segStates) {
-            try {
-              segState.finish(pool);
-            } catch (Throwable th) {
-              // suppress so we keep throwing original exc
-            }
-        }
-      }
+    @Override
+    public void close() throws IOException {
+      IOUtils.close(() -> rld.release(reader), () -> onClose.accept(rld));
     }
-    
-    return segStates.toArray(new SegmentState[0]);
-  }
-
-  /** Close segment states previously opened with openSegmentStates. */
-  public ApplyDeletesResult closeSegmentStates(IndexWriter.ReaderPool pool, SegmentState[] segStates, boolean success) throws IOException {
-    int count = segStates.length;
-    Throwable firstExc = null;
-    List<SegmentCommitInfo> allDeleted = null;
-    long totDelCount = 0;
-
-    for (int j=0;j<count;j++) {
-      SegmentState segState = segStates[j];
-      if (success) {
-        totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
-        int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
-        assert fullDelCount <= segState.rld.info.info.maxDoc();
-        if (fullDelCount == segState.rld.info.info.maxDoc()) {
-          if (allDeleted == null) {
-            allDeleted = new ArrayList<>();
-          }
-          allDeleted.add(segState.reader.getSegmentInfo());
-        }
-      }
-      try {
-        segStates[j].finish(pool);
-      } catch (Throwable th) {
-        if (firstExc == null) {
-          firstExc = th;
-        }
-      }
-    }
-
-    if (success) {
-      if (firstExc != null) {
-        throw IOUtils.rethrowAlways(firstExc);
-      }
-    }
-
-    if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + updates.size() + " packets; bytesUsed=" + pool.ramBytesUsed());
-    }
-
-    return new ApplyDeletesResult(totDelCount > 0, allDeleted);      
   }
 
   // only for assert
@@ -395,24 +312,24 @@ class BufferedUpdatesStream implements Accountable {
 
     private final InfoStream infoStream;
 
-    public FinishedSegments(InfoStream infoStream) {
+    FinishedSegments(InfoStream infoStream) {
       this.infoStream = infoStream;
     }
 
-    public synchronized void clear() {
+    synchronized void clear() {
       finishedDelGens.clear();
       completedDelGen = 0;
     }
 
-    public synchronized boolean stillRunning(long delGen) {
+    synchronized boolean stillRunning(long delGen) {
       return delGen > completedDelGen && finishedDelGens.contains(delGen) == false;
     }
 
-    public synchronized long getCompletedDelGen() {
+    synchronized long getCompletedDelGen() {
       return completedDelGen;
     }
 
-    public synchronized void finishedSegment(long delGen) {
+    synchronized void finishedSegment(long delGen) {
       finishedDelGens.add(delGen);
       while (true) {
         if (finishedDelGens.contains(completedDelGen + 1)) {
@@ -428,4 +345,5 @@ class BufferedUpdatesStream implements Accountable {
       }
     }
   }
+
 }

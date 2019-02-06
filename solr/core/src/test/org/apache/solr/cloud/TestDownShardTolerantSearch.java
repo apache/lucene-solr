@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -63,20 +64,21 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
     assertThat(response.getStatus(), is(0));
     assertThat(response.getResults().getNumFound(), is(100L));
 
-    cluster.stopJettySolrRunner(0);
+    JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
+    
+    cluster.waitForJettyToStop(stoppedServer);
 
     response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
     assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
-    try {
-      cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false));
-      fail("Request should have failed because we killed shard1 jetty");
-    } catch (SolrServerException e) {
-      log.info("error from server", e);
-      assertNotNull(e.getCause());
-      assertTrue("Error message from server should have the name of the down shard",
-          e.getCause().getMessage().contains("shard"));
-    }
+    SolrServerException e = expectThrows(SolrServerException.class,
+        "Request should have failed because we killed shard1 jetty",
+        () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1)
+            .setParam(ShardParams.SHARDS_TOLERANT, false))
+    );
+    assertNotNull(e.getCause());
+    assertTrue("Error message from server should have the name of the down shard",
+        e.getCause().getMessage().contains("shard"));
   }
 }

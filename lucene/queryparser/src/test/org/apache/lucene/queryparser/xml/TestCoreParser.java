@@ -118,7 +118,7 @@ public class TestCoreParser extends LuceneTestCase {
 
   public void testCustomFieldUserQueryXML() throws ParserException, IOException {
     Query q = parse("UserInputQueryCustomField.xml");
-    long h = searcher().search(q, 1000).totalHits;
+    long h = searcher().search(q, 1000).totalHits.value;
     assertEquals("UserInputQueryCustomField should produce 0 result ", 0, h);
   }
 
@@ -252,13 +252,13 @@ public class TestCoreParser extends LuceneTestCase {
     }
     final IndexSearcher searcher = searcher();
     TopDocs hits = searcher.search(q, numDocs);
-    final boolean producedResults = (hits.totalHits > 0);
+    final boolean producedResults = (hits.totalHits.value > 0);
     if (!producedResults) {
       System.out.println("TEST: qType=" + qType + " numDocs=" + numDocs + " " + q.getClass().getCanonicalName() + " query=" + q);
     }
     if (VERBOSE) {
       ScoreDoc[] scoreDocs = hits.scoreDocs;
-      for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
+      for (int i = 0; i < Math.min(numDocs, hits.totalHits.value); i++) {
         Document ldoc = searcher.doc(scoreDocs[i].doc);
         System.out.println("[" + ldoc.get("date") + "]" + ldoc.get("contents"));
       }

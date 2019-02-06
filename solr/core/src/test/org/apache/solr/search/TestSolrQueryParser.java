@@ -38,6 +38,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
@@ -352,13 +353,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String q = sb.toString();
 
     // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
-    try {
+    {
       ignoreException("Too many clauses");
-      assertJQ(req("q",q)
-          ,"/response/numFound==6");
-      fail();
-    } catch (Exception e) {
-      // expect "too many clauses" exception... see SOLR-10921
+      SolrException e = expectThrows(SolrException.class, "exoected too many clauses exception",
+          () -> assertJQ(req("q", q), "/response/numFound==6"));
       assertTrue(e.getMessage().contains("many clauses"));
     }
 
@@ -415,11 +413,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
 
 
-    final MetricsMap filterCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.filterCache");
+    final MetricsMap filterCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
     assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.queryResultCache");
+    final MetricsMap queryCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
 
     assertNotNull(queryCacheStats);
 
@@ -1113,13 +1111,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     for (String suffix:fieldSuffix) {
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
       qParser.setIsFilter(true); // this may change in the future
-      try {
-        qParser.getQuery();
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-        assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
-      }
+      SolrException e = expectThrows(SolrException.class, "Expecting exception", qParser::getQuery);
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
     }
     
     

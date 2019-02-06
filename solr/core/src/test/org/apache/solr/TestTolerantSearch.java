@@ -56,8 +56,9 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath());
+    createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
     collection1 = getHttpSolrClient(url + "/collection1");
     collection2 = getHttpSolrClient(url + "/collection2");
@@ -105,6 +106,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     jetty.stop();
     jetty=null;
     resetExceptionIgnores();
+    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @SuppressWarnings("unchecked")
@@ -131,12 +133,9 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     query.setFacet(true);
     
     ignoreException("Dummy exception in BadResponseWriter");
-    try {
-      collection1.query(query);
-      fail("Should get an exception");
-    } catch (Exception e) {
-      //expected
-    }
+
+    expectThrows(SolrException.class, () -> collection1.query(query));
+
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
     assertTrue(response.getResponseHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
@@ -179,12 +178,9 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     query.setFacet(true);
     
     ignoreException("Dummy exception in BadResponseWriter");
-    try {
-      collection1.query(query);
-      fail("Should get an exception");
-    } catch (Exception e) {
-      //expected
-    }
+
+    expectThrows(Exception.class, () -> collection1.query(query));
+
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
     assertTrue(response.getResponseHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));

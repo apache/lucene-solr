@@ -42,26 +42,26 @@ If you have already indexed data into your Solr index, you will need to complete
 
 DocValues are only available for specific field types. The types chosen determine the underlying Lucene docValue type that will be used. The available Solr field types are:
 
-* `StrField` and `UUIDField`:
+* `StrField`, and `UUIDField`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `SORTED` type.
-** If the field is multi-valued, Lucene will use the `SORTED_SET` type.
+** If the field is multi-valued, Lucene will use the `SORTED_SET` type. Entries are kept in sorted order and duplicates are removed.
 * `BoolField`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `SORTED` type.
-** If the field is multi-valued, Lucene will use the `SORTED_BINARY` type.
+** If the field is multi-valued, Lucene will use the `SORTED_SET` type. Entries are kept in sorted order and duplicates are removed.
 * Any `*PointField` Numeric or Date fields, `EnumFieldType`, and `CurrencyFieldType`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `NUMERIC` type.
-** If the field is multi-valued, Lucene will use the `SORTED_NUMERIC` type.
+** If the field is multi-valued, Lucene will use the `SORTED_NUMERIC` type. Entries are kept in sorted order and duplicates are kept.
 * Any of the deprecated `Trie*` Numeric or Date fields, `EnumField` and `CurrencyField`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `NUMERIC` type.
-** If the field is multi-valued, Lucene will use the `SORTED_SET` type.
+** If the field is multi-valued, Lucene will use the `SORTED_SET` type. Entries are kept in sorted order and duplicates are removed.
 
 These Lucene types are related to how the {lucene-javadocs}/core/org/apache/lucene/index/DocValuesType.html[values are sorted and stored].
 
-There is an additional configuration option available, which is to modify the `docValuesFormat` <<field-type-definitions-and-properties.adoc#docvaluesformat,used by the field type>>. The default implementation employs a mixture of loading some things into memory and keeping some on disk. In some cases, however, you may choose to specify an alternative {lucene-javadocs}/core/org/apache/lucene/codecs/DocValuesFormat.html[DocValuesFormat implementation]. For example, you could choose to keep everything in memory by specifying `docValuesFormat="Memory"` on a field type:
+There is an additional configuration option available, which is to modify the `docValuesFormat` <<field-type-definitions-and-properties.adoc#docvaluesformat,used by the field type>>. The default implementation employs a mixture of loading some things into memory and keeping some on disk. In some cases, however, you may choose to specify an alternative {lucene-javadocs}/core/org/apache/lucene/codecs/DocValuesFormat.html[DocValuesFormat implementation]. For example, you could choose to keep everything in memory by specifying `docValuesFormat="Direct"` on a field type:
 
 [source,xml]
 ----
-<fieldType name="string_in_mem_dv" class="solr.StrField" docValues="true" docValuesFormat="Memory" />
+<fieldType name="string_in_mem_dv" class="solr.StrField" docValues="true" docValuesFormat="Direct" />
 ----
 
 Please note that the `docValuesFormat` option may change in future releases.
@@ -79,11 +79,11 @@ If `docValues="true"` for a field, then DocValues will automatically be used any
 
 Field values retrieved during search queries are typically returned from stored values. However, non-stored docValues fields will be also returned along with other stored fields when all fields (or pattern matching globs) are specified to be returned (e.g., "`fl=*`") for search queries depending on the effective value of the `useDocValuesAsStored` parameter for each field. For schema versions >= 1.6, the implicit default is `useDocValuesAsStored="true"`. See <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties,Field Type Definitions and Properties>> & <<defining-fields.adoc#defining-fields,Defining Fields>> for more details.
 
-When `useDocValuesAsStored="false"`, non-stored DocValues fields can still be explicitly requested by name in the <<common-query-parameters.adoc#fl-field-list-parameter,fl param>>, but will not match glob patterns (`"*"`). Note that returning DocValues along with "regular" stored fields at query time has performance implications that stored fields may not because DocValues are column-oriented and may therefore incur additional cost to retrieve for each returned document. Also note that while returning non-stored fields from DocValues, the values of a multi-valued field are returned in sorted order (and not insertion order). If you require the multi-valued fields to be returned in the original insertion order, then make your multi-valued field as stored (such a change requires re-indexing).
+When `useDocValuesAsStored="false"`, non-stored DocValues fields can still be explicitly requested by name in the <<common-query-parameters.adoc#fl-field-list-parameter,fl param>>, but will not match glob patterns (`"*"`). Note that returning DocValues along with "regular" stored fields at query time has performance implications that stored fields may not because DocValues are column-oriented and may therefore incur additional cost to retrieve for each returned document. Also note that while returning non-stored fields from DocValues, the values of a multi-valued field are returned in sorted order rather than insertion order and may have duplicates removed, see above. If you require the multi-valued fields to be returned in the original insertion order, then make your multi-valued field as stored (such a change requires re-indexing).
 
 In cases where the query is returning _only_ docValues fields performance may improve since returning stored fields requires disk reads and decompression whereas returning docValues fields in the fl list only requires memory access.
 
-When retrieving fields from their docValues form (using the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>, <<streaming-expressions.adoc#streaming-expressions,streaming expressions>> or if the field is requested in the `fl` parameter), two important differences between regular stored fields and docValues fields must be understood:
+When retrieving fields from their docValues form (such as when using the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>, <<streaming-expressions.adoc#streaming-expressions,streaming expressions>> or if the field is requested in the `fl` parameter), two important differences between regular stored fields and docValues fields must be understood:
 
-1.  Order is _not_ preserved. For simply retrieving stored fields, the insertion order is the return order. For docValues, it is the _sorted_ order.
-2.  For field types using `SORTED_SET`, multiple identical entries are collapsed into a single value. Thus if I insert values 4, 5, 2, 4, 1, my return will be 1, 2, 4, 5.
+1.  Order is _not_ preserved. When retrieving stored fields, the insertion order is the return order. For docValues, it is the _sorted_ order.
+2.  For field types using `SORTED_SET` (see above), multiple identical entries are collapsed into a single value. Thus if values 4, 5, 2, 4, 1 are inserted, the values returned will be 1, 2, 4, 5.

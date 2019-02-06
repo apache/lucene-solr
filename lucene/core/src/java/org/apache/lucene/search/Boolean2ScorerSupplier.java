@@ -30,13 +30,13 @@ import org.apache.lucene.search.BooleanClause.Occur;
 
 final class Boolean2ScorerSupplier extends ScorerSupplier {
 
-  private final BooleanWeight weight;
+  private final Weight weight;
   private final Map<BooleanClause.Occur, Collection<ScorerSupplier>> subs;
   private final ScoreMode scoreMode;
   private final int minShouldMatch;
   private long cost = -1;
 
-  Boolean2ScorerSupplier(BooleanWeight weight,
+  Boolean2ScorerSupplier(Weight weight,
       Map<Occur, Collection<ScorerSupplier>> subs,
       ScoreMode scoreMode, int minShouldMatch) {
     if (minShouldMatch < 0) {
@@ -111,7 +111,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       assert scoreMode.needsScores();
       return new ReqOptSumScorer(
           excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost),
-          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost));
+          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost), scoreMode);
     }
   }
 
@@ -187,7 +187,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       } else if (scoreMode == ScoreMode.TOP_SCORES) {
         return new WANDScorer(weight, optionalScorers);
       } else {
-        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode.needsScores());
+        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }
     }
   }

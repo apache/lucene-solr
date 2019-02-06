@@ -62,7 +62,6 @@ import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.Builder;
@@ -927,10 +926,7 @@ public class Dictionary {
         if (hasStemExceptions && end+1 < line.length()) {
           String stemException = parseStemException(line.substring(end+1));
           if (stemException != null) {
-            if (stemExceptionCount == stemExceptions.length) {
-              int newSize = ArrayUtil.oversize(stemExceptionCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-              stemExceptions = Arrays.copyOf(stemExceptions, newSize);
-            }
+            stemExceptions = ArrayUtil.grow(stemExceptions, stemExceptionCount+1);
             stemExceptionID = stemExceptionCount+1; // we use '0' to indicate no exception for the form
             stemExceptions[stemExceptionCount++] = stemException;
           }
@@ -1125,7 +1121,7 @@ public class Dictionary {
       }
 
       if (upto < flags.length) {
-        flags = Arrays.copyOf(flags, upto);
+        flags = ArrayUtil.copyOfSubArray(flags, 0, upto);
       }
       return flags;
     }

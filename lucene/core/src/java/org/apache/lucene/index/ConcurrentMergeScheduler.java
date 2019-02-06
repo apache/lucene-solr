@@ -418,7 +418,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         if (value != null) {
           spins = Boolean.parseBoolean(value);
         }
-      } catch (Throwable ignored) {
+      } catch (Exception ignored) {
+        // that's fine we might hit a SecurityException etc. here just continue
       }
       setDefaultMaxMergesAndThreads(spins);
       if (verbose()) {

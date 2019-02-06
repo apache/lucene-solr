@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.replicator;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.util.Random;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 
+@ThreadLeakLingering(linger = 80000) // Jetty might ignore interrupt for a minute 
 public abstract class ReplicatorTestCase extends LuceneTestCase {
   
   private static HttpClientConnectionManager clientConnectionManager;

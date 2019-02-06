@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
@@ -89,7 +89,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: run aq=" + query);
     }
-    return searcher.search(query, 5).totalHits;
+    return searcher.search(query, 5).totalHits.value;
   }
   
   private void assertAutomatonHits(int expected, Automaton automaton)
@@ -181,7 +181,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
    */
   public void testRewriteSingleTerm() throws IOException {
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), Automata.makeString("piece"));
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
+    Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), FN);
     assertTrue(aq.getTermsEnum(terms) instanceof SingleTermsEnum);
     assertEquals(1, automatonQueryNrHits(aq));
   }
@@ -204,7 +204,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     AutomatonQuery aq = new AutomatonQuery(newTerm("bogus"), Automata.makeEmpty());
     // not yet available: assertTrue(aq.getEnum(searcher.getIndexReader())
     // instanceof EmptyTermEnum);
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
+    Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), FN);
     assertSame(TermsEnum.EMPTY, aq.getTermsEnum(terms));
     assertEquals(0, automatonQueryNrHits(aq));
   }

@@ -28,12 +28,13 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -814,7 +815,7 @@ public class TestPackedInts extends LuceneTestCase {
     final int valueCount = TestUtil.nextInt(random(), 1, 2048);
     for (int bpv = 1; bpv <= 64; ++bpv) {
       final int maxValue = (int) Math.min(PackedInts.maxValue(31), PackedInts.maxValue(bpv));
-      final RAMDirectory directory = new RAMDirectory();
+      final Directory directory = new ByteBuffersDirectory();
       List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
       for (PackedInts.Mutable mutable : packedInts) {
         for (int i = 0; i < mutable.size(); ++i) {
@@ -903,8 +904,8 @@ public class TestPackedInts extends LuceneTestCase {
         // 3. re-encode
         final long[] blocks2 = new long[blocksOffset2 + blocksLen];
         encoder.encode(values, valuesOffset, blocks2, blocksOffset2, longIterations);
-        assertArrayEquals(msg, Arrays.copyOfRange(blocks, blocksOffset, blocks.length),
-            Arrays.copyOfRange(blocks2, blocksOffset2, blocks2.length));
+        assertArrayEquals(msg, ArrayUtil.copyOfSubArray(blocks, blocksOffset, blocks.length),
+            ArrayUtil.copyOfSubArray(blocks2, blocksOffset2, blocks2.length));
         // test encoding from int[]
         if (bpv <= 32) {
           final long[] blocks3 = new long[blocks2.length];

@@ -17,8 +17,6 @@
 package org.apache.lucene.analysis.custom;
 
 
-import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassInstance;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
@@ -29,21 +27,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilter;
+import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilterFactory;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.Version;
+
+import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassInstance;
 
 /**
  * A general-purpose Analyzer that can be created with a builder-style API.
@@ -73,6 +77,19 @@ import org.apache.lucene.util.Version;
  * <p>The list of names to be used for components can be looked up through:
  * {@link TokenizerFactory#availableTokenizers()}, {@link TokenFilterFactory#availableTokenFilters()},
  * and {@link CharFilterFactory#availableCharFilters()}.
+ * <p>You can create conditional branches in the analyzer by using {@link Builder#when(String, String...)} and
+ * {@link Builder#whenTerm(Predicate)}:
+ * <pre class="prettyprint">
+ * Analyzer ana = CustomAnalyzer.builder()
+ *    .withTokenizer(&quot;standard&quot;)
+ *    .addTokenFilter(&quot;lowercase&quot;)
+ *    .whenTerm(t -&gt; t.length() &gt; 10)
+ *      .addTokenFilter(&quot;reversestring&quot;)
+ *    .endwhen()
+ *    .build();
+ * </pre>
+ *
+ * @since 5.0.0
  */
 public final class CustomAnalyzer extends Analyzer {
   
@@ -125,10 +142,7 @@ public final class CustomAnalyzer extends Analyzer {
   @Override
   protected Reader initReaderForNormalization(String fieldName, Reader reader) {
     for (CharFilterFactory charFilter : charFilters) {
-      if (charFilter instanceof MultiTermAwareComponent) {
-        charFilter = (CharFilterFactory) ((MultiTermAwareComponent) charFilter).getMultiTermComponent();
-        reader = charFilter.create(reader);
-      }
+      reader = charFilter.normalize(reader);
     }
     return reader;
   }
@@ -147,10 +161,7 @@ public final class CustomAnalyzer extends Analyzer {
   protected TokenStream normalize(String fieldName, TokenStream in) {
     TokenStream result = in;
     for (TokenFilterFactory filter : tokenFilters) {
-      if (filter instanceof MultiTermAwareComponent) {
-        filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(result);
-      }
+      result = filter.normalize(result);
     }
     return result;
   }
@@ -335,6 +346,13 @@ public final class CustomAnalyzer extends Analyzer {
       componentsAdded = true;
       return this;
     }
+
+    private Builder addTokenFilter(TokenFilterFactory factory) {
+      Objects.requireNonNull(factory, "TokenFilterFactory may not be null");
+      tokenFilters.add(factory);
+      componentsAdded = true;
+      return this;
+    }
     
     /** Adds the given char filter.
      * @param factory class that is used to create the char filter.
@@ -377,6 +395,117 @@ public final class CustomAnalyzer extends Analyzer {
       componentsAdded = true;
       return this;
     }
+
+    /**
+     * Add a {@link ConditionalTokenFilterFactory} to the analysis chain
+     *
+     * TokenFilters added by subsequent calls to {@link ConditionBuilder#addTokenFilter(String, String...)}
+     * and related functions will only be used if the current token matches the condition.  Consumers
+     * must call {@link ConditionBuilder#endwhen()} to return to the normal tokenfilter
+     * chain once conditional filters have been added
+     *
+     * @param name    is used to look up the factory with {@link TokenFilterFactory#forName(String, Map)}
+     * @param params  the parameters to be passed to the factory
+     */
+    public ConditionBuilder when(String name, String... params) throws IOException {
+      return when(name, paramsToMap(params));
+    }
+
+    /**
+     * Add a {@link ConditionalTokenFilterFactory} to the analysis chain
+     *
+     * TokenFilters added by subsequent calls to {@link ConditionBuilder#addTokenFilter(String, String...)}
+     * and related functions will only be used if the current token matches the condition.  Consumers
+     * must call {@link ConditionBuilder#endwhen()} to return to the normal tokenfilter
+     * chain once conditional filters have been added
+     *
+     * @param name    is used to look up the factory with {@link TokenFilterFactory#forName(String, Map)}
+     * @param params  the parameters to be passed to the factory.  The map must be modifiable
+     */
+    @SuppressWarnings("unchecked")
+    public ConditionBuilder when(String name, Map<String, String> params) throws IOException {
+      Class<? extends TokenFilterFactory> clazz = TokenFilterFactory.lookupClass(name);
+      if (ConditionalTokenFilterFactory.class.isAssignableFrom(clazz) == false) {
+        throw new IllegalArgumentException("TokenFilterFactory " + name + " is not a ConditionalTokenFilterFactory");
+      }
+      return when((Class<? extends ConditionalTokenFilterFactory>) clazz, params);
+    }
+
+    /**
+     * Add a {@link ConditionalTokenFilterFactory} to the analysis chain
+     *
+     * TokenFilters added by subsequent calls to {@link ConditionBuilder#addTokenFilter(String, String...)}
+     * and related functions will only be used if the current token matches the condition.  Consumers
+     * must call {@link ConditionBuilder#endwhen()} to return to the normal tokenfilter
+     * chain once conditional filters have been added
+     *
+     * @param factory class that is used to create the ConditionalTokenFilter
+     * @param params  the parameters to be passed to the factory
+     */
+    public ConditionBuilder when(Class<? extends ConditionalTokenFilterFactory> factory, String... params) throws IOException {
+      return when(factory, paramsToMap(params));
+    }
+
+    /**
+     * Add a {@link ConditionalTokenFilterFactory} to the analysis chain
+     *
+     * TokenFilters added by subsequent calls to {@link ConditionBuilder#addTokenFilter(String, String...)}
+     * and related functions will only be used if the current token matches the condition.  Consumers
+     * must call {@link ConditionBuilder#endwhen()} to return to the normal tokenfilter
+     * chain once conditional filters have been added
+     *
+     * @param factory class that is used to create the ConditionalTokenFilter
+     * @param params  the parameters to be passed to the factory.  The map must be modifiable
+     */
+    public ConditionBuilder when(Class<? extends ConditionalTokenFilterFactory> factory, Map<String, String> params) throws IOException {
+      return when(newFactoryClassInstance(factory, applyDefaultParams(params)));
+    }
+
+    /**
+     * Add a {@link ConditionalTokenFilterFactory} to the analysis chain
+     *
+     * TokenFilters added by subsequent calls to {@link ConditionBuilder#addTokenFilter(String, String...)}
+     * and related functions will only be used if the current token matches the condition.  Consumers
+     * must call {@link ConditionBuilder#endwhen()} to return to the normal tokenfilter
+     * chain once conditional filters have been added
+     */
+    public ConditionBuilder when(ConditionalTokenFilterFactory factory) {
+      return new ConditionBuilder(factory, this);
+    }
+
+    /**
+     * Apply subsequent token filters if the current token's term matches a predicate
+     *
+     * This is the equivalent of:
+     * <pre>
+     *   when(new ConditionalTokenFilterFactory(Collections.emptyMap()) {
+     *      {@code @}Override
+     *      protected ConditionalTokenFilter create(TokenStream input, Function&lt;TokenStream, TokenStream&gt; inner) {
+     *        return new ConditionalTokenFilter(input, inner) {
+     *          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+     *          {@code @}Override
+     *          protected boolean shouldFilter() {
+     *            return predicate.test(termAtt);
+     *          }
+     *        };
+     *      }
+     *   });
+     * </pre>
+     */
+    public ConditionBuilder whenTerm(Predicate<CharSequence> predicate) {
+      return new ConditionBuilder(new ConditionalTokenFilterFactory(Collections.emptyMap()) {
+        @Override
+        protected ConditionalTokenFilter create(TokenStream input, Function<TokenStream, TokenStream> inner) {
+          return new ConditionalTokenFilter(input, inner) {
+            CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+            @Override
+            protected boolean shouldFilter() {
+              return predicate.test(termAtt);
+            }
+          };
+        }
+      }, this);
+    }
     
     /** Builds the analyzer. */
     public CustomAnalyzer build() {
@@ -412,11 +541,73 @@ public final class CustomAnalyzer extends Analyzer {
       return map;
     }
     
-    private <T> T applyResourceLoader(T factory) throws IOException {
+    <T> T applyResourceLoader(T factory) throws IOException {
       if (factory instanceof ResourceLoaderAware) {
         ((ResourceLoaderAware) factory).inform(loader);
       }
       return factory;
     }
   }
+
+  /**
+   * Factory class for a {@link ConditionalTokenFilter}
+   */
+  public static class ConditionBuilder {
+
+    private final List<TokenFilterFactory> innerFilters = new ArrayList<>();
+    private final ConditionalTokenFilterFactory factory;
+    private final Builder parent;
+
+    private ConditionBuilder(ConditionalTokenFilterFactory factory, Builder parent) {
+      this.factory = factory;
+      this.parent = parent;
+    }
+
+    /** Adds the given token filter.
+     * @param name is used to look up the factory with {@link TokenFilterFactory#forName(String, Map)}.
+     *  The list of possible names can be looked up with {@link TokenFilterFactory#availableTokenFilters()}.
+     * @param params the map of parameters to be passed to factory. The map must be modifiable.
+     */
+    public ConditionBuilder addTokenFilter(String name, Map<String, String> params) throws IOException {
+      innerFilters.add(TokenFilterFactory.forName(name, parent.applyDefaultParams(params)));
+      return this;
+    }
+
+    /** Adds the given token filter.
+     * @param name is used to look up the factory with {@link TokenFilterFactory#forName(String, Map)}.
+     *  The list of possible names can be looked up with {@link TokenFilterFactory#availableTokenFilters()}.
+     * @param params the map of parameters to be passed to factory. The map must be modifiable.
+     */
+    public ConditionBuilder addTokenFilter(String name, String... params) throws IOException {
+      return addTokenFilter(name, parent.paramsToMap(params));
+    }
+
+    /** Adds the given token filter.
+     * @param factory class that is used to create the token filter.
+     * @param params the map of parameters to be passed to factory. The map must be modifiable.
+     */
+    public ConditionBuilder addTokenFilter(Class<? extends TokenFilterFactory> factory, Map<String, String> params) throws IOException {
+      innerFilters.add(newFactoryClassInstance(factory, parent.applyDefaultParams(params)));
+      return this;
+    }
+
+    /** Adds the given token filter.
+     * @param factory class that is used to create the token filter.
+     * @param params the map of parameters to be passed to factory. The map must be modifiable.
+     */
+    public ConditionBuilder addTokenFilter(Class<? extends TokenFilterFactory> factory, String... params) throws IOException {
+      return addTokenFilter(factory, parent.paramsToMap(params));
+    }
+
+    /**
+     * Close the branch and return to the main analysis chain
+     */
+    public Builder endwhen() throws IOException {
+      factory.setInnerFilters(innerFilters);
+      parent.applyResourceLoader(factory);
+      parent.addTokenFilter(factory);
+      return parent;
+    }
+  }
+
 }

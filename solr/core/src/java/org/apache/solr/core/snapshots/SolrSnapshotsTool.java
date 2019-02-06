@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +91,7 @@ public class SolrSnapshotsTool implements Closeable {
   private final CloudSolrClient solrClient;
 
   public SolrSnapshotsTool(String solrZkEnsemble) {
-    solrClient = (new CloudSolrClient.Builder()).withZkHost(solrZkEnsemble).build();
+    solrClient = new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty()).build();
   }
 
   @Override

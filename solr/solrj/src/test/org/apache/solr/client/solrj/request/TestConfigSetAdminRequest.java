@@ -38,8 +38,6 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     ConfigSetAdminRequest.Create create = new ConfigSetAdminRequest.Create();
     verifyException(create, "ConfigSet");
     create.setConfigSetName("name");
-    verifyException(create, "Base ConfigSet");
-    create.setBaseConfigSetName("baseConfigSet");
     create.getParams();
   }
 

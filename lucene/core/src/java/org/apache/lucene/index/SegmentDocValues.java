@@ -78,21 +78,10 @@ final class SegmentDocValues {
    * generations. 
    */
   synchronized void decRef(List<Long> dvProducersGens) throws IOException {
-    Throwable t = null;
-    for (Long gen : dvProducersGens) {
+    IOUtils.applyToAll(dvProducersGens, gen -> {
       RefCount<DocValuesProducer> dvp = genDVProducers.get(gen);
       assert dvp != null : "gen=" + gen;
-      try {
-        dvp.decRef();
-      } catch (Throwable th) {
-        if (t == null) {
-          t = th;
-        }
-      }
-    }
-
-    if (t != null) {
-      throw IOUtils.rethrowAlways(t);
-    }
+      dvp.decRef();
+    });
   }
 }

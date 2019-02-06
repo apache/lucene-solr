@@ -33,7 +33,7 @@ Since the Analytics framework is a _search component_, it must be declared as su
 For distributed analytics requests over cloud collections, the component uses the `AnalyticsHandler` strictly for inter-shard communication.
 The Analytics Handler should not be used by users to submit analytics requests.
 
-To configure Solr to use the Analytics Component, the first step is to add a `lib` directive so Solr loads the Analytic Component classes (for more about the `lib` directive, see <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig, Lib Directives in SolrConfig>>). In the section of `solrconfig.xml` where the default `lib` directive are, add a line:
+To configure Solr to use the Analytics Component, the first step is to add a `<lib/>` directive so Solr loads the Analytic Component classes (for more about the `<lib/>` directive, see <<resource-and-plugin-loading.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). In the section of `solrconfig.xml` where the default `<lib/>` directives are, add a line:
 
 [source,xml]
 <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-analytics-\d.*\.jar" />

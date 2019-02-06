@@ -41,7 +41,7 @@ Solr can sort query responses according to:
 * A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document. TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
 ** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#copying-fields,use a `copyField` directive>> in the the Schema to clone the field. Then search on the field and sort on its clone.
 
-In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.  This default behavior is equivilent to explicitly sorting using the 2 argument `<<function-queries.adoc#field-function,field()>>` function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
+In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.  This default behavior is equivalent to explicitly sorting using the 2 argument `<<function-queries.adoc#field-function,field()>>` function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
 
 The table below explains how Solr responds to various settings of the `sort` parameter.
 
@@ -102,7 +102,7 @@ fq=+popularity:[10 TO *] +section:0
 ----
 
 * The document sets from each filter query are cached independently. Thus, concerning the previous examples: use a single `fq` containing two mandatory clauses if those clauses appear together often, and use two separate `fq` parameters if they are relatively independent. (To learn about tuning cache sizes and making sure a filter cache actually exists, see <<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>.)
-* It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucene-query-parser-and-the-solr-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
+* It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucene-s-classic-query-parser-and-solr-s-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
 
 * As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values. Online tools are available to help you with URL-encoding. For example: http://meyerweb.com/eric/tools/dencoder/.
 
@@ -216,7 +216,7 @@ As this check is periodically performed, the actual time for which a request can
 
 This parameter may be set to either `true` or `false`.
 
-If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will attempt to use an {lucene-javadocs}/core/org/apache/lucene/search/EarlyTerminatingSortingCollector.html[`EarlyTerminatingSortingCollector`].
+If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will be able to skip documents on a per-segment basis that are definitively not candidates for the current page of results.
 
 If early termination is used, a `segmentTerminatedEarly` header will be included in the `responseHeader`.
 
@@ -284,9 +284,9 @@ The `echoParams` parameter controls what information about request parameters is
 
 The `echoParams` parameter accepts the following values:
 
-* `explicit`: This is the default value. Only parameters included in the actual request, plus the `_` parameter (which is a 64-bit numeric timestamp) will be added to the params section of the response header.
+* `explicit`: This is the default value. Only parameters included in the actual request, plus the `_` parameter (which is a 64-bit numeric timestamp) will be added to the `params` section of the response header.
 * `all`: Include all request parameters that contributed to the query. This will include everything defined in the request handler definition found in `solrconfig.xml` as well as parameters included with the request, plus the `_` parameter. If a parameter is included in the request handler definition AND the request, it will appear multiple times in the response header.
-* `none`: Entirely removes the "params" section of the response header. No information about the request parameters will be available in the response.
+* `none`: Entirely removes the `params` section of the response header. No information about the request parameters will be available in the response.
 
 Here is an example of a JSON response where the echoParams parameter was not included, so the default of `explicit` is active. The request URL that created this response included three parameters - `q`, `wt`, and `indent`:
 

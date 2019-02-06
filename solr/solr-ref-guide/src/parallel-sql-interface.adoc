@@ -280,7 +280,7 @@ The `aggregationMode` parameter is available in the both the JDBC driver and HTT
 SELECT distinct fieldA as fa, fieldB as fb FROM tableA ORDER BY fa desc, fb desc
 ----
 
-=== Statistics
+=== Statistical Functions
 
 The SQL interface supports simple statistics calculated on numeric fields. The supported functions are `count(*)`, `min`, `max`, `sum`, and `avg`.
 
@@ -320,10 +320,6 @@ The Column Identifiers can contain both fields in the Solr index and aggregate f
 * `max:(field)`: Returns the max value of a numerics over a set of buckets.
 
 The non-function fields in the field list determine the fields to calculate the aggregations over.
-
-*`GROUP BY` Clause*
-
-The `GROUP BY` clause can contain up to 4 fields in the Solr index. These fields should correspond with the non-function fields in the field list.
 
 === HAVING Clause
 

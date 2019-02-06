@@ -19,15 +19,10 @@ package org.apache.solr.legacy;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.solr.legacy.LegacyDoubleField;
-import org.apache.solr.legacy.LegacyFloatField;
-import org.apache.solr.legacy.LegacyIntField;
-import org.apache.solr.legacy.LegacyLongField;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -55,9 +50,9 @@ public class TestLegacyTerms extends LuceneTestCase {
     }
     
     IndexReader r = w.getReader();
-    Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(new Integer(minValue), LegacyNumericUtils.getMinInt(terms));
-    assertEquals(new Integer(maxValue), LegacyNumericUtils.getMaxInt(terms));
+    Terms terms = MultiTerms.getTerms(r, "field");
+    assertEquals(Integer.valueOf(minValue), LegacyNumericUtils.getMinInt(terms));
+    assertEquals(Integer.valueOf(maxValue), LegacyNumericUtils.getMaxInt(terms));
 
     r.close();
     w.close();
@@ -86,9 +81,9 @@ public class TestLegacyTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
 
-    Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(new Long(minValue), LegacyNumericUtils.getMinLong(terms));
-    assertEquals(new Long(maxValue), LegacyNumericUtils.getMaxLong(terms));
+    Terms terms = MultiTerms.getTerms(r, "field");
+    assertEquals(Long.valueOf(minValue), LegacyNumericUtils.getMinLong(terms));
+    assertEquals(Long.valueOf(maxValue), LegacyNumericUtils.getMaxLong(terms));
 
     r.close();
     w.close();
@@ -111,7 +106,7 @@ public class TestLegacyTerms extends LuceneTestCase {
     }
     
     IndexReader r = w.getReader();
-    Terms terms = MultiFields.getTerms(r, "field");
+    Terms terms = MultiTerms.getTerms(r, "field");
     assertEquals(minValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
     assertEquals(maxValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
 
@@ -137,7 +132,7 @@ public class TestLegacyTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
 
-    Terms terms = MultiFields.getTerms(r, "field");
+    Terms terms = MultiTerms.getTerms(r, "field");
 
     assertEquals(minValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
     assertEquals(maxValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);

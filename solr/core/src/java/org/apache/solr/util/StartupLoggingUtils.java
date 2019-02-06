@@ -18,12 +18,15 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Enumeration;
+import java.util.Map;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,27 +52,32 @@ public final class StartupLoggingUtils {
     }
   }
 
+  public static String getLoggerImplStr() {
+    return binder.getLoggerFactoryClassStr();
+  }
+
   /**
-   * Disables all log4j ConsoleAppender's by modifying log4j configuration dynamically.
+   * Disables all log4j2 ConsoleAppender's by modifying log4j configuration dynamically.
    * Must only be used during early startup
-   * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
+   * @return true if ok or else false if something happened, e.g. log4j2 classes were not in classpath
    */
-  @SuppressForbidden(reason = "Legitimate log4j access")
+  @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static boolean muteConsole() {
     try {
       if (!isLog4jActive()) {
         logNotSupported("Could not mute logging to console.");
         return false;
       }
-      org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-      Enumeration appenders = rootLogger.getAllAppenders();
-      while (appenders.hasMoreElements()) {
-        Appender appender = (Appender) appenders.nextElement();
+      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      Configuration config = ctx.getConfiguration();
+      LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      Map<String, Appender> appenders = loggerConfig.getAppenders();
+      appenders.forEach((name, appender) -> {
         if (appender instanceof ConsoleAppender) {
-          log.info("Property solr.log.muteconsole given. Muting ConsoleAppender named " + appender.getName());
-          rootLogger.removeAppender(appender);
+          loggerConfig.removeAppender(name);
+          ctx.updateLoggers();
         }
-      }
+      });
       return true;
     } catch (Exception e) {
       logNotSupported("Could not mute logging to console.");
@@ -82,14 +90,19 @@ public final class StartupLoggingUtils {
    * @param logLevel String with level, should be one of the supported, e.g. TRACE, DEBUG, INFO, WARN, ERROR...
    * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
    */
-  @SuppressForbidden(reason = "Legitimate log4j access")
+  @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static boolean changeLogLevel(String logLevel) {
     try {
       if (!isLog4jActive()) {
         logNotSupported("Could not change log level.");
         return false;
       }
-      LogManager.getRootLogger().setLevel(Level.toLevel(logLevel, Level.INFO));
+
+      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      Configuration config = ctx.getConfiguration();
+      LoggerConfig loggerConfig = config.getRootLogger();
+      loggerConfig.setLevel(Level.toLevel(logLevel, Level.INFO));
+      ctx.updateLoggers();
       return true;
     } catch (Exception e) {
       logNotSupported("Could not change log level.");

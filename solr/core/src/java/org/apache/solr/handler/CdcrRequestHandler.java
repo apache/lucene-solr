@@ -134,19 +134,19 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       // Configuration of the Update Log Synchronizer
       Object updateLogSynchonizerParam = args.get(CdcrParams.UPDATE_LOG_SYNCHRONIZER_PARAM);
       if (updateLogSynchonizerParam != null && updateLogSynchonizerParam instanceof NamedList) {
-        updateLogSynchronizerConfiguration = SolrParams.toSolrParams((NamedList) updateLogSynchonizerParam);
+        updateLogSynchronizerConfiguration = ((NamedList) updateLogSynchonizerParam).toSolrParams();
       }
 
       // Configuration of the Replicator
       Object replicatorParam = args.get(CdcrParams.REPLICATOR_PARAM);
       if (replicatorParam != null && replicatorParam instanceof NamedList) {
-        replicatorConfiguration = SolrParams.toSolrParams((NamedList) replicatorParam);
+        replicatorConfiguration = ((NamedList) replicatorParam).toSolrParams();
       }
 
       // Configuration of the Buffer
       Object bufferParam = args.get(CdcrParams.BUFFER_PARAM);
       if (bufferParam != null && bufferParam instanceof NamedList) {
-        bufferConfiguration = SolrParams.toSolrParams((NamedList) bufferParam);
+        bufferConfiguration = ((NamedList) bufferParam).toSolrParams();
       }
 
       // Configuration of the Replicas
@@ -154,7 +154,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       List replicas = args.getAll(CdcrParams.REPLICA_PARAM);
       for (Object replica : replicas) {
         if (replica != null && replica instanceof NamedList) {
-          SolrParams params = SolrParams.toSolrParams((NamedList) replica);
+          SolrParams params = ((NamedList) replica).toSolrParams();
           if (!replicasConfiguration.containsKey(params.get(CdcrParams.SOURCE_COLLECTION_PARAM))) {
             replicasConfiguration.put(params.get(CdcrParams.SOURCE_COLLECTION_PARAM), new ArrayList<>());
           }

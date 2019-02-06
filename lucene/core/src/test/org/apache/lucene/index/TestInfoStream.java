@@ -74,8 +74,12 @@ public class TestInfoStream extends LuceneTestCase {
         return true;
       }
     });
-    IndexWriter iw = new IndexWriter(dir, iwc);
-    iw.enableTestPoints = true;
+    IndexWriter iw = new IndexWriter(dir, iwc) {
+      @Override
+      protected boolean isEnableTestPoints() {
+        return true;
+      }
+    };
     iw.addDocument(new Document());
     iw.close();
     dir.close();

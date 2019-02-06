@@ -27,6 +27,8 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -485,6 +487,21 @@ public class TestIOUtils extends LuceneTestCase {
     }
     IOUtils.fsync(somefile, false);
     // no exception
+  }
+
+  public void testApplyToAll() {
+    ArrayList<Integer> closed = new ArrayList<>();
+    RuntimeException runtimeException = expectThrows(RuntimeException.class, () ->
+        IOUtils.applyToAll(Arrays.asList(1, 2), i -> {
+          closed.add(i);
+          throw new RuntimeException("" + i);
+        }));
+    assertEquals("1", runtimeException.getMessage());
+    assertEquals(1, runtimeException.getSuppressed().length);
+    assertEquals("2", runtimeException.getSuppressed()[0].getMessage());
+    assertEquals(2, closed.size());
+    assertEquals(1, closed.get(0).intValue());
+    assertEquals(2, closed.get(1).intValue());
   }
 
 }

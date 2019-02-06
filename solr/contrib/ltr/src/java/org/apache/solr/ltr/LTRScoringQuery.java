@@ -508,7 +508,7 @@ public class LTRScoringQuery extends Query {
       }
 
       @Override
-      public Collection<ChildScorer> getChildren() throws IOException {
+      public Collection<ChildScorable> getChildren() throws IOException {
         return featureTraversalScorer.getChildren();
       }
 
@@ -592,10 +592,10 @@ public class LTRScoringQuery extends Query {
         }
 
         @Override
-        public final Collection<ChildScorer> getChildren() {
-          final ArrayList<ChildScorer> children = new ArrayList<>();
+        public final Collection<ChildScorable> getChildren() {
+          final ArrayList<ChildScorable> children = new ArrayList<>();
           for (final DisiWrapper scorer : subScorers) {
-            children.add(new ChildScorer(scorer.scorer, "SHOULD"));
+            children.add(new ChildScorable(scorer.scorer, "SHOULD"));
           }
           return children;
         }
@@ -674,10 +674,10 @@ public class LTRScoringQuery extends Query {
         }
         
         @Override
-        public final Collection<ChildScorer> getChildren() {
-          final ArrayList<ChildScorer> children = new ArrayList<>();
+        public final Collection<ChildScorable> getChildren() {
+          final ArrayList<ChildScorable> children = new ArrayList<>();
           for (final Scorer scorer : featureScorers) {
-            children.add(new ChildScorer(scorer, "SHOULD"));
+            children.add(new ChildScorable(scorer, "SHOULD"));
           }
           return children;
         }

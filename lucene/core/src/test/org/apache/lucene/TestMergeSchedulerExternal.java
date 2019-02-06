@@ -34,9 +34,9 @@ import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergeTrigger;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -175,7 +175,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     // we don't really need to execute anything, just to make sure the custom MS
     // compiles. But ensure that it can be used as well, e.g., no other hidden
     // dependencies or something. Therefore, don't use any random API !
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setMergeScheduler(new ReportingMergeScheduler());
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -187,5 +187,4 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
 }

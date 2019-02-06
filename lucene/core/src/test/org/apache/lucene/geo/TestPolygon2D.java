@@ -16,10 +16,13 @@
  */
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.GeoTestUtil.createRegularPolygon;
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
 import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
+import static org.apache.lucene.geo.GeoTestUtil.nextPointNear;
 import static org.apache.lucene.geo.GeoTestUtil.nextPolygon;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -286,6 +289,52 @@ public class TestPolygon2D extends LuceneTestCase {
         double longitude = point[1];
         boolean expected = GeoTestUtil.containsSlowly(polygon, latitude, longitude);
         assertEquals(expected, impl.contains(latitude, longitude));
+      }
+    }
+  }
+
+  // targets the polygon directly
+  public void testRelateTriangle() {
+    for (int i = 0; i < 100; ++i) {
+      Polygon polygon = nextPolygon();
+      Polygon2D impl = Polygon2D.create(polygon);
+
+      for (int j = 0; j < 100; j++) {
+        double[] a = nextPointNear(polygon);
+        double[] b = nextPointNear(polygon);
+        double[] c = nextPointNear(polygon);
+
+        // if the point is within poly, then triangle should not intersect
+        if (impl.contains(a[0], a[1]) || impl.contains(b[0], b[1]) || impl.contains(c[0], c[1])) {
+          assertTrue(impl.relateTriangle(a[1], a[0], b[1], b[0], c[1], c[0]) != Relation.CELL_OUTSIDE_QUERY);
+        }
+      }
+    }
+  }
+
+  public void testRelateTriangleContainsPolygon() {
+    Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
+    Polygon2D impl = Polygon2D.create(polygon);
+    assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-10 , -1, 2, -1, 10, 10));
+  }
+
+  // test
+  public void testRelateTriangleEdgeCases() {
+    for (int i = 0; i < 100; ++i) {
+      // random radius between 1Km and 100Km
+      int randomRadius = RandomNumbers.randomIntBetween(random(), 1000, 100000);
+      // random number of vertices
+      int numVertices = RandomNumbers.randomIntBetween(random(), 100, 1000);
+      Polygon polygon = createRegularPolygon(0, 0, randomRadius, numVertices);
+      Polygon2D impl = Polygon2D.create(polygon);
+
+      // create and test a simple tessellation
+      for (int j = 1; j < numVertices; ++j) {
+        double[] a = new double[] {0d, 0d};  // center of poly
+        double[] b = new double[] {polygon.getPolyLat(j - 1), polygon.getPolyLon(j - 1)};
+        // occassionally test pancake triangles
+        double[] c = random().nextBoolean() ? new double[] {polygon.getPolyLat(j), polygon.getPolyLon(j)} : new double[] {a[0], a[1]};
+        assertTrue(impl.relateTriangle(a[0], a[1], b[0], b[1], c[0], c[1]) != Relation.CELL_OUTSIDE_QUERY);
       }
     }
   }

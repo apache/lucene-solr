@@ -17,14 +17,14 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -39,11 +39,12 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -180,81 +181,10 @@ public class ChaosMonkey {
   }
 
   public void stopJetty(CloudJettyRunner cjetty) throws Exception {
-    stop(cjetty.jetty);
+    cjetty.jetty.stop();
     stops.incrementAndGet();
   }
 
-  public void killJetty(CloudJettyRunner cjetty) throws Exception {
-    kill(cjetty);
-    stops.incrementAndGet();
-  }
-  
-  public void stopJetty(JettySolrRunner jetty) throws Exception {
-    stops.incrementAndGet();
-    stopJettySolrRunner(jetty);
-  }
-  
-  private static void stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    assert(jetty != null);
-    monkeyLog("stop jetty! " + jetty.getLocalPort());
-    SolrDispatchFilter sdf = jetty.getSolrDispatchFilter();
-    if (sdf != null) {
-      try {
-        sdf.destroy();
-      } catch (Throwable t) {
-        log.error("", t);
-      }
-    }
-    try {
-      jetty.stop();
-    } catch (InterruptedException e) {
-      log.info("Jetty stop interrupted - should be a test caused interruption, we will try again to be sure we shutdown");
-    } 
-    
-    if (!jetty.isStopped()) {
-      jetty.stop();
-    }
-
-    if (!jetty.isStopped()) {
-      throw new RuntimeException("could not stop jetty");
-    }
-  }
-  
-
-  public static void kill(List<JettySolrRunner> jettys) throws Exception {
-    for (JettySolrRunner jetty : jettys) {
-      kill(jetty);
-    }
-  }
-  
-  public static void kill(JettySolrRunner jetty) throws Exception {
-
-    CoreContainer cores = jetty.getCoreContainer();
-    if (cores != null) {
-      if (cores.isZooKeeperAware()) {
-        int zklocalport = ((InetSocketAddress) cores.getZkController()
-            .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
-        IpTables.blockPort(zklocalport);
-      }
-    }
-
-    IpTables.blockPort(jetty.getLocalPort());
-    
-    monkeyLog("kill jetty! " + jetty.getLocalPort());
-    
-    jetty.stop();
-    
-    stop(jetty);
-    
-    if (!jetty.isStopped()) {
-      throw new RuntimeException("could not kill jetty");
-    }
-  }
-  
-  public static void kill(CloudJettyRunner cjetty) throws Exception {
-    kill(cjetty.jetty);
-  }
-  
   public void stopAll(int pauseBetweenMs) throws Exception {
     Set<String> keys = shardToJetty.keySet();
     List<Thread> jettyThreads = new ArrayList<>(keys.size());
@@ -286,7 +216,7 @@ public class ChaosMonkey {
     for (String key : keys) {
       List<CloudJettyRunner> jetties = shardToJetty.get(key);
       for (CloudJettyRunner jetty : jetties) {
-        start(jetty.jetty);
+        jetty.jetty.start();
       }
     }
   }
@@ -346,7 +276,7 @@ public class ChaosMonkey {
   public CloudJettyRunner killRandomShard(String slice) throws Exception {
     CloudJettyRunner cjetty = getRandomJetty(slice, aggressivelyKillLeaders);
     if (cjetty != null) {
-      killJetty(cjetty);
+      stopJetty(cjetty);
     }
     return cjetty;
   }
@@ -365,17 +295,33 @@ public class ChaosMonkey {
     }
     
     // let's check the deadpool count
-    int numRunning = 0;
-    for (CloudJettyRunner cjetty : shardToJetty.get(slice)) {
-      if (!deadPool.contains(cjetty)) {
-        numRunning++;
-      }
-    }
+    int numRunning = getNumRunning(slice);
     
     if (numRunning < 2) {
       // we cannot kill anyone
       monkeyLog("only one active node in shard - monkey cannot kill :(");
       return null;
+    }
+    
+    if (numActive == 2) {
+      // we are careful
+      Thread.sleep(1000);
+      
+      numActive = checkIfKillIsLegal(slice, numActive);
+      
+      if (numActive < 2) {
+        // we cannot kill anyone
+        monkeyLog("only one active node in shard - monkey cannot kill :(");
+        return null;
+      }
+      
+      numRunning = getNumRunning(slice);
+      
+      if (numRunning < 2) {
+        // we cannot kill anyone
+        monkeyLog("only one active node in shard - monkey cannot kill :(");
+        return null;
+      }
     }
     
     boolean canKillIndexer = canKillIndexer(slice);
@@ -443,6 +389,16 @@ public class ChaosMonkey {
     monkeyLog("chose a victim! " + cjetty.jetty.getLocalPort());
   
     return cjetty;
+  }
+
+  private int getNumRunning(String slice) {
+    int numRunning = 0;
+    for (CloudJettyRunner cjetty : shardToJetty.get(slice)) {
+      if (!deadPool.contains(cjetty)) {
+        numRunning++;
+      }
+    }
+    return numRunning;
   }
 
   private Type getTypeForJetty(String sliceName, CloudJettyRunner cjetty) {
@@ -594,7 +550,8 @@ public class ChaosMonkey {
       if (!deadPool.isEmpty()) {
         int index = chaosRandom.nextInt(deadPool.size());
         JettySolrRunner jetty = deadPool.get(index).jetty;
-        if (jetty.isStopped() && !ChaosMonkey.start(jetty)) {
+        if (jetty.isStopped()) {
+          jetty.start();
           return;
         }
         deadPool.remove(index);
@@ -631,60 +588,45 @@ public class ChaosMonkey {
   }
 
   public static void stop(List<JettySolrRunner> jettys) throws Exception {
+    ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+        0,
+        Integer.MAX_VALUE,
+        15, TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+        new DefaultSolrThreadFactory("ChaosMonkey"),
+        false);
     for (JettySolrRunner jetty : jettys) {
-      stop(jetty);
+      executor.submit(() -> {
+        try {
+          jetty.stop();
+        } catch (Exception e) {
+          log.error("error stopping jetty", e);
+          throw new RuntimeException(e);
+        }
+      });
     }
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
-  
-  public static void stop(JettySolrRunner jetty) throws Exception {
-    stopJettySolrRunner(jetty);
-  }
-  
+
   public static void start(List<JettySolrRunner> jettys) throws Exception {
+    ExecutorService executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+        0,
+        Integer.MAX_VALUE,
+        15, TimeUnit.SECONDS,
+        new SynchronousQueue<>(),
+        new DefaultSolrThreadFactory("ChaosMonkey"),
+        false);
     for (JettySolrRunner jetty : jettys) {
-      start(jetty);
-    }
-  }
-  
-  public static boolean start(JettySolrRunner jetty) throws Exception {
-    monkeyLog("starting jetty! " + jetty.getLocalPort());
-    IpTables.unblockPort(jetty.getLocalPort());
-    try {
-      jetty.start();
-    } catch (Exception e) {
-      jetty.stop();
-      Thread.sleep(3000);
-      try {
-        jetty.start();
-      } catch (Exception e2) {
-        jetty.stop();
-        Thread.sleep(10000);
+      executor.submit(() -> {
         try {
           jetty.start();
-        } catch (Exception e3) {
-          jetty.stop();
-          Thread.sleep(30000);
-          try {
-            jetty.start();
-          } catch (Exception e4) {
-            log.error("Could not get the port to start jetty again", e4);
-            // we coud not get the port
-            jetty.stop();
-            return false;
-          }
+        } catch (Exception e) {
+          log.error("error starting jetty", e);
+          throw new RuntimeException(e);
         }
-      }
+      });
     }
-    CoreContainer cores = jetty.getCoreContainer();
-    if (cores != null) {
-      if (cores.isZooKeeperAware()) {
-        int zklocalport = ((InetSocketAddress) cores.getZkController()
-            .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
-        IpTables.unblockPort(zklocalport);
-      }
-    }
-
-    return true;
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
   }
 
   /**

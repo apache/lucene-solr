@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,7 +112,7 @@ public class CloudSolrClient extends SolrClient {
   private HttpClient myClient;
   private final boolean clientIsInternal;
   //no of times collection state to be reloaded if stale state error is received
-  private static final int MAX_STALE_RETRIES = 5;
+  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
   Random rand = new Random();
   
   private final boolean updatesToLeaders;
@@ -211,9 +212,9 @@ public class CloudSolrClient extends SolrClient {
     final DocCollection cached;
     final long cachedAt;
     //This is the time at which the collection is retried and got the same old version
-    long retriedAt = -1;
+    volatile long retriedAt = -1;
     //flag that suggests that this is potentially to be rechecked
-    boolean maybeStale = false;
+    volatile boolean maybeStale = false;
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
@@ -587,6 +588,7 @@ public class CloudSolrClient extends SolrClient {
         nonRoutableRequest = new UpdateRequest();
       }
       nonRoutableRequest.setParams(nonRoutableParams);
+      nonRoutableRequest.setBasicAuthCredentials(request.getBasicAuthUser(), request.getBasicAuthPassword());
       List<String> urlList = new ArrayList<>();
       urlList.addAll(routes.keySet());
       Collections.shuffle(urlList, rand);
@@ -609,10 +611,8 @@ public class CloudSolrClient extends SolrClient {
 
   private Map<String,List<String>> buildUrlMap(DocCollection col) {
     Map<String, List<String>> urlMap = new HashMap<>();
-    Collection<Slice> slices = col.getActiveSlices();
-    Iterator<Slice> sliceIterator = slices.iterator();
-    while (sliceIterator.hasNext()) {
-      Slice slice = sliceIterator.next();
+    Slice[] slices = col.getActiveSlicesArr();
+    for (Slice slice : slices) {
       String name = slice.getName();
       List<String> urls = new ArrayList<>();
       Replica leader = slice.getLeader();
@@ -916,16 +916,19 @@ public class CloudSolrClient extends SolrClient {
       int errorCode = (rootCause instanceof SolrException) ?
           ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
 
-      log.error("Request to collection {} failed due to (" + errorCode + ") {}, retry? " + retryCount,
-          inputCollections, rootCause.toString());
+          boolean wasCommError =
+              (rootCause instanceof ConnectException ||
+                  rootCause instanceof ConnectTimeoutException ||
+                  rootCause instanceof NoHttpResponseException ||
+                  rootCause instanceof SocketException);
+          
+      log.error("Request to collection {} failed due to (" + errorCode + ") {}, retry={} commError={} errorCode={} ",
+          inputCollections, rootCause.toString(), retryCount, wasCommError, errorCode);
 
-      boolean wasCommError =
-          (rootCause instanceof ConnectException ||
-              rootCause instanceof ConnectTimeoutException ||
-              rootCause instanceof NoHttpResponseException ||
-              rootCause instanceof SocketException);
-
-      if (wasCommError || (exc instanceof RouteException)) {
+      if (wasCommError
+          || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
+          //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
+          ) {
         // it was a communication error. it is likely that
         // the node to which the request to be sent is down . So , expire the state
         // so that the next attempt would fetch the fresh state
@@ -943,15 +946,18 @@ public class CloudSolrClient extends SolrClient {
           // and we could not get any information from the server
           //it is probably not worth trying again and again because
           // the state would not have been updated
+          log.info("trying request again");
           return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
         }
+      } else {
+        log.info("request was not communication error it seems");
       }
 
       boolean stateWasStale = false;
       if (retryCount < MAX_STALE_RETRIES  &&
           requestedCollections != null    &&
           !requestedCollections.isEmpty() &&
-          SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE)
+          (SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE || errorCode == 404))
       {
         // cached state for one or more external collections was stale
         // re-issue request using updated state
@@ -1257,7 +1263,7 @@ public class CloudSolrClient extends SolrClient {
       NamedList routes = ((CloudSolrClient.RouteResponse)resp).getRouteResponses();
       DocCollection coll = getDocCollection(collection, null);
       Map<String,String> leaders = new HashMap<String,String>();
-      for (Slice slice : coll.getActiveSlices()) {
+      for (Slice slice : coll.getActiveSlicesArr()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
           ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
@@ -1356,6 +1362,58 @@ public class CloudSolrClient extends SolrClient {
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
+    
+    /**
+     * @deprecated use other constructors instead.  This constructor will be changing visibility in an upcoming release.
+     */
+    @Deprecated
+    public Builder() {}
+    
+    /**
+     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient} instances.
+     * The solr client will use these urls to understand the cluster topology, which solr nodes are active etc.
+     * 
+     * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); they should not
+     * include any collections, cores, or other path components.
+     *
+     * Usage example:
+     *
+     * <pre>
+     *   final List&lt;String&gt; solrBaseUrls = new ArrayList&lt;String&gt;();
+     *   solrBaseUrls.add("http://solr1:8983/solr"); solrBaseUrls.add("http://solr2:8983/solr"); solrBaseUrls.add("http://solr3:8983/solr");
+     *   final SolrClient client = new CloudSolrClient.Builder(solrBaseUrls).build();
+     * </pre>
+     */
+    public Builder(List<String> solrUrls) {
+      this.solrUrls = solrUrls;
+    }
+    
+    /**
+     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient} instances.
+     *
+     * Usage example when Solr stores data at the ZooKeeper root ('/'):
+     *
+     * <pre>
+     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
+     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
+     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
+     * </pre>
+     *
+     * Usage example when Solr data is stored in a ZooKeeper chroot:
+     *
+     *  <pre>
+     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
+     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
+     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
+     *  </pre>
+     *
+     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
+     * @param zkChroot the path to the root ZooKeeper node containing Solr data.  Provide {@code java.util.Optional.empty()} if no ZK chroot is used.
+     */
+    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
+      this.zkHosts = zkHosts;
+      if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
 
     /**
      * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
@@ -1365,7 +1423,10 @@ public class CloudSolrClient extends SolrClient {
      * @param zkHost
      *          The client endpoint of the ZooKeeper quorum containing the cloud
      *          state.
+     *          
+     * @deprecated use Zk-host constructor instead
      */
+    @Deprecated
     public Builder withZkHost(String zkHost) {
       this.zkHosts.add(zkHost);
       return this;
@@ -1379,7 +1440,10 @@ public class CloudSolrClient extends SolrClient {
      * 
      * Provided Solr URL is expected to point to the root Solr path ("http://hostname:8983/solr"); it should not
      * include any collections, cores, or other path components.
+     * 
+     * @deprecated use Solr-URL constructor instead
      */
+    @Deprecated
     public Builder withSolrUrl(String solrUrl) {
       this.solrUrls.add(solrUrl);
       return this;
@@ -1392,7 +1456,10 @@ public class CloudSolrClient extends SolrClient {
      * 
      * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); they should not
      * include any collections, cores, or other path components.
+     * 
+     * @deprecated use Solr URL constructors instead
      */
+    @Deprecated
     public Builder withSolrUrl(Collection<String> solrUrls) {
       this.solrUrls.addAll(solrUrls);
       return this;
@@ -1416,7 +1483,10 @@ public class CloudSolrClient extends SolrClient {
      *          each host in the ZooKeeper ensemble. Note that with certain
      *          Collection types like HashSet, the order of hosts in the final
      *          connect string may not be in the same order you added them.
+     *          
+     * @deprecated use Zk-host constructor instead
      */
+    @Deprecated
     public Builder withZkHost(Collection<String> zkHosts) {
       this.zkHosts.addAll(zkHosts);
       return this;
@@ -1424,7 +1494,10 @@ public class CloudSolrClient extends SolrClient {
 
     /**
      * Provides a ZooKeeper chroot for the builder to use when creating clients.
+     * 
+     * @deprecated use Zk-host constructor instead
      */
+    @Deprecated
     public Builder withZkChroot(String zkChroot) {
       this.zkChroot = zkChroot;
       return this;
@@ -1440,6 +1513,8 @@ public class CloudSolrClient extends SolrClient {
 
     /**
      * Tells {@link Builder} that created clients should send updates only to shard leaders.
+     *
+     * WARNING: This method currently has no effect.  See SOLR-6312 for more information.
      */
     public Builder sendUpdatesOnlyToShardLeaders() {
       shardLeadersOnly = true;
@@ -1448,6 +1523,8 @@ public class CloudSolrClient extends SolrClient {
     
     /**
      * Tells {@link Builder} that created clients should send updates to all replicas for a shard.
+     *
+     * WARNING: This method currently has no effect.  See SOLR-6312 for more information.
      */
     public Builder sendUpdatesToAllReplicasInShard() {
       shardLeadersOnly = false;
@@ -1456,6 +1533,8 @@ public class CloudSolrClient extends SolrClient {
 
     /**
      * Tells {@link Builder} that created clients should send direct updates to shard leaders only.
+     *
+     * UpdateRequests whose leaders cannot be found will "fail fast" on the client side with a {@link SolrException}
      */
     public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
@@ -1463,20 +1542,37 @@ public class CloudSolrClient extends SolrClient {
     }
 
     /**
-     * Tells {@link Builder} that created clients can send updates
-     * to any shard replica (shard leaders and non-leaders).
+     * Tells {@link Builder} that created clients can send updates to any shard replica (shard leaders and non-leaders).
+     *
+     * Shard leaders are still preferred, but the created clients will fallback to using other replicas if a leader
+     * cannot be found.
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
       return this;
     }
 
-    /** Should direct updates to shards be done in parallel (the default) or if not then synchronously? */
+    /**
+     * Tells {@link Builder} whether created clients should send shard updates serially or in parallel
+     *
+     * When an {@link UpdateRequest} affects multiple shards, {@link CloudSolrClient} splits it up and sends a request
+     * to each affected shard.  This setting chooses whether those sub-requests are sent serially or in parallel.
+     * <p>
+     * If not set, this defaults to 'true' and sends sub-requests in parallel.
+     */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
       return this;
     }
 
+    /**
+     * Expert feature where you want to implement a custom cluster discovery mechanism of the solr nodes as part of the
+     * cluster.
+     *
+     * @deprecated since this is an expert feature we don't want to expose this to regular users. To use this feature
+     * extend CloudSolrClient.Builder and pass your custom ClusterStateProvider
+     */
+    @Deprecated
     public Builder withClusterStateProvider(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
       return this;

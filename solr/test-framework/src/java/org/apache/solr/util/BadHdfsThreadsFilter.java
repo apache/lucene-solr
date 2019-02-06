@@ -25,13 +25,22 @@ public class BadHdfsThreadsFilter implements ThreadFilter {
     String name = t.getName();
     if (name.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
       return true;
+    } if (name.startsWith("IPC Client")) { // SOLR-5007
+      return true;
     } else if (name.startsWith("org.apache.hadoop.hdfs.PeerCache")) { // SOLR-7288
+      return true;
+    } else if (name.endsWith("StatisticsDataReferenceCleaner")) {
       return true;
     } else if (name.startsWith("LeaseRenewer")) { // SOLR-7287
       return true;
     } else if (name.startsWith("org.apache.hadoop.fs.FileSystem$Statistics")) { // SOLR-11261
       return true;
+    } else if (name.startsWith("ForkJoinPool.")) { // JVM built in pool
+      return true;
+    } else if (name.startsWith("solr-hdfs-threadpool-")) { // SOLR-9515 and HDFS-14251
+      return true;
     }
+    
     return false;
   }
 }

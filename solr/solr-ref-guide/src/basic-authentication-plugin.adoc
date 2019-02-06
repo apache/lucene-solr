@@ -36,13 +36,15 @@ An example `security.json` showing both sections is shown below to show how thes
 "authentication":{ <1>
    "blockUnknown": true, <2>
    "class":"solr.BasicAuthPlugin",
-   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="} <3>
+   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="}, <3>
+   "realm":"My Solr users", <4>
+   "forwardCredentials": false <5>
 },
 "authorization":{
    "class":"solr.RuleBasedAuthorizationPlugin",
    "permissions":[{"name":"security-edit",
-      "role":"admin"}], <4>
-   "user-role":{"solr":"admin"} <5>
+      "role":"admin"}], <6>
+   "user-role":{"solr":"admin"} <7>
 }}
 ----
 
@@ -51,12 +53,16 @@ There are several things defined in this file:
 <1> Basic authentication and rule-based authorization plugins are enabled.
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
 <3> A user called 'solr', with a password `'SolrRocks'` has been defined.
-<4> The 'admin' role has been defined, and it has permission to edit security settings.
-<5> The 'solr' user has been defined to the 'admin' role.
+<4> We override the `realm` property to display another text on the login prompt.
+<5> The parameter `"forwardCredentials":false` means we let Solr's PKI authenticaion handle distributed request instead of forwarding the Basic Auth header. 
+<6> The 'admin' role has been defined, and it has permission to edit security settings.
+<7> The 'solr' user has been defined to the 'admin' role.
 
 Save your settings to a file called `security.json` locally. If you are using Solr in standalone mode, you should put this file in `$SOLR_HOME`.
 
 If `blockUnknown` does not appear in the `security.json` file, it will default to `false`. This has the effect of not requiring authentication at all. In some cases, you may want this; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that this parameter is set to `true` in order for authentication to be truly enabled in your system.
+
+If `realm` is not defined, it will default to `solr`.
 
 If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You can use this example command, ensuring that the ZooKeeper port is correct:
 
@@ -64,6 +70,8 @@ If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You ca
 ----
 bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
 ----
+
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 === Caveats
 
@@ -73,7 +81,7 @@ There are a few things to keep in mind when using the Basic authentication plugi
 * A user who has access to write permissions to `security.json` will be able to modify all the permissions and how users have been assigned permissions. Special care should be taken to only grant access to editing security to appropriate users.
 * Your network should, of course, be secure. Even with Basic authentication enabled, you should not unnecessarily expose Solr to the outside world.
 
-== Editing Authentication Plugin Configuration
+== Editing Basic Authentication Plugin Configuration
 
 An Authentication API allows modifying user IDs and passwords. The API provides an endpoint with specific commands to set user details or delete a user.
 
@@ -137,11 +145,11 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 
 === Set a Property
 
-Set properties for the authentication plugin. The only currently supported property for the Basic Authentication plugin is `blockUnknown`.
+Set properties for the authentication plugin. The currently supported properties for the Basic Authentication plugin are `blockUnknown`, `realm` and `forwardCredentials`.
 
 [.dynamic-tabs]
 --
-[example.tab-pane#v1set-property]
+[example.tab-pane#v1set-property-blockUnknown]
 ====
 [.tab-label]*V1 API*
 
@@ -151,7 +159,7 @@ curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'C
 ----
 ====
 
-[example.tab-pane#v2set-property]
+[example.tab-pane#v2set-property-blockUnknown]
 ====
 [.tab-label]*V2 API*
 
@@ -162,7 +170,32 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 ====
 --
 
-=== Using Basic Auth with SolrJ
+The authentication realm defaults to `solr` and is displayed in the `WWW-Authenticate` HTTP header and in the Admin UI login page. To change the realm, set the `realm` property: 
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1set-property-realm]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
+----
+====
+
+[example.tab-pane#v2set-property-realm]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
+----
+====
+--
+
+== Using Basic Auth with SolrJ
 
 In SolrJ, the basic authentication credentials need to be set for each request as in this example:
 
@@ -182,7 +215,7 @@ req.setBasicAuthCredentials(userName, password);
 QueryResponse rsp = req.process(solrClient);
 ----
 
-=== Using the Solr Control Script with Basic Auth
+== Using the Solr Control Script with Basic Auth
 
 Add the following line to the `solr.in.sh` or `solr.in.cmd` file. This example tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks":
 

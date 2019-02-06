@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants) {
+    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, ZookeeperStatus) {
 
         $scope.showDebug = false;
 
@@ -26,23 +26,504 @@ solrAdminApp.controller('CloudController',
 
         $scope.closeDebug = function() {
             $scope.showDebug = false;
-        }
+        };
 
-        var view = $location.search().view ? $location.search().view : "graph";
-        if (view == "tree") {
+        var view = $location.search().view ? $location.search().view : "nodes";
+        if (view === "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
             treeSubController($scope, Zookeeper);
-        } else if (view == "rgraph") {
-            $scope.resetMenu("cloud-rgraph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, Zookeeper, true);
-        } else if (view == "graph") {
+        } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, false);
+        } else if (view === "nodes") {
+            $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
+            nodesSubController($scope, Collections, System, Metrics);
+        } else if (view === "zkstatus") {
+            $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
+            zkStatusSubController($scope, ZookeeperStatus, false);
         }
     }
 );
 
+function getOrCreateObj(name, object) {
+  if (name in object) {
+    entry = object[name];
+  } else {
+    entry = {};
+    object[name] = entry;
+  }
+  return entry;
+}
+
+function getOrCreateList(name, object) {
+  if (name in object) {
+    entry = object[name];
+  } else {
+    entry = [];
+    object[name] = entry;
+  }
+  return entry;
+}
+
+function ensureInList(string, list) {
+  if (list.indexOf(string) === -1) {
+    list.push(string);
+  }
+}
+
+/* Puts a node name into the hosts structure */
+function ensureNodeInHosts(node_name, hosts) {
+  var hostName = node_name.split(":")[0];
+  var host = getOrCreateObj(hostName, hosts);
+  var hostNodes = getOrCreateList("nodes", host);
+  ensureInList(node_name, hostNodes);
+}
+
+// from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
+function bytesToSize(bytes) {
+  var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
+  if (bytes === 0) return '0b';
+  var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+  if (bytes === 0) return bytes + '' + sizes[i];
+  return (bytes / Math.pow(1024, i)).toFixed(1) + '' + sizes[i];
+}
+
+function numDocsHuman(docs) {
+  var sizes = ['', 'k', 'mn', 'bn', 'tn'];
+  if (docs === 0) return '0';
+  var i = parseInt(Math.floor(Math.log(docs) / Math.log(1000)));
+  if (i === 0) return docs + '' + sizes[i];
+  return (docs / Math.pow(1000, i)).toFixed(1) + '' + sizes[i];
+}
+
+/* Returns a style class depending on percentage */
+var styleForPct = function (pct) {
+  if (pct < 60) return "pct-normal";
+  if (pct < 80) return "pct-warn";
+  return "pct-critical"
+};
+
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
+var nodesSubController = function($scope, Collections, System, Metrics) {
+  $scope.pageSize = 10;
+  $scope.showNodes = true;
+  $scope.showTree = false;
+  $scope.showGraph = false;
+  $scope.showData = false;
+  $scope.showAllDetails = false;
+  $scope.showDetails = {};
+  $scope.from = 0;
+  $scope.to = $scope.pageSize - 1;
+  $scope.filterType = "node"; // Pre-initialize dropdown
+
+  $scope.toggleAllDetails = function() {
+    $scope.showAllDetails = !$scope.showAllDetails;
+    for (var node in $scope.nodes) {
+      $scope.showDetails[node] = $scope.showAllDetails;
+    }
+    for (var host in $scope.hosts) {
+      $scope.showDetails[host] = $scope.showAllDetails;
+    }
+  };
+
+  $scope.toggleDetails = function(key) {
+    $scope.showDetails[key] = !$scope.showDetails[key] === true;
+  };
+
+  $scope.toggleHostDetails = function(key) {
+    $scope.showDetails[key] = !$scope.showDetails[key] === true;
+    for (var nodeId in $scope.hosts[key].nodes) {
+      var node = $scope.hosts[key].nodes[nodeId];
+      $scope.showDetails[node] = $scope.showDetails[key];
+    }
+  };
+
+  $scope.nextPage = function() {
+    $scope.from += parseInt($scope.pageSize);
+    $scope.reload();
+  };
+
+  $scope.previousPage = function() {
+    $scope.from = Math.max(0, $scope.from - parseInt($scope.pageSize));
+    $scope.reload();
+  };
+  
+  // Checks if this node is the first (alphabetically) for a given host. Used to decide rowspan in table
+  $scope.isFirstNodeForHost = function(node) {
+    var hostName = node.split(":")[0]; 
+    var nodesInHost = $scope.filteredNodes.filter(function (node) {
+      return node.startsWith(hostName);
+    });
+    return nodesInHost[0] === node;
+  };
+  
+  // Initializes the cluster state, list of nodes, collections etc
+  $scope.initClusterState = function() {
+    var nodes = {};
+    var hosts = {};
+    var live_nodes = [];
+
+    // We build a node-centric view of the cluster state which we can easily consume to render the table
+    Collections.status(function (data) {
+      // Fetch cluster state from collections API and invert to a nodes structure
+      for (var name in data.cluster.collections) {
+        var collection = data.cluster.collections[name];
+        collection.name = name;
+        var shards = collection.shards;
+        collection.shards = [];
+        for (var shardName in shards) {
+          var shard = shards[shardName];
+          shard.name = shardName;
+          shard.collection = collection.name;
+          var replicas = shard.replicas;
+          shard.replicas = [];
+          for (var replicaName in replicas) {
+            var core = replicas[replicaName];
+            core.name = replicaName;
+            core.collection = collection.name;
+            core.shard = shard.name;
+            core.shard_state = shard.state;
+
+            var node_name = core['node_name'];
+            var node = getOrCreateObj(node_name, nodes);
+            var cores = getOrCreateList("cores", node);
+            cores.push(core);
+            node['base_url'] = core.base_url;
+            node['id'] = core.base_url.replace(/[^\w\d]/g, '');
+            node['host'] = node_name.split(":")[0];
+            var collections = getOrCreateList("collections", node);
+            ensureInList(core.collection, collections);
+            ensureNodeInHosts(node_name, hosts);
+          }
+        }
+      }
+
+      live_nodes = data.cluster.live_nodes;
+      for (n in data.cluster.live_nodes) {
+        node = data.cluster.live_nodes[n];
+        if (!(node in nodes)) {
+          var hostName = node.split(":")[0];
+          nodes[node] = {};
+          nodes[node]['host'] = hostName;
+        }
+        ensureNodeInHosts(node, hosts);
+      }
+
+      // Make sure nodes are sorted alphabetically to align with rowspan in table 
+      for (var host in hosts) {
+        hosts[host].nodes.sort();
+      }
+
+      $scope.nodes = nodes;
+      $scope.hosts = hosts;
+      $scope.live_nodes = live_nodes;
+
+      $scope.Math = window.Math;
+      $scope.reload();
+    });
+  };
+
+  $scope.filterInput = function() {
+    $scope.from = 0;
+    $scope.to = $scope.pageSize - 1;
+    $scope.reload();
+  };
+
+  /*
+    Reload will fetch data for the current page of the table and thus refresh numbers.
+    It is also called whenever a filter or paging action is executed 
+   */
+  $scope.reload = function() {
+    var nodes = $scope.nodes;
+    var node_keys = Object.keys(nodes);
+    var hosts = $scope.hosts;
+    var live_nodes = $scope.live_nodes;
+    var hostNames = Object.keys(hosts);
+    hostNames.sort();
+    var pageSize = isNumeric($scope.pageSize) ? $scope.pageSize : 10;
+
+    // Calculate what nodes that will show on this page
+    var nodesToShow = [];
+    var nodesParam;
+    var hostsToShow = [];
+    var filteredNodes;
+    var filteredHosts;
+    var isFiltered = false;
+    switch ($scope.filterType) {
+      case "node":  // Find what nodes match the node filter
+        if ($scope.nodeFilter) {
+          filteredNodes = node_keys.filter(function (node) {
+            return node.indexOf($scope.nodeFilter) !== -1;
+          });
+        }
+        break;
+
+      case "collection": // Find what collections match the collection filter and what nodes that have these collections
+        if ($scope.collectionFilter) {
+          candidateNodes = {};
+          nodesCollections = [];
+          for (var i = 0 ; i < node_keys.length ; i++) {
+            var node_name = node_keys[i];
+            var node = nodes[node_name];
+            nodeColl = {};
+            nodeColl['node'] = node_name;
+            collections = {};
+            node.cores.forEach(function(core) {
+              collections[core.collection] = true;
+            });
+            nodeColl['collections'] = Object.keys(collections);
+            nodesCollections.push(nodeColl);
+          }
+          nodesCollections.forEach(function(nc) {
+            matchingColls = nc['collections'].filter(function (collection) {
+              return collection.indexOf($scope.collectionFilter) !== -1;
+            });
+            if (matchingColls.length > 0) {
+              candidateNodes[nc.node] = true;
+            }
+          });
+          filteredNodes = Object.keys(candidateNodes);
+        }
+        break;
+
+      case "health":
+
+    }
+    
+    if (filteredNodes) {
+      // If filtering is active, calculate what hosts contain the nodes that match the filters
+      isFiltered = true;
+      filteredHosts = filteredNodes.map(function (node) {
+        return node.split(":")[0];
+      }).filter(function (item, index, self) {
+        return self.indexOf(item) === index;
+      });
+    } else {
+      filteredNodes = node_keys;
+      filteredHosts = hostNames;
+    }
+    filteredNodes.sort();
+    filteredHosts.sort();
+    
+    // Find what hosts & nodes (from the filtered set) that should be displayed on current page
+    for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
+      var hostName = filteredHosts[id];
+      hostsToShow.push(hostName);
+      if (isFiltered) { // Only show the nodes per host matching active filter
+        nodesToShow = nodesToShow.concat(filteredNodes.filter(function (node) {
+          return node.startsWith(hostName);
+        }));
+      } else {
+        nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
+      }
+    }
+    nodesParam = nodesToShow.join(',');
+    $scope.nextEnabled = $scope.from + pageSize < filteredHosts.length;
+    $scope.prevEnabled = $scope.from - pageSize >= 0;
+    nodesToShow.sort();
+    hostsToShow.sort();
+
+    /*
+     Fetch system info for all selected nodes
+     Pick the data we want to display and add it to the node-centric data structure
+      */
+    System.get({"nodes": nodesParam}, function (systemResponse) {
+      for (var node in systemResponse) {
+        if (node in nodes) {
+          var s = systemResponse[node];
+          nodes[node]['system'] = s;
+          var memTotal = s.system.totalPhysicalMemorySize;
+          var memFree = s.system.freePhysicalMemorySize;
+          var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+          nodes[node]['memUsedPct'] = memPercentage;
+          nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
+          nodes[node]['memTotal'] = bytesToSize(memTotal);
+          nodes[node]['memFree'] = bytesToSize(memFree);
+          nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+
+          var heapTotal = s.jvm.memory.raw.total;
+          var heapFree = s.jvm.memory.raw.free;
+          var heapPercentage = Math.floor((heapTotal - heapFree) / heapTotal * 100);
+          nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
+          nodes[node]['heapUsedPct'] = heapPercentage;
+          nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
+          nodes[node]['heapTotal'] = bytesToSize(heapTotal);
+          nodes[node]['heapFree'] = bytesToSize(heapFree);
+
+          var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+          nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+          nodes[node]['jvmUptimeSec'] = jvmUptime;
+
+          nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
+          nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
+          nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
+          nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
+          nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
+        }
+      }
+    });
+
+    /*
+     Fetch metrics for all selected nodes. Only pull the metrics that we'll show to save bandwidth
+     Pick the data we want to display and add it to the node-centric data structure
+      */
+    Metrics.get({
+          "nodes": nodesParam,
+          "prefix": "CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"
+        },
+        function (metricsResponse) {
+          for (var node in metricsResponse) {
+            if (node in nodes) {
+              var m = metricsResponse[node];
+              nodes[node]['metrics'] = m;
+              var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace'];
+              var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
+              var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
+              nodes[node]['diskUsedPct'] = diskPercentage;
+              nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
+              nodes[node]['diskTotal'] = bytesToSize(diskTotal);
+              nodes[node]['diskFree'] = bytesToSize(diskFree);
+
+              var r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
+              nodes[node]['req'] = r.count;
+              nodes[node]['req1minRate'] = Math.floor(r['1minRate'] * 100) / 100;
+              nodes[node]['req5minRate'] = Math.floor(r['5minRate'] * 100) / 100;
+              nodes[node]['req15minRate'] = Math.floor(r['15minRate'] * 100) / 100;
+              nodes[node]['reqp75_ms'] = Math.floor(r['p75_ms']);
+              nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
+              nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
+
+              var cores = nodes[node]['cores'];
+              var indexSizeTotal = 0;
+              var docsTotal = 0;
+              var graphData = [];
+              if (cores) {
+                for (coreId in cores) {
+                  var core = cores[coreId];
+                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
+                  var nodeMetric = m.metrics[keyName];
+                  var size = nodeMetric['INDEX.sizeInBytes'];
+                  size = (typeof size !== 'undefined') ? size : 0;
+                  core['sizeInBytes'] = size;
+                  core['size'] = bytesToSize(size);
+                  core['label'] = core['core'].replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
+                  if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
+                    // If core state is not active, display the real state, or if shard is inactive, display that
+                    var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
+                    core['label'] += "_(" + labelState + ")";
+                  }
+                  indexSizeTotal += size;
+                  var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
+                  numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
+                  core['numDocs'] = numDocs;
+                  core['numDocsHuman'] = numDocsHuman(numDocs);
+                  core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
+                  var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
+                  deletedDocs = (typeof deletedDocs !== 'undefined') ? deletedDocs : 0;
+                  core['deletedDocs'] = deletedDocs;
+                  core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
+                  var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  warmupTime = (typeof warmupTime !== 'undefined') ? warmupTime : 0;
+                  core['warmupTime'] = warmupTime;
+                  docsTotal += core['numDocs'];
+                }
+                for (coreId in cores) {
+                  core = cores[coreId];
+                  var graphObj = {};
+                  graphObj['label'] = core['label'];
+                  graphObj['size'] = core['sizeInBytes'];
+                  graphObj['sizeHuman'] = core['size'];
+                  graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
+                  graphData.push(graphObj);
+                }
+                cores.sort(function (a, b) {
+                  return b.sizeInBytes - a.sizeInBytes
+                });
+              } else {
+                cores = {};
+              }
+              graphData.sort(function (a, b) {
+                return b.size - a.size
+              });
+              nodes[node]['graphData'] = graphData;
+              nodes[node]['numDocs'] = numDocsHuman(docsTotal);
+              nodes[node]['sizeInBytes'] = indexSizeTotal;
+              nodes[node]['size'] = bytesToSize(indexSizeTotal);
+              nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
+
+              // Build the d3 powered bar chart
+              $('#chart' + nodes[node]['id']).empty();
+              var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
+
+              // Add one div per bar which will group together both labels and bars
+              var g = chart.selectAll('div')
+                  .data(nodes[node]['graphData']).enter()
+                  .append('div');
+
+              // Add the bars
+              var bars = g.append("div")
+                  .attr("class", "rect")
+                  .text(function (d) {
+                    return d.label + ':\u00A0\u00A0' + d.sizeHuman;
+                  });
+
+              // Execute the transition to show the bars
+              bars.transition()
+                  .ease('elastic')
+                  .style('width', function (d) {
+                    return d.pct + '%';
+                  });
+            }
+          }
+        });
+    $scope.nodes = nodes;
+    $scope.hosts = hosts;
+    $scope.live_nodes = live_nodes;
+    $scope.nodesToShow = nodesToShow;
+    $scope.hostsToShow = hostsToShow;
+    $scope.filteredNodes = filteredNodes;
+    $scope.filteredHosts = filteredHosts;
+  };
+  $scope.initClusterState();
+};
+
+var zkStatusSubController = function($scope, ZookeeperStatus) {
+    $scope.showZkStatus = true;
+    $scope.showNodes = false;
+    $scope.showTree = false;
+    $scope.showGraph = false;
+    $scope.tree = {};
+    $scope.showData = false;
+    $scope.showDetails = false;
+    
+    $scope.toggleDetails = function() {
+      $scope.showDetails = !$scope.showDetails === true;
+    };
+
+    $scope.initZookeeper = function() {
+      ZookeeperStatus.monitor({}, function(data) {
+        $scope.zkState = data.zkStatus;
+        $scope.mainKeys = ["ok", "clientPort", "zk_server_state", "zk_version", 
+          "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
+        $scope.detailKeys = ["dataDir", "dataLogDir", 
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
+          "zk_packets_sent", "zk_packets_received",
+          "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
+        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
+        $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
+      });
+    };
+
+    $scope.initZookeeper();
+};
+
 var treeSubController = function($scope, Zookeeper) {
+    $scope.showZkStatus = false;
     $scope.showTree = true;
     $scope.showGraph = false;
     $scope.tree = {};
@@ -78,7 +559,30 @@ var treeSubController = function($scope, Zookeeper) {
     $scope.initTree();
 };
 
-var graphSubController = function ($scope, Zookeeper, isRadial) {
+/**
+ * Translates seconds into human readable format of seconds, minutes, hours, days, and years
+ * 
+ * @param  {number} seconds The number of seconds to be processed
+ * @return {string}         The phrase describing the the amount of time
+ */
+function secondsForHumans ( seconds ) {
+    var levels = [
+        [Math.floor(seconds / 31536000), 'y'],
+        [Math.floor((seconds % 31536000) / 86400), 'd'],
+        [Math.floor(((seconds % 31536000) % 86400) / 3600), 'h'],
+        [Math.floor((((seconds % 31536000) % 86400) % 3600) / 60), 'm']
+    ];
+    var returntext = '';
+
+    for (var i = 0, max = levels.length; i < max; i++) {
+        if ( levels[i][0] === 0 ) continue;
+        returntext += ' ' + levels[i][0] + levels[i][1];
+    }
+    return returntext.trim() === '' ? '0m' : returntext.trim();
+}
+
+var graphSubController = function ($scope, Zookeeper) {
+    $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
 
@@ -89,23 +593,29 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
         host: [],
         hostname: [],
         port: [],
-        pathname: []
+        pathname: [],
+        replicaType: [],
+        base_url: [],
+        core: [],
+        node_name: [],
+        state: [],
+        core_node: []
     };
 
     $scope.next = function() {
         $scope.pos += $scope.rows;
         $scope.initGraph();
-    }
+    };
 
     $scope.previous = function() {
         $scope.pos = Math.max(0, $scope.pos - $scope.rows);
         $scope.initGraph();
-    }
+    };
 
     $scope.resetGraph = function() {
         $scope.pos = 0;
         $scope.initGraph();
-    }
+    };
 
     $scope.initGraph = function() {
         Zookeeper.liveNodes(function (data) {
@@ -153,7 +663,13 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                                     host: parts[2],
                                     hostname: parts[3],
                                     port: parseInt(parts[5] || 80, 10),
-                                    pathname: parts[6]
+                                    pathname: parts[6],
+                                    replicaType: replica.type,
+                                    base_url: replica.base_url,
+                                    core: replica.core,
+                                    node_name: replica.node_name,
+                                    state: replica.state,
+                                    core_node: n
                                 };
 
                                 $scope.helperData.protocol.push(uri_parts.protocol);
@@ -161,6 +677,12 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                                 $scope.helperData.hostname.push(uri_parts.hostname);
                                 $scope.helperData.port.push(uri_parts.port);
                                 $scope.helperData.pathname.push(uri_parts.pathname);
+                                $scope.helperData.replicaType.push(uri_parts.replicaType);
+                                $scope.helperData.base_url.push(uri_parts.base_url);
+                                $scope.helperData.core.push(uri_parts.core);
+                                $scope.helperData.node_name.push(uri_parts.node_name);
+                                $scope.helperData.state.push(uri_parts.state);
+                                $scope.helperData.core_node.push(uri_parts.core_node);
 
                                 var replica_status = replica.state;
 
@@ -208,8 +730,14 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                     $scope.helperData.hostname = $.unique($scope.helperData.hostname);
                     $scope.helperData.port = $.unique($scope.helperData.port);
                     $scope.helperData.pathname = $.unique($scope.helperData.pathname);
+                    $scope.helperData.replicaType = $.unique($scope.helperData.replicaType);
+                    $scope.helperData.base_url = $.unique($scope.helperData.base_url);
+                    $scope.helperData.core = $.unique($scope.helperData.core);
+                    $scope.helperData.node_name = $.unique($scope.helperData.node_name);
+                    $scope.helperData.state = $.unique($scope.helperData.state);
+                    $scope.helperData.core_node = $.unique($scope.helperData.core_node);
 
-                    if (!isRadial && data.znode && data.znode.paging) {
+                    if (data.znode && data.znode.paging) {
                         $scope.showPaging = true;
 
                         var parr = data.znode.paging.split('|');
@@ -243,13 +771,12 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                     }
                     $scope.graphData = graph_data;
                     $scope.leafCount = leaf_count;
-                    $scope.isRadial = isRadial;
                 });
         });
     };
 
     $scope.initGraph();
-    $scope.pos = 0;   
+    $scope.pos = 0;
 };
 
 solrAdminApp.directive('graph', function(Constants) {
@@ -259,7 +786,6 @@ solrAdminApp.directive('graph', function(Constants) {
             data: "=",
             leafCount: "=",
             helperData: "=",
-            isRadial: "="
         },
         link: function (scope, element, attrs) {
             var helper_path_class = function (p) {
@@ -294,6 +820,26 @@ solrAdminApp.directive('graph', function(Constants) {
                 return classes.join(' ');
             };
 
+            var helper_tooltip_text = function (d) {
+                if (!d.data || !d.data.uri) {
+                    return tooltip;
+                }
+
+                var tooltip = d.data.uri.core_node + " {<br/>";
+
+                if (0 !== scope.helperData.core.length) {
+                    tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                }
+
+                if (0 !== scope.helperData.node_name.length) {
+                    tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
+                }
+
+                tooltip += "}";
+
+                return tooltip;
+            };
+
             var helper_node_text = function (d) {
                 if (!d.data || !d.data.uri) {
                     return d.name;
@@ -313,17 +859,23 @@ solrAdminApp.directive('graph', function(Constants) {
                     name += d.data.uri.pathname;
                 }
 
+                if(0 !== scope.helperData.replicaType.length) {
+                    name += ' (' + d.data.uri.replicaType[0] + ')';
+                }
+
                 return name;
             };
 
             scope.$watch("data", function(newValue, oldValue) {
                 if (newValue) {
-                    if (scope.isRadial) {
-                        radialGraph(element, scope.data, scope.leafCount);
-                    } else {
-                        flatGraph(element, scope.data, scope.leafCount);
-                    }
+                    flatGraph(element, scope.data, scope.leafCount);
                 }
+
+                $('text').tooltip({
+                    content: function() {
+                        return $(this).attr('title');
+                    }
+                });
             });
 
 
@@ -397,65 +949,12 @@ solrAdminApp.directive('graph', function(Constants) {
                     })
                     .attr('text-anchor', function (d) {
                         return 0 === d.depth ? 'end' : 'start';
-                    })                    
+                    })
+                    .attr("title", helper_tooltip_text)
                     .text(helper_node_text);
 
                 setNodeNavigationBehavior(node);
             };
-
-            var radialGraph = function(element, graphData, leafCount) {
-                var max_val = Math.min(element.width(), $('body').height())
-                var r = max_val / 2;
-
-                var cluster = d3.layout.cluster()
-                    .size([360, r - 160]);
-
-                var diagonal = d3.svg.diagonal.radial()
-                    .projection(function (d) {
-                        return [d.y, d.x / 180 * Math.PI];
-                    });
-
-                d3.select('#canvas', element).html('');
-                var vis = d3.select('#canvas').append('svg')
-                    .attr('width', r * 2)
-                    .attr('height', r * 2)
-                    .append('g')
-                    .attr('transform', 'translate(' + r + ',' + r + ')');
-
-                var nodes = cluster.nodes(graphData);
-
-                var link = vis.selectAll('path.link')
-                    .data(cluster.links(nodes))
-                    .enter().append('path')
-                    .attr('class', helper_path_class)
-                    .attr('d', diagonal);
-
-                var node = vis.selectAll('g.node')
-                    .data(nodes)
-                    .enter().append('g')
-                    .attr('class', helper_node_class)
-                    .attr('transform', function (d) {
-                        return 'rotate(' + (d.x - 90) + ')translate(' + d.y + ')';
-                    })
-
-                node.append('circle')
-                    .attr('r', 4.5);
-
-                node.append('text')
-                    .attr('dx', function (d) {
-                        return d.x < 180 ? 8 : -8;
-                    })
-                    .attr('dy', '.31em')
-                    .attr('text-anchor', function (d) {
-                        return d.x < 180 ? 'start' : 'end';
-                    })
-                    .attr('transform', function (d) {
-                        return d.x < 180 ? null : 'rotate(180)';
-                    })
-                    .text(helper_node_text);
-
-                setNodeNavigationBehavior(node, "rgraph");
-            }
         }
     };
-})
+});

@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -125,22 +125,16 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
     MockAnalyzer analyzer = new MockAnalyzer(random());
     LeafReader leafReader = getRandomIndex(analyzer, 100);
     try {
-      long trainStart = System.currentTimeMillis();
       KNearestNeighborClassifier kNearestNeighborClassifier = new KNearestNeighborClassifier(leafReader, null,
           analyzer, null, 1, 1, 1, categoryFieldName, textFieldName);
-      long trainEnd = System.currentTimeMillis();
-      long trainTime = trainEnd - trainStart;
-      assertTrue("training took more than 10s: " + trainTime / 1000 + "s", trainTime < 10000);
 
-      long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
           kNearestNeighborClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
-      long evaluationEnd = System.currentTimeMillis();
-      long evaluationTime = evaluationEnd - evaluationStart;
-      assertTrue("evaluation took more than 2m: " + evaluationTime / 1000 + "s", evaluationTime < 120000);
+
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
-      assertTrue(5000 > avgClassificationTime);
+      assertTrue(avgClassificationTime >= 0);
+
       double accuracy = confusionMatrix.getAccuracy();
       assertTrue(accuracy >= 0d);
       assertTrue(accuracy <= 1d);
@@ -153,7 +147,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
       assertTrue(precision >= 0d);
       assertTrue(precision <= 1d);
 
-      Terms terms = MultiFields.getTerms(leafReader, categoryFieldName);
+      Terms terms = MultiTerms.getTerms(leafReader, categoryFieldName);
       TermsEnum iterator = terms.iterator();
       BytesRef term;
       while ((term = iterator.next()) != null) {

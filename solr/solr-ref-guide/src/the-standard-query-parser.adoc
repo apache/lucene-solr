@@ -318,9 +318,9 @@ Example:
 
 Comments may be nested.
 
-== Differences between Lucene Query Parser and the Solr Standard Query Parser
+== Differences between Lucene's Classic Query Parser and Solr's Standard Query Parser
 
-Solr's standard query parser differs from the Lucene Query Parser in the following ways:
+Solr's standard query parser originated as a variation of Lucene's "classic" QueryParser.  It diverges in the following ways:
 
 * A `*` may be used for either or both endpoints to specify an open-ended range query
 ** `field:[* TO 100]` finds all field values less than or equal to 100
@@ -329,11 +329,15 @@ Solr's standard query parser differs from the Lucene Query Parser in the followi
 * Pure negative queries (all clauses prohibited) are allowed (only as a top-level clause)
 ** `-inStock:false` finds all field values where inStock is not false
 ** `-field:[* TO *]` finds all documents without a value for field
-* A hook into FunctionQuery syntax. You'll need to use quotes to encapsulate the function if it includes parentheses, as shown in the second example below:
-** `_val_:myfield`
-** `_val_:"recip(rord(myfield),1,2,3)"`
-* Support for using any type of query parser as a nested clause.
+* Support for embedded Solr queries (sub-queries) using any type of query parser as a nested clause using the local-params syntax.
 ** `inStock:true OR {!dismax qf='name manu' v='ipod'}`
++
+Gotcha: Be careful not to start your query with `{!` at the very beginning, which changes the parsing of the entire
+query string, which may not be what you want if there are additional clauses.  So flipping the example above so the
+sub-query comes first would fail to work as expected without a leading space.
++
+Sub-queries can also be done with the magic field `\_query_` and for function queries with the magic field `\_val_` but it
+should be considered deprecated since it is less clear.  Example: `\_val_:"recip(rord(myfield),1,2,3)"`
 * Support for a special `filter(...)` syntax to indicate that some query clauses should be cached in the filter cache (as a constant score boolean query). This allows sub-queries to be cached and re-used in other queries. For example `inStock:true` will be cached and re-used in all three of the queries below:
 ** `q=features:songs OR filter(inStock:true)`
 ** `q=+manu:Apple +filter(inStock:true)`

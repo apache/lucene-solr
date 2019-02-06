@@ -399,14 +399,14 @@ public class
         new String[] { "これ", "は", "本", "で", "は", "ない" },
         new int[] { 0, 2, 3, 4, 5, 6 },
         new int[] { 2, 3, 4, 5, 6, 8 },
-        new Integer(8)
+        8
     );
 
     assertTokenStreamContents(analyzerNoPunct.tokenStream("foo", "これは本ではない    "),
         new String[] { "これ", "は", "本", "で", "は", "ない"  },
         new int[] { 0, 2, 3, 4, 5, 6, 8 },
         new int[] { 2, 3, 4, 5, 6, 8, 9 },
-        new Integer(12)
+        12
     );
   }
 
@@ -417,7 +417,7 @@ public class
                               new String[] { "関西", "国際", "空港", "に", "行っ", "た"  },
                               new int[] { 0, 2, 4, 6, 7, 9 },
                               new int[] { 2, 4, 6, 7, 9, 10 },
-                              new Integer(10)
+                              10
     );
   }
 
@@ -427,7 +427,7 @@ public class
                               new String[] { "朝青龍"  },
                               new int[] { 0 },
                               new int[] { 3 },
-                              new Integer(3)
+                              3
     );
   }
 
@@ -437,7 +437,7 @@ public class
                               new String[] { "a", "b", "cd"  },
                               new int[] { 0, 1, 2 },
                               new int[] { 1, 2, 4 },
-                              new Integer(4)
+                              4
     );
   }
 
@@ -453,7 +453,7 @@ public class
                               new String[] { "ab", "cd", "efg", "hij"  },
                               new int[] { 0, 2, 4, 7 },
                               new int[] { 2, 4, 7, 10 },
-                              new Integer(10)
+                              10
     );
   }
   */
