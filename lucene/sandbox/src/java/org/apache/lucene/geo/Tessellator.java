@@ -80,7 +80,6 @@ final public class Tessellator {
   // No Instance:
   private Tessellator() {}
 
-  /** Produces an array of vertices representing the triangulated result set of the Points array */
   public static final List<Triangle> tessellate(final Polygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.
@@ -119,17 +118,67 @@ final public class Tessellator {
     return result;
   }
 
+
+  public static final List<Triangle> tessellate(final XYPolygon polygon) {
+    // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
+    // then filter instances of intersections.
+    Node outerNode = createDoublyLinkedList(polygon, 0, WindingOrder.CW);
+    // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
+    if(outerNode == null) {
+      throw new IllegalArgumentException("Malformed shape detected in Tessellator!");
+    }
+
+    // Determine if the specified list of points contains holes
+    if (polygon.numHoles() > 0) {
+      // Eliminate the hole triangulation.
+      outerNode = eliminateHoles(polygon, outerNode);
+    }
+
+    // If the shape crosses VERTEX_THRESHOLD, use z-order curve hashing:
+    final boolean mortonOptimized;
+    {
+      int threshold = VERTEX_THRESHOLD - polygon.numPoints();
+      for (int i = 0; threshold >= 0 && i < polygon.numHoles(); ++i) {
+        threshold -= polygon.getHole(i).numPoints();
+      }
+
+      // Link polygon nodes in Z-Order
+      mortonOptimized = threshold < 0;
+      if (mortonOptimized == true) {
+        sortByMorton(outerNode);
+      }
+    }
+    // Calculate the tessellation using the doubly LinkedList.
+    List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
+    if (result.size() == 0) {
+      throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
+    }
+
+    return result;
+  }
+
+  private static final Node createDoublyLinkedList(XYPolygon polygon, int startIndex, final WindingOrder windingOrder) {
+    return createDoublyLinkedList(polygon.getPolyX(), polygon.getPolyY(), polygon.getWindingOrder(), false,
+        0, WindingOrder.CW);
+  }
+
+  private static final Node createDoublyLinkedList(Polygon polygon, int startIndex, final WindingOrder windingOrder) {
+    return createDoublyLinkedList(polygon.getPolyLons(), polygon.getPolyLats(),polygon.getWindingOrder(), true,
+        0, WindingOrder.CW);
+  }
+
   /** Creates a circular doubly linked list using polygon points. The order is governed by the specified winding order */
-  private static final Node createDoublyLinkedList(final Polygon polygon, int startIndex, final WindingOrder windingOrder) {
+  private static final Node createDoublyLinkedList(final double[] x, final double[] y, final WindingOrder polyWindingOrder,
+                                                   boolean isGeo, int startIndex, final WindingOrder windingOrder) {
     Node lastNode = null;
     // Link points into the circular doubly-linked list in the specified winding order
-    if (windingOrder == polygon.getWindingOrder()) {
-      for (int i = 0; i < polygon.numPoints(); ++i) {
-        lastNode = insertNode(polygon, startIndex++, i, lastNode);
+    if (windingOrder == polyWindingOrder) {
+      for (int i = 0; i < x.length; ++i) {
+        lastNode = insertNode(x, y, startIndex++, i, lastNode, isGeo);
       }
     } else {
-      for (int i = polygon.numPoints() - 1; i >= 0; --i) {
-        lastNode = insertNode(polygon, startIndex++, i, lastNode);
+      for (int i = x.length - 1; i >= 0; --i) {
+        lastNode = insertNode(x, y, startIndex++, i, lastNode, isGeo);
       }
     }
     // if first and last node are the same then remove the end node and set lastNode to the start
@@ -140,6 +189,30 @@ final public class Tessellator {
 
     // Return the last node in the Doubly-Linked List
     return filterPoints(lastNode, null);
+  }
+
+  private static final Node eliminateHoles(final XYPolygon polygon, Node outerNode) {
+    // Define a list to hole a reference to each filtered hole list.
+    final List<Node> holeList = new ArrayList<>();
+    // keep a reference to the hole
+    final Map<Node, XYPolygon> holeListPolygons = new HashMap<>();
+    // Iterate through each array of hole vertices.
+    XYPolygon[] holes = polygon.getHoles();
+    int nodeIndex = polygon.numPoints() ;
+    for(int i = 0; i < polygon.numHoles(); ++i) {
+      // create the doubly-linked hole list
+      Node list = createDoublyLinkedList(holes[i].getPolyX(), holes[i].getPolyY(), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
+      if (list == list.next) {
+        list.isSteiner = true;
+      }
+      // Determine if the resulting hole polygon was successful.
+      if(list != null) {
+        // Add the leftmost vertex of the hole.
+        holeList.add(fetchLeftmost(list));
+      }
+      nodeIndex += holes[i].numPoints();
+    }
+    return eliminateHoles(holeList, holeListPolygons, outerNode);
   }
 
   /** Links every hole into the outer loop, producing a single-ring polygon without holes. **/
@@ -153,8 +226,7 @@ final public class Tessellator {
     int nodeIndex = polygon.numPoints();
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
-      Node list = createDoublyLinkedList(holes[i], nodeIndex, WindingOrder.CCW);
-
+      Node list = createDoublyLinkedList(holes[i].getPolyLons(), holes[i].getPolyLats(), holes[i].getWindingOrder(), true, nodeIndex, WindingOrder.CCW);
       if (list == list.next) {
         throw new IllegalArgumentException("Points are all coplanar in hole: " + holes[i]);
       }
@@ -167,7 +239,10 @@ final public class Tessellator {
       }
       nodeIndex += holes[i].numPoints();
     }
+    return eliminateHoles(holeList, holeListPolygons, outerNode);
+  }
 
+  private static final Node eliminateHoles(List<Node> holeList, final Map holeListPolygons, Node outerNode) {
     // Sort the hole vertices by x coordinate
     holeList.sort((Node pNodeA, Node pNodeB) ->
     {
@@ -188,8 +263,22 @@ final public class Tessellator {
     for(int i = 0; i < holeList.size(); ++i) {
       // Eliminate hole triangles from the result set
       final Node holeNode = holeList.get(i);
-      final Polygon hole = holeListPolygons.get(holeNode);
-      eliminateHole(holeNode, outerNode, hole);
+      double holeMinX, holeMaxX, holeMinY, holeMaxY;
+      Object h = holeListPolygons.get(holeNode);
+      if (h instanceof Polygon) {
+        Polygon holePoly = (Polygon)h;
+        holeMinX = holePoly.minLon;
+        holeMaxX = holePoly.maxLon;
+        holeMinY = holePoly.minLat;
+        holeMaxY = holePoly.maxLat;
+      } else {
+        XYPolygon holePoly = (XYPolygon)h;
+        holeMinX = holePoly.minX;
+        holeMaxX = holePoly.maxX;
+        holeMinY = holePoly.minY;
+        holeMaxY = holePoly.maxY;
+      }
+      eliminateHole(holeNode, outerNode, holeMinX, holeMaxX, holeMinY, holeMaxY);
       // Filter the new polygon.
       outerNode = filterPoints(outerNode, outerNode.next);
     }
@@ -198,11 +287,11 @@ final public class Tessellator {
   }
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
-  private static final void eliminateHole(final Node holeNode, Node outerNode, Polygon hole) {
+  private static final void eliminateHole(final Node holeNode, Node outerNode, double holeMinX, double holeMaxX, double holeMinY, double holeMaxY) {
     // Attempt to find a common point between the HoleNode and OuterNode.
     Node next = outerNode;
     do {
-      if (Rectangle.containsPoint(next.getLat(), next.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
+      if (Rectangle.containsPoint(next.getLat(), next.getLon(), holeMinY, holeMaxY, holeMinX, holeMaxX)) {
         Node sharedVertex = getSharedVertex(holeNode, next);
         if (sharedVertex != null) {
           // Split the resulting polygon.
@@ -319,7 +408,7 @@ final public class Tessellator {
   }
 
   /** Main ear slicing loop which triangulates the vertices of a polygon, provided as a doubly-linked list. **/
-  private static final List<Triangle> earcutLinkedList(Polygon polygon, Node currEar, final List<Triangle> tessellation,
+  private static final List<Triangle> earcutLinkedList(Object polygon, Node currEar, final List<Triangle> tessellation,
                                                        State state, final boolean mortonOptimized) {
     earcut : do {
       if (currEar == null || currEar.previous == currEar.next) {
@@ -479,7 +568,7 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
-  private static final boolean splitEarcut(Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
+  private static final boolean splitEarcut(Object polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -734,8 +823,8 @@ final public class Tessellator {
   }
 
   /** Creates a node and optionally links it with a previous node in a circular doubly-linked list */
-  private static final Node insertNode(final Polygon polygon, int index, int vertexIndex, final Node lastNode) {
-    final Node node = new Node(polygon, index, vertexIndex);
+  private static final Node insertNode(final double[] x, final double[] y, int index, int vertexIndex, final Node lastNode, boolean isGeo) {
+    final Node node = new Node(x, y, index, vertexIndex, isGeo);
     if(lastNode == null) {
       node.previous = node;
       node.previousZ = node;
@@ -822,7 +911,9 @@ final public class Tessellator {
     // vertex index in the polygon
     private final int vrtxIdx;
     // reference to the polygon for lat/lon values
-    private final Polygon polygon;
+//    private final Polygon polygon;
+    private final double[] polyX;
+    private final double[] polyY;
     // encoded x value
     private final int x;
     // encoded y value
@@ -839,13 +930,14 @@ final public class Tessellator {
     // next z node
     private Node nextZ;
 
-    protected Node(final Polygon polygon, final int index, final int vertexIndex) {
+    protected Node(final double[] x, final double[] y, final int index, final int vertexIndex, final boolean isGeo) {
       this.idx = index;
       this.vrtxIdx = vertexIndex;
-      this.polygon = polygon;
-      this.y = encodeLatitude(polygon.getPolyLat(vrtxIdx));
-      this.x = encodeLongitude(polygon.getPolyLon(vrtxIdx));
-      this.morton = BitUtil.interleave(x ^ 0x80000000, y ^ 0x80000000);
+      this.polyX = x;
+      this.polyY = y;
+      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : Float.floatToIntBits((float)polyY[vrtxIdx]);
+      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : Float.floatToIntBits((float)polyX[vrtxIdx]);
+      this.morton = BitUtil.interleave(this.x ^ 0x80000000, this.y ^ 0x80000000);
       this.previous = null;
       this.next = null;
       this.previousZ = null;
@@ -856,7 +948,8 @@ final public class Tessellator {
     protected Node(Node other) {
       this.idx = other.idx;
       this.vrtxIdx = other.vrtxIdx;
-      this.polygon = other.polygon;
+      this.polyX = other.polyX;
+      this.polyY = other.polyY;
       this.morton = other.morton;
       this.x = other.x;
       this.y = other.y;
@@ -868,22 +961,22 @@ final public class Tessellator {
 
     /** get the x value */
     public final double getX() {
-      return polygon.getPolyLon(vrtxIdx);
+      return polyX[vrtxIdx];
     }
 
     /** get the y value */
     public final double getY() {
-      return polygon.getPolyLat(vrtxIdx);
+      return polyY[vrtxIdx];
     }
 
     /** get the longitude value */
     public final double getLon() {
-      return polygon.getPolyLon(vrtxIdx);
+      return polyX[vrtxIdx];
     }
 
     /** get the latitude value */
     public final double getLat() {
-      return polygon.getPolyLat(vrtxIdx);
+      return polyY[vrtxIdx];
     }
 
     @Override
