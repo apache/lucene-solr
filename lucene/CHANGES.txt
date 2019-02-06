@@ -16,7 +16,11 @@ Bug fixes:
   it's inaccessible. (Dawid Weiss)
 
 ======================= Lucene 8.1.0 =======================
-(No Changes)
+
+Improvements
+
+* LUCENE-8673: Use radix partitioning when merging dimensional points instead
+  of sorting all dimensions before hand. (Ignacio Vera, Adrien Grand)
 
 ======================= Lucene 8.0.0 =======================
 
