@@ -59,6 +59,8 @@ Bug Fixes
 
 Improvements
 ----------------------
+* SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
+  disk space (noble)
 
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
