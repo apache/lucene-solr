@@ -18,22 +18,19 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.update.AddUpdateCommand;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-public interface RoutedAlias<K> {
+public interface RoutedAlias {
 
   /**
    * Types supported. Every entry here must have a case in the switch statement in {@link #fromProps(String, Map)}
@@ -68,7 +65,7 @@ public interface RoutedAlias<K> {
 
     String typeStr = props.get(ROUTER_TYPE_NAME);
     if (typeStr == null) {
-      return null;
+      return null; // non-routed aliases are being created
     }
     SupportedRouterTypes routerType;
     try {
@@ -106,7 +103,7 @@ public interface RoutedAlias<K> {
    *
    * @return optional string of initial collection name
    */
-  Optional<String> computeInitialCollectionName();
+  String computeInitialCollectionName();
 
 
   /**
@@ -118,11 +115,7 @@ public interface RoutedAlias<K> {
 
   String getRouteField();
 
-  /**
-   * Parses the elements of the collection list. Result is returned them in sorted order (desc) if there
-   * is a natural order for this type of routed alias
-   */
-  List<Map.Entry<K, String>> parseCollections(Aliases aliases);
+
 
   /**
    * Check that the value we will be routing on is legal for this type of routed alias.

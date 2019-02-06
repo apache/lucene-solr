@@ -18,16 +18,12 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -41,30 +37,40 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CategoryRoutedAlias implements RoutedAlias<String> {
+public class CategoryRoutedAlias implements RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String COLLECTION_INFIX = "__CRA__";
+  private static final String COLLECTION_INFIX = "__CRA__";
+
+  // This constant is terribly annoying but a great many things fall apart if we allow an alias with
+  // no collections to be created. So this kludge seems better than reworking every request path that
+  // expects a collection but also works with an alias to handle or error out on empty alias. The
+  // collection with this constant as a suffix is automatically removed after the alias begins to
+  // receive data.
+  public static final String UNINITIALIZED = "NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA__TEMP";
 
   /**
    * Parameters required for creating a category routed alias
    */
+  @SuppressWarnings("WeakerAccess")
   public static final Set<String> REQUIRED_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       CommonParams.NAME,
       ROUTER_TYPE_NAME,
       ROUTER_FIELD)));
 
+  @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
+  @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
   /**
    * Optional parameters for creating a category routed alias excluding parameters for collection creation.
    */
+  @SuppressWarnings("WeakerAccess")
   public static final Set<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       ROUTER_MAX_CARDINALITY,
       ROUTER_MUST_MATCH)));
 
-  private List<String> collectionNames; // List of collections currently in the CRA
-  private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
+  private Aliases parsedAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
   private final String aliasName;
   private final Map<String, String> aliasMetadata;
 
@@ -76,13 +82,12 @@ public class CategoryRoutedAlias implements RoutedAlias<String> {
   @Override
   public boolean updateParsedCollectionAliases(ZkController zkController) {
     final Aliases aliases = zkController.getZkStateReader().getAliases(); // note: might be different from last request
-    if (this.parsedCollectionsAliases != aliases) {
-      if (this.parsedCollectionsAliases != null) {
+    if (this.parsedAliases != aliases) {
+      if (this.parsedAliases != null) {
         log.debug("Observing possibly updated alias: {}", getAliasName());
       }
       // slightly inefficient, but not easy to make changes to the return value of parseCollections
-      this.collectionNames = parseCollections(aliases).stream().map(Map.Entry::getValue).collect(Collectors.toList());
-      this.parsedCollectionsAliases = aliases;
+      this.parsedAliases = aliases;
       return true;
     }
     return false;
@@ -96,43 +101,6 @@ public class CategoryRoutedAlias implements RoutedAlias<String> {
   @Override
   public String getRouteField() {
     return aliasMetadata.get(ROUTER_FIELD);
-  }
-
-  @Override
-  public List<Map.Entry<String, String>> parseCollections(Aliases aliases) {
-    final List<String> collections = aliases.getCollectionAliasListMap().get(aliasName);
-    if (collections == null) {
-      throw RoutedAlias.newAliasMustExistException(getAliasName());
-    }
-    List<Map.Entry<String,String>> result = new ArrayList<>(collections.size());
-    for (String collection : collections) {
-      String collCategory = parseCategoryFromCollectionName(aliasName, collection);
-      result.add(new AbstractMap.SimpleImmutableEntry<>(collCategory, collection));
-    }
-    // TODO Think about this... is order needed? if so perhaps better if insertion maintains order?
-    result.sort((e1, e2) -> e2.getKey().compareTo(e1.getKey())); // reverse sort by key
-
-    // note that this is also sorted by value since the value corresponds to the key plus a the alias name which
-    // is constant within a given alias.
-    return result;
-  }
-
-  /**
-   * Pattern for Category Routed Alias is aliasName__CRA__datadrivincategory. The __CRA__ infix is to
-   * reduce the chance of inadvertently duplicating (or worse yet, adopting) other collections
-   * that are not supposed to be included in the alias. With Time routed aliases the timestamp in
-   * the collection name was sufficiently unique, but given that aliasName could be anything and
-   * 2 part collection names of the form foo_bar are probably common in the wild, the infix seems
-   * necessary.
-   *
-   */
-  private String parseCategoryFromCollectionName(String aliasName, String collection) {
-    String prefix = aliasName + COLLECTION_INFIX;
-    if (!collection.startsWith(prefix)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Category Routed Alias collection names " +
-          "must start with the name of the alias plus " + COLLECTION_INFIX);
-    }
-    return collection.substring(prefix.length(),collection.length());
   }
 
   @Override
@@ -151,7 +119,7 @@ public class CategoryRoutedAlias implements RoutedAlias<String> {
     return dataValue.trim().replaceAll("\\W", "_");
   }
 
-  private String buildCollectionNameFromValue(String value) {
+  String buildCollectionNameFromValue(String value) {
     return aliasName + COLLECTION_INFIX + safeKeyValue(value);
   }
 
@@ -169,7 +137,7 @@ public class CategoryRoutedAlias implements RoutedAlias<String> {
       // Note: CRA's have no way to predict values that determine collection so preemptive async creation
       // is not possible. We have no choice but to block and wait (to do otherwise would imperil the overseer).
       do {
-        if (this.collectionNames.contains(candidateCollectionName)) {
+        if (getCollectionList(this.parsedAliases).contains(candidateCollectionName)) {
           return candidateCollectionName;
         } else {
           // this could time out in which case we simply let it throw an error
@@ -196,9 +164,13 @@ public class CategoryRoutedAlias implements RoutedAlias<String> {
     }
   }
 
+  private List<String> getCollectionList(Aliases p) {
+    return p.getCollectionAliasListMap().get(this.aliasName);
+  }
+
   @Override
-  public Optional<String> computeInitialCollectionName() {
-    return Optional.empty();
+  public String computeInitialCollectionName() {
+    return buildCollectionNameFromValue(UNINITIALIZED);
   }
 
   @Override

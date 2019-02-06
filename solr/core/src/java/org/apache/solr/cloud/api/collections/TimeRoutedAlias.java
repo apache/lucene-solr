@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +70,7 @@ import static org.apache.solr.common.params.CommonParams.TZ;
  * @see MaintainTimeRoutedAliasCmd
  * @see RoutedAliasUpdateProcessor
  */
-public class TimeRoutedAlias implements RoutedAlias<Instant> {
+public class TimeRoutedAlias implements RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // This class is created once per request and the overseer methods prevent duplicate create requests
@@ -199,8 +198,8 @@ public class TimeRoutedAlias implements RoutedAlias<Instant> {
   }
 
   @Override
-  public Optional<String> computeInitialCollectionName() {
-    return Optional.of(formatCollectionNameFromInstant(aliasName, parseStringAsInstant(this.start, timeZone)));
+  public String computeInitialCollectionName() {
+    return formatCollectionNameFromInstant(aliasName, parseStringAsInstant(this.start, timeZone));
   }
 
   public static Instant parseInstantFromCollectionName(String aliasName, String collection) {
@@ -289,9 +288,10 @@ public class TimeRoutedAlias implements RoutedAlias<Instant> {
         .add("timeZone", timeZone)
         .toString();
   }
-
-  /** Parses the timestamp from the collection list and returns them in reverse sorted order (most recent 1st) */
-  public List<Map.Entry<Instant,String>> parseCollections(Aliases aliases) {
+  /**
+   * Parses the elements of the collection list. Result is returned them in sorted order (most recent 1st)
+   */
+  List<Map.Entry<Instant,String>> parseCollections(Aliases aliases) {
     final List<String> collections = aliases.getCollectionAliasListMap().get(aliasName);
     if (collections == null) {
       throw RoutedAlias.newAliasMustExistException(getAliasName());

@@ -17,13 +17,10 @@
 
 package org.apache.solr.update.processor;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,8 +31,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -51,7 +46,6 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocumentList;
@@ -61,7 +55,6 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -72,7 +65,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -81,8 +73,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059")
-public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
+public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String alias = "myalias";
@@ -731,18 +725,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     return strings.contains(collection);
   }
 
-  private void waitCol(int slices, String collection) {
-    waitForState("waiting for collections to be created", collection,
-        (liveNodes, collectionState) -> {
-          if (collectionState == null) {
-            // per predicate javadoc, this is what we get if the collection doesn't exist at all.
-            return false;
-          }
-          Collection<Slice> activeSlices = collectionState.getActiveSlices();
-          int size = activeSlices.size();
-          return size == slices;
-        });
-  }
+
 
   private void testFailedDocument(Instant timestamp, String errorMsg) throws SolrServerException, IOException {
     try {
@@ -761,76 +744,15 @@ public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     assertNull("" + errors, errors);
   }
 
-  /** Adds these documents and commits, returning when they are committed.
-   * We randomly go about this in different ways. */
-  private void addDocsAndCommit(boolean aliasOnly, SolrInputDocument... solrInputDocuments) throws Exception {
-    // we assume all docs will be added (none too old/new to cause exception)
-    Collections.shuffle(Arrays.asList(solrInputDocuments), random());
 
-    // this is a list of the collections & the alias name.  Use to pick randomly where to send.
-    //   (it doesn't matter where we send docs since the alias is honored at the URP level)
-    List<String> collections = new ArrayList<>();
-    collections.add(alias);
-    if (!aliasOnly) {
-      collections.addAll(new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias));
-    }
-
-    int commitWithin = random().nextBoolean() ? -1 : 500; // if -1, we commit explicitly instead
-
-    if (random().nextBoolean()) {
-      // Send in separate threads. Choose random collection & solrClient
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        ExecutorService exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-            new DefaultSolrThreadFactory(getSaferTestName()));
-        List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
-        for (SolrInputDocument solrInputDocument : solrInputDocuments) {
-          String col = collections.get(random().nextInt(collections.size()));
-          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
-        }
-        for (Future<UpdateResponse> future : futures) {
-          assertUpdateResponse(future.get());
-        }
-        // at this point there shouldn't be any tasks running
-        assertEquals(0, exec.shutdownNow().size());
-      }
-    } else {
-      // send in a batch.
-      String col = collections.get(random().nextInt(collections.size()));
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
-      }
-    }
-    String col = collections.get(random().nextInt(collections.size()));
-    if (commitWithin == -1) {
-      solrClient.commit(col);
-    } else {
-      // check that it all got committed eventually
-      String docsQ =
-          "{!terms f=id}"
-          + Arrays.stream(solrInputDocuments).map(d -> d.getFieldValue("id").toString())
-              .collect(Collectors.joining(","));
-      int numDocs = queryNumDocs(docsQ);
-      if (numDocs == solrInputDocuments.length) {
-        System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
-        return;
-      }
-      // wait until it's committed
-      Thread.sleep(commitWithin);
-      for (int idx = 0; idx < 100; ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
-        numDocs = queryNumDocs(docsQ);
-        if (numDocs == solrInputDocuments.length) break;
-        Thread.sleep(100);
-      }
-
-      assertEquals("not committed.  Bug or a slow test?",
-          solrInputDocuments.length, numDocs);
-    }
+  @Override
+  public String getAlias() {
+    return alias;
   }
 
-  private void assertUpdateResponse(UpdateResponse rsp) {
-    // use of TolerantUpdateProcessor can cause non-thrown "errors" that we need to check for
-    List errors = (List) rsp.getResponseHeader().get("errors");
-    assertTrue("Expected no errors: " + errors,errors == null || errors.isEmpty());
+  @Override
+  public CloudSolrClient getSolrClient() {
+    return solrClient;
   }
 
   private int queryNumDocs(String q) throws SolrServerException, IOException {

@@ -17,20 +17,40 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+
+import static org.apache.solr.cloud.api.collections.CategoryRoutedAlias.UNINITIALIZED;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class MaintainCategoryRoutedAliasCmd extends AliasCmd {
 
+  @SuppressWarnings("WeakerAccess")
   public static final String IF_CATEGORY_COLLECTION_NOT_FOUND = "ifCategoryCollectionNotFound";
+
+  private final OverseerCollectionMessageHandler ocmh;
+
+  MaintainCategoryRoutedAliasCmd(OverseerCollectionMessageHandler ocmh) {
+    this.ocmh = ocmh;
+  }
 
   /**
    * Invokes this command from the client.  If there's a problem it will throw an exception.
@@ -38,7 +58,8 @@ public class MaintainCategoryRoutedAliasCmd extends AliasCmd {
    * block (up to the standard OCP timeout) to prevent large batches of add's from sending a message
    * to the overseer for every document added in RoutedAliasUpdateProcessor.
    */
-  public static NamedList remoteInvoke(CollectionsHandler collHandler, String aliasName, String categoryCollection)
+  @SuppressWarnings("WeakerAccess")
+  public static void remoteInvoke(CollectionsHandler collHandler, String aliasName, String categoryCollection)
       throws Exception {
     final String operation = CollectionParams.CollectionAction.MAINTAINCATEGORYROUTEDALIAS.toLower();
     Map<String, Object> msg = new HashMap<>();
@@ -49,11 +70,75 @@ public class MaintainCategoryRoutedAliasCmd extends AliasCmd {
     if (rsp.getException() != null) {
       throw rsp.getException();
     }
-    return rsp.getResponse();
   }
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    //todo
+    //---- PARSE PRIMARY MESSAGE PARAMS
+    // important that we use NAME for the alias as that is what the Overseer will get a lock on before calling us
+    final String aliasName = message.getStr(NAME);
+    // the client believes this collection name should exist.  Our goal is to ensure it does.
+    final String categoryRequired = message.getStr(IF_CATEGORY_COLLECTION_NOT_FOUND); // optional
+
+
+    //---- PARSE ALIAS INFO FROM ZK
+    final ZkStateReader.AliasesManager aliasesManager = ocmh.zkStateReader.aliasesManager;
+    final Aliases aliases = aliasesManager.getAliases();
+    final Map<String, String> aliasMetadata = aliases.getCollectionAliasProperties(aliasName);
+    if (aliasMetadata == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Alias " + aliasName + " does not exist."); // if it did exist, we'd have a non-null map
+    }
+    final CategoryRoutedAlias categoryRoutedAlias = (CategoryRoutedAlias) RoutedAlias.fromProps(aliasName, aliasMetadata);
+
+    if (categoryRoutedAlias == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, getClass() + " got alias metadata with an " +
+          "invalid routing type and produced null");
+    }
+
+
+    //---- SEARCH FOR REQUESTED COLL
+    Map<String, List<String>> collectionAliasListMap = aliases.getCollectionAliasListMap();
+
+    // if we found it the collection already exists and we're done (concurrent creation on another request)
+    // so this if does not need an else.
+    if (!collectionAliasListMap.get(aliasName).contains(categoryRequired)) {
+      //---- DETECT and REMOVE the initial place holder collection if it still exists:
+
+      String initialCollection = categoryRoutedAlias.buildCollectionNameFromValue(UNINITIALIZED);
+
+      // important not to delete the place holder collection it until after a second collection exists,
+      // otherwise we have a situation where the alias has no collections briefly and concurrent
+      // requests to the alias will fail with internal errors (incl. queries etc).
+      // TODO avoid this contains check?
+      List<String> colList = new ArrayList<>(collectionAliasListMap.get(aliasName));
+      if (colList.contains(initialCollection) && colList.size() > 1) {
+
+        aliasesManager.applyModificationAndExportToZk(curAliases -> {
+          colList.remove(initialCollection);
+          final String collectionsToKeepStr = StrUtils.join(colList, ',');
+          return curAliases.cloneWithCollectionAlias(aliasName, collectionsToKeepStr);
+        });
+        final CollectionsHandler collHandler = ocmh.overseer.getCoreContainer().getCollectionsHandler();
+        final SolrParams reqParams = CollectionAdminRequest
+            .deleteCollection(initialCollection).getParams();
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        collHandler.handleRequestBody(new LocalSolrQueryRequest(null, reqParams), rsp);
+        //noinspection unchecked
+        results.add(UNINITIALIZED, rsp.getValues());
+      }
+
+      //---- CREATE THE COLLECTION
+      NamedList createResults = createCollectionAndWait(state, aliasName, aliasMetadata,
+          categoryRequired, ocmh);
+      if (createResults != null) {
+        //noinspection unchecked
+        results.add("create", createResults);
+      }
+      //---- UPDATE THE ALIAS WITH NEW COLLECTION
+      updateAlias(aliasName, aliasesManager, categoryRequired);
+    }
+
   }
+
 }

@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class CreateAliasCmd extends AliasCmd {
 
@@ -45,6 +45,7 @@ public class CreateAliasCmd extends AliasCmd {
     return message.keySet().stream().anyMatch(k -> k.startsWith(RoutedAlias.ROUTER_PREFIX));
   }
 
+  @SuppressWarnings("WeakerAccess")
   public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
   }
@@ -79,7 +80,7 @@ public class CreateAliasCmd extends AliasCmd {
   private void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
     final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
     final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
-    validateAllCollectionsExistAndNoDups(canonicalCollectionList, zkStateReader);
+    validateAllCollectionsExistAndNoDuplicates(canonicalCollectionList, zkStateReader);
     zkStateReader.aliasesManager
         .applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, canonicalCollectionsString));
   }
@@ -97,6 +98,7 @@ public class CreateAliasCmd extends AliasCmd {
         .collect(Collectors.toList());
   }
 
+  @SuppressWarnings("unchecked")
   private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
     // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
@@ -110,31 +112,27 @@ public class CreateAliasCmd extends AliasCmd {
 
     // Further validation happens here
     RoutedAlias routedAlias = RoutedAlias.fromProps(aliasName, props);
+    if (routedAlias == null) {
+      // should never happen here, but keep static analysis in IDE's happy...
+      throw new SolrException(SERVER_ERROR,"Tried to create a routed alias with no type!");
+    }
 
-    // If we can, create the first collection.
-    Optional<String> initialCollectionName = routedAlias.computeInitialCollectionName();
-    if (initialCollectionName.isPresent()) {
-      String initialColl = initialCollectionName.get();
+    // Create the first collection.
+    String initialColl = routedAlias.computeInitialCollectionName();
       ensureAliasCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialColl);
       // Create/update the alias
       zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
           .cloneWithCollectionAlias(aliasName, initialColl)
           .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
-      return;
-    }
-
-    // Create/update the alias
-    zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
-        .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 
   private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
     // Create the collection
     createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
-    validateAllCollectionsExistAndNoDups(Collections.singletonList(initialCollectionName), zkStateReader);
+    validateAllCollectionsExistAndNoDuplicates(Collections.singletonList(initialCollectionName), zkStateReader);
   }
 
-  private void validateAllCollectionsExistAndNoDups(List<String> collectionList, ZkStateReader zkStateReader) {
+  private void validateAllCollectionsExistAndNoDuplicates(List<String> collectionList, ZkStateReader zkStateReader) {
     final String collectionStr = StrUtils.join(collectionList, ',');
 
     if (new HashSet<>(collectionList).size() != collectionList.size()) {
