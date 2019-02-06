@@ -24,6 +24,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.RadixSelector;
 
+
 /**
  *
  * Offline Radix selector for BKD tree.
@@ -210,7 +211,7 @@ public final class BKDRadixSelector {
     partition(points, left, right, deltaPoints, from, to, dim, commonPrefix, 0);
     //close delta point writer
     deltaPoints.close();
-    //
+
     long newPartitionPoint = partitionPoint - from - leftCount;
 
     if (deltaPoints instanceof HeapPointWriter) {
@@ -256,6 +257,7 @@ public final class BKDRadixSelector {
         }
       }
     }
+    //Delete original file
     points.destroy();
   }
 
@@ -268,12 +270,12 @@ public final class BKDRadixSelector {
   }
 
   private byte[] heapSelect(HeapPointWriter points, PointWriter left, PointWriter right, int dim, int from, int to, int partitionPoint, int commonPrefix) throws IOException {
+    final int offset = dim * bytesPerDim + commonPrefix;
     new RadixSelector(bytesSorted - commonPrefix) {
 
       @Override
       protected void swap(int i, int j) {
         points.swap(i, j);
-
       }
 
       @Override
@@ -283,7 +285,7 @@ public final class BKDRadixSelector {
           // dim bytes
           int block = i / points.valuesPerBlock;
           int index = i % points.valuesPerBlock;
-          return points.blocks.get(block)[index * packedBytesLength + dim * bytesPerDim + k + commonPrefix] & 0xff;
+          return points.blocks.get(block)[index * packedBytesLength + offset + k] & 0xff;
         } else {
           // doc id
           int s = 3 - (k + commonPrefix - bytesPerDim);
@@ -292,8 +294,6 @@ public final class BKDRadixSelector {
       }
     }.select(from, to, partitionPoint);
 
-    byte[] partition = new byte[bytesPerDim];
-    Arrays.fill(partition, (byte) 0xff);
     for (int i = from; i < to; i++) {
       points.getPackedValueSlice(i, bytesRef1);
       int docID = points.docIDs[i];
@@ -301,11 +301,11 @@ public final class BKDRadixSelector {
         left.append(bytesRef1, docID);
       } else {
         right.append(bytesRef1, docID);
-        if (FutureArrays.compareUnsigned(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, bytesRef1.offset + (dim + 1) * bytesPerDim, partition, 0, bytesPerDim) < 0) {
-          System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, partition, 0, bytesPerDim);
-        }
       }
     }
+    byte[] partition = new byte[bytesPerDim];
+    points.getPackedValueSlice(partitionPoint, bytesRef1);
+    System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, partition, 0, bytesPerDim);
     return partition;
   }
 }
