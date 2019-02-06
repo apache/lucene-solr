@@ -128,7 +128,7 @@ public final class BKDRadixSelector {
       System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, commonPrefix, 0, bytesPerDim);
       // copy docID
       System.arraycopy(bytesRef1.bytes, bytesRef1.offset + packedBytesLength, commonPrefix, bytesPerDim, Integer.BYTES);
-      for (long i =from + 1; i< to; i++) {
+      for (long i = from + 1; i< to; i++) {
         reader.next();
         reader.packedValueWithDocId(bytesRef1);
         int startIndex =  dim * bytesPerDim;
@@ -151,7 +151,7 @@ public final class BKDRadixSelector {
     }
 
     //build histogram up to the common prefix
-    for (int i=0; i < commonPrefixPosition; i++) {
+    for (int i = 0; i < commonPrefixPosition; i++) {
       partitionBucket[i] = commonPrefix[i] & 0xff;
       histogram[i][partitionBucket[i]] = to - from;
     }

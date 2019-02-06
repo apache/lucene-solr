@@ -1060,7 +1060,7 @@ final class SimpleTextBKDWriter implements Closeable {
             int bucket = scratchBytesRef1.bytes[scratchBytesRef1.offset + offset + prefix] & 0xff;
             usedBytes[dim].set(bucket);
           }
-          int cardinality =usedBytes[dim].cardinality();
+          int cardinality = usedBytes[dim].cardinality();
           if (cardinality < sortedDimCardinality) {
             sortedDim = dim;
             sortedDimCardinality = cardinality;
@@ -1078,7 +1078,7 @@ final class SimpleTextBKDWriter implements Closeable {
       // loading the values:
       int count = Math.toIntExact(heapSource.count());
       assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
-      writeLeafBlockDocs(out, heapSource.docIDs, Math.toIntExact(0), count);
+      writeLeafBlockDocs(out, heapSource.docIDs, 0, count);
 
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
@@ -1093,7 +1093,7 @@ final class SimpleTextBKDWriter implements Closeable {
 
         @Override
         public BytesRef apply(int i) {
-          heapSource.getPackedValueSlice(Math.toIntExact(i), scratch);
+          heapSource.getPackedValueSlice(i, scratch);
           return scratch;
         }
       };
@@ -1124,7 +1124,7 @@ final class SimpleTextBKDWriter implements Closeable {
 
       try (PointWriter leftPointWriter2 = getPointWriter(leftCount, "left" + splitDim);
            PointWriter rightPointWriter2 = getPointWriter(rightCount, "right" + splitDim)) {
-        splitValue = radixSelector.select(data, leftPointWriter2, rightPointWriter2, 0, Math.toIntExact(data.count()),  Math.toIntExact(leftCount), splitDim);
+        splitValue = radixSelector.select(data, leftPointWriter2, rightPointWriter2, 0, data.count(),  leftCount, splitDim);
         leftPointWriter = leftPointWriter2;
         rightPointWriter = rightPointWriter2;
       } catch (Throwable t) {
