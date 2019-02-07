@@ -59,6 +59,8 @@ Bug Fixes
 
 * SOLR-12330: 500 error code on json.facet syntax errors (Munendra S N, Mikhail Khludnev)
 
+* SOLR-13229: Cleanup replicasMetTragicEvent after all types of exception (Tomás Fernández Löbbe)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
