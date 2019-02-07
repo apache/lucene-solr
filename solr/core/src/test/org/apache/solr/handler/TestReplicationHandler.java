@@ -157,7 +157,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
-  private static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
+  static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -167,7 +167,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return jetty;
   }
 
-  private static SolrClient createNewSolrClient(int port) {
+  static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
@@ -179,7 +179,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  int index(SolrClient s, Object... fields) throws Exception {
+  static int index(SolrClient s, Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     for (int i = 0; i < fields.length; i += 2) {
       doc.addField((String) (fields[i]), fields[i + 1]);
@@ -473,7 +473,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   //Simple function to wrap the invocation of replication commands on the various
   //jetty servers.
-  private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
+  static void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
     String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=" + pCommand;
     URL u = new URL(masterUrl);
@@ -1486,7 +1486,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     q.add("qt", "/replication")
         .add("wt", "json")
         .add("command", "filelist")
-        .add("generation", "-1"); // A 'generation' value not matching any commit point should cause error.
+        .add("generation", "-2"); // A 'generation' value not matching any commit point should cause error.
     QueryResponse response = slaveClient.query(q);
     NamedList<Object> resp = response.getResponse();
     assertNotNull(resp);

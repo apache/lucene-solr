@@ -113,7 +113,10 @@ Here are examples of `<commit>` and `<optimize>` using optional attributes:
 
 ==== Delete Operations
 
-Documents can be deleted from the index in two ways. "Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema. "Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
+Documents can be deleted from the index in two ways.
+"Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema.
+It doesn't work for child/nested docs.
+"Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
 
 [source,xml]
 ----
@@ -378,7 +381,7 @@ Or a list of document IDs:
 { "delete":["id1","id2"] }
 ----
 
-The value of a "delete" can be an array which contains a list of zero or more id's to be deleted. It is not a range (start and end).
+Note: Delete-by-id doesn't work for child/nested docs.
 
 You can also specify `\_version_` with each "delete":
 

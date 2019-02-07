@@ -16,7 +16,11 @@ Bug fixes:
   it's inaccessible. (Dawid Weiss)
 
 ======================= Lucene 8.1.0 =======================
-(No Changes)
+
+Improvements
+
+* LUCENE-8673: Use radix partitioning when merging dimensional points instead
+  of sorting all dimensions before hand. (Ignacio Vera, Adrien Grand)
 
 ======================= Lucene 8.0.0 =======================
 
@@ -204,6 +208,9 @@ New Features
 
 * LUCENE-8646: New interval functions: Intervals.prefix() and Intervals.wildcard()
   (Alan Woodward)
+
+* LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
+  underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
 
 Improvements
 
