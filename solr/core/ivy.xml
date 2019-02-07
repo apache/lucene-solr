@@ -110,7 +110,6 @@
     <!-- Hadoop MiniKdc Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerby-config" rev="${/org.apache.kerby/kerby-config}" conf="test.MiniKdc"/>
-    <dependency org="org.apache.kerby" name="kerby-kerb" rev="${/org.apache.kerby/kerby-kerb}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerb-client" rev="${/org.apache.kerby/kerb-client}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerb-common" rev="${/org.apache.kerby/kerb-common}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerb-crypto" rev="${/org.apache.kerby/kerb-crypto}" conf="test.MiniKdc"/>
