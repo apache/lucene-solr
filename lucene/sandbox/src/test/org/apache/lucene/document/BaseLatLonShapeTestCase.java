@@ -24,6 +24,7 @@ import java.util.Set;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
@@ -282,9 +283,6 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Rectangle rect = GeoTestUtil.nextBox();
-      while (queryRelation == QueryRelation.CONTAINS && rect.crossesDateline()) {
-        rect = GeoTestUtil.nextBox();
-      }
       Query query = newRectQuery(FIELD_NAME, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
       if (VERBOSE) {
@@ -328,17 +326,23 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          // check quantized poly against quantized query
-          if (qMinLon > qMaxLon && rect.crossesDateline() == false) {
-            // if the quantization creates a false dateline crossing (because of encodeCeil):
-            // then do not use encodeCeil
-            qMinLon = quantizeLon(rect.minLon);
-          }
-
           if (qMinLat > qMaxLat) {
             qMinLat = quantizeLat(rect.maxLat);
           }
-          expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          if (queryRelation == QueryRelation.CONTAINS && rect.crossesDateline()) {
+            expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, GeoUtils.MAX_LON_INCL, shapes[id]);
+            if (expected) {
+              expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, GeoUtils.MIN_LON_INCL, qMaxLon, shapes[id]);
+            }
+          } else {
+            // check quantized poly against quantized query
+            if (qMinLon > qMaxLon && rect.crossesDateline() == false) {
+              // if the quantization creates a false dateline crossing (because of encodeCeil):
+              // then do not use encodeCeil
+              qMinLon = quantizeLon(rect.minLon);
+            }
+            expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          }
         }
 
         if (hits.get(docID) != expected) {
@@ -489,7 +493,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       }
 
       // Polygon
-      Polygon queryPolygon = GeoTestUtil.nextPolygon();
+      int n = randomIntBetween(1, 4);
+      Polygon[] queryPolygon = new Polygon[n];
+      for (int i =0; i < n; i++) {
+        queryPolygon[i] = GeoTestUtil.nextPolygon();
+      }
       Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
@@ -531,7 +539,17 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = getValidator(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
+          if (queryRelation == QueryRelation.CONTAINS && queryPolygon.length > 1) {
+            expected = true;
+            for (Polygon polygon : queryPolygon) {
+              if (expected = getValidator(queryRelation).testPolygonQuery(Polygon2D.create(polygon), shapes[id]) == false) {
+                expected = false;
+                break;
+              }
+            }
+          } else {
+            expected = getValidator(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
+          }
         }
 
         if (hits.get(docID) != expected) {
@@ -550,7 +568,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
+          b.append("  queryPolygon=" + Arrays.toString(queryPolygon));
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
