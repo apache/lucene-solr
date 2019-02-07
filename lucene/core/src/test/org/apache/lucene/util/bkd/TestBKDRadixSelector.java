@@ -187,7 +187,14 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
       BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHeap, dir, "test");
       BKDRadixSelector.PathSlice copySlice = new BKDRadixSelector.PathSlice(copy, 0, copy.count());
-      byte[] partitionPoint = radixSelector.select(copySlice, slices, start, end, middle, splitDim, 0);
+      byte[] pointsMax = getMax(copySlice, bytesPerDimensions, splitDim);
+      byte[] pointsMin = getMin(copySlice, bytesPerDimensions, splitDim);
+      int commonPrefixLength = FutureArrays.mismatch(pointsMin, 0, bytesPerDimensions, pointsMax, 0, bytesPerDimensions);
+      if (commonPrefixLength == -1) {
+        commonPrefixLength = bytesPerDimensions;
+      }
+      int commonPrefixLengthInput = (random().nextBoolean()) ? commonPrefixLength : commonPrefixLength == 0 ? 0 : random().nextInt(commonPrefixLength);
+      byte[] partitionPoint = radixSelector.select(copySlice, slices, start, end, middle, splitDim, commonPrefixLengthInput);
       assertEquals(middle - start, slices[0].count);
       assertEquals(end - middle, slices[1].count);
       byte[] max = getMax(slices[0], bytesPerDimensions, splitDim);

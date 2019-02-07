@@ -146,7 +146,8 @@ public final class BKDRadixSelector {
         int endIndex  = (commonPrefixPosition > bytesPerDim) ? bytesPerDim :  commonPrefixPosition;
         int j = FutureArrays.mismatch(commonPrefix, startIndex, endIndex, bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim + startIndex, bytesRef1.offset + dim * bytesPerDim + endIndex);
         if (j == 0) {
-          return dimCommonPrefix;
+          commonPrefixPosition = dimCommonPrefix;
+          break;
         } else if (j == -1) {
           if (commonPrefixPosition > bytesPerDim) {
             //tie-break on docID
