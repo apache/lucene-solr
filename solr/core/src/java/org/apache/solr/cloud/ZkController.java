@@ -628,7 +628,14 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.release(this);
   }
 
+  /**
+   * Best effort to give up the leadership of a shard in a core after hitting a tragic exception
+   * @param cd The current core descriptor
+   * @param tragicException The tragic exception from the {@code IndexWriter}
+   */
   public void giveupLeadership(CoreDescriptor cd, Throwable tragicException) {
+    assert tragicException != null;
+    assert cd != null;
     DocCollection dc = getClusterState().getCollectionOrNull(cd.getCollectionName());
     if (dc == null) return;
 
@@ -666,13 +673,12 @@ public class ZkController implements Closeable {
           props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().name().toUpperCase(Locale.ROOT));
           props.put(CoreAdminParams.NODE, getNodeName());
           getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
-        } catch (KeeperException e) {
-          log.info("Met exception on give up leadership for {}", key, e);
+        } catch (Exception e) {
+          // Exceptions are not bubbled up. giveupLeadership is best effort, and is only called in case of some other
+          // unrecoverable error happened
+          log.error("Met exception on give up leadership for {}", key, e);
           replicasMetTragicEvent.remove(key);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.info("Met exception on give up leadership for {}", key, e);
-          replicasMetTragicEvent.remove(key);
+          SolrZkClient.checkInterrupted(e);
         }
       }
     }
