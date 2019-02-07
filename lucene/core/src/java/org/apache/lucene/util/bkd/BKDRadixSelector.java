@@ -48,7 +48,7 @@ public final class BKDRadixSelector {
   private final int maxPointsSortInHeap;
   //reusable buffer
   private final byte[] offlineBuffer;
-  //holder for partition points
+  //holder for offlinePartition points
   private final int[] partitionBucket;
   // scratch object to move bytes around
   private final BytesRef bytesRef1 = new BytesRef();
@@ -66,7 +66,7 @@ public final class BKDRadixSelector {
     this.bytesPerDim = bytesPerDim;
     this.packedBytesLength = numDim * bytesPerDim;
     this.bytesSorted = bytesPerDim + Integer.BYTES;
-    this.maxPointsSortInHeap = 2 * maxPointsSortInHeap;
+    this.maxPointsSortInHeap = maxPointsSortInHeap;
     int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / (packedBytesLength + Integer.BYTES);
     this.offlineBuffer = new byte[numberOfPointsOffline * (packedBytesLength + Integer.BYTES)];
     this.partitionBucket = new int[bytesSorted];
@@ -78,34 +78,44 @@ public final class BKDRadixSelector {
 
   /**
    *
-   * Method to partition the input data. It returns the value of the dimension where
+   * Method to offlinePartition the input data. It returns the value of the dimension where
    * the split happens. The method destroys the original writer.
    *
    */
-  public byte[] select(PointWriter points, PointWriter left, PointWriter right, long from, long to, long partitionPoint, int dim) throws IOException {
+  public byte[] select(PathSlice points, PathSlice[] slices, long from, long to, long partitionPoint, int dim, int dimCommonPrefix) throws IOException {
     checkArgs(from, to, partitionPoint);
 
+    assert slices.length == 2;
+
     //If we are on heap then we just select on heap
-    if (points instanceof HeapPointWriter) {
-      return heapSelect((HeapPointWriter) points, left, right, dim, Math.toIntExact(from), Math.toIntExact(to),  Math.toIntExact(partitionPoint), 0);
+    if (points.writer instanceof HeapPointWriter) {
+      byte[] partition = heapRadixSelect((HeapPointWriter) points.writer, dim, Math.toIntExact(from), Math.toIntExact(to),  Math.toIntExact(partitionPoint), dimCommonPrefix);
+      slices[0] = new PathSlice(points.writer, from, partitionPoint - from);
+      slices[1] = new PathSlice(points.writer, partitionPoint, to - partitionPoint);
+      return partition;
     }
 
     //reset histogram
     for (int i = 0; i < bytesSorted; i++) {
       Arrays.fill(histogram[i], 0);
     }
-    OfflinePointWriter offlinePointWriter = (OfflinePointWriter) points;
+    OfflinePointWriter offlinePointWriter = (OfflinePointWriter) points.writer;
 
-    //find common prefix, it does already set histogram values if needed
-    int commonPrefix = findCommonPrefix(offlinePointWriter, from, to, dim);
+    //find common prefix from dimCommonPrefix, it does already set histogram values if needed
+    int commonPrefix = findCommonPrefix(offlinePointWriter, from, to, dim, dimCommonPrefix);
 
-    //if all equals we just partition the data
-    if (commonPrefix ==  bytesSorted) {
-      partition(offlinePointWriter, left,  right, null, from, to, dim, commonPrefix - 1, partitionPoint);
-      return partitionPointFromCommonPrefix();
+    try (PointWriter left = getPointWriter(partitionPoint - from, "left" + dim);
+         PointWriter right = getPointWriter(to - partitionPoint, "right" + dim)) {
+      slices[0] = new PathSlice(left, 0, partitionPoint - from);
+      slices[1] = new PathSlice(right, 0, to - partitionPoint);
+      //if all equals we just offlinePartition the data
+      if (commonPrefix == bytesSorted) {
+        offlinePartition(offlinePointWriter, left, right, null, from, to, dim, commonPrefix - 1, partitionPoint);
+        return partitionPointFromCommonPrefix();
+      }
+      //let's rock'n'roll
+      return buildHistogramAndPartition(offlinePointWriter, left, right, from, to, partitionPoint, 0, commonPrefix, dim);
     }
-    //let's rock'n'roll
-    return buildHistogramAndPartition(offlinePointWriter, left, right, from, to, partitionPoint, 0, commonPrefix, dim);
   }
 
   void checkArgs(long from, long to, long partitionPoint) {
@@ -117,11 +127,12 @@ public final class BKDRadixSelector {
     }
   }
 
-  private int findCommonPrefix(OfflinePointWriter points, long from, long to, int dim) throws IOException{
+  private int findCommonPrefix(OfflinePointWriter points, long from, long to, int dim, int dimCommonPrefix) throws IOException{
     //find common prefix
     byte[] commonPrefix = new byte[bytesSorted];
     int commonPrefixPosition = bytesSorted;
     try (OfflinePointReader reader = points.getReader(from, to - from, offlineBuffer)) {
+      assert commonPrefixPosition > dimCommonPrefix;
       reader.next();
       reader.packedValueWithDocId(bytesRef1);
       // copy dimension
@@ -131,21 +142,21 @@ public final class BKDRadixSelector {
       for (long i = from + 1; i< to; i++) {
         reader.next();
         reader.packedValueWithDocId(bytesRef1);
-        int startIndex =  dim * bytesPerDim;
-        int endIndex  = (commonPrefixPosition > bytesPerDim) ? startIndex + bytesPerDim :  startIndex + commonPrefixPosition;
-        int j = FutureArrays.mismatch(commonPrefix, 0, endIndex - startIndex, bytesRef1.bytes, bytesRef1.offset + startIndex, bytesRef1.offset + endIndex);
+        int startIndex =  (dimCommonPrefix > bytesPerDim) ? bytesPerDim : dimCommonPrefix;
+        int endIndex  = (commonPrefixPosition > bytesPerDim) ? bytesPerDim :  commonPrefixPosition;
+        int j = FutureArrays.mismatch(commonPrefix, startIndex, endIndex, bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim + startIndex, bytesRef1.offset + dim * bytesPerDim + endIndex);
         if (j == 0) {
-          return 0;
+          return dimCommonPrefix;
         } else if (j == -1) {
           if (commonPrefixPosition > bytesPerDim) {
             //tie-break on docID
-            int k = FutureArrays.mismatch(commonPrefix, bytesPerDim, commonPrefixPosition, bytesRef1.bytes, bytesRef1.offset + packedBytesLength, bytesRef1.offset + packedBytesLength + commonPrefixPosition - bytesPerDim );
+            int k = FutureArrays.mismatch(commonPrefix, bytesPerDim, commonPrefixPosition, bytesRef1.bytes, bytesRef1.offset + packedBytesLength, bytesRef1.offset + packedBytesLength + commonPrefixPosition - bytesPerDim);
             if (k != -1) {
               commonPrefixPosition = bytesPerDim + k;
             }
           }
         } else {
-          commonPrefixPosition = j;
+          commonPrefixPosition = dimCommonPrefix + j;
         }
       }
     }
@@ -176,7 +187,7 @@ public final class BKDRadixSelector {
         histogram[commonPrefix][bucket]++;
       }
     }
-    //Count left points and record the partition point
+    //Count left points and record the offlinePartition point
     for(int i = 0; i < HISTOGRAM_SIZE; i++) {
       long size = histogram[commonPrefix][i];
       if (leftCount + size > partitionPoint - from) {
@@ -196,33 +207,45 @@ public final class BKDRadixSelector {
     //special case when be have lot of points that are equal
     if (commonPrefix == bytesSorted - 1) {
       long tieBreakCount =(partitionPoint - from - leftCount);
-      partition(points, left,  right, null, from, to, dim, commonPrefix, tieBreakCount);
+      offlinePartition(points, left,  right, null, from, to, dim, commonPrefix, tieBreakCount);
       return partitionPointFromCommonPrefix();
     }
 
     //create the delta points writer
     PointWriter deltaPoints;
-    if (delta <= maxPointsSortInHeap) {
+    if (delta <= getMaxPointsSortInHeap(left, right)) {
       deltaPoints =  new HeapPointWriter(Math.toIntExact(delta), Math.toIntExact(delta), packedBytesLength);
     } else {
       deltaPoints = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta" + iteration, delta);
     }
     //divide the points. This actually destroys the current writer
-    partition(points, left, right, deltaPoints, from, to, dim, commonPrefix, 0);
+    offlinePartition(points, left, right, deltaPoints, from, to, dim, commonPrefix, 0);
     //close delta point writer
     deltaPoints.close();
 
     long newPartitionPoint = partitionPoint - from - leftCount;
 
     if (deltaPoints instanceof HeapPointWriter) {
-      return heapSelect((HeapPointWriter) deltaPoints, left, right, dim, 0, (int) deltaPoints.count(), Math.toIntExact(newPartitionPoint), ++commonPrefix);
+      return heapPartition((HeapPointWriter) deltaPoints, left, right, dim, 0, (int) deltaPoints.count(), Math.toIntExact(newPartitionPoint), ++commonPrefix);
     } else {
       return buildHistogramAndPartition((OfflinePointWriter) deltaPoints, left, right, 0, deltaPoints.count(), newPartitionPoint, ++iteration, ++commonPrefix, dim);
     }
   }
 
-  private void partition(OfflinePointWriter points, PointWriter left, PointWriter right, PointWriter deltaPoints,
-                           long from, long to, int dim, int bytePosition, long numDocsTiebreak) throws IOException {
+  private int getMaxPointsSortInHeap(PointWriter left, PointWriter right) {
+    long pointsUsed = 0;
+    if (left instanceof HeapPointWriter) {
+      pointsUsed += left.count();
+    }
+    if (right instanceof HeapPointWriter) {
+      pointsUsed += right.count();
+    }
+    assert maxPointsSortInHeap >= pointsUsed;
+    return maxPointsSortInHeap - (int) pointsUsed;
+  }
+
+  private void offlinePartition(OfflinePointWriter points, PointWriter left, PointWriter right, PointWriter deltaPoints,
+                                long from, long to, int dim, int bytePosition, long numDocsTiebreak) throws IOException {
     assert bytePosition == bytesSorted -1 || deltaPoints != null;
     long tiebreakCounter = 0;
     try (OfflinePointReader reader = points.getReader(from, to - from, offlineBuffer)) {
@@ -269,7 +292,24 @@ public final class BKDRadixSelector {
     return partition;
   }
 
-  private byte[] heapSelect(HeapPointWriter points, PointWriter left, PointWriter right, int dim, int from, int to, int partitionPoint, int commonPrefix) throws IOException {
+  private byte[] heapPartition(HeapPointWriter points, PointWriter left, PointWriter right, int dim, int from, int to, int partitionPoint, int commonPrefix) throws IOException {
+
+    byte[] partition = heapRadixSelect(points, dim, from, to, partitionPoint, commonPrefix);
+
+    for (int i = from; i < to; i++) {
+      points.getPackedValueSlice(i, bytesRef1);
+      int docID = points.docIDs[i];
+      if (i < partitionPoint) {
+        left.append(bytesRef1, docID);
+      } else {
+        right.append(bytesRef1, docID);
+      }
+    }
+
+    return partition;
+  }
+
+  private byte[] heapRadixSelect(HeapPointWriter points, int dim, int from, int to, int partitionPoint, int commonPrefix) {
     final int offset = dim * bytesPerDim + commonPrefix;
     new RadixSelector(bytesSorted - commonPrefix) {
 
@@ -294,18 +334,37 @@ public final class BKDRadixSelector {
       }
     }.select(from, to, partitionPoint);
 
-    for (int i = from; i < to; i++) {
-      points.getPackedValueSlice(i, bytesRef1);
-      int docID = points.docIDs[i];
-      if (i < partitionPoint) {
-        left.append(bytesRef1, docID);
-      } else {
-        right.append(bytesRef1, docID);
-      }
-    }
     byte[] partition = new byte[bytesPerDim];
     points.getPackedValueSlice(partitionPoint, bytesRef1);
     System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, partition, 0, bytesPerDim);
     return partition;
   }
+
+  PointWriter getPointWriter(long count, String desc) throws IOException {
+    if (count <= maxPointsSortInHeap / 2) {
+      int size = Math.toIntExact(count);
+      return new HeapPointWriter(size, size, packedBytesLength);
+    } else {
+      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, desc, count);
+    }
+  }
+
+  /** Sliced reference to points in an PointWriter. */
+  public static final class PathSlice {
+    public final PointWriter writer;
+    public final long start;
+    public final long count;
+
+    public PathSlice(PointWriter writer, long start, long count) {
+      this.writer = writer;
+      this.start = start;
+      this.count = count;
+    }
+
+    @Override
+    public String toString() {
+      return "PathSlice(start=" + start + " count=" + count + " writer=" + writer + ")";
+    }
+  }
+
 }
