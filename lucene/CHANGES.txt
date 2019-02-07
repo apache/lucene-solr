@@ -3,6 +3,14 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+
+======================= Lucene 8.1.0 =======================
+
+Improvements
+
+* LUCENE-8673: Use radix partitioning when merging dimensional points instead
+  of sorting all dimensions before hand. (Ignacio Vera, Adrien Grand)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes

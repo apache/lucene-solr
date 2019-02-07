@@ -24,44 +24,42 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.BytesRef;
 
-/** Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
+/**
+ * Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
  *
- * @lucene.internal */
+ * @lucene.internal
+ * */
 public final class OfflinePointReader extends PointReader {
+
   long countLeft;
   final IndexInput in;
-  private final byte[] packedValue;
-  final boolean singleValuePerDoc;
+  byte[] onHeapBuffer;
+  private int offset;
   final int bytesPerDoc;
-  private long ord;
-  private int docID;
-  // true if ords are written as long (8 bytes), else 4 bytes
-  private boolean longOrds;
   private boolean checked;
-
+  private final int packedValueLength;
+  private int pointsInBuffer;
+  private final int maxPointOnHeap;
   // File name we are reading
   final String name;
 
-  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length,
-                     boolean longOrds, boolean singleValuePerDoc) throws IOException {
-    this.singleValuePerDoc = singleValuePerDoc;
-    int bytesPerDoc = packedBytesLength + Integer.BYTES;
-    if (singleValuePerDoc == false) {
-      if (longOrds) {
-        bytesPerDoc += Long.BYTES;
-      } else {
-        bytesPerDoc += Integer.BYTES;
-      }
-    }
-    this.bytesPerDoc = bytesPerDoc;
+  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, byte[] reusableBuffer) throws IOException {
+    this.bytesPerDoc = packedBytesLength + Integer.BYTES;
+    this.packedValueLength = packedBytesLength;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
       throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
     }
+    if (reusableBuffer == null) {
+      throw new IllegalArgumentException("[reusableBuffer] cannot be null");
+    }
+    if (reusableBuffer.length < bytesPerDoc) {
+      throw new IllegalArgumentException("Length of [reusableBuffer] must be bigger than " + bytesPerDoc);
+    }
 
+    this.maxPointOnHeap =  reusableBuffer.length / bytesPerDoc;
     // Best-effort checksumming:
     if (start == 0 && length*bytesPerDoc == tempDir.fileLength(tempFileName) - CodecUtil.footerLength()) {
       // If we are going to read the entire file, e.g. because BKDWriter is now
@@ -74,55 +72,63 @@ public final class OfflinePointReader extends PointReader {
       // at another level of the BKDWriter recursion
       in = tempDir.openInput(tempFileName, IOContext.READONCE);
     }
+
     name = tempFileName;
 
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     countLeft = length;
-    packedValue = new byte[packedBytesLength];
-    this.longOrds = longOrds;
+    this.onHeapBuffer = reusableBuffer;
   }
 
   @Override
   public boolean next() throws IOException {
-    if (countLeft >= 0) {
-      if (countLeft == 0) {
+    if (this.pointsInBuffer == 0) {
+      if (countLeft >= 0) {
+        if (countLeft == 0) {
+          return false;
+        }
+      }
+      try {
+        if (countLeft > maxPointOnHeap) {
+          in.readBytes(onHeapBuffer, 0, maxPointOnHeap * bytesPerDoc);
+          pointsInBuffer = maxPointOnHeap - 1;
+          countLeft -= maxPointOnHeap;
+        } else {
+          in.readBytes(onHeapBuffer, 0, (int) countLeft * bytesPerDoc);
+          pointsInBuffer = Math.toIntExact(countLeft - 1);
+          countLeft = 0;
+        }
+        this.offset = 0;
+      } catch (EOFException eofe) {
+        assert countLeft == -1;
         return false;
       }
-      countLeft--;
-    }
-    try {
-      in.readBytes(packedValue, 0, packedValue.length);
-    } catch (EOFException eofe) {
-      assert countLeft == -1;
-      return false;
-    }
-    docID = in.readInt();
-    if (singleValuePerDoc == false) {
-      if (longOrds) {
-        ord = in.readLong();
-      } else {
-        ord = in.readInt();
-      }
     } else {
-      ord = docID;
+      this.pointsInBuffer--;
+      this.offset += bytesPerDoc;
     }
     return true;
   }
 
   @Override
-  public byte[] packedValue() {
-    return packedValue;
+  public void packedValue(BytesRef bytesRef) {
+    bytesRef.bytes = onHeapBuffer;
+    bytesRef.offset = offset;
+    bytesRef.length = packedValueLength;
   }
 
-  @Override
-  public long ord() {
-    return ord;
+  protected void packedValueWithDocId(BytesRef bytesRef) {
+    bytesRef.bytes = onHeapBuffer;
+    bytesRef.offset = offset;
+    bytesRef.length = bytesPerDoc;
   }
 
   @Override
   public int docID() {
-    return docID;
+    int position = this.offset + packedValueLength;
+    return ((onHeapBuffer[position++] & 0xFF) << 24) | ((onHeapBuffer[position++] & 0xFF) << 16)
+        | ((onHeapBuffer[position++] & 0xFF) <<  8) |  (onHeapBuffer[position++] & 0xFF);
   }
 
   @Override
@@ -136,113 +142,6 @@ public final class OfflinePointReader extends PointReader {
     } finally {
       in.close();
     }
-  }
-
-  @Override
-  public void markOrds(long count, LongBitSet ordBitSet) throws IOException {
-    if (countLeft < count) {
-      throw new IllegalStateException("only " + countLeft + " points remain, but " + count + " were requested");
-    }
-    long fp = in.getFilePointer() + packedValue.length;
-    if (singleValuePerDoc == false) {
-      fp += Integer.BYTES;
-    }
-    for(long i=0;i<count;i++) {
-      in.seek(fp);
-      long ord;
-      if (longOrds) {
-        ord = in.readLong();
-      } else {
-        ord = in.readInt();
-      }
-      assert ordBitSet.get(ord) == false: "ord=" + ord + " i=" + i + " was seen twice from " + this;
-      ordBitSet.set(ord);
-      fp += bytesPerDoc;
-    }
-  }
-
-  @Override
-  public long split(long count, LongBitSet rightTree, PointWriter left, PointWriter right, boolean doClearBits) throws IOException {
-
-    if (left instanceof OfflinePointWriter == false ||
-        right instanceof OfflinePointWriter == false) {
-      return super.split(count, rightTree, left, right, doClearBits);
-    }
-
-    // We specialize the offline -> offline split since the default impl
-    // is somewhat wasteful otherwise (e.g. decoding docID when we don't
-    // need to)
-
-    int packedBytesLength = packedValue.length;
-
-    int bytesPerDoc = packedBytesLength + Integer.BYTES;
-    if (singleValuePerDoc == false) {
-      if (longOrds) {
-        bytesPerDoc += Long.BYTES;
-      } else {
-        bytesPerDoc += Integer.BYTES;
-      }
-    }
-
-    long rightCount = 0;
-
-    IndexOutput rightOut = ((OfflinePointWriter) right).out;
-    IndexOutput leftOut = ((OfflinePointWriter) left).out;
-
-    assert count <= countLeft: "count=" + count + " countLeft=" + countLeft;
-
-    countLeft -= count;
-
-    long countStart = count;
-
-    byte[] buffer = new byte[bytesPerDoc];
-    while (count > 0) {
-      in.readBytes(buffer, 0, buffer.length);
-
-      long ord;
-      if (longOrds) {
-        // A long ord, after the docID:
-        ord = readLong(buffer, packedBytesLength+Integer.BYTES);
-      } else if (singleValuePerDoc) {
-        // docID is the ord:
-        ord = readInt(buffer, packedBytesLength);
-      } else {
-        // An int ord, after the docID:
-        ord = readInt(buffer, packedBytesLength+Integer.BYTES);
-      }
-
-      if (rightTree.get(ord)) {
-        rightOut.writeBytes(buffer, 0, bytesPerDoc);
-        if (doClearBits) {
-          rightTree.clear(ord);
-        }
-        rightCount++;
-      } else {
-        leftOut.writeBytes(buffer, 0, bytesPerDoc);
-      }
-
-      count--;
-    }
-
-    ((OfflinePointWriter) right).count = rightCount;
-    ((OfflinePointWriter) left).count = countStart-rightCount;
-
-    return rightCount;
-  }
-
-  // Poached from ByteArrayDataInput:
-  private static long readLong(byte[] bytes, int pos) {
-    final int i1 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
-      ((bytes[pos++] & 0xff) << 8) | (bytes[pos++] & 0xff);
-    final int i2 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
-      ((bytes[pos++] & 0xff) << 8) | (bytes[pos++] & 0xff);
-    return (((long)i1) << 32) | (i2 & 0xFFFFFFFFL);
-  }
-
-  // Poached from ByteArrayDataInput:
-  private static int readInt(byte[] bytes, int pos) {
-    return ((bytes[pos++] & 0xFF) << 24) | ((bytes[pos++] & 0xFF) << 16)
-      | ((bytes[pos++] & 0xFF) <<  8) |  (bytes[pos++] & 0xFF);
   }
 }
 
