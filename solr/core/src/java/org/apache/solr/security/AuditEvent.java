@@ -27,8 +27,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static org.apache.solr.security.AuditEvent.EventType.ANONYMOUS;
 
@@ -37,6 +39,7 @@ import static org.apache.solr.security.AuditEvent.EventType.ANONYMOUS;
  */
 public class AuditEvent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private String nodeName;
 
   private String message;
   private Level level;
@@ -117,6 +120,16 @@ public class AuditEvent {
     this.httpMethod = httpRequest.getMethod();
     this.queryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
+    this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
+
+    switch (this.httpMethod) {
+      case "GET":
+        this.requestType = AuthorizationContext.RequestType.READ.name();
+      case "POST":
+      case "PUT":
+        this.requestType = AuthorizationContext.RequestType.WRITE.name();
+    }
+
     setException(exception);
 
     Principal principal = httpRequest.getUserPrincipal();
@@ -143,7 +156,7 @@ public class AuditEvent {
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
     this.resource = authorizationContext.getResource();
     this.requestType = authorizationContext.getRequestType().toString();
-    authorizationContext.getParams().getAll(this.solrParams);
+    authorizationContext.getParams().toMap(this.solrParams);
   }
 
   /**
@@ -260,6 +273,14 @@ public class AuditEvent {
 
   public AuthorizationResponse getAutResponse() {
     return autResponse;
+  }
+
+  public String getNodeName() {
+    return nodeName;
+  }
+
+  public String getRequestType() {
+    return requestType;
   }
 
   public long getStatus() {
