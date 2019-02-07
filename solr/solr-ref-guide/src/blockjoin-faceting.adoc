@@ -20,7 +20,7 @@ BlockJoin facets allow you to aggregate children facet counts by their parents.
 
 It is a common requirement that if a parent document has several children documents, all of them need to increment facet value count only once. This functionality is provided by `BlockJoinDocSetFacetComponent`, and `BlockJoinFacetComponent` just an alias for compatibility.
 
-CAUTION: This functionality is considered deprecated. Users are encouraged to use `uniqueBlock(\_root_)` aggregation under a `terms` facet in the <<json-facet-api.adoc#block-join-counts,JSON Facet API>>.
+CAUTION: This functionality is considered deprecated. Users are encouraged to use `uniqueBlock(\_root_)` aggregation under a `terms` facet in the <<json-faceting-domain-changes.adoc#block-join-domain-changes,JSON Facet API>>.
 If this component is used, it must be explicitly enabled for a request handler in `solrconfig.xml`, in the same way as any other <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,search component>>.
 
 This example shows how you could add this search components to `solrconfig.xml` and define it in request handler:
