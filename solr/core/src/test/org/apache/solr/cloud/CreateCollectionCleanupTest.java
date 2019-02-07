@@ -22,6 +22,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,4 +80,26 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     assertFalse(CollectionAdminRequest.listCollections(cloudClient).contains("foo"));
 
   }
+  
+  @Test
+  public void testAsyncCreateCollectionCleanup() throws Exception {
+    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    // Create a collection that would fail
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("foo2","conf1",1,1);
+
+    Properties properties = new Properties();
+    properties.put(CoreAdminParams.DATA_DIR, "/some_invalid_dir/foo2");
+    create.setProperties(properties);
+    create.setAsyncId("testAsyncCreateCollectionCleanup");
+    CollectionAdminResponse rsp = create.process(cloudClient);
+    assertFalse(rsp.isSuccess());
+    RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion("testAsyncCreateCollectionCleanup", 30, cloudClient);
+//    assertEquals("Unexpected request status: " + state, "failed", state.getKey());
+
+    // Confirm using LIST that the collection does not exist
+    assertFalse("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull("foo2"),
+        CollectionAdminRequest.listCollections(cloudClient).contains("foo2"));
+
+  }
+  
 }
