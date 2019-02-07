@@ -49,7 +49,6 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     points.append(bytes, 3);
     points.close();
     verify(dir, points, dimensions, 0, values, middle, packedLength, bytesPerDimensions, 0);
-    verify(dir, points, dimensions, 0, values, 0, packedLength, bytesPerDimensions, 0);
     dir.close();
   }
 
@@ -79,7 +78,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       end = TestUtil.nextInt(random(), start  + 2, values);
     }
     int partitionPoint = TestUtil.nextInt(random(), start + 1, end - 1);
-    int sortedOnHeap = random().nextInt(values /4) + 1;
+    int sortedOnHeap = random().nextInt(5000);
     int dimensions =  TestUtil.nextInt(random(), 1, 8);
     int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
     int packedLength = dimensions * bytesPerDimensions;
@@ -98,7 +97,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int values =  TestUtil.nextInt(random(), 15000, 20000);
     Directory dir = getDirectory(values);
     int partitionPoint = random().nextInt(values);
-    int sortedOnHeap = random().nextInt(values /4) + 1;
+    int sortedOnHeap = random().nextInt(5000);
     int dimensions =  TestUtil.nextInt(random(), 1, 8);
     int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
     int packedLength = dimensions * bytesPerDimensions;
@@ -121,7 +120,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int values = random().nextInt(15000) + 1;
     Directory dir = getDirectory(values);
     int partitionPoint = random().nextInt(values);
-    int sortedOnHeap = random().nextInt(values /4) + 1;
+    int sortedOnHeap = random().nextInt(5000);
     int dimensions =  TestUtil.nextInt(random(), 1, 8);
     int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
     int packedLength = dimensions * bytesPerDimensions;
@@ -144,7 +143,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int values = random().nextInt(15000) + 1;
     Directory dir = getDirectory(values);
     int partitionPoint = random().nextInt(values);
-    int sortedOnHeap = random().nextInt(values /4) + 1;
+    int sortedOnHeap = random().nextInt(5000);
     int dimensions =  TestUtil.nextInt(random(), 1, 8);
     int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
     int packedLength = dimensions * bytesPerDimensions;
@@ -163,7 +162,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int values = atLeast(15000);
     Directory dir = getDirectory(values);
     int partitionPoint = random().nextInt(values);
-    int sortedOnHeap = random().nextInt(values /4) + 1;
+    int sortedOnHeap = random().nextInt(5000);
     int dimensions =  TestUtil.nextInt(random(), 1, 8);
     int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
     int packedLength = dimensions * bytesPerDimensions;
