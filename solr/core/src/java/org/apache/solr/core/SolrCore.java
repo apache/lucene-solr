@@ -152,6 +152,7 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
@@ -234,10 +235,16 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private String metricTag = Integer.toHexString(hashCode());
 
+  public boolean searchEnabled = true;
+  public boolean indexEnabled = true;
+
   public Set<String> getMetricNames() {
     return metricNames;
   }
 
+  public boolean isSearchEnabled(){
+    return searchEnabled;
+  }
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -259,6 +266,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
+  private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -1434,7 +1442,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Load the request processors
    */
-   private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+  private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
     if(def == null){
@@ -1452,6 +1460,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
     map.put(null, def);
     map.put("", def);
+
+    map.computeIfAbsent(RunUpdateProcessorFactory.PRE_RUN_CHAIN_NAME,
+        k -> new UpdateRequestProcessorChain(Collections.singletonList(new NestedUpdateProcessorFactory()), this));
+
     return map;
   }
 
@@ -1526,6 +1538,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return;
     }
     log.info("{} CLOSING SolrCore {}", logid, this);
+
+    ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
 
     // stop reporting metrics
     try {
@@ -3160,5 +3174,27 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     });
     return blobRef;
+  }
+
+  /**
+   * Run an arbitrary task in it's own thread. This is an expert option and is
+   * a method you should use with great care. It would be bad to run something that never stopped
+   * or run something that took a very long time. Typically this is intended for actions that take
+   * a few seconds, and therefore would be bad to wait for within a request, but but would not pose
+   * a significant hindrance to server shut down times. It is not intended for long running tasks
+   * and if you are using a Runnable with a loop in it, you are almost certainly doing it wrong.
+   * <p>
+   * WARNING: Solr wil not be able to shut down gracefully until this task completes!
+   * <p>
+   * A significant upside of using this method vs creating your own ExecutorService is that your code
+   * does not have to properly shutdown executors which typically is risky from a unit testing
+   * perspective since the test framework will complain if you don't carefully ensure the executor
+   * shuts down before the end of the test. Also the threads running this task are sure to have
+   * a proper MDC for logging.
+   *
+   * @param r the task to run
+   */
+  public void runAsync(Runnable r) {
+    coreAsyncTaskExecutor.submit(r);
   }
 }

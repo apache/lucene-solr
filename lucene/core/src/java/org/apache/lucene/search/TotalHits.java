@@ -64,6 +64,23 @@ public final class TotalHits {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    TotalHits totalHits = (TotalHits) o;
+    return value == totalHits.value && relation == totalHits.relation;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value, relation);
+  }
+
+  @Override
   public String toString() {
     return value + (relation == Relation.EQUAL_TO ? "" : "+") + " hits";
   }

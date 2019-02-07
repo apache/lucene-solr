@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +40,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARD_UNIQUE;
@@ -46,6 +49,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.BA
 
 // Class to encapsulate processing replica properties that have at most one replica hosting a property per slice.
 class ExclusiveSliceProperty {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private ClusterState clusterState;
   private final boolean onlyActiveNodes;
   private final String property;
@@ -235,6 +239,15 @@ class ExclusiveSliceProperty {
       adjustLimits(nodesHostingProp.get(nodeName));
       removeSliceAlreadyHostedFromPossibles(srToChange.slice.getName());
       addProp(srToChange.slice, srToChange.replica.getName());
+      // When you set the property, you must insure that it is _removed_ from any other replicas.
+      for (Replica rep : srToChange.slice.getReplicas()) {
+        if (rep.getName().equals(srToChange.replica.getName())) {
+          continue;
+        }
+        if (rep.getProperty(property) != null) {
+          removeProp(srToChange.slice, srToChange.replica.getName());
+        }
+      }
     }
   }
 
@@ -266,10 +279,12 @@ class ExclusiveSliceProperty {
   }
 
   private void removeProp(Slice origSlice, String replicaName) {
+    log.debug("Removing property {} from slice {}, replica {}", property, origSlice.getName(), replicaName);
     getReplicaFromChanged(origSlice, replicaName).getProperties().remove(property);
   }
 
   private void addProp(Slice origSlice, String replicaName) {
+    log.debug("Adding property {} to slice {}, replica {}", property, origSlice.getName(), replicaName);
     getReplicaFromChanged(origSlice, replicaName).getProperties().put(property, "true");
   }
 
@@ -341,6 +356,11 @@ class ExclusiveSliceProperty {
     SliceReplica(Slice slice, Replica replica) {
       this.slice = slice;
       this.replica = replica;
+    }
+    public String toString() {
+      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator()).append("******EOE20 starting toString of SliceReplica");
+      sb.append("    :").append(System.lineSeparator()).append("slice: ").append(slice.toString()).append(System.lineSeparator()).append("      replica: ").append(replica.toString()).append(System.lineSeparator());
+      return sb.toString();
     }
   }
 }

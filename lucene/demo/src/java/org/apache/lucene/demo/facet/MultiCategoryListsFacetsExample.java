@@ -38,14 +38,14 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 /** Demonstrates indexing categories into different indexed fields. */
 public class MultiCategoryListsFacetsExample {
 
-  private final Directory indexDir = new RAMDirectory();
-  private final Directory taxoDir = new RAMDirectory();
+  private final Directory indexDir = new ByteBuffersDirectory();
+  private final Directory taxoDir = new ByteBuffersDirectory();
   private final FacetsConfig config = new FacetsConfig();
 
   /** Creates a new instance and populates the category list params mapping. */
@@ -87,7 +87,7 @@ public class MultiCategoryListsFacetsExample {
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
-    
+
     indexWriter.close();
     taxoWriter.close();
   }
@@ -114,10 +114,10 @@ public class MultiCategoryListsFacetsExample {
 
     Facets pubDate = new FastTaxonomyFacetCounts("pubdate", taxoReader, config, fc);
     results.add(pubDate.getTopChildren(10, "Publish Date"));
-    
+
     indexReader.close();
     taxoReader.close();
-    
+
     return results;
   }
 
@@ -126,7 +126,7 @@ public class MultiCategoryListsFacetsExample {
     index();
     return search();
   }
-  
+
   /** Runs the search example and prints the results. */
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting over multiple category lists example:");

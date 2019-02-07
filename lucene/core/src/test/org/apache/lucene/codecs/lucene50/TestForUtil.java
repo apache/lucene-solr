@@ -23,11 +23,11 @@ import static org.apache.lucene.codecs.lucene50.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.packed.PackedInts;
@@ -55,7 +55,7 @@ public class TestForUtil extends LuceneTestCase {
       }
     }
 
-    final Directory d = new RAMDirectory();
+    final Directory d = new ByteBuffersDirectory();
     final long endPointer;
 
     {

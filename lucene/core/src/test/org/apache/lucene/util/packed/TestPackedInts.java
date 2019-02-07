@@ -28,12 +28,12 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LongsRef;
@@ -815,7 +815,7 @@ public class TestPackedInts extends LuceneTestCase {
     final int valueCount = TestUtil.nextInt(random(), 1, 2048);
     for (int bpv = 1; bpv <= 64; ++bpv) {
       final int maxValue = (int) Math.min(PackedInts.maxValue(31), PackedInts.maxValue(bpv));
-      final RAMDirectory directory = new RAMDirectory();
+      final Directory directory = new ByteBuffersDirectory();
       List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bpv);
       for (PackedInts.Mutable mutable : packedInts) {
         for (int i = 0; i < mutable.size(); ++i) {

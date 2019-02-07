@@ -245,6 +245,7 @@ final class FrozenBufferedUpdates {
         AtomicBoolean success = new AtomicBoolean();
         long delCount;
         try (Closeable finalizer = () -> finishApply(writer, segStates, success.get(), delFiles)) {
+          assert finalizer != null; // access the finalizer to prevent a warning
           // don't hold IW monitor lock here so threads are free concurrently resolve deletes/updates:
           delCount = apply(segStates);
           success.set(true);

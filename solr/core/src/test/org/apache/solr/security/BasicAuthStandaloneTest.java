@@ -49,7 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.security.BasicAuthIntegrationTest.NOT_NULL_PREDICATE;
+import static org.apache.solr.cloud.SolrCloudAuthTestCase.NOT_NULL_PREDICATE;
 import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 

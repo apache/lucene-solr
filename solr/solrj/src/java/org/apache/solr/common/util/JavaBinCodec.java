@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.apache.solr.common.ConditionalMapWriter;
 import org.apache.solr.common.EnumFieldValue;
@@ -117,7 +118,7 @@ public class JavaBinCodec implements PushWriter {
   private WritableDocFields writableDocFields;
   private boolean alreadyMarshalled;
   private boolean alreadyUnmarshalled;
-  private boolean readStringAsCharSeq = false;
+  protected boolean readStringAsCharSeq = false;
 
   public JavaBinCodec() {
     resolver =null;
@@ -284,7 +285,7 @@ public class JavaBinCodec implements PushWriter {
     // OK, try type + size in single byte
     switch (tagByte >>> 5) {
       case STR >>> 5:
-        return readStr(dis);
+        return readStr(dis, stringCache, readStringAsCharSeq);
       case SINT >>> 5:
         return readSmallInt(dis);
       case SLONG >>> 5:
@@ -354,6 +355,9 @@ public class JavaBinCodec implements PushWriter {
     if (val instanceof SolrDocumentList) { // SolrDocumentList is a List, so must come before List check
       writeSolrDocumentList((SolrDocumentList) val);
       return true;
+    }
+    if (val instanceof SolrInputField) {
+      return writeKnownType(((SolrInputField) val).getValue());
     }
     if (val instanceof IteratorWriter) {
       writeIterator((IteratorWriter) val);
@@ -612,7 +616,7 @@ public class JavaBinCodec implements PushWriter {
         log.debug(message);
       }
     }
-    SolrInputDocument sdoc = new SolrInputDocument(new LinkedHashMap<>(sz));
+    SolrInputDocument sdoc = createSolrInputDocument(sz);
     for (int i = 0; i < sz; i++) {
       String fieldName;
       Object obj = readVal(dis); // could be a boost, a field name, or a child document
@@ -639,15 +643,16 @@ public class JavaBinCodec implements PushWriter {
     return sdoc;
   }
 
+  protected SolrInputDocument createSolrInputDocument(int sz) {
+    return new SolrInputDocument(new LinkedHashMap<>(sz));
+  }
+
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
     List<SolrInputDocument> children = sdoc.getChildDocuments();
     int sz = sdoc.size() + (children==null ? 0 : children.size());
     writeTag(SOLRINPUTDOC, sz);
     writeFloat(1f); // document boost
-    for (SolrInputField inputField : sdoc.values()) {
-      writeExternString(inputField.getName());
-      writeVal(inputField.getValue());
-    }
+    sdoc.writeMap(ew);
     if (children != null) {
       for (SolrInputDocument child : children) {
         writeSolrInputDocument(child);
@@ -891,26 +896,53 @@ public class JavaBinCodec implements PushWriter {
   private StringBytes bytesRef = new StringBytes(bytes,0,0);
 
   public CharSequence readStr(DataInputInputStream dis) throws IOException {
-    return readStr(dis,null);
+    return readStr(dis, null, readStringAsCharSeq);
   }
 
-  public CharSequence readStr(DataInputInputStream dis, StringCache stringCache) throws IOException {
+  public CharSequence readStr(DataInputInputStream dis, StringCache stringCache, boolean readStringAsCharSeq) throws IOException {
+    if (readStringAsCharSeq) {
+      return readUtf8(dis);
+    }
     int sz = readSize(dis);
+    return _readStr(dis, stringCache, sz);
+  }
+
+  private CharSequence _readStr(DataInputInputStream dis, StringCache stringCache, int sz) throws IOException {
     if (bytes == null || bytes.length < sz) bytes = new byte[sz];
     dis.readFully(bytes, 0, sz);
     if (stringCache != null) {
       return stringCache.get(bytesRef.reset(bytes, 0, sz));
     } else {
       arr.reset();
-      if (readStringAsCharSeq) {
-        byte[] copyBuf = new byte[sz];
-        System.arraycopy(bytes, 0, copyBuf, 0, sz);
-        return new ByteArrayUtf8CharSequence(copyBuf, 0, sz);
-      } else {
-        ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
-        return arr.toString();
-      }
+      ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
+      return arr.toString();
     }
+  }
+
+  /////////// code to optimize reading UTF8
+  static final int MAX_UTF8_SZ = 1024 * 64;//too big strings can cause too much memory allocation
+  private Function<ByteArrayUtf8CharSequence, String> stringProvider;
+  private BytesBlock bytesBlock;
+
+  protected CharSequence readUtf8(DataInputInputStream dis) throws IOException {
+    int sz = readSize(dis);
+    if (sz > MAX_UTF8_SZ) return _readStr(dis, null, sz);
+    if (bytesBlock == null) bytesBlock = new BytesBlock(1024 * 4);
+    BytesBlock block = this.bytesBlock.expand(sz);
+    dis.readFully(block.getBuf(), block.getStartPos(), sz);
+
+    ByteArrayUtf8CharSequence result = new ByteArrayUtf8CharSequence(block.getBuf(), block.getStartPos(), sz);
+    if (stringProvider == null) {
+      stringProvider = butf8cs -> {
+        synchronized (JavaBinCodec.this) {
+          arr.reset();
+          ByteUtils.UTF8toUTF16(butf8cs.buf, butf8cs.offset(), butf8cs.size(), arr);
+          return arr.toString();
+        }
+      };
+    }
+    result.stringProvider = this.stringProvider;
+    return result;
   }
 
   public void writeInt(int val) throws IOException {
@@ -973,6 +1005,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     } else if (val instanceof Utf8CharSequence) {
       writeUTF8Str((Utf8CharSequence) val);
+      return true;
     } else if (val instanceof CharSequence) {
       writeStr((CharSequence) val);
       return true;
@@ -1133,7 +1166,7 @@ public class JavaBinCodec implements PushWriter {
       return stringsList.get(idx - 1);
     } else {// idx == 0 means it has a string value
       tagByte = fis.readByte();
-      CharSequence s = readStr(fis, stringCache);
+      CharSequence s = readStr(fis, stringCache, false);
       if (s != null) s = s.toString();
       if (stringsList == null) stringsList = new ArrayList<>();
       stringsList.add(s);

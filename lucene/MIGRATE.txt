@@ -1,5 +1,12 @@
 # Apache Lucene Migration Guide
 
+## RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream removed ##
+
+RAM-based directory implementation have been removed. (LUCENE-8474). 
+ByteBuffersDirectory can be used as a RAM-resident replacement, although it
+is discouraged in favor of the default memory-mapped directory.
+
+
 ## Similarity.SimScorer.computeXXXFactor methods removed (LUCENE-8014) ##
 
 SpanQuery and PhraseQuery now always calculate their slops as (1.0 / (1.0 +

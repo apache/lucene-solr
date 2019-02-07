@@ -29,6 +29,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -118,18 +119,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   }
 
   private void authenticationFailure(HttpServletResponse response, boolean isAjaxRequest, String message) throws IOException {
-    for (Map.Entry<String, String> entry : authenticationProvider.getPromptHeaders().entrySet()) {
-      String value = entry.getValue();
-      // Prevent browser from intercepting basic authentication header when reqeust from Admin UI
-      if (isAjaxRequest && HttpHeaders.WWW_AUTHENTICATE.equalsIgnoreCase(entry.getKey()) && value != null) {
-        if (value.startsWith("Basic ")) {
-          value = "x" + value;
-          log.debug("Prefixing {} header for Basic Auth with 'x' to prevent browser basic auth popup", 
-              HttpHeaders.WWW_AUTHENTICATE);
-        }
-      }
-      response.setHeader(entry.getKey(), value);
-    }
+    getPromptHeaders(isAjaxRequest).forEach(response::setHeader);
     response.sendError(401, message);
   }
 
@@ -195,10 +185,27 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       return false;
     } else {
       numPassThrough.inc();
-      request.setAttribute(AuthenticationPlugin.class.getName(), authenticationProvider.getPromptHeaders());
+      request.setAttribute(AuthenticationPlugin.class.getName(), getPromptHeaders(isAjaxRequest));
       filterChain.doFilter(request, response);
       return true;
     }
+  }
+
+  /**
+   * Get the prompt headers, and replace Basic with xBasic if ajax request to avoid
+   * browser intercepting the authentication
+   * @param isAjaxRequest set to true if the request is an ajax request
+   * @return map of headers
+   */
+  private Map<String, String> getPromptHeaders(boolean isAjaxRequest) {
+    Map<String,String> headers = new HashMap(authenticationProvider.getPromptHeaders());
+    if (isAjaxRequest && headers.containsKey(HttpHeaders.WWW_AUTHENTICATE) 
+        && headers.get(HttpHeaders.WWW_AUTHENTICATE).startsWith("Basic ")) {
+      headers.put(HttpHeaders.WWW_AUTHENTICATE, "x" + headers.get(HttpHeaders.WWW_AUTHENTICATE));
+      log.debug("Prefixing {} header for Basic Auth with 'x' to prevent browser basic auth popup",
+          HttpHeaders.WWW_AUTHENTICATE);
+    }
+    return headers;
   }
 
   @Override

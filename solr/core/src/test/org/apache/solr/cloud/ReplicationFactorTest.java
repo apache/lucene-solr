@@ -77,7 +77,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
     waitForThingsToLevelOut(30000);

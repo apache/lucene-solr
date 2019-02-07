@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -82,7 +81,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testExecute() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testExecute";
@@ -173,6 +172,8 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     String collectionName = "testIntegration";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,

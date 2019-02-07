@@ -430,4 +430,9 @@ public final class SchemaField extends FieldProperties implements IndexableField
   public int pointNumBytes() {
     return 0;
   }
+
+  @Override
+  public Map<String, String> getAttributes() {
+    return null;
+  }
 }

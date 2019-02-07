@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.facet;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.tdunning.math.stats.AVLTreeDigest;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,21 +28,17 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import com.tdunning.math.stats.AVLTreeDigest;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
-
+import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -73,14 +71,37 @@ public class TestJsonFacets extends SolrTestCaseHS {
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
+  /**
+   * Start all servers for cluster, initialize shards whitelist and then restart
+   */
   public static void initServers() throws Exception {
     if (servers == null) {
       servers = new SolrInstances(3, "solrconfig-tlog.xml", "schema_latest.xml");
+      // Set the shards whitelist to all shards plus the fake one used for tolerant test
+      System.setProperty(SOLR_TESTS_SHARDS_WHITELIST, servers.getWhitelistString() + ",http://[ff01::114]:33332");
+      systemSetPropertySolrDisableShardsWhitelist("false");
+      restartServers();
     }
+  }
+
+  /**
+   * Restart all configured servers, i.e. configuration will be re-read
+   */
+  public static void restartServers() {
+    servers.slist.forEach(s -> {
+      try {
+        s.stop();
+        s.start();
+      } catch (Exception e) {
+        fail("Exception during server restart: " + e.getMessage());
+      }
+    });
   }
 
   @AfterClass
   public static void afterTests() throws Exception {
+    System.clearProperty(SOLR_TESTS_SHARDS_WHITELIST);
+    systemClearPropertySolrDisableShardsWhitelist();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
@@ -2318,6 +2339,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void doTestPrelimSortingDistrib(final boolean extraAgg, final boolean extraSubFacet) throws Exception {
     // we only use 2 shards, but we also want to to sanity check code paths if one (additional) shard is empty
     final int totalShards = random().nextBoolean() ? 2 : 3;
+    
     final SolrInstances nodes = new SolrInstances(totalShards, "solrconfig-tlog.xml", "schema_latest.xml");
     try {
       final Client client = nodes.getClient(random().nextInt());
@@ -2789,7 +2811,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testTolerant() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards() + ",[ff01::114]:33332:/ignore_exception");
+    client.queryDefaults().set("shards", servers.getShards() + ",[ff01::114]:33332/ignore_exception");
     indexSimple(client);
 
     try {

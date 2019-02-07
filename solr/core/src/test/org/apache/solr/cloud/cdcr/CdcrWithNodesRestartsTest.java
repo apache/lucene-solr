@@ -204,7 +204,7 @@ public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testReplicationAfterLeaderChange() throws Exception {
     createCollections();
     CdcrTestsUtil.cdcrStart(sourceSolrClient);

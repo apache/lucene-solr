@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2018 The Apache Software Foundation
+ Copyright 2006-2019 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -129,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2018 The Apache Software Foundation
+Copyright 2001-2019 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -573,3 +573,21 @@ Copyright 2013 The MITRE Corporation. All Rights Reserved.
   subject to the Rights in Noncommercial Computer Software
   and Noncommercial Computer Software Documentation
   Clause 252.227-7014 (JUN 1995)
+
+=========================================================================
+==     Jose4j Notice                                                   ==
+=========================================================================
+
+jose4j
+Copyright 2012-2015 Brian Campbell
+
+EcdsaUsingShaAlgorithm contains code for converting the concatenated
+R & S values of the signature to and from DER, which was originally
+derived from the Apache Santuario XML Security library's SignatureECDSA
+implementation. http://santuario.apache.org/
+
+The Base64 implementation in this software was derived from the
+Apache Commons Codec project. http://commons.apache.org/proper/commons-codec/
+
+JSON processing in this software was derived from the JSON.simple toolkit.
+https://code.google.com/p/json-simple/

@@ -48,7 +48,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.Config.assertWarnOrFail;
+import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 /**
  * This config object encapsulates IndexWriter config params,

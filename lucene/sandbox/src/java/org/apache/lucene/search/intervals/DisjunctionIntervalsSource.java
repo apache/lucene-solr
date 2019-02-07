@@ -90,7 +90,16 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
   }
 
-  private static class DisjunctionIntervalIterator extends IntervalIterator {
+  @Override
+  public int minExtent() {
+    int minExtent = subSources.get(0).minExtent();
+    for (int i = 1; i < subSources.size(); i++) {
+      minExtent = Math.min(minExtent, subSources.get(i).minExtent());
+    }
+    return minExtent;
+  }
+
+  static class DisjunctionIntervalIterator extends IntervalIterator {
 
     final DocIdSetIterator approximation;
     final PriorityQueue<IntervalIterator> intervalQueue;

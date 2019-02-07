@@ -69,7 +69,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -110,7 +109,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. </p>
@@ -618,6 +616,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
     String v = solrParams.required().get(GENERATION);
     long gen = Long.parseLong(v);
+    if (gen == -1) {
+      IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
+      if(commitPoint == null) {
+        rsp.add(CMD_GET_FILE_LIST, Collections.EMPTY_LIST);
+        return;
+      }
+      gen = commitPoint.getGeneration();
+    }
     IndexCommit commit = core.getDeletionPolicy().getCommitPoint(gen);
 
     if (commit == null) {
@@ -976,6 +982,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       addVal(slave, IndexFetcher.TIMES_FAILED, props, Integer.class);
       addVal(slave, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
       addVal(slave, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+      addVal(slave, IndexFetcher.CLEARED_LOCAL_IDX, props, Long.class);
 
       slave.add("currentDate", new Date().toString());
       slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
@@ -1319,11 +1326,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (reserve != null && !reserve.trim().equals("")) {
         reserveCommitDuration = readIntervalMs(reserve);
         deprecatedReserveCommitDuration = reserveCommitDuration;
-        // remove this error check & backcompat logic when Version.LUCENE_7_1_0 is removed
-        assertWarnOrFail(
-          "Beginning with Solr 7.1, master."+RESERVE + " is deprecated and should now be configured directly on the ReplicationHandler.",
-          (null == reserve),
-          core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_1_0));
       }
       isMaster = true;
     }

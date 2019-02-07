@@ -210,14 +210,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       }
       initialState.forEachCollection(dc -> {
         collProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>()).putAll(dc.getProperties());
-        opDelays.computeIfAbsent(dc.getName(), c -> new HashMap<>()).putAll(defaultOpDelays);
+        opDelays.computeIfAbsent(dc.getName(), Utils.NEW_HASHMAP_FUN).putAll(defaultOpDelays);
         dc.getSlices().forEach(s -> {
           sliceProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>())
-              .computeIfAbsent(s.getName(), name -> new HashMap<>()).putAll(s.getProperties());
+              .computeIfAbsent(s.getName(), Utils.NEW_HASHMAP_FUN).putAll(s.getProperties());
           s.getReplicas().forEach(r -> {
             ReplicaInfo ri = new ReplicaInfo(r.getName(), r.getCoreName(), dc.getName(), s.getName(), r.getType(), r.getNodeName(), r.getProperties());
             if (liveNodes.get().contains(r.getNodeName())) {
-              nodeReplicaMap.computeIfAbsent(r.getNodeName(), rn -> new ArrayList<>()).add(ri);
+              nodeReplicaMap.computeIfAbsent(r.getNodeName(), Utils.NEW_ARRAYLIST_FUN).add(ri);
             }
           });
         });
@@ -370,6 +370,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     } catch (Exception e) {
       log.warn("Exception saving overseer leader id", e);
     }
+  }
+
+  public synchronized String simGetOverseerLeader() {
+    return overseerLeader;
   }
 
   // this method needs to be called under a lock
@@ -631,10 +635,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     byte[] data = Utils.toJSON(state);
     try {
       VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_STATE);
-      int version = oldData != null ? oldData.getVersion() : -1;
-      Assert.assertEquals(clusterStateVersion, version + 1);
+      int version = oldData != null ? oldData.getVersion() : 0;
+      Assert.assertEquals(clusterStateVersion, version);
       stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
-      log.debug("** saved cluster state version " + (version + 1));
+      log.debug("** saved cluster state version " + (version));
       clusterStateVersion++;
     } catch (Exception e) {
       throw new IOException(e);
@@ -981,6 +985,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       sliceProperties.remove(collection);
       leaderThrottles.remove(collection);
       colShardReplicaMap.remove(collection);
+      SplitShardCmd.unlockForSplit(cloudManager, collection, null);
 
       opDelay(collection, CollectionParams.CollectionAction.DELETE.name());
 
@@ -1034,6 +1039,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         values.put(ImplicitSnitch.SYSLOADAVG, 1.0);
         values.put(ImplicitSnitch.HEAPUSAGE, 123450000);
       });
+      cloudManager.getDistribStateManager().removeRecursively(ZkStateReader.COLLECTIONS_ZKNODE, true, false);
     } finally {
       lock.unlock();
     }
@@ -1287,6 +1293,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       success = true;
     } finally {
       if (!success) {
+        Map<String, Object> sProps = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
+            .computeIfAbsent(sliceName.get(), s -> new ConcurrentHashMap<>());
+        sProps.remove(BUFFERED_UPDATES);
         SplitShardCmd.unlockForSplit(cloudManager, collectionName, sliceName.get());
       }
     }

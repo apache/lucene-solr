@@ -33,7 +33,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
@@ -43,7 +42,6 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
-    assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
 
     setupMiniKdc();
 
@@ -139,5 +137,4 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
         solrClient.getZkStateReader(), true, true, 330);
     assertAuthMetricsMinimums(16, 8, 0, 8, 0, 0);
   }
-
 }

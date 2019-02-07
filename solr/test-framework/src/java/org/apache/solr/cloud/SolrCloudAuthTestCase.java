@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,14 +25,30 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.message.AbstractHttpMessage;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Base test class for cloud tests wanting to track authentication metrics.
@@ -46,11 +63,12 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
   private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
   private static final String METRICS_PREFIX = "SECURITY./authentication.";
+  public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
   
   /**
    * Used to check metric counts for PKI auth
    */
-  protected void assertPkiAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
+  protected void assertPkiAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
     assertAuthMetricsMinimums(METRICS_PREFIX_PKI, requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, errors);
   }
   
@@ -59,7 +77,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * 
    * TODO: many of these params have to be under specified - this should wait a bit to see the desired params and timeout
    */
-  protected void assertAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
+  protected void assertAuthMetricsMinimums(int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
     assertAuthMetricsMinimums(METRICS_PREFIX, requests, authenticated, passThrough, failWrongCredentials, failMissingCredentials, errors);
   }
 
@@ -86,17 +104,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * Common test method to be able to check security from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
-  private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) {
-    Map<String, Long> counts = countAuthMetrics(prefix);
-    
-    // check each counter
-    boolean success = isMetricEuqalOrLarger(requests, "requests", counts)
-        & isMetricEuqalOrLarger(authenticated, "authenticated", counts)
-        & isMetricEuqalOrLarger(passThrough, "passThrough", counts)
-        & isMetricEuqalOrLarger(failWrongCredentials, "failWrongCredentials", counts)
-        & isMetricEuqalOrLarger(failMissingCredentials, "failMissingCredentials", counts)
-        & isMetricEuqalOrLarger(errors, "errors", counts);
-    
+  private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
     Map<String, Long> expectedCounts = new HashMap<>();
     expectedCounts.put("requests", (long) requests);
     expectedCounts.put("authenticated", (long) authenticated);
@@ -104,6 +112,16 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     expectedCounts.put("failWrongCredentials", (long) failWrongCredentials);
     expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
     expectedCounts.put("errors", (long) errors);
+
+    Map<String, Long> counts = countAuthMetrics(prefix);
+    boolean success = isMetricsEqualOrLarger(expectedCounts, counts);
+    if (!success) {
+      log.info("First metrics count assert failed, pausing 2s before re-attempt");
+      Thread.sleep(2000);
+      counts = countAuthMetrics(prefix);
+      success = isMetricsEqualOrLarger(expectedCounts, counts);
+    }
+    
     assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
     
     if (counts.get("requests") > 0) {
@@ -112,11 +130,9 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     }
   }
 
-  // Check that the actual metric is equal to or greater than the expected value, never less
-  private boolean isMetricEuqalOrLarger(int expected, String key, Map<String, Long> counts) {
-    long cnt = counts.get(key);
-    log.debug("Asserting that auth metrics count ({}) > expected ({})", cnt, expected);
-    return(cnt >= expected);
+  private boolean isMetricsEqualOrLarger(Map<String, Long> expectedCounts, Map<String, Long> actualCounts) {
+    return Stream.of("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors")
+        .allMatch(k -> actualCounts.get(k).intValue() >= expectedCounts.get(k).intValue());
   }
 
   // Have to sum the metrics from all three shards/nodes
@@ -128,5 +144,70 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       return (long) ((long) 1000 * metrics.stream().mapToDouble(l -> ((Timer)l.get(prefix + key)).getMeanRate()).average().orElse(0.0d));
     else
       return metrics.stream().mapToLong(l -> ((Counter)l.get(prefix + key)).getCount()).sum();
+  }
+  
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                            Object expected, int count) throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, (String)null);
+  }
+
+
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                          Object expected, int count, String user, String pwd)
+      throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, makeBasicAuthHeader(user, pwd));
+  }
+
+  protected void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                      Object expected, int count, JsonWebSignature jws) throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, getBearerAuthHeader(jws));
+  }
+
+
+  private static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                            Object expected, int count, String authHeader) throws IOException, InterruptedException {
+    boolean success = false;
+    String s = null;
+    List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
+    for (int i = 0; i < count; i++) {
+      HttpGet get = new HttpGet(url);
+      if (authHeader != null) setAuthorizationHeader(get, authHeader);
+      HttpResponse rsp = cl.execute(get);
+      s = EntityUtils.toString(rsp.getEntity());
+      Map m = null;
+      try {
+        m = (Map) Utils.fromJSONString(s);
+      } catch (Exception e) {
+        fail("Invalid json " + s);
+      }
+      Utils.consumeFully(rsp.getEntity());
+      Object actual = Utils.getObjectByPath(m, true, hierarchy);
+      if (expected instanceof Predicate) {
+        Predicate predicate = (Predicate) expected;
+        if (predicate.test(actual)) {
+          success = true;
+          break;
+        }
+      } else if (Objects.equals(actual == null ? null : String.valueOf(actual), expected)) {
+        success = true;
+        break;
+      }
+      Thread.sleep(50);
+    }
+    assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
+  }
+
+  protected static String makeBasicAuthHeader(String user, String pwd) {
+    String userPass = user + ":" + pwd;
+    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+  }
+
+  static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
+    return "Bearer " + jws.getCompactSerialization();
+  }
+  
+  public static void setAuthorizationHeader(AbstractHttpMessage httpMsg, String headerString) {
+    httpMsg.setHeader(new BasicHeader("Authorization", headerString));
+    log.info("Added Authorization Header {}", headerString);
   }
 }

@@ -115,8 +115,8 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     }
   }
 
-  public void testCorruptOnCloseIsWorkingRAMDir() throws Exception {
-    try(Directory dir = new RAMDirectory()) {
+  public void testCorruptOnCloseIsWorkingOnByteBuffersDirectory() throws Exception {
+    try(Directory dir = new ByteBuffersDirectory()) {
       testCorruptOnCloseIsWorking(dir);
     }
   }

@@ -61,7 +61,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
   public Object toNativeType(Object val) {
     if(val==null) return null;
     if (val instanceof Number) return ((Number) val).floatValue();
-    if (val instanceof String) return Float.parseFloat((String) val);
+    if (val instanceof CharSequence) return Float.parseFloat(val.toString());
     return super.toNativeType(val);
   }
 

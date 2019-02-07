@@ -90,12 +90,12 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-update-processor-chains.xml", "schema-nest.xml");
+    initCore("solrconfig-minimal.xml", "schema-nest.xml");
   }
 
   @Before
   public void before() throws Exception {
-    assertU(delQ("*:*"));
+    clearIndex();
     assertU(commit());
   }
 
@@ -103,7 +103,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPGrandChild() throws Exception {
     final String[] tests = {
         "/response/docs/[0]/id=='4'",
-        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#0/grandChild#'"
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='/children#0/grandChild#'"
     };
     indexSampleData(jDoc);
 
@@ -115,27 +115,42 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNumberInName() throws Exception {
+    // child named "grandChild99"  (has a number in it)
+    indexSampleData(jDoc.replace("grandChild", "grandChild99"));
+    //assertQ(req("qt", "/terms", "terms", "true", "terms.fl", IndexSchema.NEST_PATH_FIELD_NAME), "false"); // for debugging
+
+    // find it
+    assertJQ(req("q", "{!field f=" + IndexSchema.NEST_PATH_FIELD_NAME + "}/children/grandChild99"),
+        "/response/numFound==1");
+    // should *NOT* find it; different number
+    assertJQ(req("q", "{!field f=" + IndexSchema.NEST_PATH_FIELD_NAME + "}/children/grandChild22"),
+        "/response/numFound==0");
+
+  }
+
+  @Test
   public void testDeeplyNestedURPChildren() throws Exception {
     final String[] childrenTests = {
         "/response/docs/[0]/id=='2'",
         "/response/docs/[1]/id=='3'",
-        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#0'",
-        "/response/docs/[1]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='children#1'"
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='/children#0'",
+        "/response/docs/[1]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='/children#1'"
     };
     indexSampleData(jDoc);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":children/",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":\\/children",
         "fl","*, _nest_path_",
         "sort","id asc",
         "wt","json"),
         childrenTests);
 
-    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":anotherChildList/",
+    assertJQ(req("q", IndexSchema.NEST_PATH_FIELD_NAME + ":\\/anotherChildList",
         "fl","*, _nest_path_",
         "sort","id asc",
         "wt","json"),
         "/response/docs/[0]/id=='4'",
-        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='anotherChildList#0'");
+        "/response/docs/[0]/" + IndexSchema.NEST_PATH_FIELD_NAME + "=='/anotherChildList#0'");
   }
 
   @Test
@@ -151,16 +166,16 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     List children = (List) docHierarchy.get("children").getValues();
 
     SolrInputDocument firstChild = (SolrInputDocument) children.get(0);
-    assertEquals("SolrInputDocument(fields: [id=2, name_s=Yaz, _nest_path_=children#0, _nest_parent_=1])", firstChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=2, name_s=Yaz, _nest_path_=/children#0, _nest_parent_=1])", firstChild.toString());
 
     SolrInputDocument secondChild = (SolrInputDocument) children.get(1);
-    assertEquals("SolrInputDocument(fields: [id=3, name_s=Jazz, grandChild=SolrInputDocument(fields: [id=4, name_s=Gaz, _nest_path_=children#1/grandChild#, _nest_parent_=3]), _nest_path_=children#1, _nest_parent_=1])", secondChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=3, name_s=Jazz, grandChild=SolrInputDocument(fields: [id=4, name_s=Gaz, _nest_path_=/children#1/grandChild#, _nest_parent_=3]), _nest_path_=/children#1, _nest_parent_=1])", secondChild.toString());
 
     SolrInputDocument grandChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get("grandChild").getValue();
-    assertEquals("SolrInputDocument(fields: [id=4, name_s=Gaz, _nest_path_=children#1/grandChild#, _nest_parent_=3])", grandChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=4, name_s=Gaz, _nest_path_=/children#1/grandChild#, _nest_parent_=3])", grandChild.toString());
 
     SolrInputDocument singularChild = (SolrInputDocument) docHierarchy.get("lonelyChild").getValue();
-    assertEquals("SolrInputDocument(fields: [id=5, name_s=Loner, _nest_path_=lonelyChild#, _nest_parent_=1])", singularChild.toString());
+    assertEquals("SolrInputDocument(fields: [id=5, name_s=Loner, _nest_path_=/lonelyChild#, _nest_parent_=1])", singularChild.toString());
   }
 
   @Test
@@ -189,7 +204,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   private void indexSampleData(String cmd) throws Exception {
-    updateJ(cmd, params("update.chain", "nested"));
+    updateJ(cmd, null);
     assertU(commit());
   }
 }

@@ -92,8 +92,10 @@ public class Lang {
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
         .withFunctionName("plist", ParallelListStream.class)
+        .withFunctionName("zplot", ZplotStream.class)
 
-            // metrics
+
+        // metrics
         .withFunctionName("min", MinMetric.class)
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
@@ -277,6 +279,9 @@ public class Lang {
         .withFunctionName("pivot", PivotEvaluator.class)
         .withFunctionName("ltrim", LeftShiftEvaluator.class)
         .withFunctionName("rtrim", RightShiftEvaluator.class)
+        .withFunctionName("repeat", RepeatEvaluator.class)
+        .withFunctionName("natural", NaturalEvaluator.class)
+        .withFunctionName("movingMAD", MovingMADEvaluator.class)
 
         // Boolean Stream Evaluators
 

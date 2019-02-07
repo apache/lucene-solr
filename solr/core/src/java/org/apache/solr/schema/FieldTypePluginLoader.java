@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
@@ -231,7 +231,7 @@ public final class FieldTypePluginLoader
         final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
         final Version luceneMatchVersion = (matchVersionStr == null) ?
           schema.getDefaultLuceneMatchVersion() :
-          Config.parseLuceneVersionString(matchVersionStr);
+          SolrConfig.parseLuceneVersionString(matchVersionStr);
         if (luceneMatchVersion == null) {
           throw new SolrException
             ( SolrException.ErrorCode.SERVER_ERROR,
@@ -362,12 +362,12 @@ public final class FieldTypePluginLoader
 
   private Version parseConfiguredVersion(String configuredVersion, String pluginClassName) {
     Version version = (configuredVersion != null) ?
-            Config.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
+            SolrConfig.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
-    if (!version.onOrAfter(Version.LUCENE_7_0_0)) {
+    if (!version.onOrAfter(Version.LUCENE_8_0_0)) {
       log.warn(pluginClassName + " is using deprecated " + version +
-        " emulation. You should at some point declare and reindex to at least 7.0, because " +
-        "6.x emulation is deprecated and will be removed in 8.0");
+        " emulation. You should at some point declare and reindex to at least 8.0, because " +
+        "7.x emulation is deprecated and will be removed in 9.0");
     }
     return version;
   }

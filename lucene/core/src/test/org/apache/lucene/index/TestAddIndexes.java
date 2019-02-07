@@ -43,10 +43,11 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
+
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -669,7 +670,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     public RunAddIndexesThreads(int numCopy) throws Throwable {
       NUM_COPY = numCopy;
-      dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+      dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))
           .setMaxBufferedDocs(2));
       for (int i = 0; i < NUM_INIT_DOCS; i++)
@@ -1103,7 +1104,7 @@ public class TestAddIndexes extends LuceneTestCase {
   public void testNonCFSLeftovers() throws Exception {
     Directory[] dirs = new Directory[2];
     for (int i = 0; i < dirs.length; i++) {
-      dirs[i] = new RAMDirectory();
+      dirs[i] = new ByteBuffersDirectory();
       IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(new MockAnalyzer(random())));
       Document d = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -1115,7 +1116,7 @@ public class TestAddIndexes extends LuceneTestCase {
     
     DirectoryReader[] readers = new DirectoryReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:

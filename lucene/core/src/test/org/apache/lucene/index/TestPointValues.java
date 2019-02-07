@@ -33,9 +33,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -624,7 +624,7 @@ public class TestPointValues extends LuceneTestCase {
   }
 
   public void testCheckIndexIncludesPoints() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
     Document doc = new Document();
     doc.add(new IntPoint("int1", 17));
@@ -659,7 +659,7 @@ public class TestPointValues extends LuceneTestCase {
   }
 
   public void testMergedStatsOneSegmentWithoutPoints() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null).setMergePolicy(NoMergePolicy.INSTANCE));
     w.addDocument(new Document());
     DirectoryReader.open(w).close();
@@ -680,7 +680,7 @@ public class TestPointValues extends LuceneTestCase {
   }
 
   public void testMergedStatsAllPointsDeleted() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
     w.addDocument(new Document());
     Document doc = new Document();
@@ -718,7 +718,7 @@ public class TestPointValues extends LuceneTestCase {
   private void doTestMergedStats() throws IOException {
     final int numDims = TestUtil.nextInt(random(), 1, 8);
     final int numBytesPerDim = TestUtil.nextInt(random(), 1, 16);
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
     final int numDocs = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < numDocs; ++i) {

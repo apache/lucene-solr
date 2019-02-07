@@ -109,7 +109,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
     );
 
     String termsMethod = new String[]{"termsFilter", "booleanQuery", "automaton", "docValuesTermsFilter"}[random().nextInt(4)];
-    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " }other stuff,wow dude")
+    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " }wow dude,other stuff")//terms reverse sorted to show this works
         ,"//result[@numFound='2']"
     );
 

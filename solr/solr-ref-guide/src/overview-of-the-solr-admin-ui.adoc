@@ -1,4 +1,5 @@
 = Overview of the Solr Admin UI
+:page-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,15 +17,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr features a Web interface that makes it easy for Solr administrators and programmers to view <<files-screen.adoc#files-screen,Solr configuration>> details, run <<query-screen.adoc#query-screen,queries and analyze>> document fields in order to fine-tune a Solr configuration and access <<getting-assistance.adoc#getting-assistance,online documentation>> and other help.
+Solr features a Web interface that makes it easy for Solr administrators and programmers to view <<files-screen.adoc#files-screen,Solr configuration>> details, run <<query-screen.adoc#query-screen,queries and analyze>> document fields in order to fine-tune a Solr configuration and access <<Getting Assistance,online documentation>> and other help.
+
+== Dashboard
+
+Accessing the URL `\http://hostname:8983/solr/` will show the main dashboard, which is divided into two parts.
 
 .Solr Dashboard
 image::images/overview-of-the-solr-admin-ui/dashboard.png[image,height=400]
 
+The left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI.
 
-Accessing the URL `\http://hostname:8983/solr/` will show the main dashboard, which is divided into two parts.
+The first set of links are for system-level information and configuration and provide access to <<logging.adoc#logging,Logging>>, <<collections-core-admin.adoc#collections-core-admin,Collection/Core Administration>>, and <<java-properties.adoc#java-properties,Java Properties>>, among other things.
 
-A left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI. The first set of links are for system-level information and configuration and provide access to <<logging.adoc#logging,Logging>>, <<collections-core-admin.adoc#collections-core-admin,Collection/Core Administration>>, and <<java-properties.adoc#java-properties,Java Properties>>, among other things. At the end of this information is at least one pulldown listing Solr cores configured for this instance. On <<solrcloud.adoc#solrcloud,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster. Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>>, <<files-screen.adoc#files-screen,Config Files>>, <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#query-screen,Queries>> on indexed data.
+At the end of this information is at least one pulldown listing Solr cores configured for this instance. On <<solrcloud.adoc#solrcloud,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster. Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>>, <<files-screen.adoc#files-screen,Config Files>>, <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#query-screen,Queries>> on indexed data.
 
 The center of the screen shows the detail of the option selected. This may include a sub-navigation for the option or text or graphical representation of the requested data. See the sections in this guide for each screen for more details.
 
@@ -34,3 +40,40 @@ Under the covers, the Solr Admin UI re-uses the same HTTP APIs available to all 
 ====
 The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which redirects to `\http://hostname:port/solr/\#/` in the current version. A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
 ====
+
+== Login Screen
+
+If authentication has been enabled, Solr will present a login screen to unauthenticated users before allowing them further access to the Admin UI.
+
+.Login Screen
+image::images/overview-of-the-solr-admin-ui/login.png[]
+
+This login screen currently only works with Basic Authentication.
+See the section <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>> for
+ details on how to configure Solr to use this method of authentication.
+
+If Kerberos is enabled and the user has a valid ticket, the login screen will be skipped.
+However, if the user does not have a valid ticket, they will see a message that they need to obtain a valid ticket before continuing.
+
+== Getting Assistance
+
+At the bottom of each screen of the Admin UI is a set of links that can be used to get more assistance with configuring and using Solr.
+
+.Assistance icons
+image::images/getting-assistance/Assistance.png[image]
+
+These icons include the following links.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="25,75",options="header"]
+|===
+|Link |Description
+|Documentation |Navigates to the Apache Solr documentation hosted on https://lucene.apache.org/solr/.
+|Issue Tracker |Navigates to the JIRA issue tracking server for the Apache Solr project. This server resides at https://issues.apache.org/jira/browse/SOLR.
+|IRC Channel |Navigates to Solr's http://en.wikipedia.org/wiki/Internet_Relay_Chat[IRC] live-chat room: http://webchat.freenode.net/?channels=#solr.
+|Community forum |Navigates to the Apache Wiki page which has further information about ways to engage in the Solr User community mailing lists: https://wiki.apache.org/solr/UsingMailingLists.
+|Solr Query Syntax |Navigates to the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>> in this Reference Guide.
+|===
+
+These links cannot be modified without editing the `index.html` in the `server/solr/solr-webapp` directory that contains the Admin UI files.

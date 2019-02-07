@@ -98,7 +98,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     // disable .auto_add_replicas (once it exists)
     CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".auto_add_replicas");
     CloudTestUtils.suspendTrigger(cluster, ".auto_add_replicas");
-    
+    cluster.getSimClusterStateProvider().createSystemCollection();
+
     waitForSeconds = 5;
     triggerStartedCount.set(0);
     triggerFinishedCount.set(0);
@@ -172,6 +173,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     cluster.getTimeSource().sleep(5000);
 
@@ -267,6 +270,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     // create a collection with more than 1 replica per node
     String collectionName = "testNodeAdded";
@@ -471,6 +476,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
 
     // create a collection with 1 replica per node
     String collectionName = "testNodeLost";
@@ -670,6 +676,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    assertAutoscalingUpdateComplete();
 
     boolean await = triggerFinishedLatch.await(waitForSeconds * 45000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("The trigger did not fire at all", await);

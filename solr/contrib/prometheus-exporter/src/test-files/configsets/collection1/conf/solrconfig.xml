@@ -53,7 +53,7 @@
 
   <query>
 
-    <maxBooleanClauses>1024</maxBooleanClauses>
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
     <filterCache class="solr.FastLRUCache"
                  size="512"

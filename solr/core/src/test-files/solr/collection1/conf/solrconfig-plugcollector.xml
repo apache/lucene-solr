@@ -76,7 +76,7 @@
         range or wildcard queries that expand to big boolean
         queries.  An exception is thrown if exceeded.
     -->
-    <maxBooleanClauses>1024</maxBooleanClauses>
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
@@ -457,7 +457,7 @@ based HashBitset. -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
-  <queryParser name="rank" class="org.apache.solr.search.TestRankQueryPlugin"/>
+  <queryParser name="rank" class="org.apache.solr.search.RankQueryTestPlugin"/>
 
   <updateRequestProcessorChain name="dedupe">
     <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">

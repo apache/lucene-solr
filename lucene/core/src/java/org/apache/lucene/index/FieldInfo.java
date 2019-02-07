@@ -142,7 +142,7 @@ public final class FieldInfo {
 
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
-              int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+              Map<String, String> attributes, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
     if (indexOptions == null) {
       throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
     }
@@ -175,6 +175,9 @@ public final class FieldInfo {
     if (this.indexOptions == IndexOptions.NONE || this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
       // cannot store payloads if we don't store positions:
       this.storePayloads = false;
+    }
+    if (attributes != null) {
+      this.attributes.putAll(attributes);
     }
     assert checkConsistency();
   }
@@ -346,8 +349,9 @@ public final class FieldInfo {
    * to store additional metadata, and will be available to the codec
    * when reading the segment via {@link #getAttribute(String)}
    * <p>
-   * If a value already exists for the field, it will be replaced with 
-   * the new value.
+   * If a value already exists for the key in the field, it will be replaced with
+   * the new value. If the value of the attributes for a same field is changed between
+   * the documents, the behaviour after merge is undefined.
    */
   public String putAttribute(String key, String value) {
     return attributes.put(key, value);

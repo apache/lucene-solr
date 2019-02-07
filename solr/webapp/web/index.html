@@ -85,6 +85,7 @@ limitations under the License.
   <script src="js/angular/controllers/replication.js"></script>
   <script src="js/angular/controllers/schema.js"></script>
   <script src="js/angular/controllers/segments.js"></script>
+  <script src="js/angular/controllers/unknown.js"></script>
   <script src="js/angular/controllers/cluster-suggestions.js"></script>
 
 
@@ -144,9 +145,9 @@ limitations under the License.
           <ul id="menu">
             <li id="login" class="global" ng-class="{active:page=='login'}" ng-show="http401 || currentUser"><p><a href="#/login">{{http401 ? "Login" : "Logout " + currentUser}}</a></p></li>
             
-            <div ng-show="!http401">
-              <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>
+            <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>
   
+            <div ng-show="!http401">
               <li id="logging" class="global" ng-class="{active:page=='logging'}"><p><a href="#/~logging">Logging</a></p>
                 <ul ng-show="showingLogging">
                   <li class="level" ng-class="{active:page=='logging-levels'}"><a href="#/~logging/level">Level</a></li>

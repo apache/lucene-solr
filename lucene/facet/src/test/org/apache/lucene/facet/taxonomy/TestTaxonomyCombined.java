@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.SlowRAMDirectory;
+import org.apache.lucene.facet.SlowDirectory;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.store.Directory;
@@ -732,7 +732,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
   private void assertConsistentYoungestChild(final FacetLabel abPath,
       final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry, int numCategories)
       throws Exception {
-    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for initialization
+    SlowDirectory indexDir = new SlowDirectory(-1, null); // no slowness for initialization
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
     tw.addCategory(new FacetLabel("a", "0"));
     tw.addCategory(abPath);

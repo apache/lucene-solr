@@ -18,9 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -295,7 +293,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
       throw new RuntimeException("non-live node " + node);
     }
     if (tags.isEmpty()) {
-      return Collections.emptyMap();
+      return new HashMap<>();
     }
     Map<String, Object> result = new HashMap<>();
     Map<String, Object> metrics = getReplicaMetricsValues(node, tags.stream().filter(s -> s.startsWith("metrics:solr.core.")).collect(Collectors.toList()));
@@ -312,13 +310,13 @@ public class SimNodeStateProvider implements NodeStateProvider {
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
     List<ReplicaInfo> replicas = clusterStateProvider.simGetReplicaInfos(node);
     if (replicas == null || replicas.isEmpty()) {
-      return Collections.emptyMap();
+      return new HashMap<>();
     }
     Map<String, Map<String, List<ReplicaInfo>>> res = new HashMap<>();
     // TODO: probably needs special treatment for "metrics:solr.core..." tags
     for (ReplicaInfo r : replicas) {
-      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), s -> new HashMap<>());
-      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), s -> new ArrayList<>());
+      Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
+      List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
       perShard.add(r);
     }
     return res;

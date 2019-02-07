@@ -70,7 +70,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
@@ -240,7 +240,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           } else {
             configFileExists = true;
             log.info("Loading QueryElevation from: " + fC.getAbsolutePath());
-            Config cfg = new Config(core.getResourceLoader(), configFileName);
+            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
             elevationProvider = loadElevationProvider(cfg);
           }
           elevationProviderCache.put(null, elevationProvider);
@@ -360,13 +360,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     log.info("Loading QueryElevation from data dir: " + configFileName);
 
-    Config cfg;
+    XmlConfigFile cfg;
     ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null) {
-      cfg = new Config(core.getResourceLoader(), configFileName, null, null);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null);
     } else {
       InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
-      cfg = new Config(core.getResourceLoader(), configFileName, new InputSource(is), null);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null);
     }
     ElevationProvider elevationProvider = loadElevationProvider(cfg);
     assert elevationProvider != null;
@@ -381,7 +381,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *                          (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
   @SuppressWarnings("WeakerAccess")
-  protected ElevationProvider loadElevationProvider(Config config) throws IOException {
+  protected ElevationProvider loadElevationProvider(XmlConfigFile config) throws IOException {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
     XPath xpath = XPathFactory.newInstance().newXPath();
     NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);

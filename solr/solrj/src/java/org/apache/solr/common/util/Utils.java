@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,6 +45,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -81,6 +83,10 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class Utils {
+  public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
+  public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
+  public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
+  public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static Map getDeepCopy(Map map, int maxDepth) {
@@ -98,7 +104,7 @@ public class Utils {
     if (sorted) {
       copy = new TreeMap();
     } else {
-      copy = new LinkedHashMap();
+      copy = map instanceof LinkedHashMap?  new LinkedHashMap(map.size()): new HashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
@@ -286,6 +292,19 @@ public class Utils {
         @Override
         public Object newObject() {
           return new LinkedHashMapWriter();
+        }
+      };
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+
+  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser){
+        @Override
+        public Object newObject() {
+          return new HashMap();
         }
       };
     } catch (IOException e) {
