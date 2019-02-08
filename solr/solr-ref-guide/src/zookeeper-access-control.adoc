@@ -97,7 +97,7 @@ There are two scripts that impact ZooKeeper ACLs:
 * For *nix systems: `bin/solr` & `server/scripts/cloud-scripts/zkcli.sh`
 * For Windows systems: `bin/solr.cmd` & `server/scripts/cloud-scripts/zkcli.bat`
 
-These Solr scripts can enable use of ZK ACLs by setting the appropriate system properties: uncomment the following and replace the passwords with ones you choose to enable the above-described VM parameters ACL and credentials providers in the following files:
+These Solr scripts can enable use of ZooKeeper ACLs by setting the appropriate system properties: uncomment the following and replace the passwords with ones you choose to enable the above-described VM parameters ACL and credentials providers in the following files:
 
 .solr.in.sh
 [source,bash]
