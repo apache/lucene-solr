@@ -179,15 +179,7 @@ final class SimpleTextBKDWriter implements Closeable {
     // dimensional values (numDims * bytesPerDim) +  docID (int)
     bytesPerDoc = packedBytesLength + Integer.BYTES;
 
-    // As we recurse, we compute temporary partitions of the data, halving the
-    // number of points at each recursion.  Once there are few enough points,
-    // we can switch to sorting in heap instead of offline (on disk).  At any
-    // time in the recursion, we hold the number of points at that level, plus
-    // all recursive halves (i.e. 16 + 8 + 4 + 2) so the memory usage is 2X
-    // what that level would consume, so we multiply by 0.5 to convert from
-    // bytes to points here.  In addition the radix partitioning may sort on memory
-    // double of this size so we multiply by another 0.5.
-
+    // Maximum number of points we hold in memory at any time
     maxPointsSortInHeap = (int) ((maxMBSortInHeap * 1024 * 1024) / (bytesPerDoc * numDataDims));
 
     // Finally, we must be able to hold at least the leaf node in heap during build:
