@@ -903,7 +903,23 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
-      results.add(requestMap.get(k), waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k)));
+      NamedList reqResult = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
+      log.debug("Async response for {}: {}",  k, reqResult);
+      if (reqResult.get("STATUS").equals("failed")) {
+        SimpleOrderedMap failures = (SimpleOrderedMap) results.get("failure");
+        if (failures == null) {
+          failures = new SimpleOrderedMap();
+          results.add("failure", failures);
+        }
+        failures.add(k, reqResult);
+      } else {
+        SimpleOrderedMap successes = (SimpleOrderedMap) results.get("success");
+        if (successes == null) {
+          successes = new SimpleOrderedMap();
+          results.add("success", successes);
+        }
+        successes.add(k, reqResult);
+      }
     }
   }
 
