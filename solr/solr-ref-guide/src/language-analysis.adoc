@@ -654,9 +654,9 @@ There are two filters written specifically for dealing with Bengali language. Th
 
 ----
 
-*Normalisation* - `মানুষ` -> `মানুস`
+*Normalisation* - `মানুষ` \-> `মানুস`
 
-*Stemming* - `সমস্ত` -> `সমস্` 
+*Stemming* - `সমস্ত` \-> `সমস্` 
 
 
 === Brazilian Portuguese
