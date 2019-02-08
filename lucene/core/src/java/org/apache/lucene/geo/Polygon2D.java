@@ -138,6 +138,63 @@ public final class Polygon2D extends EdgeTree {
     return Relation.CELL_CROSSES_QUERY;
   }
 
+  @Override
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // check any holes
+    if (holes != null) {
+      Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
+      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
+        return WithinRelation.NOTWITHIN;
+      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
+        return WithinRelation.DISJOINT;
+      }
+    }
+
+    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
+    if (numCorners > 0) {
+      return WithinRelation.NOTWITHIN;
+    }
+    WithinRelation relation = WithinRelation.DISJOINT;
+    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
+    if (tree.relateLine(ax, ay, bx, by) == Relation.CELL_CROSSES_QUERY) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.relateLine(bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.relateLine(cx, cy, ax, ay) == Relation.CELL_CROSSES_QUERY) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    //if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    //check that triangle bounding box not inside shape bounding box
+    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+
+    //Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
     int containsCount = 0;
     if (componentContains(ay, ax)) {

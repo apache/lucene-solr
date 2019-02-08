@@ -52,4 +52,9 @@ public final class Line2D extends EdgeTree {
   protected PointValues.Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     return tree.relateTriangle(ax, ay, bx, by, cx, cy);
   }
+
+  @Override
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    return WithinRelation.NOTWITHIN;
+  }
 }
