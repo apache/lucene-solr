@@ -131,7 +131,7 @@ You can boost results that have a field that matches a specific value:
 http://localhost:8983/solr/techproducts/select?q=video&defType=edismax&qf=features^20.0+text^0.3&bq=cat:electronics^5.0
 ----
 
-Using the "mm" param, 1 and 2 word queries require that all of the optional clauses match, but for queries with three or more clauses one missing clause is allowed:
+Using the `mm` parameter, 1 and 2 word queries require that all of the optional clauses match, but for queries with three or more clauses one missing clause is allowed:
 
 [source,text]
 ----
