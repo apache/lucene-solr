@@ -231,4 +231,4 @@ Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs
 </backup>
 ----
 
-Better throughput might be achieved by increasing buffer size with `<int name="solr.hdfs.buffer.size">262144</int>`. Buffer size is specified in bytes, by default it's 4KB.
+Better throughput might be achieved by increasing buffer size with `<int name="solr.hdfs.buffer.size">262144</int>`. Buffer size is specified in bytes, by default it's 4096 bytes (4KB).
