@@ -1026,8 +1026,9 @@ final class SimpleTextBKDWriter implements Closeable {
         heapSource = (HeapPointWriter) points.writer;
       }
 
-      int from = (int) points.start;
-      int to = (int) (points.start + points.count);
+      int from = Math.toIntExact(points.start);
+      int to = Math.toIntExact(points.start + points.count);
+
       //we store common prefix on scratch1
       computeCommonPrefixLength(heapSource, scratch1);
 

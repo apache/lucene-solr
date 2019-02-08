@@ -77,21 +77,30 @@ public final class BKDRadixSelector {
   }
 
   /**
+   *  It uses the provided {@code points} from the given {@code from} to the given {@code to}
+   *  to populate the {@code partitionSlices} array holder with two path slices
+   *  so the path slice at position 0 contains {@code partition - from} points
+   *  where the value of the {@code dim} is lower or equal to the {@code to -from}
+   *  points on the slice at position 1.
    *
-   * Method to partition the input data. It returns the value of the dimension where
-   * the split happens. The method destroys the original writer.
+   *  The {@code dimCommonPrefix} provides a hint for the length of the common prefix length for
+   *  the {@code dim} where are partitioning the points.
    *
+   *  It return the value of the {@code dim} at the partition point.
+   *
+   *  If the provided {@code points} is wrapping an {@link OfflinePointWriter}, the
+   *  writer is destroyed in the process to save disk space.
    */
-  public byte[] select(PathSlice points, PathSlice[] slices, long from, long to, long partitionPoint, int dim, int dimCommonPrefix) throws IOException {
+  public byte[] select(PathSlice points, PathSlice[] partitionSlices, long from, long to, long partitionPoint, int dim, int dimCommonPrefix) throws IOException {
     checkArgs(from, to, partitionPoint);
 
-    assert slices.length == 2;
+    assert partitionSlices.length > 1;
 
     //If we are on heap then we just select on heap
     if (points.writer instanceof HeapPointWriter) {
       byte[] partition = heapRadixSelect((HeapPointWriter) points.writer, dim, Math.toIntExact(from), Math.toIntExact(to),  Math.toIntExact(partitionPoint), dimCommonPrefix);
-      slices[0] = new PathSlice(points.writer, from, partitionPoint - from);
-      slices[1] = new PathSlice(points.writer, partitionPoint, to - partitionPoint);
+      partitionSlices[0] = new PathSlice(points.writer, from, partitionPoint - from);
+      partitionSlices[1] = new PathSlice(points.writer, partitionPoint, to - partitionPoint);
       return partition;
     }
 
@@ -106,9 +115,9 @@ public final class BKDRadixSelector {
 
     try (PointWriter left = getPointWriter(partitionPoint - from, "left" + dim);
          PointWriter right = getPointWriter(to - partitionPoint, "right" + dim)) {
-      slices[0] = new PathSlice(left, 0, partitionPoint - from);
-      slices[1] = new PathSlice(right, 0, to - partitionPoint);
-      //if all equals we just offlinePartition the data
+      partitionSlices[0] = new PathSlice(left, 0, partitionPoint - from);
+      partitionSlices[1] = new PathSlice(right, 0, to - partitionPoint);
+      //if all equals we just partition the points
       if (commonPrefix == bytesSorted) {
         offlinePartition(offlinePointWriter, left, right, null, from, to, dim, commonPrefix - 1, partitionPoint);
         return partitionPointFromCommonPrefix();
@@ -188,7 +197,7 @@ public final class BKDRadixSelector {
         histogram[commonPrefix][bucket]++;
       }
     }
-    //Count left points and record the offlinePartition point
+    //Count left points and record the partition point
     for(int i = 0; i < HISTOGRAM_SIZE; i++) {
       long size = histogram[commonPrefix][i];
       if (leftCount + size > partitionPoint - from) {
@@ -234,15 +243,15 @@ public final class BKDRadixSelector {
   }
 
   private int getMaxPointsSortInHeap(PointWriter left, PointWriter right) {
-    long pointsUsed = 0;
+    int pointsUsed = 0;
     if (left instanceof HeapPointWriter) {
-      pointsUsed += left.count();
+      pointsUsed += ((HeapPointWriter) left).maxSize;
     }
     if (right instanceof HeapPointWriter) {
-      pointsUsed += right.count();
+      pointsUsed += ((HeapPointWriter) right).maxSize;
     }
     assert maxPointsSortInHeap >= pointsUsed;
-    return maxPointsSortInHeap - (int) pointsUsed;
+    return maxPointsSortInHeap - pointsUsed;
   }
 
   private void offlinePartition(OfflinePointWriter points, PointWriter left, PointWriter right, PointWriter deltaPoints,
@@ -342,6 +351,8 @@ public final class BKDRadixSelector {
   }
 
   PointWriter getPointWriter(long count, String desc) throws IOException {
+    //As we recurse, we hold two on-heap point writers at any point. Therefore the
+    //max size for these objects is half of the total points we can have on-heap.
     if (count <= maxPointsSortInHeap / 2) {
       int size = Math.toIntExact(count);
       return new HeapPointWriter(size, size, packedBytesLength);
