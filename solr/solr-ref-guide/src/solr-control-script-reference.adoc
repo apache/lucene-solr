@@ -698,7 +698,7 @@ Use the `zk downconfig` command to download a configuration set from ZooKeeper t
 All parameters listed below are required.
 
 `-n <name>`::
-Name of config set in ZooKeeper to download. The Admin UI Cloud \-> Tree \-> configs node lists all available configuration sets.
+Name of the configset in ZooKeeper to download. The Admin UI Cloud \-> Tree \-> configs node lists all available configuration sets.
 +
 *Example*: `-n myconfig`
 
