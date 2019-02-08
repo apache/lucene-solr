@@ -79,31 +79,6 @@ public final class Polygon2D extends EdgeTree {
   }
 
   @Override
-  protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    // check any holes
-    if (holes != null) {
-      Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
-      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
-        return Relation.CELL_CROSSES_QUERY;
-      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
-        return Relation.CELL_OUTSIDE_QUERY;
-      }
-    }
-    // check each corner: if < 3 are present, its cheaper than crossesSlowly
-    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
-    if (numCorners == 3) {
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners > 0) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-    return null;
-  }
-
-  /** Returns relation to the provided rectangle for this component */
-  @Override
   protected Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
     // check any holes
     if (holes != null) {
@@ -114,17 +89,53 @@ public final class Polygon2D extends EdgeTree {
         return Relation.CELL_OUTSIDE_QUERY;
       }
     }
-    // check each corner: if < 4 are present, its cheaper than crossesSlowly
+    // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minLat, maxLat, minLon, maxLon);
     if (numCorners == 4) {
       if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners > 0) {
-      return Relation.CELL_CROSSES_QUERY;
+    }  else if (numCorners == 0) {
+      if (minLat >= tree.lat1 && maxLat <= tree.lat1 && minLon >= tree.lon2 && maxLon <= tree.lon2) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
     }
-    return null;
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  @Override
+  protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    // check any holes
+    if (holes != null) {
+      Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
+      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
+        return Relation.CELL_CROSSES_QUERY;
+      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
+    }
+    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
+    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
+    if (numCorners == 3) {
+      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners == 0) {
+      if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    return Relation.CELL_CROSSES_QUERY;
   }
 
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
