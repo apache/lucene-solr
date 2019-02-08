@@ -49,6 +49,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13236")
 @LuceneTestCase.Nightly
 @LuceneTestCase.Slow
 @Deprecated
