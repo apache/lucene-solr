@@ -48,7 +48,7 @@ public final class BKDRadixSelector {
   private final int maxPointsSortInHeap;
   //reusable buffer
   private final byte[] offlineBuffer;
-  //holder for offlinePartition points
+  //holder for partition points
   private final int[] partitionBucket;
   // scratch object to move bytes around
   private final BytesRef bytesRef1 = new BytesRef();
@@ -78,7 +78,7 @@ public final class BKDRadixSelector {
 
   /**
    *
-   * Method to offlinePartition the input data. It returns the value of the dimension where
+   * Method to partition the input data. It returns the value of the dimension where
    * the split happens. The method destroys the original writer.
    *
    */
