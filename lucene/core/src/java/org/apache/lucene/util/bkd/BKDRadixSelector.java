@@ -78,7 +78,7 @@ public final class BKDRadixSelector {
 
   /**
    *  It uses the provided {@code points} from the given {@code from} to the given {@code to}
-   *  to populate the {@code partitionSlices} array holder (length > 1) with two path slices
+   *  to populate the {@code partitionSlices} array holder (length &gt; 1) with two path slices
    *  so the path slice at position 0 contains {@code partition - from} points
    *  where the value of the {@code dim} is lower or equal to the {@code to -from}
    *  points on the slice at position 1.
