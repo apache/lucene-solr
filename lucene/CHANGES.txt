@@ -11,6 +11,10 @@ Improvements
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
   of sorting all dimensions before hand. (Ignacio Vera, Adrien Grand)
 
+Other
+
+* LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
