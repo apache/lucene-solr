@@ -29,7 +29,7 @@ For information about language detection at index time, see <<detecting-language
 
 Protects words from being modified by stemmers. A customized protected word list may be specified with the "protected" attribute in the schema. Any words in the protected word list will not be modified by any stemmer in Solr.
 
-A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` <<config-sets.adoc#config-sets,config set>> directory:
+A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> directory:
 
 [source,xml]
 ----
@@ -1241,7 +1241,7 @@ Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` an
 
 *Arguments:*
 
-`tags`:: filename for a list of parts-of-speech for which to remove terms; see `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#config-sets,config set>> for an example.
+`tags`:: filename for a list of parts-of-speech for which to remove terms; see `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#config-sets,configset>> for an example.
 
 `enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 

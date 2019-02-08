@@ -183,8 +183,8 @@ facet(collection1,
       count(*))
 ----
 
-The example above shows a facet function with rollups over three buckets, where the buckets are returned in descending order by bucket value.
-The rows param returns 10 rows and the offset param starts returning rows from the 20th row.
+The example above shows a `facet` function with rollups over three buckets, where the buckets are returned in descending order by bucket value.
+The `rows` parameter returns 10 rows and the `offset` parameter starts returning rows from the 20th row.
 
 == features
 

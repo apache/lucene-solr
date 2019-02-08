@@ -167,7 +167,7 @@ The Content-Type of the response is set according to the `<xsl:output>` statemen
 
 === XSLT Configuration
 
-The example below, from the `sample_techproducts_configs` <<response-writers.adoc#response-writers,config set>> in the Solr distribution, shows how the XSLT Response Writer is configured.
+The example below, from the `sample_techproducts_configs` <<response-writers.adoc#response-writers,configset>> in the Solr distribution, shows how the XSLT Response Writer is configured.
 
 [source,xml]
 ----

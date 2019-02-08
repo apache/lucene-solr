@@ -216,5 +216,5 @@ The following properties are available in context and can be referenced from tem
 ----
 
 This configuration specifies that each time one of the listed stages is reached, or before and after each of the listed
-actions is executed, the listener will send the templated payload to a URL that also depends on the config and the current event,
+actions is executed, the listener will send the templated payload to a URL that also depends on the configuration and the current event,
 and with a custom header that indicates the trigger name.

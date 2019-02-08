@@ -708,12 +708,11 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 </response>
 ----
 
-Create an alias named "myTimeData" for data begining on `2018-01-15` in the UTC time zone and partitioning daily
-based on the `evt_dt` field in the incomming documents. Data more than an hour beyond the latest (most recent)
-partiton is to be rejected and collections are created using a config set named myConfig and
-
-
 *Input*
+
+Create an alias named "myTimeData" for data beginning on `2018-01-15` in the UTC time zone and partitioning daily
+based on the `evt_dt` field in the incoming documents. Data more than one hour beyond the latest (most recent)
+partition is to be rejected and collections are created using a configset named "myConfig".
 
 [source,text]
 ----
@@ -732,10 +731,11 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&
 </response>
 ----
 
-A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
-Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
 
 *Input*
+
+A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
+Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
 
 [source,json]
 ----

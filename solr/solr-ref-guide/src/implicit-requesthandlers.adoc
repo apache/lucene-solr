@@ -302,7 +302,7 @@ Custom JSON Updates:: Add and update custom JSON-formatted documents.
 
 You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>.
 
-To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request param. For the `/export` request handler, you can make a request like this:
+To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter. For the `/export` request handler, you can make a request like this:
 
 
 [.dynamic-tabs]

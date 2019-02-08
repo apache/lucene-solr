@@ -250,7 +250,7 @@ This parameter indicates the facet algorithm to use:
 * "stream" Presently equivalent to "enum"
 * "smart" Pick the best method for the field type (this is the default)
 
-|prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` param is very costly>>.
+|prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` parameter is very costly>>.
 |===
 
 == Query Facet
