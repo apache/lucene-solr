@@ -878,25 +878,30 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
       log.error("Error from shard: " + shard, e);
-
-      SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-      if (failure == null) {
-        failure = new SimpleOrderedMap();
-        results.add("failure", failure);
-      }
-
-      failure.add(nodeName, e.getClass().getName() + ":" + e.getMessage());
-
+      addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
     } else {
-
-      SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-      if (success == null) {
-        success = new SimpleOrderedMap();
-        results.add("success", success);
-      }
-
-      success.add(nodeName, solrResponse.getResponse());
+      addSuccess(results, nodeName, solrResponse.getResponse());
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void addFailure(NamedList<Object> results, String key, Object value) {
+    SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
+    if (failure == null) {
+      failure = new SimpleOrderedMap<>();
+      results.add("failure", failure);
+    }
+    failure.add(key, value);
+  }
+  
+  @SuppressWarnings("unchecked")
+  private static void addSuccess(NamedList<Object> results, String key, Object value) {
+    SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
+    if (success == null) {
+      success = new SimpleOrderedMap<>();
+      results.add("success", success);
+    }
+    success.add(key, value);
   }
 
   @SuppressWarnings("unchecked")
@@ -906,19 +911,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       NamedList reqResult = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
       log.debug("Async response for {}: {}",  k, reqResult);
       if (reqResult.get("STATUS").equals("failed")) {
-        SimpleOrderedMap failures = (SimpleOrderedMap) results.get("failure");
-        if (failures == null) {
-          failures = new SimpleOrderedMap();
-          results.add("failure", failures);
-        }
-        failures.add(k, reqResult);
+        addFailure(results, k, reqResult);
       } else {
-        SimpleOrderedMap successes = (SimpleOrderedMap) results.get("success");
-        if (successes == null) {
-          successes = new SimpleOrderedMap();
-          results.add("success", successes);
-        }
-        successes.add(k, reqResult);
+        addSuccess(results, k, reqResult);
       }
     }
   }
