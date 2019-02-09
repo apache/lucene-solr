@@ -24,6 +24,10 @@ Improvements
 
 * LUCENE-8687: Optimise radix partitioning for points on heap. (Ignacio Vera)
 
+Other
+
+* LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes

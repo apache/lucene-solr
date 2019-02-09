@@ -252,7 +252,7 @@ public class ZkController implements Closeable {
   // ref is held as a HashSet since we clone the set before notifying to avoid synchronizing too long
   private HashSet<OnReconnect> reconnectListeners = new HashSet<OnReconnect>();
 
-  private class RegisterCoreAsync implements Callable {
+  private class RegisterCoreAsync implements Callable<Object> {
 
     CoreDescriptor descriptor;
     boolean recoverReloadedCores;
@@ -272,7 +272,7 @@ public class ZkController implements Closeable {
   }
 
   // notifies registered listeners after the ZK reconnect in the background
-  private static class OnReconnectNotifyAsync implements Callable {
+  private static class OnReconnectNotifyAsync implements Callable<Object> {
 
     private final OnReconnect listener;
 
