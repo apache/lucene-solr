@@ -223,15 +223,11 @@ public final class BKDRadixSelector {
 
     //create the delta points writer
     PointWriter deltaPoints;
-    if (delta <= getMaxPointsSortInHeap(left, right)) {
-      deltaPoints =  new HeapPointWriter(Math.toIntExact(delta), Math.toIntExact(delta), packedBytesLength);
-    } else {
-      deltaPoints = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta" + iteration, delta);
+    try (PointWriter tempDeltaPoints = getDeltaPointWriter(left, right, delta, iteration)) {
+      //divide the points. This actually destroys the current writer
+      offlinePartition(points, left, right, tempDeltaPoints, from, to, dim, commonPrefix, 0);
+      deltaPoints = tempDeltaPoints;
     }
-    //divide the points. This actually destroys the current writer
-    offlinePartition(points, left, right, deltaPoints, from, to, dim, commonPrefix, 0);
-    //close delta point writer
-    deltaPoints.close();
 
     long newPartitionPoint = partitionPoint - from - leftCount;
 
@@ -240,18 +236,6 @@ public final class BKDRadixSelector {
     } else {
       return buildHistogramAndPartition((OfflinePointWriter) deltaPoints, left, right, 0, deltaPoints.count(), newPartitionPoint, ++iteration, ++commonPrefix, dim);
     }
-  }
-
-  private int getMaxPointsSortInHeap(PointWriter left, PointWriter right) {
-    int pointsUsed = 0;
-    if (left instanceof HeapPointWriter) {
-      pointsUsed += ((HeapPointWriter) left).maxSize;
-    }
-    if (right instanceof HeapPointWriter) {
-      pointsUsed += ((HeapPointWriter) right).maxSize;
-    }
-    assert maxPointsSortInHeap >= pointsUsed;
-    return maxPointsSortInHeap - pointsUsed;
   }
 
   private void offlinePartition(OfflinePointWriter points, PointWriter left, PointWriter right, PointWriter deltaPoints,
@@ -348,6 +332,26 @@ public final class BKDRadixSelector {
     points.getPackedValueSlice(partitionPoint, bytesRef1);
     System.arraycopy(bytesRef1.bytes, bytesRef1.offset + dim * bytesPerDim, partition, 0, bytesPerDim);
     return partition;
+  }
+
+  private PointWriter getDeltaPointWriter(PointWriter left, PointWriter right, long delta, int iteration) throws IOException {
+    if (delta <= getMaxPointsSortInHeap(left, right)) {
+      return  new HeapPointWriter(Math.toIntExact(delta), Math.toIntExact(delta), packedBytesLength);
+    } else {
+      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "delta" + iteration, delta);
+    }
+  }
+
+  private int getMaxPointsSortInHeap(PointWriter left, PointWriter right) {
+    int pointsUsed = 0;
+    if (left instanceof HeapPointWriter) {
+      pointsUsed += ((HeapPointWriter) left).maxSize;
+    }
+    if (right instanceof HeapPointWriter) {
+      pointsUsed += ((HeapPointWriter) right).maxSize;
+    }
+    assert maxPointsSortInHeap >= pointsUsed;
+    return maxPointsSortInHeap - pointsUsed;
   }
 
   PointWriter getPointWriter(long count, String desc) throws IOException {
