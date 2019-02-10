@@ -72,7 +72,10 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-filter
 The value of `filter` can be a single query to treat as a filter, or a JSON list of filter queries.  Each query can be:
 
 * a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`.
+The referred parameter might have 0 (absent) or many values.
+** When no values specified, no filter is applied and no error is thrown
+** When many values are specified, each value is parsed and used as filters
 
 When a `filter` option is combined with other `domain` changing options, the filtering is applied _after_ the other domain changes take place.
 
@@ -165,7 +168,10 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-query-
 The value of `query` can be a single query, or a JSON list of queries.  Each query can be:
 
 * a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param: <request_param_name>}`
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`.
+The referred parameter might have 0 (absent) or many values.
+** When no values specified, no error is thrown
+** When many values are specified, each value is parsed and used as queries
 
 NOTE: While a `query` domain can be combined with an additional domain `filter`, It is not possible to also use `excludeTags`, because the tags would be meaningless: The `query` domain already completely ignores the top-level query and all previous filters.
 
