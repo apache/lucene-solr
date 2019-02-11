@@ -65,13 +65,19 @@ public abstract class TermsEnum implements BytesRefIterator {
     NOT_FOUND
   };
 
-  /** Attempts to seek to the exact term, returning
-   *  true if the term is found.  If this returns false, the
-   *  enum is unpositioned.  For some codecs, seekExact may
-   *  be substantially faster than {@link #seekCeil}. */
-  public boolean seekExact(BytesRef text) throws IOException {
-    return seekCeil(text) == SeekStatus.FOUND;
-  }
+  /**
+   * Attempts to seek to the exact term, returning true if the term is found. If this returns false, the enum is
+   * unpositioned. For some codecs, seekExact may be substantially faster than {@link #seekCeil}.
+   * <p>
+   * 
+   * The default implementation can be <code>seekCeil(text) == SeekStatus.FOUND; </code><br>
+   * But this method is performance critical. In some cases, the default implementation may be slow and consume huge memory,
+   * so subclass SHOULD have its own implementation if possible.
+   * 
+   * @return true if the term is found; return false if the enum is unpositioned.
+   */
+  public abstract boolean seekExact(BytesRef text) throws IOException;
+
 
   /** Seeks to the specified term, if it exists, or to the
    *  next (ceiling) term.  Returns SeekStatus to
@@ -205,6 +211,11 @@ public abstract class TermsEnum implements BytesRefIterator {
   public static final TermsEnum EMPTY = new TermsEnum() {    
     @Override
     public SeekStatus seekCeil(BytesRef term) { return SeekStatus.END; }
+    
+    @Override
+    public boolean seekExact(BytesRef text) throws IOException {
+      return seekCeil(text) == SeekStatus.FOUND;
+    }
     
     @Override
     public void seekExact(long ord) {}
