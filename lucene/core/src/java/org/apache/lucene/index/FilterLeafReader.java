@@ -178,6 +178,11 @@ public abstract class FilterLeafReader extends LeafReader {
     public SeekStatus seekCeil(BytesRef text) throws IOException {
       return in.seekCeil(text);
     }
+    
+    @Override
+    public boolean seekExact(BytesRef text) throws IOException {
+      return in.seekExact(text);
+    }
 
     @Override
     public void seekExact(long ord) throws IOException {

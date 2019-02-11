@@ -654,6 +654,11 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     @Override
+    public boolean seekExact(BytesRef text) throws IOException {
+      return seekCeil(text) == SeekStatus.FOUND;
+    }
+    
+    @Override
     public void seekExact(long ord) {
       throw new UnsupportedOperationException();
     }

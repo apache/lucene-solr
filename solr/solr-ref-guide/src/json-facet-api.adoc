@@ -2,6 +2,7 @@
 :page-tocclass: right
 :solr-root-path: ../../
 :example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+:page-children: json-faceting-domain-changes
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,18 +22,12 @@
 
 == Facet & Analytics Module
 
-The new Facet & Analytics Module exposed via the JSON Facet API is a rewrite of Solr's previous faceting capabilities, with the following goals:
+The JSON Faceting module exposes similar functionality to Solr's traditional faceting module but with a stronger emphasis on usability.  It has several benefits over traditional faceting:
 
-* First class native JSON API to control faceting and analytics
-** The structured nature of nested sub-facets are more naturally expressed in JSON rather than the flat namespace provided by normal query parameters.
-* First class integrated analytics support
-* Nest any facet type under any other facet type (such as range facet, field facet, query facet)
-* Ability to sort facet buckets by any calculated metric
-* Easier programmatic construction of complex nested facet commands
-* Support a more canonical response format that is easier for clients to parse
-* Support a cleaner way to implement distributed faceting
-* Support better integration with other search features
-* Full integration with the JSON Request API
+* easier programmatic construction of complex or nested facets
+* the nesting and structure offered by JSON makes facets easier to read and understand than the flat namespace of the traditional faceting API.
+* first class support for metrics and analytics
+* more standardized response format makes responses easier for clients to parse and use
 
 == Faceted Search
 
@@ -42,35 +37,6 @@ There are two main types of facets:
 
 * Facets that partition or categorize data (the domain) into multiple *buckets*
 * Facets that calculate data for a given bucket (normally a metric, statistic or analytic function)
-
-=== Metrics Example
-
-By default, the *domain* for facets starts with all documents that match the base query and any filters. Here's an example that requests various metrics about the root domain:
-
-[source,bash]
-----
-curl http://localhost:8983/solr/techproducts/query -d '
-q=memory&
-fq=inStock:true&
-json.facet={
-  "avg_price" : "avg(price)",
-  "num_suppliers" : "unique(manu_exact)",
-  "median_weight" : "percentile(weight,50)"
-}'
-----
-
-The response to the facet request above will start with documents matching the root domain (docs containing "memory" with inStock:true) then calculate and return the requested metrics:
-
-[...]
-[source,java]
-----
- "facets" : {
-    "count" : 4,
-    "avg_price" : 109.9950008392334,
-    "num_suppliers" : 3,
-    "median_weight" : 352.0
-  }
-----
 
 === Bucketing Facet Example
 
@@ -83,12 +49,15 @@ Here's an example of a bucketing facet, that partitions documents into bucket ba
 [.tab-label]*curl*
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&
-json.facet={
-  categories : {
-    type : terms,
-    field : cat,    // bucket documents based on the "cat" field
-    limit : 3       // retrieve the top 3 buckets ranked by the number of docs in each bucket
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "facet": {
+    "categories" : {
+      "type": "terms",
+      "field": "cat",
+      "limit": 3
+    }
   }
 }'
 ----
@@ -127,88 +96,96 @@ The response below shows us that 32 documents match the default root domain. and
   }
 ----
 
-=== Making a Facet Request
+=== Stat Facet Example
 
-In this guide, we will often just present the **facet command block**:
-
-[source,java]
-----
-{
-  x: "average(mul(price,popularity))"
-}
-----
-
-To execute a facet command block such as this, you'll need to use the `json.facet` parameter, and provide at least a base query such as `q=\*:*`
-
-[source,bash]
-----
-curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&json.facet=
-{
-  x: "avg(mul(price,popularity))"
-}
-'
-----
-
-Another option is to use the JSON Request API to provide the entire request in JSON:
+Stat (also called `aggregation` or `analytic`) facets are useful for displaying information derived from query results, in addition to those results themselves.  For example, stat facets can be used to provide context to users on an e-commerce site looking for memory.  The example below computes the average price (and other statistics) and would allow a user to gauge whether the memory stick in their cart is a good price.
 
 [.dynamic-tabs]
 --
-[example.tab-pane#curljsontermsfacet2]
+[example.tab-pane#curl-json-metrics-facet-1]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+q=memory&
+fq=inStock:true&
+json.facet={
+  "avg_price" : "avg(price)",
+  "num_suppliers" : "unique(manu_exact)",
+  "median_weight" : "percentile(weight,50)"
+}'
+----
+====
+
+[example.tab-pane#solrj-json-metrics-facet-1]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-facet-1]
+----
+====
+--
+
+The response to the facet request above will start with documents matching the root domain (docs containing "memory" with inStock:true) followed by the requested statistics in a `facets` block:
+
+[...]
+[source,java]
+----
+ "facets" : {
+    "count" : 4,
+    "avg_price" : 109.9950008392334,
+    "num_suppliers" : 3,
+    "median_weight" : 352.0
+  }
+----
+
+
+== Types of Facets
+There are 4 different types of bucketing facets, which behave in two different ways:
+
+* "terms" and "range" facets produce multiple buckets and assign each document in the domain into one (or more) of these buckets
+* "query" and "heatmap" facets always produce a single bucket which all documents in the domain belong to
+
+Each of these facet-types are covered in detail below.
+
+=== Terms Facet
+
+A `terms` facet buckets the domain based on the unique values in a field.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-terms-facet-2]
 ====
 [.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
 {
-  query: "*:*",                        // this is the base query
-  filter: [ "inStock:true" ],          // a list of filters
-  facet: {
-    x: "avg(mul(price,popularity))"    // and our funky metric of average of price * popularity
- }
-}
-'
+  "query": "*:*",
+  "facet": {
+    categories:{
+      "type": "terms",
+      "field" : "cat",
+      "limit" : 5
+    }
+  }
+}'
 ----
 ====
 
-[example.tab-pane#solrjjsontermsfacet2]
+[example.tab-pane#solrj-json-terms-facet-2]
 ====
 [.tab-label]*SolrJ*
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet2]
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-2]
 ----
 ====
 --
-
-=== JSON Extensions
-
-The *Noggit* JSON parser that is used by Solr accepts a number of JSON extensions such as,
-
-* bare words can be left unquoted
-* single line comments using either `//` or `#`
-* Multi-line comments using C style /* comments in here */
-* Single quoted strings
-* Allow backslash escaping of any character
-* Allow trailing commas and extra commas. Example: [9,4,3,]
-* Handle nbsp (non-break space, \u00a0) as whitespace.
-
-== Terms Facet
-
-The terms facet (or field facet) buckets the domain based on the unique terms / values of a field.
-
-[source,bash]
-----
-curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&
-json.facet={
-  categories:{
-    terms: {
-      field : cat,    // bucket documents based on the "cat" field
-      limit : 5       // retrieve the top 5 buckets ranked by the number of docs in each bucket
-    }
-  }
-}'
-----
 
 // TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
@@ -220,7 +197,7 @@ json.facet={
 |limit |Limits the number of buckets returned. Defaults to 10.
 |sort |Specifies how to sort the buckets produced.
 
-“count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#aggregation-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
+“count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#stat-facet-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
 |overrequest a|
 Number of buckets beyond the `limit` to internally request from shards during a distributed search.
 
@@ -250,34 +227,79 @@ This parameter indicates the facet algorithm to use:
 * "stream" Presently equivalent to "enum"
 * "smart" Pick the best method for the field type (this is the default)
 
-|prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` param is very costly>>.
+|prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` parameter is very costly>>.
 |===
 
-== Query Facet
+=== Query Facet
 
 The query facet produces a single bucket of documents that match the domain as well as the specified query.
 
-An example of the simplest form of the query facet is `"query":"query string"`.
-
-[source,java]
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-query-facet-simple]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
+curl http://localhost:8983/solr/techproducts/query -d '
 {
-  high_popularity: {query: "popularity:[8 TO 10]" }
-}
-----
-
-An expanded form allows for more parameters and a facet command block to specify sub-facets (either nested facets or metrics):
-
-[source,java]
-----
-{
-  high_popularity : {
-    type: query,
-    q : "popularity:[8 TO 10]",
-    facet : { average_price : "avg(price)" }
+  "query": "*:*",
+  "facet": {
+    "high_popularity": {
+      "type": "query",
+      "q": "popularity:[8 TO 10]"
+    }
   }
-}
+}'
 ----
+====
+
+[example.tab-pane#solrj-json-query-facet-simple]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-facet-simple]
+----
+====
+--
+
+Users may also specify sub-facets (either "bucketing" facets or metrics):
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-query-facet-expanded]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "facet": {
+    "high_popularity": {
+      "type": "query",
+      "q": "popularity:[8 TO 10]",
+      "facet" : {
+        "average_price" : "avg(price)"
+      }
+    }
+  }
+}'
+----
+====
+
+[example.tab-pane#solrj-json-query-facet-expanded]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-facet-expanded]
+----
+====
+--
 
 Example response:
 
@@ -289,24 +311,45 @@ Example response:
 }
 ----
 
-== Range Facet
+=== Range Facet
 
-The range facet produces multiple buckets over a date field or numeric field.
+The range facet produces multiple buckets over a date or numeric field.
 
-Example:
-
-[source,java]
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-range-facet-simple]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
+curl http://localhost:8983/solr/techproducts/query -d '
 {
-  prices : {
-    type: range,
-    field : price,
-    start : 0,
-    end : 100,
-    gap : 20
+  "query": "*:*",
+  "facet": {
+    "prices": {
+      "type": "range",
+      "field": "price",
+      "start": 0,
+      "end": 100,
+      "gap": 20
+    }
   }
-}
+}'
 ----
+====
+
+[example.tab-pane#solrj-json-range-facet-simple]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-range-facet-simple]
+----
+====
+--
+
+The output from the range facet above would look a bit like:
 
 [source,java]
 ----
@@ -317,10 +360,10 @@ Example:
       "count":5},
     {
       "val":20.0,
-      "count":3},
+      "count":0},
     {
       "val":40.0,
-      "count":2},
+      "count":0},
     {
       "val":60.0,
       "count":1},
@@ -331,9 +374,9 @@ Example:
 }
 ----
 
-=== Range Facet Parameters
+==== Range Facet Parameters
 
-To ease migration, the range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
+Range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
 
 // TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
@@ -366,7 +409,7 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 |facet |Aggregations, metrics, or nested facets that will be calculated for every returned bucket
 |===
 
-== Heatmap Facet
+=== Heatmap Facet
 
 The `heatmap` facet generates a 2D grid of facet counts for documents having spatial data in each grid cell.
 
@@ -378,27 +421,45 @@ For example `geom` here corresponds to `facet.heatmap.geom` in a facet.heatmap c
 
 NOTE: Unlike other facets that partition the domain into buckets, `heatmap` facets do not currently support <<Nested Facets>>.
 
-
-Here's an example query:
-[source,java]
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-heatmap-facet-1]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
+curl http://localhost:8983/solr/spatialdata/query -d '
 {
-  hm : {
-    type : heatmap,
-    field : points_srpt,
-    geom : "[-49.492,-180 TO 64.701,73.125]",
-    distErrPct : 0.5
+  "query": "*:*",
+  "facet": {
+    "locations": {
+      "type": "heatmap",
+      "field": "location_srpt",
+      "geom": "[\"50 20\" TO \"180 90\"]",
+      "gridLevel": 4
+    }
   }
-}
+}'
 ----
+====
+
+[example.tab-pane#solrj-json-heatmap-facet-1]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiHeatmapFacetingTest.java[tag=solrj-json-heatmap-facet-1]
+----
+====
+--
 
 And the facet response will look like:
 [source,json]
 ----
 {
-"facets":{
-    "count":145725,
-    "hm":{
+  "facets": {
+    "locations":{
       "gridLevel":1,
       "columns":6,
       "rows":4,
@@ -407,10 +468,12 @@ And the facet response will look like:
       "minY":-90.0,
       "maxY":90.0,
       "counts_ints2D":[[68,1270,459,5359,39456,1713],[123,10472,13620,7777,18376,6239],[88,6,3898,989,1314,255],[0,0,30,1,0,1]]
-      }}}
+    }
+  }
+}
 ----
 
-== Aggregation Functions
+=== Stat Facet Functions
 
 Unlike all the facets discussed so far, Aggregation functions (also called *facet functions*, *analytic functions*, or *metrics*) do not partition data into buckets.  Instead, they calculate something over all the documents in the domain.
 
@@ -422,40 +485,89 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
-|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-facet-api.adoc#block-join-counts,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
+|uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
 |percentile |`percentile(salary,50,75,99,99.9)` |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
 |sumsq |`sumsq(rent)` |sum of squares of field or function
 |variance |`variance(rent)` |variance of numeric field or function
 |stddev |`stddev(rent)` |standard deviation of field or function
-|relatedness |`relatedness('popularity:[100 TO *]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries).  This is primarily for use when building <<Semantic Knowledge Graphs>>.
+|relatedness |`relatedness('popularity:[100 TO *]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries).  This is primarily for use when building <<json-facet-api.adoc#relatedness-and-semantic-knowledge-graphs,Semantic Knowledge Graphs>>.
 |===
 
 Numeric aggregation functions such as `avg` can be on any numeric field, or on a <<function-queries.adoc#function-queries,nested function>> of multiple numeric fields such as `avg(div(popularity,price))`.
 
-The most common way of requesting an aggregation function is as a simple containing the expression you wish to compute:
+The most common way of requesting an aggregation function is as a simple String containing the expression you wish to compute:
 
-[source,javascript]
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-metrics-facet-simple]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
+curl http://localhost:8983/solr/techproducts/query -d '
 {
-  "average_roi": "avg(div(popularity,price))"
-}
+  "query": "*:*",
+  "filter": [
+    "price:[1.0 TO *]",
+    "popularity:[0 TO 10]"
+  ],
+  "facet": {
+    "avg_value": "avg(div(popularity,price))"
+  }
+}'
 ----
+====
+
+[example.tab-pane#solrj-json-metrics-facet-simple]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-facet-simple]
+----
+====
+--
 
 An expanded form allows for <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> to be specified.  These may be used explicitly by some specialized aggregations such as `<<json-facet-api.adoc#relatedness-options,relatedness()>>`, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
 
-[source,javascript]
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-metrics-facet-expanded]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
+curl http://localhost:8983/solr/techproducts/query -d '
 {
-  "average_roi" : {
-    "type": "func",
-    "func": "avg(div($numer,$denom))",
-    "numer": "mul(popularity,rating)",
-    "denom": "mul(price,size)"
+  "query": "*:*",
+  "filter": [
+    "price:[1.0 TO *]",
+    "popularity:[0 TO 10]"
+  ],
+  "facet": {
+    "avg_value" : {
+      "type": "func",
+      "func": "avg(div($numer,$denom))",
+      "numer": "mul(popularity,3.0)",
+      "denom": "price"
+    }
   }
-}
+}'
 ----
+====
 
+[example.tab-pane#solrj-json-metrics-facet-expanded]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-facet-expanded]
+----
+====
+--
 
 
 == Nested Facets
@@ -466,91 +578,147 @@ The syntax is identical to top-level facets - just add a `facet` command to the 
 
 === Nested Facet Example
 
-Let's start off with a simple non-nested terms facet on the genre field:
+Let's start off with a simple non-nested terms facet on the category field `cat`:
 
-[source,java]
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-unnested-cat-facet]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
- top_genres:{
-    type: terms
-    field: genre,
-    limit: 5
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "facet": {
+    "categories": {
+      "type": "terms",
+      "field": "cat",
+      "limit": 3
+    }
   }
+}'
 ----
+====
 
-Now if we wanted to add a nested facet to find the top 2 authors for each genre bucket:
+[example.tab-pane#solrj-json-unnested-cat-facet]
+====
+[.tab-label]*SolrJ*
 
-[source,java]
+[source,java,indent=0]
 ----
-  top_genres:{
-    type: terms,
-    field: genre,
-    limit: 5,
-    facet:{
-      top_authors:{
-        type: terms, // nested terms facet on author will be calculated for each parent bucket (genre)
-        field: author,
-        limit: 2
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
+----
+====
+--
+
+The response for the facet above will show the top category and the number of documents that falls into each category bucket. Nested facets can be used to gather additional information about each bucket of documents.  For example, using the nested facet below, we can find the top categories as well as who the leading manufacturer is in each category:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-nested-cat-facet]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "facet": {
+    "categories": {
+      "type": "terms",
+      "field": "cat",
+      "limit": 3,
+      "facet": {
+        "top_manufacturer": {
+          "type": "terms",
+          "field": "manu_id_s",
+          "limit": 1
+        }
       }
     }
   }
+}'
 ----
+====
+
+[example.tab-pane#solrj-json-nested-cat-facet]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet]
+----
+====
+--
 
 And the response will look something like:
 
 [source,java]
 ----
-  "facets":{
-    "top_genres":{
-      "buckets":[
-        {
-          "val":"Fantasy",
-          "count":5432,
-          "top_authors":{  // these are the top authors in the "Fantasy" genre
+"facets":{
+    "count":32,
+    "categories":{
+      "buckets":[{
+          "val":"electronics",
+          "count":12,
+          "top_manufacturer":{
             "buckets":[{
-                "val":"Mercedes Lackey",
-                "count":121},
-              {
-                "val":"Piers Anthony",
-                "count":98}
-            ]
-          }
-        },
+                "val":"corsair",
+                "count":3}]}},
         {
-          "val":"Mystery",
-          "count":4322,
-          "top_authors":{  // these are the top authors in the "Mystery" genre
+          "val":"currency",
+          "count":4,
+          "top_manufacturer":{
             "buckets":[{
-                "val":"James Patterson",
-                "count":146},
-              {
-                "val":"Patricia Cornwell",
-                "count":132}
-            ]
-          }
-        }
+                "val":"boa",
+                "count":1}]}},
 ----
-
-By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
 
 
 === Sorting Facets By Nested Functions
 
 The default sort for a field or terms facet is by bucket count descending. We can optionally `sort` ascending or descending by any facet function that appears in each bucket.
 
-[source,java]
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-json-nested-cat-facet-sorted]
+====
+[.tab-label]*curl*
+[source,bash]
 ----
+curl http://localhost:8983/solr/techproducts/query -d '
 {
-  categories:{
-    type : terms,     // terms facet creates a bucket for each indexed term in the field
-    field : cat,
-    sort : "x desc",  // can also use sort:{x:desc}
-    facet : {
-      x : "avg(price)",     // x = average price for each facet bucket
-      y : "max(popularity)" // y = max popularity value in each facet bucket
+  "query": "*:*",
+  "facet": {
+    "categories":{
+      "type" : "terms",     // terms facet creates a bucket for each indexed term in the field
+      "field" : "cat",
+      "limit": 3,
+      "sort" : "avg_price desc",
+      "facet" : {
+        "avg_price" : "avg(price)",
+      }
     }
   }
-}
+}'
 ----
+====
+
+[example.tab-pane#solrj-json-nested-cat-facet-sorted]
+====
+[.tab-label]*SolrJ*
+
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet-sorted]
+----
+====
+--
+
+
 
 In some situations the desired `sort` may be an aggregation function that is very costly to compute for every bucket.  A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).  Only after the top candidate buckets have been refined, will the actual `sort` be used.
 
@@ -576,178 +744,21 @@ In some situations the desired `sort` may be an aggregation function that is ver
 
 == Changing the Domain
 
-As discussed above, facets compute buckets or statistics based on a "domain" which is typically implicit:
+As discussed above, facets compute buckets or statistics based on their "domain" of documents.
 
- * By default, facets use the set of all documents matching the main query as their domain.
- * Nested "sub-facets" are computed for every bucket of their parent facet, using a domain containing all documents in that bucket.
+* By default, top-level facets use the set of all documents matching the main query as their domain.
+* Nested "sub-facets" are computed for every bucket of their parent facet, using a domain containing all documents in that bucket.
 
-But users can also override the "domain" of a facet that partitions data, using an explicit `domain` attribute whose value is a JSON Object that can support various options for restricting, expanding, or completely changing the original domain before the buckets are computed for the associated facet.
+In addition to this default behavior, domains can be also be widened, narrowed, or changed entirely.  The JSON Faceting API supports modifying domains through its `domain` property.  This is discussed in more detail <<json-faceting-domain-changes.adoc#json-faceting-domain-changes,here>>
 
-[NOTE]
-====
-`domain` changes can only be specified on individual facets that do data partitioning -- not statistical/metric facets, or groups of facets.
+== Special Stat Facet Functions
 
-A `\*:*` query facet with a `domain` change can be used to group multiple sub-facets of any type, for the purpose of applying a common domain change.
-====
+Most stat facet functions (`avg`, `sumsq`, etc.) allow users to perform math computations on groups of documents.  A few functions are more involved though, and deserve an explanation of their own.  These are described in more detail in the sections below.
 
+=== uniqueBlock() and Block Join Counts
 
-=== Adding Domain Filters
-
-The simplest example of a domain change is to specify an additional filter which will be applied to the existing domain. This can be done via the `filter` keyword in the `domain` block of the facet.
-
-Example:
-[source,json]
-----
-{
-  categories: {
-     type: terms,
-     field: cat,
-     domain: {filter: "popularity:[5 TO 10]" }
-   }
-}
-----
-
-The value of `filter` can be a single query to treat as a filter, or a JSON list of filter queries.  Each query can be:
-
-* a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
-
-When a `filter` option is combined with other `domain` changing options, the filtering is applied _after_ the other domain changes take place.
-
-=== Filter Exclusions
-
-Domains can also exclude the top-level query or filters via the `excludeTags` keywords in the `domain` block of the facet, expanding the existing domain.
-
-Example:
-[source,bash]
-----
-&q={!tag=top}"running shorts"
-&fq={!tag=COLOR}color:Blue
-&json={
-   filter:"{!tag=BRAND}brand:Bosco"
-   facet:{
-      sizes:{type:terms, field:size},
-      colors:{type:terms, field:color, domain:{excludeTags:COLOR} },
-      brands:{type:terms, field:brand, domain:{excludeTags:"BRAND,top"} }
-   }
-}
-----
-
-The value of `excludeTags` can be a single string tag, array of string tags or comma-separated tags in the single string.
-
-When an `excludeTags` option is combined with other `domain` changing options, it expands the domain _before_ any other domain changes take place.
-
-See also the section on <<faceting.adoc#tagging-and-excluding-filters,multi-select faceting>>.
-
-=== Arbitrary Domain Query
-
-A `query` domain can be specified when you wish to compute a facet against an arbitrary set of documents, regardless of the original domain.  The most common use case would be to compute a top level facet against a specific subset of the collection, regardless of the main query.  But it can also be useful on nested facets when building <<Semantic Knowledge Graphs>>.
-
-Example:
-[source,json]
-----
-{
-  "categories": {
-     "type": "terms",
-     "field": "cat",
-     "domain": {"query": "*:*" }
-   }
-}
-----
-
-The value of `query` can be a single query, or a JSON list of queries.  Each query can be:
-
-* a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param: <request_param_name>}`
-
-NOTE: While a `query` domain can be combined with an additional domain `filter`, It is not possible to also use `excludeTags`, because the tags would be meaningless: The `query` domain already completely ignores the top-level query and all previous filters.
-
-=== Block Join Domain Changes
-
-When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` or `blockParent` domain options can be used transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
-
-Both of these options work similar to the corresponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain.
-
-Example:
-[source,json,subs="verbatim,callouts"]]
-----
-{
-  "colors": {                         // <1>
-    "type": "terms",
-    "field": "sku_color",             // <2>
-    "facet" : {
-      "brands" : {
-        "type": "terms",
-        "field": "product_brand",     // <3>
-        "domain": {
-          "blockParent": "doc_type:product"
-        }
-      }}}}
-----
-<1> This example assumes we parent documents corresponding to Products, with child documents corresponding to individual SKUs with unique colors, and that our original query was against SKU documents.
-<2> The `colors` facet will be computed against all of the original SKU documents matching our search.
-<3> For each bucket in the `colors` facet, the set of all matching SKU documents will be transformed into the set of corresponding parent Product documents.  The resulting `brands` sub-facet will count how many Product documents (that have SKUs with the associated color) exist for each Brand.
-
-=== Join Query Domain Changes
-
-A `join` domain change option can be used to specify arbitrary `from` and `to` fields to use in transforming from the existing domain to a related set of documents.
-
-This works very similar to the <<other-parsers.adoc#join-query-parser,Join Query Parser>>, and has the same limitations when dealing with multi-shard collections.
-
-Example:
-[source,json]
-----
-{
-  "colors": {
-    "type": "terms",
-    "field": "sku_color",
-    "facet": {
-      "brands": {
-        "type": "terms",
-        "field": "product_brand",
-        "domain" : {
-          "join" : {
-            "from": "product_id_of_this_sku",
-            "to": "id"
-          },
-          "filter": "doc_type:product"
-        }
-      }
-    }
-  }
-}
-
-----
-
-=== Graph Traversal Domain Changes
-
-A `graph` domain change option works similarly to the `join` domain option, but can do traversal multiple hops `from` the existing domain `to` other documents.
-
-This works very similar to the <<other-parsers.adoc#graph-query-parser,Graph Query Parser>>, supporting all of it's optional parameters, and has the same limitations when dealing with multi-shard collections.
-
-Example:
-[source,json]
-----
-{
-  "related_brands": {
-    "type": "terms",
-    "field": "brand",
-    "domain": {
-      "graph": {
-        "from": "related_product_ids",
-        "to": "id",
-        "maxDepth": 3
-      }
-    }
-  }
-}
-----
-
-== Block Join Counts
-
-When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` and `blockParent` domain changes mentioned above can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).  But in the situation where the _count_ of all the blocks that exist in the current domain is sufficient, a more efficient option is the `uniqueBlock()` aggregate function.
-
-=== Block Join Counts Example
+When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` and `blockParent` <<json-faceting-domain-changes.adoc#block-join-domain-changes, domain changes>> can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).
+But if you only need to know the _count_ of all the blocks that exist in the current domain, a more efficient option is the `uniqueBlock()` aggregate function.
 
 Suppose we have products with multiple SKUs, and we want to count products for each color.
 
@@ -800,9 +811,9 @@ Aggregation `uniqueBlock(\_root_)` is functionally equivalent to `unique(\_root_
 It's recommended to define `limit: -1` for `uniqueBlock` calculation, like in above example,
 since default value of `limit` parameter is `10`, while `uniqueBlock` is supposed to be much faster with `-1`.
 
-== Semantic Knowledge Graphs
+=== relatedness() and Semantic Knowledge Graphs
 
-The `relatedness(...)` aggregation function allows for sets of documents to be scored relative to Foreground and Background sets of documents, for the purposes of finding ad-hoc relationships that make up a "Semantic Knowledge Graph":
+The `relatedness(...)` stat function allows for sets of documents to be scored relative to Foreground and Background sets of documents, for the purposes of finding ad-hoc relationships that make up a "Semantic Knowledge Graph":
 
 [quote, Grainger et al., 'https://arxiv.org/abs/1609.00464[The Semantic Knowledge Graph]']
 ____
@@ -816,7 +827,7 @@ Unlike most aggregation functions, the `relatedness(...)` function is aware of w
 NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 
 [[relatedness-options]]
-=== relatedness() Options
+==== relatedness() Options
 
 When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an opional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
 
@@ -835,7 +846,7 @@ This can be particularly useful when using a descending sorting on `relatedness(
 When sorting on `relatedness(...)` requests can be processed much more quickly by adding a `prelim_sort: "count desc"` option.  Increasing the `overrequest` can help improve the accuracy of the top buckets.
 ====
 
-=== Semantic Knowledge Graph Example
+==== Semantic Knowledge Graph Example
 
 .Sample Documents
 [source,bash,subs="verbatim,callouts"]
@@ -938,15 +949,3 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <5> The state of Colorado (CO) has a _negative_ correlation with the nested Foreground Set -- i.e., "People in Colorado are statistically less likely to be '35+ year old Golfers' then the country as a whole."
 <6> The number documents matching `age:[35 TO *]` _and_ `hobbies:golf` _and_ `state:AZ` is 18.75% of the total number of documents in the Background Set
 <7> 50% of the documents in the Background Set match `state:AZ`
-
-== References
-
-This documentation was originally adapted largely from the following blog pages:
-
-http://yonik.com/json-facet-api/
-
-http://yonik.com/solr-facet-functions/
-
-http://yonik.com/solr-subfacets/
-
-http://yonik.com/percentiles-for-solr-faceting/

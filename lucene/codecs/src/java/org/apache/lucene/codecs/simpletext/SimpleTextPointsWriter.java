@@ -71,7 +71,6 @@ class SimpleTextPointsWriter extends PointsWriter {
   public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
     PointValues values = reader.getValues(fieldInfo.name);
-    boolean singleValuePerDoc = values.size() == values.getDocCount();
 
     // We use our own fork of the BKDWriter to customize how it writes the index and blocks to disk:
     try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
@@ -82,8 +81,7 @@ class SimpleTextPointsWriter extends PointsWriter {
                                                               fieldInfo.getPointNumBytes(),
                                                               SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
                                                               SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
-                                                              values.size(),
-                                                              singleValuePerDoc)) {
+                                                              values.size())) {
 
       values.intersect(new IntersectVisitor() {
           @Override
