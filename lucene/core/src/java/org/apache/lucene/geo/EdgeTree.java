@@ -361,15 +361,18 @@ public abstract class EdgeTree {
 
         if (outside == false) {
           r = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
+          if (r == Relation.CELL_CROSSES_QUERY) {
+            return r;
+          }
         }
         if (left != null) {
-          if ((r = left.relateLine(ax, ay, bx, by)) != Relation.CELL_OUTSIDE_QUERY) {
+          if ((r = left.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
             return r;
           }
         }
 
         if (right != null && maxLat >= low) {
-          if ((r = right.relateLine(ax, ay, bx, by)) != Relation.CELL_OUTSIDE_QUERY) {
+          if ((r = right.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
             return r;
           }
         }
