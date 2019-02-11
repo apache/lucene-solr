@@ -11,6 +11,8 @@ Improvements
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
   of sorting all dimensions before hand. (Ignacio Vera, Adrien Grand)
 
+* LUCENE-8687: Optimise radix partitioning for points on heap. (Ignacio Vera)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)

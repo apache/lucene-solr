@@ -971,7 +971,7 @@ public class TestBKD extends LuceneTestCase {
         public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
           IndexOutput out = in.createTempOutput(prefix, suffix, context);
           //System.out.println("prefix=" + prefix + " suffix=" + suffix);
-          if (corrupted == false && suffix.equals("bkd_left1")) {
+          if (corrupted == false && suffix.equals("bkd_left0")) {
             //System.out.println("now corrupt byte=" + x + " prefix=" + prefix + " suffix=" + suffix);
             corrupted = true;
             return new CorruptingIndexOutput(dir0, 22072, out);
