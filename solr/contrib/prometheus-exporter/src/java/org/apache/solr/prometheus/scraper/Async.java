@@ -15,7 +15,22 @@
  * limitations under the License.
  */
 
-/**
- * Send the raw requests to Solr endpoints.
- */
 package org.apache.solr.prometheus.scraper;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+public class Async {
+
+  public static <T> CompletableFuture<List<T>> whenAllComplete(List<CompletableFuture<T>> futures) {
+    CompletableFuture<Void> completed =
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+    return completed.thenApply(v ->
+        futures.stream().map(CompletableFuture::join).collect(Collectors.toList())
+    );
+  }
+
+
+}

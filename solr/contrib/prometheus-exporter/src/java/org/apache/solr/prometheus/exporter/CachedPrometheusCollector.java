@@ -15,7 +15,25 @@
  * limitations under the License.
  */
 
-/**
- * Send the raw requests to Solr endpoints.
- */
-package org.apache.solr.prometheus.scraper;
+package org.apache.solr.prometheus.exporter;
+
+import java.util.List;
+
+import io.prometheus.client.Collector;
+import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
+
+public class CachedPrometheusCollector extends Collector implements SchedulerMetricsCollector.Observer {
+
+  private volatile List<MetricFamilySamples> samples;
+
+  @Override
+  public List<MetricFamilySamples> collect() {
+    return samples;
+  }
+
+  @Override
+  public void metricsUpdated(List<MetricFamilySamples> samples) {
+    this.samples = samples;
+  }
+
+}
