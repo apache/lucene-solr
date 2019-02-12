@@ -34,6 +34,10 @@ Upgrade Notes
 New Features
 ----------------------
 
+Improvements
+----------------------
+SOLR-13234 Prometheus Metric Exporter Not Threadsafe (Danyal Prout)
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
