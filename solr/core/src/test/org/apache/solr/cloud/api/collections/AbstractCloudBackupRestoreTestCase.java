@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -205,6 +208,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
+      assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(restoreCollectionName), 
+          CollectionAdminRequest.listCollections(solrClient), not(hasItem(restoreCollectionName)));
     }
   }
 
