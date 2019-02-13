@@ -203,6 +203,8 @@ New Features
 
 * SOLR-13155: Add command-line option for testing autoscaling configurations. (ab)
 
+* SOLR-13241: Add 'autoscaling' tool support to solr.cmd (Jason Gerlowski)
+
 Bug Fixes
 ----------------------
 
