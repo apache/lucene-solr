@@ -1429,7 +1429,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           !sdoc.getField(idField.getName()).getFirstValue().toString().equals((String) nestedDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
         String docPath = (String) oldDoc.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
-        List<String> docPaths = StrUtils.splitSmart(docPath, '/');
+        List<String> docPaths = StrUtils.splitSmart(docPath.substring(1), '/'); // substr to remove first '/'
         Pair<String, Integer> subPath = getPathAndIndexFromNestPath(docPaths.remove(0));
         SolrInputField sifToReplace = nestedDoc.getField(subPath.getLeft());
         for(String subPathString: docPaths) {
