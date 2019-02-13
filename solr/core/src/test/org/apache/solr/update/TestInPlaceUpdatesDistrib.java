@@ -125,6 +125,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   @SuppressWarnings("unchecked")
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     waitForRecoveriesToFinish(true);
 
@@ -486,7 +487,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Retries the specified 'req' against each SolrClient in "clients" untill the expected number of 
+   * Retries the specified 'req' against each SolrClient in "clients" until the expected number of 
    * results are returned, at which point the results are verified using assertDocIdsAndValuesInResults
    *
    * @param debug used in log and assertion messages

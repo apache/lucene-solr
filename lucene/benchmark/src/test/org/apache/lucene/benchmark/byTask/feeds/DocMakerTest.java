@@ -76,7 +76,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     // Indexing configuration.
     props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
     props.setProperty("content.source", OneDocSource.class.getName());
-    props.setProperty("directory", "RAMDirectory");
+    props.setProperty("directory", "ByteBuffersDirectory");
     if (setIndexProps) {
       props.setProperty("doc.index.props", Boolean.toString(indexPropsVal));
     }
@@ -105,7 +105,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     
     // Indexing configuration.
     props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
-    props.setProperty("directory", "RAMDirectory");
+    props.setProperty("directory", "ByteBuffersDirectory");
     if (setNormsProp) {
       props.setProperty("doc.tokenized.norms", Boolean.toString(normsPropVal));
     }

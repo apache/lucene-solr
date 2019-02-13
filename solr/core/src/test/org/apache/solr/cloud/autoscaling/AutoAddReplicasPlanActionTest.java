@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +32,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterStateUtil;
@@ -77,7 +76,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //Commented out 11-Dec-2018 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13028")
   public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
@@ -113,7 +112,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
         "'removeListeners': true" +
         "}" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeTriggerCommand);
     NamedList response = cluster.getSolrClient().request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -148,7 +147,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
         "'set-cluster-preferences': [" +
         "{'minimize': 'cores','precision': 0}]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
     
     // you can hit a stale connection from pool when restarting jetty
     try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()),

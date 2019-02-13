@@ -270,7 +270,7 @@ public class TestWANDScorer extends LuceneTestCase {
       for (int i = 0; i < numClauses; ++i) {
         Query query = new TermQuery(new Term("foo", Integer.toString(start + i)));
         if (random().nextBoolean()) {
-          query = new InfiniteMaxScoreWrapperQuery(query);
+          query = new InfiniteMaxScoreWrapperQuery(query, numDocs / TestUtil.nextInt(random(), 1, 100));
         }
         builder.add(query, Occur.SHOULD);
       }
@@ -292,13 +292,26 @@ public class TestWANDScorer extends LuceneTestCase {
 
   private static class InfiniteMaxScoreWrapperScorer extends FilterScorer {
 
-    InfiniteMaxScoreWrapperScorer(Scorer scorer) {
+    private final int maxRange;
+    private int lastShallowTarget = -1;
+
+    InfiniteMaxScoreWrapperScorer(Scorer scorer, int maxRange) {
       super(scorer);
+      this.maxRange = maxRange;
+    }
+
+    @Override
+    public int advanceShallow(int target) throws IOException {
+      lastShallowTarget = target;
+      return in.advanceShallow(target);
     }
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
+      if (upTo - Math.max(docID(), lastShallowTarget) >= maxRange) {
+        return Float.POSITIVE_INFINITY;
+      }
+      return in.getMaxScore(upTo);
     }
 
   }
@@ -306,9 +319,15 @@ public class TestWANDScorer extends LuceneTestCase {
   private static class InfiniteMaxScoreWrapperQuery extends Query {
 
     private final Query query;
+    private final int maxRange;
     
-    InfiniteMaxScoreWrapperQuery(Query query) {
+    /**
+     * If asked for the maximum score over a range of doc IDs that is greater
+     * than or equal to maxRange, this query will return a maximum score of +Infty
+     */
+    InfiniteMaxScoreWrapperQuery(Query query, int maxRange) {
       this.query = query;
+      this.maxRange = maxRange;
     }
     
     @Override
@@ -330,7 +349,7 @@ public class TestWANDScorer extends LuceneTestCase {
     public Query rewrite(IndexReader reader) throws IOException {
       Query rewritten = query.rewrite(reader);
       if (rewritten != query) {
-        return new InfiniteMaxScoreWrapperQuery(rewritten);
+        return new InfiniteMaxScoreWrapperQuery(rewritten, maxRange);
       }
       return super.rewrite(reader);
     }
@@ -344,7 +363,7 @@ public class TestWANDScorer extends LuceneTestCase {
           if (scorer == null) {
             return null;
           } else {
-            return new InfiniteMaxScoreWrapperScorer(scorer);
+            return new InfiniteMaxScoreWrapperScorer(scorer, maxRange);
           }
         }
 
@@ -358,7 +377,7 @@ public class TestWANDScorer extends LuceneTestCase {
               
               @Override
               public Scorer get(long leadCost) throws IOException {
-                return new InfiniteMaxScoreWrapperScorer(supplier.get(leadCost));
+                return new InfiniteMaxScoreWrapperScorer(supplier.get(leadCost), maxRange);
               }
               
               @Override

@@ -43,12 +43,13 @@ import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.Utils;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.EMPTY_MAP;
-import static java.util.Collections.emptyMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.common.util.Utils.MAPOBJBUILDER;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestPolicy2 extends SolrTestCaseJ4 {
@@ -208,7 +209,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-            Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, s -> emptyMap());
+            Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
             if (!keys.isEmpty()) {
               Row.forEachReplica(result, replicaInfo -> {
                 for (String key : keys) {
@@ -424,17 +425,28 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
         , cloudManagerFromDiagnostics);
-//    System.out.println(Utils.writeJson(suggestions, new StringWriter(), true).toString());
     for (Suggester.SuggestionInfo suggestion : suggestions) {
       assertEquals("unresolved-violation", suggestion._get("type", null));
       assertEquals("1.0", suggestion._getStr("violation/violation/delta", null));
     }
-
-
   }
+
+
+  @Ignore
+  public void testInfiniteLoop() {
+    Row.cacheStats.clear();
+    Map<String, Object> m = (Map<String, Object>) loadFromResource("testInfiniteLoop.json");
+    SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(
+        new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
+        , cloudManagerFromDiagnostics, 200, 1200);
+
+    System.out.println(suggestions);
+  }
+
   public static Object loadFromResource(String file)  {
     try (InputStream is = TestPolicy2.class.getResourceAsStream("/solrj/solr/autoscaling/" + file)) {
-      return Utils.fromJSON(is);
+      return Utils.fromJSON(is, MAPOBJBUILDER);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

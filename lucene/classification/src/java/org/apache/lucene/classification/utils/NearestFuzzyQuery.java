@@ -62,7 +62,7 @@ public class NearestFuzzyQuery extends Query {
   /**
    * Default constructor
    *
-   * @param analyzer the analyzer used to proecss the query text
+   * @param analyzer the analyzer used to process the query text
    */
   public NearestFuzzyQuery(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -114,11 +114,8 @@ public class NearestFuzzyQuery extends Query {
       if (prefixLength != other.prefixLength)
         return false;
       if (queryString == null) {
-        if (other.queryString != null)
-          return false;
-      } else if (!queryString.equals(other.queryString))
-        return false;
-      return true;
+        return other.queryString == null;
+      } else return queryString.equals(other.queryString);
     }
 
 

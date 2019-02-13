@@ -24,7 +24,7 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -62,7 +62,7 @@ public abstract class StemmerTestBase extends LuceneTestCase {
     }
     
     try {
-      Dictionary dictionary = new Dictionary(new RAMDirectory(), "dictionary", affixStream, Arrays.asList(dictStreams), ignoreCase);
+      Dictionary dictionary = new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, Arrays.asList(dictStreams), ignoreCase);
       stemmer = new Stemmer(dictionary);
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);

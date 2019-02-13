@@ -212,7 +212,9 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
-@TestRuleLimitSysouts.Limit(bytes = TestRuleLimitSysouts.DEFAULT_SYSOUT_BYTES_THRESHOLD)
+@TestRuleLimitSysouts.Limit(
+    bytes = TestRuleLimitSysouts.DEFAULT_LIMIT,
+    hardLimit = TestRuleLimitSysouts.DEFAULT_HARD_LIMIT)
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------
@@ -488,7 +490,6 @@ public abstract class LuceneTestCase extends Assert {
   private static final List<String> CORE_DIRECTORIES;
   static {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
-    CORE_DIRECTORIES.add("RAMDirectory");
     CORE_DIRECTORIES.add(ByteBuffersDirectory.class.getSimpleName());
   }
   
@@ -1624,7 +1625,7 @@ public abstract class LuceneTestCase extends Assert {
       if (rarely(random)) {
         clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
       } else {
-        clazzName = "RAMDirectory";
+        clazzName = ByteBuffersDirectory.class.getName();
       }
     }
 
@@ -1648,7 +1649,7 @@ public abstract class LuceneTestCase extends Assert {
       
       // the remaining dirs are no longer filesystem based, so we must check that the passedLockFactory is not file based:
       if (!(lf instanceof FSLockFactory)) {
-        // try ctor with only LockFactory (e.g. RAMDirectory)
+        // try ctor with only LockFactory
         try {
           return clazz.getConstructor(LockFactory.class).newInstance(lf);
         } catch (NoSuchMethodException nsme) {

@@ -197,12 +197,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
         if (singleStorableField != null) {
           BytesRef cl = new BytesRef(singleStorableField.stringValue());
         //update count
-        Integer count = classCounts.get(cl);
-        if (count != null) {
-          classCounts.put(cl, count + 1);
-        } else {
-          classCounts.put(cl, 1);
-        }
+          classCounts.merge(cl, 1, (a, b) -> a + b);
         //update boost, the boost is based on the best score
         Double totalBoost = classBoosts.get(cl);
         double singleBoost = scoreDoc.score / maxScore;

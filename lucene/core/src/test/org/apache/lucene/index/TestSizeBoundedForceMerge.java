@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSizeBoundedForceMerge extends LuceneTestCase {
@@ -54,7 +54,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   
   public void testByteSizeLimit() throws Exception {
     // tests that the max merge size constraint is applied during forceMerge.
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
     // Prepare an index w/ several small segments and a large one.
     IndexWriterConfig conf = newWriterConfig();
@@ -85,7 +85,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
 
   public void testNumDocsLimit() throws Exception {
     // tests that the max merge docs constraint is applied during forceMerge.
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
     // Prepare an index w/ several small segments and a large one.
     IndexWriterConfig conf = newWriterConfig();
@@ -116,7 +116,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
 
   public void testLastSegmentTooLarge() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -142,7 +142,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testFirstSegmentTooLarge() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -168,7 +168,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testAllSegmentsSmall() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -194,7 +194,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testAllSegmentsLarge() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -219,7 +219,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testOneLargeOneSmall() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -245,7 +245,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testMergeFactor() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -277,7 +277,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testSingleMergeableSegment() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -306,7 +306,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
   
   public void testSingleNonMergeableSegment() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -330,7 +330,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
   }
 
   public void testSingleMergeableTooLargeSegment() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     
     IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);

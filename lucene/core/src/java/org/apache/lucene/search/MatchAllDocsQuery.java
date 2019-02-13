@@ -24,7 +24,6 @@ import org.apache.lucene.util.Bits;
 
 /**
  * A query that matches all documents.
- *
  */
 public final class MatchAllDocsQuery extends Query {
 
@@ -47,6 +46,9 @@ public final class MatchAllDocsQuery extends Query {
 
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
+        if (scoreMode == ScoreMode.TOP_SCORES) {
+          return super.bulkScorer(context);
+        }
         final float score = score();
         final int maxDoc = context.reader().maxDoc();
         return new BulkScorer() {

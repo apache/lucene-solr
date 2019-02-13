@@ -65,6 +65,7 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String BELOW_OP_PROP = "belowOp";
   public static final String COLLECTIONS_PROP = "collections";
   public static final String MAX_OPS_PROP = "maxOps";
+  public static final String SPLIT_FUZZ_PROP = CommonAdminParams.SPLIT_FUZZ;
   public static final String SPLIT_METHOD_PROP = CommonAdminParams.SPLIT_METHOD;
 
   public static final String BYTES_SIZE_PROP = "__bytes__";
@@ -80,6 +81,7 @@ public class IndexSizeTrigger extends TriggerBase {
   private long aboveBytes, aboveDocs, belowBytes, belowDocs;
   private int maxOps;
   private SolrIndexSplitter.SplitMethod splitMethod;
+  private float splitFuzz;
   private CollectionParams.CollectionAction aboveOp, belowOp;
   private final Set<String> collections = new HashSet<>();
   private final Map<String, Long> lastAboveEventMap = new ConcurrentHashMap<>();
@@ -89,7 +91,7 @@ public class IndexSizeTrigger extends TriggerBase {
     super(TriggerEventType.INDEXSIZE, name);
     TriggerUtils.validProperties(validProperties,
         ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP,
-        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP);
+        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP);
   }
 
   @Override
@@ -169,11 +171,17 @@ public class IndexSizeTrigger extends TriggerBase {
     } catch (Exception e) {
       throw new TriggerValidationException(getName(), MAX_OPS_PROP, "invalid value: '" + maxOpsStr + "': " + e.getMessage());
     }
-    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.LINK.toLower());
     splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
     if (splitMethod == null) {
       throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
           ": " + methodStr);
+    }
+    String fuzzStr = String.valueOf(properties.getOrDefault(SPLIT_FUZZ_PROP, 0.0f));
+    try {
+      splitFuzz = Float.parseFloat(fuzzStr);
+    } catch (Exception e) {
+      throw new TriggerValidationException(getName(), SPLIT_FUZZ_PROP, "invalid value: '" + fuzzStr + "': " + e.getMessage());
     }
   }
 
@@ -399,6 +407,9 @@ public class IndexSizeTrigger extends TriggerBase {
         op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(coll, r.getShard()));
         Map<String, Object> params = new HashMap<>();
         params.put(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
+        if (splitFuzz > 0) {
+          params.put(CommonAdminParams.SPLIT_FUZZ, splitFuzz);
+        }
         op.addHint(Suggester.Hint.PARAMS, params);
         ops.add(op);
         Long time = lastAboveEventMap.get(r.getCore());

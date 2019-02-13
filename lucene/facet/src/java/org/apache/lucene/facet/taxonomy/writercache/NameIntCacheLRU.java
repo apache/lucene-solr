@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
- * An an LRU cache of mapping from name to int.
+ * An LRU cache of mapping from name to int.
  * Used to cache Ordinals of category paths.
  * 
  * @lucene.experimental

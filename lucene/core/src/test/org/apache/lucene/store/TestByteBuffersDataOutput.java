@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.junit.Assert;
 import org.junit.Test;

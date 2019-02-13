@@ -39,29 +39,6 @@ public class FieldTermStack {
   private final String fieldName;
   LinkedList<TermInfo> termList = new LinkedList<>();
   
-  //public static void main( String[] args ) throws Exception {
-  //  Analyzer analyzer = new WhitespaceAnalyzer(Version.LATEST);
-  //  QueryParser parser = new QueryParser(Version.LATEST,  "f", analyzer );
-  //  Query query = parser.parse( "a x:b" );
-  //  FieldQuery fieldQuery = new FieldQuery( query, true, false );
-    
-  //  Directory dir = new RAMDirectory();
-  //  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
-  //  Document doc = new Document();
-  //  FieldType ft = new FieldType(TextField.TYPE_STORED);
-  //  ft.setStoreTermVectors(true);
-  //  ft.setStoreTermVectorOffsets(true);
-  //  ft.setStoreTermVectorPositions(true);
-  //  doc.add( new Field( "f", ft, "a a a b b c a b b c d e f" ) );
-  //  doc.add( new Field( "f", ft, "b a b a f" ) );
-  //  writer.addDocument( doc );
-  //  writer.close();
-    
-  //  IndexReader reader = IndexReader.open(dir1);
-  //  new FieldTermStack( reader, 0, "f", fieldQuery );
-  //  reader.close();
-  //}
-
   /**
    * a constructor.
    * 

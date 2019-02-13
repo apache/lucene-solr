@@ -32,7 +32,7 @@ import org.junit.Test;
 public class SolrExceptionTest extends LuceneTestCase {
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSolrException() throws Throwable {
     // test a connection to a solr server that probably doesn't exist
     // this is a very simple test and most of the test should be considered verified 

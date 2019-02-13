@@ -53,7 +53,7 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
+import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -71,12 +71,12 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
@@ -930,7 +930,7 @@ public final class TestUtil {
    * Returns the actual default docvalues format (e.g. LuceneMNDocValuesFormat for this version of Lucene.
    */
   public static DocValuesFormat getDefaultDocValuesFormat() {
-    return new Lucene70DocValuesFormat();
+    return new Lucene80DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to
@@ -1281,9 +1281,12 @@ public final class TestUtil {
     }
   }
   
-  /** Returns a copy of directory, entirely in RAM */
-  public static RAMDirectory ramCopyOf(Directory dir) throws IOException {
-    RAMDirectory ram = new RAMDirectory();
+  /**
+   * Returns a copy of the source directory, with file contents stored
+   * in RAM.
+   */
+  public static Directory ramCopyOf(Directory dir) throws IOException {
+    Directory ram = new ByteBuffersDirectory();
     for (String file : dir.listAll()) {
       if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         ram.copyFrom(dir, file, file, IOContext.DEFAULT);

@@ -65,7 +65,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
-  private SolrDocument generateSolrDocumentWithChildDocs() {
+  public static SolrDocument generateSolrDocumentWithChildDocs() {
     SolrDocument parentDocument = new SolrDocument();
     parentDocument.addField("id", "1");
     parentDocument.addField("subject", "parentDocument");
@@ -376,8 +376,8 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   }
 
   private void testPerf() throws InterruptedException {
-    final ArrayList<JavaBinCodec.StringBytes> l = new ArrayList<>();
-    Cache<JavaBinCodec.StringBytes, String> cache = null;
+    final ArrayList<StringBytes> l = new ArrayList<>();
+    Cache<StringBytes, String> cache = null;
    /* cache = new ConcurrentLRUCache<JavaBinCodec.StringBytes,String>(10000, 9000, 10000, 1000, false, true, null){
       @Override
       public String put(JavaBinCodec.StringBytes key, String val) {
@@ -388,12 +388,12 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     Runtime.getRuntime().gc();
     printMem("before cache init");
 
-    Cache<JavaBinCodec.StringBytes, String> cache1 = new MapBackedCache<>(new HashMap<>()) ;
+    Cache<StringBytes, String> cache1 = new MapBackedCache<>(new HashMap<>()) ;
     final JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
 
 //    STRING_CACHE = new JavaBinCodec.StringCache(cache);
     byte[] bytes = new byte[0];
-    JavaBinCodec.StringBytes stringBytes = new JavaBinCodec.StringBytes(null,0,0);
+    StringBytes stringBytes = new StringBytes(null,0,0);
 
     for(int i=0;i<10000;i++) {
       String s = String.valueOf(random().nextLong());
@@ -410,9 +410,9 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     int THREADS = 10;
 
     runInThreads(THREADS, () -> {
-      JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0, 0);
+      StringBytes stringBytes1 = new StringBytes(new byte[0], 0, 0);
       for (int i = 0; i < ITERS; i++) {
-        JavaBinCodec.StringBytes b = l.get(i % l.size());
+        StringBytes b = l.get(i % l.size());
         stringBytes1.reset(b.bytes, 0, b.bytes.length);
         if (STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
       }
@@ -429,7 +429,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       String a = null;
       CharArr arr = new CharArr();
       for (int i = 0; i < ITERS; i++) {
-        JavaBinCodec.StringBytes sb = l.get(i % l.size());
+        StringBytes sb = l.get(i % l.size());
         arr.reset();
         ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
         a = arr.toString();

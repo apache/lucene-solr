@@ -94,7 +94,7 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     roundTrip(cal);
   }
 
-  public void testToStringISO8601() {
+  public void testToStringISO8601() throws ParseException {
     Calendar cal = tree.newCal();
     cal.setTimeInMillis(random().nextLong());
     //  create ZonedDateTime from the calendar, then get toInstant.toString which is the ISO8601 we emulate
@@ -110,6 +110,7 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
             .toInstant().toString();
     String resultToString = tree.toString(cal) + 'Z';
     assertEquals(expectedISO8601, resultToString);
+    assertEquals(cal, tree.parseCalendar(expectedISO8601));
   }
 
   //copies from DateRangePrefixTree
@@ -208,6 +209,53 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     assertEquals("[2014 TO 2014-09-15]", tree.parseShape("[2014 TO 2014-09-15]").toString());
 
     assertEquals("[* TO 2014-09-15]", tree.parseShape("[* TO 2014-09-15]").toString());
+  }
+
+  public void testInvalidDateException() throws ParseException {
+    {
+      Calendar jurasic = tree.parseCalendar("-187183959-07-06T11:00:57.156");
+      assertEquals(187183960, jurasic.get(Calendar.YEAR));
+      assertEquals(0, jurasic.get(Calendar.ERA));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-10T13-1");
+    });
+    {
+        String causeMessage = expectThrows(ParseException.class, () -> {
+          tree.parseCalendar("2000-11-10T13Z1");
+        }).getCause().getMessage();
+        assertTrue(causeMessage +" has actual delimeter", causeMessage.contains("Z"));
+        assertTrue(causeMessage +" has expected delimeter",causeMessage.contains(":"));
+        assertFalse(causeMessage +" has no input",causeMessage.contains("2000-11-10"));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11T13Z");
+    });
+    {
+      String causeMessage = expectThrows(ParseException.class, () -> {
+        tree.parseCalendar("2000-13-12");
+      }).getCause().getMessage();
+      assertTrue(causeMessage +" has actual value",causeMessage.contains("13"));
+      assertFalse(causeMessage +" has no input",causeMessage.contains("2000-13-12"));
+    }
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-13-41T13Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:61Z");
+    });
+    expectThrows(ParseException.class, () -> {
+      tree.parseCalendar("2000-11-12T25:14:61Z");
+    });
   }
 
 }

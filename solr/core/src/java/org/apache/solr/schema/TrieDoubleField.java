@@ -61,7 +61,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   public Object toNativeType(Object val) {
     if(val==null) return null;
     if (val instanceof Number) return ((Number) val).doubleValue();
-    if (val instanceof String) return Double.parseDouble((String) val);
+    if (val instanceof CharSequence) return Double.parseDouble(val.toString());
     return super.toNativeType(val);
   }
 

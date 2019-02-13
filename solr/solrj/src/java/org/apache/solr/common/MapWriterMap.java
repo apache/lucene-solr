@@ -30,7 +30,7 @@ public class MapWriterMap implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    delegate.forEach((k, v) -> ew.putNoEx(k == null ? null : k.toString(), v));
+    delegate.forEach(ew.getBiConsumer());
   }
 
   @Override

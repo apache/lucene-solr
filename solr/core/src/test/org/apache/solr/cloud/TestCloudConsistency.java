@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -99,7 +98,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testOutOfSyncReplicasCannotBecomeLeaderAfterRestart() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(true);
   }
@@ -171,7 +170,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     cluster.waitForNode(j1, 30);
     cluster.waitForNode(j2, 30);
     
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       Replica newLeader = getCollectionState(collection).getSlice("shard1").getLeader();
       if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
@@ -213,7 +212,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState)
         -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.CURRENT_TIME);
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       Replica newLeader = getCollectionState(collection).getLeader("shard1");
       if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
@@ -229,6 +228,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
     waitForState("Timeout waiting for active collection", collection, clusterShape(1, 3));
+    
+    cluster.waitForActiveCollection(collection, 1, 3);
   }
 
   private void addDocs(String collection, int numDocs, int startId) throws SolrServerException, IOException {

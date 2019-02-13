@@ -152,6 +152,7 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
@@ -234,10 +235,16 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private String metricTag = Integer.toHexString(hashCode());
 
+  public boolean searchEnabled = true;
+  public boolean indexEnabled = true;
+
   public Set<String> getMetricNames() {
     return metricNames;
   }
 
+  public boolean isSearchEnabled(){
+    return searchEnabled;
+  }
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -259,6 +266,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
+  private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -674,7 +682,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         return core;
       } finally {
         // close the new core on any errors that have occurred.
-        if (!success) {
+        if (!success && core != null && core.getOpenCount() > 0) {
           IOUtils.closeQuietly(core);
         }
       }
@@ -896,63 +904,63 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
                   IndexSchema schema, NamedList configSetProperties,
                   CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
-                  IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
+      IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
-    this.coreContainer = coreContainer;
-    
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
 
-    CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
-    coreContainer.solrCores.addCoreDescriptor(cd);
-
-    setName(name);
-    MDCLoggingContext.setCore(this);
-    
-    resourceLoader = config.getResourceLoader();
-    this.solrConfig = config;
-    this.configSetProperties = configSetProperties;
-    // Initialize the metrics manager
-    this.coreMetricManager = initCoreMetricManager(config);
-    this.coreMetricManager.loadReporters();
-
-    if (updateHandler == null) {
-      directoryFactory = initDirectoryFactory();
-      recoveryStrategyBuilder = initRecoveryStrategyBuilder();
-      solrCoreState = new DefaultSolrCoreState(directoryFactory, recoveryStrategyBuilder);
-    } else {
-      solrCoreState = updateHandler.getSolrCoreState();
-      directoryFactory = solrCoreState.getDirectoryFactory();
-      recoveryStrategyBuilder = solrCoreState.getRecoveryStrategyBuilder();
-      isReloaded = true;
-    }
-
-    this.dataDir = initDataDir(dataDir, config, coreDescriptor);
-    this.ulogDir = initUpdateLogDir(coreDescriptor);
-
-    log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(), this.dataDir);
-
-    checkVersionFieldExistsInSchema(schema, coreDescriptor);
-
-    SolrMetricManager metricManager = coreContainer.getMetricManager();
-
-    // initialize searcher-related metrics
-    initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, null);
-
-    SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
-    // this is registered at the CONTAINER level because it's not core-specific - for now we
-    // also register it here for back-compat
-    solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "core");
-    infoRegistry.put("fieldCache", solrFieldCacheBean);
-
-
-    initSchema(config, schema);
-
-    this.maxWarmingSearchers = config.maxWarmingSearchers;
-    this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
+    this.coreContainer = coreContainer;
 
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
+
+      CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
+      coreContainer.solrCores.addCoreDescriptor(cd);
+
+      setName(name);
+      MDCLoggingContext.setCore(this);
+
+      resourceLoader = config.getResourceLoader();
+      this.solrConfig = config;
+      this.configSetProperties = configSetProperties;
+      // Initialize the metrics manager
+      this.coreMetricManager = initCoreMetricManager(config);
+      this.coreMetricManager.loadReporters();
+
+      if (updateHandler == null) {
+        directoryFactory = initDirectoryFactory();
+        recoveryStrategyBuilder = initRecoveryStrategyBuilder();
+        solrCoreState = new DefaultSolrCoreState(directoryFactory, recoveryStrategyBuilder);
+      } else {
+        solrCoreState = updateHandler.getSolrCoreState();
+        directoryFactory = solrCoreState.getDirectoryFactory();
+        recoveryStrategyBuilder = solrCoreState.getRecoveryStrategyBuilder();
+        isReloaded = true;
+      }
+
+      this.dataDir = initDataDir(dataDir, config, coreDescriptor);
+      this.ulogDir = initUpdateLogDir(coreDescriptor);
+
+      log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
+          this.dataDir);
+
+      checkVersionFieldExistsInSchema(schema, coreDescriptor);
+
+      SolrMetricManager metricManager = coreContainer.getMetricManager();
+
+      // initialize searcher-related metrics
+      initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, null);
+
+      SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
+      // this is registered at the CONTAINER level because it's not core-specific - for now we
+      // also register it here for back-compat
+      solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "core");
+      infoRegistry.put("fieldCache", solrFieldCacheBean);
+
+      initSchema(config, schema);
+
+      this.maxWarmingSearchers = config.maxWarmingSearchers;
+      this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
 
       initListeners();
 
@@ -961,7 +969,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       this.codec = initCodec(solrConfig, this.schema);
 
-      memClassLoader = new MemClassLoader(PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())), getResourceLoader());
+      memClassLoader = new MemClassLoader(
+          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
+          getResourceLoader());
       initIndex(prev != null, reload);
 
       initWriters();
@@ -987,7 +997,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       });
 
       this.updateHandler = initUpdateHandler(updateHandler);
-      
+
       initSearcher(prev);
 
       // Initialize the RestManager
@@ -997,7 +1007,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
       this.updateHandler.informEventListeners(this);
-   
+
       infoRegistry.put("core", this);
 
       // register any SolrInfoMBeans SolrResourceLoader initialized
@@ -1029,13 +1039,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // should be fine, since counting down on a latch of 0 is still fine
       latch.countDown();
       if (e instanceof OutOfMemoryError) {
-        throw (OutOfMemoryError)e;
+        throw (OutOfMemoryError) e;
       }
 
       try {
         // close down the searcher and any other resources, if it exists, as this
         // is not recoverable
-       close();
+        close();
       } catch (Throwable t) {
         if (t instanceof OutOfMemoryError) {
           throw (OutOfMemoryError) t;
@@ -1048,7 +1058,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
     }
-    
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -1432,7 +1442,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Load the request processors
    */
-   private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+  private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
     if(def == null){
@@ -1450,6 +1460,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
     map.put(null, def);
     map.put("", def);
+
+    map.computeIfAbsent(RunUpdateProcessorFactory.PRE_RUN_CHAIN_NAME,
+        k -> new UpdateRequestProcessorChain(Collections.singletonList(new NestedUpdateProcessorFactory()), this));
+
     return map;
   }
 
@@ -1524,6 +1538,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return;
     }
     log.info("{} CLOSING SolrCore {}", logid, this);
+
+    ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
 
     // stop reporting metrics
     try {
@@ -3158,5 +3174,27 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     });
     return blobRef;
+  }
+
+  /**
+   * Run an arbitrary task in it's own thread. This is an expert option and is
+   * a method you should use with great care. It would be bad to run something that never stopped
+   * or run something that took a very long time. Typically this is intended for actions that take
+   * a few seconds, and therefore would be bad to wait for within a request, but but would not pose
+   * a significant hindrance to server shut down times. It is not intended for long running tasks
+   * and if you are using a Runnable with a loop in it, you are almost certainly doing it wrong.
+   * <p>
+   * WARNING: Solr wil not be able to shut down gracefully until this task completes!
+   * <p>
+   * A significant upside of using this method vs creating your own ExecutorService is that your code
+   * does not have to properly shutdown executors which typically is risky from a unit testing
+   * perspective since the test framework will complain if you don't carefully ensure the executor
+   * shuts down before the end of the test. Also the threads running this task are sure to have
+   * a proper MDC for logging.
+   *
+   * @param r the task to run
+   */
+  public void runAsync(Runnable r) {
+    coreAsyncTaskExecutor.submit(r);
   }
 }

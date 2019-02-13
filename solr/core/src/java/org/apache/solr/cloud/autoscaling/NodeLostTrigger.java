@@ -63,17 +63,17 @@ public class NodeLostTrigger extends TriggerBase {
   public void init() throws Exception {
     super.init();
     lastLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-    log.info("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
+    log.debug("NodeLostTrigger {} - Initial livenodes: {}", name, lastLiveNodes);
     // pick up lost nodes for which marker paths were created
     try {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       lost.forEach(n -> {
         // don't add nodes that have since came back
-        if (!lastLiveNodes.contains(n)) {
+        if (!lastLiveNodes.contains(n) && !nodeNameVsTimeRemoved.containsKey(n)) {
+          // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeRemoved for a node may also be restored
           log.debug("Adding lost node from marker path: {}", n);
           nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
         }
-        removeMarker(n);
       });
     } catch (NoSuchElementException e) {
       // ignore
@@ -148,7 +148,7 @@ public class NodeLostTrigger extends TriggerBase {
       }
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
-      log.info("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
+      log.debug("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
 
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
@@ -159,7 +159,7 @@ public class NodeLostTrigger extends TriggerBase {
       Set<String> copyOfLastLiveNodes = new HashSet<>(lastLiveNodes);
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
-        log.info("Tracking lost node: {}", n);
+        log.debug("Tracking lost node: {}", n);
         nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
       });
 
@@ -186,7 +186,6 @@ public class NodeLostTrigger extends TriggerBase {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {
               nodeNameVsTimeRemoved.remove(n);
-              removeMarker(n);
             });
           } else  {
             log.debug("NodeLostTrigger processor for lost nodes: {} is not ready, will try later", nodeNames);
@@ -194,7 +193,6 @@ public class NodeLostTrigger extends TriggerBase {
         } else  {
           nodeNames.forEach(n -> {
             nodeNameVsTimeRemoved.remove(n);
-            removeMarker(n);
           });
         }
       }
@@ -203,19 +201,6 @@ public class NodeLostTrigger extends TriggerBase {
     
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeLostTrigger", e);
-    }
-  }
-
-  private void removeMarker(String nodeName) {
-    String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + nodeName;
-    try {
-      if (stateManager.hasData(path)) {
-        stateManager.removeData(path, -1);
-      }
-    } catch (NoSuchElementException e) {
-      // ignore
-    } catch (Exception e) {
-      log.warn("Exception removing nodeLost marker " + nodeName, e);
     }
   }
 

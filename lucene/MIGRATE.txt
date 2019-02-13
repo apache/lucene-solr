@@ -1,5 +1,19 @@
 # Apache Lucene Migration Guide
 
+## TermsEnum.seekExact(BytesRef) is abstract (LUCENE-8662) ##
+
+TermsEnum.seekExact has been changed to abstract, so non-abstract subclass must implement it.
+The default implementation can be seekCeil(text) == SeekStatus.FOUND.
+This method is performance critical, so subclass SHOULD have its own implementation
+if possible instead of using the default implementation.
+
+## RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream removed ##
+
+RAM-based directory implementation have been removed. (LUCENE-8474). 
+ByteBuffersDirectory can be used as a RAM-resident replacement, although it
+is discouraged in favor of the default memory-mapped directory.
+
+
 ## Similarity.SimScorer.computeXXXFactor methods removed (LUCENE-8014) ##
 
 SpanQuery and PhraseQuery now always calculate their slops as (1.0 / (1.0 +
@@ -158,3 +172,9 @@ constant factor was removed from the numerator of the scoring formula.
 Ordering of results is preserved unless scores are computed from multiple
 fields using different similarities. The previous behaviour is now exposed
 by the LegacyBM25Similarity class which can be found in the lucene-misc jar.
+
+## IndexWriter#maxDoc()/#numDocs() removed in favor of IndexWriter#getDocStats() ##
+
+IndexWriter#getDocStats() should be used instead of #maxDoc() / #numDocs() which offers a consistent 
+view on document stats. Previously calling two methods in order ot get point in time stats was subject
+to concurrent changes.

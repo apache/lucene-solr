@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -262,6 +263,12 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
     assertEquals(0, kids.size());
   }
 
+  @Test
+  public void testCanCreateNodesWithDataAtTopLevel() throws Exception {
+    final String path = stateManager.createData("/topLevelNodeWithData", new String("helloworld").getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+    assertEquals("/topLevelNodeWithData", path);
+  }
+
   static class OnceWatcher implements Watcher {
     CountDownLatch triggered = new CountDownLatch(1);
     WatchedEvent event;
@@ -332,6 +339,35 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
     if (!nodeWatcher.triggered.await(5, TimeUnit.SECONDS)) {
       fail("Node watch should have fired!");
     }
+  }
+
+  @Test
+  public void testNewlyCreatedPathsStartWithVersionZero() throws Exception {
+    stateManager.makePath("/createdWithoutData");
+    VersionedData vd = stateManager.getData("/createdWithoutData", null);
+    assertEquals(0, vd.getVersion());
+
+    stateManager.createData("/createdWithData", new String("helloworld").getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+    vd = stateManager.getData("/createdWithData");
+    assertEquals(0, vd.getVersion());
+  }
+
+  @Test
+  public void testModifiedDataNodesGetUpdatedVersion() throws Exception {
+    stateManager.createData("/createdWithData", new String("foo").getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+    VersionedData vd = stateManager.getData("/createdWithData");
+    assertEquals(0, vd.getVersion());
+
+    stateManager.setData("/createdWithData", new String("bar").getBytes(StandardCharsets.UTF_8), 0);
+    vd = stateManager.getData("/createdWithData");
+    assertEquals(1, vd.getVersion());
+  }
+
+  // This is a little counterintuitive, so probably worth its own testcase so we don't break it accidentally.
+  @Test
+  public void testHasDataReturnsTrueForExistingButEmptyNodes() throws Exception {
+    stateManager.makePath("/nodeWithoutData");
+    assertTrue(stateManager.hasData("/nodeWithoutData"));
   }
 
   @Test

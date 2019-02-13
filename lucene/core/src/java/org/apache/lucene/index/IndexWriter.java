@@ -1131,15 +1131,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return analyzer;
   }
 
-  /** Returns total number of docs in this index, including
-   *  docs not yet flushed (still in the RAM buffer),
-   *  not counting deletions.
-   *  @see #numDocs */
-  public synchronized int maxDoc() {
-    ensureOpen();
-    return docWriter.getNumDocs() + segmentInfos.totalMaxDoc();
-  }
-
   /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value.
    *
    * @lucene.internal */
@@ -1149,21 +1140,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       segmentInfos.setVersion(newVersion);
     }
     changed();
-  }
-
-  /** Returns total number of docs in this index, including
-   *  docs not yet flushed (still in the RAM buffer), and
-   *  including deletions.  <b>NOTE:</b> buffered deletions
-   *  are not counted.  If you really need these to be
-   *  counted you should call {@link #commit()} first.
-   *  @see #numDocs */
-  public synchronized int numDocs() {
-    ensureOpen();
-    int count = docWriter.getNumDocs();
-    for (final SegmentCommitInfo info : segmentInfos) {
-      count += info.info.maxDoc() - numDeletedDocs(info);
-    }
-    return count;
   }
 
   /**
@@ -5288,5 +5264,46 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   /** Tests should use this method to snapshot the current segmentInfos to have a consistent view */
   final synchronized SegmentInfos cloneSegmentInfos() {
     return segmentInfos.clone();
+  }
+
+  /**
+   * Returns accurate {@link DocStats} form this writer. The numDoc for instance can change after maxDoc is fetched
+   * that causes numDocs to be greater than maxDoc which makes it hard to get accurate document stats from IndexWriter.
+   */
+  public synchronized DocStats getDocStats() {
+    ensureOpen();
+    int numDocs = docWriter.getNumDocs();
+    int maxDoc = numDocs;
+    for (final SegmentCommitInfo info : segmentInfos) {
+      maxDoc += info.info.maxDoc();
+      numDocs += info.info.maxDoc() - numDeletedDocs(info);
+    }
+    assert maxDoc >= numDocs : "maxDoc is less than numDocs: " + maxDoc + " < " + numDocs;
+    return new DocStats(maxDoc, numDocs);
+  }
+
+  /**
+   * DocStats for this index
+   */
+  public static final class DocStats {
+    /**
+     * The total number of docs in this index, including
+     * docs not yet flushed (still in the RAM buffer),
+     * not counting deletions.
+     */
+    public final int maxDoc;
+    /**
+     * The total number of docs in this index, including
+     * docs not yet flushed (still in the RAM buffer), and
+     * including deletions.  <b>NOTE:</b> buffered deletions
+     * are not counted.  If you really need these to be
+     * counted you should call {@link IndexWriter#commit()} first.
+     */
+    public final int numDocs;
+
+    private DocStats(int maxDoc, int numDocs) {
+      this.maxDoc = maxDoc;
+      this.numDocs = numDocs;
+    }
   }
 }

@@ -44,7 +44,8 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 @Nightly // this test is currently too slow for non nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
+  // TODO: SOLR-12313 tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+  private final boolean onlyLeaderIndexes = random().nextBoolean() && false; // consume same amount of random
 
   @BeforeClass
   public static void beforeClassSetup() {
@@ -57,7 +58,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+    return onlyLeaderIndexes;
   }
 
   @Test

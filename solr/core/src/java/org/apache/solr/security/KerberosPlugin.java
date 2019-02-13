@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
@@ -253,6 +254,11 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     return kerberosBuilder.getBuilder(builder);
+  }
+
+  @Override
+  public void setup(Http2SolrClient client) {
+    kerberosBuilder.setup(client);
   }
 
   @Override

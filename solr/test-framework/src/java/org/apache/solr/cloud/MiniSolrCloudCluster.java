@@ -82,6 +82,8 @@ public class MiniSolrCloudCluster {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
+  public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
+
   public static final String DEFAULT_CLOUD_SOLR_XML = "<solr>\n" +
       "\n" +
       "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
@@ -93,6 +95,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
       "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n" +
       "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n" +
+      "    <str name=\"shardsWhitelist\">${"+SOLR_TESTS_SHARDS_WHITELIST+":}</str>\n" +
       "  </shardHandlerFactory>\n" +
       "\n" +
       "  <solrcloud>\n" +
@@ -122,9 +125,6 @@ public class MiniSolrCloudCluster {
   private final CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
 
-  private final ExecutorService executorLauncher = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-launcher"));
-  private final ExecutorService executorCloser = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-closer"));
-  
   private final AtomicInteger nodeIds = new AtomicInteger();
 
   /**
@@ -272,7 +272,9 @@ public class MiniSolrCloudCluster {
       startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
     }
 
+    final ExecutorService executorLauncher = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-launcher"));
     Collection<Future<JettySolrRunner>> futures = executorLauncher.invokeAll(startups);
+    ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
     Exception startupError = checkForExceptions("Error starting up MiniSolrCloudCluster", futures);
     if (startupError != null) {
       try {
@@ -293,10 +295,6 @@ public class MiniSolrCloudCluster {
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds) throws IOException, InterruptedException, TimeoutException {
-    
-    executorLauncher.shutdown();
-    
-    ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
     
     int numRunning = 0;
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -326,10 +324,6 @@ public class MiniSolrCloudCluster {
 
   public void waitForNode(JettySolrRunner jetty, int timeoutSeconds)
       throws IOException, InterruptedException, TimeoutException {
-
-    executorLauncher.shutdown();
-
-    ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
 
     ZkStateReader reader = getSolrClient().getZkStateReader();
 
@@ -577,21 +571,19 @@ public class MiniSolrCloudCluster {
     try {
     
       IOUtils.closeQuietly(solrClient);
-      // accept no new tasks
-      executorLauncher.shutdown();
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
       jettys.clear();
+      final ExecutorService executorCloser = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jetty-closer"));
       Collection<Future<JettySolrRunner>> futures = executorCloser.invokeAll(shutdowns);
+      ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
       Exception shutdownError = checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
       if (shutdownError != null) {
         throw shutdownError;
       }
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
-      ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
       try {
         if (!externalZkServer) {
           zkServer.shutdown();

@@ -163,6 +163,8 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
 
   public void testIncomingGraphs() throws IOException {
 
+    // b/a c b/a d
+
     TokenStream ts = new CannedTokenStream(
         new Token("b", 0, 1),
         new Token("a", 0, 0, 1),
@@ -206,23 +208,6 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
       new FixedShingleFilter(new CannedTokenStream(), 5);
     });
     assertEquals("Shingle size must be between 2 and 4, got 5", e2.getMessage());
-  }
-
-  public void testShingleCountLimits() {
-
-    Token[] tokens = new Token[5000];
-    tokens[0] = new Token("term", 1, 0, 1);
-    tokens[1] = new Token("term1", 1, 2, 3);
-    for (int i = 2; i < 5000; i++) {
-      tokens[i] = new Token("term" + i, 0, 2, 3);
-    }
-
-    Exception e = expectThrows(IllegalStateException.class, () -> {
-      TokenStream ts = new FixedShingleFilter(new CannedTokenStream(tokens), 2);
-      ts.reset();
-      while (ts.incrementToken()) {}
-    });
-    assertEquals("Too many shingles (> 1000) at term [term]", e.getMessage());
   }
 
 }

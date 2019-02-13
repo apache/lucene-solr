@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -35,9 +33,11 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -111,7 +111,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + AssertingTriggerAction.class.getName() + "'}," +
         "{'name':'error','class':'" + ErrorTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -121,7 +121,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"node_lost_trigger.system\"\n" +
         "\t}\n" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, removeListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -144,29 +144,20 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         "'class' : '" + SystemLogListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    // stop non-overseer node
-    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
-    String overseerLeader = (String) overSeerStatus.get("leader");
-    int nonOverseerLeaderIndex = 0;
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      JettySolrRunner jetty = cluster.getJettySolrRunner(i);
-      if (!jetty.getNodeName().equals(overseerLeader)) {
-        nonOverseerLeaderIndex = i;
-      }
-    }
-    log.info("Stopping node " + cluster.getJettySolrRunner(nonOverseerLeaderIndex).getNodeName());
-    JettySolrRunner j = cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
-    cluster.waitForJettyToStop(j);
+    // Stop a node (that's safe to stop for the purposes of this test)
+    final JettySolrRunner stoppedJetty = pickNodeToStop();
+    log.info("Stopping node " + stoppedJetty.getNodeName());
+    cluster.stopJettySolrRunner(stoppedJetty);
+    cluster.waitForJettyToStop(stoppedJetty);
+    
     assertTrue("Trigger was not fired ", triggerFiredLatch.await(60, TimeUnit.SECONDS));
     assertTrue(fired.get());
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
-
-    
     
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     
@@ -199,7 +190,8 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     QueryResponse resp = cluster.getSolrClient().query(CollectionAdminParams.SYSTEM_COLL, query);
     SolrDocumentList docs = resp.getResults();
     assertNotNull(docs);
-    assertEquals("wrong number of events added to .system", 9, docs.size());
+    assertEquals("wrong number of events added to .system: " + docs.toString(),
+                 9, docs.size());
     docs.forEach(doc -> assertCommonFields(doc));
 
     // STARTED
@@ -273,4 +265,25 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     assertNotNull(doc.getFieldValue("event_str"));
     assertEquals("NODELOST", doc.getFieldValue("event.type_s"));
   }
+
+  /** 
+   * Helper method for picking a node that can safely be stoped
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-13050">SOLR-13050</a>
+   */
+  private JettySolrRunner pickNodeToStop() throws Exception {
+    // first get the nodeName of the overser.
+    // stopping the overseer is not something we want to hassle with in this test
+    final String overseerNodeName = (String) cluster.getSolrClient().request
+      (CollectionAdminRequest.getOverseerStatus()).get("leader");
+
+    // now find a node that is *NOT* the overseer or the leader of a .system collection shard
+    for (Replica r :  getCollectionState(CollectionAdminParams.SYSTEM_COLL).getReplicas()) {
+      if ( ! (r.getBool("leader", false) || r.getNodeName().equals(overseerNodeName) ) ) {
+        return cluster.getReplicaJetty(r);
+      }
+    }
+    fail("Couldn't find non-leader, non-overseer, replica of .system collection to kill");
+    return null;
+  }
+  
 }

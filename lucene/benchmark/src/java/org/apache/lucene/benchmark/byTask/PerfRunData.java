@@ -44,9 +44,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -70,12 +70,13 @@ import org.apache.lucene.util.IOUtils;
  *  <li><b>facet.source</b>=&lt;class name for facet-source| Default: RandomFacetSource&gt;
  *  <li><b>query.maker</b>=&lt;class name for query-maker| Default: SimpleQueryMaker&gt;
  *  <li><b>log.queries</b>=&lt;whether queries should be printed| Default: false&gt;
- *  <li><b>directory</b>=&lt;type of directory to use for the index| Default: RAMDirectory&gt;
- *  <li><b>taxonomy.directory</b>=&lt;type of directory for taxonomy index| Default: RAMDirectory&gt;
+ *  <li><b>directory</b>=&lt;type of directory to use for the index| Default: ByteBuffersDirectory&gt;
+ *  <li><b>taxonomy.directory</b>=&lt;type of directory for taxonomy index| Default: ByteBuffersDirectory&gt;
  * </ul>
  */
 public class PerfRunData implements Closeable {
 
+  private static final String DEFAULT_DIRECTORY = "ByteBuffersDirectory";
   private Points points;
   
   // objects used during performance test run
@@ -192,17 +193,26 @@ public class PerfRunData implements Closeable {
 
   private Directory createDirectory(boolean eraseIndex, String dirName,
       String dirParam) throws IOException {
-    if ("FSDirectory".equals(config.get(dirParam,"RAMDirectory"))) {
-      Path workDir = Paths.get(config.get("work.dir","work"));
+    String dirImpl = config.get(dirParam, DEFAULT_DIRECTORY);
+    if ("FSDirectory".equals(dirImpl)) {
+      Path workDir = Paths.get(config.get("work.dir", "work"));
       Path indexDir = workDir.resolve(dirName);
       if (eraseIndex && Files.exists(indexDir)) {
         IOUtils.rm(indexDir);
       }
       Files.createDirectories(indexDir);
       return FSDirectory.open(indexDir);
-    } 
+    }
 
-    return new RAMDirectory();
+    if ("RAMDirectory".equals(dirImpl)) {
+      throw new IOException("RAMDirectory has been removed, use ByteBuffersDirectory.");
+    }
+
+    if ("ByteBuffersDirectory".equals(dirImpl)) {
+      return new ByteBuffersDirectory();
+    }
+
+    throw new IOException("Directory type not supported: " + dirImpl);
   }
   
   /** Returns an object that was previously set by {@link #setPerfObject(String, Object)}. */

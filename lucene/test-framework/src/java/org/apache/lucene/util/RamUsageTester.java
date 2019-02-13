@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -31,8 +32,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -111,80 +114,18 @@ public final class RamUsageTester {
       }
       seen.add(ob);
 
+      final long obSize;
       final Class<?> obClazz = ob.getClass();
       assert obClazz != null : "jvm bug detected (Object.getClass() == null). please report this to your vendor";
       if (obClazz.isArray()) {
-        /*
-         * Consider an array, possibly of primitive types. Push any of its references to
-         * the processing stack and accumulate this array's shallow size. 
-         */
-        final long shallowSize = RamUsageEstimator.shallowSizeOf(ob);
-        final int len = Array.getLength(ob);
-        final List<Object> values;
-        Class<?> componentClazz = obClazz.getComponentType();
-        if (componentClazz.isPrimitive()) {
-          values = Collections.emptyList();
-        } else {
-          values = new AbstractList<Object>() {
-
-            @Override
-            public Object get(int index) {
-              return Array.get(ob, index);
-            }
-
-            @Override
-            public int size() {
-              return len;
-            }
-            
-          };
-        }
-        totalSize += accumulator.accumulateArray(ob, shallowSize, values, stack);
+        obSize = handleArray(accumulator, stack, ob, obClazz);
       } else {
-        /*
-         * Consider an object. Push any references it has to the processing stack
-         * and accumulate this object's shallow size. 
-         */
-        try {
-          ClassCache cachedInfo = classCache.get(obClazz);
-          if (cachedInfo == null) {
-            classCache.put(obClazz, cachedInfo = createCacheEntry(obClazz));
-          }
-          
-          boolean needsReflection = true;
-          if (Constants.JRE_IS_MINIMUM_JAVA9 && obClazz.getName().startsWith("java.")) {
-            // Java 9: Best guess for some known types, as we cannot precisely look into runtime classes:
-            final ToLongFunction<Object> func = SIMPLE_TYPES.get(obClazz);
-            if (func != null) { // some simple type like String where the size is easy to get from public properties
-              totalSize += accumulator.accumulateObject(ob, cachedInfo.alignedShallowInstanceSize + func.applyAsLong(ob), 
-                  Collections.emptyMap(), stack);
-              needsReflection = false;
-            } else if (ob instanceof Iterable) {
-              final List<Object> values = StreamSupport.stream(((Iterable<?>) ob).spliterator(), false)
-                  .collect(Collectors.toList());
-              totalSize += accumulator.accumulateArray(ob, cachedInfo.alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
-              needsReflection = false;
-            }  else if (ob instanceof Map) {
-              final List<Object> values = ((Map<?,?>) ob).entrySet().stream()
-                  .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
-                  .collect(Collectors.toList());
-              totalSize += accumulator.accumulateArray(ob, cachedInfo.alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
-              totalSize += RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-              needsReflection = false;
-            }
-          }
-          if (needsReflection) {
-            final Map<Field, Object> fieldValues = new HashMap<>();
-            for (Field f : cachedInfo.referenceFields) {
-              fieldValues.put(f, f.get(ob));
-            }
-            totalSize += accumulator.accumulateObject(ob, cachedInfo.alignedShallowInstanceSize, fieldValues, stack);
-          }
-        } catch (IllegalAccessException e) {
-          // this should never happen as we enabled setAccessible().
-          throw new RuntimeException("Reflective field access failed?", e);
-        }
+        obSize = handleOther(accumulator, classCache, stack, ob, obClazz);
       }
+
+      totalSize += obSize;
+      // Dump size of each object for comparisons across JVMs and flags.
+      // System.out.println("  += " + obClazz + " | " + obSize);
     }
 
     // Help the GC (?).
@@ -194,7 +135,91 @@ public final class RamUsageTester {
 
     return totalSize;
   }
-  
+
+  private static long handleOther(Accumulator accumulator, IdentityHashMap<Class<?>, ClassCache> classCache, ArrayList<Object> stack, Object ob, Class<?> obClazz) {
+    /*
+     * Consider an object. Push any references it has to the processing stack
+     * and accumulate this object's shallow size.
+     */
+    try {
+      if (Constants.JRE_IS_MINIMUM_JAVA9) {
+        long alignedShallowInstanceSize = RamUsageEstimator.shallowSizeOf(ob);
+
+        Predicate<Class<?>> isJavaModule = (clazz) -> {
+          return clazz.getName().startsWith("java.");
+        };
+
+        // Java 9: Best guess for some known types, as we cannot precisely look into runtime classes:
+        final ToLongFunction<Object> func = SIMPLE_TYPES.get(obClazz);
+        if (func != null) { // some simple type like String where the size is easy to get from public properties
+          return accumulator.accumulateObject(ob, alignedShallowInstanceSize + func.applyAsLong(ob),
+              Collections.emptyMap(), stack);
+        } else if (ob instanceof Enum) {
+          return alignedShallowInstanceSize;
+        } else if (ob instanceof ByteBuffer) {
+          // Approximate ByteBuffers with their underlying storage (ignores field overhead).
+          return byteArraySize(((ByteBuffer) ob).capacity());
+        }  else if (isJavaModule.test(obClazz) && ob instanceof Map) {
+          final List<Object> values = ((Map<?,?>) ob).entrySet().stream()
+              .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
+              .collect(Collectors.toList());
+          return accumulator.accumulateArray(ob, alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack)
+              + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+        } else if (isJavaModule.test(obClazz) && ob instanceof Iterable) {
+          final List<Object> values = StreamSupport.stream(((Iterable<?>) ob).spliterator(), false)
+            .collect(Collectors.toList());
+          return accumulator.accumulateArray(ob, alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack)
+              + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+        } else {
+          // Fallback to reflective access.
+        }
+      }
+
+      ClassCache cachedInfo = classCache.get(obClazz);
+      if (cachedInfo == null) {
+        classCache.put(obClazz, cachedInfo = createCacheEntry(obClazz));
+      }
+
+      final Map<Field, Object> fieldValues = new HashMap<>();
+      for (Field f : cachedInfo.referenceFields) {
+        fieldValues.put(f, f.get(ob));
+      }
+      return accumulator.accumulateObject(ob, cachedInfo.alignedShallowInstanceSize, fieldValues, stack);
+    } catch (IllegalAccessException e) {
+      // this should never happen as we enabled setAccessible().
+      throw new RuntimeException("Reflective field access failed?", e);
+    }
+  }
+
+  private static long handleArray(Accumulator accumulator, ArrayList<Object> stack, Object ob, Class<?> obClazz) {
+    /*
+     * Consider an array, possibly of primitive types. Push any of its references to
+     * the processing stack and accumulate this array's shallow size.
+     */
+    final long shallowSize = RamUsageEstimator.shallowSizeOf(ob);
+    final int len = Array.getLength(ob);
+    final List<Object> values;
+    Class<?> componentClazz = obClazz.getComponentType();
+    if (componentClazz.isPrimitive()) {
+      values = Collections.emptyList();
+    } else {
+      values = new AbstractList<Object>() {
+
+        @Override
+        public Object get(int index) {
+          return Array.get(ob, index);
+        }
+
+        @Override
+        public int size() {
+          return len;
+        }
+
+      };
+    }
+    return accumulator.accumulateArray(ob, shallowSize, values, stack);
+  }
+
   /**
    * This map contains a function to calculate sizes of some "simple types" like String just from their public properties.
    * This is needed for Java 9, which does not allow to look into runtime class fields.
@@ -223,10 +248,6 @@ public final class RamUsageTester {
     
     private long charArraySize(int len) {
       return RamUsageEstimator.alignObjectSize((long)RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long)Character.BYTES * len);
-    }
-    
-    private long byteArraySize(int len) {
-      return RamUsageEstimator.alignObjectSize((long)RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + len);
     }
   });
   
@@ -268,11 +289,10 @@ public final class RamUsageTester {
                 f.setAccessible(true);
                 referenceFields.add(f);
               } catch (RuntimeException re) {
-                if ("java.lang.reflect.InaccessibleObjectException".equals(re.getClass().getName())) {
-                  // LUCENE-7595: this is Java 9, which prevents access to fields in foreign modules
-                } else {
-                  throw re;
-                }
+                throw new RuntimeException(String.format(Locale.ROOT,
+                    "Can't access field '%s' of class '%s' for RAM estimation.",
+                    f.getName(),
+                    clazz.getName()), re);
               }
             }
           }
@@ -286,4 +306,7 @@ public final class RamUsageTester {
     });
   }
 
+  private static long byteArraySize(int len) {
+    return RamUsageEstimator.alignObjectSize((long) RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + len);
+  }
 }

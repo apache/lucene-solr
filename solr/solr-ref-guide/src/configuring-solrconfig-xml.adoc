@@ -51,9 +51,9 @@ We've covered the options in the following sections:
 
 == Substituting Properties in Solr Config Files
 
-Solr supports variable substitution of property values in config files, which allows runtime specification of various configuration options in `solrconfig.xml`. The syntax is `${propertyname[:option default value]`}. This allows defining a default that can be overridden when Solr is launched. If a default value is not specified, then the property _must_ be specified at runtime or the configuration file will generate an error when parsed.
+Solr supports variable substitution of property values in configuration files, which allows runtime specification of various configuration options in `solrconfig.xml`. The syntax is `${propertyname[:option default value]`}. This allows defining a default that can be overridden when Solr is launched. If a default value is not specified, then the property _must_ be specified at runtime or the configuration file will generate an error when parsed.
 
-There are multiple methods for specifying properties that can be used in configuration files. Of those below, strongly consider "config overlay" as the preferred approach, as it stays local to the config set and because it's easy to modify.
+There are multiple methods for specifying properties that can be used in configuration files. Of those below, strongly consider "config overlay" as the preferred approach, as it stays local to the configset and is easy to modify.
 
 === JVM System Properties
 

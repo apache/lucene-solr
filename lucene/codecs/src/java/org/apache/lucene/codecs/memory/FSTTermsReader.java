@@ -520,6 +520,11 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       @Override
+      public boolean seekExact(BytesRef text) throws IOException {
+        return seekCeil(text) == SeekStatus.FOUND;
+      }
+      
+      @Override
       public SeekStatus seekCeil(BytesRef target) throws IOException {
         decoded = false;
         doSeekCeil(target);

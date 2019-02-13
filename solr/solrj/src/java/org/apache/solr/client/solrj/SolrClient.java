@@ -16,6 +16,15 @@
  */
 package org.apache.solr.client.solrj;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
@@ -33,15 +42,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Abstraction through which all communication with a Solr server may be routed
@@ -739,7 +739,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID
+   * Deletes a single document by unique ID.  Doesn't work for child/nested docs.
    *
    * @param collection the Solr collection to delete the document from
    * @param id  the ID of the document to delete
@@ -755,7 +755,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID
+   * Deletes a single document by unique ID.  Doesn't work for child/nested docs.
    *
    * @param id  the ID of the document to delete
    *
@@ -770,7 +770,8 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID, specifying max time before commit
+   * Deletes a single document by unique ID, specifying max time before commit.
+   * Doesn't work for child/nested docs.
    *
    * @param collection the Solr collection to delete the document from
    * @param id  the ID of the document to delete
@@ -792,7 +793,8 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID, specifying max time before commit
+   * Deletes a single document by unique ID, specifying max time before commit.
+   * Doesn't work for child/nested docs.
    *
    * @param id  the ID of the document to delete
    * @param commitWithinMs  max time (in ms) before a commit will happen
@@ -810,7 +812,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a list of documents by unique ID
+   * Deletes a list of documents by unique ID.  Doesn't work for child/nested docs.
    *
    * @param collection the Solr collection to delete the documents from
    * @param ids  the list of document IDs to delete; must be non-null and contain elements
@@ -826,7 +828,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a list of documents by unique ID
+   * Deletes a list of documents by unique ID.  Doesn't work for child/nested docs.
    *
    * @param ids  the list of document IDs to delete; must be non-null and contain elements
    *
@@ -841,7 +843,8 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a list of documents by unique ID, specifying max time before commit
+   * Deletes a list of documents by unique ID, specifying max time before commit.
+   * Doesn't work for child/nested docs.
    *
    * @param collection the Solr collection to delete the documents from
    * @param ids  the list of document IDs to delete; must be non-null and contain elements
@@ -866,7 +869,8 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a list of documents by unique ID, specifying max time before commit
+   * Deletes a list of documents by unique ID, specifying max time before commit.
+   * Doesn't work for child/nested docs.
    *
    * @param ids  the list of document IDs to delete
    * @param commitWithinMs  max time (in ms) before a commit will happen
@@ -1054,9 +1058,19 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public QueryResponse queryAndStreamResponse(String collection, SolrParams params, StreamingResponseCallback callback)
       throws SolrServerException, IOException {
-    ResponseParser parser = new StreamingBinaryResponseParser(callback);
+    return getQueryResponse(collection, params,  new StreamingBinaryResponseParser(callback));
+  }
+
+  public QueryResponse queryAndStreamResponse(String collection, SolrParams params, FastStreamingDocsCallback callback)
+      throws SolrServerException, IOException {
+    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+  }
+
+  private QueryResponse getQueryResponse(String collection, SolrParams params, ResponseParser parser) throws SolrServerException, IOException {
     QueryRequest req = new QueryRequest(params);
-    req.setStreamingResponseCallback(callback);
+    if (parser instanceof StreamingBinaryResponseParser) {
+      req.setStreamingResponseCallback(((StreamingBinaryResponseParser) parser).callback);
+    }
     req.setResponseParser(parser);
     return req.process(this, collection);
   }

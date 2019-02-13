@@ -32,10 +32,10 @@ import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -224,7 +224,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       index = new FilterDirectory(FSDirectory.open(new File(indexDir).toPath())) {
       };
     } else {
-      index = new RAMDirectory();
+      index = new ByteBuffersDirectory();
     }
   }
 

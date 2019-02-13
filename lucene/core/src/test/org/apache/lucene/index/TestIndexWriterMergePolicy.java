@@ -221,7 +221,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     writer.waitForMerges();
     writer.commit();
     checkInvariants(writer);
-    assertEquals(10, writer.maxDoc());
+    assertEquals(10, writer.getDocStats().maxDoc);
 
     writer.close();
     dir.close();

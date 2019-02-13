@@ -675,7 +675,7 @@ pre.syntax .tex .formula
   z-index: 100;
 }
 
-#connection-status-recovered:
+#connection-status-recovered
 {
   z-index:102;
 }

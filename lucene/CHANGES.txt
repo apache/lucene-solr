@@ -3,9 +3,37 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 9.0.0 =======================
+
+API Changes
+
+* LUCENE-8474: RAMDirectory and associated deprecated classes have been 
+  removed. (Dawid Weiss)
+
+Bug fixes:
+
+* LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
+  it's inaccessible. (Dawid Weiss)
+
+======================= Lucene 8.1.0 =======================
+
+Improvements
+
+* LUCENE-8673: Use radix partitioning when merging dimensional points instead
+  of sorting all dimensions before hand. (Ignacio Vera, Adrien Grand)
+
+* LUCENE-8687: Optimise radix partitioning for points on heap. (Ignacio Vera)
+
+Other
+
+* LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
+
+* LUCENE-8662: TermsEnum.seekExact(BytesRef) to abstract and delegate seekExact(BytesRef)
+  in FilterLeafReader.FilterTermsEnum. (Jeffery Yuan via Tomás Fernández Löbbe, Simon Willnauer)
 
 * LUCENE-8469: Deprecated StringHelper.compare has been removed. (Dawid Weiss)
 
@@ -98,6 +126,13 @@ API Changes
   methods.  This decouples normalization from tokenization entirely.
   (Mayya Sharipova, Alan Woodward)
 
+* LUCENE-8597: IntervalIterator now exposes a gaps() method that reports the
+  number of gaps between its component sub-intervals.  This can be used in a 
+  new filter available via Intervals.maxgaps().  (Alan Woodward)
+
+* LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
+  of IndexWriter#getDocStats(). (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -142,9 +177,17 @@ Changes in Runtime Behavior
   anymore. This doesn't affect ordering as this is a constant factor which is
   the same for every document. (Luca Cavanna via Adrien Grand)
 
+* LUCENE-8509: WordDelimiterGraphFilter will no longer set the offsets of internal
+  tokens by default, preventing a number of bugs when the filter is chained with
+  tokenfilters that change the length of their tokens (Alan Woodward)
+
+* LUCENE-8633: IntervalQuery scores do not use term weighting any more, the score
+  is instead calculated as a function of the sloppy frequency of the matching
+  intervals. (Alan Woodward, Jim Ferenczi)
+
 New Features
 
-* LUCENE-8340: LongPoint#newDistanceQuery may be used to boost scores based on
+* LUCENE-8340: LongPoint#newDistanceFeatureQuery may be used to boost scores based on
   how close a value of a long field is from an configurable origin. This is
   typically useful to boost by recency. (Adrien Grand)
 
@@ -154,6 +197,29 @@ New Features
 
 * LUCENE-8216: Added a new BM25FQuery in sandbox to blend statistics across several fields
   using the BM25F formula. (Adrien Grand, Jim Ferenczi)
+
+* LUCENE-8564: GraphTokenFilter is an abstract class useful for token filters that need
+  to read-ahead in the token stream and take into account graph structures.  This
+  also changes FixedShingleFilter to extend GraphTokenFilter (Alan Woodward)
+
+* LUCENE-8612: Intervals.extend() treats an interval as if it covered a wider
+  span than it actually does, allowing users to force minimum gaps between
+  intervals in a phrase. (Alan Woodward)
+
+* LUCENE-8629: New interval functions: Intervals.before(), Intervals.after(),
+  Intervals.within() and Intervals.overlapping(). (Alan Woodward)
+
+* LUCENE-8622: Adds a minimum-should-match interval function that produces intervals
+  spanning a subset of a set of sources. (Alan Woodward)
+
+* LUCENE-8645: Intervals.fixField() allows you to report intervals from one field
+  as if they came from another. (Alan Woodward)
+
+* LUCENE-8646: New interval functions: Intervals.prefix() and Intervals.wildcard()
+  (Alan Woodward)
+
+* LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
+  underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
 
 Improvements
 
@@ -172,6 +238,9 @@ Improvements
   order to speed up selection of top scored documents. (Adrien Grand)
 
 * LUCENE-8279: CheckIndex now cross-checks terms with norms. (Adrien Grand)
+
+* LUCENE-8660: TopDocsCollectors now return an accurate count (instead of a lower bound)
+  if the total hit count is equal to the provided threshold. (Adrien Grand, Jim Ferenczi)
 
 Optimizations
 
@@ -208,20 +277,55 @@ Optimizations
   to early terminate the iterator if the minimum score is greater than the constant
   score. (Christophe Bismuth via Jim Ferenczi)
 
-* LUCENE-8374: Reduce reads for sparse DocValues and whole number numeric DocValues.
-  (Toke Eskildsen)
+* LUCENE-8607: MatchAllDocsQuery can shortcut when total hit count is not
+  required (Alan Woodward, Adrien Grand)
+
+* LUCENE-8585: Index-time jump-tables for DocValues, for O(1) advance when retrieving doc values.
+  (Toke Eskildsen, Adrien Grand)
 
 ======================= Lucene 7.7.0 =======================
 
+Changes in Runtime Behavior
+
+* LUCENE-8527: StandardTokenizer and UAX29URLEmailTokenizer now support Unicode 9.0,
+  and provide Unicode UTS#51 v11.0 Emoji tokenization with the "<EMOJI>" token type. 
+
 Build
+
+* LUCENE-8611: Update randomizedtesting to 2.7.2, JUnit to 4.12, add hamcrest-core 
+  dependency. (Dawid Weiss)
 
 * LUCENE-8537: ant test command fails under lucene/tools (Peter Somogyi)
 
 Bug fixes:
 
-* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
-  detects script boundaries more accurately with Character#UnicodeScript#of.
-  (Christophe Bismuth, Jim Ferenczi)
+* LUCENE-8669: Fix LatLonShape WITHIN queries that fail with Multiple search Polygons
+  that share the dateline. (Nick Knize)
+
+* LUCENE-8603: Fix the inversion of right ids for additional nouns in the Korean user dictionary.
+  (Yoo Jeongin via Jim Ferenczi)
+
+* LUCENE-8624: int overflow in ByteBuffersDataOutput.size(). (Mulugeta Mammo, 
+  Dawid Weiss)
+
+* LUCENE-8625: int overflow in ByteBuffersDataInput.sliceBufferList. (Mulugeta Mammo,
+  Dawid Weiss)
+
+* LUCENE-8639: Newly created threadstates while flushing / refreshing can cause duplicated
+  sequence IDs on IndexWriter. (Simon Willnauer)
+
+* LUCENE-8649: LatLonShape's within and disjoint queries can return false positives with
+  indexed multi-shapes. (Ignacio Vera)
+
+* LUCENE-8654: Polygon2D#relateTriangle returns the wrong answer if polygon is inside
+  the triangle. (Ignacio Vera)
+
+* LUCENE-8650: ConcatenatingTokenStream did not correctly clear its state in reset(), and
+  was not propagating final position increments from its child streams correctly.
+  (Dan Meehl, Alan Woodward)
+
+* LUCENE-8676: The Korean tokenizer does not update the last position if the backtrace is caused
+  by a big buffer (1024 chars). (Jim Ferenczi)
 
 New Features
 
@@ -232,6 +336,10 @@ New Features
 * LUCENE-8508: IndexWriter can now set the created version via
   IndexWriterConfig#setIndexCreatedVersionMajor. This is an expert feature.
   (Adrien Grand)
+
+* LUCENE-8601: Attributes set in the IndexableFieldType for each field during indexing will
+  now be recorded into the corresponding FieldInfo's attributes, accessible at search
+  time (Murali Krishna P)
 
 Improvements
 
@@ -247,15 +355,56 @@ Improvements
 * LUCENE-8575: SegmentInfos#toString now includes attributes and diagnostics.
   (Namgyu Kim via Adrien Grand)
 
+* LUCENE-8548: The KoreanTokenizer no longer splits unknown words on combining diacritics and
+  detects script boundaries more accurately with Character#UnicodeScript#of.
+  (Christophe Bismuth, Jim Ferenczi)
+
+* LUCENE-8581: Change LatLonShape encoding to use 4 bytes Per Dimension.
+  (Ignacio Vera, Nick Knize, Adrien Grand)
+  
+* LUCENE-8527: Upgrade JFlex dependency to 1.7.0; in StandardTokenizer and UAX29URLEmailTokenizer,
+  increase supported Unicode version from 6.3 to 9.0, and support Unicode UTS#51 v11.0 Emoji tokenization.
+
+* LUCENE-8640: Date Range format validation (Lucky Sharma, David Smiley via Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8552: FieldInfos.getMergedFieldInfos no longer does any merging if there is <= 1 segment.
   (Christophe Bismuth via David Smiley)
 
+* LUCENE-8590: BufferedUpdates now uses an optimized storage for buffering docvalues updates that
+  can safe up to 80% of the heap used compared to the previous implementation and uses non-object
+  based datastructures. (Simon Willnauer, Mike McCandless, Shai Erera, Adrien Grand)
+
+* LUCENE-8598: Moved to the default accepted overhead ratio for packet ints in DocValuesFieldUpdats
+  yields an up-to 4x performance improvement when applying doc values updates. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8599: Use sparse bitset to store docs in SingleValueDocValuesFieldUpdates. 
+  (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8600: Doc-value updates get applied faster by sorting with quicksort,
+  rather than an in-place mergesort, which needs to perform fewer swaps.
+  (Adrien Grand)
+
+* LUCENE-8623: Decrease I/O pressure when merging high dimensional points. (Ignacio Vera)
+
+Test Framework
+
+* LUCENE-8604: TestRuleLimitSysouts now has an optional "hard limit" of bytes that can be written
+  to stderr and stdout (anything beyond the hard limit is ignored). The default hard limit is 2 GB of 
+  logs per test class. (Dawid Weiss)
+
 Other
 
 * LUCENE-8573: BKDWriter now uses FutureArrays#mismatch to compute shared prefixes.
   (Christoph Büscher via Adrien Grand)
+
+* LUCENE-8605: Separate bounding box spatial logic from query logic on LatLonShapeBoundingBoxQuery.
+  (Ignacio Vera)
+
+* LUCENE-8609: Deprecated IndexWriter#numDocs() and IndexWriter#maxDoc() in favor of IndexWriter#getDocStats()
+  that allows to get consistent numDocs and maxDoc stats that are not subject to concurrent changes.
+  (Simon Willnauer, Nhat Nguyen)
 
 ======================= Lucene 7.6.0 =======================
 
@@ -296,6 +445,20 @@ Bug fixes
 
 * LUCENE-8556: Use latitude and longitude instead of encoding values to check if triangle is ear
   when using morton optimisation. (Ignacio Vera)
+
+* LUCENE-8586: Intervals.or() could get stuck in an infinite loop on certain indexes
+  (Alan Woodward)
+
+* LUCENE-8595: Fix interleaved DV update and reset. Interleaved update and reset value
+  to the same doc in the same updates package looses an update if the reset comes before
+  the update as well as loosing the reset if the update comes frist. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-8592: Fix index sorting corruption due to numeric overflow. The merge of sorted segments
+  can produce an invalid sort if the sort field is an Integer/Long that uses reverse order and contains
+  values equal to Integer/Long#MIN_VALUE. These values are always sorted first during a merge
+  (instead of last because of the reverse order) due to this bug. Indices affected by the bug can be
+  detected by running the CheckIndex command on a distribution that contains the fix (7.6+).
+  (Jim Ferenczi, Adrien Grand, Mike McCandless, Simon Willnauer)
 
 New Features
 

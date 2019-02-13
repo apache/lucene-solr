@@ -90,6 +90,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -172,7 +173,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 @RandomizeSSL()
-@ThreadLeakLingering(linger = 3000)
+@ThreadLeakLingering(linger = 10000)
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -190,6 +191,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
+
+  @Deprecated // For backwards compatibility only. Please do not use in new tests.
+  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -288,10 +292,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
-    
+
     sslConfig = buildSSLConfig();
     // based on randomized SSL config, set SchemaRegistryProvider appropriately
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
+    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");
@@ -314,7 +319,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
       if (suiteFailureMarker.wasSuccessful()) {
         // if the tests passed, make sure everything was closed / released
-        String orr = clearObjectTrackerAndCheckEmpty(30, false);
+        String orr = clearObjectTrackerAndCheckEmpty(60, false);
         assertNull(orr, orr);
       } else {
         ObjectReleaseTracker.tryClose();
@@ -336,6 +341,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
+      Http2SolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
 
@@ -488,7 +494,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   protected static JettyConfig buildJettyConfig(String context) {
-    return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig).build();
+    return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
   
   protected static String buildUrl(final int port, final String context) {
@@ -2742,6 +2748,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
   }
   
+  @Deprecated // For backwards compatibility only. Please do not use in new tests.
+  protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
+    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
+  }
+
+  @Deprecated // For backwards compatibility only. Please do not use in new tests.
+  protected static void systemClearPropertySolrDisableShardsWhitelist() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
+  }
+
   protected <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }

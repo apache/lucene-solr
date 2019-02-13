@@ -98,6 +98,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloseHook;
@@ -251,7 +252,7 @@ public class ZkController implements Closeable {
   // ref is held as a HashSet since we clone the set before notifying to avoid synchronizing too long
   private HashSet<OnReconnect> reconnectListeners = new HashSet<OnReconnect>();
 
-  private class RegisterCoreAsync implements Callable {
+  private class RegisterCoreAsync implements Callable<Object> {
 
     CoreDescriptor descriptor;
     boolean recoverReloadedCores;
@@ -271,7 +272,7 @@ public class ZkController implements Closeable {
   }
 
   // notifies registered listeners after the ZK reconnect in the background
-  private static class OnReconnectNotifyAsync implements Callable {
+  private static class OnReconnectNotifyAsync implements Callable<Object> {
 
     private final OnReconnect listener;
 
@@ -973,10 +974,12 @@ public class ZkController implements Closeable {
         log.warn("Unable to read autoscaling.json", e1);
       }
       if (createNodes) {
+        byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", cloudManager.getTimeSource().getEpochTimeNs()));
         for (String n : oldNodes) {
           String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
+
           try {
-            zkClient.create(path, null, CreateMode.PERSISTENT, true);
+            zkClient.create(path, json, CreateMode.PERSISTENT, true);
           } catch (KeeperException.NodeExistsException e) {
             // someone else already created this node - ignore
           } catch (KeeperException | InterruptedException e1) {
@@ -1078,7 +1081,8 @@ public class ZkController implements Closeable {
     if (createMarkerNode && !zkClient.exists(nodeAddedPath, true)) {
       // use EPHEMERAL so that it disappears if this node goes down
       // and no other action is taken
-      ops.add(Op.create(nodeAddedPath, null, zkClient.getZkACLProvider().getACLsToAdd(nodeAddedPath), CreateMode.EPHEMERAL));
+      byte[] json = Utils.toJSON(Collections.singletonMap("timestamp", TimeSource.NANO_TIME.getEpochTimeNs()));
+      ops.add(Op.create(nodeAddedPath, json, zkClient.getZkACLProvider().getACLsToAdd(nodeAddedPath), CreateMode.EPHEMERAL));
     }
     zkClient.multi(ops, true);
   }

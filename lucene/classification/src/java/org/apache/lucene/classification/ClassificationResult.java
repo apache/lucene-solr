@@ -57,6 +57,6 @@ public class ClassificationResult<T> implements Comparable<ClassificationResult<
 
   @Override
   public int compareTo(ClassificationResult<T> o) {
-    return this.getScore() < o.getScore() ? 1 : this.getScore() > o.getScore() ? -1 : 0;
+    return Double.compare(o.getScore(), this.getScore());
   }
 }

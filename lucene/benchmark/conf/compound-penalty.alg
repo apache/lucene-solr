@@ -29,7 +29,7 @@ compound=compnd:true:false
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
-#directory=RamDirectory
+#directory=ByteBuffersDirectory
 
 doc.stored=stored:true:true:false:false
 doc.tokenized=true

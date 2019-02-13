@@ -1140,13 +1140,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
           @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
             Map<String, Object> result = (Map<String, Object>) Utils.getObjectByPath(m, false, Arrays.asList("nodeValues", node));
-            return result == null ? Collections.emptyMap() : result;
+            return result == null ? new HashMap<>() : result;
           }
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
             Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
-            return result == null ? Collections.emptyMap() : result;
+            return result == null ? new HashMap<>() : result;
           }
         };
       }
@@ -2336,7 +2336,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             }
-            return Collections.emptyMap();
+            return new HashMap<>();
           }
         };
       }
@@ -2476,7 +2476,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
       rows.add(new Row((String) m.get("node"), c, false,
           new HashMap<>(),
-          (Boolean) m.get("isLive"), null));
+          (Boolean) m.get("isLive"), null, new HashMap(), new HashMap()));
     }
     int deadNodes = 0;
     for (Row row : rows) {
@@ -2618,13 +2618,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
           @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
             Map<String, Object> result = (Map<String, Object>) Utils.getObjectByPath(m, false, Arrays.asList("nodeValues", node));
-            return result == null ? Collections.emptyMap() : result;
+            return result == null ? new HashMap<>() : result;
           }
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
             Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
-            return result == null ? Collections.emptyMap() : result;
+            return result == null ? new HashMap<>() : result;
           }
         };
       }

@@ -27,23 +27,23 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import com.tdunning.math.stats.AVLTreeDigest;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
-
+import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.tdunning.math.stats.AVLTreeDigest;
 
 // Related tests:
 //   TestCloudJSONFacetJoinDomain for random field faceting tests with domain modifications
@@ -73,14 +73,37 @@ public class TestJsonFacets extends SolrTestCaseHS {
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
+  /**
+   * Start all servers for cluster, initialize shards whitelist and then restart
+   */
   public static void initServers() throws Exception {
     if (servers == null) {
       servers = new SolrInstances(3, "solrconfig-tlog.xml", "schema_latest.xml");
+      // Set the shards whitelist to all shards plus the fake one used for tolerant test
+      System.setProperty(SOLR_TESTS_SHARDS_WHITELIST, servers.getWhitelistString() + ",http://[ff01::114]:33332");
+      systemSetPropertySolrDisableShardsWhitelist("false");
+      restartServers();
     }
+  }
+
+  /**
+   * Restart all configured servers, i.e. configuration will be re-read
+   */
+  public static void restartServers() {
+    servers.slist.forEach(s -> {
+      try {
+        s.stop();
+        s.start();
+      } catch (Exception e) {
+        fail("Exception during server restart: " + e.getMessage());
+      }
+    });
   }
 
   @AfterClass
   public static void afterTests() throws Exception {
+    System.clearProperty(SOLR_TESTS_SHARDS_WHITELIST);
+    systemClearPropertySolrDisableShardsWhitelist();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
@@ -2318,6 +2341,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void doTestPrelimSortingDistrib(final boolean extraAgg, final boolean extraSubFacet) throws Exception {
     // we only use 2 shards, but we also want to to sanity check code paths if one (additional) shard is empty
     final int totalShards = random().nextBoolean() ? 2 : 3;
+    
     final SolrInstances nodes = new SolrInstances(totalShards, "solrconfig-tlog.xml", "schema_latest.xml");
     try {
       final Client client = nodes.getClient(random().nextInt());
@@ -2789,7 +2813,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testTolerant() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards() + ",[ff01::114]:33332:/ignore_exception");
+    client.queryDefaults().set("shards", servers.getShards() + ",[ff01::114]:33332/ignore_exception");
     indexSimple(client);
 
     try {
@@ -3159,6 +3183,115 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   }
 
+  @Test
+  public void testDomainErrors() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+
+    // using assertQEx so that, status code and error message can be asserted
+    assertQEx("Should Fail as filter with qparser in domain becomes null",
+        "QParser yields null, perhaps unresolved parameter reference in: {!query v=$NOfilt}",
+        req("q", "*:*", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:{filter:'{!query v=$NOfilt}'}}}"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    assertQEx("Should Fail as filter in domain becomes null",
+        "QParser yields null, perhaps unresolved parameter reference in: {!v=$NOfilt}",
+        req("q", "*:*", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:{filter:'{!v=$NOfilt}'}}}"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    // when domain type is invalid
+    assertQEx("Should Fail as domain not of type map",
+        "Expected Map for 'domain', received String=bleh , path=facet/cat_s",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:bleh}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    // when domain = null, should not throw exception
+    assertQ("Should pass as no domain is specified",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s}}"));
+
+    // when blockChildren or blockParent is passed but not of string
+    assertQEx("Should Fail as blockChildren is of type map",
+        "Expected string type for param 'blockChildren' but got LinkedHashMap = {} , path=facet/cat_s",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:{blockChildren:{}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should Fail as blockParent is of type map",
+        "Expected string type for param 'blockParent' but got LinkedHashMap = {} , path=facet/cat_s",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:{blockParent:{}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+  }
+
+  @Test
+  public void testOtherErrorCases() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+
+    // test for sort
+    assertQEx("Should fail as sort is of type list",
+        "Expected string/map for 'sort', received ArrayList=[count desc]",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:[\"count desc\"]}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+
+    assertQEx("Should fail as facet is not of type map",
+        "Expected Map for 'facet', received ArrayList=[{}]",
+        req("q", "*:*", "rows", "0", "json.facet", "[{}]"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // range facets
+    assertQEx("Should fail as 'other' is of type Map",
+        "Expected list of string or comma separated string values for 'other', " +
+            "received LinkedHashMap={} , path=facet/f",
+        req("q", "*:*", "json.facet", "{f:{type:range, field:num_d, start:10, end:12, gap:1, other:{}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should fail as 'include' is of type Map",
+        "Expected list of string or comma separated string values for 'include', " +
+            "received LinkedHashMap={} , path=facet/f",
+        req("q", "*:*", "json.facet", "{f:{type:range, field:num_d, start:10, end:12, gap:1, include:{}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    // missing start parameter
+    assertQEx("Should Fail with missing field error",
+        "Missing required parameter: 'start' , path=facet/f",
+        req("q", "*:*", "json.facet", "{f:{type:range, field:num_d}}"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // missing end parameter
+    assertQEx("Should Fail with missing field error",
+        "Missing required parameter: 'end' , path=facet/f",
+        req("q", "*:*", "json.facet", "{f:{type:range, field:num_d, start:10}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    // missing gap parameter
+    assertQEx("Should Fail with missing field error",
+        "Missing required parameter: 'gap' , path=facet/f",
+        req("q", "*:*", "json.facet", "{f:{type:range, field:num_d, start:10, end:12}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    // invalid value for facet field
+    assertQEx("Should Fail as args is of type long",
+        "Expected string/map for facet field, received Long=2 , path=facet/facet",
+        req("q", "*:*", "rows", "0", "json.facet.facet.field", "2"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // invalid value for facet query
+    assertQEx("Should Fail as args is of type long for query",
+        "Expected string/map for facet query, received Long=2 , path=facet/facet",
+        req("q", "*:*", "rows", "0", "json.facet.facet.query", "2"), SolrException.ErrorCode.BAD_REQUEST);
+
+    // valid facet field
+    assertQ("Should pass as this is valid query",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s}}"));
+
+    // invalid perSeg
+    assertQEx("Should fail as perSeg is not of type boolean",
+        "Expected boolean type for param 'perSeg' but got Long = 2 , path=facet/cat_s",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,perSeg:2}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
 
 
   public void XtestPercentiles() {

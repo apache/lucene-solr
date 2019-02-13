@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -73,10 +72,12 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
     NamedList values = rsp.getValues();
-    values.add("zkStatus", getZkStatus(cores.getZkController().getZkServerAddress()));
+    if (cores.isZooKeeperAware()) {
+      values.add("zkStatus", getZkStatus(cores.getZkController().getZkServerAddress()));
+    } else {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The Zookeeper status API is only available in Cloud mode");
+    }
   }
 
   /*

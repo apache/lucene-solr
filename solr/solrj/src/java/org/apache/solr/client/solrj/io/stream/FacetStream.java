@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -99,6 +100,11 @@ public class FacetStream extends TupleStream implements Expressible  {
   public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException{   
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
+
+    if(collectionName.indexOf('"') > -1) {
+      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+    }
+
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter bucketExpression = factory.getNamedOperand(expression, "buckets");
     StreamExpressionNamedParameter bucketSortExpression = factory.getNamedOperand(expression, "bucketSorts");
@@ -377,7 +383,11 @@ public class FacetStream extends TupleStream implements Expressible  {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
     
     // parameters
 
@@ -496,7 +506,7 @@ public class FacetStream extends TupleStream implements Expressible  {
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(paramsLoc);
+    QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);

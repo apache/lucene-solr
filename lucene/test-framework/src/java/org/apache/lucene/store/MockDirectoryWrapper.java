@@ -255,20 +255,15 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   public synchronized final long sizeInBytes() throws IOException {
-    if (in instanceof RAMDirectory)
-      return ((RAMDirectory) in).ramBytesUsed();
-    else {
-      // hack
-      long size = 0;
-      for (String file : in.listAll()) {
-        // hack 2: see TODO in ExtrasFS (ideally it would always return 0 byte
-        // size for extras it creates, even though the size of non-regular files is not defined)
-        if (!file.startsWith("extra")) {
-          size += in.fileLength(file);
-        }
+    long size = 0;
+    for (String file : in.listAll()) {
+      // hack 2: see TODO in ExtrasFS (ideally it would always return 0 byte
+      // size for extras it creates, even though the size of non-regular files is not defined)
+      if (!file.startsWith("extra")) {
+        size += in.fileLength(file);
       }
-      return size;
     }
+    return size;
   }
 
   public synchronized void corruptUnknownFiles() throws IOException {
@@ -510,7 +505,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     return this.maxUsedSize;
   }
   public void resetMaxUsedSizeInBytes() throws IOException {
-    this.maxUsedSize = getRecomputedActualSizeInBytes();
+    this.maxUsedSize = sizeInBytes();
   }
 
   /**
@@ -772,32 +767,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     addFileHandle(ii, name, Handle.Input);
     return ii;
-  }
-  
-  /** Provided for testing purposes.  Use sizeInBytes() instead. */
-  public synchronized final long getRecomputedSizeInBytes() throws IOException {
-    if (!(in instanceof RAMDirectory))
-      return sizeInBytes();
-    long size = 0;
-    for(final RAMFile file: ((RAMDirectory)in).fileMap.values()) {
-      size += file.ramBytesUsed();
-    }
-    return size;
-  }
-
-  /** Like getRecomputedSizeInBytes(), but, uses actual file
-   * lengths rather than buffer allocations (which are
-   * quantized up to nearest
-   * RAMOutputStream.BUFFER_SIZE (now 1024) bytes.
-   */
-
-  public final synchronized long getRecomputedActualSizeInBytes() throws IOException {
-    if (!(in instanceof RAMDirectory))
-      return sizeInBytes();
-    long size = 0;
-    for (final RAMFile file : ((RAMDirectory)in).fileMap.values())
-      size += file.length;
-    return size;
   }
 
   // NOTE: This is off by default; see LUCENE-5574

@@ -17,12 +17,16 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.CONFLICT;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -32,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -46,11 +51,6 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.CONFLICT;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor {
   private static final String[] EMPTY_STR_ARR = new String[0];
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -62,6 +62,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private final boolean supportMissingVersionOnOldDocs;
   private final String[] deleteVersionParamNames;
   private final SolrCore core;
+  private final NamedList<Object> tombstoneConfig;
 
   private final DistributedUpdateProcessor distribProc;  // the distributed update processor following us
   private final DistributedUpdateProcessor.DistribPhase phase;
@@ -74,6 +75,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
                                              List<String> deleteVersionParamNames,
                                              boolean supportMissingVersionOnOldDocs,
                                              boolean useFieldCache,
+                                             NamedList<Object> tombstoneConfig,
                                              SolrQueryRequest req,
                                              UpdateRequestProcessor next ) {
     super(next);
@@ -93,6 +95,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     this.distribProc = getDistributedUpdateProcessor(next);
 
     this.phase = DistributedUpdateProcessor.DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+    this.tombstoneConfig = tombstoneConfig;
   }
 
   private static DistributedUpdateProcessor getDistributedUpdateProcessor(UpdateRequestProcessor next) {
@@ -429,10 +432,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     if (isNotLeader(cmd)) {
       // transform delete to add earlier rather than later
 
-      SolrInputDocument newDoc = new SolrInputDocument();
-      newDoc.setField(core.getLatestSchema().getUniqueKeyField().getName(),
-          cmd.getId());
-      setDeleteParamValues(newDoc, deleteParamValues);
+      SolrInputDocument newDoc = createTombstoneDocument(core.getLatestSchema(), cmd.getId(), versionFieldNames, deleteParamValues, this.tombstoneConfig);
 
       AddUpdateCommand newCmd = new AddUpdateCommand(cmd.getReq());
       newCmd.solrDoc = newDoc;
@@ -458,10 +458,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
         // drop the delete, and instead propagate an AddDoc that
         // replaces the doc with a new "empty" one that records the deleted version
 
-        SolrInputDocument newDoc = new SolrInputDocument();
-        newDoc.setField(core.getLatestSchema().getUniqueKeyField().getName(),
-            cmd.getId());
-        setDeleteParamValues(newDoc, deleteParamValues);
+        SolrInputDocument newDoc = createTombstoneDocument(core.getLatestSchema(), cmd.getId(), versionFieldNames, deleteParamValues, this.tombstoneConfig);
 
         AddUpdateCommand newCmd = new AddUpdateCommand(cmd.getReq());
         newCmd.solrDoc = newDoc;
@@ -478,6 +475,29 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       }
 
     }
+  }
+  
+  /**
+   * Creates a tombstone document, that will be used to update a document that's being deleted by ID. The returned document will contain:
+   * <ul>
+   * <li>uniqueKey</li>
+   * <li>versions (All the fields configured as in the {@code versionField} parameter)</li>
+   * <li>All the fields set in the {@code tombstoneConfig} parameter</li>
+   * </ul>
+   * 
+   * Note that if the schema contains required fields (other than version fields or uniqueKey), they should be populated by the {@code tombstoneConfig}, 
+   * otherwise this tombstone will fail when indexing (and consequently the delete will fail). Alternatively, required fields must be populated by some
+   * other means (like {@code DocBasedVersionConstraintsProcessorFactory} or similar) 
+   */
+  protected SolrInputDocument createTombstoneDocument(IndexSchema schema, String id, String[] versionFieldNames, String[] deleteParamValues, NamedList<Object> tombstoneConfig) {
+    final SolrInputDocument newDoc = new SolrInputDocument();
+    
+    if (tombstoneConfig != null) {
+      tombstoneConfig.forEach((k,v) -> newDoc.addField(k, v));
+    }
+    newDoc.setField(schema.getUniqueKeyField().getName(), id);
+    setDeleteParamValues(newDoc, versionFieldNames, deleteParamValues);
+    return newDoc;
   }
 
   private String[] getDeleteParamValuesFromRequest(DeleteUpdateCommand cmd) {
@@ -503,7 +523,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     }
   }
 
-  private void setDeleteParamValues(SolrInputDocument doc, String[] values) {
+  private static void setDeleteParamValues(SolrInputDocument doc, String[] versionFieldNames, String[] values) {
     for (int i = 0; i < values.length; i++) {
       String versionFieldName = versionFieldNames[i];
       String value = values[i];
