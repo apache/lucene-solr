@@ -1058,9 +1058,19 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public QueryResponse queryAndStreamResponse(String collection, SolrParams params, StreamingResponseCallback callback)
       throws SolrServerException, IOException {
-    ResponseParser parser = new StreamingBinaryResponseParser(callback);
+    return getQueryResponse(collection, params,  new StreamingBinaryResponseParser(callback));
+  }
+
+  public QueryResponse queryAndStreamResponse(String collection, SolrParams params, FastStreamingDocsCallback callback)
+      throws SolrServerException, IOException {
+    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+  }
+
+  private QueryResponse getQueryResponse(String collection, SolrParams params, ResponseParser parser) throws SolrServerException, IOException {
     QueryRequest req = new QueryRequest(params);
-    req.setStreamingResponseCallback(callback);
+    if (parser instanceof StreamingBinaryResponseParser) {
+      req.setStreamingResponseCallback(((StreamingBinaryResponseParser) parser).callback);
+    }
     req.setResponseParser(parser);
     return req.process(this, collection);
   }

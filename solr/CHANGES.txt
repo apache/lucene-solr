@@ -34,6 +34,7 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-13171 : A true streaming parser for javabin payload/stream without creating any objects (noble)
 
 Bug Fixes
 ----------------------
