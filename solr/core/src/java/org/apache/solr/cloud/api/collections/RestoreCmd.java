@@ -281,10 +281,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           propMap.put(ASYNC, asyncId);
         }
         ocmh.addPropertyParams(message, propMap);
-        final NamedList addResult = new NamedList();
-        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addResult, () -> {
-          countDownLatch.countDown();
-          Object addResultFailure = addResult.get("failure");
+        final NamedList addReplicaResult = new NamedList();
+        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
+          Object addResultFailure = addReplicaResult.get("failure");
           if (addResultFailure != null) {
             SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
             if (failure == null) {
@@ -298,19 +297,20 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
               success = new SimpleOrderedMap();
               results.add("success", success);
             }
-            success.addAll((NamedList) addResult.get("success"));
+            success.addAll((NamedList) addReplicaResult.get("success"));
           }
+          countDownLatch.countDown();
         });
       }
 
       boolean allIsDone = countDownLatch.await(1, TimeUnit.HOURS);
       if (!allIsDone) {
-        throw new TimeoutException("Initial replicas were not created within 10 minutes. Timing out.");
+        throw new TimeoutException("Initial replicas were not created within 1 hour. Timing out.");
       }
       Object failures = results.get("failure");
       if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
         log.error("Restore failed to create initial replicas.");
-        ocmh.cleanupCollection(restoreCollectionName, new NamedList());
+        ocmh.cleanupCollection(restoreCollectionName, new NamedList<Object>());
         return;
       }
 
