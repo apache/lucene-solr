@@ -83,7 +83,7 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
 
     NamedList nl1 = (NamedList) new JavaBinCodec()
         .setReadStringAsCharSeq(true)
-        .unmarshal(new FastInputStream(null, bytes, 0, bytes.length));
+        .unmarshal(new ByteArrayInputStream( bytes, 0, bytes.length));
     byte[] buf = ((ByteArrayUtf8CharSequence) nl1.getVal(0)).getBuf();
     ByteArrayUtf8CharSequence valLong = (ByteArrayUtf8CharSequence) nl1.get("key_long");
     assertFalse(valLong.getBuf() == buf);
