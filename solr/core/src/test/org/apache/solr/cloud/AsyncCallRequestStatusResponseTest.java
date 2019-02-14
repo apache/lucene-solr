@@ -46,9 +46,10 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     CollectionAdminResponse rsp = requestStatus.process(cluster.getSolrClient());
     NamedList<?> r = rsp.getResponse();
-    assertEquals("Expected 3 elements in the response" + r, 3, r.size());
+    assertEquals("Expected 5 elements in the response" + r, 5, r.size());
     assertNotNull("Expected 'responseHeader' response" + r, r.get("responseHeader"));
     assertNotNull("Expected 'success' response" + r, r.get("success"));
     assertNotNull("Expected 'status' response" + r, r.get("status"));
+    assertEquals("Expected 4 elements in the success element" + r.get("success"), 4, ((NamedList<?>)r.get("success")).size());
   }
 }
