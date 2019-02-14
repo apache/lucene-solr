@@ -22,46 +22,48 @@ The chosen replica acts as an aggregator: it creates internal requests to random
 
 == Limiting Which Shards are Queried
 
-While one of the advantages of using SolrCloud is the ability to query very large collections distributed among various shards, in some cases <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,you may know that you are only interested in results from a subset of your shards>>. You have the option of searching over all of your data or just parts of it.
+While one of the advantages of using SolrCloud is the ability to query very large collections distributed across various shards, in some cases you may have configured Solr so you know <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,you are only interested in results from a specific subset of shards>>. You have the option of searching over all of your data or just parts of it.
 
-Querying all shards for a collection should look familiar; it's as though SolrCloud didn't even come into play:
+A query across all shards for a collection is simply a query that does not define a `shards` parameter:
 
 [source,text]
 ----
 http://localhost:8983/solr/gettingstarted/select?q=*:*
 ----
 
-If, on the other hand, you wanted to search just one shard, you can specify that shard by its logical ID, as in:
+If you want to search just one shard, use the `shards` parameter to specify the shard by its logical ID, as in:
 
 [source,text]
 ----
 http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1
 ----
 
-If you want to search a group of shard Ids, you can specify them together:
+If you want to search a group of shards, you can specify each shard separated by a comma in one request:
 
 [source,text]
 ----
 http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,shard2
 ----
 
-In both of the above examples, the shard Id(s) will be used to pick a random replica of that shard.
+In both of the above examples, while only the specific shards are queried, any random replica of the shard will get the request.
 
-Alternatively, you can specify the explicit replicas you wish to use in place of a shard Ids:
+Alternatively, you can specify a list of replicas you wish to use in place of a shard IDs by separating the replica IDs with commas:
 
 [source,text]
 ----
 http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=localhost:7574/solr/gettingstarted,localhost:8983/solr/gettingstarted
 ----
 
-Or you can specify a list of replicas to choose from for a single shard (for load balancing purposes) by using the pipe symbol (|):
+Or you can specify a list of replicas to choose from for a single shard (for load balancing purposes) by using the pipe symbol (|) between different replica IDs:
 
 [source,text]
 ----
 http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted
 ----
 
-And of course, you can specify a list of shards (separated by commas) each defined by a list of replicas (seperated by pipes). In this example, 2 shards are queried, the first being a random replica from shard1, the second being a random replica from the explicit pipe delimited list:
+Finally, you can specify a list of shards (separated by commas) each defined by a list of replicas (seperated by pipes).
+
+In the following example, 2 shards are queried, the first being a random replica from shard1, the second being a random replica from the explicit pipe delimited list:
 
 [source,text]
 ----
@@ -70,9 +72,11 @@ http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,localhost:7
 
 == Configuring the ShardHandlerFactory
 
-You can directly configure aspects of the concurrency and thread-pooling used within distributed search in Solr. This allows for finer grained control and you can tune it to target your own specific requirements. The default configuration favors throughput over latency.
+For finer-grained control, you can directly configure and tune aspects of the concurrency and thread-pooling used within distributed search in Solr. The default configuration favors throughput over latency.
 
-To configure the standard search handler, provide a configuration like this in `solrconfig.xml`:
+This is done by defining a `shardHandler` in the configuration for your search handler.
+
+To add a `shardHandler` to the standard search handler, provide a configuration in `solrconfig.xml`, as in this example:
 
 [source,xml]
 ----
@@ -112,10 +116,16 @@ If specified, the thread pool will use a backing queue instead of a direct hando
 Chooses the JVM specifics dealing with fair policy queuing, if enabled distributed searches will be handled in a First in First out fashion at a cost to throughput. If disabled throughput will be favored over latency. The default is `false`.
 
 `shardsWhitelist`::
-If specified, this lists limits what nodes can be requested in the `shards` request parameter. In cloud mode this whitelist is automatically configured to include all live nodes in the cluster. In standalone mode the whitelist defaults to empty (sharding not allowed). If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.:
+If specified, this lists limits what nodes can be requested in the `shards` request parameter.
++
+In SolrCloud mode this whitelist is automatically configured to include all live nodes in the cluster.
++
+In standalone mode the whitelist defaults to empty (sharding not allowed).
++
+If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.:
 `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
-
-NOTE: In cloud mode, if at least one node is included in the whitelist, then the live_nodes will no longer be used as source for the list. This means that, if you need to do a cross-cluster request using the `shards` parameter in cloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist. 
++
+NOTE: In SolrCloud mode, if at least one node is included in the whitelist, then the `live_nodes` will no longer be used as source for the list. This means that if you need to do a cross-cluster request using the `shards` parameter in SolrCloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist.
 
 == Configuring statsCache (Distributed IDF)
 
