@@ -128,7 +128,7 @@ Threads:: Return info on all JVM threads.
 v2: `api/node/threads` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
-Health:: Reporting the health of the node (_available only in Solrcloud mode_)
+Health:: Reporting the health of the node (_available only in SolrCloud mode_)
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
