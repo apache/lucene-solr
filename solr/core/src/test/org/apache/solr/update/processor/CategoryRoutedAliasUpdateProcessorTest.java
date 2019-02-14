@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -216,6 +217,53 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private String noDollar(String ship) {
     return ship.replaceAll("\\$", "_");
   }
+  @Slow
+  @Test
+  public void testMaxCardinality() throws Exception {
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    final int maxCardinality = 2;
+
+    // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
+    //  This tests we may pre-create the collection and it's acceptable.
+    final String colVogon = getAlias() + "__CRA__" + SHIPS[0];
+
+    // we expect changes ensuring a legal collection name.
+    final String colHoG = getAlias() + "__CRA__" + SHIPS[1].replaceAll("\\s", "_");
+
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+
+    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
+    assertTrue("We expect at least 2 configSets",
+        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
+    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
+
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
+            .setMaxShardsPerNode(2)).setMaxCardinality(2)
+        .process(solrClient);
+
+    // now we index a document
+    addDocsAndCommit(true, newDoc(SHIPS[0]));
+    //assertDocRoutedToCol(lastDocId, col23rd);
+
+    String uninitialized = getAlias() + "__CRA__" + CategoryRoutedAlias.UNINITIALIZED;
+    assertInvariants(colVogon, uninitialized);
+
+    addDocsAndCommit(true, newDoc(SHIPS[1]));
+
+    assertInvariants(colVogon, colHoG);
+
+    // should fail since max cardinality is reached
+    Throwable e = expectThrows(Throwable.class, () -> addDocsAndCommit(true, newDoc(SHIPS[2])));
+    assertTrue("update should fail because CRA max cardinality is reached",
+        e.getMessage().contains("max cardinality can not be exceeded for a Category Routed Alias"));
+    --lastDocId; // since last doc was not indexed
+    assertInvariants(colVogon, colHoG);
+  }
+
 
   /**
    * Test that the Update Processor Factory routes documents to leader shards and thus

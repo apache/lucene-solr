@@ -106,6 +106,27 @@ public class CategoryRoutedAlias implements RoutedAlias {
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
     //Mostly this will be filled out by SOLR-13150 and SOLR-13151
+    String maxCardinality = aliasMetadata.get(ROUTER_MAX_CARDINALITY);
+    if(maxCardinality == null) {
+      return;
+    }
+
+    if (this.parsedAliases == null) {
+      updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController());
+    }
+
+    String dataValue = String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
+    String candidateCollectionName = buildCollectionNameFromValue(dataValue);
+    List<String> colls = getCollectionList(this.parsedAliases);
+
+    if (colls.contains(candidateCollectionName)) {
+      return;
+    }
+
+    if (colls.stream()
+        .filter(x -> !x.contains(UNINITIALIZED)).count() >= Integer.valueOf(maxCardinality)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "max cardinality can not be exceeded for a Category Routed Alias: " + maxCardinality);
+    }
   }
 
   /**
@@ -130,8 +151,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
     CoreContainer coreContainer = core.getCoreContainer();
     CollectionsHandler collectionsHandler = coreContainer.getCollectionsHandler();
     String dataValue = String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
-
-   String candidateCollectionName = buildCollectionNameFromValue(dataValue);
+    String candidateCollectionName = buildCollectionNameFromValue(dataValue);
 
     try {
       // Note: CRA's have no way to predict values that determine collection so preemptive async creation
