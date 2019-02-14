@@ -1061,12 +1061,15 @@ public class SolrCLI {
             perColl.put("minCoresPerNode", minCoresPerNode);
           });
           Map<String, Map<String, Object>> nodeStats = new TreeMap<>();
+          Map<Integer, AtomicInteger> coreStats = new TreeMap<>();
           for (Row row : session.getSortedNodes()) {
             Map<String, Object> nodeStat = nodeStats.computeIfAbsent(row.node, n -> new LinkedHashMap<>());
             nodeStat.put("isLive", row.isLive());
             nodeStat.put("freedisk", row.getVal("freedisk", 0));
             nodeStat.put("totaldisk", row.getVal("totaldisk", 0));
-            nodeStat.put("cores", row.getVal("cores", 0));
+            int cores = ((Number)row.getVal("cores", 0)).intValue();
+            nodeStat.put("cores", cores);
+            coreStats.computeIfAbsent(cores, num -> new AtomicInteger()).incrementAndGet();
             Map<String, Map<String, Map<String, Object>>> collReplicas = new TreeMap<>();
             row.forEachReplica(ri -> {
               Map<String, Object> perReplica = collReplicas.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
@@ -1107,6 +1110,7 @@ public class SolrCLI {
           }
           Map<String, Object> stats = new LinkedHashMap<>();
           results.put("STATISTICS", stats);
+          stats.put("coresPerNodes", coreStats);
           stats.put("nodeStats", nodeStats);
           stats.put("collectionStats", collStats);
         }
