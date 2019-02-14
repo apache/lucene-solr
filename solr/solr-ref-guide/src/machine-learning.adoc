@@ -386,7 +386,7 @@ This expression returns the following response:
 === Cluster Features
 
 The example below examines the top features of a specific cluster. This example uses the same techniques
-as the centroids example but the top features are extracted from a cluster rather then the centroids.
+as the centroids example but the top features are extracted from a cluster rather than the centroids.
 
 [source,text]
 ----
@@ -490,7 +490,7 @@ The `multiKmeans` function runs the k-means clustering algorithm for a given num
 best result based on which trial produces the lowest intra-cluster variance.
 
 The example below is identical to centroids example except that it uses `multiKmeans` with 100 trials,
-rather then a single trial of the `kmeans` function.
+rather than a single trial of the `kmeans` function.
 
 [source,text]
 ----
