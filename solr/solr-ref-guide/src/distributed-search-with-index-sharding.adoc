@@ -60,14 +60,15 @@ The following components support distributed search:
 * The *Debug* component, which helps with debugging.
 
 === Shards Whitelist
-What nodes are allowed in the `shards` parameter is configurable through the `shardsWhitelist` property in `solr.xml`. This whitelist is automatically configured for SolrCloud but needs explicit configuration for master/slave mode. Read more details in <<distributed-requests.adoc#configuring-the-shardhandlerfactory>>. 
+
+The nodes allowed in the `shards` parameter is configurable through the `shardsWhitelist` property in `solr.xml`. This whitelist is automatically configured for SolrCloud but needs explicit configuration for master/slave mode. Read more details in the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>>.
 
 == Limitations to Distributed Search
 
 Distributed searching in Solr has the following limitations:
 
 * Each document indexed must have a unique key.
-* If Solr discovers duplicate document IDs, Solr selects the first document and discards subsequent ones.
+* If Solr discovers duplicate document IDs, Solr selects the first document and discards subsequent documents.
 * The index for distributed searching may become momentarily out of sync if a commit happens between the first and second phase of the distributed search. This might cause a situation where a document that once matched a query and was subsequently changed may no longer match the query but will still be retrieved. This situation is expected to be quite rare, however, and is only possible for a single query request.
 * The number of shards is limited by number of characters allowed for GET method's URI; most Web servers generally support at least 4000 characters, but many servers limit URI length to reduce their vulnerability to Denial of Service (DoS) attacks.
 * Shard information can be returned with each document in a distributed search by including `fl=id, [shard]` in the search request. This returns the shard URL.
