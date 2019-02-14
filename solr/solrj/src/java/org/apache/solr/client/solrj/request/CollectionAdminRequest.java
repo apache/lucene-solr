@@ -1632,9 +1632,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public static final String ROUTER_TYPE_NAME = "router.name";
     public static final String ROUTER_FIELD = "router.field";
+    public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
 
     private final String aliasName;
     private final String routerField;
+    private Integer maxCardinality;
 
     private final Create createCollTemplate;
 
@@ -1645,12 +1647,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.createCollTemplate = createCollTemplate;
     }
 
+    public CreateCategoryRoutedAlias setMaxCardinality(int maxCardinality) {
+      this.maxCardinality = maxCardinality;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.add(CommonParams.NAME, aliasName);
       params.add(ROUTER_TYPE_NAME, "category");
       params.add(ROUTER_FIELD, routerField);
+
+      if (maxCardinality != null) {
+        params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+      }
 
       // merge the above with collectionParams.  Above takes precedence.
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target

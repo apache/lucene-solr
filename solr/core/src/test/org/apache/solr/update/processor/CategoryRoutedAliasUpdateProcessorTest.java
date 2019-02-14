@@ -60,6 +60,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private static final String intField = "integer_i";
 
   private int lastDocId = 0;
+  private int numDocsDeletedOrFailed = 0;
   private static CloudSolrClient solrClient;
 
   @Before
@@ -207,14 +208,51 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG, colStunt, colArk, colBistro);
   }
 
-  private String noSpaces(String ship) {
-    return ship.replaceAll("\\s", "_");
-  }
-  private String noDashes(String ship) {
-    return ship.replaceAll("-", "_");
-  }
-  private String noDollar(String ship) {
-    return ship.replaceAll("\\$", "_");
+  @Slow
+  @Test
+  public void testMaxCardinality() throws Exception {
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    final int maxCardinality = 2;
+
+    // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
+    //  This tests we may pre-create the collection and it's acceptable.
+    final String colVogon = getAlias() + "__CRA__" + noSpaces(SHIPS[0]);
+
+    // we expect changes ensuring a legal collection name.
+    final String colHoG = getAlias() + "__CRA__" + noSpaces(SHIPS[1]);
+
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+
+    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
+    assertTrue("We expect at least 2 configSets",
+        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
+    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
+
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
+            .setMaxShardsPerNode(2)).setMaxCardinality(2)
+        .process(solrClient);
+
+    // now we index a document
+    addDocsAndCommit(true, newDoc(SHIPS[0]));
+    //assertDocRoutedToCol(lastDocId, col23rd);
+
+    String uninitialized = getAlias() + "__CRA__" + CategoryRoutedAlias.UNINITIALIZED;
+    assertInvariants(colVogon, uninitialized);
+
+    addDocsAndCommit(true, newDoc(SHIPS[1]));
+
+    assertInvariants(colVogon, colHoG);
+
+    // should fail since max cardinality is reached
+    Throwable e = expectThrows(Throwable.class, () -> addDocsAndCommit(true, newDoc(SHIPS[2])));
+    assertTrue("update should fail because CRA max cardinality is reached",
+        e.getMessage().contains("max cardinality can not be exceeded for a Category Routed Alias"));
+    --lastDocId; // since last doc was not indexed
+    assertInvariants(colVogon, colHoG);
   }
 
   /**
@@ -275,9 +313,18 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertRouting(numShards, updateCommands);
   }
 
+  private String noSpaces(String ship) {
+    return ship.replaceAll("\\s", "_");
+  }
+  private String noDashes(String ship) {
+    return ship.replaceAll("-", "_");
+  }
+  private String noDollar(String ship) {
+    return ship.replaceAll("\\$", "_");
+  }
+
 
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {
-    int numDocsDeletedOrFailed = 0;
     final int expectNumFound = lastDocId - numDocsDeletedOrFailed; //lastDocId is effectively # generated docs
 
     List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(getAlias());
