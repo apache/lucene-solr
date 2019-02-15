@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -176,7 +177,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
 
-  private class RangeTermsEnum extends TermsEnum {
+  private class RangeTermsEnum extends BaseTermsEnum {
 
     TermsEnum te;
     BytesRef curr;

@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -825,7 +826,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
   }
 
-  private static class TVTermsEnum extends TermsEnum {
+  private static class TVTermsEnum extends BaseTermsEnum {
 
     private int numTerms, startPos, ord;
     private int[] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;
@@ -906,11 +907,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       }
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     @Override
     public void seekExact(long ord) throws IOException {
       throw new UnsupportedOperationException();

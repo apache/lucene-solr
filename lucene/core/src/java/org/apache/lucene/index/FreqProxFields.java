@@ -124,7 +124,7 @@ class FreqProxFields extends Fields {
     }
   }
 
-  private static class FreqProxTermsEnum extends TermsEnum {
+  private static class FreqProxTermsEnum extends BaseTermsEnum {
     final FreqProxTermsWriterPerField terms;
     final int[] sortedTermIDs;
     final FreqProxPostingsArray postingsArray;
@@ -180,11 +180,6 @@ class FreqProxFields extends Fields {
       }
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     public void seekExact(long ord) {
       this.ord = (int) ord;
       int textStart = postingsArray.textStarts[sortedTermIDs[this.ord]];

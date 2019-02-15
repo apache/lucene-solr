@@ -613,7 +613,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private static class DataTermsEnum extends TermsEnum {
+  private static class DataTermsEnum extends BaseTermsEnum {
     final FieldData fieldData;
     private int upto = -1;
 
@@ -653,11 +653,6 @@ public class TestCodecs extends LuceneTestCase {
       return SeekStatus.END;
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     @Override
     public void seekExact(long ord) {
       throw new UnsupportedOperationException();
