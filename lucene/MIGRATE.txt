@@ -1,11 +1,11 @@
 # Apache Lucene Migration Guide
 
-## TermsEnum.seekExact(BytesRef) is abstract (LUCENE-8662) ##
+## TermsEnum is now fully abstract (LUCENE-8292) ##
 
-TermsEnum.seekExact has been changed to abstract, so non-abstract subclass must implement it.
-The default implementation can be seekCeil(text) == SeekStatus.FOUND.
-This method is performance critical, so subclass SHOULD have its own implementation
-if possible instead of using the default implementation.
+TermsEnum has been changed to be fully abstract, so non-abstract subclass must implement all it's methods.
+Non-Performance critical TermsEnums can use BaseTermsEnum as a base class instead. The change was motivated
+by several performance issues with FilterTermsEnum that caused significant slowdowns and massive memory consumption due
+to not delegating all method from TermsEnum. See LUCENE-8292 and LUCENE-8662
 
 ## RAMDirectory, RAMFile, RAMInputStream, RAMOutputStream removed ##
 

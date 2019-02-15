@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.ImpactsEnum;
@@ -286,7 +287,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
 
     // Iterates through terms in this field
-    private final class SegmentTermsEnum extends TermsEnum {
+    private final class SegmentTermsEnum extends BaseTermsEnum {
       private final IndexInput in;
       private final BlockTermState state;
       private final boolean doOrd;
@@ -685,11 +686,6 @@ public class BlockTermsReader extends FieldsProducer {
         return ts;
       }
 
-      @Override
-      public boolean seekExact(BytesRef text) throws IOException {
-        return seekCeil(text) == SeekStatus.FOUND;
-      }
-      
       @Override
       public void seekExact(long ord) throws IOException {
         //System.out.println("BTR.seek by ord ord=" + ord);

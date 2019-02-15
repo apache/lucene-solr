@@ -519,7 +519,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private static class SeedTermsEnum extends TermsEnum {
+  private static class SeedTermsEnum extends BaseTermsEnum {
     final SortedMap<BytesRef,SeedAndOrd> terms;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
@@ -564,11 +564,6 @@ public class RandomPostingsTester {
       }
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     @Override
     public void seekExact(long ord) {
       throw new UnsupportedOperationException();

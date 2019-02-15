@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ImpactsEnum;
@@ -291,7 +292,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
 
-    static final class BloomFilteredTermsEnum extends TermsEnum {
+    static final class BloomFilteredTermsEnum extends BaseTermsEnum {
       private Terms delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;
