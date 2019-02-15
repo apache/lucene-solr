@@ -33,6 +33,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 
 /**
@@ -129,7 +130,15 @@ public class CommonTermsQuery extends Query {
     collectTermStates(reader, leaves, contextArray, queryTerms);
     return buildQuery(maxDoc, contextArray, queryTerms);
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (Term term : terms) {
+      v.visitLeaf(this, term);
+    }
+  }
+
   protected int calcLowFreqMinimumNumberShouldMatch(int numOptional) {
     return minNrShouldMatch(lowFreqMinNrShouldMatch, numOptional);
   }

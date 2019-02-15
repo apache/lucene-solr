@@ -30,6 +30,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
@@ -75,6 +76,11 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       return new SpanPayloadCheckQuery((SpanQuery)matchRewritten, payloadToMatch);
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    match.visit(visitor.getMatchingVisitor(this));
   }
 
   /**

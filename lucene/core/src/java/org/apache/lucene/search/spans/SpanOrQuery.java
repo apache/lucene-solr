@@ -33,6 +33,7 @@ import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -86,6 +87,14 @@ public final class SpanOrQuery extends SpanQuery {
       return rewritten;
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (SpanQuery q : clauses) {
+      q.visit(v);
+    }
   }
 
   @Override

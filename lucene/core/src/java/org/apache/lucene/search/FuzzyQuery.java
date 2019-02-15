@@ -173,7 +173,12 @@ public class FuzzyQuery extends MultiTermQuery {
     buffer.append(Integer.toString(maxEdits));
     return buffer.toString();
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this, field, () -> term -> true);   // TODO construct automaton from FuzzyTermsEnum
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;

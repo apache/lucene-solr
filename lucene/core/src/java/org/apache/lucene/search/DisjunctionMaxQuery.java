@@ -237,6 +237,14 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     return super.rewrite(reader);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (Query q : disjuncts) {
+      q.visit(v);
+    }
+  }
+
   /** Prettyprint us.
    * @param field the field to which we are applied
    * @return a string that shows what we do, of the form "(disjunct1 | disjunct2 | ... | disjunctn)^boost"

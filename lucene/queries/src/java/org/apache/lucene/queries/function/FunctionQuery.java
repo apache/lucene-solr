@@ -150,7 +150,6 @@ public class FunctionQuery extends Query {
     return new FunctionQuery.FunctionWeight(searcher, boost);
   }
 
-
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field)

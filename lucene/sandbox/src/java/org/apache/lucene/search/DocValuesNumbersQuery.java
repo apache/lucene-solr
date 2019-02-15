@@ -129,4 +129,5 @@ public class DocValuesNumbersQuery extends Query {
 
     };
   }
+
 }

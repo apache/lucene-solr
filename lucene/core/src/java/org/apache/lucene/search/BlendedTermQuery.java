@@ -294,6 +294,14 @@ public final class BlendedTermQuery extends Query {
     return rewriteMethod.rewrite(termQueries);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (Term term : terms) {
+      v.visitLeaf(this, term);
+    }
+  }
+
   private static TermStates adjustFrequencies(IndexReaderContext readerContext,
                                               TermStates ctx, int artificialDf, long artificialTtf) throws IOException {
     List<LeafReaderContext> leaves = readerContext.leaves();

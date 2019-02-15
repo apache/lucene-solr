@@ -21,15 +21,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FilterMatchesIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 
 class ConjunctionIntervalsSource extends IntervalsSource {
 
@@ -56,9 +55,10 @@ class ConjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
+  public void visit(String field, QueryVisitor visitor) {
+    QueryVisitor v = visitor.getMatchingVisitor(new IntervalQuery(field, this));
     for (IntervalsSource source : subSources) {
-      source.extractTerms(field, terms);
+      source.visit(field, v);
     }
   }
 

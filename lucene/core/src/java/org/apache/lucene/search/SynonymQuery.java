@@ -118,6 +118,14 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (Term term : terms) {
+      v.visitLeaf(this, term);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     if (scoreMode.needsScores()) {
       return new SynonymWeight(this, searcher, scoreMode, boost);

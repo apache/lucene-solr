@@ -492,4 +492,12 @@ public class TermAutomatonQuery extends Query {
     // TODO: we could maybe also rewrite to union of PhraseQuery (pull all finite strings) if it's "worth it"?
     return this;
   }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (BytesRef term : termToID.keySet()) {
+      v.visitLeaf(this, new Term(field, term));
+    }
+  }
 }

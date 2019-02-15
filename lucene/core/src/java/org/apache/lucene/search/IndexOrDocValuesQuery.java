@@ -110,6 +110,13 @@ public final class IndexOrDocValuesQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getMatchingVisitor(this);
+    indexQuery.visit(v);
+    dvQuery.visit(v);
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Weight indexWeight = indexQuery.createWeight(searcher, scoreMode, boost);
     final Weight dvWeight = dvQuery.createWeight(searcher, scoreMode, boost);

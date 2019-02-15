@@ -33,6 +33,7 @@ import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
@@ -263,6 +264,14 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getMatchingVisitor(this);
+    for (SpanQuery clause : clauses) {
+      clause.visit(v);
+    }
   }
 
   @Override

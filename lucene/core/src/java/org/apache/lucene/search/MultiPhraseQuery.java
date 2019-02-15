@@ -204,6 +204,17 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getMatchingVisitor(this);
+    for (Term[] terms : termArrays) {
+      QueryVisitor sv = v.getShouldMatchVisitor(this);
+      for (Term term : terms) {
+        sv.visitLeaf(this, term);
+      }
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Map<Term,TermStates> termStates = new HashMap<>();
     return new PhraseWeight(this, field, searcher, scoreMode) {

@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 
@@ -209,7 +210,14 @@ public final class SpanNotQuery extends SpanQuery {
     }
     return super.rewrite(reader);
   }
-    /** Returns true iff <code>o</code> is equal to this. */
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    include.visit(visitor.getMatchingVisitor(this));
+    exclude.visit(visitor.getNonMatchingVisitor(this));
+  }
+
+  /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&

@@ -451,6 +451,25 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     return super.rewrite(reader);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    for (BooleanClause clause : clauses) {
+      switch (clause.getOccur()) {
+        case MUST:
+          clause.getQuery().visit(visitor.getMatchingVisitor(this));
+          break;
+        case SHOULD:
+          clause.getQuery().visit(visitor.getShouldMatchVisitor(this));
+          break;
+        case FILTER:
+          clause.getQuery().visit(visitor.getFilteringVisitor(this));
+          break;
+        case MUST_NOT:
+          clause.getQuery().visit(visitor.getNonMatchingVisitor(this));
+      }
+    }
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {

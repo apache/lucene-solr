@@ -219,6 +219,14 @@ public final class BM25FQuery extends Query {
     return this;
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    for (Term term : fieldTerms) {
+      v.visitLeaf(this, term);
+    }
+  }
+
   private BooleanQuery rewriteToBoolean() {
     // rewrite to a simple disjunction if the score is not needed.
     BooleanQuery.Builder bq = new BooleanQuery.Builder();

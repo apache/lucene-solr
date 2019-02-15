@@ -19,11 +19,10 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.QueryVisitor;
 
 class DifferenceIntervalsSource extends IntervalsSource {
 
@@ -83,8 +82,10 @@ class DifferenceIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
-    minuend.extractTerms(field, terms);
+  public void visit(String field, QueryVisitor visitor) {
+    IntervalQuery q = new IntervalQuery(field, this);
+    minuend.visit(field, visitor.getMatchingVisitor(q));
+    subtrahend.visit(field, visitor.getNonMatchingVisitor(q));
   }
 
   @Override

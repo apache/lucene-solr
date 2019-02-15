@@ -78,6 +78,11 @@ public class NGramPhraseQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    phraseQuery.visit(visitor.getFilteringVisitor(this));
+  }
+
+  @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
            equalsTo(getClass().cast(other));

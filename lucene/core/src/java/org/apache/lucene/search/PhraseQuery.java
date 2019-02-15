@@ -284,6 +284,14 @@ public class PhraseQuery extends Query {
     }
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getMatchingVisitor(this);
+    for (Term term : terms) {
+      v.visitLeaf(this, term);
+    }
+  }
+
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final PostingsEnum postings;
     final int position;

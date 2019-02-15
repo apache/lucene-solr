@@ -151,7 +151,12 @@ public class AutomatonQuery extends MultiTermQuery {
     buffer.append("}");
     return buffer.toString();
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this, field, () -> QueryVisitor.matchesAutomaton(compiled));
+  }
+
   /** Returns the automaton used to create this query */
   public Automaton getAutomaton() {
     return automaton;

@@ -42,6 +42,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -120,6 +121,18 @@ public class TermInSetQuery extends Query implements Accountable {
       return new ConstantScoreQuery(bq.build());
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this, field, () -> {
+      BytesRefHash terms = new BytesRefHash();
+      TermIterator it = termData.iterator();
+      for (BytesRef term = it.next(); term != null; term = it.next()) {
+        terms.add(term);
+      }
+      return t -> terms.find(t) != -1;
+    });
   }
 
   @Override

@@ -205,6 +205,11 @@ public class TermQuery extends Query {
     return new TermWeight(searcher, scoreMode, boost, termState);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this, term);
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
