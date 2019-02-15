@@ -31,10 +31,10 @@ Some use cases for collection aliasing:
 The `CREATEALIAS` action will create a new alias pointing to one or more collections.
 Aliases come in 2 flavors: standard and routed.
 
-*Standard aliases* are simple: CREATEALIAS registers the alias name with the names of one or more collections provided
+*Standard aliases* are simple:  CREATEALIAS registers the alias name with the names of one or more collections provided
   by the command.
 If an existing alias exists, it is replaced/updated.
-A standard alias can serve to have the appearance of renaming a collection, and can be used to atomically swap
+A standard alias can serve as a means to rename a collection, and can be used to atomically swap
 which backing/underlying collection is "live" for various purposes.
 When Solr searches an alias pointing to multiple collections, Solr will search all shards of all the collections as an
   aggregated whole.
@@ -54,12 +54,20 @@ NOTE: Presently this is only supported for temporal fields stored as a
 <<field-types-included-with-solr.adoc#field-types-included-with-solr,DatePointField or TrieDateField>> type. Other
 well ordered field types may be added in future versions.
 
+=======
+*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route
+  updates to the correct collection. Routing is data driven and may be based on a temporal field or on categories
+  specified in a field (normally string based).
+See <<aliases.adoc#routed-aliases,Routed Aliases>> for some important high-level information
+  before getting started.
+
+>>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [source,text]
 ----
 localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
-If run on Jan 15, 2018, the above will create an alias named timedata, that contains collections with names prefixed
+If run on Jan 15, 2018, the above will create an time routed alias named timedata, that contains collections with names prefixed
 with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
 alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60
 minutes of 2018-01-15. After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
@@ -101,6 +109,21 @@ prohibited. If routing parameters are present this parameter is prohibited.
 
 Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
 
+`router.name`::
+The type of routing to use. Presently only `time` and `category` are valid.  This parameter is required.
+
+`router.field`::
+The field to inspect to determine which underlying collection an incoming document should be routed to.
+This field is required on all incoming documents.
+
+`create-collection.*`::
+The * wildcard can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
+are identical in requirements and naming except that we insist that the configset be explicitly specified.
+The configset must be created beforehand, either uploaded or copied and modified.
+It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+
+==== Time Routed Alias Parameters
+
 `router.start`::
 The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW"
 optionally with <<working-with-dates.adoc#date-math,date math>>).
@@ -121,13 +144,6 @@ myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
 +
 The default timezone is UTC.
 
-`router.field`::
-The date field to inspect to determine which underlying collection an incoming document should be routed to.
-This field is required on all incoming documents.
-
-`router.name`::
-The type of routing to use. Presently only `time` is valid.  This parameter is required.
-
 `router.interval`::
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
@@ -141,6 +157,27 @@ without error.  If there was no limit, than an erroneous value could trigger man
 +
 The default is 10 minutes.
 
+`router.preemptiveCreateMath`::
+A date math expression that results in early creation of new collections.
++
+If a document arrives with a timestamp that is after the end time of the most recent collection minus this
+interval, then the next (and only the next) collection will be created asynchronously. Without this setting, collections are created
+synchronously when required by the document time stamp and thus block the flow of documents until the collection
+is created (possibly several seconds). Preemptive creation reduces these hiccups. If set to enough time (perhaps
+an hour or more) then if there are problems creating a collection, this window of time might be enough to take
+corrective action. However after a successful preemptive creation,  the collection is consuming resources without
+being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that
+router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may
+want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
+soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
+minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
+destined for a collection that does not exist will still trigger synchronous creation up to that destination collection
+but will not trigger additional async preemptive creation. Only one type of collection creation can happen
+per document.
+Example: `90MINUTES`.
++
+This property is blank by default indicating just-in-time, synchronous creation of new collections.
+
 `router.autoDeleteAge`::
 A date math expression that results in the oldest collections getting deleted automatically.
 +
@@ -152,11 +189,18 @@ Example: `/DAY-90DAYS`.
 +
 The default is not to delete.
 
-`create-collection.*`::
-The * wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`. All other fields
-are identical in requirements and naming except that we insist that the configset be explicitly specified.
-The configset must be created beforehand, either uploaded or copied and modified.
-It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+==== Category Routed Alias Parameters
+
+`router.maxCardinality`::
+The maximum number of categories allowed for this alias.
+This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
+
+`router.mustMatch`::
+A regular expression that the value of the field specified by `router.field` must match before a corresponding
+collection will be created. Note that changing this setting after data has been added will not alter the data already
+indexed. Any valid Java regular expression pattern may be specified. This expression is pre-compiled at the start of
+each request so batching of updates is strongly recommended. Overly complex patterns will produce cpu
+or garbage collecting overhead during indexing as determined by the JVM's implementation of regular expressions.
 
 === CREATEALIAS Response
 
@@ -170,10 +214,14 @@ To confirm the creation of the alias, you can look in the Solr Admin UI, under t
 
 Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
 
+// tag::createalias-simple-example[]
+
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
 ----
+
+//end::createalias-simple-example[]
 
 *Output*
 
@@ -187,12 +235,11 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 </response>
 ----
 
-Create an alias named "myTimeData" for data begining on `2018-01-15` in the UTC time zone and partitioning daily
-based on the `evt_dt` field in the incomming documents. Data more than an hour beyond the latest (most recent)
-partiton is to be rejected and collections are created using a config set named myConfig and
-
-
 *Input*
+
+Create an alias named "myTimeData" for data beginning on `2018-01-15` in the UTC time zone and partitioning daily
+based on the `evt_dt` field in the incoming documents. Data more than one hour beyond the latest (most recent)
+partition is to be rejected and collections are created using a configset named "myConfig".
 
 [source,text]
 ----
@@ -211,10 +258,11 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&
 </response>
 ----
 
-A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
-Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
 
 *Input*
+
+A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
+Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
 
 [source,json]
 ----
@@ -310,6 +358,10 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
 
 `/admin/collections?action=ALIASPROP&name=_name_&property.someKey=somevalue`
+
+WARNING: This command allows you to revise any property. No alias specific validation is performed.
+         Routed aliases may cease to function, function incorrectly or cause errors if property values
+         are set carelessly.
 
 === ALIASPROP Parameters
 

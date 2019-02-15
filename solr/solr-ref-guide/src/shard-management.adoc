@@ -39,7 +39,11 @@ When using `splitMethod=rewrite` (default) you must ensure that the node running
 
 Also, the first replicas of resulting sub-shards will always be placed on the shard leader node, which may cause Autoscaling policy violations that need to be resolved either automatically (when appropriate triggers are in use) or manually.
 
+<<<<<<< HEAD
 Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<collections-api.adoc#asynchronous-calls,asynchronous call>>.
+=======
+Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<Asynchronous Calls,asynchronous call>>.
+>>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 
 === SPLITSHARD Parameters
 
@@ -61,6 +65,14 @@ This parameter can be used to split a shard using a route key such that all docu
 +
 For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to shard 'shard1' with range `0-20`. Splitting by this route key would yield three sub-shards with ranges `0-11`, `12-15` and `16-20`. Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
 
+<<<<<<< HEAD
+=======
+`numSubShards`::
+The number of sub-shards to split the parent shard into. Allowed values for this are in the range of `2`-`8` and defaults to `2`.
++
+This parameter can only be used when `ranges` or `split.key` are not specified.
+
+>>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 `splitMethod`::
 Currently two methods of shard splitting are supported:
 * `splitMethod=rewrite` (default) after selecting documents to retain in each partition this method creates sub-indexes from
@@ -72,6 +84,13 @@ file that contains the list of deleted documents in each partition. This method 
 belonging to the partition. This slows down the replication process and consumes more disk space on replica nodes (the multiple hard-linked
 copies don't occupy additional disk space on the leader node, unless hard-linking is not supported).
 
+<<<<<<< HEAD
+=======
+`splitFuzz`::
+A float value (default is 0.0f, must be smaller than 0.5f) that allows to vary the sub-shard ranges
+by this percentage of total shard range, odd shards being larger and even shards being smaller.
+
+>>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
@@ -170,6 +189,13 @@ Use SPLITSHARD for collections created with the 'compositeId' router (`router.ke
 
 `/admin/collections?action=CREATESHARD&shard=_shardName_&collection=_name_`
 
+<<<<<<< HEAD
+=======
+The default values for `replicationFactor` or `nrtReplicas`, `tlogReplicas`, `pullReplicas` from the collection is used to determine the number of replicas to be created for the new shard. This can be customized by explicitly passing the corresponding parameters to the request.
+
+The API uses the Autoscaling framework to find the best possible nodes in the cluster when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
+>>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 === CREATESHARD Parameters
 
 `collection`::
@@ -183,6 +209,18 @@ Allows defining the nodes to spread the new collection across. If not provided, 
 +
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 
+<<<<<<< HEAD
+=======
+`nrtReplicas`::
+The number of `nrt` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`tlogReplicas`::
+The number of `tlog` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`pullReplicas`::
+The number of `pull` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+>>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
