@@ -519,7 +519,7 @@ public class RandomPostingsTester {
     }
   }
 
-  private static class SeedTermsEnum extends TermsEnum.BaseTermsEnum {
+  private static class SeedTermsEnum extends BaseTermsEnum {
     final SortedMap<BytesRef,SeedAndOrd> terms;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;

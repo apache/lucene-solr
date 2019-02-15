@@ -33,7 +33,7 @@ import org.apache.lucene.util.AttributeSource;
  * {@link UnsupportedOperationException} when a seeking method
  * is called.
  */
-public abstract class FilteredTermsEnum extends TermsEnum.BaseTermsEnum {
+public abstract class FilteredTermsEnum extends TermsEnum {
 
   private BytesRef initialSeekTerm;
   private boolean doSeek;

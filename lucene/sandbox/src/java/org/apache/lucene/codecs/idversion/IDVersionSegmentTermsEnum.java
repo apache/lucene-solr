@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -39,7 +39,7 @@ import org.apache.lucene.util.fst.Util;
  *  can cast it to call {@link #seekExact(BytesRef, long)} for
  *  optimistic-concurrency, and also {@link #getVersion} to get the
  *  version of the currently seek'd term. */
-public final class IDVersionSegmentTermsEnum extends TermsEnum.BaseTermsEnum {
+public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
   // Lazy init:
   IndexInput in;

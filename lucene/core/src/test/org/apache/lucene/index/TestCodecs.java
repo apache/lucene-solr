@@ -613,7 +613,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private static class DataTermsEnum extends TermsEnum.BaseTermsEnum {
+  private static class DataTermsEnum extends BaseTermsEnum {
     final FieldData fieldData;
     private int upto = -1;
 
