@@ -37,6 +37,12 @@ import org.apache.lucene.util.BytesRef;
 public abstract class BaseTermsEnum extends TermsEnum {
 
   private AttributeSource atts = null;
+  
+  /** Sole constructor. (For invocation by subclass
+   *  constructors, typically implicit.) */
+  protected BaseTermsEnum() {
+    super();
+  }
 
   @Override
   public TermState termState() throws IOException {
