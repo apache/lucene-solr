@@ -18,6 +18,7 @@
 package org.apache.lucene.search.intervals;
 
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
@@ -48,6 +49,22 @@ public final class Intervals {
    */
   public static IntervalsSource term(String term) {
     return new TermIntervalsSource(new BytesRef(term));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a term, filtered by the value
+   * of the term's payload at each position
+   */
+  public static IntervalsSource term(String term, Predicate<BytesRef> payloadFilter) {
+    return term(new BytesRef(term), payloadFilter);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a term, filtered by the value
+   * of the term's payload at each position
+   */
+  public static IntervalsSource term(BytesRef term, Predicate<BytesRef> payloadFilter) {
+    return new PayloadFilteredTermIntervalsSource(term, payloadFilter);
   }
 
   /**
