@@ -28,8 +28,8 @@ NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same
 
 Two commands are available:
 
-* `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#backup,Backup Collection>>.
-* `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collections-api.adoc#restore,Restore Collection>>.
+* `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collection-management.adoc#backup,Backup Collection>>.
+* `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collection-management.adoc#restore,Restore Collection>>.
 
 == Standalone Mode Backups
 

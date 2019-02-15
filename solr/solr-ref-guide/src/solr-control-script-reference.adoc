@@ -686,7 +686,7 @@ bin/solr zk upconfig -z 111.222.333.444:2181 -n mynewconfig -d /path/to/configse
 .Reload Collections When Changing Configurations
 [WARNING]
 ====
-This command does *not* automatically make changes effective! It simply uploads the configuration sets to ZooKeeper. You can use the Collection API's <<collections-api.adoc#reload,RELOAD command>> to reload any collections that uses this configuration set.
+This command does *not* automatically make changes effective! It simply uploads the configuration sets to ZooKeeper. You can use the Collection API's <<collection-management.adoc#reload,RELOAD command>> to reload any collections that uses this configuration set.
 ====
 
 === Download a Configuration Set

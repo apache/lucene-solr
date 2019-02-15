@@ -28,9 +28,9 @@ If you need to store a lot of timestamped data in Solr, such as logs or IoT sens
 
 == How It Works
 
-First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with some
+First you create a time routed aliases using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command with some
   router settings.
-Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+Most of the settings are editable at a later time using the <<collection-aliasing.adoc#aliasprop,ALIASPROP>> command.
 
 The first collection will be created automatically, along with an alias pointing to it.
 Each underlying Solr "core" in a collection that is a member of a TRA has a special core property referencing the alias.

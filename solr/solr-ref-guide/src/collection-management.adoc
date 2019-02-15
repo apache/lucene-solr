@@ -1,0 +1,752 @@
+= Collection Management Commands
+:page-tocclass: right
+:page-toclevels: 1
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+A collection is a single logical index that uses a single Solr configuration file (`solrconfig.xml`) and a single index schema.
+
+[[create]]
+== CREATE: Create a Collection
+
+`/admin/collections?action=CREATE&name=_name_`
+
+=== CREATE Parameters
+
+The CREATE action allows the following parameters:
+
+`name`::
+The name of the collection to be created. This parameter is required.
+
+`router.name`::
+The router name that will be used. The router defines how documents will be distributed among the shards. Possible values are `implicit` or `compositeId`, which is the default.
++
+The `implicit` router does not automatically route documents to different shards. Whichever shard you indicate on the indexing request (or within each document) will be used as the destination for those documents.
++
+The `compositeId` router hashes the value in the uniqueKey field and looks up that hash in the collection's clusterstate to determine which shard will receive the document, with the additional ability to manually direct the routing.
++
+When using the `implicit` router, the `shards` parameter is required. When using the `compositeId` router, the `numShards` parameter is required.
++
+For more information, see also the section <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>>.
+
+`numShards`::
+The number of shards to be created as part of the collection. This is a required parameter when the `router.name` is `compositeId`.
+
+`shards`::
+A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`. This is a required parameter when the `router.name` is `implicit`.
+
+`replicationFactor`::
+The number of replicas to be created for each shard. The default is `1`.
++
+This will create a NRT type of replica. If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters below. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`nrtReplicas`::
+The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. If you want all of your replicas to be of this type, you can simply use `replicationFactor` instead.
+
+`tlogReplicas`::
+The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`pullReplicas`::
+The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`maxShardsPerNode`::
+When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
++
+If a node is not live when the CREATE action is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas the CREATE action will spread to each node.
++
+If the entire collection can not be fit into the live nodes, no collection will be created at all. The default `maxShardsPerNode` value is `1`.
+
+`createNodeSet`::
+Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
++
+If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
++
+Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<replica-management.adoc#addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
+
+`createNodeSet.shuffle`::
+Controls wether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
++
+A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
++
+This parameter is ignored if `createNodeSet` is not also specified.
+
+`collection.configName`::
+Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configSet to create a new (and mutable) configSet named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
+
+`router.field`::
+If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
++
+Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
+
+`property._name_=_value_`::
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+`autoAddReplicas`::
+When set to `true`, enables automatic addition of replicas when the number of active replicas falls below the value set for `replicationFactor`. This may occur if a replica goes down, for example. The default is `false`, which means new replicas will not be added.
++
+While this parameter is provided as part of Solr's set of features to provide autoscaling of clusters, it is available even when you have not implemented any other part of autoscaling (such as a policy). See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for more details about this option and how it can be used.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+`rule`::
+Replica placement rules. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+
+`snitch`::
+Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+
+`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
+`withCollection`::
+The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
+See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
+
+=== CREATE Response
+
+The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using CREATE
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">3764</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3450</int>
+      </lst>
+      <str name="core">newCollection_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3597</int>
+      </lst>
+      <str name="core">newCollection_shard2_replica1</str>
+    </lst>
+  </lst>
+</response>
+----
+
+[[reload]]
+== RELOAD: Reload a Collection
+
+`/admin/collections?action=RELOAD&name=_name_`
+
+The RELOAD action is used when you have changed a configuration in ZooKeeper.
+
+=== RELOAD Parameters
+
+`name`::
+The name of the collection to reload. This parameter is required.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== RELOAD Response
+
+The response will include the status of the request and the cores that were reloaded. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using RELOAD
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1551</int>
+  </lst>
+  <lst name="success">
+    <lst name="10.0.1.6:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">761</int>
+      </lst>
+    </lst>
+    <lst name="10.0.1.4:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1527</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+
+[[modifycollection]]
+== MODIFYCOLLECTION: Modify Attributes of a Collection
+
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>_&__<attribute-name>__=__<attribute-value>__&__<another-attribute-name>__=__<another-value>__&__<yet_another_attribute_name>__=`
+
+It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+
+An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
+
+=== MODIFYCOLLECTION Parameters
+
+`collection`::
+The name of the collection to be modified. This parameter is required.
+
+`_attribute_=_value_`::
+Key-value pairs of attribute names and attribute values.
+
+At least one `_attribute_` parameter is required.
+
+The attributes that can be modified are:
+
+* maxShardsPerNode
+* replicationFactor
+* autoAddReplicas
+* collection.configName
+* rule
+* snitch
+* policy
+* withCollection
+
+See the <<create,CREATE action>> section above for details on these attributes.
+
+[[list]]
+== LIST: List Collections
+
+Fetch the names of the collections in the cluster.
+
+`/admin/collections?action=LIST`
+
+=== Examples using LIST
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=LIST
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":2011},
+  "collections":["collection1",
+    "example1",
+    "example2"]}
+----
+
+[[delete]]
+== DELETE: Delete a Collection
+
+`/admin/collections?action=DELETE&name=_collection_`
+
+=== DELETE Parameters
+
+`name`::
+The name of the collection to delete. This parameter is required.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== DELETE Response
+
+The response will include the status of the request and the cores that were deleted. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using DELETE
+
+*Input*
+
+Delete the collection named "newCollection".
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">603</int>
+  </lst>
+  <lst name="success">
+    <lst name="10.0.1.6:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">19</int>
+      </lst>
+    </lst>
+    <lst name="10.0.1.4:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">67</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[collectionprop]]
+== COLLECTIONPROP: Collection Properties
+
+Add, edit or delete a collection property.
+
+`/admin/collections?action=COLLECTIONPROP&name=_collectionName_&propertyName=_propertyName_&propertyValue=_propertyValue_`
+
+=== COLLECTIONPROP Parameters
+
+`name`::
+The name of the collection for which the property would be set.
+
+`propertyName`::
+The name of the property.
+
+`propertyValue`::
+The value of the property. When not provided, the property is deleted.
+
+=== COLLECTIONPROP Response
+
+The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+
+=== Examples using COLLECTIONPROP
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&val=bar&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+</response>
+----
+
+[[backup]]
+== BACKUP: Backup Collection
+
+Backs up Solr collections and associated configurations to a shared filesystem - for example a Network File System.
+
+`/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
+
+The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command takes one copy from each shard for the indexes. For configurations, it backs up the configSet that was associated with the collection and metadata.
+
+=== BACKUP Parameters
+
+`collection`::
+The name of the collection to be backed up. This parameter is required.
+
+`location`::
+The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+`repository`::
+The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+
+[[restore]]
+== RESTORE: Restore Collection
+
+Restores Solr indexes and associated configurations.
+
+`/admin/collections?action=RESTORE&name=myBackupName&location=/path/to/my/shared/drive&collection=myRestoredCollectionName`
+
+The RESTORE operation will create a collection with the specified name in the collection parameter. You cannot restore into the same collection the backup was taken from. Also the target collection should not be present at the time the API is called as Solr will create it for you.
+
+The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc. Optionally, you can override some parameters documented below.
+
+While restoring, if a configSet with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configSet in ZooKeeper and use that.
+
+You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> command to make sure clients don't need to change the endpoint to query or index against the newly restored collection.
+
+=== RESTORE Parameters
+
+`collection`::
+The collection where the indexes will be restored into. This parameter is required.
+
+`location`::
+The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+`repository`::
+The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+
+*Override Parameters*
+
+Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup:
+
+`collection.configName`::
+Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.
+
+`replicationFactor`::
+The number of replicas to be created for each shard.
+
+`nrtReplicas`::
+The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. This parameter behaves the same way as setting replicationFactor parameter.
+
+`tlogReplicas`::
+The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`pullReplicas`::
+The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`maxShardsPerNode`::
+When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
++
+If a node is not live when the CREATE operation is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas CREATE will spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all.
+
+`autoAddReplicas`::
+When set to `true`, enables auto addition of replicas on shared file systems. See the section <<running-solr-on-hdfs.adoc#automatically-add-replicas-in-solrcloud,Automatically Add Replicas in SolrCloud>> for more details on settings and overrides.
+
+`property._name_=_value_`::
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+
+[[migrate]]
+== MIGRATE: Migrate Documents to Another Collection
+
+`/admin/collections?action=MIGRATE&collection=_name_&split.key=_key1!_&target.collection=_target_collection_&forward.timeout=60`
+
+The MIGRATE command is used to migrate all documents having a given routing key to another collection. The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter. It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
+
+The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections. The migration is performed shard-by-shard in a single thread. One or more temporary collections may be created by this command during the ‘migrate’ process but they are cleaned up at the end automatically.
+
+This is a long running operation and therefore using the `async` parameter is highly recommended. If the `async` parameter is not specified then the operation is synchronous by default and keeping a large read timeout on the invocation is advised. Even with a large read timeout, the request may still timeout but that doesn’t necessarily mean that the operation has failed. Users should check logs, cluster state, source and target collections before invoking the operation again.
+
+This command works only with collections using the compositeId router. The target collection must not receive any writes during the time the MIGRATE command is running otherwise some writes may be lost.
+
+Please note that the MIGRATE API does not perform any de-duplication on the documents so if the target collection contains documents with the same uniqueKey as the documents being migrated then the target collection will end up with duplicate documents.
+
+=== MIGRATE Parameters
+
+`collection`::
+The name of the source collection from which documents will be split. This parameter is required.
+
+`target.collection`::
+The name of the target collection to which documents will be migrated. This parameter is required.
+
+`split.key`::
+The routing key prefix. For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
+
+`forward.timeout`::
+The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
+
+`property._name_=_value_`::
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== MIGRATE Response
+
+The response will include the status of the request.
+
+=== Examples using MIGRATE
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">19014</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_0_replica1</str>
+      <str name="status">BUFFERING</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">2479</int>
+      </lst>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1002</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">21</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1655</int>
+      </lst>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica2</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">4006</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">17</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_0_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">31</int>
+      </lst>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">31</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_1_replica1</str>
+      <str name="status">BUFFERING</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1742</int>
+      </lst>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1002</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">15</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1917</int>
+      </lst>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica2</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">5007</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">8</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">1</int>
+      </lst>
+      <str name="core">test2_shard1_1_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">30</int>
+      </lst>
+    </lst>
+    <lst name="192.168.43.52:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">30</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[rebalanceleaders]]
+== REBALANCELEADERS: Rebalance Leaders
+
+Reassigns leaders in a collection according to the preferredLeader property across active nodes.
+
+`/admin/collections?action=REBALANCELEADERS&collection=collectionName`
+
+Leaders are assigned in a collection according to the `preferredLeader` property on active nodes. This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
+
+NOTE: It is not _required_ that all shards in a collection have a `preferredLeader` property. Rebalancing will only attempt to reassign leadership to those replicas that have the `preferredLeader` property set to `true` _and_ are not currently the shard leader _and_ are currently active.
+
+=== REBALANCELEADERS Parameters
+
+`collection`::
+The name of the collection to rebalance `preferredLeaders` on. This parameter is required.
+
+`maxAtOnce`::
+The maximum number of reassignments to have queue up at once. Values \<=0 are use the default value Integer.MAX_VALUE.
++
+When this number is reached, the process waits for one or more leaders to be successfully assigned before adding more to the queue.
+
+`maxWaitSeconds`::
+Defaults to `60`. This is the timeout value when waiting for leaders to be reassigned. If `maxAtOnce` is less than the number of reassignments that will take place, this is the maximum interval that any _single_ wait for at least one reassignment.
++
+For example, if 10 reassignments are to take place and `maxAtOnce` is `1` and `maxWaitSeconds` is `60`, the upper bound on the time that the command may wait is 10 minutes.
+
+=== REBALANCELEADERS Response
+
+The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+
+=== Examples using REBALANCELEADERS
+
+*Input*
+
+Either of these commands would cause all the active replicas that had the `preferredLeader` property set and were _not_ already the preferred leader to become leaders.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&wt=xml
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30&wt=xml
+----
+
+*Output*
+
+In this example, two replicas in the "alreadyLeaders" section already had the leader assigned to the same node as the `preferredLeader` property so no action was taken.
+
+The replica in the "inactivePreferreds" section had the `preferredLeader` property set but the node was down and no action was taken. The three nodes in the "successes" section were made leaders because they had the `preferredLeader` property set but were not leaders and they were active.
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">123</int>
+  </lst>
+  <lst name="alreadyLeaders">
+    <lst name="core_node1">
+      <str name="status">success</str>
+      <str name="msg">Already leader</str>
+      <str name="nodeName">192.168.1.167:7400_solr</str>
+    </lst>
+    <lst name="core_node17">
+      <str name="status">success</str>
+      <str name="msg">Already leader</str>
+      <str name="nodeName">192.168.1.167:7600_solr</str>
+    </lst>
+  </lst>
+  <lst name="inactivePreferreds">
+    <lst name="core_node4">
+      <str name="status">skipped</str>
+      <str name="msg">Node is a referredLeader, but it's inactive. Skipping</str>
+      <str name="nodeName">192.168.1.167:7500_solr</str>
+    </lst>
+  </lst>
+  <lst name="successes">
+    <lst name="_collection1_shard3_replica1">
+      <str name="status">success</str>
+      <str name="msg">
+        Assigned 'Collection: 'collection1', Shard: 'shard3', Core: 'collection1_shard3_replica1', BaseUrl:
+        'http://192.168.1.167:8983/solr'' to be leader
+      </str>
+    </lst>
+    <lst name="_collection1_shard5_replica3">
+      <str name="status">success</str>
+      <str name="msg">
+        Assigned 'Collection: 'collection1', Shard: 'shard5', Core: 'collection1_shard5_replica3', BaseUrl:
+        'http://192.168.1.167:7200/solr'' to be leader
+      </str>
+    </lst>
+    <lst name="_collection1_shard4_replica2">
+      <str name="status">success</str>
+      <str name="msg">
+        Assigned 'Collection: 'collection1', Shard: 'shard4', Core: 'collection1_shard4_replica2', BaseUrl:
+        'http://192.168.1.167:7300/solr'' to be leader
+      </str>
+    </lst>
+  </lst>
+</response>
+----
+
+Examining the clusterstate after issuing this call should show that every live node that has the `preferredLeader` property should also have the "leader" property set to _true_.

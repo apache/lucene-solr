@@ -36,7 +36,7 @@ When upgrading to Solr 7.6, users should be aware of the following major changes
 
 *Collections*
 
-* The JSON parameter to set cluster-wide default cluster properties with the <<collections-api.adoc#clusterprop,CLUSTERPROP>> command has changed.
+* The JSON parameter to set cluster-wide default cluster properties with the <<cluster-node-management.adoc#clusterprop,CLUSTERPROP>> command has changed.
 +
 The old syntax nested the defaults into a property named `clusterDefaults`. The new syntax uses only `defaults`. The command to use is still `set-obj-property`.
 +
@@ -165,7 +165,7 @@ When upgrading to Solr 7.3, users should be aware of the following major changes
 +
 This means to upgrade to Solr 8 in the future, you will need to be on Solr 7.3 or higher.
 
-* Replicas which are not up-to-date are no longer allowed to become leader. Use the <<collections-api.adoc#forceleader,FORCELEADER command>> of the Collections API to allow these replicas become leader.
+* Replicas which are not up-to-date are no longer allowed to become leader. Use the <<shard-management.adoc#forceleader,FORCELEADER command>> of the Collections API to allow these replicas become leader.
 
 *Spatial*
 
@@ -215,7 +215,7 @@ When upgrading to Solr 7.1, users should be aware of the following major changes
 +
 Existing users of this feature should not have to change anything. However, they should note these changes:
 
-** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collections-api.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
+** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collection-management.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
 ** Deprecations: Enabling/disabling autoAddReplicas cluster-wide with the API will be deprecated; use suspend/resume trigger APIs with `name=".auto_add_replicas"` instead.
 +
 More information about the changes to this feature can be found in the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud Automatically Adding Replicas>>.
