@@ -111,7 +111,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  private class SimpleTextTermsEnum extends TermsEnum {
+  private class SimpleTextTermsEnum extends TermsEnum.BaseTermsEnum {
     private final IndexOptions indexOptions;
     private int docFreq;
     private long totalTermFreq;

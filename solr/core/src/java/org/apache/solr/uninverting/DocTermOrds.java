@@ -589,7 +589,7 @@ public class DocTermOrds implements Accountable {
    * "wrap" our own terms index around the original IndexReader. 
    * Only valid if there are terms for this field rom the original reader
    */
-  private final class OrdWrappedTermsEnum extends TermsEnum {
+  private final class OrdWrappedTermsEnum extends TermsEnum.BaseTermsEnum {
     private final TermsEnum termsEnum;
     private BytesRef term;
     private long ord = -indexInterval-1;          // force "real" seek
@@ -703,11 +703,6 @@ public class DocTermOrds implements Accountable {
       }
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     @Override
     public void seekExact(long targetOrd) throws IOException {
       int delta = (int) (targetOrd - ordBase - ord);

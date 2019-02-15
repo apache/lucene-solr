@@ -34,7 +34,7 @@ import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.fst.FST;
 
 // NOTE: cannot seek!
-final class OrdsIntersectTermsEnum extends TermsEnum {
+final class OrdsIntersectTermsEnum extends TermsEnum.BaseTermsEnum {
   final IndexInput in;
 
   private OrdsIntersectTermsEnumFrame[] stack;

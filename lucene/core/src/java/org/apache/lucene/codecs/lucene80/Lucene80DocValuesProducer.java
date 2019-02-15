@@ -926,7 +926,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
   }
 
-  private static class TermsDict extends TermsEnum {
+  private static class TermsDict extends TermsEnum.BaseTermsEnum {
 
     final TermsDictEntry entry;
     final LongValues blockAddresses;
@@ -973,11 +973,6 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       return term;
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     @Override
     public void seekExact(long ord) throws IOException {
       if (ord < 0 || ord >= entry.termsDictSize) {

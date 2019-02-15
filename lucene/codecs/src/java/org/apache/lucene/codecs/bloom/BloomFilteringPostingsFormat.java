@@ -291,7 +291,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
 
-    static final class BloomFilteredTermsEnum extends TermsEnum {
+    static final class BloomFilteredTermsEnum extends TermsEnum.BaseTermsEnum {
       private Terms delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;

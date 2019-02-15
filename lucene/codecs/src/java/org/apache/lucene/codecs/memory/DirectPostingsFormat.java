@@ -699,7 +699,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       return hasPayloads;
     }
 
-    private final class DirectTermsEnum extends TermsEnum {
+    private final class DirectTermsEnum extends TermsEnum.BaseTermsEnum {
 
       private final BytesRef scratch = new BytesRef();
       private int termOrd;
@@ -944,7 +944,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    private final class DirectIntersectTermsEnum extends TermsEnum {
+    private final class DirectIntersectTermsEnum extends TermsEnum.BaseTermsEnum {
       private final RunAutomaton runAutomaton;
       private final CompiledAutomaton compiledAutomaton;
       private int termOrd;
@@ -1508,10 +1508,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
         throw new UnsupportedOperationException();
       }
       
-      @Override
-      public boolean seekExact(BytesRef text) throws IOException {
-        return seekCeil(text) == SeekStatus.FOUND;
-      }
     }
   }
 

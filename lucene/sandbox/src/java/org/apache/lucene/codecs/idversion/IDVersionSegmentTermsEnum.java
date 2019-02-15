@@ -39,7 +39,7 @@ import org.apache.lucene.util.fst.Util;
  *  can cast it to call {@link #seekExact(BytesRef, long)} for
  *  optimistic-concurrency, and also {@link #getVersion} to get the
  *  version of the currently seek'd term. */
-public final class IDVersionSegmentTermsEnum extends TermsEnum {
+public final class IDVersionSegmentTermsEnum extends TermsEnum.BaseTermsEnum {
 
   // Lazy init:
   IndexInput in;

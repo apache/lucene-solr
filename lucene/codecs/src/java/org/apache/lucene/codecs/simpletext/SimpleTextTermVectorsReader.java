@@ -338,7 +338,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private BytesRef payloads[];
   }
 
-  private static class SimpleTVTermsEnum extends TermsEnum {
+  private static class SimpleTVTermsEnum extends TermsEnum.BaseTermsEnum {
     SortedMap<BytesRef,SimpleTVPostings> terms;
     Iterator<Map.Entry<BytesRef,SimpleTextTermVectorsReader.SimpleTVPostings>> iterator;
     Map.Entry<BytesRef,SimpleTextTermVectorsReader.SimpleTVPostings> current;
@@ -358,11 +358,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       }
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     @Override
     public void seekExact(long ord) throws IOException {
       throw new UnsupportedOperationException();

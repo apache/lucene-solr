@@ -176,7 +176,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
 
-  private class RangeTermsEnum extends TermsEnum {
+  private class RangeTermsEnum extends TermsEnum.BaseTermsEnum {
 
     TermsEnum te;
     BytesRef curr;

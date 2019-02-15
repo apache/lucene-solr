@@ -36,7 +36,7 @@ import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field. */
 
-final class SegmentTermsEnum extends TermsEnum {
+final class SegmentTermsEnum extends TermsEnum.BaseTermsEnum {
 
   // Lazy init:
   IndexInput in;

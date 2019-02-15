@@ -403,7 +403,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  static class RAMTermsEnum extends TermsEnum {
+  static class RAMTermsEnum extends TermsEnum.BaseTermsEnum {
     Iterator<String> it;
     String current;
     private final RAMField ramField;
@@ -444,11 +444,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       }
     }
     
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }    
-
     @Override
     public void seekExact(long ord) {
       throw new UnsupportedOperationException();

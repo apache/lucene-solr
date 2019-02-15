@@ -44,7 +44,7 @@ import java.util.Arrays;
  * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  */
-public final class FuzzyTermsEnum extends TermsEnum {
+public final class FuzzyTermsEnum extends TermsEnum.BaseTermsEnum {
 
   // NOTE: we can't subclass FilteredTermsEnum here because we need to sometimes change actualEnum:
   private TermsEnum actualEnum;

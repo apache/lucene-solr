@@ -41,7 +41,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field. */
-public final class OrdsSegmentTermsEnum extends TermsEnum {
+public final class OrdsSegmentTermsEnum extends TermsEnum.BaseTermsEnum {
 
   // Lazy init:
   IndexInput in;

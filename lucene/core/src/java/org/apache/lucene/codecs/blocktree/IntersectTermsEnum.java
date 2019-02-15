@@ -44,7 +44,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  Likewise, in next it scans until it finds a term that matches the
  *  current automaton transition. */
 
-final class IntersectTermsEnum extends TermsEnum {
+final class IntersectTermsEnum extends TermsEnum.BaseTermsEnum {
 
   //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
