@@ -499,6 +499,14 @@ public final class KoreanTokenizer extends Tokenizer {
     }
   }
 
+  private int max_int(int a, int b) {
+    if (a >= b) {
+      return a;
+    } else {
+      return b;
+    }
+  }
+
   /* Incrementally parse some more characters.  This runs
    * the viterbi search forwards "enough" so that we
    * generate some more tokens.  How much forward depends on
@@ -513,6 +521,9 @@ public final class KoreanTokenizer extends Tokenizer {
 
     // Index of the last character of unknown word:
     int unknownWordEndIndex = -1;
+
+    /// Largest global posAhead of user word
+    int global_posAheadMax = -1;
 
     // Advances over each position (character):
     while (true) {
@@ -651,20 +662,37 @@ public final class KoreanTokenizer extends Tokenizer {
       if (userFST != null) {
         userFST.getFirstArc(arc);
         int output = 0;
+        int posAheadMax = 0;
+        int output_posAheadMax = 0;
+        int arcFinalOut_posAheadMax = 0;
+
         for(int posAhead=pos;;posAhead++) {
           final int ch = buffer.get(posAhead);
-          if (ch == -1) {
-            break;
-          }
-          if (userFST.findTargetArc(ch, arc, arc, posAhead == pos, userFSTReader) == null) {
-            break;
+          if (ch == -1 || userFST.findTargetArc(ch, arc, arc, posAhead == pos, userFSTReader) == null) {
+            if (anyMatches
+              && posAheadMax > global_posAheadMax) {
+              if (VERBOSE) {
+                System.out.println("    USER word " + new String(buffer.get(pos, posAheadMax - pos + 1)) + " toPos=" + (posAheadMax + 1));
+              }
+              add(userDictionary,
+                posData,
+                pos,
+                posAheadMax + 1,
+                output_posAheadMax + arcFinalOut_posAheadMax,
+                Type.USER);
+              
+              global_posAheadMax = max_int(global_posAheadMax, posAheadMax);
+              break;
+            }
+            else {
+              break;
+            }
           }
           output += arc.output.intValue();
           if (arc.isFinal()) {
-            if (VERBOSE) {
-              System.out.println("    USER word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1));
-            }
-            add(userDictionary, posData, pos, posAhead+1, output + arc.nextFinalOutput.intValue(), Type.USER);
+            posAheadMax = posAhead;
+            output_posAheadMax = output;
+            arcFinalOut_posAheadMax = arc.nextFinalOutput.intValue();
             anyMatches = true;
           }
         }
