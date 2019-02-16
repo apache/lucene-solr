@@ -39,6 +39,9 @@ Improvements
 * LUCENE-8652: SynonymQuery can now deboost the document frequency of each term when
   blending the score of the synonym. (Jim Ferenczi)
 
+* LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
+  the other matches. (Yeongsu Kim via Jim Ferenczi)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
