@@ -223,7 +223,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     String configName = getSaferTestName();
     createConfigSet(configName);
 
-    final int maxCardinality = 2;
+    final int maxCardinality = 2; // max cardinality for current test
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
     //  This tests we may pre-create the collection and it's acceptable.
@@ -242,7 +242,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2)).setMaxCardinality(2)
+            .setMaxShardsPerNode(2)).setMaxCardinality(maxCardinality)
         .process(solrClient);
 
     // now we index a document
@@ -257,7 +257,8 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG);
 
     // should fail since max cardinality is reached
-    Throwable e = expectThrows(Throwable.class, () -> addDocsAndCommit(true, newDoc(SHIPS[2])));
+    SolrException e = expectThrows(SolrException.class, () ->
+        solrClient.add(getAlias(), Collections.singleton(newDoc(SHIPS[2])), -1));
     assertTrue("update should fail because CRA max cardinality is reached",
         e.getMessage().contains("max cardinality can not be exceeded for a Category Routed Alias"));
     --lastDocId; // since last doc was not indexed
