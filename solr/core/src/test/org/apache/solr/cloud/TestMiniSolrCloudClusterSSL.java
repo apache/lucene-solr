@@ -33,7 +33,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -140,7 +139,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     checkClusterWithNodeReplacement(sslConfig);
   }
 
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented out on: 17-Feb-2019   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testSslWithCheckPeerName() throws Exception {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false, true);
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
