@@ -117,15 +117,15 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
     String dataValue = String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
     String candidateCollectionName = buildCollectionNameFromValue(dataValue);
-    List<String> colls = getCollectionList(this.parsedAliases);
+    List<String> cols = getCollectionList(this.parsedAliases);
 
-    if (colls.contains(candidateCollectionName)) {
+    if (cols.contains(candidateCollectionName)) {
       return;
     }
 
-    if (colls.stream()
+    if (cols.stream()
         .filter(x -> !x.contains(UNINITIALIZED)).count() >= Integer.valueOf(maxCardinality)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "max cardinality can not be exceeded for a Category Routed Alias: " + maxCardinality);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "max cardinality can not be exceeded for a Category Routed Alias: " + maxCardinality);
     }
   }
 
