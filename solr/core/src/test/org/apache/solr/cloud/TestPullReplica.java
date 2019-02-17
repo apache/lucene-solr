@@ -130,7 +130,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
