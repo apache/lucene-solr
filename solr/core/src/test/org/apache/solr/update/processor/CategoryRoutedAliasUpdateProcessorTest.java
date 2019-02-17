@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
@@ -30,6 +29,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -248,11 +248,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG);
 
     // should fail since max cardinality is reached
-    SolrException e = expectThrows(SolrException.class, () ->
-        solrClient.add(getAlias(), Collections.singleton(newDoc(SHIPS[2])), -1));
-    assertTrue("update should fail because CRA max cardinality is reached",
-        e.getMessage().contains("max cardinality can not be exceeded for a Category Routed Alias"));
-    --lastDocId; // since last doc was not indexed
+    testFailedDocument(newDoc(SHIPS[2]), "max cardinality can not be exceeded for a Category Routed Alias");
     assertInvariants(colVogon, colHoG);
   }
 
@@ -381,6 +377,18 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
       return FieldValueMutatingUpdateProcessor.valueMutator(getSelector(), next,
           (src) -> Integer.valueOf(src.toString()) + 1);
     }
+  }
+
+  private void testFailedDocument(SolrInputDocument sdoc, String errorMsg) throws SolrServerException, IOException {
+    try {
+      final UpdateResponse resp = solrClient.add(getAlias(), sdoc);
+      // if we have a TolerantUpdateProcessor then we see it there)
+      final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
+      assertTrue(errors != null && errors.toString().contains(errorMsg));
+    } catch (SolrException e) {
+      assertTrue(e.getMessage().contains(errorMsg));
+    }
+    ++numDocsDeletedOrFailed;
   }
 
 }
