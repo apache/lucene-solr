@@ -140,10 +140,6 @@ public final class Polygon2D extends EdgeTree {
 
   @Override
   protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    //If a point or a line then it is not within.
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) ||((cx == bx && cy == by))) {
-      return WithinRelation.NOTWITHIN;
-    }
     // check any holes
     if (holes != null) {
       Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
@@ -186,6 +182,11 @@ public final class Polygon2D extends EdgeTree {
     if (relation == WithinRelation.CANDIDATE) {
       return WithinRelation.CANDIDATE;
     }
+
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
 
     //check that triangle bounding box not inside shape bounding box
     if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {

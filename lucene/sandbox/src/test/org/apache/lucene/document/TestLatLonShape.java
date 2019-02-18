@@ -26,6 +26,7 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
+import org.apache.lucene.geo.SimpleWKTShapeParser;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -840,7 +841,7 @@ public class TestLatLonShape extends LuceneTestCase {
     assertEquals(encoded.cX, alonEnc);
   }
 
-  public void testWithInDateLine() throws Exception {
+  public void testWithinDateLine() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -884,7 +885,7 @@ public class TestLatLonShape extends LuceneTestCase {
     IOUtils.close(w, reader, dir);
   }
 
-  public void testLContainsDateLine() throws Exception {
+  public void testContainsDateLine() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
