@@ -360,24 +360,28 @@ public abstract class EdgeTree {
             (dx > maxLon && ex > maxLon);
 
         if (outside == false) {
-          r = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
-          if (r != Relation.CELL_OUTSIDE_QUERY) {
-            return r;
+          Relation thisRelation = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
+          if (thisRelation == Relation.CELL_CROSSES_QUERY) {
+            //if crosses then we can return
+            return Relation.CELL_CROSSES_QUERY;
+          } else if (thisRelation == Relation.CELL_INSIDE_QUERY) {
+            //might be inside but we need to check other edges
+            r = Relation.CELL_INSIDE_QUERY;
           }
         }
         if (left != null) {
-          if ((r = left.relateLine(ax, ay, bx, by)) != Relation.CELL_OUTSIDE_QUERY) {
-            return r;
+          if ((left.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
+            return Relation.CELL_CROSSES_QUERY;
           }
         }
 
         if (right != null && maxLat >= low) {
-          if ((r = right.relateLine(ax, ay, bx, by)) != Relation.CELL_OUTSIDE_QUERY) {
-            return r;
+          if ((right.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
+            return Relation.CELL_CROSSES_QUERY;
           }
         }
       }
-      return Relation.CELL_OUTSIDE_QUERY;
+      return r;
     }
 
     /** Returns true if the box crosses any edge in this edge subtree */
