@@ -189,7 +189,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+            .setMaxShardsPerNode(2)).setMaxCardinality(Integer.MAX_VALUE)
         .process(solrClient);
 
     // now we index a document

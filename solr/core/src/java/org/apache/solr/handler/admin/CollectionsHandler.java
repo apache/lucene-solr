@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.api.Api;
@@ -82,6 +83,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -582,6 +584,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       // Now filter out just the parameters we care about from the request
       Map<String, Object> result = copy(req.getParams(), null, routedAlias.getRequiredParams());
+      if (!result.keySet().containsAll(routedAlias.getRequiredParams())) {
+        throw new SolrException(BAD_REQUEST, "Not all required params were supplied. Missing params: " +
+            StrUtils.join(Sets.difference(routedAlias.getRequiredParams(), result.keySet()), ','));
+      }
       copy(req.getParams(), result, routedAlias.getOptionalParams());
 
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix

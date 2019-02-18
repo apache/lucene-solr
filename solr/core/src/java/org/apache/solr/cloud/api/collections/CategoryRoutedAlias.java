@@ -48,6 +48,9 @@ public class CategoryRoutedAlias implements RoutedAlias {
   // receive data.
   public static final String UNINITIALIZED = "NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA__TEMP";
 
+  @SuppressWarnings("WeakerAccess")
+  public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
+
   /**
    * Parameters required for creating a category routed alias
    */
@@ -55,10 +58,10 @@ public class CategoryRoutedAlias implements RoutedAlias {
   public static final Set<String> REQUIRED_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       CommonParams.NAME,
       ROUTER_TYPE_NAME,
-      ROUTER_FIELD)));
+      ROUTER_FIELD,
+      ROUTER_MAX_CARDINALITY
+  )));
 
-  @SuppressWarnings("WeakerAccess")
-  public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
   @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
