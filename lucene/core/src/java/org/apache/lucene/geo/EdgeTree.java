@@ -365,10 +365,10 @@ public abstract class EdgeTree {
             return Relation.CELL_CROSSES_QUERY;
           } else if (thisRelation == Relation.CELL_INSIDE_QUERY) {
             //We still need to check that the line is between the edges of this other line
-            boolean contains = (dy > minLat && ey > minLat) &&
-                (dy < maxLat && ey < maxLat) &&
-                (dx > minLon && ex > minLon) &&
-                (dx < maxLon && ex < maxLon);
+            boolean contains = (dy >= minLat && ey >= minLat) &&
+                (dy <= maxLat && ey <= maxLat) &&
+                (dx >= minLon && ex >= minLon) &&
+                (dx <= maxLon && ex <= maxLon);
             if (contains) {
               return Relation.CELL_INSIDE_QUERY;
             } else {
