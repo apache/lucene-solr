@@ -50,6 +50,7 @@ import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -239,7 +240,8 @@ public class ZkStateReader implements Closeable {
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
       CoreAdminParams.BACKUP_LOCATION,
-      MAX_CORES_PER_NODE)));
+      MAX_CORES_PER_NODE,
+      CollectionAdminParams.DEFAULTS)));
 
   /**
    * Returns config set name for collection.
