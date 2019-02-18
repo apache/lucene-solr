@@ -882,6 +882,9 @@ public class TestLatLonShape extends LuceneTestCase {
     Query q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
     assertEquals(1, searcher.count(q));
 
+    q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -20, 20, 170, -170);
+    assertEquals(1, searcher.count(q));
+
     IOUtils.close(w, reader, dir);
   }
 
@@ -924,6 +927,9 @@ public class TestLatLonShape extends LuceneTestCase {
     };
 
     Query q = LatLonShape.newPolygonQuery("test", QueryRelation.CONTAINS, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.CONTAINS, -7.5, 15, 176, -176);
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
