@@ -43,6 +43,9 @@ Bug Fixes
 
 * SOLR-13229: Cleanup replicasMetTragicEvent after all types of exception (Tomás Fernández Löbbe)
 
+* SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
+  Ishan Chattopadhyaya)
+
 Improvements
 ----------------------
 
