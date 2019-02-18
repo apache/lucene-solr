@@ -150,10 +150,6 @@ public final class Polygon2D extends EdgeTree {
       }
     }
 
-    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
-    if (numCorners > 0) {
-      return WithinRelation.NOTWITHIN;
-    }
     WithinRelation relation = WithinRelation.DISJOINT;
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
     if (tree.relateLine(ax, ay, bx, by) == Relation.CELL_CROSSES_QUERY) {
