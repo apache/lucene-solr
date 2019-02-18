@@ -221,6 +221,28 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
   @Slow
   @Test
+  public void testMissingRequiredParams() throws Exception {
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+
+    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
+    assertTrue("We expect at least 2 configSets",
+        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
+    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
+
+    SolrException e = expectThrows(SolrException.class, () ->CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
+            .setMaxShardsPerNode(2))
+        .process(solrClient)
+    );
+    assertTrue("Create Alias should fail since not all required params were supplied", e.getMessage().contains("Not all required params were supplied"));
+  }
+
+  @Slow
+  @Test
   public void testMaxCardinality() throws Exception {
     String configName = getSaferTestName();
     createConfigSet(configName);
@@ -259,7 +281,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG);
 
     // should fail since max cardinality is reached
-    testFailedDocument(newDoc(SHIPS[2]), "max cardinality can not be exceeded for a Category Routed Alias");
+    testFailedDocument(newDoc(SHIPS[2]), "Max cardinality");
     assertInvariants(colVogon, colHoG);
   }
 
