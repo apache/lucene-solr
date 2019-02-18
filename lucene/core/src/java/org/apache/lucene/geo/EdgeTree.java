@@ -338,7 +338,7 @@ public abstract class EdgeTree {
       return r;
     }
 
-    /** Returns true if the Line crosses any edge in this edge subtree */
+    /** Returns the relation between the provided line and this edge subtree */
     Relation relateLine(double ax, double ay, double bx, double by) {
       double minLat = StrictMath.min(ay, by);
       double minLon = StrictMath.min(ax, bx);
@@ -361,18 +361,18 @@ public abstract class EdgeTree {
 
         if (outside == false) {
           r = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
-          if (r == Relation.CELL_CROSSES_QUERY) {
+          if (r != Relation.CELL_OUTSIDE_QUERY) {
             return r;
           }
         }
         if (left != null) {
-          if ((r = left.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
+          if ((r = left.relateLine(ax, ay, bx, by)) != Relation.CELL_OUTSIDE_QUERY) {
             return r;
           }
         }
 
         if (right != null && maxLat >= low) {
-          if ((r = right.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
+          if ((r = right.relateLine(ax, ay, bx, by)) != Relation.CELL_OUTSIDE_QUERY) {
             return r;
           }
         }
