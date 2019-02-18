@@ -166,6 +166,12 @@ Bug Fixes
 * SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
   matched (Alan Woodward, Mikhail Khludnev)
 
+* SOLR-13248: Autoscaling based replica placement is broken out of the box. Solr 7.5 enabled autoscaling based replica
+  placement by default but in the absence of default cluster policies, autoscaling can place more than 1 replica of the
+  same shard on the same node. Also, the maxShardsPerNode and createNodeSet was not respected. Due to these reasons,
+  this issue reverts the default replica placement policy to the 'legacy' assignment policy that was the default until
+  Solr 7.4. (Gus Heck, Andrzej Bialecki, Bram Van Dam, shalin)
+
 Improvements
 ----------------------
 
