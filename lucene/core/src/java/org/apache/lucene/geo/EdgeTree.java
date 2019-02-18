@@ -345,7 +345,6 @@ public abstract class EdgeTree {
       double maxLat = StrictMath.max(ay, by);
       double maxLon = StrictMath.max(ax, bx);
 
-      Relation r = Relation.CELL_OUTSIDE_QUERY;
       if (minLat <= max) {
         double dy = lat1;
         double ey = lat2;
@@ -365,8 +364,16 @@ public abstract class EdgeTree {
             //if crosses then we can return
             return Relation.CELL_CROSSES_QUERY;
           } else if (thisRelation == Relation.CELL_INSIDE_QUERY) {
-            //might be inside but we need to check other edges
-            r = Relation.CELL_INSIDE_QUERY;
+            //We still need to check that the line is between the edges of this other line
+            boolean contains = (dy > minLat && ey > minLat) &&
+                (dy < maxLat && ey < maxLat) &&
+                (dx > minLon && ex > minLon) &&
+                (dx < maxLon && ex < maxLon);
+            if (contains) {
+              return Relation.CELL_INSIDE_QUERY;
+            } else {
+              return Relation.CELL_CROSSES_QUERY;
+            }
           }
         }
         if (left != null) {
@@ -381,7 +388,7 @@ public abstract class EdgeTree {
           }
         }
       }
-      return r;
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
     /** Returns true if the box crosses any edge in this edge subtree */
