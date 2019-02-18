@@ -50,10 +50,8 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
     CharSequence buffer = str;
 
     // regular escapable Char for terms
-    for (int i = 0; i < escapableTermChars.length; i++) {
-      buffer = replaceIgnoreCase(buffer, escapableTermChars[i].toLowerCase(locale),
-          "\\", locale);
-    }
+    for (int i = 0; i < escapableTermChars.length; i++)
+      buffer = buffer.toString().replace(escapableTermChars[i], "\\" + escapableTermChars[i]);
 
     // First Character of a term as more escaping chars
     for (int i = 0; i < escapableTermExtraFirstChars.length; i++) {
@@ -73,10 +71,9 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
 
     CharSequence buffer = str;
 
-    for (int i = 0; i < escapableQuotedChars.length; i++) {
-      buffer = replaceIgnoreCase(buffer, escapableTermChars[i].toLowerCase(locale),
-          "\\", locale);
-    }
+    for (int i = 0; i < escapableQuotedChars.length; i++)
+      buffer = buffer.toString().replace(escapableTermChars[i], "\\" + escapableTermChars[i]);
+
     return buffer;
   }
 
@@ -97,72 +94,6 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
   }
 
   /**
-   * replace with ignore case
-   * 
-   * @param string
-   *          string to get replaced
-   * @param sequence1
-   *          the old character sequence in lowercase
-   * @param escapeChar
-   *          the new character to prefix sequence1 in return string.
-   * @return the new String
-   */
-  private static CharSequence replaceIgnoreCase(CharSequence string,
-      CharSequence sequence1, CharSequence escapeChar, Locale locale) {
-    if (escapeChar == null || sequence1 == null || string == null)
-      throw new NullPointerException();
-
-    // empty string case
-    int count = string.length();
-    int sequence1Length = sequence1.length();
-    if (sequence1Length == 0) {
-      StringBuilder result = new StringBuilder((count + 1)
-          * escapeChar.length());
-      result.append(escapeChar);
-      for (int i = 0; i < count; i++) {
-        result.append(string.charAt(i));
-        result.append(escapeChar);
-      }
-      return result.toString();
-    }
-
-    // normal case
-    StringBuilder result = new StringBuilder();
-    char first = sequence1.charAt(0);
-    int start = 0, copyStart = 0, firstIndex;
-    while (start < count) {
-      if ((firstIndex = string.toString().toLowerCase(locale).indexOf(first,
-          start)) == -1)
-        break;
-      boolean found = true;
-      if (sequence1.length() > 1) {
-        if (firstIndex + sequence1Length > count)
-          break;
-        for (int i = 1; i < sequence1Length; i++) {
-          if (string.toString().toLowerCase(locale).charAt(firstIndex + i) != sequence1
-              .charAt(i)) {
-            found = false;
-            break;
-          }
-        }
-      }
-      if (found) {
-        result.append(string.toString().substring(copyStart, firstIndex));
-        result.append(escapeChar);
-        result.append(string.toString().substring(firstIndex,
-            firstIndex + sequence1Length));
-        copyStart = start = firstIndex + sequence1Length;
-      } else {
-        start = firstIndex + 1;
-      }
-    }
-    if (result.length() == 0 && copyStart == 0)
-      return string;
-    result.append(string.toString().substring(copyStart));
-    return result.toString();
-  }
-
-  /**
    * escape all tokens that are part of the parser syntax on a given string
    * 
    * @param str
@@ -178,10 +109,9 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
 
     CharSequence buffer = str;
 
-    for (int i = 0; i < escapableWhiteChars.length; i++) {
-      buffer = replaceIgnoreCase(buffer, escapableWhiteChars[i].toLowerCase(locale),
-          "\\", locale);
-    }
+    for (int i = 0; i < escapableWhiteChars.length; i++)
+      buffer = buffer.toString().replace(escapableWhiteChars[i], "\\" + escapableWhiteChars[i]);
+
     return buffer;
   }
 
