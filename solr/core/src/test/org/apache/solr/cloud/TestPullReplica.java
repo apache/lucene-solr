@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 @Slow
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+//@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 public class TestPullReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
