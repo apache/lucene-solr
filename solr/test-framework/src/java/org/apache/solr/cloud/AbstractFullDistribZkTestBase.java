@@ -2269,13 +2269,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           continue;
         }
         while (true) {
-          long replicaIndexVersion = getIndexVersion(pullReplica); 
+          long replicaIndexVersion = getIndexVersion(pullReplica);
+          if (replicaIndexVersion == 0L) {
+            log.info("Leader replica's index has version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
+            break;
+          }
           if (leaderIndexVersion == replicaIndexVersion) {
             log.info("Leader replica's version ({}) in sync with replica({}): {} == {}", leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
-            
-            if (replicaIndexVersion == 0L) {
-              break;
-            }
             
             // Make sure the host is serving the correct version
             try (SolrCore core = containers.get(pullReplica.getNodeName()).getCore(pullReplica.getCoreName())) {
