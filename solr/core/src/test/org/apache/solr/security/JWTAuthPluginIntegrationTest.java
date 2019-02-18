@@ -78,6 +78,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
