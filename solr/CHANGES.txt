@@ -54,6 +54,8 @@ Bug fixes
 
 * SOLR-12708: Async collection actions should not hide internal failures (Mano Kovacs, Varun Thacker, Tomás Fernández Löbbe)
 
+* SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
+  Ishan Chattopadhyaya)
 
 ==================  7.7.1 ==================
 

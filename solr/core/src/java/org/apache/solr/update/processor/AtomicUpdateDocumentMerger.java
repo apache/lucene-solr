@@ -148,7 +148,7 @@ public class AtomicUpdateDocumentMerger {
    * Note: If an update command has updates to only supported fields (and _version_ is also supported),
    * only then is such an update command executed as an in-place update.
    */
-  private static boolean isSupportedFieldForInPlaceUpdate(SchemaField schemaField) {
+  public static boolean isSupportedFieldForInPlaceUpdate(SchemaField schemaField) {
     return !(schemaField.indexed() || schemaField.stored() || !schemaField.hasDocValues() || 
         schemaField.multiValued() || !(schemaField.getType() instanceof NumericValueFieldType));
   }
