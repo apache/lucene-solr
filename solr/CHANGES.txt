@@ -152,6 +152,24 @@ Upgrade Notes
   are problematic.  In-place-updates are safe though.  If you want to delete certain child documents and if you know
   they don't themselves have nested children then you must do so with a delete-by-query technique.
 
+* SOLR-13248: The default replica placement strategy used in Solr has been reverted to the 'legacy' policy used by Solr
+  7.4 and previous versions. This is due to multiple bugs in the autoscaling based replica placement strategy that was
+  made default in Solr 7.5 which causes multiple replicas of the same shard to be placed on the same node in addition
+  to the maxShardsPerNode and createNodeSet parameters being ignored. Although the default has changed, autoscaling
+  will continue to be used if a cluster policy or preference is specified or a collection level policy is in use.
+  The default replica placement strategy can be changed to use autoscaling again by setting a cluster property:
+  curl -X POST -H 'Content-type:application/json' --data-binary '
+  {
+    "set-obj-property": {
+      "defaults" : {
+        "cluster": {
+          "useLegacyReplicaAssignment":false
+        }
+      }
+    }
+  }' http://$SOLR_HOST:$SOLR_PORT/api/cluster
+
+
 New Features
 ----------------------
 
