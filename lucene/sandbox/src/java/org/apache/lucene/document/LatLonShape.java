@@ -104,7 +104,6 @@ public class LatLonShape {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       builder.add(newBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, GeoUtils.MAX_LON_INCL), BooleanClause.Occur.MUST);
       builder.add(newBoxQuery(field, queryRelation, minLatitude, maxLatitude, GeoUtils.MIN_LON_INCL, maxLongitude), BooleanClause.Occur.MUST);
-      builder.setMinimumNumberShouldMatch(2);
       return builder.build();
     }
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
@@ -119,7 +118,6 @@ public class LatLonShape {
       for (int i =0; i < lines.length; i++) {
         builder.add(newLineQuery(field, queryRelation, lines[i]), BooleanClause.Occur.MUST);
       }
-      builder.setMinimumNumberShouldMatch(lines.length);
       return builder.build();
     }
     return new LatLonShapeLineQuery(field, queryRelation, lines);
@@ -134,7 +132,6 @@ public class LatLonShape {
       for (int i =0; i < polygons.length; i++) {
          builder.add(newPolygonQuery(field, queryRelation, polygons[i]), BooleanClause.Occur.MUST);
       }
-      builder.setMinimumNumberShouldMatch(polygons.length);
      return builder.build();
     }
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
