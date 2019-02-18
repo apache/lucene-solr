@@ -584,10 +584,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       // Now filter out just the parameters we care about from the request
       Map<String, Object> result = copy(req.getParams(), null, routedAlias.getRequiredParams());
-      if (!result.keySet().containsAll(routedAlias.getRequiredParams())) {
-        throw new SolrException(BAD_REQUEST, "Not all required params were supplied. Missing params: " +
-            StrUtils.join(Sets.difference(routedAlias.getRequiredParams(), result.keySet()), ','));
-      }
       copy(req.getParams(), result, routedAlias.getOptionalParams());
 
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix

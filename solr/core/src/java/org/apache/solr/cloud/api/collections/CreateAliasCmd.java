@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Sets;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -115,6 +116,11 @@ public class CreateAliasCmd extends AliasCmd {
     if (routedAlias == null) {
       // should never happen here, but keep static analysis in IDE's happy...
       throw new SolrException(SERVER_ERROR,"Tried to create a routed alias with no type!");
+    }
+
+    if (!props.keySet().containsAll(routedAlias.getRequiredParams())) {
+      throw new SolrException(BAD_REQUEST, "Not all required params were supplied. Missing params: " +
+          StrUtils.join(Sets.difference(routedAlias.getRequiredParams(), props.keySet()), ','));
     }
 
     // Create the first collection.
