@@ -93,8 +93,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   /*
-   * Implements a TopFieldCollector over one SortField criteria, with tracking
-   * document scores and maxScore.
+   * Implements a TopFieldCollector over one SortField criteria, with tracking document scores.
    */
   private static class SimpleFieldCollector extends TopFieldCollector {
 
@@ -189,11 +188,22 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     private int prorateForSegment(int topK, LeafReaderContext leafCtx) {
         // prorate number of hits to collect based on proportion of documents in this leaf (segment).
+        // These calculations are based on documents' index sort values being distributed uniformly
+        // randomly among segments.
         // p := probability of a top-k document (or any document) being in this segment
-        double p = (double) leafCtx.reader().numDocs() / leafCtx.parent.reader().numDocs();
+        int numDocs = leafCtx.parent.reader().numDocs();
+        if (numDocs == 0) {
+            return 0;
+        }
+        double p = (double) leafCtx.reader().numDocs() / numDocs;
         // m := expected number of the topK results in this segment
         double m = p * topK;
-        // Increase N to include a bound to ensure the probability of missing a doc is very small
+        // Add a "safety margin" to ensure the probability of missing a doc is small. This margin
+        // corresponds to perSegmentMargin standard deviations of a binomial distribution, which has
+        // variance = (p - p^2), where p is the mean of the distribution. With 3 standard deviations
+        // above the mean, we expect to return a non top-K document (eg maybe document K+1 instead
+        // of K) 0.15% of the time (per segment). With 5 standard deviations, that would happen
+        // about 1 in 7 million (different, somehow random) queries.
         double stddev = Math.sqrt(topK * (p - (p * p)));
         return (int) Math.ceil(m + perSegmentMargin * stddev);
     }

@@ -258,58 +258,6 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     terms = new ArrayList<>(randomTerms);
   }
 
-  private void createUniformIndexX() throws IOException {
-    dir = newDirectory();
-    numDocs = atLeast(150);
-    int numSegs = atLeast(5);
-    // Create segments of random pre-determined sizes so we can distribute the documents uniformly
-    // among them
-    int docsRemaining = numDocs;
-    List<Integer> segmentSizes = new ArrayList<>();
-    for (int i = 0; i < numSegs - 1; i++) {
-      int size = random().nextInt(docsRemaining - numSegs + i);
-      segmentSizes.add(size);
-      docsRemaining -= size;
-    }
-    segmentSizes.add(docsRemaining);
-    List<List<Document>> segDocs = new ArrayList<>();
-    for (int i = 0; i < numSegs; i++) {
-      segDocs.add(new ArrayList<>());
-    }
-    createRandomTerms();
-    List<List<Document>> segDocsToFill = new ArrayList<>(segDocs);
-    for (int seg = 0, i = 0, j = 0; i < numDocs; ++i) {
-      // Create documents with the sort key and terms uniformly distributed among segments
-      seg %= segDocsToFill.size();
-      if (seg == 0) {
-        // this causes equal numbers of docs with "score" j to be added to each segment that has at least j documents
-        // TODO: sometimes do not increment j (so we get more random setup), but we must increment it when complete a segment
-        ++j;
-      }
-      List<Document> docs = segDocsToFill.get(seg);
-      docs.add(numberedDocument(j, j));
-      if (docs.size() == segmentSizes.get(seg)) {
-        segmentSizes.remove(seg);
-        segDocsToFill.remove(seg);
-      } else {
-        ++seg;
-      }
-    }
-    final long seed = random().nextLong();
-    final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
-    // one segment per commit so we can control the segment sizes
-    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
-    iwc.setIndexSort(sort);
-    iw = new RandomIndexWriter(new Random(seed), dir, iwc);
-    for (int seg = 0; seg < segDocs.size(); seg++) {
-      for (Document doc : segDocs.get(seg)) {
-        iw.addDocument(doc);
-      }
-      iw.commit();
-    }
-    reader = iw.getReader();
-  }
-
   private void createUniformIndex() throws IOException {
     dir = newDirectory();
     numDocs = atLeast(150);
@@ -391,7 +339,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     }
   }
 
-  public void testProratedMarginTooSmall() throws IOException {
+  public void testNoProrating() throws IOException {
     final int iters = atLeast(8);
     for (int i = 0; i < iters; ++i) {
       createSkewedIndex();
@@ -400,14 +348,21 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         final IndexSearcher searcher = new IndexSearcher(reader, exec);
         for (int j = 0; j < 10 * iters; ++j) {
           final int numHits = TestUtil.nextInt(random(), 5, 50);
-          final int margin = 0;
-          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager = TopFieldCollector.createManager(sort, numHits, null, numHits, margin);
+          // We expect to see some ranking errors when the index is skewed and the margin is zero
+          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager =
+              TopFieldCollector.createManager(sort, numHits, null, numHits, 0);
 
           final Query query = new MatchAllDocsQuery();
           TopDocs expected = searcher.search(query, numHits, sort);
-          TopDocs td = searcher.search(query, collectorManager);
+          TopDocs td1 = searcher.search(query, collectorManager);
           expectThrows(AssertionError.class, () ->
-                       assertTopDocsEquals(expected.scoreDocs, td.scoreDocs));
+                       assertTopDocsEquals(expected.scoreDocs, td1.scoreDocs));
+
+          // Setting the margin to Integer.MAX_VALUE effectively disables prorating
+          final CollectorManager<TopFieldCollector, TopFieldDocs> noProratingManager =
+              TopFieldCollector.createManager(sort, numHits, null, numHits, Integer.MAX_VALUE);
+          TopDocs td2 = searcher.search(query, noProratingManager);
+          assertTopDocsEquals(expected.scoreDocs, td2.scoreDocs);
         }
       } finally {
         exec.shutdown();
