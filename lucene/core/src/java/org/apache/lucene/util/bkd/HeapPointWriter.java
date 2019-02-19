@@ -37,7 +37,6 @@ public final class HeapPointWriter implements PointWriter {
     docIDs = new int[size];
     this.maxSize = size;
     this.packedBytesLength = packedBytesLength;
-    // 64K per page, unless each value is > 64K:
     block = new byte[packedBytesLength * size];
     scratch = new byte[packedBytesLength];
   }
