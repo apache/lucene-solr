@@ -121,19 +121,15 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    System.out.println("*****************FOO***************");
-
     // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
     assertTrue("We expect at least 2 configSets",
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    System.out.println("*****************FOO2***************");
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+            .setMaxShardsPerNode(2)).setMaxCardinality(20)
         .process(solrClient);
-    System.out.println("*****************FOO3***************");
     addDocsAndCommit(true,
         newDoc(somethingInChinese),
         newDoc(somethingInHebrew),
@@ -142,12 +138,8 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         newDoc(somethingInGreek),
         newDoc(somethingInGujarati));
 
-    System.out.println("*****************FOO4***************");
-
     // Note Gujarati not listed, because it duplicates hebrew.
     assertInvariants(collectionChinese, collectionHebrew, collectionThai, collectionArabic, collectionGreek);
-
-    System.out.println("*****************FOO5***************");
 
     assertColHasDocCount(collectionChinese, 1);
     assertColHasDocCount(collectionHebrew, 2);
@@ -305,7 +297,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     final int numReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas))
+            .setMaxShardsPerNode(numReplicas)).setMaxCardinality(20)
         .process(solrClient);
 
     // cause some collections to be created
