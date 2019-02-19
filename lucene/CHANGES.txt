@@ -28,6 +28,8 @@ Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
 
+* LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
