@@ -127,8 +127,8 @@ public final class OfflinePointReader extends PointReader {
   @Override
   public int docID() {
     int position = this.offset + packedValueLength;
-    return ((onHeapBuffer[position++] & 0xFF) << 24) | ((onHeapBuffer[position++] & 0xFF) << 16)
-        | ((onHeapBuffer[position++] & 0xFF) <<  8) |  (onHeapBuffer[position++] & 0xFF);
+    return ((onHeapBuffer[position] & 0xFF) << 24) | ((onHeapBuffer[++position] & 0xFF) << 16)
+        | ((onHeapBuffer[++position] & 0xFF) <<  8) |  (onHeapBuffer[++position] & 0xFF);
   }
 
   @Override

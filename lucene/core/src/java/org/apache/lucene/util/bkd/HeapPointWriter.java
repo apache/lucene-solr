@@ -77,7 +77,7 @@ public final class HeapPointWriter implements PointWriter {
   }
 
   private int fromByteArray(int offset, byte[] bytes) {
-    return bytes[offset] << 24 | (bytes[++offset] & 0xFF) << 16 | (bytes[++offset] & 0xFF) << 8 | (bytes[++offset] & 0xFF);
+    return (bytes[offset] & 0xFF) << 24 | (bytes[++offset] & 0xFF) << 16 | (bytes[++offset] & 0xFF) << 8 | (bytes[++offset] & 0xFF);
   }
 
   public void swap(int i, int j) {
