@@ -93,7 +93,7 @@ public final class DrillDownQuery extends Query {
 
   /** Adds one dimension of drill downs; if you pass the same
    *  dimension more than once it is OR'd with the previous
-   *  cofnstraints on that dimension, and all dimensions are
+   *  constraints on that dimension, and all dimensions are
    *  AND'd against each other and the base query. */
   public void add(String dim, String... path) {
     String indexedField = config.getDimConfig(dim).indexFieldName;

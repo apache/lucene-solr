@@ -28,6 +28,8 @@ Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
 
+* LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
@@ -133,6 +135,8 @@ API Changes
 * LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
   of IndexWriter#getDocStats(). (Simon Willnauer)
 
+* LUCENE-8292: Make TermsEnum fully abstract. (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -220,6 +224,9 @@ New Features
 
 * LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
   underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
+
+* LUCENE-8697: GraphTokenStreamFiniteStrings correctly handles side paths 
+  containing gaps (Alan Woodward)
 
 Improvements
 

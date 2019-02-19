@@ -312,7 +312,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -1340,6 +1340,12 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
     ;;
   esac
 
+  exit $?
+fi
+
+
+if [[ "$SCRIPT_CMD" == "autoscaling" ]]; then
+  run_tool autoscaling $@
   exit $?
 fi
 

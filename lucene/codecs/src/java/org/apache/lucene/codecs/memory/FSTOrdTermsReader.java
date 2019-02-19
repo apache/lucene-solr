@@ -305,7 +305,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
 
     // Only wraps common operations for PBF interact
-    abstract class BaseTermsEnum extends TermsEnum {
+    abstract class BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
 
       /* Current term's ord, starts from 0 */
       long ord;
@@ -626,11 +626,6 @@ public class FSTOrdTermsReader extends FieldsProducer {
         super.decodeStats();
       }
 
-      @Override
-      public boolean seekExact(BytesRef text) throws IOException {
-        return seekCeil(text) == SeekStatus.FOUND;
-      }
-      
       @Override
       public SeekStatus seekCeil(BytesRef target) throws IOException {
         throw new UnsupportedOperationException();
