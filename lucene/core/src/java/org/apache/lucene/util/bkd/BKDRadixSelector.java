@@ -476,10 +476,10 @@ public final class BKDRadixSelector {
   private int getMaxPointsSortInHeap(PointWriter left, PointWriter right) {
     int pointsUsed = 0;
     if (left instanceof HeapPointWriter) {
-      pointsUsed += ((HeapPointWriter) left).maxSize;
+      pointsUsed += ((HeapPointWriter) left).size;
     }
     if (right instanceof HeapPointWriter) {
-      pointsUsed += ((HeapPointWriter) right).maxSize;
+      pointsUsed += ((HeapPointWriter) right).size;
     }
     assert maxPointsSortInHeap >= pointsUsed;
     return maxPointsSortInHeap - pointsUsed;
