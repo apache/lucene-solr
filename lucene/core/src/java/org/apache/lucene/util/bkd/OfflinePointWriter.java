@@ -46,34 +46,26 @@ public final class OfflinePointWriter implements PointWriter {
     this.name = out.getName();
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
-
     this.expectedCount = expectedCount;
   }
 
   @Override
-  public void append(byte[] packedValue, int docID) throws IOException {
-    assert packedValue.length == packedBytesLength;
-    out.writeBytes(packedValue, 0, packedValue.length);
-    out.writeInt(docID);
-    count++;
-    assert expectedCount == 0 || count <= expectedCount;
-  }
-
-  @Override
   public void append(BytesRef packedValue, int docID) throws IOException {
-    assert packedValue.length == packedBytesLength;
+    assert closed == false : "Point writer is already closed";
+    assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
     out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length);
     out.writeInt(docID);
     count++;
-    assert expectedCount == 0 || count <= expectedCount;
+    assert expectedCount == 0 || count <= expectedCount:  "expectedCount=" + expectedCount + " vs count=" + count;
   }
 
   @Override
   public void append(BytesRef packedValueWithDocId) throws IOException {
-    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES;
+    assert closed == false : "Point writer is already closed";
+    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
     out.writeBytes(packedValueWithDocId.bytes, packedValueWithDocId.offset, packedValueWithDocId.length);
     count++;
-    assert expectedCount == 0 || count <= expectedCount;
+    assert expectedCount == 0 || count <= expectedCount : "expectedCount=" + expectedCount + " vs count=" + count;
   }
 
   @Override
@@ -83,7 +75,7 @@ public final class OfflinePointWriter implements PointWriter {
   }
 
   protected OfflinePointReader getReader(long start, long length, byte[] reusableBuffer) throws IOException {
-    assert closed;
+    assert closed: "point writer is still open and trying to get a reader";
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
     assert expectedCount == 0 || count == expectedCount;
     return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, reusableBuffer);

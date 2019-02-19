@@ -38,15 +38,16 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int bytesPerDimensions = Integer.BYTES;
     int packedLength = dimensions * bytesPerDimensions;
     PointWriter points = getRandomPointWriter(dir, values, packedLength);
-    byte[] bytes = new byte[Integer.BYTES];
-    NumericUtils.intToSortableBytes(1, bytes, 0);
-    points.append(bytes, 0);
-    NumericUtils.intToSortableBytes(2, bytes, 0);
-    points.append(bytes, 1);
-    NumericUtils.intToSortableBytes(3, bytes, 0);
-    points.append(bytes, 2);
-    NumericUtils.intToSortableBytes(4, bytes, 0);
-    points.append(bytes, 3);
+    byte[] value = new byte[packedLength];
+    BytesRef bytesRef = new BytesRef(value);
+    NumericUtils.intToSortableBytes(1, bytesRef.bytes, 0);
+    points.append(bytesRef, 0);
+    NumericUtils.intToSortableBytes(2, bytesRef.bytes, 0);
+    points.append(bytesRef, 1);
+    NumericUtils.intToSortableBytes(3, bytesRef.bytes, 0);
+    points.append(bytesRef, 2);
+    NumericUtils.intToSortableBytes(4, bytesRef.bytes, 0);
+    points.append(bytesRef, 3);
     points.close();
     PointWriter copy = copyPoints(dir,points, packedLength);
     verify(dir, copy, dimensions, 0, values, middle, packedLength, bytesPerDimensions, 0);
@@ -85,9 +86,10 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int packedLength = dimensions * bytesPerDimensions;
     PointWriter points = getRandomPointWriter(dir, values, packedLength);
     byte[] value = new byte[packedLength];
+    BytesRef bytesRef = new BytesRef(value);
     for (int i =0; i < values; i++) {
-      random().nextBytes(value);
-      points.append(value, i);
+      random().nextBytes(bytesRef.bytes);
+      points.append(bytesRef, i);
     }
     points.close();
     verify(dir, points, dimensions, start, end, partitionPoint, packedLength, bytesPerDimensions, sortedOnHeap);
@@ -104,12 +106,13 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int packedLength = dimensions * bytesPerDimensions;
     PointWriter points = getRandomPointWriter(dir, values, packedLength);
     byte[] value = new byte[packedLength];
-    random().nextBytes(value);
+    BytesRef bytesRef = new BytesRef(value);
+    random().nextBytes(bytesRef.bytes);
     for (int i =0; i < values; i++) {
       if (random().nextBoolean()) {
-        points.append(value, i);
+        points.append(bytesRef, i);
       } else {
-        points.append(value, random().nextInt(values));
+        points.append(bytesRef, random().nextInt(values));
       }
     }
     points.close();
@@ -127,12 +130,13 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int packedLength = dimensions * bytesPerDimensions;
     PointWriter points = getRandomPointWriter(dir, values, packedLength);
     byte[] value = new byte[packedLength];
-    random().nextBytes(value);
+    BytesRef bytesRef = new BytesRef(value);
+    random().nextBytes(bytesRef.bytes);
     for (int i =0; i < values; i++) {
       if (random().nextBoolean()) {
-        points.append(value, 1);
+        points.append(bytesRef, 1);
       } else {
-        points.append(value, 2);
+        points.append(bytesRef, 2);
       }
     }
     points.close();
@@ -150,9 +154,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int packedLength = dimensions * bytesPerDimensions;
     PointWriter points = getRandomPointWriter(dir, values, packedLength);
     byte[] value = new byte[packedLength];
-    random().nextBytes(value);
+    BytesRef bytesRef = new BytesRef(value);
     for (int i =0; i < values; i++) {
-      points.append(value, 0);
+      points.append(bytesRef, 0);
     }
     points.close();
     verify(dir, points, dimensions, 0, values, partitionPoint, packedLength, bytesPerDimensions, sortedOnHeap);
@@ -169,9 +173,11 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int packedLength = dimensions * bytesPerDimensions;
     PointWriter points = getRandomPointWriter(dir, values, packedLength);
     int numberValues = random().nextInt(8) + 2;
-    byte[][] differentValues = new byte[numberValues][packedLength];
+    BytesRef[] differentValues = new BytesRef[numberValues];
     for (int i =0; i < numberValues; i++) {
-      random().nextBytes(differentValues[i]);
+      byte[] value = new byte[packedLength];
+      differentValues[i] = new BytesRef(value);
+      random().nextBytes(differentValues[i].bytes);
     }
     for (int i =0; i < values; i++) {
       points.append(differentValues[random().nextInt(numberValues)], i);
@@ -182,21 +188,17 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   }
 
   private void verify(Directory dir, PointWriter points, int dimensions, long start, long end, long middle, int packedLength, int bytesPerDimensions, int sortedOnHeap) throws IOException{
+    BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHeap, dir, "test");
+    //we check for each dimension
     for (int splitDim =0; splitDim < dimensions; splitDim++) {
-      PointWriter copy = copyPoints(dir, points, packedLength);
+      //We need to make a copy of the data as it is deleted in the process
+      BKDRadixSelector.PathSlice inputSlice = new BKDRadixSelector.PathSlice(copyPoints(dir, points, packedLength), 0, points.count());
+      int commonPrefixLengthInput = getRandomCommonPrefix(inputSlice, bytesPerDimensions, splitDim);
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
-      BKDRadixSelector radixSelector = new BKDRadixSelector(dimensions, bytesPerDimensions, sortedOnHeap, dir, "test");
-      BKDRadixSelector.PathSlice copySlice = new BKDRadixSelector.PathSlice(copy, 0, copy.count());
-      byte[] pointsMax = getMax(copySlice, bytesPerDimensions, splitDim);
-      byte[] pointsMin = getMin(copySlice, bytesPerDimensions, splitDim);
-      int commonPrefixLength = FutureArrays.mismatch(pointsMin, 0, bytesPerDimensions, pointsMax, 0, bytesPerDimensions);
-      if (commonPrefixLength == -1) {
-        commonPrefixLength = bytesPerDimensions;
-      }
-      int commonPrefixLengthInput = (random().nextBoolean()) ? commonPrefixLength : commonPrefixLength == 0 ? 0 : random().nextInt(commonPrefixLength);
-      byte[] partitionPoint = radixSelector.select(copySlice, slices, start, end, middle, splitDim, commonPrefixLengthInput);
+      byte[] partitionPoint = radixSelector.select(inputSlice, slices, start, end, middle, splitDim, commonPrefixLengthInput);
       assertEquals(middle - start, slices[0].count);
       assertEquals(end - middle, slices[1].count);
+      //check that left and right slices contain the correct points
       byte[] max = getMax(slices[0], bytesPerDimensions, splitDim);
       byte[] min = getMin(slices[1], bytesPerDimensions, splitDim);
       int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
@@ -213,6 +215,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     points.destroy();
   }
 
+
   private PointWriter copyPoints(Directory dir, PointWriter points, int packedLength) throws IOException {
     BytesRef bytesRef = new BytesRef();
 
@@ -224,6 +227,17 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       }
       return copy;
     }
+  }
+
+  /** returns a common prefix length equal or lower than the current one */
+  private int getRandomCommonPrefix(BKDRadixSelector.PathSlice inputSlice, int bytesPerDimension, int splitDim) throws IOException {
+    byte[] pointsMax = getMax(inputSlice, bytesPerDimension, splitDim);
+    byte[] pointsMin = getMin(inputSlice, bytesPerDimension, splitDim);
+    int commonPrefixLength = FutureArrays.mismatch(pointsMin, 0, bytesPerDimension, pointsMax, 0, bytesPerDimension);
+    if (commonPrefixLength == -1) {
+      commonPrefixLength = bytesPerDimension;
+    }
+    return (random().nextBoolean()) ? commonPrefixLength : commonPrefixLength == 0 ? 0 : random().nextInt(commonPrefixLength);
   }
 
   private PointWriter getRandomPointWriter(Directory dir, long numPoints, int packedBytesLength) throws IOException {

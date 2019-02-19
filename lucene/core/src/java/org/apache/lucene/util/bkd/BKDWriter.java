@@ -215,8 +215,8 @@ public class BKDWriter implements Closeable {
     offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "spill", 0);
     tempInput = offlinePointWriter.out;
     for(int i=0;i<pointCount;i++) {
-      heapPointWriter.getPackedValueSlice(i, scratchBytesRef1);
-      offlinePointWriter.append(scratchBytesRef1, heapPointWriter.docIDs[i]);
+      heapPointWriter.getPackedValueSlice(i, scratchBytesRef2);
+      offlinePointWriter.append(scratchBytesRef2, heapPointWriter.docIDs[i]);
     }
     heapPointWriter = null;
   }
@@ -225,15 +225,18 @@ public class BKDWriter implements Closeable {
     if (packedValue.length != packedBytesLength) {
       throw new IllegalArgumentException("packedValue should be length=" + packedBytesLength + " (got: " + packedValue.length + ")");
     }
+    scratchBytesRef1.bytes = packedValue;
+    scratchBytesRef1.offset = 0;
+    scratchBytesRef1.length = packedBytesLength;
 
     if (pointCount >= maxPointsSortInHeap) {
       if (offlinePointWriter == null) {
         spillToOffline();
       }
-      offlinePointWriter.append(packedValue, docID);
+      offlinePointWriter.append(scratchBytesRef1, docID);
     } else {
       // Not too many points added yet, continue using heap:
-      heapPointWriter.append(packedValue, docID);
+      heapPointWriter.append(scratchBytesRef1, docID);
     }
 
     // TODO: we could specialize for the 1D case:

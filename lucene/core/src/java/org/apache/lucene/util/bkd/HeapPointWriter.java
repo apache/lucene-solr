@@ -49,18 +49,10 @@ public final class HeapPointWriter implements PointWriter {
   }
 
   @Override
-  public void append(byte[] packedValue, int docID) {
-    assert closed == false;
-    assert packedValue.length == packedBytesLength;
-    System.arraycopy(packedValue, 0,block, nextWrite * packedBytesLength, packedBytesLength);
-    docIDs[nextWrite] = docID;
-    nextWrite++;
-  }
-
-  @Override
   public void append(BytesRef packedValue, int docID) {
-    assert closed == false;
-    assert packedValue.length == packedBytesLength;
+    assert closed == false : "point writer is already closed";
+    assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
+    assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
     System.arraycopy(packedValue.bytes, packedValue.offset, block, nextWrite * packedBytesLength, packedBytesLength);
     docIDs[nextWrite] = docID;
     nextWrite++;
@@ -68,11 +60,11 @@ public final class HeapPointWriter implements PointWriter {
 
   @Override
   public void append(BytesRef packedValueWithDocId) {
-    assert closed == false;
-    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES;
+    assert closed == false : "point writer is already closed";
+    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
+    assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
     System.arraycopy(packedValueWithDocId.bytes, packedValueWithDocId.offset, block, nextWrite * packedBytesLength, packedBytesLength);
-    int docID = fromByteArray(packedValueWithDocId.offset + packedBytesLength, packedValueWithDocId.bytes);
-    docIDs[nextWrite] = docID;
+    docIDs[nextWrite] = fromByteArray(packedValueWithDocId.offset + packedBytesLength, packedValueWithDocId.bytes);
     nextWrite++;
   }
 
@@ -103,6 +95,7 @@ public final class HeapPointWriter implements PointWriter {
 
   @Override
   public PointReader getReader(long start, long length) {
+    assert closed : "point writer is still open and trying to get a reader";
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
     assert start + length <= nextWrite: "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
     return new HeapPointReader(block, packedBytesLength, docIDs, (int) start, Math.toIntExact(start+length));

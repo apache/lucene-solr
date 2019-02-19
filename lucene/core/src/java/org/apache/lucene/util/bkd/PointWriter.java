@@ -29,8 +29,6 @@ import org.apache.lucene.util.BytesRef;
  *  @lucene.internal
  *  */
 public interface PointWriter extends Closeable {
-  /** Add a new point from byte array*/
-  void append(byte[] packedValue, int docID) throws IOException;
 
   /** Add a new point from byteRef and docId */
   void append(BytesRef packedValue, int docID) throws IOException;
