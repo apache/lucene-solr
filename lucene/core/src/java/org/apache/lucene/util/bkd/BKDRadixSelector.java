@@ -40,7 +40,7 @@ public final class BKDRadixSelector {
   private static final int HISTOGRAM_SIZE = 256;
   //size of the online buffer: 8 KB
   private static final int MAX_SIZE_OFFLINE_BUFFER = 1024 * 8;
-  // we store one histogram per recursion level
+  //histogram array
   private final long[] histogram;
   //bytes per dimension
   private final int bytesPerDim;
@@ -392,7 +392,6 @@ public final class BKDRadixSelector {
   public void heapRadixSort(final HeapPointWriter points, int from, int to, int dim, int commonPrefixLength) {
     final int offset = dim * bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = bytesPerDim - commonPrefixLength;
-
     new MSBRadixSorter(bytesSorted - commonPrefixLength) {
 
       @Override
@@ -514,5 +513,4 @@ public final class BKDRadixSelector {
       return "PathSlice(start=" + start + " count=" + count + " writer=" + writer + ")";
     }
   }
-
 }
