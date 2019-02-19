@@ -473,6 +473,23 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
+  void flushPending() throws IOException {
+    boolean hasEvents = preUpdate();
+    final ThreadState perThread = flushControl.obtainAndLock();
+    final DocumentsWriterPerThread flushingDWPT;
+    try {
+      // This must happen after we've pulled the ThreadState because IW.close
+      // waits for all ThreadStates to be released:
+      ensureOpen();
+      ensureInitialized(perThread);
+      assert perThread.isInitialized();
+      flushingDWPT = flushControl.checkout(perThread, false);
+    } finally {
+      perThreadPool.release(perThread);
+    }
+    postUpdate(flushingDWPT, hasEvents);
+  }
+
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
                       final DocumentsWriterDeleteQueue.Node<?> delNode) throws IOException {
 

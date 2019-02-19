@@ -187,7 +187,7 @@ final class DocumentsWriterFlushControl implements Accountable {
     }
   }
 
-  private DocumentsWriterPerThread checkout(ThreadState perThread, boolean markPending) {
+  DocumentsWriterPerThread checkout(ThreadState perThread, boolean markPending) {
     if (fullFlush) {
       if (perThread.flushPending) {
         checkoutAndBlock(perThread);

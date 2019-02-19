@@ -5105,6 +5105,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
   }
   
+  /**
+   * Offer a thread to IndexWriter, enabling it to process events from its queue. Ordinarily
+   * IndexWriter "steals" cycles from indexing threads, but when no indexing is ongoing, flushing of
+   * multiple segments will be done in the single thread calling, eg commit(). Callers may invoke
+   * this method from multiple threads to enable multithreaded flushing in such a case.
+   */
+  public void yield() throws IOException {
+    // execute any pending flushes
+    docWriter.flushPending();
+    Event event;
+    while ((event = eventQueue.poll()) != null)  {
+      event.process(this);
+    }
+  }
+
   private void processEvents(boolean triggerMerge) throws IOException {
     if (tragedy.get() == null) {
       Event event;

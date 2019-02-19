@@ -19,8 +19,13 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -38,7 +43,7 @@ import org.apache.lucene.util.TestUtil;
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
  *  commit periodically; may or may not forceMerge in the end,
- *  may flush by doc count instead of RAM, etc. 
+ *  may flush by doc count instead of RAM, etc.
  */
 
 public class RandomIndexWriter implements Closeable {
@@ -312,7 +317,11 @@ public class RandomIndexWriter implements Closeable {
   
   public long commit() throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    return w.commit();
+    if (doRandomConcurrentFlush) {
+      return commitFlushingConcurrently();
+    } else {
+      return w.commit();
+    }
   }
   
   public IndexWriter.DocStats getDocStats() {
@@ -330,6 +339,7 @@ public class RandomIndexWriter implements Closeable {
 
   private boolean doRandomForceMerge = true;
   private boolean doRandomForceMergeAssert = true;
+  private boolean doRandomConcurrentFlush = false;
 
   public void forceMergeDeletes(boolean doWait) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
@@ -347,6 +357,10 @@ public class RandomIndexWriter implements Closeable {
 
   public void setDoRandomForceMergeAssert(boolean v) {
     doRandomForceMergeAssert = v;
+  }
+
+  public void setDoRandomConcurrentFlush(boolean v) {
+    doRandomConcurrentFlush = v;
   }
 
   private void doRandomForceMerge() throws IOException {
@@ -375,6 +389,44 @@ public class RandomIndexWriter implements Closeable {
         w.forceMergeDeletes();
       }
     }
+  }
+
+  private long commitFlushingConcurrently() throws IOException {
+    // Here we create a bunch of threads that spin and yield cycles to IndexWriter until it is done
+    // committing.
+    CountDownLatch commitDone = new CountDownLatch(1);
+    int nThreads = r.nextInt(4);
+    AtomicBoolean fail = new AtomicBoolean();
+    List<Thread> threads = new ArrayList<>();
+    for (int i = 0; i < nThreads; i++) {
+      Thread t = new Thread(() -> {
+        while (fail.get() == false) {
+          try {
+            w.yield();
+            if (commitDone.await(100, TimeUnit.MILLISECONDS)) {
+              break;
+            }
+          } catch (Exception e) {
+            fail.set(true);
+          }
+        }
+      }, Thread.currentThread().getName() + "-yield-" + i);
+      threads.add(t);
+      t.start();
+    }
+    long seqNum = w.commit();
+    commitDone.countDown();
+    for (Thread t : threads) {
+      try {
+        t.join();
+      } catch (InterruptedException e) {
+        fail.set(true);
+      }
+    }
+    if (fail.get()) {
+      throw new IOException("fail");
+    }
+    return seqNum;
   }
 
   public DirectoryReader getReader(boolean applyDeletions, boolean writeAllDeletes) throws IOException {
@@ -451,11 +503,11 @@ public class RandomIndexWriter implements Closeable {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     w.forceMerge(maxSegmentCount);
   }
-  
+
   static final class TestPointInfoStream extends InfoStream {
     private final InfoStream delegate;
     private final TestPoint testPoint;
-    
+
     public TestPointInfoStream(InfoStream delegate, TestPoint testPoint) {
       this.delegate = delegate == null ? new NullInfoStream(): delegate;
       this.testPoint = testPoint;
@@ -475,13 +527,13 @@ public class RandomIndexWriter implements Closeable {
         delegate.message(component, message);
       }
     }
-    
+
     @Override
     public boolean isEnabled(String component) {
       return "TP".equals(component) || delegate.isEnabled(component);
     }
   }
-  
+
   /** Writes all in-memory segments to the {@link Directory}. */
   public final void flush() throws IOException {
     w.flush();
