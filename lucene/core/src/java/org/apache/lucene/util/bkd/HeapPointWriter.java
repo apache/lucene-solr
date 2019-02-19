@@ -24,21 +24,21 @@ import org.apache.lucene.util.BytesRef;
  *  @lucene.internal
  *  */
 public final class HeapPointWriter implements PointWriter {
-  public int[] docIDs;
+  public final int[] docIDs;
+  public final byte[] block;
+  final int size;
+  final int packedBytesLength;
+  private final byte[] scratch;
   private int nextWrite;
   private boolean closed;
-  final int maxSize;
-  final int packedBytesLength;
-  public final byte[] block;
-  private byte[] scratch;
 
 
   public HeapPointWriter(int size, int packedBytesLength) {
-    docIDs = new int[size];
-    this.maxSize = size;
+    this.docIDs = new int[size];
+    this.block = new byte[packedBytesLength * size];
+    this.size = size;
     this.packedBytesLength = packedBytesLength;
-    block = new byte[packedBytesLength * size];
-    scratch = new byte[packedBytesLength];
+    this.scratch = new byte[packedBytesLength];
   }
 
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
