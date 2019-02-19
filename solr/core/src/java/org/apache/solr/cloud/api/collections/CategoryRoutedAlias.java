@@ -148,6 +148,14 @@ public class CategoryRoutedAlias implements RoutedAlias {
     return aliasName + COLLECTION_INFIX + safeKeyValue(value);
   }
 
+  /**
+   * Method to possibly create a collection. It's possible that the collection will already have been created
+   * either by a prior invocation in this thread or another thread. This method is idempotent, multiple invocations
+   * are harmless.
+   *
+   * @param cmd The command that might cause collection creation
+   * @return the collection to which the the update should be directed, possibly a newly created collection.
+   */
   @Override
   public String createCollectionsIfRequired(AddUpdateCommand cmd) {
     SolrQueryRequest req = cmd.getReq();
