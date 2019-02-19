@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -129,7 +131,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     System.out.println("*****************FOO2***************");
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+            .setMaxShardsPerNode(2)).setMaxCardinality(Integer.MAX_VALUE)
         .process(solrClient);
     System.out.println("*****************FOO3***************");
     addDocsAndCommit(true,
@@ -293,7 +295,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     final int numReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas))
+            .setMaxShardsPerNode(numReplicas)).setMaxCardinality(Integer.MAX_VALUE)
         .process(solrClient);
 
     // cause some collections to be created
