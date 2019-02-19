@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.util.bkd;
 
-import java.util.List;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -27,15 +25,13 @@ import org.apache.lucene.util.BytesRef;
  * */
 public final class HeapPointReader extends PointReader {
   private int curRead;
-  final List<byte[]> blocks;
-  final int valuesPerBlock;
+  final byte[] block;
   final int packedBytesLength;
   final int[] docIDs;
   final int end;
 
-  public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] docIDs, int start, int end) {
-    this.blocks = blocks;
-    this.valuesPerBlock = valuesPerBlock;
+  public HeapPointReader(byte[] block, int packedBytesLength, int[] docIDs, int start, int end) {
+    this.block = block;
     this.docIDs = docIDs;
     curRead = start-1;
     this.end = end;
@@ -50,10 +46,8 @@ public final class HeapPointReader extends PointReader {
 
   @Override
   public void packedValue(BytesRef bytesRef) {
-    int block = curRead / valuesPerBlock;
-    int blockIndex = curRead % valuesPerBlock;
-    bytesRef.bytes = blocks.get(block);
-    bytesRef.offset = blockIndex * packedBytesLength;
+    bytesRef.bytes = block;
+    bytesRef.offset = curRead * packedBytesLength;
     bytesRef.length = packedBytesLength;
   }
 

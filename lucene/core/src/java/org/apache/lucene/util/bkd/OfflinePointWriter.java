@@ -49,7 +49,7 @@ public final class OfflinePointWriter implements PointWriter {
 
     this.expectedCount = expectedCount;
   }
-    
+
   @Override
   public void append(byte[] packedValue, int docID) throws IOException {
     assert packedValue.length == packedBytesLength;
@@ -64,6 +64,14 @@ public final class OfflinePointWriter implements PointWriter {
     assert packedValue.length == packedBytesLength;
     out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length);
     out.writeInt(docID);
+    count++;
+    assert expectedCount == 0 || count <= expectedCount;
+  }
+
+  @Override
+  public void append(BytesRef packedValueWithDocId) throws IOException {
+    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES;
+    out.writeBytes(packedValueWithDocId.bytes, packedValueWithDocId.offset, packedValueWithDocId.length);
     count++;
     assert expectedCount == 0 || count <= expectedCount;
   }

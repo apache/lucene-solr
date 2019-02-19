@@ -16,10 +16,6 @@
  */
 package org.apache.lucene.util.bkd;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -32,78 +28,32 @@ public final class HeapPointWriter implements PointWriter {
   private int nextWrite;
   private boolean closed;
   final int maxSize;
-  public final int valuesPerBlock;
   final int packedBytesLength;
-  // NOTE: can't use ByteBlockPool because we need random-write access when sorting in heap
-  public final List<byte[]> blocks = new ArrayList<>();
+  public final byte[] block;
   private byte[] scratch;
 
 
-  public HeapPointWriter(int initSize, int maxSize, int packedBytesLength) {
-    docIDs = new int[initSize];
-    this.maxSize = maxSize;
+  public HeapPointWriter(int size, int packedBytesLength) {
+    docIDs = new int[size];
+    this.maxSize = size;
     this.packedBytesLength = packedBytesLength;
-    // 4K per page, unless each value is > 4K:
-    valuesPerBlock = Math.max(1, 4096/packedBytesLength);
+    // 64K per page, unless each value is > 64K:
+    block = new byte[packedBytesLength * size];
     scratch = new byte[packedBytesLength];
-  }
-
-  public void copyFrom(HeapPointWriter other) {
-    if (docIDs.length < other.nextWrite) {
-      throw new IllegalStateException("docIDs.length=" + docIDs.length + " other.nextWrite=" + other.nextWrite);
-    }
-    System.arraycopy(other.docIDs, 0, docIDs, 0, other.nextWrite);
-    for(byte[] block : other.blocks) {
-      blocks.add(block.clone());
-    }
-    nextWrite = other.nextWrite;
   }
 
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
   public void getPackedValueSlice(int index, BytesRef result) {
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    result.bytes = blocks.get(block);
-    result.offset = blockIndex * packedBytesLength;
+    result.bytes = block;
+    result.offset = index * packedBytesLength;
     result.length = packedBytesLength;
-  }
-
-  void writePackedValue(int index, byte[] bytes) {
-    assert bytes.length == packedBytesLength;
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    //System.out.println("writePackedValue: index=" + index + " bytes.length=" + bytes.length + " block=" + block + " blockIndex=" + blockIndex + " valuesPerBlock=" + valuesPerBlock);
-    while (blocks.size() <= block) {
-      // If this is the last block, only allocate as large as necessary for maxSize:
-      int valuesInBlock = Math.min(valuesPerBlock, maxSize - (blocks.size() * valuesPerBlock));
-      blocks.add(new byte[valuesInBlock*packedBytesLength]);
-    }
-    System.arraycopy(bytes, 0, blocks.get(block), blockIndex * packedBytesLength, packedBytesLength);
-  }
-
-  void writePackedValue(int index, BytesRef bytes) {
-    assert bytes.length == packedBytesLength;
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    //System.out.println("writePackedValue: index=" + index + " bytes.length=" + bytes.length + " block=" + block + " blockIndex=" + blockIndex + " valuesPerBlock=" + valuesPerBlock);
-    while (blocks.size() <= block) {
-      // If this is the last block, only allocate as large as necessary for maxSize:
-      int valuesInBlock = Math.min(valuesPerBlock, maxSize - (blocks.size() * valuesPerBlock));
-      blocks.add(new byte[valuesInBlock*packedBytesLength]);
-    }
-    System.arraycopy(bytes.bytes, bytes.offset, blocks.get(block), blockIndex * packedBytesLength, packedBytesLength);
   }
 
   @Override
   public void append(byte[] packedValue, int docID) {
     assert closed == false;
     assert packedValue.length == packedBytesLength;
-    if (docIDs.length == nextWrite) {
-      int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, Integer.BYTES));
-      assert nextSize > nextWrite: "nextSize=" + nextSize + " vs nextWrite=" + nextWrite;
-      docIDs = ArrayUtil.growExact(docIDs, nextSize);
-    }
-    writePackedValue(nextWrite, packedValue);
+    System.arraycopy(packedValue, 0,block, nextWrite * packedBytesLength, packedBytesLength);
     docIDs[nextWrite] = docID;
     nextWrite++;
   }
@@ -112,14 +62,23 @@ public final class HeapPointWriter implements PointWriter {
   public void append(BytesRef packedValue, int docID) {
     assert closed == false;
     assert packedValue.length == packedBytesLength;
-    if (docIDs.length == nextWrite) {
-      int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, Integer.BYTES));
-      assert nextSize > nextWrite: "nextSize=" + nextSize + " vs nextWrite=" + nextWrite;
-      docIDs = ArrayUtil.growExact(docIDs, nextSize);
-    }
-    writePackedValue(nextWrite, packedValue);
+    System.arraycopy(packedValue.bytes, packedValue.offset, block, nextWrite * packedBytesLength, packedBytesLength);
     docIDs[nextWrite] = docID;
     nextWrite++;
+  }
+
+  @Override
+  public void append(BytesRef packedValueWithDocId) {
+    assert closed == false;
+    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES;
+    System.arraycopy(packedValueWithDocId.bytes, packedValueWithDocId.offset, block, nextWrite * packedBytesLength, packedBytesLength);
+    int docID = fromByteArray(packedValueWithDocId.offset + packedBytesLength, packedValueWithDocId.bytes);
+    docIDs[nextWrite] = docID;
+    nextWrite++;
+  }
+
+  private int fromByteArray(int offset, byte[] bytes) {
+    return bytes[offset] << 24 | (bytes[++offset] & 0xFF) << 16 | (bytes[++offset] & 0xFF) << 8 | (bytes[++offset] & 0xFF);
   }
 
   public void swap(int i, int j) {
@@ -127,18 +86,15 @@ public final class HeapPointWriter implements PointWriter {
     docIDs[i] = docIDs[j];
     docIDs[j] = docID;
 
-
-    byte[] blockI = blocks.get(i / valuesPerBlock);
-    int indexI = (i % valuesPerBlock) * packedBytesLength;
-    byte[] blockJ = blocks.get(j / valuesPerBlock);
-    int indexJ = (j % valuesPerBlock) * packedBytesLength;
+    int indexI = i * packedBytesLength;
+    int indexJ = j * packedBytesLength;
 
     // scratch1 = values[i]
-    System.arraycopy(blockI, indexI, scratch, 0, packedBytesLength);
+    System.arraycopy(block, indexI, scratch, 0, packedBytesLength);
     // values[i] = values[j]
-    System.arraycopy(blockJ, indexJ, blockI, indexI, packedBytesLength);
+    System.arraycopy(block, indexJ, block, indexI, packedBytesLength);
     // values[j] = scratch1
-    System.arraycopy(scratch, 0, blockJ, indexJ, packedBytesLength);
+    System.arraycopy(scratch, 0, block, indexJ, packedBytesLength);
   }
 
   @Override
@@ -150,7 +106,7 @@ public final class HeapPointWriter implements PointWriter {
   public PointReader getReader(long start, long length) {
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
     assert start + length <= nextWrite: "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
-    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, docIDs, (int) start, Math.toIntExact(start+length));
+    return new HeapPointReader(block, packedBytesLength, docIDs, (int) start, Math.toIntExact(start+length));
   }
 
   @Override
@@ -164,6 +120,6 @@ public final class HeapPointWriter implements PointWriter {
 
   @Override
   public String toString() {
-    return "HeapPointWriter(count=" + nextWrite + " alloc=" + docIDs.length + ")";
+    return "HeapPointWriter(count=" + nextWrite + " size=" + docIDs.length + ")";
   }
 }

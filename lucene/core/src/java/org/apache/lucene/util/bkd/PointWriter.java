@@ -32,8 +32,11 @@ public interface PointWriter extends Closeable {
   /** Add a new point from byte array*/
   void append(byte[] packedValue, int docID) throws IOException;
 
-  /** Add a new point from byteRef */
+  /** Add a new point from byteRef and docId */
   void append(BytesRef packedValue, int docID) throws IOException;
+
+  /** Add a new point from byteRef. The last 4 bytes contain the docID*/
+  void append(BytesRef packedValueWithDocId) throws IOException;
 
   /** Returns a {@link PointReader} iterator to step through all previously added points */
   PointReader getReader(long startPoint, long length) throws IOException;

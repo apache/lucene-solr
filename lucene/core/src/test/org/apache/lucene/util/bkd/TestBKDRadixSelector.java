@@ -228,7 +228,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
 
   private PointWriter getRandomPointWriter(Directory dir, long numPoints, int packedBytesLength) throws IOException {
     if (numPoints < 4096 && random().nextBoolean()) {
-      return new HeapPointWriter(Math.toIntExact(numPoints), Math.toIntExact(numPoints), packedBytesLength);
+      return new HeapPointWriter(Math.toIntExact(numPoints), packedBytesLength);
     } else {
       return new OfflinePointWriter(dir, "test", packedBytesLength, "data", numPoints);
     }
