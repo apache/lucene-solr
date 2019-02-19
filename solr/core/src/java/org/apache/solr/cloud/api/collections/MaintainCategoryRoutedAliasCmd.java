@@ -17,10 +17,12 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -37,14 +39,19 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.api.collections.CategoryRoutedAlias.UNINITIALIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class MaintainCategoryRoutedAliasCmd extends AliasCmd {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings("WeakerAccess")
   public static final String IF_CATEGORY_COLLECTION_NOT_FOUND = "ifCategoryCollectionNotFound";
+
+  private static NamedSimpleSemaphore DELETE_LOCK = new NamedSimpleSemaphore();
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -112,20 +119,38 @@ public class MaintainCategoryRoutedAliasCmd extends AliasCmd {
       // requests to the alias will fail with internal errors (incl. queries etc).
       // TODO avoid this contains check?
       List<String> colList = new ArrayList<>(collectionAliasListMap.get(aliasName));
-      if (colList.contains(initialCollection) && colList.size() > 1) {
+      if (colList.contains(initialCollection) && colList.size() > 1 ) {
 
-        aliasesManager.applyModificationAndExportToZk(curAliases -> {
-          colList.remove(initialCollection);
-          final String collectionsToKeepStr = StrUtils.join(colList, ',');
-          return curAliases.cloneWithCollectionAlias(aliasName, collectionsToKeepStr);
-        });
-        final CollectionsHandler collHandler = ocmh.overseer.getCoreContainer().getCollectionsHandler();
-        final SolrParams reqParams = CollectionAdminRequest
-            .deleteCollection(initialCollection).getParams();
-        SolrQueryResponse rsp = new SolrQueryResponse();
-        collHandler.handleRequestBody(new LocalSolrQueryRequest(null, reqParams), rsp);
-        //noinspection unchecked
-        results.add(UNINITIALIZED, rsp.getValues());
+        // need to run the delete async, otherwise we may deadlock with incoming updates that are attempting
+        // to create collections (they will have called getCore() but may be waiting on the overseer alias lock
+        // we hold and we will be waiting for the Core reference count to reach zero). By deleting asynchronously
+        // we allow this request to complete and the alias lock to be released, which allows the update to complete
+        // so that we can do the delete. Additionally we don't want to cause multiple delete operations during
+        // the time the delete is in progress, since that just wastes overseer cycles.
+        // TODO: check TRA's are protected against this
+
+        if (DELETE_LOCK.tryAcquire(aliasName)) {
+          // note that the overseer might not have any cores (and the unit test occasionally catches this)
+          ocmh.overseer.getCoreContainer().runAsync(() -> {
+            aliasesManager.applyModificationAndExportToZk(curAliases -> {
+              colList.remove(initialCollection);
+              final String collectionsToKeepStr = StrUtils.join(colList, ',');
+              return curAliases.cloneWithCollectionAlias(aliasName, collectionsToKeepStr);
+            });
+            final CollectionsHandler collHandler = ocmh.overseer.getCoreContainer().getCollectionsHandler();
+            final SolrParams reqParams = CollectionAdminRequest
+                .deleteCollection(initialCollection).getParams();
+            SolrQueryResponse rsp = new SolrQueryResponse();
+            try {
+              collHandler.handleRequestBody(new LocalSolrQueryRequest(null, reqParams), rsp);
+            } catch (Exception e) {
+              log.error("Could not delete initial collection from CRA", e);
+            }
+            //noinspection unchecked
+            results.add(UNINITIALIZED, rsp.getValues());
+            DELETE_LOCK.release(aliasName);
+          });
+        }
       }
 
       //---- CREATE THE COLLECTION
@@ -138,7 +163,21 @@ public class MaintainCategoryRoutedAliasCmd extends AliasCmd {
       //---- UPDATE THE ALIAS WITH NEW COLLECTION
       updateAlias(aliasName, aliasesManager, categoryRequired);
     }
-
   }
 
+  private static class NamedSimpleSemaphore {
+
+    private final HashMap<String, Semaphore> semaphores = new HashMap<>();
+
+    NamedSimpleSemaphore() {
+    }
+
+    boolean tryAcquire(String name) {
+      return semaphores.computeIfAbsent(name, s -> new Semaphore(1)).tryAcquire();
+    }
+
+    public void release(String name) {
+      semaphores.get(name).release();
+    }
+  }
 }

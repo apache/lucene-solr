@@ -21,21 +21,22 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -59,7 +60,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private static final String intField = "integer_i";
 
   private int lastDocId = 0;
-  private int numDocsDeletedOrFailed = 0;
   private static CloudSolrClient solrClient;
 
   @Before
@@ -82,6 +82,86 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     IOUtils.close(solrClient);
   }
 
+  public void testNonEnglish() throws Exception {
+    // test to document the expected behavior with non-english text for categories
+    // the present expectation is that non-latin text and many accented latin characters
+    // will get replaced with '_'. This is necessary to maintain collection naming
+    // conventions. The net effect is that documents get sorted by the number of characters
+    // in the category rather than the actual categories.
+
+    // This should be changed in an enhancement (wherein the category is RFC-4648 url-safe encoded).
+    // For now document it as an expected limitation.
+
+    String somethingInChinese = "中文的东西";      // 5 chars
+    String somethingInHebrew = "משהו בסינית";      // 11 chars
+    String somethingInThai = "บางอย่างในภาษาจีน";   // 17 chars
+    String somethingInArabic = "شيء في الصينية"; // 14 chars
+    String somethingInGreek = "κάτι κινεζικό";   // 13 chars
+    String somethingInGujarati = "િનીમાં કંઈક";       // 11 chars (same as hebrew)
+
+    String ONE_   = "_";
+    String TWO_   = "__";
+    String THREE_ = "___";
+    String FOUR_  = "____";
+    String FIVE_  = "_____";
+
+    String collectionChinese  = getAlias() + "__CRA__" + FIVE_;
+    String collectionHebrew   = getAlias() + "__CRA__" + FIVE_ + FIVE_ + ONE_;
+    String collectionThai     = getAlias() + "__CRA__" + FIVE_ + FIVE_ + FIVE_ + TWO_;
+    String collectionArabic   = getAlias() + "__CRA__" + FIVE_ + FIVE_ + FOUR_;
+    String collectionGreek    = getAlias() + "__CRA__" + FIVE_ + FIVE_ + THREE_;
+    // Note Gujarati not listed, because it duplicates hebrew.
+
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+
+    System.out.println("*****************FOO***************");
+
+    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
+    assertTrue("We expect at least 2 configSets",
+        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
+    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
+
+    System.out.println("*****************FOO2***************");
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
+            .setMaxShardsPerNode(2))
+        .process(solrClient);
+    System.out.println("*****************FOO3***************");
+    addDocsAndCommit(true,
+        newDoc(somethingInChinese),
+        newDoc(somethingInHebrew),
+        newDoc(somethingInThai),
+        newDoc(somethingInArabic),
+        newDoc(somethingInGreek),
+        newDoc(somethingInGujarati));
+
+    System.out.println("*****************FOO4***************");
+
+    // Note Gujarati not listed, because it duplicates hebrew.
+    assertInvariants(collectionChinese, collectionHebrew, collectionThai, collectionArabic, collectionGreek);
+
+    System.out.println("*****************FOO5***************");
+
+    assertColHasDocCount(collectionChinese, 1);
+    assertColHasDocCount(collectionHebrew, 2);
+    assertColHasDocCount(collectionThai, 1);
+    assertColHasDocCount(collectionArabic, 1);
+    assertColHasDocCount(collectionGreek, 1);
+
+  }
+
+  private void assertColHasDocCount(String collectionChinese, int expected) throws SolrServerException, IOException {
+    final QueryResponse colResponse = solrClient.query(collectionChinese, params(
+        "q", "*:*",
+        "rows", "0"));
+    long aliasNumFound = colResponse.getResults().getNumFound();
+    assertEquals(expected,aliasNumFound);
+  }
+
   @Slow
   @Test
   public void test() throws Exception {
@@ -93,10 +173,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     final String colVogon = getAlias() + "__CRA__" + SHIPS[0];
 
     // we expect changes ensuring a legal collection name.
-    final String colHoG = getAlias() + "__CRA__" + SHIPS[1].replaceAll("\\s", "_");
-    final String colStunt = getAlias() + "__CRA__" + SHIPS[2].replaceAll("\\s", "_");
-    final String colArk = getAlias() + "__CRA__" + SHIPS[3].replaceAll("-","_");
-    final String colBistro = getAlias() + "__CRA__" + SHIPS[4].replaceAll("\\$", "_");
+    final String colHoG = getAlias() + "__CRA__" + noSpaces(SHIPS[1]);
+    final String colStunt = getAlias() + "__CRA__" + noSpaces(SHIPS[2]);
+    final String colArk = getAlias() + "__CRA__" + noDashes(SHIPS[3]);
+    final String colBistro = getAlias() + "__CRA__" + noDollar(SHIPS[4]);
 
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
@@ -127,56 +207,77 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG, colStunt, colArk, colBistro);
   }
 
-  private void createConfigSet(String configName) throws SolrServerException, IOException {
-    // First create a configSet
-    // Then we create a collection with the name of the eventual config.
-    // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
-    // Later we create the "real" collections referencing this modified config-set.
-    assertEquals(0, new ConfigSetAdminRequest.Create()
-        .setConfigSetName(configName)
-        .setBaseConfigSetName("_default")
-        .process(solrClient).getStatus());
-
-    CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(solrClient);
-
-    // TODO: fix SOLR-13059, a where this wait isn't working ~0.3% of the time.
-    waitCol(1, configName);
-    // manipulate the config...
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
-            "  'add-updateprocessor' : {" +
-            "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
-            "  }," +
-            "  'add-updateprocessor' : {" + // for testing
-            "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
-            "    'fieldName':'" + intField + "'" +
-            "  }," +
-            "}").build()));
-    // only sometimes test with "tolerant" URP:
-    final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
-    checkNoError(solrClient.request(new V2Request.Builder("/collections/" + configName + "/config/params")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set' : {" +
-            "    '_UPDATE' : {'processor':'" + urpNames + "'}" +
-            "  }" +
-            "}").build()));
-
-    CollectionAdminRequest.deleteCollection(configName).process(solrClient);
-    assertTrue(
-        new ConfigSetAdminRequest.List().process(solrClient).getConfigSets()
-            .contains(configName)
-    );
+  private String noSpaces(String ship) {
+    return ship.replaceAll("\\s", "_");
+  }
+  private String noDashes(String ship) {
+    return ship.replaceAll("-", "_");
+  }
+  private String noDollar(String ship) {
+    return ship.replaceAll("\\$", "_");
   }
 
-  private void checkNoError(NamedList<Object> response) {
-    Object errors = response.get("errorMessages");
-    assertNull("" + errors, errors);
+  /**
+   * Test that the Update Processor Factory routes documents to leader shards and thus
+   * avoids the possibility of introducing an extra hop to find the leader.
+   *
+   * @throws Exception when it blows up unexpectedly :)
+   */
+  @Slow
+  @Test
+  @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
+  public void testSliceRouting() throws Exception {
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    // each collection has 4 shards with 3 replicas for 12 possible destinations
+    // 4 of which are leaders, and 8 of which should fail this test.
+    final int numShards = 1 + random().nextInt(4);
+    final int numReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
+            .setMaxShardsPerNode(numReplicas))
+        .process(solrClient);
+
+    // cause some collections to be created
+    assertUpdateResponse(solrClient.add(getAlias(), new SolrInputDocument("id","1",categoryField, SHIPS[0])));
+    assertUpdateResponse(solrClient.add(getAlias(), new SolrInputDocument("id","2",categoryField, SHIPS[1])));
+    assertUpdateResponse(solrClient.add(getAlias(), new SolrInputDocument("id","3",categoryField, SHIPS[2])));
+    assertUpdateResponse(solrClient.commit(getAlias()));
+
+    // wait for all the collections to exist...
+
+    waitColAndAlias(getAlias(), "__CRA__", SHIPS[0], numShards);
+    waitColAndAlias(getAlias(), "__CRA__", noSpaces(SHIPS[1]), numShards);
+    waitColAndAlias(getAlias(), "__CRA__", noSpaces(SHIPS[2]), numShards);
+
+    // at this point we now have 3 collections with 4 shards each, and 3 replicas per shard for a total of
+    // 36 total replicas, 1/3 of which are leaders. We will add 3 docs and each has a 33% chance of hitting a
+    // leader randomly and not causing a failure if the code is broken, but as a whole this test will therefore only have
+    // about a 3.6% false positive rate (0.33^3). If that's not good enough, add more docs or more replicas per shard :).
+
+    final String trackGroupName = getTrackUpdatesGroupName();
+    final List<UpdateCommand> updateCommands;
+    try {
+      TrackingUpdateProcessorFactory.startRecording(trackGroupName);
+
+      ModifiableSolrParams params = params("post-processor", "tracking-" + trackGroupName);
+      List<SolrInputDocument> list = Arrays.asList(
+          sdoc("id", "4", categoryField, SHIPS[0]),
+          sdoc("id", "5", categoryField, SHIPS[1]),
+          sdoc("id", "6", categoryField, SHIPS[2]));
+      Collections.shuffle(list, random()); // order should not matter here
+      assertUpdateResponse(add(getAlias(), list,
+          params));
+    } finally {
+      updateCommands = TrackingUpdateProcessorFactory.stopRecording(trackGroupName);
+    }
+    assertRouting(numShards, updateCommands);
   }
+
 
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {
+    int numDocsDeletedOrFailed = 0;
     final int expectNumFound = lastDocId - numDocsDeletedOrFailed; //lastDocId is effectively # generated docs
 
     List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(getAlias());
