@@ -564,7 +564,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (collections != null) {
         if (routedAlias != null) {
-          throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a time routed alias.");
+          throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
         } else {
           //////////////////////////////////////
           // Regular alias creation indicated //
@@ -1277,14 +1277,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       log.info("Not waiting for active collection due to exception: " + createCollResponse.getResponse().get("exception"));
       return;
     }
-    
+
     int replicaFailCount;
     if (createCollResponse.getResponse().get("failure") != null) {
       replicaFailCount = ((NamedList) createCollResponse.getResponse().get("failure")).size();
     } else {
       replicaFailCount = 0;
     }
-    
+
     CloudConfig ccfg = cc.getConfig().getCloudConfig();
     Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
     Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
@@ -1298,7 +1298,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           // the collection was not created, don't wait
           return true;
         }
-        
+
         if (c.getSlices() != null) {
           Collection<Slice> shards = c.getSlices();
           int replicaNotAliveCnt = 0;
@@ -1326,13 +1326,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return false;
       });
     } catch (TimeoutException | InterruptedException e) {
-   
+
       String  error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }
-    
+
   }
-  
+
   public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {
     List l = (List) m.get(RULE);
     if (l != null) {
@@ -1368,7 +1368,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
     return props;
   }
-  
+
   private static void verifyShardsParam(String shardsParam) {
     for (String shard : shardsParam.split(",")) {
       SolrIdentifierValidator.validateShardName(shard);

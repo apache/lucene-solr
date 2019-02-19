@@ -128,7 +128,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
     if (cols.stream()
         .filter(x -> !x.contains(UNINITIALIZED)).count() >= Integer.valueOf(maxCardinality)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Max cardinality " + maxCardinality
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Max cardinality " + maxCardinality
           + " reached for Category Routed Alias: " + getAliasName());
     }
   }
