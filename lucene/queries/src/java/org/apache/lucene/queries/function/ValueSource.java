@@ -216,7 +216,10 @@ public abstract class ValueSource {
           }
           else
             scorer.score = 0;
-          return fv.exists(doc);
+          // ValueSource will return values even if exists() is false, generally a default
+          // of some kind.  To preserve this behaviour with the iterator, we need to always
+          // return 'true' here.
+          return true;
         }
       };
     }

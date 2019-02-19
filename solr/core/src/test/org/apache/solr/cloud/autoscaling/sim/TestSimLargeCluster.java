@@ -366,7 +366,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLost() throws Exception {
     doTestNodeLost(waitForSeconds, 5000, 0);
   }

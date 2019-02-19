@@ -49,7 +49,7 @@ Both streaming expressions and the streaming API are considered experimental, an
 
 Streaming Expressions are comprised of streaming functions which work with a Solr collection. They emit a stream of tuples (key/value Maps).
 
-Many of the provided streaming functions are designed to work with entire result sets rather then the top N results like normal search. This is supported by the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>.
+Many of the provided streaming functions are designed to work with entire result sets rather than the top N results like normal search. This is supported by the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>.
 
 Some streaming functions act as stream sources to originate the stream flow. Other streaming functions act as stream decorators to wrap other stream functions and perform operations on the stream of tuples. Many streams functions can be parallelized across a worker collection. This can be particularly powerful for relational algebra functions.
 

@@ -23,7 +23,7 @@ import java.io.OutputStream;
 /**
  * A byte[] backed String
  */
-public interface Utf8CharSequence extends CharSequence , Comparable {
+public interface Utf8CharSequence extends CharSequence , Comparable, Cloneable {
 
   /**
    * Write the bytes into a buffer. The objective is to avoid the local bytes being exposed to
@@ -70,5 +70,7 @@ public interface Utf8CharSequence extends CharSequence , Comparable {
       start += sz;
     }
   }
+
+  Utf8CharSequence clone();
 
 }

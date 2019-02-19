@@ -52,11 +52,17 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-13171 : A true streaming parser for javabin payload/stream without creating any objects (noble)
 
 Bug Fixes
 ----------------------
 
 * SOLR-12330: 500 error code on json.facet syntax errors (Munendra S N, Mikhail Khludnev)
+
+* SOLR-13229: Cleanup replicasMetTragicEvent after all types of exception (Tomás Fernández Löbbe)
+
+* SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
+  Ishan Chattopadhyaya)
 
 Improvements
 ----------------------
@@ -163,6 +169,24 @@ Upgrade Notes
   are problematic.  In-place-updates are safe though.  If you want to delete certain child documents and if you know
   they don't themselves have nested children then you must do so with a delete-by-query technique.
 
+* SOLR-13248: The default replica placement strategy used in Solr has been reverted to the 'legacy' policy used by Solr
+  7.4 and previous versions. This is due to multiple bugs in the autoscaling based replica placement strategy that was
+  made default in Solr 7.5 which causes multiple replicas of the same shard to be placed on the same node in addition
+  to the maxShardsPerNode and createNodeSet parameters being ignored. Although the default has changed, autoscaling
+  will continue to be used if a cluster policy or preference is specified or a collection level policy is in use.
+  The default replica placement strategy can be changed to use autoscaling again by setting a cluster property:
+  curl -X POST -H 'Content-type:application/json' --data-binary '
+  {
+    "set-obj-property": {
+      "defaults" : {
+        "cluster": {
+          "useLegacyReplicaAssignment":false
+        }
+      }
+    }
+  }' http://$SOLR_HOST:$SOLR_PORT/api/cluster
+
+
 New Features
 ----------------------
 
@@ -202,6 +226,8 @@ New Features
 
 * SOLR-13155: Add command-line option for testing autoscaling configurations. (ab)
 
+* SOLR-13241: Add 'autoscaling' tool support to solr.cmd (Jason Gerlowski)
+
 Bug Fixes
 ----------------------
 
@@ -209,6 +235,15 @@ Bug Fixes
 
 * SOLR-11774: langid.map.individual now works together with langid.map.keepOrig. Also the detectLanguage() API 
   is changed to accept a Reader allowing for more memory efficient implementations (janhoy)
+
+* SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
+  matched (Alan Woodward, Mikhail Khludnev)
+
+* SOLR-13248: Autoscaling based replica placement is broken out of the box. Solr 7.5 enabled autoscaling based replica
+  placement by default but in the absence of default cluster policies, autoscaling can place more than 1 replica of the
+  same shard on the same node. Also, the maxShardsPerNode and createNodeSet was not respected. Due to these reasons,
+  this issue reverts the default replica placement policy to the 'legacy' assignment policy that was the default until
+  Solr 7.4. (Gus Heck, Andrzej Bialecki, Bram Van Dam, shalin)
 
 Improvements
 ----------------------

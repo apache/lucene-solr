@@ -657,11 +657,11 @@ public class HttpSolrClient extends SolrClient {
           + getBaseURL(), e);
     } catch (SocketTimeoutException e) {
       throw new SolrServerException(
-          "Timeout occured while waiting response from server at: "
+          "Timeout occurred while waiting response from server at: "
               + getBaseURL(), e);
     } catch (IOException e) {
       throw new SolrServerException(
-          "IOException occured when talking to server at: " + getBaseURL(), e);
+          "IOException occurred when talking to server at: " + getBaseURL(), e);
     } finally {
       if (shouldClose) {
         Utils.consumeFully(entity);

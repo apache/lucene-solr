@@ -632,17 +632,6 @@ function print_usage() {
     echo ""
     echo "  -V                                     Enable more verbose output."
     echo ""
-  elif [ "$CMD" == "autoscaling" ]; then
-    echo ""
-    echo "Usage: solr autoscaling [-z zkHost] [-a <autoscaling.json.file>] [-s] [-d] [-n] [-r]"
-    echo ""
-    echo "  Calculate autoscaling policy suggestions and diagnostic information, using either the deployed"
-    echo "  autoscaling configuration or the one supplied on the command line. This calculation takes place"
-    echo "  on the client-side without affecting the running cluster except for fetching the node and replica"
-    echo "  metrics from the cluster. For detailed usage instructions, do:"
-    echo ""
-    echo "    bin/solr autoscaling -help"
-    echo ""
   fi
 } # end print_usage
 

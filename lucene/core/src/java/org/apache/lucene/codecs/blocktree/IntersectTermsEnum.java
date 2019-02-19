@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -44,7 +44,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  Likewise, in next it scans until it finds a term that matches the
  *  current automaton transition. */
 
-final class IntersectTermsEnum extends TermsEnum {
+final class IntersectTermsEnum extends BaseTermsEnum {
 
   //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 

@@ -28,7 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Lucene 6.0 point format, which encodes dimensional values in a block KD-tree structure
- * for fast 1D range and N dimesional shape intersection filtering.
+ * for fast 1D range and N dimensional shape intersection filtering.
  * See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
  *
  * <p>This data structure is written as a series of blocks on disk, with an in-memory perfectly balanced
