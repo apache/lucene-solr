@@ -28,6 +28,8 @@ Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
 
+* LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
@@ -222,6 +224,9 @@ New Features
 
 * LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
   underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
+
+* LUCENE-8697: GraphTokenStreamFiniteStrings correctly handles side paths 
+  containing gaps (Alan Woodward)
 
 Improvements
 
