@@ -38,6 +38,11 @@ Upgrade Notes
   the next scheduled collection. This can impact the freshness of the metrics if prometheus is configured to query the
   tool more frequently.
 
+* SOLR-12708: When requesting the status of an async request via REQUESTSTATUS collections API, the response will
+  include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
+  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more 
+  details
+
 Bug fixes
 ----------------------
 
@@ -46,6 +51,8 @@ Bug fixes
   performance slightly by using the cluster state instead of sending multiple HTTP requests to each node to lookup
   all the cores.
   (Danyal Prout via shalin)
+
+* SOLR-12708: Async collection actions should not hide internal failures (Mano Kovacs, Varun Thacker, Tomás Fernández Löbbe)
 
 
 ==================  7.7.1 ==================

@@ -189,6 +189,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       COLOCATED_WITH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String FAILURE_FIELD = "failure";
+  public static final String SUCCESS_FIELD = "success";
 
   Overseer overseer;
   HttpShardHandlerFactory shardHandlerFactory;
@@ -878,32 +880,52 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
       log.error("Error from shard: " + shard, e);
-
-      SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-      if (failure == null) {
-        failure = new SimpleOrderedMap();
-        results.add("failure", failure);
-      }
-
-      failure.add(nodeName, e.getClass().getName() + ":" + e.getMessage());
-
+      addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
     } else {
-
-      SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-      if (success == null) {
-        success = new SimpleOrderedMap();
-        results.add("success", success);
-      }
-
-      success.add(nodeName, solrResponse.getResponse());
+      addSuccess(results, nodeName, solrResponse.getResponse());
     }
   }
 
   @SuppressWarnings("unchecked")
+  private static void addFailure(NamedList<Object> results, String key, Object value) {
+    SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
+    if (failure == null) {
+      failure = new SimpleOrderedMap<>();
+      results.add("failure", failure);
+    }
+    failure.add(key, value);
+  }
+  
+  @SuppressWarnings("unchecked")
+  private static void addSuccess(NamedList<Object> results, String key, Object value) {
+    SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
+    if (success == null) {
+      success = new SimpleOrderedMap<>();
+      results.add("success", success);
+    }
+    success.add(key, value);
+  }
+
+  /*
+   * backward compatibility reasons, add the response with the async ID as top level.
+   * This can be removed in Solr 9
+   */
+  @Deprecated
+  public final static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
+  @SuppressWarnings("unchecked")
   private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
-      results.add(requestMap.get(k), waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k)));
+      NamedList reqResult = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
+      if (INCLUDE_TOP_LEVEL_RESPONSE) {
+        results.add(requestMap.get(k), reqResult);
+      }
+      if ("failed".equalsIgnoreCase(((String)reqResult.get("STATUS")))) {
+        log.error("Error from shard {}: {}", k,  reqResult);
+        addFailure(results, k, reqResult);
+      } else {
+        addSuccess(results, k, reqResult);
+      }
     }
   }
 
