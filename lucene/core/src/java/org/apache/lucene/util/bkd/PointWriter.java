@@ -28,7 +28,7 @@ import java.io.IOException;
  *  */
 public interface PointWriter extends Closeable {
 
-  /** Add a new point from a byte array and docId */
+  /** Add a new point from the packed value and docId */
   void append(byte[] packedValue, int docID) throws IOException;
 
   /** Add a new point from a {@link PointValue} */
