@@ -71,7 +71,12 @@ Improvements
 
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
+Other Changes
+----------------------
+
 * SOLR-11763: Upgrade Guava to 25.1-jre (Markus Jelsma, Kevin Risden)
+
+* SOLR-13222: Improve logging in StreamingSolrClients (Peter Cseh via Kevin Risden)
 
 ==================  8.0.0 ==================
 
