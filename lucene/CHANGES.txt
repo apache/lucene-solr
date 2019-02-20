@@ -12,6 +12,10 @@ Improvements
 
 * LUCENE-8687: Optimise radix partitioning for points on heap. (Ignacio Vera)
 
+* LUCENE-8699: Change HeapPointWriter to use a single byte array instead to a list
+  of byte arrays. In addition a new interface PointValue is added to abstract out
+  the different formats between offline and on-heap writers. (Ignacio Vera)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)

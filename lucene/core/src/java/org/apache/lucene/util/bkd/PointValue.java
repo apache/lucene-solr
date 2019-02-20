@@ -14,25 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.util.bkd;
 
+import org.apache.lucene.util.BytesRef;
 
-import java.io.Closeable;
-import java.io.IOException;
+/**
+ * Represent a dimensional point value written in the BKD tree.
+ */
+public interface PointValue {
 
-/** One pass iterator through all points previously written with a
- *  {@link PointWriter}, abstracting away whether points are read
- *  from (offline) disk or simple arrays in heap.
- *
- * @lucene.internal
- * */
-public interface PointReader extends Closeable {
+  /** Return the packed values for the dimensions */
+  BytesRef packedValue();
 
-  /** Returns false once iteration is done, else true. */
-  boolean next() throws IOException;
+  /** The document id */
+  int docID();
 
-  /** Sets the packed value in the provided ByteRef */
-  PointValue pointValue();
+  /** The byte representation of the document id */
+  BytesRef docIDBytes();
 
 }
-
