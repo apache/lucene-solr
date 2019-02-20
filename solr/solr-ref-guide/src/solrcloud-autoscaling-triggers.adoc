@@ -337,7 +337,7 @@ operation `NONE` (which still can be monitored and acted upon by an appropriate 
   "aboveDocs" : 1000000000,
   "belowBytes" : 200000,
   "belowDocs" : 200000,
-  "belopOp" : "NONE",
+  "belowOp" : "NONE",
   "waitFor" : "1m",
   "enabled" : true,
   "actions" : [
