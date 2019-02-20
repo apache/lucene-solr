@@ -17,16 +17,19 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.SolrRequestParsers;
 
 public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends SolrTestCaseJ4 {
 
@@ -383,6 +386,25 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
    */
   private SolrInputDocument process(SolrInputDocument origDoc) {
     SolrInputDocument modifiedDoc = origDoc.deepCopy();
+    if (random().nextBoolean()) {
+      modifiedDoc.forEach((s, f) -> {
+        Object rawVal = f.getRawValue();
+        if (rawVal instanceof Collection) {
+          Collection rawValue = (Collection) rawVal;
+          ArrayList<Object> newVal = new ArrayList<>(rawValue.size());
+          for (Object o : rawValue) {
+            if (o instanceof String) {
+              newVal.add(new ByteArrayUtf8CharSequence((String) o));
+            } else {
+              newVal.add(rawVal);
+            }
+          }
+          f.setValue(newVal);
+        } else if (rawVal instanceof String) {
+          f.setValue(new ByteArrayUtf8CharSequence((String) rawVal));
+        }
+      });
+    }
     liProcessor.process(modifiedDoc);
     return modifiedDoc;
   }
