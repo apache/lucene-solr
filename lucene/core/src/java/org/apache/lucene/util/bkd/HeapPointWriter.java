@@ -64,9 +64,9 @@ public final class HeapPointWriter implements PointWriter {
   @Override
   public void append(PointValue pointValue) {
     assert closed == false : "point writer is already closed";
-    //assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
     BytesRef packedValue = pointValue.packedValue();
+    assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + (packedBytesLength) + "] but was [" + packedValue.length + "]";
     System.arraycopy(packedValue.bytes, packedValue.offset, block, nextWrite * packedBytesLength, packedBytesLength);
     docIDs[nextWrite] = pointValue.docID();
     nextWrite++;
