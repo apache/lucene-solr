@@ -97,7 +97,7 @@ public final class BKDRadixSelector {
   public byte[] select(PathSlice points, PathSlice[] partitionSlices, long from, long to, long partitionPoint, int dim, int dimCommonPrefix) throws IOException {
     checkArgs(from, to, partitionPoint);
 
-    assert partitionSlices.length > 1;
+    assert partitionSlices.length > 1 : "[partition alices] must be > 1, got " + partitionSlices.length;
 
     //If we are on heap then we just select on heap
     if (points.writer instanceof HeapPointWriter) {
@@ -322,7 +322,7 @@ public final class BKDRadixSelector {
 
       @Override
       protected int byteAt(int i, int k) {
-        assert k >= 0;
+        assert k >= 0 : "negative prefix " + k;
         if (k  < dimCmpBytes) {
           // dim bytes
           return points.block[i * packedBytesLength + offset + k] & 0xff;
@@ -400,7 +400,7 @@ public final class BKDRadixSelector {
 
       @Override
       protected int byteAt(int i, int k) {
-        assert k >= 0;
+        assert k >= 0 : "negative prefix " + k;
         if (k  < dimCmpBytes) {
           // dim bytes
           return points.block[i * packedBytesLength + offset + k] & 0xff;
