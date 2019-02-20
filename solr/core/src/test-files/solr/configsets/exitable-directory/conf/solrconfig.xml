@@ -19,6 +19,7 @@
 
 <config>
   <jmx />
+  <metrics/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
@@ -32,6 +33,9 @@
   </directoryFactory>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <indexReaderFactory name="IndexReaderFactory" 
+       class="org.apache.solr.cloud.TrollingIndexReaderFactory"></indexReaderFactory >
+    
   <dataDir>${solr.data.dir:}</dataDir>
 
   <!-- an update processor the explicitly excludes distrib to test
@@ -51,67 +55,32 @@
     </updateLog>
   </updateHandler>
 
-  <updateRequestProcessorChain name="dedupe">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <bool name="overwriteDupes">true</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="stored_sig">
-    <!-- this chain is valid even though the signature field is not
-         indexed, because we are not asking for dups to be overwritten
-      -->
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <str name="signatureField">non_indexed_signature_sS</str>
-      <bool name="overwriteDupes">false</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-
-  <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
-    <!-- explicit test using processors before and after distrib -->
-    <processor class="solr.RegexReplaceProcessorFactory">
-      <str name="fieldName">regex_dup_A_s</str>
-      <str name="pattern">x</str>
-      <str name="replacement">x_x</str>
-    </processor>
-    <processor class="solr.DistributedUpdateProcessorFactory" />
-    <processor class="solr.RegexReplaceProcessorFactory">
-      <str name="fieldName">regex_dup_B_s</str>
-      <str name="pattern">x</str>
-      <str name="replacement">x_x</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-
-  <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
-    <!-- implicit test w/o distrib declared-->
-    <processor class="solr.RegexReplaceProcessorFactory">
-      <str name="fieldName">regex_dup_A_s</str>
-      <str name="pattern">x</str>
-      <str name="replacement">x_x</str>
-    </processor>
-    <processor class="solr.RegexReplaceProcessorFactory">
-      <str name="fieldName">regex_dup_B_s</str>
-      <str name="pattern">x</str>
-      <str name="replacement">x_x</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-
+  <query>
+         <filterCache class="solr.FastLRUCache"
+                 size="0"
+                 initialSize="0"
+                 autowarmCount="0"/>
+         <queryResultCache class="solr.LRUCache"
+                  size="0"
+                  initialSize="0"
+                  autowarmCount="0"/>
+         <documentCache class="solr.LRUCache"
+                   size="0"
+                   initialSize="0"
+                   autowarmCount="0"/>
+         <fieldValueCache class="solr.FastLRUCache"
+                size="0"
+                autowarmCount="0"
+                showItems="0" />         
+  </query>
+  
   <searchComponent name="delayingSearchComponent"
                    class="org.apache.solr.search.DelayingSearchComponent"/>
 
   <requestHandler name="/select" class="solr.SearchHandler">
     <arr name="first-components">
       <str>delayingSearchComponent</str>
-    </arr>
+    </arr> 
   </requestHandler>
 
 </config>

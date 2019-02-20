@@ -47,6 +47,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.QueryParsing;
@@ -711,6 +712,17 @@ public class FacetComponent extends SearchComponent {
       NamedList facet_counts = null;
       try {
         facet_counts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
+        if (facet_counts==null) {
+          NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
+          if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+            continue;
+          } else {
+            log.warn("corrupted response on "+srsp.getShardRequest()+": "+srsp.getSolrResponse());
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "facet_counts is absent in response from " + srsp.getNodeName() +
+                ", but "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" hasn't been responded");
+          }
+        }
       } catch (Exception ex) {
         if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
           continue; // looks like a shard did not return anything

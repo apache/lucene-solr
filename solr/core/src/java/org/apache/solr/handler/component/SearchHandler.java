@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -52,9 +55,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 /**
@@ -315,17 +315,16 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
-        SolrDocumentList r = (SolrDocumentList) rb.rsp.getResponse();
-        if(r == null)
-          r = new SolrDocumentList();
-        r.setNumFound(0);
-        rb.rsp.addResponse(r);
+        if( rb.rsp.getResponse() == null) {
+          rb.rsp.addResponse(new SolrDocumentList());
+        }
         if(rb.isDebug()) {
           NamedList debug = new NamedList();
           debug.add("explain", new NamedList());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.getResponseHeader().asShallowMap()
+              .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
@@ -413,9 +412,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                   throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
                 }
               } else {
-                if(rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
-                  rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-                }
+                rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
               }
             }
 

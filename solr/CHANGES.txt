@@ -90,6 +90,9 @@ Bug Fixes
   all the cores.
   (Danyal Prout via shalin)
 
+* SOLR-9882: 500 error code on breaching timeAllowed by core and distributed (fsv) search, 
+  old and json facets (Mikhail Khludnev)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
