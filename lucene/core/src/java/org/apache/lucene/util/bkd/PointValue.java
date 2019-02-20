@@ -23,7 +23,8 @@ import org.apache.lucene.util.BytesRef;
  * Represent a dimensional point value written in the BKD tree.
  */
 public interface PointValue {
-  /** Object containing the values for the differnt dimensions */
+
+  /** Return the packed values for the dimensions */
   BytesRef packedValue();
 
   /** The document id */
