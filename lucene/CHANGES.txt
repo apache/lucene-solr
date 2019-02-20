@@ -207,6 +207,9 @@ New Features
 * LUCENE-8697: GraphTokenStreamFiniteStrings correctly handles side paths 
   containing gaps (Alan Woodward)
 
+* LUCENE-8702: Simplify intervals returned from vararg Intervals factory methods
+  (Alan Woodward)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
