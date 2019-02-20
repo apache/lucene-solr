@@ -104,8 +104,7 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
     // If sentinel objects are supported, populate the queue with them
     T sentinel = sentinelObjectSupplier.get();
     if (sentinel != null) {
-      heap[1] = sentinel;
-      for (int i = 2; i < heap.length; i++) {
+      for (int i = 1; i < heap.length; i++) {
         heap[i] = sentinelObjectSupplier.get();
       }
       size = maxSize;
