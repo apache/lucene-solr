@@ -294,8 +294,7 @@ public final class BytesRefHash {
         buffer[bufferUpto] = (byte) (0x80 | (length & 0x7f));
         buffer[bufferUpto + 1] = (byte) ((length >> 7) & 0xff);
         pool.byteUpto += length + 2;
-        System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 2,
-            length);
+        System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 2, length);
       }
       assert ids[hashPos] == -1;
       ids[hashPos] = e;

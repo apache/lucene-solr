@@ -43,8 +43,8 @@ import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
  **/
 public final class ByteBlockPool {
   public final static int BYTE_BLOCK_SHIFT = 15;
-  public final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;
-  public final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
+  public final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;  //默认每个块的大小
+  public final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;    //根据起始位置计算在当前块位置的掩码
 
   /** Abstract class for allocating and freeing byte
    *  blocks. */
@@ -116,17 +116,17 @@ public final class ByteBlockPool {
    * array of buffers currently used in the pool. Buffers are allocated if
    * needed don't modify this outside of this class.
    */
-  public byte[][] buffers = new byte[10][];
+  public byte[][] buffers = new byte[10][];   //块数组，每一项代表一个数组块
   
   /** index into the buffers array pointing to the current buffer used as the head */
-  private int bufferUpto = -1;                        // Which buffer we are upto
+  private int bufferUpto = -1;                        // Which buffer we are upto 当前块的索引
   /** Where we are in head buffer */
-  public int byteUpto = BYTE_BLOCK_SIZE;
+  public int byteUpto = BYTE_BLOCK_SIZE;    //当前块的起始位置，等于 (bufferUpto -1)*BYTE_BLOCK_SIZE
 
   /** Current head buffer */
   public byte[] buffer;
   /** Current head offset */
-  public int byteOffset = -BYTE_BLOCK_SIZE;
+  public int byteOffset = -BYTE_BLOCK_SIZE;   //第一次调用nextBuffer时恢复到0
 
   private final Allocator allocator;
 
@@ -195,12 +195,11 @@ public final class ByteBlockPool {
    */
   public void nextBuffer() {
     if (1+bufferUpto == buffers.length) {
-      byte[][] newBuffers = new byte[ArrayUtil.oversize(buffers.length+1,
-                                                        NUM_BYTES_OBJECT_REF)][];
+      byte[][] newBuffers = new byte[ArrayUtil.oversize(buffers.length+1, NUM_BYTES_OBJECT_REF)][];
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }
-    buffer = buffers[1+bufferUpto] = allocator.getByteBlock();
+    buffer = buffers[1+bufferUpto] = allocator.getByteBlock();  //分配一个block
     bufferUpto++;
 
     byteUpto = 0;
@@ -249,8 +248,8 @@ public final class ByteBlockPool {
    */
   public int allocSlice(final byte[] slice, final int upto) {
 
-    final int level = slice[upto] & 15;
-    final int newLevel = NEXT_LEVEL_ARRAY[level];
+    final int level = slice[upto] & 15;   //获取当前是第几层
+    final int newLevel = NEXT_LEVEL_ARRAY[level];   //获取下一层
     final int newSize = LEVEL_SIZE_ARRAY[newLevel];
 
     // Maybe allocate another block
@@ -275,7 +274,7 @@ public final class ByteBlockPool {
     slice[upto] = (byte) offset;
         
     // Write new level:
-    buffer[byteUpto-1] = (byte) (16|newLevel);
+    buffer[byteUpto-1] = (byte) (16|newLevel);  //通过16|newLevel表示结束
 
     return newUpto+3;
   }

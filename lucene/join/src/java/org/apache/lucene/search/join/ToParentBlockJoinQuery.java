@@ -118,7 +118,7 @@ public class ToParentBlockJoinQuery extends Query {
     // parent document space
     @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-      final ScorerSupplier childScorerSupplier = in.scorerSupplier(context);
+      final ScorerSupplier childScorerSupplier = in.scorerSupplier(context);    //这里会得到members.realname对应的TermsEnum
       if (childScorerSupplier == null) {
         return null;
       }
