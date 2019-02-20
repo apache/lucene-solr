@@ -135,7 +135,7 @@ public class DocumentBuilder {
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
 
-      if (field.getFirstValue() instanceof SolrDocumentBase) {
+      if (field.getFirstRawValue() instanceof SolrDocumentBase) {
         if (ignoreNestedDocs) {
           continue;
         }
@@ -159,7 +159,9 @@ public class DocumentBuilder {
       // load each field value
       boolean hasField = false;
       try {
-        for( Object v : field ) {
+        Iterator it = field.getRawIterator();
+        while (it.hasNext()) {
+          Object v = it.next();
           if( v == null ) {
             continue;
           }

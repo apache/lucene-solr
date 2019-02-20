@@ -190,6 +190,10 @@ Bug Fixes
   this issue reverts the default replica placement policy to the 'legacy' assignment policy that was the default until
   Solr 7.4. (Gus Heck, Andrzej Bialecki, Bram Van Dam, shalin)
 
+* SOLR-13255 : ClasscastException when URPs try to read a String field which returns a ByteArrayUTF8CHarSequence . This is a regression
+  in release 7.7 (noble)
+
+
 Improvements
 ----------------------
 
