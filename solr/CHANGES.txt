@@ -48,6 +48,10 @@ Jetty 9.4.14.v20181114
 
 Upgrade Notes
 ----------------------
+When requesting the status of an async request via REQUESTSTATUS collections API, the response will
+include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
+to them being included outside those keys for backwards compatibility). See SOLR-12708 for more 
+details
 
 New Features
 ----------------------
