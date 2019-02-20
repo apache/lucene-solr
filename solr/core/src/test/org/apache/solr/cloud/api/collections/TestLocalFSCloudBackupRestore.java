@@ -27,7 +27,7 @@ import org.junit.Test;
  * Solr backup/restore still requires a "shared" file-system. Its just that in this case such file-system would be
  * exposed via local file-system API.
  */
-//@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12866")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12866")
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 
