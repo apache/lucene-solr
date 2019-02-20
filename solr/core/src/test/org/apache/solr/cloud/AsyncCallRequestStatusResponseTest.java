@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,7 +47,11 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     CollectionAdminResponse rsp = requestStatus.process(cluster.getSolrClient());
     NamedList<?> r = rsp.getResponse();
-    assertEquals("Expected 5 elements in the response" + r, 5, r.size());
+    if (OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE) {
+      assertEquals("Expected 5 elements in the response" + r, 5, r.size());
+    } else {
+      assertEquals("Expected 3 elements in the response" + r, 3, r.size());
+    }
     assertNotNull("Expected 'responseHeader' response" + r, r.get("responseHeader"));
     assertNotNull("Expected 'success' response" + r, r.get("success"));
     assertNotNull("Expected 'status' response" + r, r.get("status"));

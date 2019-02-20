@@ -379,7 +379,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     if (random().nextBoolean()) {
       assertEquals(0, restore.process(client).getStatus());
     } else {
-      assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 30));//async
+      assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60));//async
     }
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);

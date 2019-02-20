@@ -906,17 +906,20 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     success.add(key, value);
   }
 
+  /*
+   * backward compatibility reasons, add the response with the async ID as top level.
+   * This can be removed in Solr 9
+   */
+  @Deprecated
+  public final static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
   @SuppressWarnings("unchecked")
   private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
       NamedList reqResult = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
-      /*
-       * backward compatibility reasons, add the response with the async ID as top level.
-       * This can be removed in Solr 9
-       */
-      results.add(requestMap.get(k), reqResult);
-      log.debug("Async response for {}: {}",  k, reqResult);
+      if (INCLUDE_TOP_LEVEL_RESPONSE) {
+        results.add(requestMap.get(k), reqResult);
+      }
       if ("failed".equalsIgnoreCase(((String)reqResult.get("STATUS")))) {
         log.error("Error from shard {}: {}", k,  reqResult);
         addFailure(results, k, reqResult);
