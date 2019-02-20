@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.internal
  * */
-public final class OfflinePointReader extends PointReader {
+public final class OfflinePointReader implements PointReader {
 
   long countLeft;
   final IndexInput in;

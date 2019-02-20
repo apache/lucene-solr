@@ -23,7 +23,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.internal
  * */
-public final class HeapPointReader extends PointReader {
+public final class HeapPointReader implements PointReader {
   private int curRead;
   final byte[] block;
   final int packedBytesLength;

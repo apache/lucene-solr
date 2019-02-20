@@ -26,13 +26,13 @@ import java.io.IOException;
  *
  * @lucene.internal
  * */
-public abstract class PointReader implements Closeable {
+public interface PointReader extends Closeable {
 
   /** Returns false once iteration is done, else true. */
-  public abstract boolean next() throws IOException;
+  boolean next() throws IOException;
 
   /** Sets the packed value in the provided ByteRef */
-  public abstract PointValue pointValue();
+  PointValue pointValue();
 
 }
 
