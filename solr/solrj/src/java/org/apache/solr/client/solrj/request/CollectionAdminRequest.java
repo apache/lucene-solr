@@ -1633,10 +1633,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_TYPE_NAME = "router.name";
     public static final String ROUTER_FIELD = "router.field";
     public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
+    public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
     private final String aliasName;
     private final String routerField;
     private Integer maxCardinality;
+    private String mustMatch;
 
     private final Create createCollTemplate;
 
@@ -1652,15 +1654,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public CreateCategoryRoutedAlias setMustMatch(String regex) {
+      this.mustMatch = regex;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.add(CommonParams.NAME, aliasName);
       params.add(ROUTER_TYPE_NAME, "category");
       params.add(ROUTER_FIELD, routerField);
+      params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
 
-      if (maxCardinality != null) {
-        params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+      if (mustMatch != null) {
+        params.add(ROUTER_MUST_MATCH, mustMatch);
       }
 
       // merge the above with collectionParams.  Above takes precedence.

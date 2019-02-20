@@ -119,11 +119,17 @@ public class CategoryRoutedAlias implements RoutedAlias {
     }
 
     String dataValue = String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
+    String mustMatch = aliasMetadata.get(ROUTER_MUST_MATCH);
     String candidateCollectionName = buildCollectionNameFromValue(dataValue);
     List<String> cols = getCollectionList(this.parsedAliases);
 
     if (cols.contains(candidateCollectionName)) {
       return;
+    }
+
+    if (mustMatch != null && !candidateCollectionName.matches(mustMatch)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection name " + candidateCollectionName
+          + " does not match " + ROUTER_MUST_MATCH + ": " + mustMatch);
     }
 
     if (cols.stream()
