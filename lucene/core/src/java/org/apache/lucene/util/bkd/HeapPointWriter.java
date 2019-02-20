@@ -32,6 +32,8 @@ public final class HeapPointWriter implements PointWriter {
   private int nextWrite;
   private boolean closed;
 
+  private HeapPointReader.HeapPointValue offlinePointValue;
+
 
   public HeapPointWriter(int size, int packedBytesLength) {
     this.docIDs = new int[size];
@@ -39,37 +41,35 @@ public final class HeapPointWriter implements PointWriter {
     this.size = size;
     this.packedBytesLength = packedBytesLength;
     this.scratch = new byte[packedBytesLength];
+    offlinePointValue = new HeapPointReader.HeapPointValue(block, packedBytesLength);
   }
 
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
-  public void getPackedValueSlice(int index, BytesRef result) {
-    result.bytes = block;
-    result.offset = index * packedBytesLength;
-    result.length = packedBytesLength;
+  public PointValue getPackedValueSlice(int index) {
+    assert index < nextWrite : "nextWrite=" + (nextWrite) + " vs index=" + index;
+    offlinePointValue.setValue(index * packedBytesLength, docIDs[index]);
+    return offlinePointValue;
   }
 
   @Override
-  public void append(BytesRef packedValue, int docID) {
+  public void append(byte[] packedValue, int docID) {
     assert closed == false : "point writer is already closed";
     assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
-    System.arraycopy(packedValue.bytes, packedValue.offset, block, nextWrite * packedBytesLength, packedBytesLength);
+    System.arraycopy(packedValue, 0, block, nextWrite * packedBytesLength, packedBytesLength);
     docIDs[nextWrite] = docID;
     nextWrite++;
   }
 
   @Override
-  public void append(BytesRef packedValueWithDocId) {
+  public void append(PointValue pointValue) {
     assert closed == false : "point writer is already closed";
-    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
+    //assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
-    System.arraycopy(packedValueWithDocId.bytes, packedValueWithDocId.offset, block, nextWrite * packedBytesLength, packedBytesLength);
-    docIDs[nextWrite] = fromByteArray(packedValueWithDocId.offset + packedBytesLength, packedValueWithDocId.bytes);
+    BytesRef packedValue = pointValue.packedValue();
+    System.arraycopy(packedValue.bytes, packedValue.offset, block, nextWrite * packedBytesLength, packedBytesLength);
+    docIDs[nextWrite] = pointValue.docID();
     nextWrite++;
-  }
-
-  private int fromByteArray(int offset, byte[] bytes) {
-    return (bytes[offset] & 0xFF) << 24 | (bytes[++offset] & 0xFF) << 16 | (bytes[++offset] & 0xFF) << 8 | (bytes[++offset] & 0xFF);
   }
 
   public void swap(int i, int j) {

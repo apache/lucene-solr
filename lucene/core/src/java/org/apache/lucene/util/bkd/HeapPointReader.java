@@ -29,6 +29,7 @@ public final class HeapPointReader extends PointReader {
   final int packedBytesLength;
   final int[] docIDs;
   final int end;
+  private final HeapPointValue pointValue;
 
   public HeapPointReader(byte[] block, int packedBytesLength, int[] docIDs, int start, int end) {
     this.block = block;
@@ -36,6 +37,7 @@ public final class HeapPointReader extends PointReader {
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
+    this.pointValue = new HeapPointValue(block, packedBytesLength);
   }
 
   @Override
@@ -45,18 +47,54 @@ public final class HeapPointReader extends PointReader {
   }
 
   @Override
-  public void packedValue(BytesRef bytesRef) {
-    bytesRef.bytes = block;
-    bytesRef.offset = curRead * packedBytesLength;
-    bytesRef.length = packedBytesLength;
-  }
-
-  @Override
-  public int docID() {
-    return docIDs[curRead];
+  public PointValue pointValue() {
+    pointValue.setValue(curRead * packedBytesLength, docIDs[curRead]);
+    return pointValue;
   }
 
   @Override
   public void close() {
+  }
+
+  /**
+   * Reusable implementation for a point value on-heap
+   */
+  static class HeapPointValue implements PointValue {
+
+    BytesRef packedValue;
+    BytesRef docIDBytes;
+    int docID;
+
+    public HeapPointValue(byte[] value, int packedLength) {
+      packedValue = new BytesRef(value, 0, packedLength);
+      docIDBytes = new BytesRef(new byte[4]);
+    }
+
+    /**
+     * Sets a new value by changing the offset and docID.
+     */
+    public void setValue(int offset, int docID) {
+      this.docID = docID;
+      packedValue.offset = offset;
+    }
+
+    @Override
+    public BytesRef packedValue() {
+      return packedValue;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public BytesRef docIDBytes() {
+      docIDBytes.bytes[0] = (byte) (docID >> 24);
+      docIDBytes.bytes[1] = (byte) (docID >> 16);
+      docIDBytes.bytes[2] = (byte) (docID >> 8);
+      docIDBytes.bytes[3] = (byte) (docID >> 0);
+      return docIDBytes;
+    }
   }
 }

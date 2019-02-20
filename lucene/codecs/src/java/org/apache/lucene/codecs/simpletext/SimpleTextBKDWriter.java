@@ -45,6 +45,7 @@ import org.apache.lucene.util.bkd.HeapPointWriter;
 import org.apache.lucene.util.bkd.MutablePointsReaderUtils;
 import org.apache.lucene.util.bkd.OfflinePointWriter;
 import org.apache.lucene.util.bkd.PointReader;
+import org.apache.lucene.util.bkd.PointValue;
 import org.apache.lucene.util.bkd.PointWriter;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_COUNT;
@@ -225,8 +226,7 @@ final class SimpleTextBKDWriter implements Closeable {
     for(int i=0;i<pointCount;i++) {
       boolean hasNext = reader.next();
       assert hasNext;
-      reader.packedValue(scratchBytesRef2);
-      offlinePointWriter.append(scratchBytesRef2, heapPointWriter.docIDs[i]);
+      offlinePointWriter.append(reader.pointValue());
     }
 
     heapPointWriter = null;
@@ -245,10 +245,10 @@ final class SimpleTextBKDWriter implements Closeable {
       if (offlinePointWriter == null) {
         spillToOffline();
       }
-      offlinePointWriter.append(scratchBytesRef1, docID);
+      offlinePointWriter.append(packedValue, docID);
     } else {
       // Not too many points added yet, continue using heap:
-      heapPointWriter.append(scratchBytesRef1, docID);
+      heapPointWriter.append(packedValue, docID);
     }
 
     // TODO: we could specialize for the 1D case:
@@ -840,8 +840,7 @@ final class SimpleTextBKDWriter implements Closeable {
       for(int i=0;i<count;i++) {
         boolean hasNext = reader.next();
         assert hasNext;
-        reader.packedValue(scratchBytesRef1);
-        writer.append(scratchBytesRef1, reader.docID());
+        writer.append(reader.pointValue());
       }
       return writer;
     } catch (Throwable t) {
@@ -1018,8 +1017,9 @@ final class SimpleTextBKDWriter implements Closeable {
         if (prefix < bytesPerDim) {
           int offset = dim * bytesPerDim;
           for (int i = 0; i < heapSource.count(); ++i) {
-            heapSource.getPackedValueSlice(i, scratchBytesRef1);
-            int bucket = scratchBytesRef1.bytes[scratchBytesRef1.offset + offset + prefix] & 0xff;
+            PointValue value = heapSource.getPackedValueSlice(i);
+            BytesRef packedValue = value.packedValue();
+            int bucket = packedValue.bytes[packedValue.offset + offset + prefix] & 0xff;
             usedBytes[dim].set(bucket);
           }
           int cardinality = usedBytes[dim].cardinality();
@@ -1056,8 +1056,8 @@ final class SimpleTextBKDWriter implements Closeable {
 
         @Override
         public BytesRef apply(int i) {
-          heapSource.getPackedValueSlice(from + i, scratch);
-          return scratch;
+          PointValue value = heapSource.getPackedValueSlice(from + i);
+          return value.packedValue();
         }
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
@@ -1117,16 +1117,17 @@ final class SimpleTextBKDWriter implements Closeable {
 
   private void computeCommonPrefixLength(HeapPointWriter heapPointWriter, byte[] commonPrefix) {
     Arrays.fill(commonPrefixLengths, bytesPerDim);
-    scratchBytesRef1.length = packedBytesLength;
-    heapPointWriter.getPackedValueSlice(0, scratchBytesRef1);
+    PointValue value = heapPointWriter.getPackedValueSlice(0);
+    BytesRef packedValue = value.packedValue();
     for (int dim = 0; dim < numDataDims; dim++) {
-      System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + dim * bytesPerDim, commonPrefix, dim * bytesPerDim, bytesPerDim);
+      System.arraycopy(packedValue.bytes, packedValue.offset + dim * bytesPerDim, commonPrefix, dim * bytesPerDim, bytesPerDim);
     }
     for (int i = 1; i < heapPointWriter.count(); i++) {
-      heapPointWriter.getPackedValueSlice(i, scratchBytesRef1);
+      value = heapPointWriter.getPackedValueSlice(i);
+      packedValue = value.packedValue();
       for (int dim = 0; dim < numDataDims; dim++) {
         if (commonPrefixLengths[dim] != 0) {
-          int j = FutureArrays.mismatch(commonPrefix, dim * bytesPerDim, dim * bytesPerDim + commonPrefixLengths[dim], scratchBytesRef1.bytes, scratchBytesRef1.offset + dim * bytesPerDim, scratchBytesRef1.offset + dim * bytesPerDim + commonPrefixLengths[dim]);
+          int j = FutureArrays.mismatch(commonPrefix, dim * bytesPerDim, dim * bytesPerDim + commonPrefixLengths[dim], packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefixLengths[dim]);
           if (j != -1) {
             commonPrefixLengths[dim] = j;
           }

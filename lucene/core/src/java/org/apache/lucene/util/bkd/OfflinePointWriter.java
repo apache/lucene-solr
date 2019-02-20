@@ -50,20 +50,24 @@ public final class OfflinePointWriter implements PointWriter {
   }
 
   @Override
-  public void append(BytesRef packedValue, int docID) throws IOException {
+  public void append(byte[] packedValue, int docID) throws IOException {
     assert closed == false : "Point writer is already closed";
     assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
-    out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length);
+    out.writeBytes(packedValue, 0, packedValue.length);
     out.writeInt(docID);
     count++;
     assert expectedCount == 0 || count <= expectedCount:  "expectedCount=" + expectedCount + " vs count=" + count;
   }
 
   @Override
-  public void append(BytesRef packedValueWithDocId) throws IOException {
+  public void append(PointValue pointValue) throws IOException {
     assert closed == false : "Point writer is already closed";
-    assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
-    out.writeBytes(packedValueWithDocId.bytes, packedValueWithDocId.offset, packedValueWithDocId.length);
+    //assert packedValueWithDocId.length == packedBytesLength + Integer.BYTES : "[packedValue] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueWithDocId.length + "]";
+    BytesRef packedValue = pointValue.packedValue();
+    assert packedValue.length == packedBytesLength  : "[packedValue] must have length [" + (packedBytesLength) + "] but was [" + packedValue.length + "]";
+    out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length);
+    BytesRef docIDBytes = pointValue.docIDBytes();
+    out.writeBytes(docIDBytes.bytes, docIDBytes.offset, docIDBytes.length);
     count++;
     assert expectedCount == 0 || count <= expectedCount : "expectedCount=" + expectedCount + " vs count=" + count;
   }
