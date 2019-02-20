@@ -139,7 +139,7 @@ public final class BKDRadixSelector {
       System.arraycopy(packedValue.bytes, packedValue.offset + offset, scratch, 0, bytesPerDim);
       // copy docID
       BytesRef docIDBytes = pointValue.docIDBytes();
-      System.arraycopy(docIDBytes.bytes, docIDBytes.offset, scratch, bytesPerDim, Integer.BYTES);;
+      System.arraycopy(docIDBytes.bytes, docIDBytes.offset, scratch, bytesPerDim, Integer.BYTES);
       for (long i = from + 1; i < to; i++) {
         reader.next();
         pointValue = reader.pointValue();
