@@ -207,7 +207,7 @@ public class TermQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this, term);
+    visitor.matchesTerm(term);
   }
 
   /** Prints a user-readable version of this query. */

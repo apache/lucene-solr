@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -97,20 +96,6 @@ public class PhraseHelper {
 
     boolean[] mustRewriteHolder = {false}; // boolean wrapped in 1-ary array so it's mutable from inner class
 
-    // When we call Weight.extractTerms, we do it on clauses that are NOT position sensitive.
-    // We only want the to track a Set of bytes for the Term, not Term class with field part.
-    Set<Term> extractPosInsensitiveTermsTarget = new TreeSet<Term>() {
-      @Override
-      public boolean add(Term term) {
-        // don't call super.add; we don't actually use the superclass
-        if (fieldMatcher.test(term.field())) {
-          return positionInsensitiveTerms.add(term.bytes());
-        } else {
-          return false;
-        }
-      }
-    };
-
     // For TermQueries or other position insensitive queries, collect the Terms.
     // For other Query types, WSTE will convert to an equivalent SpanQuery.  NOT extracting position spans here.
     new WeightedSpanTermExtractor(field) {
@@ -149,8 +134,11 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
           throws IOException {
-        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, ScoreMode.COMPLETE_NO_SCORES, boost)
-            .extractTerms(extractPosInsensitiveTermsTarget);
+        query.visit(t -> {
+          if (fieldMatcher.test(t.field())) {
+            positionInsensitiveTerms.add(t.bytes());
+          }
+        });
       }
 
       // called on SpanQueries. Some other position-sensitive queries like PhraseQuery are converted beforehand

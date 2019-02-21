@@ -497,7 +497,7 @@ public class TermAutomatonQuery extends Query {
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getShouldMatchVisitor(this);
     for (BytesRef term : termToID.keySet()) {
-      v.visitLeaf(this, new Term(field, term));
+      v.matchesTerm(new Term(field, term));
     }
   }
 }

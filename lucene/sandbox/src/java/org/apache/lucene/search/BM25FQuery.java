@@ -223,7 +223,7 @@ public final class BM25FQuery extends Query {
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getShouldMatchVisitor(this);
     for (Term term : fieldTerms) {
-      v.visitLeaf(this, term);
+      v.matchesTerm(term);
     }
   }
 

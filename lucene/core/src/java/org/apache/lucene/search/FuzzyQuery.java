@@ -175,11 +175,6 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this, field, () -> term -> true);   // TODO construct automaton from FuzzyTermsEnum
-  }
-
-  @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();

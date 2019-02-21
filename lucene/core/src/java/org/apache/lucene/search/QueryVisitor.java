@@ -17,12 +17,7 @@
 
 package org.apache.lucene.search;
 
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Interface to allow recursion through a query tree
@@ -33,24 +28,16 @@ public interface QueryVisitor {
 
   /**
    * Called by leaf queries that match on a specific term
-   * @param query the leaf query visited
+   *
    * @param term  the term the query will match on
    */
-  void visitLeaf(Query query, Term term);
+  void matchesTerm(Term term);
 
   /**
-   * Called by leaf queries that do not match against the terms index
-   * @param query the leaf query visited
+   * Called by leaf queries that do not match on terms
+   * @param query the query
    */
   default void visitLeaf(Query query) {}
-
-  /**
-   * Called by leaf queries that match against a set of terms defined by a predicate
-   * @param query               the leaf query
-   * @param field               the field the query matches against
-   * @param predicateSupplier   a supplier for a predicate that will select matching terms
-   */
-  default void visitLeaf(Query query, String field, Supplier<Predicate<BytesRef>> predicateSupplier) {}
 
   /**
    * Pulls a visitor instance for visiting matching child clauses of a query
@@ -97,27 +84,8 @@ public interface QueryVisitor {
   }
 
   /**
-   * Builds a predicate for matching a set of bytes from a {@link CompiledAutomaton}
-   */
-  static Predicate<BytesRef> matchesAutomaton(CompiledAutomaton automaton) {
-    return term -> {
-      switch (automaton.type) {
-        case NONE:
-          return false;
-        case ALL:
-          return true;
-        case SINGLE:
-          assert automaton.term != null;
-          return automaton.term.equals(term);
-      }
-      assert automaton.runAutomaton != null;
-      return automaton.runAutomaton.run(term.bytes, term.offset, term.length);
-    };
-  }
-
-  /**
    * A QueryVisitor implementation that collects no terms
    */
-  QueryVisitor NO_OP = (query, term) -> { };
+  QueryVisitor NO_OP = term -> { };
 
 }

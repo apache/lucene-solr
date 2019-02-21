@@ -55,7 +55,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -140,11 +139,11 @@ public class UnifiedHighlighter {
   private int cacheFieldValCharsThreshold = DEFAULT_CACHE_CHARS_THRESHOLD;
 
   /**
-   * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.
+   * Extracts matching terms after rewriting against an empty index
    */
   protected static Set<Term> extractTerms(Query query) throws IOException {
     Set<Term> queryTerms = new HashSet<>();
-    EMPTY_INDEXSEARCHER.createWeight(EMPTY_INDEXSEARCHER.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(queryTerms);
+    EMPTY_INDEXSEARCHER.rewrite(query).visit(queryTerms::add);
     return queryTerms;
   }
 

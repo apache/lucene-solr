@@ -153,7 +153,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public void extractTerms(Set<Term> terms) {
-      intervalsSource.visit(field, (q, t) -> terms.add(t));
+      intervalsSource.visit(field, terms::add);
     }
 
     @Override

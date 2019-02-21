@@ -23,14 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -245,30 +242,19 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
      * See {@link Passage#getMatchTerms()}. */
     private BytesRef queryToTerm(Query query) {
       // compute an approximate BytesRef term of a Query.  We cache this since we're likely to see the same query again.
-      // Our approach is to call extractTerms and visit each term in order, concatenating them with an adjoining space.
+      // Our approach is to visit each matching term in order, concatenating them with an adjoining space.
       //  If we don't have any (perhaps due to an MTQ like a wildcard) then we fall back on the toString() of the query.
       return queryToTermMap.computeIfAbsent(query, (Query q) -> {
-        try {
-          BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
-          UnifiedHighlighter.EMPTY_INDEXSEARCHER
-              .createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1f)
-              .extractTerms(new TreeSet<Term>() {
-            @Override
-            public boolean add(Term term) {
-              if (bytesRefBuilder.length() > 0) {
-                bytesRefBuilder.append((byte) ' ');
-              }
-              bytesRefBuilder.append(term.bytes());
-              return true;
-            }
-          });
+        BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
+        q.visit(t -> {
           if (bytesRefBuilder.length() > 0) {
-            return bytesRefBuilder.get();
+            bytesRefBuilder.append((byte) ' ');
           }
-        } catch (IOException e) {//ignore
-          // go to fallback...
+          bytesRefBuilder.append(t.bytes());
+        });
+        if (bytesRefBuilder.length() > 0) {
+          return bytesRefBuilder.get();
         }
-
         // fallback:  (likely a MultiTermQuery)
         return new BytesRef(q.toString());
       });

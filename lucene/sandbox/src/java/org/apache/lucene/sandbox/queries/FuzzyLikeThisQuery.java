@@ -41,7 +41,6 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
@@ -330,14 +329,6 @@ public class FuzzyLikeThisQuery extends Query
     //TODO possible alternative step 3 - organize above booleans into a new layer of field-based
     // booleans with a minimum-should-match of NumFields-1?
     return bq.build();
-  }
-
-  @Override
-  public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getShouldMatchVisitor(this);
-    for (FieldVals vals : fieldVals) {
-      v.visitLeaf(this, vals.fieldName, () -> t -> true);   // TODO build automaton from FuzzyTermsEnum?
-    }
   }
 
   //Holds info for a fuzzy term variant - initially score is set to edit distance (for ranking best

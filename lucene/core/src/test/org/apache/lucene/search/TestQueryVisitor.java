@@ -26,14 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -66,7 +63,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "term5"), new Term("field1", "term6"),
         new Term("field1", "term7")
     ));
-    query.visit((q, t) -> terms.add(t));
+    query.visit(terms::add);
     assertThat(terms, equalTo(expected));
   }
 
@@ -74,7 +71,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     Set<Term> terms = new HashSet<>();
     QueryVisitor visitor = new QueryVisitor() {
       @Override
-      public void visitLeaf(Query query, Term term) {
+      public void matchesTerm(Term term) {
         terms.add(term);
       }
       @Override
@@ -92,51 +89,6 @@ public class TestQueryVisitor extends LuceneTestCase {
     assertThat(terms, equalTo(expected));
   }
 
-  static class TermSelector implements QueryVisitor {
-
-    Set<Term> terms = new HashSet<>();
-    Map<String, List<Supplier<Predicate<BytesRef>>>> suppliers = new HashMap<>();
-
-    @Override
-    public void visitLeaf(Query query, Term term) {
-      terms.add(term);
-    }
-
-    @Override
-    public void visitLeaf(Query query, String field, Supplier<Predicate<BytesRef>> predicateSupplier) {
-      List<Supplier<Predicate<BytesRef>>> l = suppliers.computeIfAbsent(field, f -> new ArrayList<>());
-      l.add(predicateSupplier);
-    }
-
-    @Override
-    public QueryVisitor getNonMatchingVisitor(Query parent) {
-      return this;    // collect non-matching terms too
-    }
-
-    boolean matches(Term term) {
-      if (terms.contains(term)) {
-        return true;
-      }
-      if (suppliers.containsKey(term.field())) {
-        for (Supplier<Predicate<BytesRef>> supplier : suppliers.get(term.field())) {
-          if (supplier.get().test(term.bytes())) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-  }
-
-  public void testSelectAllTerms() {
-    TermSelector ts = new TermSelector();
-    query.visit(ts);
-    assertTrue(ts.matches(new Term("field1", "term1")));
-    assertTrue(ts.matches(new Term("field1", "term99")));   // prefix automaton
-    assertFalse(ts.matches(new Term("field1", "term10")));  // must_not clause
-    assertFalse(ts.matches(new Term("field2", "term99")));
-  }
-
   static class BoostedTermExtractor implements QueryVisitor {
 
     final float boost;
@@ -148,7 +100,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     }
 
     @Override
-    public void visitLeaf(Query query, Term term) {
+    public void matchesTerm(Term term) {
       termsToBoosts.put(term, boost);
     }
 
@@ -183,14 +135,14 @@ public class TestQueryVisitor extends LuceneTestCase {
     int weight;
 
     @Override
-    public void visitLeaf(Query query, Term term) {
+    public void matchesTerm(Term term) {
       this.term = term;
       this.weight = term.text().length();
     }
 
     @Override
-    public void visitLeaf(Query query, String field, Supplier<Predicate<BytesRef>> predicateSupplier) {
-      this.term = new Term(field, "ANY");
+    public void visitLeaf(Query query) {
+      this.term = new Term("", "ANY");
       this.weight = 100;
     }
 

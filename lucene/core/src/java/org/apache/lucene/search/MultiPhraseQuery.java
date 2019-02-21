@@ -209,7 +209,7 @@ public class MultiPhraseQuery extends Query {
     for (Term[] terms : termArrays) {
       QueryVisitor sv = v.getShouldMatchVisitor(this);
       for (Term term : terms) {
-        sv.visitLeaf(this, term);
+        sv.matchesTerm(term);
       }
     }
   }

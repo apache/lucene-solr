@@ -228,7 +228,7 @@ class TermIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-    visitor.visitLeaf(new IntervalQuery(field, this), new Term(field, term));
+    visitor.matchesTerm(new Term(field, term));
   }
 
   /** A guess of

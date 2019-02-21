@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 
 /**
  * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg
@@ -76,14 +75,6 @@ public class MoreLikeThisQuery extends Query {
     //make at least half the terms match
     newBq.setMinimumNumberShouldMatch((int) (bq.clauses().size() * percentTermsToMatch));
     return newBq.build();
-  }
-
-  @Override
-  public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getShouldMatchVisitor(this);
-    for (String field : moreLikeFields) {
-      v.visitLeaf(this, field, () -> t -> true);
-    }
   }
 
   /* (non-Javadoc)

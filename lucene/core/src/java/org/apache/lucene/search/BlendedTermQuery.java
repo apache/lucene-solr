@@ -298,7 +298,7 @@ public final class BlendedTermQuery extends Query {
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getShouldMatchVisitor(this);
     for (Term term : terms) {
-      v.visitLeaf(this, term);
+      v.matchesTerm(term);
     }
   }
 
