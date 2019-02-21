@@ -1665,7 +1665,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.add(CommonParams.NAME, aliasName);
       params.add(ROUTER_TYPE_NAME, "category");
       params.add(ROUTER_FIELD, routerField);
-      params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+
+      if (maxCardinality != null) {
+        params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+      }
 
       if (mustMatch != null) {
         params.add(ROUTER_MUST_MATCH, mustMatch);
