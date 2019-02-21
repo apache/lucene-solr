@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
@@ -122,7 +123,7 @@ public final class FunctionScoreQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    in.visit(visitor.getMatchingVisitor(this));
+    in.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   @Override

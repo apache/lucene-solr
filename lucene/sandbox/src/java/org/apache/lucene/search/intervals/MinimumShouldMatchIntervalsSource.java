@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
@@ -85,7 +86,7 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-    QueryVisitor v = visitor.getShouldMatchVisitor(new IntervalQuery(field, this));
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, new IntervalQuery(field, this));
     for (IntervalsSource source : sources) {
       source.visit(field, v);
     }

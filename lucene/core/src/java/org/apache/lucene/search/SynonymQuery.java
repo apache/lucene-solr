@@ -119,7 +119,7 @@ public final class SynonymQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (Term term : terms) {
       v.matchesTerm(term);
     }

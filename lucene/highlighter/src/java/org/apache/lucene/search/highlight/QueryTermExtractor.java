@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -139,21 +140,17 @@ public final class QueryTermExtractor
     }
 
     @Override
-    public QueryVisitor getMatchingVisitor(Query parent) {
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
       if (parent instanceof BoostQuery) {
         float newboost = boost * ((BoostQuery)parent).getBoost();
         return new BoostedTermExtractor(field, newboost, terms, includeProhibited);
       }
+      if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
+        return term -> {};
+      }
       return this;
     }
 
-    @Override
-    public QueryVisitor getNonMatchingVisitor(Query parent) {
-      if (includeProhibited) {
-        return this;
-      }
-      return NO_OP;
-    }
   }
 
 }

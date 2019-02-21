@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -213,8 +214,8 @@ public final class SpanNotQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    include.visit(visitor.getMatchingVisitor(this));
-    exclude.visit(visitor.getNonMatchingVisitor(this));
+    include.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    exclude.visit(visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this));
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

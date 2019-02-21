@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -268,7 +269,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getMatchingVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (SpanQuery clause : clauses) {
       clause.visit(v);
     }

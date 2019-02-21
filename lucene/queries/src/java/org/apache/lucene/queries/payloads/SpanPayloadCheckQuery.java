@@ -27,6 +27,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Query;
@@ -80,7 +81,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    match.visit(visitor.getMatchingVisitor(this));
+    match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   /**

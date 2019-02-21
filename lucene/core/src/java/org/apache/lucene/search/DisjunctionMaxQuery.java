@@ -239,7 +239,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (Query q : disjuncts) {
       q.visit(v);
     }

@@ -125,7 +125,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
 
   @Override
   public void visit(QueryVisitor visitor) {
-    query.visit(visitor.getMatchingVisitor(this));
+    query.visit(visitor.getSubVisitor(Occur.MUST, this));
   }
 
   @Override

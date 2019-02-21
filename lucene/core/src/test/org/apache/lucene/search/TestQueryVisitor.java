@@ -75,7 +75,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         terms.add(term);
       }
       @Override
-      public QueryVisitor getNonMatchingVisitor(Query parent) {
+      public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
         return this;
       }
     };
@@ -105,9 +105,12 @@ public class TestQueryVisitor extends LuceneTestCase {
     }
 
     @Override
-    public QueryVisitor getMatchingVisitor(Query parent) {
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
       if (parent instanceof BoostQuery) {
         return new BoostedTermExtractor(boost * ((BoostQuery)parent).getBoost(), termsToBoosts);
+      }
+      if (occur == BooleanClause.Occur.MUST_NOT) {
+        return term -> {};
       }
       return this;
     }
@@ -147,22 +150,19 @@ public class TestQueryVisitor extends LuceneTestCase {
     }
 
     @Override
-    public QueryVisitor getMatchingVisitor(Query parent) {
-      MinimumMatchingTermSetExtractor child = new MinimumMatchingTermSetExtractor();
-      mustMatchLeaves.add(child);
-      return child;
-    }
-
-    @Override
-    public QueryVisitor getFilteringVisitor(Query parent) {
-      return getMatchingVisitor(parent);
-    }
-
-    @Override
-    public QueryVisitor getShouldMatchVisitor(Query parent) {
-      MinimumMatchingTermSetExtractor child = new MinimumMatchingTermSetExtractor();
-      shouldMatchLeaves.add(child);
-      return child;
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+      switch (occur) {
+        case MUST:
+        case FILTER:
+          MinimumMatchingTermSetExtractor must = new MinimumMatchingTermSetExtractor();
+          mustMatchLeaves.add(must);
+          return must;
+        case SHOULD:
+          MinimumMatchingTermSetExtractor should = new MinimumMatchingTermSetExtractor();
+          shouldMatchLeaves.add(should);
+          return should;
+      }
+      return term -> {};
     }
 
     int getWeight() {

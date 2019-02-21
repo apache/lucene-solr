@@ -111,7 +111,7 @@ public final class IndexOrDocValuesQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getMatchingVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     indexQuery.visit(v);
     dvQuery.visit(v);
   }

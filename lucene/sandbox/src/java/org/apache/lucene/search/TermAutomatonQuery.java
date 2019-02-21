@@ -495,7 +495,7 @@ public class TermAutomatonQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getShouldMatchVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (BytesRef term : termToID.keySet()) {
       v.matchesTerm(new Term(field, term));
     }

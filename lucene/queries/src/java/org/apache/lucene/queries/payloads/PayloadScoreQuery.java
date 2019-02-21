@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
@@ -89,7 +90,7 @@ public class PayloadScoreQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    wrappedQuery.visit(visitor.getMatchingVisitor(this));
+    wrappedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
 

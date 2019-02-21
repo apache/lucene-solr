@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
  *
  * @see Query#visit(QueryVisitor)
  */
+@FunctionalInterface
 public interface QueryVisitor {
 
   /**
@@ -44,48 +45,14 @@ public interface QueryVisitor {
    *
    * The default implementation returns {@code this}
    *
+   * @param occur   the relationship between the parent and its children
    * @param parent  the query visited
    */
-  default QueryVisitor getMatchingVisitor(Query parent) {
+  default QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+    if (occur == BooleanClause.Occur.MUST_NOT) {
+      return term -> {};
+    }
     return this;
   }
-
-  /**
-   * Pulls a visitor instance for visiting matching 'should-match' child clauses of a query
-   *
-   * The default implementation returns {@code this}
-   *
-   * @param parent  the query visited
-   */
-  default QueryVisitor getShouldMatchVisitor(Query parent) {
-    return this;
-  }
-
-  /**
-   * Pulls a visitor instance for visiting matching non-scoring child clauses of a query
-   *
-   * The default implementation returns {@code this}
-   *
-   * @param parent  the query visited
-   */
-  default QueryVisitor getFilteringVisitor(Query parent) {
-    return this;
-  }
-
-  /**
-   * Pulls a visitor instance for visiting matching 'must-not' child clauses of a query
-   *
-   * The default implementation returns {@link #NO_OP}
-   *
-   * @param parent  the query visited
-   */
-  default QueryVisitor getNonMatchingVisitor(Query parent) {
-    return NO_OP;
-  }
-
-  /**
-   * A QueryVisitor implementation that collects no terms
-   */
-  QueryVisitor NO_OP = term -> { };
 
 }

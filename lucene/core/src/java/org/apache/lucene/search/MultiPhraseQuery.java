@@ -205,9 +205,9 @@ public class MultiPhraseQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getMatchingVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (Term[] terms : termArrays) {
-      QueryVisitor sv = v.getShouldMatchVisitor(this);
+      QueryVisitor sv = v.getSubVisitor(BooleanClause.Occur.SHOULD, this);
       for (Term term : terms) {
         sv.matchesTerm(term);
       }

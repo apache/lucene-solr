@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -131,7 +132,7 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getMatchingVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     big.visit(v);
     little.visit(v);
   }

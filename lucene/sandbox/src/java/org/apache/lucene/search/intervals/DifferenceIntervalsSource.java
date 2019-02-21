@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.QueryVisitor;
 
@@ -84,8 +85,8 @@ class DifferenceIntervalsSource extends IntervalsSource {
   @Override
   public void visit(String field, QueryVisitor visitor) {
     IntervalQuery q = new IntervalQuery(field, this);
-    minuend.visit(field, visitor.getMatchingVisitor(q));
-    subtrahend.visit(field, visitor.getNonMatchingVisitor(q));
+    minuend.visit(field, visitor.getSubVisitor(BooleanClause.Occur.MUST, q));
+    subtrahend.visit(field, visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, q));
   }
 
   @Override

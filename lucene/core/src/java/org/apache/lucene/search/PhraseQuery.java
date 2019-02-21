@@ -286,7 +286,7 @@ public class PhraseQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getMatchingVisitor(this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (Term term : terms) {
       v.matchesTerm(term);
     }

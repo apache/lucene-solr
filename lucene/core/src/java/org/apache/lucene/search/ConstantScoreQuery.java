@@ -66,7 +66,7 @@ public final class ConstantScoreQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    query.visit(visitor.getFilteringVisitor(this));
+    query.visit(visitor.getSubVisitor(BooleanClause.Occur.FILTER, this));
   }
 
   /** We return this as our {@link BulkScorer} so that if the CSQ
