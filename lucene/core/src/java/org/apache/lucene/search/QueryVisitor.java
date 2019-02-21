@@ -17,28 +17,29 @@
 
 package org.apache.lucene.search;
 
+import java.util.Set;
+
 import org.apache.lucene.index.Term;
 
 /**
- * Interface to allow recursion through a query tree
+ * Allows recursion through a query tree
  *
  * @see Query#visit(QueryVisitor)
  */
-@FunctionalInterface
-public interface QueryVisitor {
+public abstract class QueryVisitor {
 
   /**
    * Called by leaf queries that match on a specific term
    *
    * @param term  the term the query will match on
    */
-  void matchesTerm(Term term);
+  public void matchesTerm(Term term) { }
 
   /**
    * Called by leaf queries that do not match on terms
    * @param query the query
    */
-  default void visitLeaf(Query query) {}
+  public void visitLeaf(Query query) { }
 
   /**
    * Pulls a visitor instance for visiting matching child clauses of a query
@@ -48,11 +49,22 @@ public interface QueryVisitor {
    * @param occur   the relationship between the parent and its children
    * @param parent  the query visited
    */
-  default QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+  public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
     if (occur == BooleanClause.Occur.MUST_NOT) {
-      return term -> {};
+      return EMPTY_VISITOR;
     }
     return this;
   }
+
+  public static QueryVisitor termCollector(Set<Term> termSet) {
+    return new QueryVisitor() {
+      @Override
+      public void matchesTerm(Term term) {
+        termSet.add(term);
+      }
+    };
+  }
+
+  public static final QueryVisitor EMPTY_VISITOR = new QueryVisitor() {};
 
 }

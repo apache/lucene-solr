@@ -63,7 +63,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "term5"), new Term("field1", "term6"),
         new Term("field1", "term7")
     ));
-    query.visit(terms::add);
+    query.visit(QueryVisitor.termCollector(terms));
     assertThat(terms, equalTo(expected));
   }
 
@@ -89,7 +89,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     assertThat(terms, equalTo(expected));
   }
 
-  static class BoostedTermExtractor implements QueryVisitor {
+  static class BoostedTermExtractor extends QueryVisitor {
 
     final float boost;
     final Map<Term, Float> termsToBoosts;
@@ -109,10 +109,7 @@ public class TestQueryVisitor extends LuceneTestCase {
       if (parent instanceof BoostQuery) {
         return new BoostedTermExtractor(boost * ((BoostQuery)parent).getBoost(), termsToBoosts);
       }
-      if (occur == BooleanClause.Occur.MUST_NOT) {
-        return term -> {};
-      }
-      return this;
+      return super.getSubVisitor(occur, parent);
     }
   }
 
@@ -130,7 +127,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     assertThat(termsToBoosts, equalTo(expected));
   }
 
-  static class MinimumMatchingTermSetExtractor implements QueryVisitor {
+  static class MinimumMatchingTermSetExtractor extends QueryVisitor {
 
     List<MinimumMatchingTermSetExtractor> mustMatchLeaves = new ArrayList<>();
     List<MinimumMatchingTermSetExtractor> shouldMatchLeaves = new ArrayList<>();
@@ -162,7 +159,7 @@ public class TestQueryVisitor extends LuceneTestCase {
           shouldMatchLeaves.add(should);
           return should;
       }
-      return term -> {};
+      return EMPTY_VISITOR;
     }
 
     int getWeight() {

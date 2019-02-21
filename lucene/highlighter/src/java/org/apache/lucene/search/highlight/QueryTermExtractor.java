@@ -118,7 +118,7 @@ public final class QueryTermExtractor
       return getTerms(query,prohibited,null);
   }
 
-  private static class BoostedTermExtractor implements QueryVisitor {
+  private static class BoostedTermExtractor extends QueryVisitor {
 
     final String field;
     final float boost;
@@ -146,7 +146,7 @@ public final class QueryTermExtractor
         return new BoostedTermExtractor(field, newboost, terms, includeProhibited);
       }
       if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
-        return term -> {};
+        return EMPTY_VISITOR;
       }
       return this;
     }

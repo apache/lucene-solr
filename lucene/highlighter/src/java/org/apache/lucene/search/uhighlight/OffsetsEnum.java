@@ -26,8 +26,10 @@ import java.util.PriorityQueue;
 import java.util.function.Supplier;
 
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -246,11 +248,14 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
       //  If we don't have any (perhaps due to an MTQ like a wildcard) then we fall back on the toString() of the query.
       return queryToTermMap.computeIfAbsent(query, (Query q) -> {
         BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
-        q.visit(t -> {
-          if (bytesRefBuilder.length() > 0) {
-            bytesRefBuilder.append((byte) ' ');
+        q.visit(new QueryVisitor() {
+          @Override
+          public void matchesTerm(Term term) {
+            if (bytesRefBuilder.length() > 0) {
+              bytesRefBuilder.append((byte) ' ');
+            }
+            bytesRefBuilder.append(term.bytes());
           }
-          bytesRefBuilder.append(t.bytes());
         });
         if (bytesRefBuilder.length() > 0) {
           return bytesRefBuilder.get();

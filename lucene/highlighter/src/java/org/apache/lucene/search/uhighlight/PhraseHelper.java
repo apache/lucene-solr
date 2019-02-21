@@ -39,6 +39,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -134,9 +135,12 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
           throws IOException {
-        query.visit(t -> {
-          if (fieldMatcher.test(t.field())) {
-            positionInsensitiveTerms.add(t.bytes());
+        query.visit(new QueryVisitor() {
+          @Override
+          public void matchesTerm(Term term) {
+            if (fieldMatcher.test(term.field())) {
+              positionInsensitiveTerms.add(term.bytes());
+            }
           }
         });
       }
