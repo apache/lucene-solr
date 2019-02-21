@@ -153,7 +153,18 @@ public class FuzzyQuery extends MultiTermQuery {
     }
     return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (maxEdits == 0 || prefixLength >= term.text().length()) {
+      visitor.matchesTerm(term);
+    }
+    else {
+      visitor.matchesAutomaton(this, field, false,
+          () -> FuzzyTermsEnum.buildAutomaton(term.text(), prefixLength, transpositions, maxEdits));
+    }
+  }
+
   /**
    * Returns the pattern term.
    */

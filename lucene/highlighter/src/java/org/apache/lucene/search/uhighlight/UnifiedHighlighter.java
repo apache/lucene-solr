@@ -816,7 +816,7 @@ public class UnifiedHighlighter {
         || highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES); // Weight.Matches will find all
 
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan, this::preMultiTermQueryRewrite)
+        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
@@ -863,7 +863,7 @@ public class UnifiedHighlighter {
           //skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {
-          return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer(), this::preMultiTermQueryRewrite);
+          return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer());
         }
       case NONE_NEEDED:
         return NoOpOffsetStrategy.INSTANCE;
@@ -899,19 +899,6 @@ public class UnifiedHighlighter {
    * @return A Collection of Query object(s) if needs to be rewritten, otherwise null.
    */
   protected Collection<Query> preSpanQueryRewrite(Query query) {
-    return null;
-  }
-
-  /**
-   * When dealing with multi term queries / span queries, we may need to handle custom queries that aren't supported
-   * by the default automata extraction in {@code MultiTermHighlighting}. This can be overridden to return a collection
-   * of queries if appropriate, or null if nothing to do. If query is not custom, simply returning null will allow the
-   * default rules to apply.
-   *
-   * @param query Query to be highlighted
-   * @return A Collection of Query object(s) if needst o be rewritten, otherwise null.
-   */
-  protected Collection<Query> preMultiTermQueryRewrite(Query query) {
     return null;
   }
 

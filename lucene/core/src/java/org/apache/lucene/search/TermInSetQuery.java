@@ -44,6 +44,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.Operations;
 
 /**
  * Specialization for a disjunction over many terms that behaves like a
@@ -133,6 +136,20 @@ public class TermInSetQuery extends Query implements Accountable {
     // termData might be heavy to compare so check the hash code first
     return termDataHashCode == other.termDataHashCode &&
         termData.equals(other.termData);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.matchesAutomaton(this, field, true, this::toAutomaton);
+  }
+
+  private Automaton toAutomaton() {
+    TermIterator iterator = termData.iterator();
+    List<Automaton> automata = new ArrayList<>();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      automata.add(Automata.makeBinary(term));
+    }
+    return Operations.union(automata);
   }
 
   @Override
