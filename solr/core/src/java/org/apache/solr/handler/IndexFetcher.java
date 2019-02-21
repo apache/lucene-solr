@@ -400,7 +400,6 @@ public class IndexFetcher {
         if (!replica.getCoreUrl().equals(masterUrl)) {
           masterUrl = replica.getCoreUrl();
           log.info("Updated masterUrl to {}", masterUrl);
-          // TODO: Do we need to set forceReplication = true?
         } else {
           log.debug("masterUrl didn't change");
         }
@@ -448,9 +447,9 @@ public class IndexFetcher {
       log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
 
       if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0 && (forceReplication || skipCommitOnMasterVersionZero)) {
+        if (commit.getGeneration() != 0 && !shouldSkipFetchWithVersionZero()) {
           // since we won't get the files for an empty index,
-          // we just clear ours and commit
+          // we just clear ours and commit.
           log.info("New index in Master. Deleting mine...");
           RefCounted<IndexWriter> iw = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
           try {
@@ -690,6 +689,14 @@ public class IndexFetcher {
         cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
       }
     }
+  }
+
+  private boolean shouldSkipFetchWithVersionZero() {
+    CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
+    if (cd == null) {
+      return false;
+    }
+    return cd.getReplicaType() == Replica.Type.PULL;
   }
 
   private Replica getLeaderReplica() throws InterruptedException {
