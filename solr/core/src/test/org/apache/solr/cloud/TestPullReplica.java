@@ -481,13 +481,14 @@ public class TestPullReplica extends SolrCloudTestCase {
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
-
-    // If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
-    if (removeReplica) {
-      // Pull replicas will replicate the empty index if a new replica was added and becomes leader
-      waitForNumDocsInAllReplicas(0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+    
+    if (TEST_NIGHTLY) {
+      // Sleep to give time to replication
+      Thread.sleep(5000);
     }
-
+    // PULL replicas shouldn't replicate the empty index
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+    
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
