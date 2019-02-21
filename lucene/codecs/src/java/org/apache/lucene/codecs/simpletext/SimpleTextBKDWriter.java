@@ -222,13 +222,9 @@ final class SimpleTextBKDWriter implements Closeable {
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
     offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "spill", 0);
     tempInput = offlinePointWriter.out;
-    PointReader reader = heapPointWriter.getReader(0, pointCount);
     for(int i=0;i<pointCount;i++) {
-      boolean hasNext = reader.next();
-      assert hasNext;
-      offlinePointWriter.append(reader.pointValue());
+      offlinePointWriter.append(heapPointWriter.getPackedValueSlice(i));
     }
-
     heapPointWriter = null;
   }
 
