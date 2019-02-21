@@ -472,7 +472,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     if (removeReplica) {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT).process(cluster.getSolrClient());
     } else {
-      leaderJetty.stop();
+      leaderJetty.start();
     }
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
