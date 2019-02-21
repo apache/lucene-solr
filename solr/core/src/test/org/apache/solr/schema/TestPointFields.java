@@ -2252,7 +2252,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private BigInteger generateRandomLongLongs() {
-    byte[] randomBytes = new byte[LongLongPointField.BYTES];
+    byte[] randomBytes = new byte[getLongLongSize()];
     random().nextBytes(randomBytes);
     return new BigInteger(randomBytes);
   }
@@ -2333,7 +2333,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         maxNum = Integer.toString(Integer.MAX_VALUE);
         break;
       case LONG_LONG:  rand = toStringArray(getRandomLongLongs(numValues, false));
-        maxNum = LongLongPointField.MAX_VALUE.toString();
+        maxNum = getLongLongMax().toString();
         break;
     }
 
@@ -2523,9 +2523,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
                 "//*[@numFound='0']");
         break;
       case LONG_LONG:
-        assertQ(req("q", fieldName + ":[" + LongLongPointField.MIN_VALUE + " TO " + LongLongPointField.MIN_VALUE + "}", "fl", "id, " + fieldName),
+        assertQ(req("q", fieldName + ":[" + getLongLongMin() + " TO " + getLongLongMin() + "}", "fl", "id, " + fieldName),
               "//*[@numFound='0']");
-        assertQ(req("q", fieldName + ":{" + LongLongPointField.MAX_VALUE + " TO " + LongLongPointField.MAX_VALUE + "]", "fl", "id, " + fieldName),
+        assertQ(req("q", fieldName + ":{" + getLongLongMax() + " TO " + getLongLongMax() + "]", "fl", "id, " + fieldName),
                 "//*[@numFound='0']");
         break;
     }
@@ -4144,6 +4144,27 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   // longlong tests
+
+  public LongLongPointField getLongLongType() {
+    final SchemaField sf = h.getCore().getLatestSchema().getField("number_p_ll");
+    assert sf.getType() instanceof LongLongPointField;
+    return (LongLongPointField)sf.getType();
+  }
+
+  public int getLongLongSize() {
+    LongLongPointField longlong = getLongLongType();
+    return longlong.getFieldLength();
+  }
+
+  public BigInteger getLongLongMax() {
+    LongLongPointField longlong = getLongLongType();
+    return longlong.getMaxValue();
+  }
+
+  public BigInteger getLongLongMin() {
+    LongLongPointField longlong = getLongLongType();
+    return longlong.getMaxValue();
+  }
 
   @Test
   public void testLongLongPointFieldExactQuery() throws Exception {

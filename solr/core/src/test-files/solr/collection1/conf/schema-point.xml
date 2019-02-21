@@ -26,7 +26,7 @@
     <fieldType name="pdouble" class="solr.DoublePointField" useDocValuesAsStored="false"/>
     <fieldType name="pfloat" class="solr.FloatPointField" useDocValuesAsStored="false"/>
     <fieldType name="pdate" class="solr.DatePointField" useDocValuesAsStored="false"/>
-    <fieldType name="plonglong" class="solr.LongLongPointField" useDocValuesAsStored="false"/>
+    <fieldType name="plonglong" class="solr.LongLongPointField" useDocValuesAsStored="false" numbytes="16"/>
  </types>
 
  <fields>

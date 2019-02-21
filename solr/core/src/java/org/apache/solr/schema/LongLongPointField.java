@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.lucene.document.BigIntegerPoint;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -65,20 +64,60 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 @SuppressWarnings("ALL")
 public class LongLongPointField extends PointField {
   /**
-   * The number of bytes per dimension: 128 bits = 16 bytes
+   * The max number of bytes per dimension: 128 bits = 16 bytes
    */
-  public static final int BYTES = 16;
-  public static final BigInteger MAX_VALUE = BigIntegerPoint.MAX_VALUE;
-  public static final BigInteger MIN_VALUE = BigIntegerPoint.MIN_VALUE;
+  public static final int MAX_NUM_BYTES = 16;
+
   private static final int HEX = 16;
   private static final int DEC = 10;
   private static final String HEX_PREFIX = "0x";
   private static final BigInteger ONE = BigInteger.ONE;
   private static final Locale locale = Locale.US;
-  /**
-   * Hard code a single 16 byte dimension for this type.
-   */
-  protected static FieldType fieldType = getFieldType();
+  private static final String NUM_BYTES_ARG = "numbytes";
+
+  private BigInteger minValue;
+  private BigInteger maxValue;
+
+  private FieldType fieldType = null;
+
+  /** returns the number of bytes the current type is configured with */
+  public int getFieldLength() {
+    return fieldType.pointNumBytes();
+  }
+
+  /** returns the minimum value this instance of LongLongPointField can have */
+  public BigInteger getMinValue() {
+    return minValue;
+  }
+
+  /** returns the maximum value this instance of LongLongPointField can have*/
+  public BigInteger getMaxValue() {
+    return maxValue;
+  }
+
+  @Override
+  protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
+    int fieldLength;
+    final String numString = args.get(NUM_BYTES_ARG);
+    if (numString != null) {
+      args.remove(NUM_BYTES_ARG);
+      try {
+        fieldLength = Integer.valueOf(numString);
+      } catch (Exception ex) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(locale,
+            "Length option must be a valid number between 1 and %d got %s", MAX_NUM_BYTES, numString ));
+      }
+      if ((fieldLength > 0) && (fieldLength <= MAX_NUM_BYTES)) {
+        fieldType = getFieldType(1, fieldLength);
+        minValue = BigInteger.ONE.shiftLeft(fieldLength * 8 - 1).negate();
+        maxValue = BigInteger.ONE.shiftLeft(fieldLength * 8 - 1).subtract(BigInteger.ONE);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(locale,
+            "Length option must be a valid number between 2 and %d got %s", MAX_NUM_BYTES, numString ));
+      }
+    }
+  }
 
   /**
    * Checks to make sure this bigint can be stored by a Point Field (within 128 bits)
@@ -86,9 +125,9 @@ public class LongLongPointField extends PointField {
    * @param number bigint to check
    * @return TRUE if value can be stored in a Point, FALSE otherwise
    */
-  private static boolean withinRange(final BigInteger number) {
+  private boolean withinRange(final BigInteger number) {
     assert (number != null);
-    return ((number.compareTo(MAX_VALUE) <= 0) && (number.compareTo(MIN_VALUE) >= 0));
+    return ((number.compareTo(maxValue) <= 0) && (number.compareTo(minValue) >= 0));
   }
 
   /**
@@ -134,10 +173,10 @@ public class LongLongPointField extends PointField {
    * @param fieldName used in any exception, may be null
    * @param val       string to parse, null if val was null
    */
-  private static BigInteger parseNumberFromUser(final String fieldName, final String val) {
+  private BigInteger parseNumberFromUser(final String fieldName, final String val) {
     if (val == null) return null;
     final BigInteger number = parseBigIntFromUser(fieldName, val);
-    if (LongLongPointField.withinRange(number)) {
+    if (withinRange(number)) {
       return number;
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(locale,
@@ -145,12 +184,12 @@ public class LongLongPointField extends PointField {
     }
   }
 
-  private static BigInteger parseNumberFromUserDefault(final String fieldName, final String val,
+  private BigInteger parseNumberFromUserDefault(final String fieldName, final String val,
                                                        final BigInteger bigintDefault) {
     return (val == null) ? bigintDefault : parseNumberFromUser(fieldName, val);
   }
 
-  private static BytesRef getSortOrderedByteRef(final BigInteger bigint) {
+  private BytesRef getSortOrderedByteRef(final BigInteger bigint) {
     return new BytesRef(getSortOrderedBytes(bigint));
   }
 
@@ -158,17 +197,17 @@ public class LongLongPointField extends PointField {
    * Returns byte array proccesed so that negative values sort natively
    *
    * @param bigint number to extract bytes from
-   * @return byte[BYTES]
+   * @return byte[field num byes]
    */
-  private static byte[] getSortOrderedBytes(final BigInteger bigint) {
-    final byte[] bytes = new byte[LongLongPointField.BYTES];
+  private byte[] getSortOrderedBytes(final BigInteger bigint) {
+    final byte[] bytes = new byte[getFieldLength()];
     encodeDimension(bigint, bytes, 0);
     return bytes;
   }
 
-  private static FieldType getFieldType() {
+  private static FieldType getFieldType(final int numDimensions, final int numBytes) {
     final FieldType type = new FieldType();
-    type.setDimensions(1, BYTES);
+    type.setDimensions(numDimensions,numBytes);
     type.freeze();
     return type;
   }
@@ -176,15 +215,19 @@ public class LongLongPointField extends PointField {
   /**
    * Encode single BigInteger dimension
    */
-  private static void encodeDimension(BigInteger value, byte[] dest, int offset) {
-    NumericUtils.bigIntToSortableBytes(value, BYTES, dest, offset);
+  private void encodeDimension(BigInteger value, byte[] dest, int offset) {
+    NumericUtils.bigIntToSortableBytes(value, getFieldLength(), dest, offset);
   }
 
   /**
    * Decode single BigInteger dimension
    */
-  private static BigInteger decodeDimension(byte[] value, int offset) {
-    return NumericUtils.sortableBytesToBigInt(value, offset, BYTES);
+  private BigInteger decodeDimension(byte[] value, int offset) {
+    return decodeDimension(value, offset, getFieldLength());
+  }
+
+  private static BigInteger decodeDimension(byte[] value, int offset, int fieldLength) {
+    return NumericUtils.sortableBytesToBigInt(value, offset, fieldLength);
   }
 
   @Override
@@ -210,8 +253,8 @@ public class LongLongPointField extends PointField {
     }
 
     if (retval != null) {
-      if (LongLongPointField.withinRange(retval)) {
-        // make sure bigint is backed by 16 byte array
+      if (withinRange(retval)) {
+        // make sure bigint is backed by the configured size of our type
         return retval;
       } else {
         throw new NumberFormatException(String.format(locale, "%s is too big or small to be stored in a %s",
@@ -224,16 +267,16 @@ public class LongLongPointField extends PointField {
   @Override
   public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
                                   boolean maxInclusive) {
-    BigInteger actualMin = parseNumberFromUserDefault(field.getName(), min, MIN_VALUE);
+    BigInteger actualMin = parseNumberFromUserDefault(field.getName(), min, minValue);
     if (!minInclusive) {
-      if (actualMin.equals(MAX_VALUE)) return new MatchNoDocsQuery();
+      if (actualMin.equals(maxValue)) return new MatchNoDocsQuery();
       actualMin = actualMin.add(ONE);
     }
     final byte[] actualMinBytes = getSortOrderedBytes(actualMin);
 
-    BigInteger actualMax = parseNumberFromUserDefault(field.getName(), max, MAX_VALUE);
+    BigInteger actualMax = parseNumberFromUserDefault(field.getName(), max, maxValue);
     if (!maxInclusive) {
-      if (actualMax.equals(MIN_VALUE)) return new MatchNoDocsQuery();
+      if (actualMax.equals(minValue)) return new MatchNoDocsQuery();
       actualMax = actualMax.subtract(ONE);
     }
     final byte[] actualMaxBytes = getSortOrderedBytes(actualMax);
@@ -246,7 +289,7 @@ public class LongLongPointField extends PointField {
     if (term == null) {
       throw new AssertionError(String.format(locale, "Unexpected state. Field: '%s'", sf));
     }
-    return LongLongPointField.decodeDimension(term.bytes, term.offset);
+    return decodeDimension(term.bytes, term.offset);
   }
 
   @Override
@@ -255,7 +298,7 @@ public class LongLongPointField extends PointField {
       throw new AssertionError(String.format(locale, "Unexpected state. Field: '%s'", f));
     }
     final BytesRef byteref = f.binaryValue();
-    return LongLongPointField.decodeDimension(byteref.bytes, byteref.offset);
+    return decodeDimension(byteref.bytes, byteref.offset);
   }
 
   @Override
@@ -275,7 +318,7 @@ public class LongLongPointField extends PointField {
 
     final byte[][] values = externalVal.stream()
         .map(x -> parseNumberFromUser(fieldName, x))
-        .map(LongLongPointField::getSortOrderedBytes)
+        .map(x ->getSortOrderedBytes(x))
         .toArray(byte[][]::new);
 
     return BinaryPoint.newSetQuery(field.getName(), values);
@@ -288,8 +331,8 @@ public class LongLongPointField extends PointField {
 
   @Override
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
-    result.grow(LongLongPointField.BYTES);
-    result.setLength(LongLongPointField.BYTES);
+    result.grow(getFieldLength());
+    result.setLength(getFieldLength());
     encodeDimension(parseBigIntFromUser(null, val.toString()), result.bytes(),
         0);
   }
@@ -336,15 +379,15 @@ public class LongLongPointField extends PointField {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    final byte[] bytes = new byte[BYTES];
+    final byte[] bytes = new byte[getFieldLength()];
     encodeDimension((BigInteger) toNativeType(value), bytes, 0);
-    return new BinaryPoint(field.getName(), bytes);
+    return new BinaryPoint(field.getName(), bytes, fieldType);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     // is this even worthwhile if the ValueSource is not numeric?
-    return new LongLongFieldSource(field.getName());
+    return new LongLongFieldSource(field.getName(), fieldType.pointNumBytes());
   }
 
   @Override
@@ -354,7 +397,7 @@ public class LongLongPointField extends PointField {
       // single value matches any selector
       return getValueSource(field, null);
     } else {
-      return new MultiValuedLongLongByteFieldSource(field.getName());
+      return new MultiValuedLongLongByteFieldSource(field.getName(), getFieldLength());
     }
   }
 
@@ -363,10 +406,10 @@ public class LongLongPointField extends PointField {
                                          boolean minInclusive, boolean maxInclusive) {
     assert field.hasDocValues() && (field.getType().isPointField() || !field.multiValued());
 
-    final BigInteger minBigInt = parseNumberFromUserDefault(field.getName(), min, MIN_VALUE);
+    final BigInteger minBigInt = parseNumberFromUserDefault(field.getName(), min, minValue);
     final BytesRef minBytes = getSortOrderedByteRef(minBigInt);
 
-    final BigInteger maxBigInt = parseNumberFromUserDefault(field.getName(), max, MAX_VALUE);
+    final BigInteger maxBigInt = parseNumberFromUserDefault(field.getName(), max, maxValue);
     final BytesRef maxBytes = getSortOrderedByteRef(maxBigInt);
 
     if (field.multiValued()) {
@@ -412,8 +455,15 @@ public class LongLongPointField extends PointField {
    * value to UTF8 - there are plenty of bit patterns that may cause an exception doing this
    */
   private static class LongLongFieldSource extends BytesRefFieldSource {
-    LongLongFieldSource(String field) {
+    private final int fieldLength;
+
+    public int getFieldLength() {
+      return fieldLength;
+    }
+
+    LongLongFieldSource(String field, int fieldLength) {
       super(field);
+      this.fieldLength = fieldLength;
     }
 
     public String description() {
@@ -434,7 +484,7 @@ public class LongLongPointField extends PointField {
             return null;
           }
           final BytesRef term = termsIndex.binaryValue();
-          return LongLongPointField.decodeDimension(term.bytes, term.offset);
+          return LongLongPointField.decodeDimension(term.bytes, term.offset, fieldLength);
         }
 
         @Override
@@ -478,8 +528,8 @@ public class LongLongPointField extends PointField {
    */
   @SuppressWarnings("SpellCheckingInspection")
   private static class MultiValuedLongLongByteFieldSource extends LongLongFieldSource {
-    MultiValuedLongLongByteFieldSource(String field) {
-      super(field);
+    MultiValuedLongLongByteFieldSource(String field, int fieldLengfth) {
+      super(field,fieldLengfth);
       Objects.requireNonNull(field, "Field is required to create a MultiValuedLongFieldSource");
     }
 
@@ -495,7 +545,8 @@ public class LongLongPointField extends PointField {
 
     @Override
     public String toString() {
-      return String.format(locale, "MultiValuedLongLongByteFieldSource{field='%s'}", field);
+      return String.format(locale, "MultiValuedLongLongByteFieldSource{field='%s', length=%d}",
+          field, getFieldLength());
     }
 
     @Override
