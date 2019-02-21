@@ -62,7 +62,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @see org.apache.lucene.document.BinaryPoint
  */
 @SuppressWarnings("ALL")
-public class LongLongPointField extends PointField {
+public class ByteStringPointField extends PointField {
   /**
    * The max number of bytes per dimension: 128 bits = 16 bytes
    */
@@ -85,12 +85,12 @@ public class LongLongPointField extends PointField {
     return fieldType.pointNumBytes();
   }
 
-  /** returns the minimum value this instance of LongLongPointField can have */
+  /** returns the minimum value this instance of ByteStringPointField can have */
   public BigInteger getMinValue() {
     return minValue;
   }
 
-  /** returns the maximum value this instance of LongLongPointField can have*/
+  /** returns the maximum value this instance of ByteStringPointField can have*/
   public BigInteger getMaxValue() {
     return maxValue;
   }
@@ -232,7 +232,7 @@ public class LongLongPointField extends PointField {
 
   @Override
   /*
-   * Native type for a LongLongPointField is BigInteger
+   * Native type for a ByteStringPointField is BigInteger
    */
   public Object toNativeType(Object val) {
     BigInteger retval = null;
@@ -387,7 +387,7 @@ public class LongLongPointField extends PointField {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     // is this even worthwhile if the ValueSource is not numeric?
-    return new LongLongFieldSource(field.getName(), fieldType.pointNumBytes());
+    return new ByteStringFieldSource(field.getName(), fieldType.pointNumBytes());
   }
 
   @Override
@@ -397,7 +397,7 @@ public class LongLongPointField extends PointField {
       // single value matches any selector
       return getValueSource(field, null);
     } else {
-      return new MultiValuedLongLongByteFieldSource(field.getName(), getFieldLength());
+      return new MultiValuedByteStringFieldSource(field.getName(), getFieldLength());
     }
   }
 
@@ -454,20 +454,20 @@ public class LongLongPointField extends PointField {
    * An extension to BytesRefFieldSource that does not attempt to cast its binary
    * value to UTF8 - there are plenty of bit patterns that may cause an exception doing this
    */
-  private static class LongLongFieldSource extends BytesRefFieldSource {
+  private static class ByteStringFieldSource extends BytesRefFieldSource {
     private final int fieldLength;
 
     public int getFieldLength() {
       return fieldLength;
     }
 
-    LongLongFieldSource(String field, int fieldLength) {
+    ByteStringFieldSource(String field, int fieldLength) {
       super(field);
       this.fieldLength = fieldLength;
     }
 
     public String description() {
-      return String.format(locale, "longlong('%s')", field);
+      return String.format(locale, "bytestring('%s')", field);
     }
 
     @Override
@@ -484,7 +484,7 @@ public class LongLongPointField extends PointField {
             return null;
           }
           final BytesRef term = termsIndex.binaryValue();
-          return LongLongPointField.decodeDimension(term.bytes, term.offset, fieldLength);
+          return ByteStringPointField.decodeDimension(term.bytes, term.offset, fieldLength);
         }
 
         @Override
@@ -508,7 +508,7 @@ public class LongLongPointField extends PointField {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       if (!super.equals(o)) return false;
-      LongLongFieldSource that = (LongLongFieldSource) o;
+      ByteStringFieldSource that = (ByteStringFieldSource) o;
       return Objects.equals(getField(), that.getField());
     }
 
@@ -519,16 +519,16 @@ public class LongLongPointField extends PointField {
 
     @Override
     public String toString() {
-      return String.format(locale, "LongLongFieldSource{field='%s'}", field);
+      return String.format(locale, "ByteStringFieldSource{field='%s'}", field);
     }
   }
 
   /**
-   * Obtains longlong field values and gives a single-valued ValueSource view of a field.
+   * Obtains bytestring field values and gives a single-valued ValueSource view of a field.
    */
   @SuppressWarnings("SpellCheckingInspection")
-  private static class MultiValuedLongLongByteFieldSource extends LongLongFieldSource {
-    MultiValuedLongLongByteFieldSource(String field, int fieldLengfth) {
+  private static class MultiValuedByteStringFieldSource extends ByteStringFieldSource {
+    MultiValuedByteStringFieldSource(String field, int fieldLengfth) {
       super(field,fieldLengfth);
       Objects.requireNonNull(field, "Field is required to create a MultiValuedLongFieldSource");
     }
@@ -540,12 +540,12 @@ public class LongLongPointField extends PointField {
 
     @Override
     public String description() {
-      return String.format(locale, "longlong(%s,min)", field);
+      return String.format(locale, "bytestring(%s,min)", field);
     }
 
     @Override
     public String toString() {
-      return String.format(locale, "MultiValuedLongLongByteFieldSource{field='%s', length=%d}",
+      return String.format(locale, "MultiValuedByteStringFieldSource{field='%s', length=%d}",
           field, getFieldLength());
     }
 
@@ -554,7 +554,7 @@ public class LongLongPointField extends PointField {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       if (!super.equals(o)) return false;
-      MultiValuedLongLongByteFieldSource that = (MultiValuedLongLongByteFieldSource) o;
+      MultiValuedByteStringFieldSource that = (MultiValuedByteStringFieldSource) o;
       return Objects.equals(getField(), that.getField());
     }
 

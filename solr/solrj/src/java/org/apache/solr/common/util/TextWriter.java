@@ -118,7 +118,7 @@ public interface TextWriter extends PushWriter {
   void writeDouble(String name, String val) throws IOException;
 
   /** if this form of the method is called, val is the Java string form of a bigInteger */
-  void writeLongLong(String name, String val) throws IOException;
+  void writeByteString(String name, String val) throws IOException;
 
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   void writeDate(String name, String val) throws IOException;
@@ -147,7 +147,7 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof AtomicLong) {
       writeLong(name, ((AtomicLong) val).get());
     } else if (val instanceof BigInteger) {
-      writeLongLong(name, ((BigInteger)val).toString());
+      writeByteString(name, ((BigInteger)val).toString());
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -175,8 +175,8 @@ public interface TextWriter extends PushWriter {
     writeInt(name,Integer.toString(val));
   }
 
-  default void writeLongLong(String name, BigInteger val) throws IOException {
-    writeLongLong(name,val.toString());
+  default void writeByteString(String name, BigInteger val) throws IOException {
+    writeByteString(name,val.toString());
   }
 
   default void writeLong(String name, long val) throws IOException {

@@ -69,7 +69,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.LatLonPointSpatialField;
-import org.apache.solr.schema.LongLongPointField;
+import org.apache.solr.schema.ByteStringPointField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -547,7 +547,7 @@ public class SolrDocumentFetcher {
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
           if (schemaField.getType() instanceof BoolField) {
             return schemaField.getType().toObject(schemaField, bRef);
-          } else if (schemaField.getType() instanceof LongLongPointField) {
+          } else if (schemaField.getType() instanceof ByteStringPointField) {
             return schemaField.getType().toObject(schemaField, bRef);
           } else {
               return bRef.utf8ToString();

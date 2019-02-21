@@ -404,7 +404,7 @@ class XLSXWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeLongLong(String name, String val) throws IOException {
+  public void writeByteString(String name, String val) throws IOException {
     wb.writeCell(val);
   }
 

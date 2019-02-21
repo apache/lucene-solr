@@ -216,7 +216,7 @@ public interface JsonTextWriter extends TextWriter {
     _writeStr(val);
   }
 
-  default void writeLongLong(String name, String val) throws IOException {
+  default void writeByteString(String name, String val) throws IOException {
     _writeStr(val);
   }
 
