@@ -58,6 +58,8 @@ New Features
 
 * SOLR-13171 : A true streaming parser for javabin payload/stream without creating any objects (noble)
 
+* SOLR-13261: Make SortableTextField work with export/streaming
+
 Bug Fixes
 ----------------------
 
