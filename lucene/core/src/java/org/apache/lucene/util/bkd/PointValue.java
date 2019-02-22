@@ -19,18 +19,19 @@ package org.apache.lucene.util.bkd;
 
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Represent a dimensional point value written in the BKD tree.
- */
+/** Represents a dimensional point value written in the BKD tree.
+ *
+ * @lucene.internal
+ **/
 public interface PointValue {
 
-  /** Return the packed values for the dimensions */
+  /** Returns the packed values for the dimensions */
   BytesRef packedValue();
 
-  /** The document id */
+  /** Returns the document id */
   int docID();
 
-  /** The byte representation of the document id */
+  /** Returns the byte representation of the document id */
   BytesRef docIDBytes();
 
 }
