@@ -149,6 +149,9 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
+    <!--JNA-->
+    <dependency org="net.java.dev.jna" name="jna" rev="5.2.0" conf="compile"/>
+
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
 </ivy-module>
