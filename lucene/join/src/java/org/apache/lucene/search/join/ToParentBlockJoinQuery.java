@@ -178,7 +178,6 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   private static class ParentApproximation extends DocIdSetIterator {
-
     private final DocIdSetIterator childApproximation;
     private final BitSet parentBits;
     private int doc = -1;
