@@ -58,6 +58,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IntValueFieldType;
 import org.apache.solr.schema.LongValueFieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
@@ -358,7 +359,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           writers[i] = new DoubleFieldWriter(field);
         }
-      } else if (fieldType instanceof StrField) {
+      } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
         } else {
@@ -377,7 +378,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           writers[i] = new BoolFieldWriter(field, fieldType);
         }
       } else {
-        throw new IOException("Export fields must either be one of the following types: int,float,long,double,string,date,boolean");
+        throw new IOException("Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
     }
     return writers;
@@ -421,7 +422,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           sortValues[i] = new LongValue(field, new LongAsc());
         }
-      } else if (ft instanceof StrField) {
+      } else if (ft instanceof StrField || ft instanceof SortableTextField) {
         LeafReader reader = searcher.getSlowAtomicReader();
         SortedDocValues vals = reader.getSortedDocValues(field);
         if (reverse) {
@@ -447,7 +448,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           sortValues[i] = new StringValue(vals, field, new IntAsc());
         }
       } else {
-        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean");
+        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
     }
     //SingleValueSortDoc etc are specialized classes which don't have array lookups. On benchmarking large datasets
