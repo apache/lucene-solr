@@ -42,20 +42,28 @@ public abstract class QueryVisitor {
   public void visitLeaf(Query query) { }
 
   /**
-   * Pulls a visitor instance for visiting matching child clauses of a query
+   * Pulls a visitor instance for visiting child clauses of a query
    *
-   * The default implementation returns {@code this}
+   * Returns {@code null} if the child clauses should not be visited
+   *
+   * The default implementation returns {@code this}, unless {@code occur} is equal
+   * to {@link BooleanClause.Occur#MUST_NOT} in which case it returns
+   * {@code null}
    *
    * @param occur   the relationship between the parent and its children
    * @param parent  the query visited
    */
   public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
     if (occur == BooleanClause.Occur.MUST_NOT) {
-      return EMPTY_VISITOR;
+      return null;
     }
     return this;
   }
 
+  /**
+   * Builds a {@code QueryVisitor} instance that collects all terms that may match a query
+   * @param termSet a {@code Set} to add collected terms to
+   */
   public static QueryVisitor termCollector(Set<Term> termSet) {
     return new QueryVisitor() {
       @Override
@@ -64,7 +72,5 @@ public abstract class QueryVisitor {
       }
     };
   }
-
-  public static final QueryVisitor EMPTY_VISITOR = new QueryVisitor() {};
 
 }

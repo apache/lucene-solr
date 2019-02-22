@@ -98,6 +98,20 @@ public class QueryUtils {
     CheckHits.checkExplanations(q, null, s, true);
   }
 
+  static final QueryVisitor NULL_DEPTH_VISITOR = new QueryVisitor() {
+    @Override
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+      return null;
+    }
+  };
+
+  /**
+   * Checks that a query correctly handles QueryVisitors that always shortcut
+   */
+  public static void checkQueryVisitor(Query q) {
+    q.visit(NULL_DEPTH_VISITOR);
+  }
+
   /**
    * Various query sanity checks on a searcher, some checks are only done for
    * instanceof IndexSearcher.
@@ -126,6 +140,7 @@ public class QueryUtils {
         }
         checkExplanations(q1,s);
         CheckHits.checkMatches(q1, s);
+        checkQueryVisitor(q1);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

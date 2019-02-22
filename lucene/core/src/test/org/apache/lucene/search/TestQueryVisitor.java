@@ -159,7 +159,7 @@ public class TestQueryVisitor extends LuceneTestCase {
           shouldMatchLeaves.add(should);
           return should;
       }
-      return EMPTY_VISITOR;
+      return null;
     }
 
     int getWeight() {

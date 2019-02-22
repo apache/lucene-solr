@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -129,7 +130,10 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 
   @Override
   public void visit(QueryVisitor visitor) {
-    match.visit(visitor);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    if (v != null) {
+      match.visit(v);
+    }
   }
 
   /** Returns true iff <code>other</code> is equal to this. */

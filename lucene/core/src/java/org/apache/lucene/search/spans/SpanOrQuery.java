@@ -92,9 +92,11 @@ public final class SpanOrQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (SpanQuery q : clauses) {
-      q.visit(v);
+      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      if (v != null) {
+        q.visit(v);
+      }
     }
   }
 

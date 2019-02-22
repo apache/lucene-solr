@@ -132,9 +132,14 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    big.visit(v);
-    little.visit(v);
+    QueryVisitor v1 = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    if (v1 != null) {
+      big.visit(v1);
+    }
+    QueryVisitor v2 = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    if (v2 != null) {
+      little.visit(v2);
+    }
   }
 
   @Override

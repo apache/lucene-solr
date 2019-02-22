@@ -85,8 +85,14 @@ class DifferenceIntervalsSource extends IntervalsSource {
   @Override
   public void visit(String field, QueryVisitor visitor) {
     IntervalQuery q = new IntervalQuery(field, this);
-    minuend.visit(field, visitor.getSubVisitor(BooleanClause.Occur.MUST, q));
-    subtrahend.visit(field, visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, q));
+    QueryVisitor m = visitor.getSubVisitor(BooleanClause.Occur.MUST, q);
+    if (m != null) {
+      minuend.visit(field, m);
+    }
+    QueryVisitor s = visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, q);
+    if (s != null) {
+      subtrahend.visit(field, s);
+    }
   }
 
   @Override

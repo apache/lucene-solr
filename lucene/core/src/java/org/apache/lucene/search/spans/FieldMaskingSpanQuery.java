@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -107,7 +108,10 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    maskedQuery.visit(visitor);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    if (v != null) {
+      maskedQuery.visit(v);
+    }
   }
 
   @Override

@@ -454,7 +454,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public void visit(QueryVisitor visitor) {
     for (BooleanClause clause : this) {
-      clause.getQuery().visit(visitor.getSubVisitor(clause.getOccur(), this));
+      QueryVisitor v = visitor.getSubVisitor(clause.getOccur(), this);
+      if (v != null) {
+        clause.getQuery().visit(v);
+      }
     }
   }
 

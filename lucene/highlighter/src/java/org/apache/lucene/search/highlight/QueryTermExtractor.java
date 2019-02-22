@@ -146,7 +146,7 @@ public final class QueryTermExtractor
         return new BoostedTermExtractor(field, newboost, terms, includeProhibited);
       }
       if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
-        return EMPTY_VISITOR;
+        return null;
       }
       return this;
     }

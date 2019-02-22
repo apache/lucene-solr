@@ -90,7 +90,10 @@ public class PayloadScoreQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    wrappedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    if (v != null) {
+      wrappedQuery.visit(v);
+    }
   }
 
 

@@ -97,7 +97,10 @@ public final class SpanBoostQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    query.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    if (v != null) {
+      query.visit(v);
+    }
   }
 
   @Override

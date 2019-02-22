@@ -221,8 +221,11 @@ public final class BM25FQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (Term term : fieldTerms) {
+      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      if (v == null) {
+        return;
+      }
       v.matchesTerm(term);
     }
   }

@@ -111,8 +111,11 @@ public final class CoveringQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (Query query : queries) {
+      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      if (v == null) {
+        return;
+      }
       query.visit(v);
     }
   }

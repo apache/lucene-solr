@@ -28,6 +28,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -85,8 +86,12 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, new IntervalQuery(field, this));
+    Query parent = new IntervalQuery(field, this);
     for (IntervalsSource source : subSources) {
+      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, parent);
+      if (v == null) {
+        return;
+      }
       source.visit(field, v);
     }
   }
