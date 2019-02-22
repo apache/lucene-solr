@@ -16,6 +16,28 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Solr tutorial at https://lucene.apache.org/solr/guide/solr-tutorial.html
 
+==================  9.0.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.13
+Jetty 9.4.14.v20181114
+
+Upgrade Notes
+----------------------
+
+* SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
+  in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
+  see commeints in the log4j2 configuration files (log4j2.xml by default).
+
+New Features
+----------------------
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -56,7 +78,6 @@ Bug Fixes
 
 Improvements
 ----------------------
-
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
   disk space (noble)
 
@@ -68,6 +89,15 @@ Other Changes
 * SOLR-11763: Upgrade Guava to 25.1-jre (Markus Jelsma, Kevin Risden)
 
 * SOLR-13222: Improve logging in StreamingSolrClients (Peter Cseh via Kevin Risden)
+
+* SOLR-12055: Enable async logging by default. This change improves throughput for logging. This opens
+  up a small window where log messages could possibly be lost. If this is unacceptable, switching back to synchronous
+  logging can be done by changing the log4j2.xml file, no internal Solr code changed to make async logging the default.
+  (Erick Erickson)
+
+* SOLR-12753: Async logging ring buffer and OOM error. When very long messages are written (1M messages or so),
+  it can produce an OOM error. Log messages are truncated at 10K via configuration in the log4j2.xml files.
+
 
 ==================  8.0.0 ==================
 
@@ -243,7 +273,7 @@ Bug Fixes
   this issue reverts the default replica placement policy to the 'legacy' assignment policy that was the default until
   Solr 7.4. (Gus Heck, Andrzej Bialecki, Bram Van Dam, shalin)
 
-* SOLR-13255 : ClassCastException when URPs try to read a String field which returns a ByteArrayUtf8CharSequence . This is a regression
+* SOLR-13255 : ClasscastException when URPs try to read a String field which returns a ByteArrayUTF8CHarSequence . This is a regression
   in release 7.7 (noble)
 
 
@@ -308,21 +338,6 @@ Other Changes
 * SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
 
 * SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
-
-==================  7.8.0 ==================
-
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
-
-Versions of Major Components
----------------------
-Apache Tika 1.19.1
-Carrot2 3.16.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache ZooKeeper 3.4.13
-Jetty 9.4.14.v20181114
-
-
-(No Changes)
 
 ==================  7.7.0 ==================
 
@@ -717,6 +732,7 @@ Upgrade Notes
 
 * SOLR-12398: The heatmap facet response structure, when returned in JSON, changed from an even/odd name/value array to
   an object style.  Although the object style makes more sense, this was an overlooked back-compat break; sorry.
+
 
 
 New Features

@@ -17,10 +17,10 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-public class SignificantTermsQParserPluginTest extends LuceneTestCase {
+public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
 
   /**
    * Test the backwards compatibility for a typo in the SignificantTermsQParserPlugin. It will fail if the backwards
