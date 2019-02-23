@@ -53,6 +53,9 @@ Bug Fixes
 
 * SOLR-12708: Async collection actions should not hide internal failures (Mano Kovacs, Varun Thacker, Tomás Fernández Löbbe)
 
+* SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors 
+(Munendra S N via Mikhail Khludnev)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
