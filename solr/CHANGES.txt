@@ -107,6 +107,8 @@ Other Changes
 
 * SOLR-13074: MoveReplicaHDFSTest leaks threads, falls into an endless loop, logging like crazy (Kevin Risden)
 
+* SOLR-9762: Remove the workaround implemented for HADOOP-13346 (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
