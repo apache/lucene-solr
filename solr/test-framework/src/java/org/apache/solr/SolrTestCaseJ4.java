@@ -348,8 +348,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       sslConfig = null;
       testSolrHome = null;
 
-      StartupLoggingUtils.shutdown();
-
       IpTables.unblockAllPorts();
 
       LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
