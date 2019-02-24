@@ -225,7 +225,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    SolrException e = expectThrows(SolrException.class, () ->CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
             .setMaxShardsPerNode(2))
         .process(solrClient)
@@ -238,17 +238,16 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   public void testMustMatch() throws Exception {
     String configName = getSaferTestName();
     createConfigSet(configName);
-    final String regexEnding = "_solr";
-    final String regexString = ".+" + regexEnding;
+    final String mustMatchRegex = ".+_solr";
 
     final int maxCardinality = Integer.MAX_VALUE; // max cardinality for current test
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
     //  This tests we may pre-create the collection and it's acceptable.
-    final String colVogon = getAlias() + "__CRA__" + noSpaces(SHIPS[0]) + "_" + regexEnding;
+    final String colVogon = getAlias() + "__CRA__" + noSpaces(SHIPS[0]) + "_solr";
 
     // we expect changes ensuring a legal collection name.
-    final String colHoG = getAlias() + "__CRA__" + noSpaces(SHIPS[1]) + "_" + regexEnding;
+    final String colHoG = getAlias() + "__CRA__" + noSpaces(SHIPS[1]) + "_solr";
 
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
@@ -262,23 +261,53 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
             .setMaxShardsPerNode(2))
         .setMaxCardinality(maxCardinality)
-        .setMustMatch(regexString)
+        .setMustMatch(mustMatchRegex)
         .process(solrClient);
 
     // now we index a document
-    addDocsAndCommit(true, newDoc(SHIPS[0] + "_" + regexEnding));
+    addDocsAndCommit(true, newDoc(SHIPS[0] + "_solr"));
     //assertDocRoutedToCol(lastDocId, col23rd);
 
     String uninitialized = getAlias() + "__CRA__" + CategoryRoutedAlias.UNINITIALIZED;
     assertInvariants(colVogon, uninitialized);
 
-    addDocsAndCommit(true, newDoc(SHIPS[1] + "_" + regexEnding));
+    addDocsAndCommit(true, newDoc(SHIPS[1] + "_solr"));
 
     assertInvariants(colVogon, colHoG);
 
     // should fail since max cardinality is reached
     testFailedDocument(newDoc(SHIPS[2]), "does not match " + CategoryRoutedAlias.ROUTER_MUST_MATCH);
     assertInvariants(colVogon, colHoG);
+  }
+
+  @Slow
+  @Test
+  public void testInvalidMustMatch() throws Exception {
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+    // Not a valid regex
+    final String mustMatchRegex = "+_solr";
+
+    final int maxCardinality = Integer.MAX_VALUE; // max cardinality for current test
+
+    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
+    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
+
+    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
+    assertTrue("We expect at least 2 configSets",
+        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
+    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
+
+    SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
+            .setMaxShardsPerNode(2))
+        .setMaxCardinality(maxCardinality)
+        .setMustMatch(mustMatchRegex)
+        .process(solrClient)
+    );
+
+    assertTrue("Create Alias should fail since router.mustMatch must be a valid regular expression",
+        e.getMessage().contains("router.mustMatch must be a valid regular expression"));
   }
 
   @Slow
