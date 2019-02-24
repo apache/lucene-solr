@@ -29,6 +29,7 @@
   <dependencies>
     <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="logging"/>
     <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}" conf="logging"/>
+    <dependency org="org.apache.logging.log4j" name="log4j-web" rev="${/org.apache.logging.log4j/log4j-web}" conf="logging"/>
     <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="logging"/>
     <dependency org="org.apache.logging.log4j" name="log4j-1.2-api" rev="${/org.apache.logging.log4j/log4j-1.2-api}" conf="logging"/>
     <dependency org="com.lmax" name="disruptor" rev="${/com.lmax/disruptor}" conf="logging"/>
