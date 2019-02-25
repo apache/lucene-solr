@@ -406,7 +406,7 @@ public class GeoPathTest extends LuceneTestCase {
 
   @Test
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8696")
-  public void testLUCEN8696() {
+  public void testLUCENE8696() {
     GeoPoint[] points = new GeoPoint[4];
     points[0] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.017453291479645996);
     points[1] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.8952476719156919);
@@ -414,13 +414,22 @@ public class GeoPathTest extends LuceneTestCase {
     points[3] = new GeoPoint(PlanetModel.WGS84, -0.7718789008737459, 0.9236607495528212);
     GeoPath path  = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, 1.3439035240356338, points);
     GeoPoint check = new GeoPoint(0.02071783020158524, 0.9523290535474472, 0.30699177256064203);
-    // Construct a bounding box from the shape
-    XYZBounds bounds = new XYZBounds();
-    path.getBounds(bounds);
-    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds);
-    
-    // If point is within solid, it must be within shape
+    /*
+   [junit4]   1>   cycle: cell=12502 parentCellID=12500 x: -1658490249 TO 2147483041, y: 2042111310 TO 2147483041, z: -2140282940 TO 2140277970, splits: 1 queue.size()=1
+   [junit4]   1>     minx=-0.7731590077686981 maxx=1.0011188539924791 miny=0.9519964046486451 maxy=1.0011188539924791 minz=-0.9977622932859775 maxz=0.9977599768255027
+   [junit4]   1>     GeoArea.CONTAINS: now addAll
+    */
+    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      -0.7731590077686981, 1.0011188539924791,
+      0.9519964046486451, 1.0011188539924791,
+      -0.9977622932859775, 0.9977599768255027);
+    // Verify that the point is within it
     assertTrue(solid.isWithin(check));
+    // Check the relationship
+    int relationship = solid.getRelationship(path);
+    assertTrue(relationship == GeoArea.CONTAINS);
+    // If relationship is CONTAINS then any point in the solid must also be within the path
+    // If point is within solid, it must be within shape
     assertTrue(path.isWithin(check));
 
     //GeoPoint surfaceCheck = PlanetModel.WGS84.createSurfacePoint(check);
