@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -76,10 +78,13 @@ public class CategoryRoutedAlias implements RoutedAlias {
   private Aliases parsedAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
   private final String aliasName;
   private final Map<String, String> aliasMetadata;
+  private final Pattern mustMatch;
 
   CategoryRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
     this.aliasName = aliasName;
     this.aliasMetadata = aliasMetadata;
+    final String mustMatch = this.aliasMetadata.get(ROUTER_MUST_MATCH);
+    this.mustMatch = mustMatch == null? null: compileMustMatch(mustMatch);
   }
 
   @Override
@@ -124,6 +129,11 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
     if (cols.contains(candidateCollectionName)) {
       return;
+    }
+
+    if (mustMatch != null && !mustMatch.matcher(candidateCollectionName).matches()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection name " + candidateCollectionName
+          + " does not match " + ROUTER_MUST_MATCH + ": " + mustMatch);
     }
 
     if (cols.stream()
@@ -193,6 +203,15 @@ public class CategoryRoutedAlias implements RoutedAlias {
       throw e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  private Pattern compileMustMatch(String mustMatch) {
+    try {
+      return Pattern.compile(mustMatch);
+    } catch (PatternSyntaxException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ROUTER_MUST_MATCH + " must be a valid regular"
+          + " expression, instead got: " + mustMatch);
     }
   }
 
