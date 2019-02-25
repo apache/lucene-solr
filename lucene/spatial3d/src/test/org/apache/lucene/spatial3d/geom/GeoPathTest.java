@@ -23,7 +23,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class GeoPathTest {
+import org.apache.lucene.util.LuceneTestCase;
+
+public class GeoPathTest extends LuceneTestCase {
 
   @Test
   public void testPathDistance() {
@@ -400,6 +402,29 @@ public class GeoPathTest {
     path = GeoPathFactory.makeGeoPath(planetModel, 0, new GeoPoint[] {point4, point5, point6});
     path = GeoPathFactory.makeGeoPath(planetModel, 0.5, new GeoPoint[] {point4, point5, point6});
 
+  }
+
+  @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8696")
+  public void testLUCEN8696() {
+    GeoPoint[] points = new GeoPoint[4];
+    points[0] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.017453291479645996);
+    points[1] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.8952476719156919);
+    points[2] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.6491968536639036);
+    points[3] = new GeoPoint(PlanetModel.WGS84, -0.7718789008737459, 0.9236607495528212);
+    GeoPath path  = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, 1.3439035240356338, points);
+    GeoPoint check = new GeoPoint(0.02071783020158524, 0.9523290535474472, 0.30699177256064203);
+    // Construct a bounding box from the shape
+    XYZBounds bounds = new XYZBounds();
+    path.getBounds(bounds);
+    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds);
+    
+    // If point is within solid, it must be within shape
+    assertTrue(solid.isWithin(check));
+    assertTrue(path.isWithin(check));
+
+    //GeoPoint surfaceCheck = PlanetModel.WGS84.createSurfacePoint(check);
+    
   }
 
 }
