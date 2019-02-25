@@ -27,7 +27,8 @@
   realtime-get, +
   exporting-result-sets, +
   parallel-sql-interface, +
-  analytics
+  analytics, +
+  searching-nested-documents
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -68,6 +69,7 @@ This section describes how Solr works with search requests. It covers the follow
 * <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>>: Detailed information about re-ranking top scoring documents from simple queries using more complex scores.
 ** <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>>: How to use LTR to run machine learned ranking models in Solr.
 
+* <<searching-nested-documents.adoc#searching-nested-documents,Searching Nested Documents>>: Detailed information about constructing nested and hierarchical queries.
 * <<transforming-result-documents.adoc#transforming-result-documents,Transforming Result Documents>>: Detailed information about using `DocTransformers` to add computed information to individual documents
 * <<suggester.adoc#suggester,Suggester>>: Detailed information about Solr's powerful autosuggest component.
 * <<morelikethis.adoc#morelikethis,MoreLikeThis>>: Detailed information about Solr's similar results query component.
