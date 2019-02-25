@@ -23,6 +23,8 @@ import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Circle;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -155,6 +157,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
   }
 
+  /** factory method to create a new polygon query */
+  protected Query newDistanceQuery(String field, QueryRelation queryRelation, Circle circle) {
+    return LatLonShape.newDistanceQuery(field, queryRelation, circle);
+  }
+
   // A particularly tricky adversary for BKD tree:
   public void testSameShapeManyTimes() throws Exception {
     int numShapes = atLeast(500);
@@ -235,6 +242,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     verifyRandomLineQueries(reader, shapes);
     // test random polygon queries
     verifyRandomPolygonQueries(reader, shapes);
+    // test random distance queries
+    verifyRandomDistanceQueries(reader, shapes);
 
     IOUtils.close(w, reader, dir);
   }
@@ -561,6 +570,100 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
+  /** test random generated polygons */
+  protected void verifyRandomDistanceQueries(IndexReader reader, Object... shapes) throws Exception {
+    IndexSearcher s = newSearcher(reader);
+
+    final int iters = scaledIterationCount(shapes.length);
+
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter = 0; iter < iters; ++iter) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
+      }
+
+      // Polygon
+      double lat = GeoTestUtil.nextLatitude();
+      double lon = GeoTestUtil.nextLongitude();
+      double distance = randomIntBetween(1, (int)Circle.MAXRADIUS);
+      Circle circle  = new Circle(lat, lon, distance);
+      Circle2D circle2D = Circle2D.create(circle);
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Query query = newDistanceQuery(FIELD_NAME, queryRelation, circle);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query + ", relation=" + queryRelation);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+        private int docBase;
+
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          hits.set(docBase+doc);
+        }
+      });
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
+      for (int docID = 0; docID < maxDoc; ++docID) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (shapes[id] == null) {
+          expected = false;
+        } else {
+          expected = getValidator(queryRelation).testDistanceQuery(circle2D, shapes[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  relation=" + queryRelation + "\n");
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  distanceQuery=" + circle2D.toString());
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+  }
+
   protected abstract Validator getValidator(QueryRelation relation);
 
   /** internal point class for testing point shapes */
@@ -639,6 +742,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
     public abstract boolean testLineQuery(Line2D line2d, Object shape);
     public abstract boolean testPolygonQuery(Polygon2D poly2d, Object shape);
+    public abstract boolean testDistanceQuery(Circle2D circle2D, Object shape);
 
     public void setRelation(QueryRelation relation) {
       this.queryRelation = relation;

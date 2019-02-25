@@ -18,8 +18,11 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Circle;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
@@ -265,6 +268,54 @@ public class TestLatLonShape extends LuceneTestCase {
     // search by same point
     Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
     assertEquals(1, s.count(q));
+    IOUtils.close(r, dir);
+  }
+
+  public void testPointIndexAndDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat,p.lon);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    double lat = GeoTestUtil.nextLatitude();
+    double lon = GeoTestUtil.nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
+    while (radiusMeters == 0 || radiusMeters == Circle.MAXRADIUS) {
+      radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
+    }
+    Circle circle = new Circle(lat, lon, radiusMeters);
+    Circle2D circle2D = Circle2D.create(circle);
+    int expected;
+    int expectedDisjoint;
+    int encodedLat = GeoEncodingUtils.encodeLatitude(p.lat);
+    int encodedLon = GeoEncodingUtils.encodeLongitude(p.lon);
+    if (circle2D.queryContainsPoint(encodedLon, encodedLat))  {
+      expected = 1;
+      expectedDisjoint = 0;
+    } else {
+      expected = 0;
+      expectedDisjoint = 1;
+    }
+
+    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
+    assertEquals(expectedDisjoint, s.count(q));
+
     IOUtils.close(r, dir);
   }
 

@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
@@ -109,6 +110,25 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
+      Polygon p = (Polygon)shape;
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
+      for (Tessellator.Triangle t : tessellation) {
+        int[] decoded = encodeDecodeTriangle(t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2));
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (circle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+            return false;
+          }
+        } else {
+          if (circle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
     }
   }
 

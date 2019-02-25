@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
@@ -103,6 +104,22 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
       Line[] lines = (Line[])shape;
       for (Line l : lines) {
         boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
+        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
+          return true;
+        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
+          return false;
+        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+          return false;
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
+      Line[] lines = (Line[])shape;
+      for (Line l : lines) {
+        boolean b = LINEVALIDATOR.testDistanceQuery(circle2D, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

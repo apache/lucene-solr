@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
@@ -120,6 +121,24 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
+      Line line = (Line)shape;
+      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
+        int[] decoded = encodeDecodeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (circle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+            return false;
+          }
+        } else {
+          if (circle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
     }
   }
 }

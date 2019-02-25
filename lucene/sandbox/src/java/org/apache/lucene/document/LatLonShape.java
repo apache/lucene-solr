@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
@@ -112,6 +113,12 @@ public class LatLonShape {
    **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
+  }
+
+  /** create a query to find all polygons that intersect a provided circle
+   **/
+  public static Query newDistanceQuery(String field, QueryRelation queryRelation, Circle circle) {
+    return new LatLonShapeDistanceQuery(field, queryRelation, circle);
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}
