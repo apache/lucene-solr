@@ -17,18 +17,16 @@
 
 package org.apache.solr.prometheus.collector;
 
-import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 
-public class MetricsCollectorFactory implements Closeable {
+public class MetricsCollectorFactory {
 
   private final MetricsConfiguration metricsConfiguration;
   private final Executor executor;
@@ -69,11 +67,6 @@ public class MetricsCollectorFactory implements Closeable {
         .collect(Collectors.toList());
 
     return new SchedulerMetricsCollector(executor, refreshInSeconds, TimeUnit.SECONDS, collectors);
-  }
-
-  @Override
-  public void close() {
-    IOUtils.closeQuietly(solrScraper);
   }
 
 }

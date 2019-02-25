@@ -26,20 +26,28 @@ import org.w3c.dom.Node;
 
 public class MetricsConfiguration {
 
+  private final PrometheusExporterSettings settings;
+
   private final List<MetricsQuery> pingConfiguration;
   private final List<MetricsQuery> metricsConfiguration;
   private final List<MetricsQuery> collectionsConfiguration;
   private final List<MetricsQuery> searchConfiguration;
 
   private MetricsConfiguration(
+      PrometheusExporterSettings settings,
       List<MetricsQuery> pingConfiguration,
       List<MetricsQuery> metricsConfiguration,
       List<MetricsQuery> collectionsConfiguration,
       List<MetricsQuery> searchConfiguration) {
+    this.settings = settings;
     this.pingConfiguration = pingConfiguration;
     this.metricsConfiguration = metricsConfiguration;
     this.collectionsConfiguration = collectionsConfiguration;
     this.searchConfiguration = searchConfiguration;
+  }
+
+  public PrometheusExporterSettings getSettings() {
+    return settings;
   }
 
   public List<MetricsQuery> getPingConfiguration() {
@@ -59,12 +67,15 @@ public class MetricsConfiguration {
   }
 
   public static MetricsConfiguration from(XmlConfigFile config) throws Exception {
+    Node settings = config.getNode("/config/settings", false);
+
     Node pingConfig = config.getNode("/config/rules/ping", false);
     Node metricsConfig = config.getNode("/config/rules/metrics", false);
     Node collectionsConfig = config.getNode("/config/rules/collections", false);
     Node searchConfiguration = config.getNode("/config/rules/search", false);
 
     return new MetricsConfiguration(
+        settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
         toMetricQueries(pingConfig),
         toMetricQueries(metricsConfig),
         toMetricQueries(collectionsConfig),

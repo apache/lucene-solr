@@ -81,7 +81,7 @@ public abstract class SolrScraper implements Closeable {
         .map(item -> CompletableFuture.supplyAsync(() -> new Pair<>(item, samplesCallable.apply(item)), executor))
         .collect(Collectors.toList());
 
-    Future<List<Pair<String, MetricSamples>>> allComplete = Async.whenAllComplete(futures);
+    Future<List<Pair<String, MetricSamples>>> allComplete = Async.waitForAllSuccessfulResponses(futures);
 
     try {
       return allComplete.get().stream().collect(Collectors.toMap(Pair::first, Pair::second));

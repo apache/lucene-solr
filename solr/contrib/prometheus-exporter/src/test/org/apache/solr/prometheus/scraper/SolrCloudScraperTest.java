@@ -39,6 +39,8 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
+import org.apache.solr.prometheus.exporter.PrometheusExporterSettings;
+import org.apache.solr.prometheus.exporter.SolrClientFactory;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.After;
@@ -63,7 +65,9 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
     solrClient.connect();
 
-    return new SolrCloudScraper(solrClient, executor);
+    SolrClientFactory factory = new SolrClientFactory(PrometheusExporterSettings.builder().build());
+
+    return new SolrCloudScraper(solrClient, executor, factory);
   }
 
   private ClusterState getClusterState() {

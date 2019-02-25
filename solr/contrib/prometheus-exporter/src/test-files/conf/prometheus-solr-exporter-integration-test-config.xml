@@ -18,6 +18,13 @@
 
 <config>
 
+  <settings>
+    <httpClients>
+      <connectionTimeout>10000</connectionTimeout>
+      <readTimeout>10000</readTimeout>
+    </httpClients>
+  </settings>
+
   <rules>
 
     <search>

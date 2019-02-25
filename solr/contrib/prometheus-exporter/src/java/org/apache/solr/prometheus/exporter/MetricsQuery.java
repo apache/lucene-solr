@@ -39,7 +39,7 @@ public class MetricsQuery {
   private final String collection;
   private final List<JsonQuery> jsonQueries;
 
-  public MetricsQuery(
+  private MetricsQuery(
       String path,
       ModifiableSolrParams parameters,
       String core,

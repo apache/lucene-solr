@@ -17,18 +17,42 @@
 
 package org.apache.solr.prometheus.scraper;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Async {
 
-  public static <T> CompletableFuture<List<T>> whenAllComplete(List<CompletableFuture<T>> futures) {
-    CompletableFuture<Void> completed =
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    return completed.thenApply(v ->
-        futures.stream().map(CompletableFuture::join).collect(Collectors.toList())
+  public static <T> CompletableFuture<List<T>> waitForAllSuccessfulResponses(List<CompletableFuture<T>> futures) {
+    CompletableFuture<Void> completed = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+    return completed.thenApply(values -> {
+        return futures.stream()
+          .map(CompletableFuture::join)
+          .collect(Collectors.toList());
+      }
+    ).exceptionally(error -> {
+      futures.stream()
+          .filter(CompletableFuture::isCompletedExceptionally)
+          .forEach(future -> {
+            try {
+              future.get();
+            } catch (Exception exception) {
+              log.warn("Error occurred during metrics collection", exception);
+            }
+          });
+
+      return futures.stream()
+          .filter(future -> !(future.isCompletedExceptionally() || future.isCancelled()))
+          .map(CompletableFuture::join)
+          .collect(Collectors.toList());
+      }
     );
   }
 

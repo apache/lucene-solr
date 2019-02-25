@@ -22,20 +22,14 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 
-import com.google.common.base.Preconditions;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -46,7 +40,6 @@ import org.apache.solr.prometheus.scraper.SolrCloudScraper;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 import org.apache.solr.prometheus.scraper.SolrStandaloneScraper;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.zookeeper.client.ConnectStringParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,7 +111,7 @@ public class SolrExporter {
         numberThreads,
         new DefaultSolrThreadFactory("solr-exporter-requests"));
 
-    this.solrScraper = createScraper(scrapeConfiguration);
+    this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
     this.metricsCollector = new MetricsCollectorFactory(metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration).create();
     this.prometheusCollector = new CachedPrometheusCollector();
   }
@@ -146,52 +139,19 @@ public class SolrExporter {
     defaultRegistry.unregister(this.prometheusCollector);
   }
 
-  private SolrScraper createScraper(SolrScrapeConfiguration configuration) {
+  private SolrScraper createScraper(SolrScrapeConfiguration configuration, PrometheusExporterSettings settings) {
+    SolrClientFactory factory = new SolrClientFactory(settings);
+
     switch (configuration.getType()) {
       case STANDALONE:
-        return new SolrStandaloneScraper(createStandaloneSolrClient(configuration), requestExecutor);
+        return new SolrStandaloneScraper(
+            factory.createStandaloneSolrClient(configuration.getSolrHost().get()), requestExecutor);
       case CLOUD:
-        return new SolrCloudScraper(createCloudSolrClient(configuration), requestExecutor);
+        return new SolrCloudScraper(
+            factory.createCloudSolrClient(configuration.getZookeeperConnectionString().get()), requestExecutor, factory);
       default:
         throw new RuntimeException(String.format(Locale.ROOT, "Invalid type: %s", configuration.getType()));
     }
-  }
-
-  private HttpSolrClient createStandaloneSolrClient(SolrScrapeConfiguration configuration) {
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
-    HttpSolrClient.Builder standaloneBuilder = new HttpSolrClient.Builder();
-
-    Preconditions.checkArgument(configuration.getSolrHost().isPresent());
-    standaloneBuilder.withBaseSolrUrl(configuration.getSolrHost().get());
-
-    standaloneBuilder.withResponseParser(responseParser);
-    HttpSolrClient httpSolrClient = standaloneBuilder.build();
-    httpSolrClient.setParser(responseParser);
-
-    return httpSolrClient;
-  }
-
-  private CloudSolrClient createCloudSolrClient(SolrScrapeConfiguration configuration) {
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
-    Preconditions.checkArgument(configuration.getZookeeperConnectionString().isPresent());
-    ConnectStringParser parser = new ConnectStringParser(configuration.getZookeeperConnectionString().get());
-
-    CloudSolrClient.Builder cloudBuilder = new CloudSolrClient.Builder(
-        parser.getServerAddresses().stream()
-            .map(address -> String.format(Locale.ROOT, "%s:%s", address.getHostString(), address.getPort()))
-            .collect(Collectors.toList()),
-        Optional.ofNullable(parser.getChrootPath()));
-
-    CloudSolrClient client = cloudBuilder.build();
-    client.setParser(responseParser);
-
-    client.connect();
-
-    return client;
   }
 
   public static void main(String[] args) {

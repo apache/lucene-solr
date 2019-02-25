@@ -17,30 +17,42 @@
 package org.apache.solr.prometheus.scraper;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsQuery;
+import org.apache.solr.prometheus.exporter.SolrClientFactory;
 
 public class SolrCloudScraper extends SolrScraper {
 
   private final CloudSolrClient solrClient;
+  private final SolrClientFactory solrClientFactory;
 
-  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor) {
+  private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder()
+      .maximumSize(100)
+      .removalListener((RemovalListener<String, HttpSolrClient>)
+          removalNotification -> IOUtils.closeQuietly(removalNotification.getValue()))
+      .build();
+
+  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor, SolrClientFactory solrClientFactory) {
     super(executor);
     this.solrClient = solrClient;
+    this.solrClientFactory = solrClientFactory;
   }
 
   @Override
@@ -65,17 +77,26 @@ public class SolrCloudScraper extends SolrScraper {
         .map(replica -> new Pair<>(replica.getCoreName(), httpSolrClients.get(replica.getBaseUrl())))
         .collect(Collectors.toMap(Pair::first, Pair::second));
 
-    Map<String, MetricSamples> samples = sendRequestsInParallel(coreNames, core -> {
+    return sendRequestsInParallel(coreNames, core -> {
       try {
         return request(coreToClient.get(core), query.withCore(core));
       } catch (IOException exception) {
         throw new RuntimeException(exception);
       }
     });
+  }
 
-    closeAll(httpSolrClients);
+  private Map<String, HttpSolrClient> createHttpSolrClients() throws IOException {
+    return getBaseUrls().stream()
+        .map(url -> {
+          try {
+            return hostClientCache.get(url, () -> solrClientFactory.createStandaloneSolrClient(url));
+          } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+          }
+        })
+        .collect(Collectors.toMap(HttpSolrClient::getBaseURL, Function.identity()));
 
-    return samples;
   }
 
   @Override
@@ -93,17 +114,13 @@ public class SolrCloudScraper extends SolrScraper {
   public Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException {
     Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
 
-    Map<String, MetricSamples> samples = sendRequestsInParallel(httpSolrClients.keySet(), (baseUrl) -> {
+    return sendRequestsInParallel(httpSolrClients.keySet(), (baseUrl) -> {
       try {
         return request(httpSolrClients.get(baseUrl), query);
       } catch (IOException exception) {
         throw new RuntimeException(exception);
       }
     });
-
-    closeAll(httpSolrClients);
-
-    return samples;
   }
 
   @Override
@@ -114,29 +131,6 @@ public class SolrCloudScraper extends SolrScraper {
   @Override
   public MetricSamples collections(MetricsQuery metricsQuery) throws IOException {
     return request(solrClient, metricsQuery);
-  }
-
-  private void closeAll(Map<String, HttpSolrClient> clients) {
-    clients.values().forEach(IOUtils::closeQuietly);
-  }
-
-  private Map<String, HttpSolrClient> createHttpSolrClients() throws IOException {
-    Map<String, HttpSolrClient> solrClients = new HashMap<>();
-
-    for (String baseUrl : getBaseUrls()) {
-      NoOpResponseParser responseParser = new NoOpResponseParser();
-      responseParser.setWriterType("json");
-
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
-      builder.withBaseSolrUrl(baseUrl);
-      builder.withResponseParser(responseParser);
-
-      HttpSolrClient httpSolrClient = builder.build();
-
-      solrClients.put(baseUrl, httpSolrClient);
-    }
-
-    return solrClients;
   }
 
   private Set<String> getBaseUrls() throws IOException {
@@ -155,5 +149,6 @@ public class SolrCloudScraper extends SolrScraper {
   @Override
   public void close() {
     IOUtils.closeQuietly(solrClient);
+    hostClientCache.asMap().values().forEach(IOUtils::closeQuietly);
   }
 }

@@ -95,7 +95,7 @@ public class SchedulerMetricsCollector implements Closeable {
       }
 
       try {
-        CompletableFuture<List<MetricSamples>> sampleFuture = Async.whenAllComplete(futures);
+        CompletableFuture<List<MetricSamples>> sampleFuture = Async.waitForAllSuccessfulResponses(futures);
         List<MetricSamples> samples = sampleFuture.get();
 
         MetricSamples metricSamples = new MetricSamples();
