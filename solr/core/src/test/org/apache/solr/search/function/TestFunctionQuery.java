@@ -423,6 +423,53 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
            ,"*//doc[1]/str[.='120']"
            ,"*//doc[2]/str[.='121']"
     );
+
+    // test a query that doesn't specify nested query val
+    assertQEx("Should fail because of missing qq",
+        "Missing param qq while parsing function 'query($qq)'",
+        req("q", "*:*", "fq","id:120 OR id:121", "defType","edismax", "boost","query($qq)"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail because of missing sortfunc in sort",
+        "Can't determine a Sort Order (asc or desc) in sort spec '{!func v=$sortfunc} desc'",
+        req("q", "*:*", "fq","id:120 OR id:121", "sort","{!func v=$sortfunc} desc", "sortfunc","query($qq)"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail because of missing qq in boost",
+        "Nested local params must have value in v parameter.  got 'query({!dismax v=$qq})",
+        req("q", "*:*", "fq","id:120 OR id:121", "defType","edismax", "boost","query({!dismax v=$qq})"),
+        SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as empty value is specified for v",
+        "Nested function query returned null for 'query({!v=})'",
+        req("q", "*:*", "defType","edismax", "boost","query({!v=})"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as v's value contains only spaces",
+        "Nested function query returned null for 'query({!v=   })'",
+        req("q", "*:*", "defType","edismax", "boost","query({!v=   })"), SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    // no field specified in ord()
+    assertQEx("Should fail as no field is specified in ord func",
+        "Expected identifier instead of 'null' for function 'ord()'",
+        req("q", "*:*", "defType","edismax","boost","ord()"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as no field is specified in rord func",
+        "Expected identifier instead of 'null' for function 'rord()'",
+        req("q", "*:*", "defType","edismax","boost","rord()"), SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    // test parseFloat
+    assertQEx("Should fail as less args are specified for recip func",
+        "Expected float instead of 'null' for function 'recip(1,2)'",
+        req("q", "*:*","defType","edismax", "boost","recip(1,2)"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    assertQEx("Should fail as invalid value is specified for recip func",
+        "Expected float instead of 'f' for function 'recip(1,2,3,f)'",
+        req("q", "*:*","defType","edismax", "boost","recip(1,2,3,f)"), SolrException.ErrorCode.BAD_REQUEST
+    );
+    // this should pass
+    assertQ(req("q", "*:*","defType","edismax", "boost","recip(1, 2, 3, 4)"));
   }
 
   @Test

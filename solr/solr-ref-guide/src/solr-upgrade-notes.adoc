@@ -26,6 +26,16 @@ When planning your Solr upgrade, consider the customizations you have made to yo
 
 Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
+== Upgrading to 8.x Releases
+
+=== Solr 8.1
+
+*Logging*
+
+Solr 8.1 changed the default log4j2 logging mode from synchronous to asynchronous. This will improve logging throughput and reduce system contention at the cost of a _slight_ chance that some logging messages may be missed in the event of abnormal Solr termination.
+
+If even this slight risk is unacceptable, the log4j configuration file ../server/resources/log4j2.xml has the synchronous logging configuration in a commented section and can be edited to re-enable synchronous logging.
+
 == Upgrading to 7.x Releases
 
 === Solr 7.6
