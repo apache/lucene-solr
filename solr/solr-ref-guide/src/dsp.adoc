@@ -231,7 +231,7 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 One approach to scaling the dot product is to first scale the vectors so that both vectors have a magnitude of 1. Vectors with a
-magnitude of 1, also called unit vectors, are used when comparing only the angle between vectors rather then the magnitude.
+magnitude of 1, also called unit vectors, are used when comparing only the angle between vectors rather than the magnitude.
 The `unitize` function can be used to unitize the vectors before calculating the dot product.
 
 Notice in the example below the dot product result, set to variable *`e`*, is effectively 1. When applied to unit vectors the dot product
@@ -463,7 +463,7 @@ difference in the formula when representing correlation is that the second vecto
 
 Notice in the example below that the second vector is reversed by the `rev` function before it is operated on by the `conv` function.
 The `conv` function reverses the second vector so it will be flipped back to its original order to perform the correlation calculation
-rather then the convolution calculation.
+rather than the convolution calculation.
 
 Notice in the result the highest value is 217. This is the point where the two vectors have the highest correlation.
 
@@ -734,7 +734,7 @@ the matrix which is a vector containing the real values of the fft response.
 
 The plot of the real values of the `fft` response is shown below. Notice there are two
 peaks on opposite sides of the plot. The plot is actually showing a mirrored response. The right side
-of the plot is an exact mirror of the left side. This is expected when the `fft` is run on real rather then
+of the plot is an exact mirror of the left side. This is expected when the `fft` is run on real rather than
 complex data.
 
 Also notice that the `fft` has accumulated significant power in a single peak. This is the power associated with

@@ -330,7 +330,7 @@ operation `NONE` (which still can be monitored and acted upon by an appropriate 
   "aboveDocs" : 1000000000,
   "belowBytes" : 200000,
   "belowDocs" : 200000,
-  "belopOp" : "NONE",
+  "belowOp" : "NONE",
   "waitFor" : "1m",
   "enabled" : true,
   "actions" : [
@@ -367,7 +367,7 @@ This trigger calculates node-level cumulative rates using per-replica rates repo
 replicas that are part of monitored collections / shards on each node. This means that it may report
 some nodes as "cold" (underutilized) because it ignores other, perhaps more active, replicas
 belonging to other collections. Also, nodes that don't host any of the monitored replicas or
-those that are explicitly excluded by `node` config property won't be reported at all.
+those that are explicitly excluded by `node` configuration property won't be reported at all.
 
 .Calculating `waitFor`
 [CAUTION]

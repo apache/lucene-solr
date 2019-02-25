@@ -322,7 +322,7 @@ The response indicates that there are 4 hits (`"numFound":4`). We've only includ
 
 Note the `responseHeader` before the documents. This header will include the parameters you have set for the search. By default it shows only the parameters _you_ have set for this query, which in this case is only your query term.
 
-The documents we got back include all the fields for each document that were indexed. This is, again, default behavior. If you want to restrict the fields in the response, you can use the `fl` param, which takes a comma-separated list of field names. This is one of the available fields on the query form in the Admin UI.
+The documents we got back include all the fields for each document that were indexed. This is, again, default behavior. If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names. This is one of the available fields on the query form in the Admin UI.
 
 Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again. Or, to specify it with curl:
 
@@ -706,7 +706,7 @@ On the Admin UI Query tab, if you check the `facet` checkbox, you'll see a few f
 .Facet options in the Query screen
 image::images/solr-tutorial/tutorial-admin-ui-facet-options.png[Solr Quick Start: Query tab facet options]
 
-To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` param. If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
+To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` parameter. If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
 
 `curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
 

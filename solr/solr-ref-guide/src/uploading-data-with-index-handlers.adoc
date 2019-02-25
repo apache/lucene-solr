@@ -212,7 +212,7 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,config set>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
 Here is an example XSLT stylesheet:
 

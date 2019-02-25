@@ -14,18 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update;
+package org.apache.solr.update.processor;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.update.processor.DocBasedVersionConstraintsProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -353,11 +363,13 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     }
     // And just verify if we pass version 1, we still error if version 2 isn't found.
     try {
+      ignoreException("Delete by ID must specify doc version param");
       deleteAndGetVersion("aaa", params("del_version", "1001",
           "update.chain","external-version-failhard-multiple"));
       fail("no 400");
     } catch (SolrException ex) {
       assertEquals(400, ex.code());
+      unIgnoreException("Delete by ID must specify doc version param");
     }
     //Verify we are still unchanged
     assertU(commit());
@@ -497,12 +509,14 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
             params("update.chain", "external-version-constraint"));
     try {
+      ignoreException("Doc exists in index, but has null versionField: my_version_l");
       updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + version + "}]"),
               params("update.chain", "external-version-constraint"));
       fail("Update to id=b should have failed because existing doc is missing version field");
     } catch (final SolrException ex) {
       // expected
       assertEquals("Doc exists in index, but has null versionField: my_version_l", ex.getMessage());
+      unIgnoreException("Doc exists in index, but has null versionField: my_version_l");
     }
     assertU(commit());
     assertJQ(req("q","*:*"), "/response/numFound==2");
@@ -521,6 +535,133 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertJQ(req("q","*:*"), "/response/numFound==2");
     assertJQ(req("qt","/get", "id", "a", "fl", "id,my_version_l"), "=={'doc':{'id':'a', 'my_version_l':3}}");
     assertJQ(req("qt","/get", "id", "b", "fl", "id,my_version_l"), "=={'doc':{'id':'b', 'my_version_l':1}}");
+  }
+  
+  public void testTombstoneConfig() throws Exception {
+    assertJQ(req("q","*:*"),"/response/numFound==0");
+    updateWithChain("tombstone-config", 
+        "id", "b!doc1", 
+        "my_version_l", "1");
+    assertU(commit());
+    assertJQ(req("q","*:*"),"/response/numFound==1");
+    assertJQ(req("q","foo_b:true"),"/response/numFound==0");
+    assertJQ(req("q","foo_i:1"),"/response/numFound==0");
+    assertJQ(req("q","foo_l:1"),"/response/numFound==0");
+    assertJQ(req("q","foo_f:1.5"),"/response/numFound==0");
+    assertJQ(req("q","foo_s:bar"),"/response/numFound==0");
+    assertJQ(req("q","foo_ss:bar1"),"/response/numFound==0");
+    assertJQ(req("q","foo_ss:bar2"),"/response/numFound==0");
+    
+    deleteAndGetVersion("b!doc1",
+        params("del_version", "2", "update.chain",
+            "tombstone-config"));
+    assertU(commit());
+    
+    assertJQ(req("q","foo_b:true"),"/response/numFound==1");
+    assertJQ(req("q","foo_i:1"),"/response/numFound==1");
+    assertJQ(req("q","foo_l:1"),"/response/numFound==1");
+    assertJQ(req("q","foo_f:1.5"),"/response/numFound==1");
+    assertJQ(req("q","foo_s:bar"),"/response/numFound==1");
+    assertJQ(req("q","foo_ss:bar1"),"/response/numFound==1");
+    assertJQ(req("q","foo_ss:bar2"),"/response/numFound==1");
+  }
+  
+  public void testCanCreateTombstonesBasic() {
+    DocBasedVersionConstraintsProcessorFactory factory = new DocBasedVersionConstraintsProcessorFactory();
+    NamedList<Object> config = new NamedList<>();
+    config.add("versionField", "_version_");
+    factory.init(config);
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+  }
+  
+  public void testCanCreateTombstonesMissingRequiredField() {
+    DocBasedVersionConstraintsProcessorFactory factory = new DocBasedVersionConstraintsProcessorFactory();
+    NamedList<Object> config = new NamedList<>();
+    config.add("versionField", "_version_");
+    factory.init(config);
+    IndexSchema schema = h.getCore().getLatestSchema();
+    SchemaField sf = schema.getField("sku1");
+    assertThat(sf, is(not(nullValue())));
+    assertThat(schema.getRequiredFields(), not(hasItem(sf)));
+    try {
+      schema.getRequiredFields().add(sf);
+      assertThat(factory.canCreateTombstoneDocument(schema), is(false));
+    } finally {
+      schema.getRequiredFields().remove(sf);
+    }
+  }
+  
+  public void testCanCreateTombstonesRequiredFieldWithDefault() {
+    DocBasedVersionConstraintsProcessorFactory factory = new DocBasedVersionConstraintsProcessorFactory();
+    NamedList<Object> config = new NamedList<>();
+    config.add("versionField", "_version_");
+    factory.init(config);
+    IndexSchema schema = h.getCore().getLatestSchema();
+    SchemaField sf = schema.getField("sku1");
+    SchemaField sf2 = new SchemaField("sku1_with_default", sf.getType(), sf.getProperties(), "foo");
+    try {
+      schema.getRequiredFields().add(sf2);
+      assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+    } finally {
+      schema.getRequiredFields().remove(sf2);
+    }
+  }
+  
+  public void testCanCreateTombstonesRequiredFieldInTombstoneConfig() {
+    DocBasedVersionConstraintsProcessorFactory factory = new DocBasedVersionConstraintsProcessorFactory();
+    NamedList<Object> config = new NamedList<>();
+    config.add("versionField", "_version_");
+    NamedList<Object> tombstoneConfig = new NamedList<>();
+    config.add("tombstoneConfig", tombstoneConfig);
+    tombstoneConfig.add("sku1", "foo");
+    factory.init(config);
+    IndexSchema schema = h.getCore().getLatestSchema();
+    SchemaField sf = schema.getField("sku1");
+    assertThat(sf, is(not(nullValue())));
+    assertThat(schema.getRequiredFields(), not(hasItem(sf)));
+    try {
+      schema.getRequiredFields().add(sf);
+      assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+    } finally {
+      schema.getRequiredFields().remove(sf);
+    }
+  }
+  
+  public void testCanCreateTombstonesVersionFieldRequired() {
+    DocBasedVersionConstraintsProcessorFactory factory = new DocBasedVersionConstraintsProcessorFactory();
+    NamedList<Object> config = new NamedList<>();
+    config.add("versionField", "_version_");
+    factory.init(config);
+    IndexSchema schema = h.getCore().getLatestSchema();
+    SchemaField versionField = schema.getField("_version_");
+    assertThat(versionField, is(not(nullValue())));
+    assertThat(schema.getRequiredFields(), not(hasItem(versionField)));
+    try {
+      schema.getRequiredFields().add(versionField);
+      assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+    } finally {
+      schema.getRequiredFields().remove(versionField);
+    }
+  }
+  
+  public void testCanCreateTombstonesUniqueKeyFieldRequired() {
+    DocBasedVersionConstraintsProcessorFactory factory = new DocBasedVersionConstraintsProcessorFactory();
+    NamedList<Object> config = new NamedList<>();
+    config.add("versionField", "_version_");
+    factory.init(config);
+    IndexSchema schema = h.getCore().getLatestSchema();
+    SchemaField uniqueKeyField = schema.getField("id");
+    assertThat(uniqueKeyField, is(not(nullValue())));
+    assertThat(uniqueKeyField, equalTo(schema.getUniqueKeyField()));
+    assertThat(schema.getRequiredFields(), hasItem(schema.getUniqueKeyField()));
+    assertThat(factory.canCreateTombstoneDocument(schema), is(true));
+  }
+  
+  private void updateWithChain(String chain, String...fields) throws Exception {
+    assert fields.length % 2 == 0;
+    SolrInputDocument doc = new SolrInputDocument(fields);
+    updateJ(jsonAdd(doc), params("update.chain", chain));
   }
   
   private Callable<Object> delayedAdd(final String... fields) {

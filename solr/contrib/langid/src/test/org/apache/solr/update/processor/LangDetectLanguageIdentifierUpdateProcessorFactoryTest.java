@@ -16,14 +16,43 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.junit.Test;
 
 public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception {
-    return new LangDetectLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
+    return new LangDetectLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(h.getCore(), parameters, null), resp, null){
+       public SolrInputDocument process(SolrInputDocument origDoc) {
+        SolrInputDocument modifiedDoc = origDoc.deepCopy();
+        if (random().nextBoolean()) {
+          modifiedDoc.forEach((s, f) -> {
+            Object rawVal = f.getRawValue();
+            if (rawVal instanceof Collection) {
+              Collection rawValue = (Collection) rawVal;
+              ArrayList<Object> newVal = new ArrayList<>(rawValue.size());
+              for (Object o : rawValue) {
+                if (o instanceof String) {
+                  newVal.add(new ByteArrayUtf8CharSequence((String) o));
+                } else {
+                  newVal.add(rawVal);
+                }
+              }
+              f.setValue(newVal);
+            } else if (rawVal instanceof String) {
+              f.setValue(new ByteArrayUtf8CharSequence((String) rawVal));
+            }
+          });
+        }
+        super.process(modifiedDoc);
+        return modifiedDoc;
+      }
+    };
   }
   
   // this one actually works better it seems with short docs

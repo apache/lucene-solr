@@ -174,7 +174,7 @@ If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, the
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from all `bin/solr` commands.
 
- When starting Solr in cloud mode, if you neither define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000, i.e., if Solr is running on port 8983, then the embedded ZooKeeper will be listening on port 9983.
+ When starting Solr in SolrCloud mode, if you do not define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000, i.e., if Solr is running on port 8983, then the embedded ZooKeeper will be listening on port 9983.
 
 [IMPORTANT]
 ====
@@ -698,7 +698,7 @@ Use the `zk downconfig` command to download a configuration set from ZooKeeper t
 All parameters listed below are required.
 
 `-n <name>`::
-Name of config set in ZooKeeper to download. The Admin UI Cloud \-> Tree \-> configs node lists all available configuration sets.
+Name of the configset in ZooKeeper to download. The Admin UI Cloud \-> Tree \-> configs node lists all available configuration sets.
 +
 *Example*: `-n myconfig`
 

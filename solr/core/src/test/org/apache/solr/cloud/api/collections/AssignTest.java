@@ -158,22 +158,35 @@ public class AssignTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUsePolicyByDefault() throws Exception {
+  public void testUseLegacyByDefault() throws Exception {
     assumeWorkingMockito();
 
     SolrCloudManager solrCloudManager = mock(SolrCloudManager.class);
     ClusterStateProvider clusterStateProvider = mock(ClusterStateProvider.class);
     when(solrCloudManager.getClusterStateProvider()).thenReturn(clusterStateProvider);
+    DistribStateManager distribStateManager = mock(DistribStateManager.class);
+    when(solrCloudManager.getDistribStateManager()).thenReturn(distribStateManager);
+    when(distribStateManager.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
+
+    // first we don't set any cluster property and assert that legacy assignment is used
+    when(clusterStateProvider.getClusterProperties()).thenReturn(Collections.emptyMap());
+    // verify
+    boolean usePolicyFramework = Assign.usePolicyFramework(solrCloudManager);
+    assertFalse(usePolicyFramework);
+    // another sanity check
+    when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Collections.emptyMap()));
+    // verify
+    usePolicyFramework = Assign.usePolicyFramework(solrCloudManager);
+    assertFalse(usePolicyFramework);
+
     // first we set useLegacyReplicaAssignment=false, so autoscaling should always be used
     when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("cluster", Utils.makeMap("useLegacyReplicaAssignment", false))));
     // verify
-    boolean usePolicyFramework = Assign.usePolicyFramework(solrCloudManager);
+    usePolicyFramework = Assign.usePolicyFramework(solrCloudManager);
     assertTrue(usePolicyFramework);
 
     // now we set useLegacyReplicaAssignment=true, so autoscaling can only be used if an explicit policy or preference exists
     when(clusterStateProvider.getClusterProperties()).thenReturn(Utils.makeMap("defaults", Utils.makeMap("cluster", Utils.makeMap("useLegacyReplicaAssignment", true))));
-    DistribStateManager distribStateManager = mock(DistribStateManager.class);
-    when(solrCloudManager.getDistribStateManager()).thenReturn(distribStateManager);
     when(distribStateManager.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
     assertFalse(Assign.usePolicyFramework(solrCloudManager));
 
