@@ -207,7 +207,7 @@ public class TermQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    visitor.consumesTerm(term);
+    visitor.consumesTerm(this, term);
   }
 
   /** Prints a user-readable version of this query. */

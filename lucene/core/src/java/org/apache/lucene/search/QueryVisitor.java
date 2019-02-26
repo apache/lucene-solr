@@ -31,9 +31,10 @@ public abstract class QueryVisitor {
   /**
    * Called by leaf queries that match on a specific term
    *
+   * @param query the leaf query
    * @param term  the term the query will match on
    */
-  public void consumesTerm(Term term) { }
+  public void consumesTerm(Query query, Term term) { }
 
   /**
    * Called by leaf queries that do not match on terms
@@ -44,18 +45,16 @@ public abstract class QueryVisitor {
   /**
    * Pulls a visitor instance for visiting child clauses of a query
    *
-   * Returns {@code null} if the child clauses should not be visited
-   *
    * The default implementation returns {@code this}, unless {@code occur} is equal
    * to {@link BooleanClause.Occur#MUST_NOT} in which case it returns
-   * {@code null}
+   * {@link #EMPTY_VISITOR}
    *
    * @param occur   the relationship between the parent and its children
    * @param parent  the query visited
    */
   public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
     if (occur == BooleanClause.Occur.MUST_NOT) {
-      return null;
+      return EMPTY_VISITOR;
     }
     return this;
   }
@@ -67,10 +66,15 @@ public abstract class QueryVisitor {
   public static QueryVisitor termCollector(Set<Term> termSet) {
     return new QueryVisitor() {
       @Override
-      public void consumesTerm(Term term) {
+      public void consumesTerm(Query query, Term term) {
         termSet.add(term);
       }
     };
   }
+
+  /**
+   * A QueryVisitor implementation that does nothing
+   */
+  public static QueryVisitor EMPTY_VISITOR = new QueryVisitor() {};
 
 }

@@ -74,7 +74,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     Set<Term> terms = new HashSet<>();
     QueryVisitor visitor = new QueryVisitor() {
       @Override
-      public void consumesTerm(Term term) {
+      public void consumesTerm(Query query, Term term) {
         terms.add(term);
       }
       @Override
@@ -104,7 +104,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     }
 
     @Override
-    public void consumesTerm(Term term) {
+    public void consumesTerm(Query query, Term term) {
       termsToBoosts.put(term, boost);
     }
 
@@ -140,7 +140,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     int weight;
 
     @Override
-    public void consumesTerm(Term term) {
+    public void consumesTerm(Query query, Term term) {
       this.term = term;
       this.weight = term.text().length();
     }
@@ -164,7 +164,7 @@ public class TestQueryVisitor extends LuceneTestCase {
           shouldMatchLeaves.add(should);
           return should;
       }
-      return null;
+      return QueryVisitor.EMPTY_VISITOR;
     }
 
     int getWeight() {

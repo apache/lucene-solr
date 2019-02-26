@@ -98,7 +98,7 @@ final class MultiTermHighlighting {
           return;
         }
         if (fq.getMaxEdits() == 0 || fq.getPrefixLength() >= fq.getTerm().text().length()) {
-          consumesTerm(fq.getTerm());
+          consumesTerm(query, fq.getTerm());
         }
         else {
           runAutomata.add(new CharacterRunAutomaton(fq.getAutomaton()){

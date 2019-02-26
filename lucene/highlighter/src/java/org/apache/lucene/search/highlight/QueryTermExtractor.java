@@ -133,7 +133,7 @@ public final class QueryTermExtractor
     }
 
     @Override
-    public void consumesTerm(Term term) {
+    public void consumesTerm(Query query, Term term) {
       if (field == null || term.field().equals(field)) {
         terms.add(new WeightedTerm(boost, term.text()));
       }

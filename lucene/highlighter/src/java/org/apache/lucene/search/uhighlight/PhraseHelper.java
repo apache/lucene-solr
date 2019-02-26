@@ -137,7 +137,7 @@ public class PhraseHelper {
           throws IOException {
         query.visit(new QueryVisitor() {
           @Override
-          public void consumesTerm(Term term) {
+          public void consumesTerm(Query query, Term term) {
             if (fieldMatcher.test(term.field())) {
               positionInsensitiveTerms.add(term.bytes());
             }

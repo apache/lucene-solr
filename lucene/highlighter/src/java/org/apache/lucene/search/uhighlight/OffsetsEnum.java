@@ -250,7 +250,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
         BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
         q.visit(new QueryVisitor() {
           @Override
-          public void consumesTerm(Term term) {
+          public void consumesTerm(Query query, Term term) {
             if (bytesRefBuilder.length() > 0) {
               bytesRefBuilder.append((byte) ' ');
             }

@@ -286,11 +286,9 @@ public class PhraseQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (Term term : terms) {
-      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-      if (v != null) {
-        v.consumesTerm(term);
-      }
+      v.consumesTerm(this, term);
     }
   }
 

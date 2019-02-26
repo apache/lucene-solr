@@ -297,11 +297,8 @@ public final class BlendedTermQuery extends Query {
   @Override
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
-    if (v == null) {
-      return;
-    }
     for (Term term : terms) {
-      v.consumesTerm(term);
+      v.consumesTerm(this, term);
     }
   }
 
