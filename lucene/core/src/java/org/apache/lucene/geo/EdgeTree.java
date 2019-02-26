@@ -345,6 +345,7 @@ public abstract class EdgeTree {
       double maxLat = StrictMath.max(ay, by);
       double maxLon = StrictMath.max(ax, bx);
 
+      Relation r = Relation.CELL_OUTSIDE_QUERY;
       if (minLat <= max) {
         double dy = lat1;
         double ey = lat2;
@@ -359,36 +360,31 @@ public abstract class EdgeTree {
             (dx > maxLon && ex > maxLon);
 
         if (outside == false) {
-          Relation thisRelation = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
-          if (thisRelation == Relation.CELL_CROSSES_QUERY) {
+          r = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
+          if (r == Relation.CELL_CROSSES_QUERY) {
             //if crosses then we can return
-            return Relation.CELL_CROSSES_QUERY;
-          } else if (thisRelation == Relation.CELL_INSIDE_QUERY) {
-            //We still need to check that the line is between the edges of this other line
-            boolean contains = (dy >= minLat && ey >= minLat) &&
-                (dy <= maxLat && ey <= maxLat) &&
-                (dx >= minLon && ex >= minLon) &&
-                (dx <= maxLon && ex <= maxLon);
-            if (contains) {
-              return Relation.CELL_INSIDE_QUERY;
-            } else {
-              return Relation.CELL_CROSSES_QUERY;
-            }
+            return r;
           }
         }
         if (left != null) {
-          if ((left.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
-            return Relation.CELL_CROSSES_QUERY;
+          Relation leftRelation = left.relateLine(ax, ay, bx, by);
+          if (leftRelation == Relation.CELL_CROSSES_QUERY) {
+            return leftRelation;
+          } else if (leftRelation == Relation.CELL_INSIDE_QUERY) {
+            r = leftRelation;
           }
         }
 
         if (right != null && maxLat >= low) {
-          if ((right.relateLine(ax, ay, bx, by)) == Relation.CELL_CROSSES_QUERY) {
-            return Relation.CELL_CROSSES_QUERY;
+          Relation rightRelation = right.relateLine(ax, ay, bx, by);
+          if (rightRelation == Relation.CELL_CROSSES_QUERY) {
+            return rightRelation;
+          } else if (rightRelation == Relation.CELL_INSIDE_QUERY) {
+            r = rightRelation;
           }
         }
       }
-      return Relation.CELL_OUTSIDE_QUERY;
+      return r;
     }
 
     /** Returns true if the box crosses any edge in this edge subtree */
