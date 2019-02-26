@@ -330,6 +330,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             qMinLat = quantizeLat(rect.maxLat);
           }
           if (queryRelation == QueryRelation.CONTAINS && rect.crossesDateline()) {
+            //For contains we need to call the validator for each section. It is only expected
+            //if both sides are contained.
             expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, GeoUtils.MAX_LON_INCL, shapes[id]);
             if (expected) {
               expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, GeoUtils.MIN_LON_INCL, qMaxLon, shapes[id]);
@@ -444,6 +446,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
+          //Note that contains is not supported here, if not we would need to call the
+          //validator for each individual line.
           expected = getValidator(queryRelation).testLineQuery(queryLine2D, shapes[id]);
         }
 
@@ -540,6 +544,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           expected = false;
         } else {
           if (queryRelation == QueryRelation.CONTAINS && queryPolygon.length > 1) {
+            //For contains we need to call the validator for each polygon. It is only expected
+            //if every polygon is contained.
             expected = true;
             for (Polygon polygon : queryPolygon) {
               if (getValidator(queryRelation).testPolygonQuery(Polygon2D.create(polygon), shapes[id]) == false) {
