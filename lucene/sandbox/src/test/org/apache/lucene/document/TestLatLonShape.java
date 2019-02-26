@@ -370,13 +370,13 @@ public class TestLatLonShape extends LuceneTestCase {
     Document doc = new Document();
 
     Polygon indexPoly1 = new Polygon(
-        new double[] {-1d, -1d, 1d, 1d, -1d},
-        new double[] {179d, 180d, 180d, 179d, 179d}
+        new double[] {-2d, -2d, 2d, 2d, -2d},
+        new double[] {178d, 180d, 180d, 178d, 178d}
     );
 
     Polygon indexPoly2 = new Polygon(
-        new double[] {-1d, -1d, 1d, 1d, -1d},
-        new double[] {-180d, -179d, -179d, -180d, -180d}
+        new double[] {-2d, -2d, 2d, 2d, -2d},
+        new double[] {-180d, -178d, -178d, -180d, -180d}
     );
 
     Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
@@ -396,10 +396,10 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     Polygon[] searchPoly = new Polygon[] {
-        new Polygon(new double[] {-2d, -2d, 2d, 2d, -2d},
-            new double[] {178d, 180d, 180d, 178d, 178d}),
-        new Polygon(new double[] {-2d, -2d, 2d, 2d, -2d},
-            new double[] {-180d, -178d, -178d, -180d, -180d})
+        new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
+            new double[] {179d, 180d, 180d, 179d, 179d}),
+        new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
+            new double[] {-180d, -179d, -179d, -180d, -180d})
     };
 
     Query q = LatLonShape.newPolygonQuery("test", QueryRelation.CONTAINS, searchPoly);
