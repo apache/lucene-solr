@@ -70,6 +70,8 @@ Improvements
 * SOLR-12753: Async logging ring buffer and OOM error. When very long messages are written (1M messages or so),
   it can produce an OOM error. Log messages are truncated at 10K via configuration in the log4j2.xml files.
 
+* SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
