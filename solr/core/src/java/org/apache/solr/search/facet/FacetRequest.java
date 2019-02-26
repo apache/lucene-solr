@@ -781,6 +781,7 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     facet.start = m.get("start");
     facet.end = m.get("end");
     facet.gap = m.get("gap");
+    facet.interval = m.get("intervals");
     facet.hardend = getBoolean(m, "hardend", facet.hardend);
     facet.mincount = getLong(m, "mincount", 0);
 
