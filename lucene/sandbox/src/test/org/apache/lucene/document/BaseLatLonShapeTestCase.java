@@ -542,7 +542,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
           if (queryRelation == QueryRelation.CONTAINS && queryPolygon.length > 1) {
             expected = true;
             for (Polygon polygon : queryPolygon) {
-              if (expected = getValidator(queryRelation).testPolygonQuery(Polygon2D.create(polygon), shapes[id]) == false) {
+              if (getValidator(queryRelation).testPolygonQuery(Polygon2D.create(polygon), shapes[id]) == false) {
                 expected = false;
                 break;
               }
