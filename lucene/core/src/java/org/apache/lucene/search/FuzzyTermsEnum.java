@@ -144,7 +144,7 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
   }
 
   /**
-   * Builds an Automaton to match a fuzzy term
+   * Builds a binary Automaton to match a fuzzy term
    * @param text            the term to match
    * @param prefixLength    length of a required common prefix
    * @param transpositions  {@code true} if transpositions should count as a single edit

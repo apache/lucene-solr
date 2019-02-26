@@ -76,7 +76,7 @@ final class MultiTermHighlighting {
       if (fieldMatcher.test(field) == false) {
         return;
       }
-      if (isBinary == false) {
+      if (isBinary == false) {  // currently true for WildcardQuery and RegexpQuery
         runAutomata.add(new CharacterRunAutomaton(automatonSupplier.get()){
           @Override
           public String toString() {

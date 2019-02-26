@@ -154,7 +154,7 @@ public class AutomatonQuery extends MultiTermQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    visitor.matchesAutomaton(this, field, automatonIsBinary, () -> automaton);
+    visitor.matchesAutomaton(this, field, automatonIsBinary, this::getAutomaton);
   }
 
   /** Returns the automaton used to create this query */

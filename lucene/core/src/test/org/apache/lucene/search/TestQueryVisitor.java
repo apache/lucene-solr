@@ -53,6 +53,9 @@ public class TestQueryVisitor extends LuceneTestCase {
       }, 2, true), BooleanClause.Occur.MUST)
       .add(new TermQuery(new Term("field1", "term8")), BooleanClause.Occur.MUST_NOT)
       .add(new PrefixQuery(new Term("field1", "term9")), BooleanClause.Occur.SHOULD)
+      .add(new BoostQuery(new BooleanQuery.Builder()
+          .add(new BoostQuery(new TermQuery(new Term("field1", "term10")), 3), BooleanClause.Occur.MUST)
+          .build(), 2), BooleanClause.Occur.SHOULD)
       .build();
 
   public void testExtractTermsEquivalent() {
@@ -61,7 +64,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "term1"), new Term("field1", "term2"),
         new Term("field1", "term3"), new Term("field1", "term4"),
         new Term("field1", "term5"), new Term("field1", "term6"),
-        new Term("field1", "term7")
+        new Term("field1", "term7"), new Term("field1", "term10")
     ));
     query.visit(QueryVisitor.termCollector(terms));
     assertThat(terms, equalTo(expected));
@@ -83,7 +86,8 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "term1"), new Term("field1", "term2"),
         new Term("field1", "term3"), new Term("field1", "term4"),
         new Term("field1", "term5"), new Term("field1", "term6"),
-        new Term("field1", "term7"), new Term("field1", "term8")
+        new Term("field1", "term7"), new Term("field1", "term8"),
+        new Term("field1", "term10")
     ));
     query.visit(visitor);
     assertThat(terms, equalTo(expected));
@@ -124,6 +128,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     expected.put(new Term("field1", "term5"), 3f);
     expected.put(new Term("field1", "term6"), 1f);
     expected.put(new Term("field1", "term7"), 1f);
+    expected.put(new Term("field1", "term10"), 6f);
     assertThat(termsToBoosts, equalTo(expected));
   }
 
