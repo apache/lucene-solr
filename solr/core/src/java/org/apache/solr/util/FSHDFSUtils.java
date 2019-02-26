@@ -20,7 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,11 +30,9 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Borrowed from Apache HBase to recover an HDFS lease.
  */
-
 public class FSHDFSUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -96,17 +93,7 @@ public class FSHDFSUtils {
     // default value for DFS_CLIENT_SOCKET_TIMEOUT_KEY.
     long subsequentPause = TimeUnit.NANOSECONDS.convert(conf.getInt("solr.hdfs.lease.recovery.dfs.timeout", 61 * 1000), TimeUnit.MILLISECONDS);
     
-    Method isFileClosedMeth = null;
-    // whether we need to look for isFileClosed method
-    
-    try {
-      isFileClosedMeth = dfs.getClass().getMethod("isFileClosed",
-          new Class[] {Path.class});
-    } catch (NoSuchMethodException nsme) {
-      log.debug("isFileClosed not available");
-    }
-    
-    if (isFileClosedMeth != null && isFileClosed(dfs, isFileClosedMeth, p)) {
+    if (dfs.isFileClosed(p)) {
       return true;
     }
     
@@ -121,13 +108,12 @@ public class FSHDFSUtils {
         if (nbAttempt == 0) {
           Thread.sleep(firstPause);
         } else {
-          // Cycle here until subsequentPause elapses.  While spinning, check isFileClosed if
-          // available (should be in hadoop 2.0.5... not in hadoop 1 though.
+          // Cycle here until subsequentPause elapses.  While spinning, check isFileClosed
           long localStartWaiting = System.nanoTime();
           while ((System.nanoTime() - localStartWaiting) < subsequentPause && !callerInfo.isCallerClosed()) {
             Thread.sleep(conf.getInt("solr.hdfs.lease.recovery.pause", 1000));
 
-            if (isFileClosedMeth != null && isFileClosed(dfs, isFileClosedMeth, p)) {
+            if (dfs.isFileClosed(p)) {
               recovered = true;
               break;
             }
@@ -187,21 +173,4 @@ public class FSHDFSUtils {
     return "attempt=" + nbAttempt + " on file=" + p + " after " +
       TimeUnit.MILLISECONDS.convert(System.nanoTime() - startWaiting, TimeUnit.NANOSECONDS) + "ms";
   }
-
-  /**
-   * Call HDFS-4525 isFileClosed if it is available.
-   * 
-   * @return True if file is closed.
-   */
-  private static boolean isFileClosed(final DistributedFileSystem dfs, final Method m, final Path p) {
-    try {
-      return (Boolean) m.invoke(dfs, p);
-    } catch (SecurityException e) {
-      log.warn("No access", e);
-    } catch (Exception e) {
-      log.warn("Failed invocation for " + p.toString(), e);
-    }
-    return false;
-  }
-
 }
