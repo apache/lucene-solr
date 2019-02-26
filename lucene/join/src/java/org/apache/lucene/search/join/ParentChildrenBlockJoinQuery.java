@@ -18,12 +18,10 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -98,11 +96,6 @@ public class ParentChildrenBlockJoinQuery extends Query {
     final Weight childWeight = childQuery.createWeight(searcher, scoreMode, boost);
     final int readerIndex = ReaderUtil.subIndex(parentDocId, searcher.getIndexReader().leaves());
     return new Weight(this) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        childWeight.extractTerms(terms);
-      }
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

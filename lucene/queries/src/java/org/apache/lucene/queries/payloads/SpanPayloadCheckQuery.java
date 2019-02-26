@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -97,11 +96,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermStates> termStates, SpanWeight matchWeight, float boost) throws IOException {
       super(SpanPayloadCheckQuery.this, searcher, termStates, boost);
       this.matchWeight = matchWeight;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      matchWeight.extractTerms(terms);
     }
 
     @Override

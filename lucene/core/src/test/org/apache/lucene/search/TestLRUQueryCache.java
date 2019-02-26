@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1304,11 +1303,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new Weight(this) {
-        @Override
-        public void extractTerms(Set<Term> terms) {
-
-        }
-
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return null;

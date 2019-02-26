@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -32,7 +31,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DisjunctionDISIApproximation;
@@ -441,13 +439,6 @@ public class LTRScoringQuery extends Query {
 
       return ltrScoringModel.explain(context, doc, finalScore, featureExplanations);
 
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
-        feature.extractTerms(terms);
-      }
     }
 
     protected void reset() {

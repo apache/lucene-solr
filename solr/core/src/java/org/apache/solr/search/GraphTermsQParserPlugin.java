@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -266,14 +265,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       }
 
       return new ConstantScoreWeight(this, boost) {
-
-        @Override
-        public void extractTerms(Set<Term> terms) {
-          // no-op
-          // This query is for abuse cases when the number of terms is too high to
-          // run efficiently as a BooleanQuery. So likewise we hide its terms in
-          // order to protect highlighters
-        }
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();

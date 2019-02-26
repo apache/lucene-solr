@@ -18,14 +18,12 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.document.FeatureField.FeatureFunction;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -87,18 +85,6 @@ final class FeatureQuery extends Query {
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         return false;
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        if (scoreMode.needsScores() == false) {
-          // features are irrelevant to highlighting, skip
-        } else {
-          // extracting the term here will help get better scoring with
-          // distributed term statistics if the saturation function is used
-          // and the pivot value is computed automatically
-          terms.add(new Term(fieldName, featureName));
-        }
       }
 
       @Override

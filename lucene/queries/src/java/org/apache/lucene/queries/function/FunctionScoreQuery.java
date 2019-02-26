@@ -19,11 +19,9 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -159,11 +157,6 @@ public final class FunctionScoreQuery extends Query {
       this.inner = inner;
       this.valueSource = valueSource;
       this.boost = boost;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      this.inner.extractTerms(terms);
     }
 
     @Override

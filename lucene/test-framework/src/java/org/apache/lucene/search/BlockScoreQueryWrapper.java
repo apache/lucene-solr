@@ -19,11 +19,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -195,11 +193,6 @@ public final class BlockScoreQueryWrapper extends Query {
           }
 
         };
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        inWeight.extractTerms(terms);
       }
 
       @Override

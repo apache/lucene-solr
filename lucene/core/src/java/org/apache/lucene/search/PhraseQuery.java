@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -467,11 +465,6 @@ public class PhraseQuery extends Query {
         else {
           return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
         }
-      }
-
-      @Override
-      public void extractTerms(Set<Term> queryTerms) {
-        Collections.addAll(queryTerms, terms);
       }
     };
   }

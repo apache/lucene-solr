@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -29,8 +28,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -359,15 +358,6 @@ public class TermAutomatonQuery extends Query {
       } else {
         stats = similarity.scorer(boost, searcher.collectionStatistics(field),
                                          allTermStats.toArray(new TermStatistics[allTermStats.size()]));
-      }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for(BytesRef text : termToID.keySet()) {
-        if (text != null) {
-          terms.add(new Term(field, text));
-        }
       }
     }
 

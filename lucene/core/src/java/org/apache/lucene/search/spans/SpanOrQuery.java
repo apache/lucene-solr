@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -143,13 +142,6 @@ public final class SpanOrQuery extends SpanQuery {
     public SpanOrWeight(IndexSearcher searcher, Map<Term, TermStates> terms, List<SpanWeight> subWeights, float boost) throws IOException {
       super(SpanOrQuery.this, searcher, terms, boost);
       this.subWeights = subWeights;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (final SpanWeight w: subWeights) {
-        w.extractTerms(terms);
-      }
     }
 
     @Override

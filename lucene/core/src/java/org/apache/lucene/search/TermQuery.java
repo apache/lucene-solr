@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -73,11 +72,6 @@ public class TermQuery extends Query {
       } else {
         this.simScorer = similarity.scorer(boost, collectionStats, termStats);
       }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      terms.add(getTerm());
     }
 
     @Override

@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
@@ -30,7 +29,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -100,9 +98,6 @@ final class LatLonPointDistanceFeatureQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return false;
       }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

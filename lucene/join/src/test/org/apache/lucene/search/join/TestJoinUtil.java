@@ -521,10 +521,6 @@ public class TestJoinUtil extends LuceneTestCase {
           return new Weight(this) {
 
             @Override
-            public void extractTerms(Set<Term> terms) {
-            }
-
-            @Override
             public Explanation explain(LeafReaderContext context, int doc) throws IOException {
               return null;
             }

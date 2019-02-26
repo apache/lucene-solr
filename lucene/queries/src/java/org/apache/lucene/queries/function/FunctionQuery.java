@@ -18,11 +18,9 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -66,9 +64,6 @@ public class FunctionQuery extends Query {
       func.createWeight(context, searcher);
       this.boost = boost;
     }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {}
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {

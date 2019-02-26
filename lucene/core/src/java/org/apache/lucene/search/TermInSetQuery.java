@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 
 import org.apache.lucene.index.IndexReader;
@@ -211,14 +210,6 @@ public class TermInSetQuery extends Query implements Accountable {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        // no-op
-        // This query is for abuse cases when the number of terms is too high to
-        // run efficiently as a BooleanQuery. So likewise we hide its terms in
-        // order to protect highlighters
-      }
 
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {

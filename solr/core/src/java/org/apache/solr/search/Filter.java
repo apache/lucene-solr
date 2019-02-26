@@ -17,10 +17,8 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -91,9 +89,6 @@ public abstract class Filter extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new Weight(this) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

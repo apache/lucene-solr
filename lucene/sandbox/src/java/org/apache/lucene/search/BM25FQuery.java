@@ -295,11 +295,6 @@ public final class BM25FQuery extends Query {
     }
 
     @Override
-    public void extractTerms(Set<Term> termSet) {
-      termSet.addAll(Arrays.asList(fieldTerms));
-    }
-
-    @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
       Weight weight = searcher.rewrite(rewriteToBoolean()).createWeight(searcher, ScoreMode.COMPLETE, 1f);
       return weight.matches(context, doc);

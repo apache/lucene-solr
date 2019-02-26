@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.apache.lucene.document.DoublePoint;
@@ -36,7 +35,6 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -122,10 +120,6 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   @Override
   public final Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
     return new Weight(this) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-      }
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

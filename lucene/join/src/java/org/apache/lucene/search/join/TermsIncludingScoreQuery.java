@@ -19,11 +19,9 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -98,9 +96,6 @@ class TermsIncludingScoreQuery extends Query {
       return searcher.rewrite(termsQuery).createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
     }
     return new Weight(TermsIncludingScoreQuery.this) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

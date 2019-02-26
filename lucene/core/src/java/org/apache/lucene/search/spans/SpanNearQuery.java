@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -228,13 +227,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      for (SpanWeight w : subWeights) {
-        w.extractTerms(terms);
-      }
-    }
-
-    @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       for (Weight w : subWeights) {
         if (w.isCacheable(ctx) == false)
@@ -337,11 +329,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       @Override
       public Spans getSpans(LeafReaderContext ctx, Postings requiredPostings) throws IOException {
         return new GapSpans(width);
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-
       }
 
       @Override

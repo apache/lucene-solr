@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
@@ -167,13 +166,6 @@ public final class SynonymQuery extends Query {
         this.simWeight = similarity.scorer(boost, collectionStats, pseudoStats);
       } else {
         this.simWeight = null; // no terms exist at all, we won't use similarity
-      }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (Term term : SynonymQuery.this.terms) {
-        terms.add(term);
       }
     }
 
