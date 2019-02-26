@@ -80,10 +80,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    if (v != null) {
-      match.visit(v);
-    }
+    match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   /**

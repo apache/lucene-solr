@@ -121,10 +121,7 @@ public final class FunctionScoreQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    if (v != null) {
-      in.visit(v);
-    }
+    in.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   @Override

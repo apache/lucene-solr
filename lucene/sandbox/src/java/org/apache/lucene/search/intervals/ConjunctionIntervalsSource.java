@@ -58,11 +58,8 @@ class ConjunctionIntervalsSource extends IntervalsSource {
   @Override
   public void visit(String field, QueryVisitor visitor) {
     Query parent = new IntervalQuery(field, this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, parent);
     for (IntervalsSource source : subSources) {
-      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, parent);
-      if (v == null) {
-        return;
-      }
       source.visit(field, v);
     }
   }

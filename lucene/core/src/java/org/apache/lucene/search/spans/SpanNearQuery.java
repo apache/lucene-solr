@@ -261,11 +261,9 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (SpanQuery clause : clauses) {
-      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-      if (v != null) {
-        clause.visit(v);
-      }
+      clause.visit(v);
     }
   }
 

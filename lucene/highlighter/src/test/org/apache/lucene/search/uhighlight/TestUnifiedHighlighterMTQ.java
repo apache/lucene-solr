@@ -1045,10 +1045,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
     @Override
     public void visit(QueryVisitor visitor) {
-      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-      if (v != null) {
-        originalQuery.visit(v);
-      }
+      originalQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
     }
 
     @Override

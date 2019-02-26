@@ -87,11 +87,8 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
   @Override
   public void visit(String field, QueryVisitor visitor) {
     Query parent = new IntervalQuery(field, this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, parent);
     for (IntervalsSource source : sources) {
-      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, parent);
-      if (v == null) {
-        return;
-      }
       source.visit(field, v);
     }
   }

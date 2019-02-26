@@ -124,10 +124,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    if (v != null) {
-      match.visit(v);
-    }
+    match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   /** Returns true iff <code>other</code> is equal to this. */

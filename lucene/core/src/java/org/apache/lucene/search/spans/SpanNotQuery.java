@@ -208,14 +208,8 @@ public final class SpanNotQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor i = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    if (i != null) {
-      include.visit(i);
-    }
-    QueryVisitor x = visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, this);
-    if (x != null) {
-      exclude.visit(x);
-    }
+    include.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    exclude.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, this));
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
