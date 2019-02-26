@@ -95,6 +95,8 @@ Other Changes
 
 * SOLR-9762: Remove the workaround implemented for HADOOP-13346 (Kevin Risden)
 
+* SOLR-7321: Remove reflection in FSHDFSUtils.java (Mike Drob, Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
