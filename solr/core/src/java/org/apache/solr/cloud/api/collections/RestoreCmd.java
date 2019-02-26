@@ -46,6 +46,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
@@ -64,6 +67,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -241,9 +245,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
       List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
+
+      CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
+
       //Create one replica per shard and copy backed up data to it
       for (Slice slice : restoreCollection.getSlices()) {
-        log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+        log.info("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
         HashMap<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
         propMap.put(COLLECTION_PROP, restoreCollectionName);
@@ -274,7 +281,37 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           propMap.put(ASYNC, asyncId);
         }
         ocmh.addPropertyParams(message, propMap);
-        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), new NamedList(), null);
+        final NamedList addReplicaResult = new NamedList();
+        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
+          Object addResultFailure = addReplicaResult.get("failure");
+          if (addResultFailure != null) {
+            SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+            if (failure == null) {
+              failure = new SimpleOrderedMap();
+              results.add("failure", failure);
+            }
+            failure.addAll((NamedList) addResultFailure);
+          } else {
+            SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+            if (success == null) {
+              success = new SimpleOrderedMap();
+              results.add("success", success);
+            }
+            success.addAll((NamedList) addReplicaResult.get("success"));
+          }
+          countDownLatch.countDown();
+        });
+      }
+
+      boolean allIsDone = countDownLatch.await(1, TimeUnit.HOURS);
+      if (!allIsDone) {
+        throw new TimeoutException("Initial replicas were not created within 1 hour. Timing out.");
+      }
+      Object failures = results.get("failure");
+      if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
+        log.error("Restore failed to create initial replicas.");
+        ocmh.cleanupCollection(restoreCollectionName, new NamedList<Object>());
+        return;
       }
 
       //refresh the location copy of collection state

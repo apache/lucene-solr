@@ -16,65 +16,61 @@
  */
 package org.apache.solr.logging;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-public class TestLogWatcher {
+public class TestLogWatcher extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private LogWatcherConfig config;
 
   @Before
-  public void setUp() {
-    config = new LogWatcherConfig(true, null, null, 50);
+  public void before() {
+    config = new LogWatcherConfig(true, null, "INFO", 1);
   }
 
+  // Create several log watchers and ensure that new messages go to the new watcher.
   @Test
-  public void testLog4jWatcher() {
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(config, null);
+  public void testLog4jWatcher() throws InterruptedException {
+    LogWatcher watcher = null;
+    int lim = random().nextInt(3) + 2;
+    for (int idx = 0; idx < lim; ++idx) {
+      String msg = "This is a test message: " + idx;
+      watcher = LogWatcher.newRegisteredLogWatcher(config, null);
 
-    assertEquals(watcher.getLastEvent(), -1);
+      // First ensure there's nothing in the new watcher.
+      assertEquals(-1, watcher.getLastEvent());
 
-    log.warn("This is a test message");
+      // Now log a message and ensure that the new watcher sees it.
+      log.warn(msg);
 
-    assertTrue(watcher.getLastEvent() > -1);
+      // Loop to give the logger time to process the async message and notify the new watcher.
+      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      boolean foundMsg = false;
+      // In local testing this loop usually succeeds 1-2 tries.
+      do {
+        // Returns an empty (but non-null) list even if there are no messages yet.
+        SolrDocumentList events = watcher.getHistory(-1, new AtomicBoolean());
+        for (SolrDocument doc : events) {
+          if (doc.get("message").equals(msg)) {
+            foundMsg = true;
+            break;
+          }
+        }
+        Thread.sleep(10);
+      } while (timeOut.hasTimedOut() == false);
 
-    SolrDocumentList events = watcher.getHistory(-1, new AtomicBoolean());
-    assertEquals(events.size(), 1);
-
-    SolrDocument event = events.get(0);
-    assertEquals(event.get("logger"), "org.apache.solr.logging.TestLogWatcher");
-    assertEquals(event.get("message"), "This is a test message");
-
+      assertTrue("Should have found message " + msg + " in loop: " + idx, foundMsg);
+    }
   }
-
-  // This seems weird to do the same thing twice, this is valid. We need to test whether listeners are replaced....
-  @Test
-  public void testLog4jWatcherRepeat() {
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(config, null);
-
-    assertEquals(watcher.getLastEvent(), -1);
-
-    log.warn("This is a test message");
-
-    assertTrue(watcher.getLastEvent() > -1);
-
-    SolrDocumentList events = watcher.getHistory(-1, new AtomicBoolean());
-    assertEquals(events.size(), 1);
-
-    SolrDocument event = events.get(0);
-    assertEquals(event.get("logger"), "org.apache.solr.logging.TestLogWatcher");
-    assertEquals(event.get("message"), "This is a test message");
-
-  }
-
 }
