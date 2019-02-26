@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
@@ -50,6 +51,7 @@ public class FacetRange extends FacetRequestSorted {
   Object start;
   Object end;
   Object gap;
+  Object interval;
   boolean hardend = false;
   EnumSet<FacetRangeInclude> include;
   EnumSet<FacetRangeOther> others;
@@ -77,6 +79,7 @@ public class FacetRange extends FacetRequestSorted {
     descr.put("start", start);
     descr.put("end", end);
     descr.put("gap", gap);
+    descr.put("intervals", interval);
     return descr;
   }
   
@@ -94,8 +97,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   final long effectiveMincount;
   final Comparable start;
   final Comparable end;
-  final String gap;
-  
+  String gap = null;
+  String interval = null;
+
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> rangeList;
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
@@ -122,9 +126,13 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     calc = getCalcForField(sf);
     start = calc.getValue(freq.start.toString());
     end = calc.getValue(freq.end.toString());
-    gap = freq.gap.toString();
+    if (freq.gap != null) {
+      gap = freq.gap.toString();
+    }
 
-    
+    if (freq.interval != null) {
+      interval = freq.interval.toString();
+    }
     // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
     // If mincount>0 then we could *potentially* set our sub mincount to 1...
     // ...but that would require sorting the buckets (by their val) at the top level
@@ -143,7 +151,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       response = refineFacets();
     } else {
       // phase#1: build list of all buckets and return full facets...
-      createRangeList();
+      if (freq.gap != null & freq.interval == null) createRangeList();
+      if (freq.gap == null & freq.interval != null) createIntervalRangeList();
       response = getRangeCountsIndexed();
     }
   }
@@ -277,6 +286,108 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       low = high;
     }
 
+    createOtherList(loop_end);
+  }
+
+  private void createIntervalRangeList() throws IOException {
+    rangeList = new ArrayList<>();
+    otherList = new ArrayList<>(3);
+
+    Comparable low = start;
+    Comparable loop_end = this.end;
+    List<Range> ranges = parseInterval(freq.interval);
+    for (Range range : ranges) {
+      rangeList.add(range);
+    }
+    createOtherList(loop_end);
+  }
+
+  private List<Range> parseInterval(Object input) {
+    //interval :[{key:"set1",value:"[0,10]"}]
+    //@todo apoorv handle exception, sort orders
+    List<Map<String, String>> intervals = (List<Map<String, String>>) input;
+    List<Range> ranges = new ArrayList<>();
+    for (Map<String, String> interval : intervals) {
+      String key = interval.get("key");
+      if (interval == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty facet interval");
+      }      String intervalStr = interval.get("value").trim();
+      if (intervalStr.length() == 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty facet interval");
+      }
+      Boolean startOpen = false, endOpen = false;
+      Comparable start = null, end = null;
+      if (intervalStr.charAt(0) == '(') {
+        startOpen = true;
+      } else if (intervalStr.charAt(0) == '[') {
+        startOpen = false;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid start character " + intervalStr.charAt(0) + " in facet interval " + intervalStr);
+      }
+
+      final int lastNdx = intervalStr.length() - 1;
+      if (intervalStr.charAt(lastNdx) == ')') {
+        endOpen = true;
+      } else if (intervalStr.charAt(lastNdx) == ']') {
+        endOpen = false;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid end character " + intervalStr.charAt(0) + " in facet interval " + intervalStr);
+      }
+
+      StringBuilder startStr = new StringBuilder(lastNdx);
+      int i = unescape(intervalStr, 1, lastNdx, startStr);
+      if (i == lastNdx) {
+        if (intervalStr.charAt(lastNdx - 1) == ',') {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Empty interval limit");
+        }
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing unescaped comma separating interval ends in " + intervalStr);
+      }
+      try {
+        start = calc.getValue(startStr.toString());
+      } catch (SolrException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Invalid start interval for key '%s': %s", key, e.getMessage()), e);
+      }
+      StringBuilder endStr = new StringBuilder(lastNdx);
+      i = unescape(intervalStr, i, lastNdx, endStr);
+      if (i != lastNdx) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Extra unescaped comma at index " + i + " in interval " + intervalStr);
+      }
+      try {
+        end = calc.getValue(endStr.toString());
+      } catch (SolrException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Invalid end interval for key '%s': %s", key, e.getMessage()), e);
+      }
+      if (start != null && end != null && start.compareTo(end) > 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Start is higher than end in interval for key: " + key);
+      }
+      if (interval.get("key") == null) key = startStr.toString();
+      Range range = new Range(key, start, end, startOpen, endOpen);
+      ranges.add(range);
+    }
+    return ranges;
+  }
+
+  /* Fill in sb with a string from i to the first unescaped comma, or n.
+      Return the index past the unescaped comma, or n if no unescaped comma exists */
+  private int unescape(String s, int i, int n, StringBuilder sb) {
+    for (; i < n; ++i) {
+      char c = s.charAt(i);
+      if (c == '\\') {
+        ++i;
+        if (i < n) {
+          c = s.charAt(i);
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unfinished escape at index " + i + " in facet interval " + s);
+        }
+      } else if (c == ',') {
+        return i + 1;
+      }
+      sb.append(c);
+    }
+    return n;
+  }
+
+  private void createOtherList(Comparable loop_end) {
     // no matter what other values are listed, we don't do
     // anything if "none" is specified.
     if (! freq.others.contains(FacetRangeOther.NONE) ) {
