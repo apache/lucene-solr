@@ -54,6 +54,9 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
     if (queryRelation == QueryRelation.WITHIN) {
       throw new IllegalArgumentException("LatLonShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
     }
+    if (queryRelation == QueryRelation.CONTAINS) {
+      throw new IllegalArgumentException("LatLonShapeLineQuery does not support " + QueryRelation.CONTAINS + " queries");
+    }
 
     if (lines == null) {
       throw new IllegalArgumentException("lines must not be null");
