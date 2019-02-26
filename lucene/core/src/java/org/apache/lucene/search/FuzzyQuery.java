@@ -147,7 +147,10 @@ public class FuzzyQuery extends MultiTermQuery {
     return transpositions;
   }
 
-  public Automaton getAutomaton() {
+  /**
+   * Expert: Constructs an equivalent Automaton accepting terms matched by this query
+   */
+  public Automaton toAutomaton() {
     return FuzzyTermsEnum.buildAutomaton(term.text(), prefixLength, transpositions, maxEdits);
   }
 

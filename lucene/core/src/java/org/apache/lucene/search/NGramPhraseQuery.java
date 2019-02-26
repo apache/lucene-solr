@@ -79,10 +79,7 @@ public class NGramPhraseQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    if (v != null) {
-      phraseQuery.visit(v);
-    }
+    phraseQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   @Override

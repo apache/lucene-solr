@@ -106,10 +106,7 @@ public final class BoostQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    if (v != null) {
-      query.visit(v);
-    }
+    query.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   @Override

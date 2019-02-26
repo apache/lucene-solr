@@ -75,6 +75,6 @@ public abstract class QueryVisitor {
   /**
    * A QueryVisitor implementation that does nothing
    */
-  public static QueryVisitor EMPTY_VISITOR = new QueryVisitor() {};
+  public static final QueryVisitor EMPTY_VISITOR = new QueryVisitor() {};
 
 }

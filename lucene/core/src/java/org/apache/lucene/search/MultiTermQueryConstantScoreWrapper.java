@@ -234,9 +234,6 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
 
   @Override
   public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(Occur.FILTER, this);
-    if (v != null) {
-      query.visit(v);
-    }
+    query.visit(visitor.getSubVisitor(Occur.FILTER, this));
   }
 }
