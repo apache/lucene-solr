@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
@@ -146,23 +147,16 @@ public class FuzzyQuery extends MultiTermQuery {
     return transpositions;
   }
 
+  public Automaton getAutomaton() {
+    return FuzzyTermsEnum.buildAutomaton(term.text(), prefixLength, transpositions, maxEdits);
+  }
+
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
     return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
-  }
-
-  @Override
-  public void visit(QueryVisitor visitor) {
-    if (maxEdits == 0 || prefixLength >= term.text().length()) {
-      visitor.matchesTerm(term);
-    }
-    else {
-      visitor.matchesAutomaton(this, field, false,
-          () -> FuzzyTermsEnum.buildAutomaton(term.text(), prefixLength, transpositions, maxEdits));
-    }
   }
 
   /**

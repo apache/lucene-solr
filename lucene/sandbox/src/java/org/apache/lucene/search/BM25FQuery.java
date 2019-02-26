@@ -226,7 +226,7 @@ public final class BM25FQuery extends Query {
       if (v == null) {
         return;
       }
-      v.matchesTerm(term);
+      v.consumesTerm(term);
     }
   }
 

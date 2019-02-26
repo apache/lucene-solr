@@ -18,10 +18,8 @@
 package org.apache.lucene.search;
 
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.automaton.Automaton;
 
 /**
  * Allows recursion through a query tree
@@ -35,16 +33,7 @@ public abstract class QueryVisitor {
    *
    * @param term  the term the query will match on
    */
-  public void matchesTerm(Term term) { }
-
-  /**
-   * Called by leaf queries that match terms against an Automaton
-   * @param query               the leaf query
-   * @param field               the field to match against
-   * @param isBinary            {@code true} if the Automaton is built to match against byte[] rather than char[]
-   * @param automatonSupplier   a supplier for the built Automaton
-   */
-  public void matchesAutomaton(Query query, String field, boolean isBinary, Supplier<Automaton> automatonSupplier) {}
+  public void consumesTerm(Term term) { }
 
   /**
    * Called by leaf queries that do not match on terms
@@ -78,7 +67,7 @@ public abstract class QueryVisitor {
   public static QueryVisitor termCollector(Set<Term> termSet) {
     return new QueryVisitor() {
       @Override
-      public void matchesTerm(Term term) {
+      public void consumesTerm(Term term) {
         termSet.add(term);
       }
     };

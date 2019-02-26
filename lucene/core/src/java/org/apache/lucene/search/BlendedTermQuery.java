@@ -301,7 +301,7 @@ public final class BlendedTermQuery extends Query {
       return;
     }
     for (Term term : terms) {
-      v.matchesTerm(term);
+      v.consumesTerm(term);
     }
   }
 

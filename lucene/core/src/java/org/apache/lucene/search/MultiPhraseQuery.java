@@ -213,7 +213,7 @@ public class MultiPhraseQuery extends Query {
       for (Term term : terms) {
         QueryVisitor sv = v.getSubVisitor(BooleanClause.Occur.SHOULD, this);
         if (sv != null) {
-          sv.matchesTerm(term);
+          sv.consumesTerm(term);
         }
       }
     }

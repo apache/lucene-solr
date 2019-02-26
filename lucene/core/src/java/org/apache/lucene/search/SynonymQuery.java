@@ -124,7 +124,7 @@ public final class SynonymQuery extends Query {
       if (v == null) {
         return;
       }
-      v.matchesTerm(term);
+      v.consumesTerm(term);
     }
   }
 

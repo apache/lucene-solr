@@ -44,8 +44,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 
 /**
  * Specialization for a disjunction over many terms that behaves like a
@@ -135,22 +133,6 @@ public class TermInSetQuery extends Query implements Accountable {
     // termData might be heavy to compare so check the hash code first
     return termDataHashCode == other.termDataHashCode &&
         termData.equals(other.termData);
-  }
-
-  @Override
-  public void visit(QueryVisitor visitor) {
-    // we return an Automaton rather than looping through all terms to protect highlighters
-    // see https://issues.apache.org/jira/browse/LUCENE-6415
-    visitor.matchesAutomaton(this, field, false, this::toAutomaton);
-  }
-
-  private Automaton toAutomaton() {
-    TermIterator iterator = termData.iterator();
-    List<BytesRef> terms = new ArrayList<>();
-    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-      terms.add(term);
-    }
-    return DaciukMihovAutomatonBuilder.build(terms);
   }
 
   @Override

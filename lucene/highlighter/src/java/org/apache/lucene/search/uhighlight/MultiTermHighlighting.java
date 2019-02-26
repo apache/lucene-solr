@@ -19,9 +19,10 @@ package org.apache.lucene.search.uhighlight;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
+import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -72,22 +73,44 @@ final class MultiTermHighlighting {
     }
 
     @Override
-    public void matchesAutomaton(Query query, String field, boolean isBinary, Supplier<Automaton> automatonSupplier) {
-      if (fieldMatcher.test(field) == false) {
-        return;
+    public void visitLeaf(Query query) {
+      if (query instanceof AutomatonQuery) {
+        AutomatonQuery aq = (AutomatonQuery) query;
+        if (fieldMatcher.test(aq.getField()) == false) {
+          return;
+        }
+        if (aq.isAutomatonBinary() == false) {
+          // WildcardQuery, RegexpQuery
+          runAutomata.add(new CharacterRunAutomaton(aq.getAutomaton()) {
+            @Override
+            public String toString() {
+              return query.toString();
+            }
+          });
+        }
+        else {
+          runAutomata.add(binaryToCharRunAutomaton(aq.getAutomaton(), query.toString()));
+        }
       }
-      if (isBinary == false) {  // currently true for WildcardQuery and RegexpQuery
-        runAutomata.add(new CharacterRunAutomaton(automatonSupplier.get()){
-          @Override
-          public String toString() {
-            return query.toString();
-          }
-        });
-      }
-      else {
-        runAutomata.add(binaryToCharRunAutomaton(automatonSupplier.get(), query.toString()));
+      else if (query instanceof FuzzyQuery) {
+        FuzzyQuery fq = (FuzzyQuery) query;
+        if (fieldMatcher.test(fq.getField()) == false) {
+          return;
+        }
+        if (fq.getMaxEdits() == 0 || fq.getPrefixLength() >= fq.getTerm().text().length()) {
+          consumesTerm(fq.getTerm());
+        }
+        else {
+          runAutomata.add(new CharacterRunAutomaton(fq.getAutomaton()){
+            @Override
+            public String toString() {
+              return query.toString();
+            }
+          });
+        }
       }
     }
+
   }
 
   private static CharacterRunAutomaton binaryToCharRunAutomaton(Automaton binaryAutomaton, String description) {

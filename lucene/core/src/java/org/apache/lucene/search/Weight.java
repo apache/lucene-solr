@@ -66,7 +66,10 @@ public abstract class Weight implements SegmentCacheable {
    * {@link Weight} was created with {@code needsScores == true} then this
    * method will only extract terms which are used for scoring, otherwise it
    * will extract all terms which are used for matching.
+   *
+   * @deprecated Use {@link QueryVisitor#termCollector(Set)}
    */
+  @Deprecated
   public abstract void extractTerms(Set<Term> terms);
 
   /**

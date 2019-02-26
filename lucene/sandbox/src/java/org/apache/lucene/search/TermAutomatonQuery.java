@@ -500,7 +500,7 @@ public class TermAutomatonQuery extends Query {
       if (v == null) {
         return;
       }
-      v.matchesTerm(new Term(field, term));
+      v.consumesTerm(new Term(field, term));
     }
   }
 }

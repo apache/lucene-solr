@@ -289,7 +289,7 @@ public class PhraseQuery extends Query {
     for (Term term : terms) {
       QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
       if (v != null) {
-        v.matchesTerm(term);
+        v.consumesTerm(term);
       }
     }
   }
