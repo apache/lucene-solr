@@ -71,11 +71,12 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     if (totalPolygons == 0) {
       return true;
     }
-    //we use bounding boxes so we do not get polygons with shared points.
+    // we use bounding boxes so we do not get polygons with shared points. we leave lot of space
+    // between polygons to prevent artifacts in the tests due to encoding.
     for (Polygon polygon : polygons) {
       if (polygon != null) {
-        if (polygon.minLat > check.maxLat || polygon.maxLat < check.minLat
-            || polygon.minLon > check.maxLon || polygon.maxLon < check.minLon) {
+        if (polygon.minLat - 0.1 > check.maxLat || polygon.maxLat + 0.1  < check.minLat
+            || polygon.minLon - 0.1 > check.maxLon || polygon.maxLon + 0.1 < check.minLon) {
           continue;
         }
         return false;
