@@ -37,7 +37,7 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
   static final String REQUEST_CONTINUES_ATTR =
       "org.apache.solr.security.authentication.requestcontinues";
 
-  private AuthenticationHandler authHandler;
+  protected AuthenticationHandler authHandler;
 
   public void setAuthHandler(AuthenticationHandler authHandler) {
     this.authHandler = authHandler;

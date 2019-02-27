@@ -37,6 +37,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
+import org.apache.hadoop.security.authentication.server.CompositeAuthenticationHandler;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationFilter;
 import org.apache.hadoop.security.token.delegation.web.HttpUserGroupInformation;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -117,7 +118,13 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
     // set the internal authentication handler in order to record whether the request should continue
     super.initializeAuthHandler(authHandlerClassName, filterConfig);
     AuthenticationHandler authHandler = getAuthenticationHandler();
-    super.initializeAuthHandler(RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
+
+    if (authHandler instanceof CompositeAuthenticationHandler) {
+      super.initializeAuthHandler(RequestRecorderCompositeHandler.class.getName(), filterConfig);
+    } else {
+      super.initializeAuthHandler(RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
+    }
+
     RequestContinuesRecorderAuthenticationHandler newAuthHandler =
         (RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
     newAuthHandler.setAuthHandler(authHandler);
