@@ -140,10 +140,6 @@ public final class Polygon2D extends EdgeTree {
 
   @Override
   protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    //short cut, lines and points cannot contain a polygon
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy)) {
-      return EdgeTree.WithinRelation.NOTWITHIN;
-    }
     // check any holes
     if (holes != null) {
       Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
