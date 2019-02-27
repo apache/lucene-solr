@@ -50,7 +50,11 @@ public final class Line2D extends EdgeTree {
 
   @Override
   protected PointValues.Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    return tree.relateTriangle(ax, ay, bx, by, cx, cy);
+    PointValues.Relation rel =  tree.relateTriangle(ax, ay, bx, by, cx, cy);
+    if (rel == PointValues.Relation.CELL_OUTSIDE_QUERY && Tessellator.pointInTriangle(tree.lon1, tree.lat2, ax, ay, bx, by, cx, cy)) {
+      return PointValues.Relation.CELL_CROSSES_QUERY;
+    }
+    return rel;
   }
 
   @Override
