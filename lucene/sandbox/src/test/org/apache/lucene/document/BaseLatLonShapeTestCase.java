@@ -502,8 +502,12 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       for (int i =0; i < n; i++) {
         queryPolygon[i] = GeoTestUtil.nextPolygon();
       }
-      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
+
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      if (queryRelation == QueryRelation.CONTAINS) {
+        queryPolygon = LatLonShapePolygonQuery.encodePolygons(queryPolygon);
+      }
+      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 
       if (VERBOSE) {

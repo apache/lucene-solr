@@ -210,10 +210,16 @@ public class Rectangle2D {
         relation = EdgeTree.WithinRelation.CANDIDATE;
       }
     }
+
     //if any of the edges crosses and edge that does not belong to the shape
     // then it is a candidate for within
     if (relation == EdgeTree.WithinRelation.CANDIDATE) {
       return EdgeTree. WithinRelation.CANDIDATE;
+    }
+
+    //check that triangle bounding box not inside shape bounding box
+    if (tMinX > minLon || tMaxX < maxLon || tMinY > minLat || tMaxY < maxLat) {
+      return EdgeTree.WithinRelation.DISJOINT;
     }
 
     //Check if shape is within the triangle,
@@ -319,32 +325,20 @@ public class Rectangle2D {
       return false;
     }
 
-    // shortcut: edge is a point
-    if (ax == bx && ay == by) {
-      return false;
-    }
-
     // top
-    if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
-        orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
+    if (GeoUtils.lineRelateLine(ax, ay, bx, by, minX, maxY, maxX, maxY) == PointValues.Relation.CELL_CROSSES_QUERY) {
       return true;
     }
-
     // right
-    if (orient(ax, ay, bx, by, maxX, maxY) * orient(ax, ay, bx, by, maxX, minY) <= 0 &&
-        orient(maxX, maxY, maxX, minY, ax, ay) * orient(maxX, maxY, maxX, minY, bx, by) <= 0) {
+    if (GeoUtils.lineRelateLine(ax, ay, bx, by, maxX, maxY, maxX, minY) == PointValues.Relation.CELL_CROSSES_QUERY) {
       return true;
     }
-
     // bottom
-    if (orient(ax, ay, bx, by, maxX, minY) * orient(ax, ay, bx, by, minX, minY) <= 0 &&
-        orient(maxX, minY, minX, minY, ax, ay) * orient(maxX, minY, minX, minY, bx, by) <= 0) {
+    if (GeoUtils.lineRelateLine(ax, ay, bx, by, maxX, minY, minX, minY) == PointValues.Relation.CELL_CROSSES_QUERY) {
       return true;
     }
-
     // left
-    if (orient(ax, ay, bx, by, minX, minY) * orient(ax, ay, bx, by, minX, maxY) <= 0 &&
-        orient(minX, minY, minX, maxY, ax, ay) * orient(minX, minY, minX, maxY, bx, by) <= 0) {
+    if (GeoUtils.lineRelateLine(ax, ay, bx, by, minX, minY, minX, maxY) == PointValues.Relation.CELL_CROSSES_QUERY) {
       return true;
     }
     return false;

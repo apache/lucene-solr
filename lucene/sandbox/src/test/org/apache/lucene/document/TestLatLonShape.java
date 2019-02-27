@@ -361,9 +361,6 @@ public class TestLatLonShape extends LuceneTestCase {
     IOUtils.close(w, reader, dir);
   }
 
-  //It seems we cannot support this due to encoding. For 180 degrees, the encoding sets the value to
-  // 179.99999991618097 and then compare with 180 of the query it fails
-  @Ignore
   public void testContainsDateLine() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);

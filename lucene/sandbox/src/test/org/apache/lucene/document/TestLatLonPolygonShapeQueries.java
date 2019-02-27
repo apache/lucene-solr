@@ -68,14 +68,14 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
   protected static class PolygonValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon p = (Polygon)shape;
+      Polygon p = (Polygon) shape;
       Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       EdgeTree.WithinRelation withinRelation = EdgeTree.WithinRelation.DISJOINT;
       for (Tessellator.Triangle t : tessellation) {
         LatLonShape.Triangle decoded = encodeDecodeTriangle(t.getLon(0), t.getLat(0), t.fromPolygon(0),
-                                             t.getLon(1), t.getLat(1), t.fromPolygon(1),
-                                             t.getLon(2), t.getLat(2), t.fromPolygon(2));
+            t.getLon(1), t.getLat(1), t.fromPolygon(1),
+            t.getLon(2), t.getLat(2), t.fromPolygon(2));
         if (queryRelation == QueryRelation.WITHIN) {
           if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
