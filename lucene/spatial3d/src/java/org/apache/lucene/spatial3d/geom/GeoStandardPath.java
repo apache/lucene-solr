@@ -169,13 +169,8 @@ class GeoStandardPath extends GeoBasePath {
       
       // General intersection case
       final PathSegment prevSegment = segments.get(i-1);
-      // We construct four separate planes, and evaluate which one includes all interior points with least overlap
-      final SidedPlane candidate1 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.URHC, currentSegment.ULHC, currentSegment.LLHC);
-      final SidedPlane candidate2 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, currentSegment.ULHC, currentSegment.LLHC, prevSegment.LRHC);
-      final SidedPlane candidate3 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, currentSegment.LLHC, prevSegment.LRHC, prevSegment.URHC);
-      final SidedPlane candidate4 = SidedPlane.constructNormalizedThreePointSidedPlane(currentSegment.start, prevSegment.LRHC, prevSegment.URHC, currentSegment.ULHC);
-
-      if (candidate1 == null && candidate2 == null && candidate3 == null && candidate4 == null) {
+      if (prevSegment.endCutoffPlane.isWithin(currentSegment.ULHC) && prevSegment.endCutoffPlane.isWithin(currentSegment.LLHC) &&
+        currentSegment.startCutoffPlane.isWithin(prevSegment.URHC) && currentSegment.startCutoffPlane.isWithin(prevSegment.LRHC)) {
         // The planes are identical.  We wouldn't need a circle at all except for the possibility of
         // backing up, which is hard to detect here.
         final SegmentEndpoint midEndpoint = new CutoffSingleCircleSegmentEndpoint(currentSegment.start, 
@@ -186,8 +181,7 @@ class GeoStandardPath extends GeoBasePath {
         endPoints.add(new CutoffDualCircleSegmentEndpoint(currentSegment.start,
           prevSegment.endCutoffPlane, currentSegment.startCutoffPlane,
           prevSegment.URHC, prevSegment.LRHC,
-          currentSegment.ULHC, currentSegment.LLHC,
-          candidate1, candidate2, candidate3, candidate4));
+          currentSegment.ULHC, currentSegment.LLHC));
       }
     }
     // Do final endpoint
@@ -809,109 +803,74 @@ class GeoStandardPath extends GeoBasePath {
   
   /**
    * Endpoint that's a dual circle with cutoff(s).
+   * This SegmentEndpoint is used when we have two adjoining segments that are not colinear, and when we are on a non-spherical world.
+   * (1) We construct two circles.  Each circle uses the two segment endpoints for one of the two segments, plus the one segment endpoint
+   *   that is on the other side of the segment's cutoff plane.
+   * (2) isWithin() is computed using both circles, using just the portion that is within both segments' cutoff planes.  If either matches, the point is included.
+   * (3) intersects() is computed using both circles, with similar cutoffs.
+   * (4) bounds() uses both circles too.
+   *
    */
   private static class CutoffDualCircleSegmentEndpoint extends BaseSegmentEndpoint {
-    
-    // For now, keep the old implementation
-    // MHL
-    protected final SidedPlane circlePlane;
-    
-    /** Pertinent cutoff plane from adjoining segments */
+   
+    /** First circle */
+    protected final SidedPlane circlePlane1;
+    /** Second circle */
+    protected final SidedPlane circlePlane2;
+    /** Notable points for first circle */
+    protected final GeoPoint[] notablePoints1;
+    /** Notable points for second circle */
+    protected final GeoPoint[] notablePoints2;
+    /** Both cutoff planes are included here */
     protected final Membership[] cutoffPlanes;
-    /** Notable points for this segment endpoint */
-    private final GeoPoint[] notablePoints;
-
-    /** Constructor for case (3).
-     * Generate an endpoint for an intersection, given four points.
-     *@param point is the center.
-     *@param prevCutoffPlane is the previous adjoining segment cutoff plane.
-     *@param nextCutoffPlane is the next path segment cutoff plane.
-     *@param notCand2Point is a point NOT on candidate2.
-     *@param notCand1Point is a point NOT on candidate1.
-     *@param notCand3Point is a point NOT on candidate3.
-     *@param notCand4Point is a point NOT on candidate4.
-     *@param candidate1 one of four candidate circle planes.
-     *@param candidate2 one of four candidate circle planes.
-     *@param candidate3 one of four candidate circle planes.
-     *@param candidate4 one of four candidate circle planes.
-     */
+    
     public CutoffDualCircleSegmentEndpoint(final GeoPoint point,
       final SidedPlane prevCutoffPlane, final SidedPlane nextCutoffPlane,
-      final GeoPoint notCand2Point, final GeoPoint notCand1Point,
-      final GeoPoint notCand3Point, final GeoPoint notCand4Point,
-      final SidedPlane candidate1, final SidedPlane candidate2, final SidedPlane candidate3, final SidedPlane candidate4) {
-      // Note: What we really need is a single plane that goes through all four points.
-      // Since that's not possible in the ellipsoid case (because three points determine a plane, not four), we
-      // need an approximation that at least creates a boundary that has no interruptions.
-      // There are three obvious choices for the third point: either (a) one of the two remaining points, or (b) the top or bottom edge
-      // intersection point.  (a) has no guarantee of continuity, while (b) is capable of producing something very far from a circle if
-      // the angle between segments is acute.
-      // The solution is to look for the side (top or bottom) that has an intersection within the shape.  We use the two points from
-      // the opposite side to determine the plane, AND we pick the third to be either of the two points on the intersecting side
-      // PROVIDED that the other point is within the final circle we come up with.
+      final GeoPoint prevURHC, final GeoPoint prevLRHC,
+      final GeoPoint currentULHC, final GeoPoint currentLLHC) {
+      // Initialize superclass
       super(point);
-
-      // We construct four separate planes, and evaluate which one includes all interior points with least overlap
-      // (Constructed beforehand because we need them for degeneracy check)
-
-      final boolean cand1IsOtherWithin = candidate1!=null?candidate1.isWithin(notCand1Point):false;
-      final boolean cand2IsOtherWithin = candidate2!=null?candidate2.isWithin(notCand2Point):false;
-      final boolean cand3IsOtherWithin = candidate3!=null?candidate3.isWithin(notCand3Point):false;
-      final boolean cand4IsOtherWithin = candidate4!=null?candidate4.isWithin(notCand4Point):false;
-      
-      if (cand1IsOtherWithin && cand2IsOtherWithin && cand3IsOtherWithin && cand4IsOtherWithin) {
-        // The only way we should see both within is if all four points are coplanar.  In that case, we default to the simplest treatment.
-        this.circlePlane = candidate1;  // doesn't matter which
-        this.notablePoints = new GeoPoint[]{notCand2Point, notCand3Point, notCand1Point, notCand4Point};
-        this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane), new SidedPlane(nextCutoffPlane)};
-      } else if (cand1IsOtherWithin) {
-        // Use candidate1, and DON'T include prevCutoffPlane in the cutoff planes list
-        this.circlePlane = candidate1;
-        this.notablePoints = new GeoPoint[]{notCand2Point, notCand3Point, notCand4Point};
-        this.cutoffPlanes = new Membership[]{new SidedPlane(nextCutoffPlane)};
-      } else if (cand2IsOtherWithin) {
-        // Use candidate2
-        this.circlePlane = candidate2;
-        this.notablePoints = new GeoPoint[]{notCand3Point, notCand4Point, notCand1Point};
-        this.cutoffPlanes = new Membership[]{new SidedPlane(nextCutoffPlane)};
-      } else if (cand3IsOtherWithin) {
-        circlePlane = candidate3;
-        this.notablePoints = new GeoPoint[]{notCand4Point, notCand1Point, notCand2Point};
-        this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane)};
-      } else if (cand4IsOtherWithin) {
-        this.circlePlane = candidate4;
-        this.notablePoints = new GeoPoint[]{notCand1Point, notCand2Point, notCand3Point};
-        this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane)};
+      // First plane consists of prev endpoints plus one of the current endpoints (the one past the end of the prev segment)
+      if (!prevCutoffPlane.isWithin(currentULHC)) {
+        circlePlane1 = SidedPlane.constructNormalizedThreePointSidedPlane(point, prevURHC, prevLRHC, currentULHC);
+        notablePoints1 = new GeoPoint[]{prevURHC, prevLRHC, currentULHC};
+      } else if (!prevCutoffPlane.isWithin(currentLLHC)) {
+        circlePlane1 = SidedPlane.constructNormalizedThreePointSidedPlane(point, prevURHC, prevLRHC, currentLLHC);
+        notablePoints1 = new GeoPoint[]{prevURHC, prevLRHC, currentLLHC};
       } else {
-        // dunno what happened
-        throw new RuntimeException("Couldn't come up with a plane through three points that included the fourth");
+        throw new IllegalArgumentException("Constructing CutoffDualCircleSegmentEndpoint with colinear segments");
       }
+      // Second plane consists of current endpoints plus one of the prev endpoints (the one past the end of the current segment)
+      if (!nextCutoffPlane.isWithin(prevURHC)) {
+        circlePlane2 = SidedPlane.constructNormalizedThreePointSidedPlane(point, currentULHC, currentLLHC, prevURHC);
+        notablePoints2 = new GeoPoint[]{currentULHC, currentLLHC, prevURHC};
+      } else if (!nextCutoffPlane.isWithin(prevLRHC)) {
+        circlePlane2 = SidedPlane.constructNormalizedThreePointSidedPlane(point, currentULHC, currentLLHC, prevLRHC);
+        notablePoints2 = new GeoPoint[]{currentULHC, currentLLHC, prevLRHC};
+      } else {
+        throw new IllegalArgumentException("Constructing CutoffDualCircleSegmentEndpoint with colinear segments");
+      }        
+      this.cutoffPlanes = new Membership[]{new SidedPlane(prevCutoffPlane), new SidedPlane(nextCutoffPlane)};
     }
 
     @Override
     public boolean isWithin(final Vector point) {
-      if (!circlePlane.isWithin(point)) {
-        return false;
-      }
       for (final Membership m : cutoffPlanes) {
         if (!m.isWithin(point)) {
           return false;
         }
       }
-      return true;
+      return circlePlane1.isWithin(point) || circlePlane2.isWithin(point);
     }
 
     @Override
     public boolean isWithin(final double x, final double y, final double z) {
-      if (!circlePlane.isWithin(x, y, z)) {
-        return false;
-      }
       for (final Membership m : cutoffPlanes) {
         if (!m.isWithin(x,y,z)) {
           return false;
         }
       }
-      return true;
+      return circlePlane1.isWithin(x, y, z) || circlePlane2.isWithin(x, y, z);
     }
 
     @Override
@@ -936,18 +895,21 @@ class GeoStandardPath extends GeoBasePath {
 
     @Override
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
-      return circlePlane.intersects(planetModel, p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
+      return circlePlane1.intersects(planetModel, p, notablePoints, this.notablePoints1, bounds, this.cutoffPlanes) ||
+        circlePlane2.intersects(planetModel, p, notablePoints, this.notablePoints2, bounds, this.cutoffPlanes);
     }
 
     @Override
     public boolean intersects(final GeoShape geoShape) {
-      return geoShape.intersects(circlePlane, this.notablePoints, this.cutoffPlanes);
+      return geoShape.intersects(circlePlane1, this.notablePoints1, this.cutoffPlanes) ||
+       geoShape.intersects(circlePlane2, this.notablePoints2, this.cutoffPlanes);
     }
 
     @Override
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       super.getBounds(planetModel, bounds);
-      bounds.addPlane(planetModel, circlePlane);
+      bounds.addPlane(planetModel, circlePlane1);
+      bounds.addPlane(planetModel, circlePlane2);
     }
 
   }

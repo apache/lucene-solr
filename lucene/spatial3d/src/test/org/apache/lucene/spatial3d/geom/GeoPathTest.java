@@ -402,7 +402,7 @@ public class GeoPathTest extends LuceneTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8696")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8696")
   public void testLUCENE8696() {
     GeoPoint[] points = new GeoPoint[4];
     points[0] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.017453291479645996);
