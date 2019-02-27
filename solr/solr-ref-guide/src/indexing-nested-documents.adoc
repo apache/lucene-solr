@@ -16,7 +16,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr supports indexing nested documents such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents. +
+Solr supports indexing nested documents for creating stronger bonds and relationships between documents,
+to be used for updates and <<searching-nested-documents.adoc#searching-nested-documents,Searching Nested Documents>>. +
+Nested documents in Solr can be used to bind a blog post parent document and comments as child documents
+-- or products as parent documents and sizes, colors, or other variations as child documents. +
 The parent with all children is referred to as a "block" and it explains some of the nomenclature of related features.
 At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
  and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child documents to the result documents.

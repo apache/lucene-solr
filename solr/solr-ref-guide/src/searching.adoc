@@ -10,6 +10,7 @@
   spell-checking, +
   query-re-ranking, +
   transforming-result-documents, +
+  searching-nested-documents, +
   suggester, +
   morelikethis, +
   pagination-of-results, +
@@ -27,8 +28,7 @@
   realtime-get, +
   exporting-result-sets, +
   parallel-sql-interface, +
-  analytics, +
-  searching-nested-documents
+  analytics
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
