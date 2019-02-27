@@ -347,23 +347,32 @@ public abstract class EdgeTree {
 
       Relation r = Relation.CELL_OUTSIDE_QUERY;
       if (minLat <= max) {
-        double dy = lat1;
-        double ey = lat2;
-        double dx = lon1;
-        double ex = lon2;
+        double thisMinLat = StrictMath.min(lat1, lat2);
+        double thisMinLon = StrictMath.min(lon1, lon2);
+        double thisMaxLat = StrictMath.max(lat1, lat2);
+        double thisMaxLon = StrictMath.max(lon1, lon2);
+//        double dy = lat1;
+//        double ey = lat2;
+//        double dx = lon1;
+//        double ex = lon2;
 
         // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
         // if not, don't waste our time trying more complicated stuff
-        boolean outside = (dy < minLat && ey < minLat) ||
-            (dy > maxLat && ey > maxLat) ||
-            (dx < minLon && ex < minLon) ||
-            (dx > maxLon && ex > maxLon);
+        boolean outside = (thisMaxLat < minLat) ||
+            (thisMinLat > maxLat) ||
+            (thisMaxLon < minLon) ||
+            (thisMinLon > maxLon);
 
         if (outside == false) {
-          r = lineRelateLine(ax, ay, bx, by, dx, dy, ex, ey);
+          r = lineRelateLine(ax, ay, bx, by, lon1, lat1, lon2, lat2);
           if (r == Relation.CELL_CROSSES_QUERY) {
             //if crosses then we can return
             return r;
+          } else if (r == Relation.CELL_INSIDE_QUERY) {
+            //We need to check that the given line is fully inside this line
+            if (minLat < thisMinLat || maxLat > thisMaxLat || minLon < thisMinLon || maxLon > thisMaxLon) {
+              return Relation.CELL_CROSSES_QUERY;
+            }
           }
         }
         if (left != null) {
