@@ -142,7 +142,7 @@ public final class Polygon2D extends EdgeTree {
   protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     //short cut, lines and points cannot contain a polygon
     if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return EdgeTree.WithinRelation.DISJOINT;
+      return WithinRelation.DISJOINT;
     }
     // check any holes
     if (holes != null) {
@@ -152,6 +152,10 @@ public final class Polygon2D extends EdgeTree {
       } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
         return WithinRelation.DISJOINT;
       }
+    }
+    //If any ogf the points of the triangle is within then is not within.
+    if (componentContains(ay, ax) || componentContains(by, bx) || componentContains(cy, cx)) {
+      return WithinRelation.NOTWITHIN;
     }
 
     WithinRelation relation = WithinRelation.DISJOINT;
