@@ -73,7 +73,9 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
         boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
