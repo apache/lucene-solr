@@ -17,14 +17,12 @@
 
 package org.apache.solr.cloud.hdfs;
 
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MoveReplicaHDFSTest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -34,8 +32,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
-    MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
