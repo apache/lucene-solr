@@ -368,9 +368,9 @@ public abstract class EdgeTree {
           if (r == Relation.CELL_CROSSES_QUERY) {
             //if crosses then we can return
             return r;
-          } else if (r == Relation.CELL_INSIDE_QUERY) {
-            //We need to check that the given line is fully inside this line
-            if (minLat < thisMinLat || maxLat > thisMaxLat || minLon < thisMinLon || maxLon > thisMaxLon) {
+          } else if (r == Relation.CELL_INSIDE_QUERY && parallel(ax, ay, bx, by, lon1, lat1, lon2, lat2)) {
+            //We need to check that the given line is fully inside this line if they are parallel.
+            if (minLat > thisMinLat || maxLat < thisMaxLat || minLon > thisMinLon || maxLon < thisMaxLon) {
               return Relation.CELL_CROSSES_QUERY;
             }
           }
@@ -394,6 +394,12 @@ public abstract class EdgeTree {
         }
       }
       return r;
+    }
+
+    private static boolean parallel(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
+      int a = orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y);
+      int b = orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y);
+      return a ==0 && b ==0;
     }
 
     /** Returns true if the box crosses any edge in this edge subtree */
