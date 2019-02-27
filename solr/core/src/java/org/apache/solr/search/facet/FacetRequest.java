@@ -1055,8 +1055,8 @@ class FacetRangeParser extends FacetParser<FacetRange> {
 
     facet.field = getString(m, "field", null);
 
-    facet.start = getVal(m, "start", true);
-    facet.end = getVal(m, "end", true);
+    facet.start = getVal(m, "start", false);
+    facet.end = getVal(m, "end", false);
     facet.gap = getVal(m, "gap", false);
     facet.interval = getVal(m, "intervals", false);
     facet.hardend = getBoolean(m, "hardend", facet.hardend);

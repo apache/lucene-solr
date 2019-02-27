@@ -95,8 +95,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   final Calc calc;
   final EnumSet<FacetRangeInclude> include;
   final long effectiveMincount;
-  final Comparable start;
-  final Comparable end;
+  Comparable start;
+  Comparable end;
   String gap = null;
   String interval = null;
 
@@ -124,8 +124,12 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     include = freq.include;
     sf = fcontext.searcher.getSchema().getField(freq.field);
     calc = getCalcForField(sf);
-    start = calc.getValue(freq.start.toString());
-    end = calc.getValue(freq.end.toString());
+    if (freq.start != null) {
+      start = calc.getValue(freq.start.toString());
+    }
+    if (freq.end != null) {
+      end = calc.getValue(freq.end.toString());
+    }
     if (freq.gap != null) {
       gap = freq.gap.toString();
     }
@@ -153,6 +157,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       // phase#1: build list of all buckets and return full facets...
       if (freq.gap != null & freq.interval == null) createRangeList();
       if (freq.gap == null & freq.interval != null) createIntervalRangeList();
+      if (freq.gap != null & freq.interval != null){
+        throw new SolrException
+            (SolrException.ErrorCode.BAD_REQUEST, "Cannot set gap and interval param together");
+      }
       response = getRangeCountsIndexed();
     }
   }
