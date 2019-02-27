@@ -166,6 +166,10 @@ public class Rectangle2D {
     if (this.crossesDateline() == true) {
       throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
     }
+    //short cut, lines and points cannot contain a bbox
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy)) {
+      return EdgeTree.WithinRelation.NOTWITHIN;
+    }
     return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);
   }
 
