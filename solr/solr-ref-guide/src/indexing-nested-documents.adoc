@@ -135,3 +135,15 @@ For the anonymous relationship, note the special `\_childDocuments_` key whose c
 [NOTE]
  In Root-only schemas, these two documents will result in the same docs being indexed (Root-only schemas do not honor nested relationships).
  When queried, child docs will be appended to _childDocuments_ key.
+
+== Updating Nested Documents
+
+Currently Solr supports updating whole hierarchies using atomic updates. Documents should be updated by the Root (top)
+document's ID, and the update should contain all its children. This is needed considering Solr deletes the old hierarchy,
+since the update term is `\_root_:id`. In case some child documents are omitted from the update command,
+said documents will be deleted from the index.
+
+.Updating By a Child Document's ID
+[NOTE]
+ An update by ID to a child document will index a new document with the same ID as the one in the nested hierarchy,
+ yet the new document will not be indexed as a child, but rather as a new document outside of the nested hierarchy.
