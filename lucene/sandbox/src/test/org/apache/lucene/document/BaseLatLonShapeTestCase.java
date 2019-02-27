@@ -67,7 +67,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
   /** name of the LatLonShape indexed field */
   protected static final String FIELD_NAME = "shape";
-  private static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT};
+  private static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS};
 
   protected abstract ShapeType getShapeType();
 

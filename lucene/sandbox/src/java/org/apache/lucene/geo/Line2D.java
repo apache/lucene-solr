@@ -55,6 +55,55 @@ public final class Line2D extends EdgeTree {
 
   @Override
   protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    return WithinRelation.NOTWITHIN;
+    //short cut, lines and points cannot contain a lines??
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
+    if (tree.relateLine(ax, ay, bx, by) == PointValues.Relation.CELL_CROSSES_QUERY) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.relateLine(bx, by, cx, cy) == PointValues.Relation.CELL_CROSSES_QUERY) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.relateLine(cx, cy, ax, ay) == PointValues.Relation.CELL_CROSSES_QUERY) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    //if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+
+    //check that triangle bounding box not inside shape bounding box
+    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+
+    //Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
   }
 }
