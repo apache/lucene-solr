@@ -24,7 +24,6 @@ import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.index.PointValues;
 
 /** random bounding box and polygon query tests for random indexed arrays of {@link Polygon} types */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -48,14 +47,15 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         // if we can't tessellate; then random polygon generator created a malformed shape
         Polygon p = (Polygon) getShapeType().nextShape();
         try {
+          Tessellator.tessellate(p);
           //polygons are disjoint so CONTAINS works. Note that if we intersect
           //any shape then contains return false.
-          if (isDisjoint(polygons, Tessellator.tessellate(p), i)) {
+          if (isDisjoint(polygons, p, i)) {
             polygons[i] = p;
             break;
           }
           repetitions++;
-          if (repetitions > 1000) {
+          if (repetitions > 50) {
             //try again
             return nextShape();
           }
@@ -67,19 +67,17 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     return polygons;
   }
 
-  private boolean isDisjoint(Polygon[] polygons, List<Tessellator.Triangle> triangles, int totalPolygons) {
+  private boolean isDisjoint(Polygon[] polygons, Polygon check, int totalPolygons) {
     if (totalPolygons == 0) {
       return true;
     }
-    Polygon[] currentPolygons = new Polygon[totalPolygons];
-    for (int i = 0; i < totalPolygons; i++) {
-      currentPolygons[i] = polygons[i];
-    }
-    Polygon2D impl = Polygon2D.create(currentPolygons);
-    for (Tessellator.Triangle triangle : triangles) {
-      if (impl.relateTriangle(triangle.getLon(0), triangle.getLat(0),
-          triangle.getLon(1), triangle.getLat(1),
-          triangle.getLon(2), triangle.getLat(2)) != PointValues.Relation.CELL_OUTSIDE_QUERY) {
+    //we use bounding boxes so we do not get polygons with shared points.
+    for (Polygon polygon : polygons) {
+      if (polygon != null) {
+        if (polygon.minLat > check.maxLat || polygon.maxLat < check.minLat
+            || polygon.minLon > check.maxLon || polygon.maxLon < check.minLon) {
+          continue;
+        }
         return false;
       }
     }
