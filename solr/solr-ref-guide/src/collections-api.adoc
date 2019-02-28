@@ -695,10 +695,14 @@ To confirm the creation of the alias, you can look in the Solr Admin UI, under t
 
 Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
 
+// tag::createalias-simple-example[]
+
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
 ----
+
+//end::createalias-simple-example[]
 
 *Output*
 
