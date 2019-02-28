@@ -93,6 +93,7 @@ public class Lang {
         .withFunctionName("sql", SqlStream.class)
         .withFunctionName("plist", ParallelListStream.class)
         .withFunctionName("zplot", ZplotStream.class)
+        .withFunctionName("hashRollup", HashRollupStream.class)
 
 
         // metrics
