@@ -75,10 +75,16 @@ public class MeanMetric extends Metric {
     ++count;
     Object o = tuple.get(columnName);
     if(o instanceof Double) {
-      Double d = (Double)tuple.get(columnName);
+      Double d = (Double) o;
       doubleSum += d;
+    } else if(o instanceof Float) {
+      Float f = (Float) o;
+      doubleSum += f.doubleValue();
+    } else if(o instanceof Integer) {
+      Integer i = (Integer)o;
+      longSum += i.longValue();
     } else {
-      Long l = (Long)tuple.get(columnName);
+      Long l = (Long)o;
       longSum += l;
     }
   }
