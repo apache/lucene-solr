@@ -64,6 +64,8 @@ import org.apache.lucene.util.BitSet;
  * overview. </p>
  *
  * @lucene.experimental
+ *
+ * yipeng 如果要按子查询过滤，子doc中过滤的字段，父节点中不能存在
  */
 public class ToParentBlockJoinQuery extends Query {
 
@@ -210,7 +212,7 @@ public class ToParentBlockJoinQuery extends Query {
       if (childDoc >= parentBits.length() - 1) {
         return doc = NO_MORE_DOCS;
       }
-      return doc = parentBits.nextSetBit(childDoc + 1);
+      return doc = parentBits.nextSetBit(childDoc + 1); //由于parent规定挡在child后面,所以取的是child对应的parent文档 ; 加1为了命中的即使是parent + 1 也会到下一个childDoc
     }
 
     @Override
@@ -254,7 +256,7 @@ public class ToParentBlockJoinQuery extends Query {
     private final Scorer childScorer;
     private final BitSet parentBits;
     private final ScoreMode scoreMode;
-    private final DocIdSetIterator childApproximation;
+    private final DocIdSetIterator childApproximation;  //子查询对应的DocIdSetIterator
     private final TwoPhaseIterator childTwoPhase;
     private final ParentApproximation parentApproximation;
     private final ParentTwoPhase parentTwoPhase;

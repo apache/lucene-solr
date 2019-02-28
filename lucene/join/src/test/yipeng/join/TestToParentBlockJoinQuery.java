@@ -48,14 +48,19 @@ import org.apache.lucene.store.RAMDirectory;
 
 public class TestToParentBlockJoinQuery {
     public static void main(String[] args) throws IOException {
-      FData fData1 = new FData(1, "a", "1");
-      FData fData2 = new FData(2, "f num b", "2");
 
-      CData cData1 = new CData(1, 2, "a", 88);
-
-      CData cData2 = new CData(2, 1, "cdata2", 199);
+      CData cData2 = new CData(2, 1, "b", 199);
 
       CData cData3 = new CData(3, 1, "cdata3", 159);
+
+      FData fData1 = new FData(1, "a", "1");
+
+      CData cData1 = new CData(1, 2, "b", 88);
+
+      FData fData2 = new FData(2, "f num b", "2");
+
+
+
 
       RAMDirectory directory = new RAMDirectory();
       IndexWriterConfig config = new IndexWriterConfig();
