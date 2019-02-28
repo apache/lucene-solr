@@ -206,9 +206,7 @@ public class MultiPhraseQuery extends Query {
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (Term[] terms : termArrays) {
       QueryVisitor sv = v.getSubVisitor(BooleanClause.Occur.SHOULD, this);
-      for (Term term : terms) {
-        sv.consumesTerm(this, term);
-      }
+      sv.consumeTerms(this, terms);
     }
   }
 

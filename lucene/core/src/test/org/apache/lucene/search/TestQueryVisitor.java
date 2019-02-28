@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -38,10 +39,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 public class TestQueryVisitor extends LuceneTestCase {
 
   private static final Query query = new BooleanQuery.Builder()
-      .add(new TermQuery(new Term("field1", "term1")), BooleanClause.Occur.MUST)
+      .add(new TermQuery(new Term("field1", "t1")), BooleanClause.Occur.MUST)
       .add(new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("field1", "term2")), BooleanClause.Occur.SHOULD)
-          .add(new BoostQuery(new TermQuery(new Term("field1", "term3")), 2), BooleanClause.Occur.SHOULD)
+          .add(new TermQuery(new Term("field1", "tm2")), BooleanClause.Occur.SHOULD)
+          .add(new BoostQuery(new TermQuery(new Term("field1", "tm3")), 2), BooleanClause.Occur.SHOULD)
           .build(), BooleanClause.Occur.MUST)
       .add(new BoostQuery(new PhraseQuery.Builder()
           .add(new Term("field1", "term4"))
@@ -61,8 +62,8 @@ public class TestQueryVisitor extends LuceneTestCase {
   public void testExtractTermsEquivalent() {
     Set<Term> terms = new HashSet<>();
     Set<Term> expected = new HashSet<>(Arrays.asList(
-        new Term("field1", "term1"), new Term("field1", "term2"),
-        new Term("field1", "term3"), new Term("field1", "term4"),
+        new Term("field1", "t1"), new Term("field1", "tm2"),
+        new Term("field1", "tm3"), new Term("field1", "term4"),
         new Term("field1", "term5"), new Term("field1", "term6"),
         new Term("field1", "term7"), new Term("field1", "term10")
     ));
@@ -74,8 +75,8 @@ public class TestQueryVisitor extends LuceneTestCase {
     Set<Term> terms = new HashSet<>();
     QueryVisitor visitor = new QueryVisitor() {
       @Override
-      public void consumesTerm(Query query, Term term) {
-        terms.add(term);
+      public void consumeTerms(Query query, Term... ts) {
+        terms.addAll(Arrays.asList(ts));
       }
       @Override
       public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
@@ -83,8 +84,8 @@ public class TestQueryVisitor extends LuceneTestCase {
       }
     };
     Set<Term> expected = new HashSet<>(Arrays.asList(
-        new Term("field1", "term1"), new Term("field1", "term2"),
-        new Term("field1", "term3"), new Term("field1", "term4"),
+        new Term("field1", "t1"), new Term("field1", "tm2"),
+        new Term("field1", "tm3"), new Term("field1", "term4"),
         new Term("field1", "term5"), new Term("field1", "term6"),
         new Term("field1", "term7"), new Term("field1", "term8"),
         new Term("field1", "term10")
@@ -104,8 +105,10 @@ public class TestQueryVisitor extends LuceneTestCase {
     }
 
     @Override
-    public void consumesTerm(Query query, Term term) {
-      termsToBoosts.put(term, boost);
+    public void consumeTerms(Query query, Term... terms) {
+      for (Term term : terms) {
+        termsToBoosts.put(term, boost);
+      }
     }
 
     @Override
@@ -121,9 +124,9 @@ public class TestQueryVisitor extends LuceneTestCase {
     Map<Term, Float> termsToBoosts = new HashMap<>();
     query.visit(new BoostedTermExtractor(1, termsToBoosts));
     Map<Term, Float> expected = new HashMap<>();
-    expected.put(new Term("field1", "term1"), 1f);
-    expected.put(new Term("field1", "term2"), 1f);
-    expected.put(new Term("field1", "term3"), 2f);
+    expected.put(new Term("field1", "t1"), 1f);
+    expected.put(new Term("field1", "tm2"), 1f);
+    expected.put(new Term("field1", "tm3"), 2f);
     expected.put(new Term("field1", "term4"), 3f);
     expected.put(new Term("field1", "term5"), 3f);
     expected.put(new Term("field1", "term6"), 1f);
@@ -132,99 +135,154 @@ public class TestQueryVisitor extends LuceneTestCase {
     assertThat(termsToBoosts, equalTo(expected));
   }
 
-  static class MinimumMatchingTermSetExtractor extends QueryVisitor {
+  static abstract class QueryNode extends QueryVisitor {
 
-    List<MinimumMatchingTermSetExtractor> mustMatchLeaves = new ArrayList<>();
-    List<MinimumMatchingTermSetExtractor> shouldMatchLeaves = new ArrayList<>();
-    Term term;
-    int weight;
+    final List<QueryNode> children = new ArrayList<>();
 
-    @Override
-    public void consumesTerm(Query query, Term term) {
-      this.term = term;
-      this.weight = term.text().length();
-    }
-
-    @Override
-    public void visitLeaf(Query query) {
-      this.term = new Term("", "ANY");
-      this.weight = 100;
-    }
+    abstract int getWeight();
+    abstract void collectTerms(Set<Term> terms);
+    abstract boolean nextTermSet();
 
     @Override
     public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      switch (occur) {
-        case MUST:
-        case FILTER:
-          MinimumMatchingTermSetExtractor must = new MinimumMatchingTermSetExtractor();
-          mustMatchLeaves.add(must);
-          return must;
-        case SHOULD:
-          MinimumMatchingTermSetExtractor should = new MinimumMatchingTermSetExtractor();
-          shouldMatchLeaves.add(should);
-          return should;
+      if (occur == BooleanClause.Occur.MUST || occur == BooleanClause.Occur.FILTER) {
+        QueryNode n = new ConjunctionNode();
+        children.add(n);
+        return n;
       }
-      return QueryVisitor.EMPTY_VISITOR;
-    }
-
-    int getWeight() {
-      if (mustMatchLeaves.size() > 0) {
-        mustMatchLeaves.sort(Comparator.comparingInt(MinimumMatchingTermSetExtractor::getWeight));
-        return mustMatchLeaves.get(0).getWeight();
+      if (occur == BooleanClause.Occur.MUST_NOT) {
+        return QueryVisitor.EMPTY_VISITOR;
       }
-      if (shouldMatchLeaves.size() > 0) {
-        shouldMatchLeaves.sort(Comparator.comparingInt(MinimumMatchingTermSetExtractor::getWeight).reversed());
-        return shouldMatchLeaves.get(0).getWeight();
-      }
-      return weight;
-    }
-
-    void getMatchesTermSet(Set<Term> terms) {
-      if (mustMatchLeaves.size() > 0) {
-        mustMatchLeaves.sort(Comparator.comparingInt(MinimumMatchingTermSetExtractor::getWeight));
-        mustMatchLeaves.get(0).getMatchesTermSet(terms);
-        return;
-      }
-      if (shouldMatchLeaves.size() > 0) {
-        for (MinimumMatchingTermSetExtractor child : shouldMatchLeaves) {
-          child.getMatchesTermSet(terms);
+      if (parent instanceof BooleanQuery) {
+        BooleanQuery bq = (BooleanQuery) parent;
+        if (bq.getClauses(BooleanClause.Occur.MUST).size() > 0 || bq.getClauses(BooleanClause.Occur.FILTER).size() > 0) {
+          return QueryVisitor.EMPTY_VISITOR;
         }
-        return;
       }
+      DisjunctionNode n = new DisjunctionNode();
+      children.add(n);
+      return n;
+    }
+  }
+
+  static class TermNode extends QueryNode {
+
+    final Term term;
+
+    TermNode(Term term) {
+      this.term = term;
+    }
+
+    @Override
+    int getWeight() {
+      return term.text().length();
+    }
+
+    @Override
+    void collectTerms(Set<Term> terms) {
       terms.add(term);
     }
 
-    boolean nextMatchingSet() {
-      if (mustMatchLeaves.size() > 0) {
-        if (mustMatchLeaves.get(0).nextMatchingSet()) {
-          return true;
-        }
-        mustMatchLeaves.remove(0);
-        return shouldMatchLeaves.size() > 0;
+    @Override
+    boolean nextTermSet() {
+      return false;
+    }
+
+    @Override
+    public String toString() {
+      return "TERM(" + term.toString() + ")";
+    }
+  }
+
+  static class ConjunctionNode extends QueryNode {
+
+    @Override
+    int getWeight() {
+      children.sort(Comparator.comparingInt(QueryNode::getWeight));
+      return children.get(0).getWeight();
+    }
+
+    @Override
+    void collectTerms(Set<Term> terms) {
+      children.sort(Comparator.comparingInt(QueryNode::getWeight));
+      children.get(0).collectTerms(terms);
+    }
+
+    @Override
+    boolean nextTermSet() {
+      children.sort(Comparator.comparingInt(QueryNode::getWeight));
+      if (children.get(0).nextTermSet()) {
+        return true;
       }
-      if (shouldMatchLeaves.size() == 0) {
+      if (children.size() == 1) {
         return false;
       }
-      boolean advanced = false;
-      for (MinimumMatchingTermSetExtractor child : shouldMatchLeaves) {
-        advanced |= child.nextMatchingSet();
+      children.remove(0);
+      return true;
+    }
+
+    @Override
+    public void consumeTerms(Query query, Term... terms) {
+      for (Term term : terms) {
+        children.add(new TermNode(term));
       }
-      return advanced;
+    }
+
+    @Override
+    public String toString() {
+      return children.stream().map(QueryNode::toString).collect(Collectors.joining(",", "AND(", ")"));
+    }
+  }
+
+  static class DisjunctionNode extends QueryNode {
+
+    @Override
+    int getWeight() {
+      children.sort(Comparator.comparingInt(QueryNode::getWeight).reversed());
+      return children.get(0).getWeight();
+    }
+
+    @Override
+    void collectTerms(Set<Term> terms) {
+      for (QueryNode child : children) {
+        child.collectTerms(terms);
+      }
+    }
+
+    @Override
+    boolean nextTermSet() {
+      boolean next = false;
+      for (QueryNode child : children) {
+        next |= child.nextTermSet();
+      }
+      return next;
+    }
+
+    @Override
+    public void consumeTerms(Query query, Term... terms) {
+      for (Term term : terms) {
+        children.add(new TermNode(term));
+      }
+    }
+
+    @Override
+    public String toString() {
+      return children.stream().map(QueryNode::toString).collect(Collectors.joining(",", "OR(", ")"));
     }
   }
 
   public void testExtractMatchingTermSet() {
-    MinimumMatchingTermSetExtractor extractor = new MinimumMatchingTermSetExtractor();
+    QueryNode extractor = new ConjunctionNode();
     query.visit(extractor);
     Set<Term> minimumTermSet = new HashSet<>();
-    extractor.getMatchesTermSet(minimumTermSet);
+    extractor.collectTerms(minimumTermSet);
 
-    Set<Term> expected1 = new HashSet<>(Collections.singletonList(new Term("field1", "term1")));
+    Set<Term> expected1 = new HashSet<>(Collections.singletonList(new Term("field1", "t1")));
     assertThat(minimumTermSet, equalTo(expected1));
-    assertTrue(extractor.nextMatchingSet());
-    Set<Term> expected2 = new HashSet<>(Arrays.asList(new Term("field1", "term2"), new Term("field1", "term3")));
+    assertTrue(extractor.nextTermSet());
+    Set<Term> expected2 = new HashSet<>(Arrays.asList(new Term("field1", "tm2"), new Term("field1", "tm3")));
     minimumTermSet.clear();
-    extractor.getMatchesTermSet(minimumTermSet);
+    extractor.collectTerms(minimumTermSet);
     assertThat(minimumTermSet, equalTo(expected2));
   }
 

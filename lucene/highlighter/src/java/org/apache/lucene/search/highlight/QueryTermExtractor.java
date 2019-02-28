@@ -133,9 +133,11 @@ public final class QueryTermExtractor
     }
 
     @Override
-    public void consumesTerm(Query query, Term term) {
-      if (field == null || term.field().equals(field)) {
-        terms.add(new WeightedTerm(boost, term.text()));
+    public void consumeTerms(Query query, Term... terms) {
+      for (Term term : terms) {
+        if (field == null || term.field().equals(field)) {
+          this.terms.add(new WeightedTerm(boost, term.text()));
+        }
       }
     }
 
@@ -146,7 +148,7 @@ public final class QueryTermExtractor
         return new BoostedTermExtractor(field, newboost, terms, includeProhibited);
       }
       if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
-        return null;
+        return QueryVisitor.EMPTY_VISITOR;
       }
       return this;
     }

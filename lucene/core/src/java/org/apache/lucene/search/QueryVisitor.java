@@ -17,6 +17,7 @@
 
 package org.apache.lucene.search;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
@@ -31,10 +32,10 @@ public abstract class QueryVisitor {
   /**
    * Called by leaf queries that match on a specific term
    *
-   * @param query the leaf query
-   * @param term  the term the query will match on
+   * @param query  the leaf query
+   * @param terms  the terms the query will match on
    */
-  public void consumesTerm(Query query, Term term) { }
+  public void consumeTerms(Query query, Term... terms) { }
 
   /**
    * Called by leaf queries that do not match on terms
@@ -66,8 +67,8 @@ public abstract class QueryVisitor {
   public static QueryVisitor termCollector(Set<Term> termSet) {
     return new QueryVisitor() {
       @Override
-      public void consumesTerm(Query query, Term term) {
-        termSet.add(term);
+      public void consumeTerms(Query query, Term... terms) {
+        termSet.addAll(Arrays.asList(terms));
       }
     };
   }

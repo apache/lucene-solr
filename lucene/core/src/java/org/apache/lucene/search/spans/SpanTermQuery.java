@@ -86,7 +86,7 @@ public class SpanTermQuery extends SpanQuery {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    visitor.consumesTerm(this, term);
+    visitor.consumeTerms(this, term);
   }
 
   public class SpanTermWeight extends SpanWeight {

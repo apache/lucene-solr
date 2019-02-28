@@ -487,7 +487,7 @@ public class TermAutomatonQuery extends Query {
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (BytesRef term : termToID.keySet()) {
-      v.consumesTerm(this, new Term(field, term));
+      v.consumeTerms(this, new Term(field, term));
     }
   }
 }

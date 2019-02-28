@@ -285,9 +285,7 @@ public class PhraseQuery extends Query {
   @Override
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    for (Term term : terms) {
-      v.consumesTerm(this, term);
-    }
+    v.consumeTerms(this, terms);
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {

@@ -98,10 +98,10 @@ final class MultiTermHighlighting {
           return;
         }
         if (fq.getMaxEdits() == 0 || fq.getPrefixLength() >= fq.getTerm().text().length()) {
-          consumesTerm(query, fq.getTerm());
+          consumeTerms(query, fq.getTerm());
         }
         else {
-          runAutomata.add(new CharacterRunAutomaton(fq.getAutomaton()){
+          runAutomata.add(new CharacterRunAutomaton(fq.toAutomaton()){
             @Override
             public String toString() {
               return query.toString();

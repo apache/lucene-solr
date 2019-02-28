@@ -134,9 +134,7 @@ public class CommonTermsQuery extends Query {
   @Override
   public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
-    for (Term term : terms) {
-      v.consumesTerm(this, term);
-    }
+    v.consumeTerms(this, terms.toArray(new Term[0]));
   }
 
   protected int calcLowFreqMinimumNumberShouldMatch(int numOptional) {

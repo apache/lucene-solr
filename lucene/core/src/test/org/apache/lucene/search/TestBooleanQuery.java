@@ -773,20 +773,26 @@ public class TestBooleanQuery extends LuceneTestCase {
       public QueryVisitor getSubVisitor(Occur occur, Query parent) {
         switch (occur) {
           case SHOULD:
-            expected = a; break;
+            expected = a;
+            break;
           case MUST:
-            expected = b; break;
+            expected = b;
+            break;
           case FILTER:
-            expected = c; break;
+            expected = c;
+            break;
           case MUST_NOT:
             expected = d;
+            break;
+          default:
+            throw new IllegalStateException();
         }
         return this;
       }
 
       @Override
-      public void consumesTerm(Query query, Term term) {
-        assertEquals(expected, term);
+      public void consumeTerms(Query query, Term... terms) {
+        assertEquals(expected, terms[0]);
       }
     });
   }
