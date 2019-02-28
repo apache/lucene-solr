@@ -135,6 +135,34 @@ public class TestQueryVisitor extends LuceneTestCase {
     assertThat(termsToBoosts, equalTo(expected));
   }
 
+  public void testLeafQueryTypeCounts() {
+    Map<Class<? extends Query>, Integer> queryCounts = new HashMap<>();
+    query.visit(new QueryVisitor() {
+
+      private void countQuery(Query q) {
+        queryCounts.compute(q.getClass(), (query, i) -> {
+          if (i == null) {
+            return 1;
+          }
+          return i + 1;
+        });
+      }
+
+      @Override
+      public void consumeTerms(Query query, Term... terms) {
+        countQuery(query);
+      }
+
+      @Override
+      public void visitLeaf(Query query) {
+        countQuery(query);
+      }
+
+    });
+    assertEquals(4, queryCounts.get(TermQuery.class).intValue());
+    assertEquals(1, queryCounts.get(PhraseQuery.class).intValue());
+  }
+
   static abstract class QueryNode extends QueryVisitor {
 
     final List<QueryNode> children = new ArrayList<>();
