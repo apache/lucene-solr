@@ -41,7 +41,12 @@ public final class HeapPointWriter implements PointWriter {
     this.size = size;
     this.packedBytesLength = packedBytesLength;
     this.scratch = new byte[packedBytesLength];
-    offlinePointValue = new HeapPointReader.HeapPointValue(block, packedBytesLength);
+    if (size > 0) {
+      offlinePointValue = new HeapPointReader.HeapPointValue(block, packedBytesLength);
+    } else {
+      //no values
+      offlinePointValue =  new HeapPointReader.HeapPointValue(block, 0);
+    }
   }
 
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */

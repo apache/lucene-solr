@@ -37,7 +37,12 @@ public final class HeapPointReader implements PointReader {
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
-    this.pointValue = new HeapPointValue(block, packedBytesLength);
+    if (start < end) {
+      this.pointValue = new HeapPointValue(block, packedBytesLength);
+    } else {
+      //no values
+      this.pointValue = new HeapPointValue(block, 0);
+    }
   }
 
   @Override
