@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -41,7 +42,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -551,17 +551,17 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
       Tuple tuple = tuples.get(0);
       assertEquals("Netherlands", tuple.getString("country"));
-      assertTrue(4.3D == tuple.getDouble("max(rating)"));
-      assertTrue(2.2D == tuple.getDouble("min(rating)"));
-      assertTrue(3.6D == tuple.getDouble("avg(rating)"));
-      assertTrue(6D == tuple.getDouble("count(*)"));
+      assertEquals(4.3D , tuple.getDouble("max(rating)") , 0.0001);
+      assertEquals(2.2D , tuple.getDouble("min(rating)"), 0.0001);
+      assertEquals(3.6D, tuple.getDouble("avg(rating)"), 0.0001);
+      assertEquals(6D , tuple.getDouble("count(*)"), 0.0001);
 
       tuple = tuples.get(1);
       assertEquals("United States", tuple.getString("country"));
-      assertTrue(5D == tuple.getDouble("max(rating)"));
-      assertTrue(3D == tuple.getDouble("min(rating)"));
-      assertTrue(3.95D == tuple.getDouble("avg(rating)"));
-      assertTrue(4D == tuple.getDouble("count(*)"));
+      assertEquals(5D , tuple.getDouble("max(rating)"), 0.0001);
+      assertEquals(3D , tuple.getDouble("min(rating)"), 0.0001);
+      assertEquals(3.95D , tuple.getDouble("avg(rating)"),0.0001);
+      assertEquals(4D , tuple.getDouble("count(*)"), 0.0001);
     } finally {
       solrClientCache.close();
     }
@@ -609,9 +609,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     for(double val : values) {
       Tuple t = tuples.get(i);
       double tip = (double)t.get(fieldName);
-      if(tip != val) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
-      }
+      assertEquals("Found value:"+tip+" expecting:"+val, val, tip, 0.00001);
       ++i;
     }
     return true;
