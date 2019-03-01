@@ -231,7 +231,6 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.release(this);
-    System.out.println("Done close " + httpClient.getExecutor().toString());
   }
 
   public boolean isV2ApiRequest(final SolrRequest request) {
