@@ -32,7 +32,7 @@ public final class HeapPointWriter implements PointWriter {
   private int nextWrite;
   private boolean closed;
 
-  private HeapPointReader.HeapPointValue offlinePointValue;
+  private HeapPointReader.HeapPointValue pointValue;
 
 
   public HeapPointWriter(int size, int packedBytesLength) {
@@ -42,18 +42,18 @@ public final class HeapPointWriter implements PointWriter {
     this.packedBytesLength = packedBytesLength;
     this.scratch = new byte[packedBytesLength];
     if (size > 0) {
-      offlinePointValue = new HeapPointReader.HeapPointValue(block, packedBytesLength);
+      pointValue = new HeapPointReader.HeapPointValue(block, packedBytesLength);
     } else {
       //no values
-      offlinePointValue =  new HeapPointReader.HeapPointValue(block, 0);
+      pointValue =  null;
     }
   }
 
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
   public PointValue getPackedValueSlice(int index) {
     assert index < nextWrite : "nextWrite=" + (nextWrite) + " vs index=" + index;
-    offlinePointValue.setValue(index * packedBytesLength, docIDs[index]);
-    return offlinePointValue;
+    pointValue.setValue(index * packedBytesLength, docIDs[index]);
+    return pointValue;
   }
 
   @Override
