@@ -451,7 +451,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     
     Directory dir = applyCreatedVersionMajor(newDirectory());
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     CannedNormSimilarity sim = new CannedNormSimilarity(norms);
     conf.setSimilarity(sim);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
