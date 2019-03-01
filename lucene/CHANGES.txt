@@ -28,6 +28,9 @@ Improvements
   of byte arrays. In addition a new interface PointValue is added to abstract out
   the different formats between offline and on-heap writers. (Ignacio Vera)
 
+* LUCENE-8703: Build point writers in the BKD tree only when they are needed.
+  (Ignacio Vera)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)

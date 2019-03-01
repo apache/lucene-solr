@@ -123,8 +123,8 @@ public class BKDWriter implements Closeable {
 
   protected final FixedBitSet docsSeen;
 
-  private OfflinePointWriter offlinePointWriter;
-  private HeapPointWriter heapPointWriter;
+  private PointWriter pointWriter;
+  private boolean finished;
 
   private IndexOutput tempInput;
   protected final int maxPointsInLeafNode;
@@ -179,9 +179,6 @@ public class BKDWriter implements Closeable {
       throw new IllegalArgumentException("maxMBSortInHeap=" + maxMBSortInHeap + " only allows for maxPointsSortInHeap=" + maxPointsSortInHeap + ", but this is less than maxPointsInLeafNode=" + maxPointsInLeafNode + "; either increase maxMBSortInHeap or decrease maxPointsInLeafNode");
     }
 
-    // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
-    heapPointWriter = new HeapPointWriter(maxPointsSortInHeap, packedBytesLength);
-
     this.maxMBSortInHeap = maxMBSortInHeap;
   }
 
@@ -208,35 +205,27 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  /** If the current segment has too many points then we spill over to temp files / offline sort. */
-  private void spillToOffline() throws IOException {
-
-    // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "spill", 0);
-    tempInput = offlinePointWriter.out;
-    for(int i=0;i<pointCount;i++) {
-      offlinePointWriter.append(heapPointWriter.getPackedValueSlice(i));
+  private void initPointWriter() throws IOException {
+    assert pointWriter == null : "Point writer is already initialized";
+    //total point count is an estimation but the final point count must be equal or lower to that number.
+    if (totalPointCount > maxPointsSortInHeap) {
+      pointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, "spill", 0);
+      tempInput = ((OfflinePointWriter)pointWriter).out;
+    } else {
+      pointWriter = new HeapPointWriter(Math.toIntExact(totalPointCount), packedBytesLength);
     }
-    heapPointWriter = null;
   }
+
 
   public void add(byte[] packedValue, int docID) throws IOException {
     if (packedValue.length != packedBytesLength) {
       throw new IllegalArgumentException("packedValue should be length=" + packedBytesLength + " (got: " + packedValue.length + ")");
     }
-
-    if (pointCount >= maxPointsSortInHeap) {
-      if (offlinePointWriter == null) {
-        spillToOffline();
-      }
-      offlinePointWriter.append(packedValue, docID);
-    } else {
-      // Not too many points added yet, continue using heap:
-      heapPointWriter.append(packedValue, docID);
+    if (pointCount >= totalPointCount) {
+      throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + (pointCount + 1) + " values");
     }
-
-    // TODO: we could specialize for the 1D case:
     if (pointCount == 0) {
+      initPointWriter();
       System.arraycopy(packedValue, 0, minPackedValue, 0, packedIndexBytesLength);
       System.arraycopy(packedValue, 0, maxPackedValue, 0, packedIndexBytesLength);
     } else {
@@ -250,11 +239,8 @@ public class BKDWriter implements Closeable {
         }
       }
     }
-
+    pointWriter.append(packedValue, docID);
     pointCount++;
-    if (pointCount > totalPointCount) {
-      throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount + " values");
-    }
     docsSeen.set(docID);
   }
 
@@ -398,12 +384,12 @@ public class BKDWriter implements Closeable {
     }
 
     // Catch user silliness:
-    if (heapPointWriter == null && tempInput == null) {
+    if (finished == true) {
       throw new IllegalStateException("already finished");
     }
 
     // Mark that we already finished:
-    heapPointWriter = null;
+    finished = true;
 
     long countPerLeaf = pointCount = values.size();
     long innerNodeCount = 1;
@@ -541,12 +527,12 @@ public class BKDWriter implements Closeable {
       }
 
       // Catch user silliness:
-      if (heapPointWriter == null && tempInput == null) {
+      if (finished == true) {
         throw new IllegalStateException("already finished");
       }
 
       // Mark that we already finished:
-      heapPointWriter = null;
+      finished = true;
 
       this.out = out;
 
@@ -739,7 +725,7 @@ public class BKDWriter implements Closeable {
     // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recurse...)
 
     // Catch user silliness:
-    if (heapPointWriter == null && tempInput == null) {
+    if (finished == true) {
       throw new IllegalStateException("already finished");
     }
 
@@ -747,15 +733,15 @@ public class BKDWriter implements Closeable {
       throw new IllegalStateException("must index at least one point");
     }
 
-    BKDRadixSelector.PathSlice points;
-    if (offlinePointWriter != null) {
-      offlinePointWriter.close();
-      points = new BKDRadixSelector.PathSlice(offlinePointWriter, 0, pointCount);
-      tempInput = null;
-    } else {
-      points = new BKDRadixSelector.PathSlice(heapPointWriter, 0, pointCount);
-      heapPointWriter = null;
-    }
+    //mark as finished
+    finished = true;
+
+    pointWriter.close();
+    BKDRadixSelector.PathSlice points = new BKDRadixSelector.PathSlice(pointWriter, 0, pointCount);
+    //clean up pointers
+    tempInput = null;
+    pointWriter = null;
+
 
     long countPerLeaf = pointCount;
     long innerNodeCount = 1;
@@ -1141,6 +1127,7 @@ public class BKDWriter implements Closeable {
 
   @Override
   public void close() throws IOException {
+    finished = true;
     if (tempInput != null) {
       // NOTE: this should only happen on exception, e.g. caller calls close w/o calling finish:
       try {
@@ -1230,8 +1217,6 @@ public class BKDWriter implements Closeable {
   /** Pull a partition back into heap once the point count is low enough while recursing. */
   private HeapPointWriter switchToHeap(PointWriter source) throws IOException {
     int count = Math.toIntExact(source.count());
-    // Not inside the try because we don't want to close it here:
-
     try (PointReader reader = source.getReader(0, source.count());
         HeapPointWriter writer = new HeapPointWriter(count, packedBytesLength)) {
       for(int i=0;i<count;i++) {
@@ -1402,8 +1387,7 @@ public class BKDWriter implements Closeable {
       // least number of unique bytes at commonPrefixLengths[dim], which makes compression more efficient
       HeapPointWriter heapSource;
       if (points.writer instanceof HeapPointWriter == false) {
-        // Adversarial cases can cause this, e.g. very lopsided data, all equal points, such that we started
-        // offline, but then kept splitting only in one dimension, and so never had to rewrite into heap writer
+        // Adversarial cases can cause this, e.g. merging big segments with most of the points deleted
         heapSource = switchToHeap(points.writer);
       } else {
         heapSource = (HeapPointWriter) points.writer;
