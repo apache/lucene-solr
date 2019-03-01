@@ -26,8 +26,10 @@ can have negative consequences for Solr as a system, or for the ability of your 
 
 There is no process in Solr for programmatically reindexing data. When we say "reindex", we mean, literally,
 "index it again". However you got the data into the index the first time, you will run that process again.
+It is strongly recommended that Solr users index their data in a repeatable, consistent way, so that the process can be
+easily repeated when the need for reindexing arises.
 
-Reindexing is recommended during upgrades, so in addition to covering what types of configuration changes should trigger a reindex, this section will also cover strategies for reindexing.
+Reindexing is recommended during major upgrades, so in addition to covering what types of configuration changes should trigger a reindex, this section will also cover strategies for reindexing.
 
 == Changes that Require Reindex
 
@@ -47,6 +49,9 @@ Solr's schema. This is different from most database models where schemas are use
 schema acts like a rulebook for indexing documents by telling Lucene how to interpret the data being sent. Once the
 documents are in Lucene, Solr's schema has no control over the underlying data structure.
 
+In addition to the types of schema changes described in the following sections, changing the schema `version` property
+is equivalent to changing field type properties. This type of change is usually only made during or because of a major upgrade.
+
 ==== Adding or Deleting Fields
 
 If you add or delete a field from Solr's schema, it's strongly recommended to reindex.
@@ -58,7 +63,7 @@ If you want to use the new field for faceting, for example, the new field facet 
 There is a slightly different situation when deleting a field.
 In this case, since simply removing the field from the schema doesn't change anything about the index, the field will still be in the index until the documents are reindexed.
 In fact, Lucene may keep a reference to a deleted field _forever_ (see also https://issues.apache.org/jira/browse/LUCENE-1761[LUCENE-1761]).
-This may only be an issue for your environment if you try to add a field that has the same name a deleted field,
+This may only be an issue for your environment if you try to add a field that has the same name as a deleted field,
 but it can also be an issue for dynamic field rules that are later removed.
 
 ==== Changing Field and Field Type Field Properties
@@ -112,7 +117,7 @@ queries *only* (and you know that you do not need to make corresponding changes 
 === Solrconfig Changes
 
 Only one parameter change to Solr's `solrconfig.xml` requires reindexing. That parameter is the `luceneMatchVersion`,
-which controls the compatibility of Solr with Lucene changes. Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing this value. Usually, however, this is only changed in conjunction with an upgrade.
+which controls the compatibility of Solr with Lucene changes. Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing this value. Usually, however, this is only changed in conjunction with a major upgrade.
 
 However, if you make a change to Solr's <<update-request-processors.adoc#update-request-processors,Update Request Processors>>, it's generally because you want to change something about how _update requests_ (documents) are _processed_ (indexed). In this case, you can decide based on the change if you want to reindex your documents to implement the changes you've made.
 
@@ -121,14 +126,14 @@ plan to reindex your documents to avoid unintended behavior.
 
 == Upgrades
 
-When upgrading, a best practice is to always reindex your data.
+When upgrading between major versions (for example, from a 7.x release to 8.0 or 8.x), a best practice
+is to always reindex your data.
 The reason for this is that subtle changes may occur in default field type definitions or the underlying code.
 
 [NOTE]
 If you have *not* changed your schema as part of an upgrade from one minor release to another (such as, from 7.x
-  to 7.x), you can often get away with reindexing your documents without first deleting your index. However, when
-  upgrading to a major release (such as, 7.x to 8.0), you should plan to reindex your documents because of the chance
-  for big changes that break back-compatibility.
+to 7.x), you can often get away with reindexing your documents without first deleting your index. However, when
+upgrading to a major release, you should plan to reindex your documents because of the likelihood of changes that break back-compatibility.
 
 == Reindexing Strategies
 
