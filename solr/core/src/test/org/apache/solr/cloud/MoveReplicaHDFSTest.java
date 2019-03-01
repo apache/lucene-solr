@@ -16,49 +16,51 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- *
- */
+@Slow
+@Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
-    MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
+@TimeoutSuite(millis = TimeUnits.HOUR)
 public class MoveReplicaHDFSTest extends MoveReplicaTest {
-
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.hdfs.blockcache.enabled", "false");
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
+    System.setProperty("tests.hdfs.numdatanodes", "1");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-
-    ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf1");
-
-    System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    cluster.shutdown(); // need to close before the MiniDFSCluster
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
+      System.setProperty("tests.hdfs.numdatanodes", "1");
+    }
+  }
+
+  @Override
+  protected String getConfigSet() {
+    return "cloud-hdfs";
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
   public void testNormalMove() throws Exception {
     inPlaceMove = false;
     test();
@@ -82,17 +84,5 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
   public void testFailedMove() throws Exception {
     super.testFailedMove();
   }
-
-  public static class ForkJoinThreadsFilter implements ThreadFilter {
-
-    @Override
-    public boolean reject(Thread t) {
-      String name = t.getName();
-      if (name.startsWith("ForkJoinPool.commonPool")) {
-        return true;
-      }
-      return false;
-    }
-  }
-
 }
+

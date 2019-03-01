@@ -147,8 +147,10 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     // can't just use fields.wantsField(String)
     // because that doesn't include extra fields needed by transformers
     final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
-    
-    final SolrDocument out = new SolrDocument();
+
+    final SolrDocument out = ResultContext.READASBYTES.get() == null ?
+        new SolrDocument() :
+        new BinaryResponseWriter.MaskCharSeqSolrDocument();
 
     // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded
     // when it's smaller then the IndexableField[] in the Document -- but that's actually *less* effecient

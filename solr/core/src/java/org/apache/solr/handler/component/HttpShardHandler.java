@@ -16,9 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,18 +33,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -52,13 +54,17 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import static org.apache.solr.handler.component.ShardRequest.PURPOSE_GET_FIELDS;
 
 public class HttpShardHandler extends ShardHandler {
   
@@ -74,11 +80,11 @@ public class HttpShardHandler extends ShardHandler {
   private CompletionService<ShardResponse> completionService;
   private Set<Future<ShardResponse>> pending;
   private Map<String,List<String>> shardToURLs;
-  private HttpClient httpClient;
+  private Http2SolrClient httpClient;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient httpClient) {
     this.httpClient = httpClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     completionService = httpShardHandlerFactory.newCompletionService();
@@ -88,7 +94,6 @@ public class HttpShardHandler extends ShardHandler {
     // This is primarily to keep track of what order we should use to query the replicas of a shard
     // so that we use the same replica for all phases of a distributed request.
     shardToURLs = new HashMap<>();
-
   }
 
 
@@ -131,6 +136,13 @@ public class HttpShardHandler extends ShardHandler {
     return urls;
   }
 
+  private static final BinaryResponseParser READ_STR_AS_CHARSEQ_PARSER = new BinaryResponseParser() {
+    @Override
+    protected JavaBinCodec createCodec() {
+      return new JavaBinCodec(null, stringCache).setReadStringAsCharSeq(true);
+    }
+  };
+
   @Override
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
@@ -154,7 +166,12 @@ public class HttpShardHandler extends ShardHandler {
 
         QueryRequest req = makeQueryRequest(sreq, params, shard);
         req.setMethod(SolrRequest.METHOD.POST);
+        SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+        if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
 
+        if (sreq.purpose == PURPOSE_GET_FIELDS) {
+          req.setResponseParser(READ_STR_AS_CHARSEQ_PARSER);
+        }
         // no need to set the response parser as binary is the default
         // req.setResponseParser(new BinaryResponseParser());
 
@@ -168,11 +185,9 @@ public class HttpShardHandler extends ShardHandler {
         if (urls.size() <= 1) {
           String url = urls.get(0);
           srsp.setShardAddress(url);
-          try (SolrClient client = new Builder(url).withHttpClient(httpClient).build()) {
-            ssr.nl = client.request(req);
-          }
+          ssr.nl = request(url, req);
         } else {
-          LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+          LBSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
           ssr.nl = rsp.getResponse();
           srsp.setShardAddress(rsp.getServer());
         }
@@ -205,6 +220,11 @@ public class HttpShardHandler extends ShardHandler {
       MDC.remove("ShardRequest.shards");
       MDC.remove("ShardRequest.urlList");
     }
+  }
+
+  protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
+    req.setBasePath(url);
+    return httpClient.request(req);
   }
   
   /**
@@ -349,6 +369,13 @@ public class HttpShardHandler extends ShardHandler {
       rb.shards = new String[rb.slices.length];
     }
 
+    HttpShardHandlerFactory.WhitelistHostChecker hostChecker = httpShardHandlerFactory.getWhitelistHostChecker();
+    if (shards != null && zkController == null && hostChecker.isWhitelistHostCheckingEnabled() && !hostChecker.hasExplicitWhitelist()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "HttpShardHandlerFactory "+HttpShardHandlerFactory.INIT_SHARDS_WHITELIST
+          +" not configured but required (in lieu of ZkController and ClusterState) when using the '"+ShardParams.SHARDS+"' parameter."
+          +HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+    }
+
     //
     // Map slices to shards
     //
@@ -372,9 +399,20 @@ public class HttpShardHandler extends ShardHandler {
         if (shortCircuit) {
           rb.isDistrib = false;
           rb.shortCircuitedURL = ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
+          if (hostChecker.isWhitelistHostCheckingEnabled() && hostChecker.hasExplicitWhitelist()) {
+            /*
+             * We only need to check the host whitelist if there is an explicit whitelist (other than all the live nodes)
+             * when the "shards" indicate cluster state elements only
+             */
+            hostChecker.checkWhitelist(clusterState, shards, Arrays.asList(rb.shortCircuitedURL));
+          }
           return;
         }
         // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
+      }
+      
+      if (clusterState == null && zkController != null) {
+        clusterState =  zkController.getClusterState();
       }
 
 
@@ -382,11 +420,11 @@ public class HttpShardHandler extends ShardHandler {
         if (rb.shards[i] != null) {
           final List<String> shardUrls = StrUtils.splitSmart(rb.shards[i], "|", true);
           replicaListTransformer.transform(shardUrls);
+          hostChecker.checkWhitelist(clusterState, shards, shardUrls);
           // And now recreate the | delimited list of equivalent servers
           rb.shards[i] = createSliceShardsStr(shardUrls);
         } else {
-          if (clusterState == null) {
-            clusterState =  zkController.getClusterState();
+          if (slices == null) {
             slices = clusterState.getCollection(cloudDescriptor.getCollectionName()).getSlicesMap();
           }
           String sliceName = rb.slices[i];
@@ -427,6 +465,14 @@ public class HttpShardHandler extends ShardHandler {
 
           final List<String> shardUrls = transformReplicasToShardUrls(replicaListTransformer, eligibleSliceReplicas);
 
+          if (hostChecker.isWhitelistHostCheckingEnabled() && hostChecker.hasExplicitWhitelist()) {
+            /*
+             * We only need to check the host whitelist if there is an explicit whitelist (other than all the live nodes)
+             * when the "shards" indicate cluster state elements only
+             */
+            hostChecker.checkWhitelist(clusterState, shards, shardUrls);
+          }
+
           // And now recreate the | delimited list of equivalent servers
           final String sliceShardsStr = createSliceShardsStr(shardUrls);
           if (sliceShardsStr.isEmpty()) {
@@ -439,6 +485,11 @@ public class HttpShardHandler extends ShardHandler {
           }
           rb.shards[i] = sliceShardsStr;
         }
+      }
+    } else {
+      if (shards != null) {
+        // No cloud, verbatim check of shards
+        hostChecker.checkWhitelist(shards, new ArrayList<>(Arrays.asList(shards.split("[,|]"))));
       }
     }
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);

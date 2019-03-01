@@ -24,11 +24,11 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -44,8 +44,8 @@ import org.junit.Before;
  */
 public class TestMultiLevelSkipList extends LuceneTestCase {
   
-  class CountingRAMDirectory extends MockDirectoryWrapper {
-    public CountingRAMDirectory(Directory delegate) {
+  class CountingDirectory extends MockDirectoryWrapper {
+    public CountingDirectory(Directory delegate) {
       super(random(), delegate);
     }
 
@@ -66,7 +66,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   }
 
   public void testSimpleSkip() throws IOException {
-    Directory dir = new CountingRAMDirectory(new RAMDirectory());
+    Directory dir = new CountingDirectory(new ByteBuffersDirectory());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new PayloadAnalyzer())
                                                 .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat()))
                                                 .setMergePolicy(newLogMergePolicy()));

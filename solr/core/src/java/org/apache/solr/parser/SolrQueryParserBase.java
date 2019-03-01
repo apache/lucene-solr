@@ -44,7 +44,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.QueryBuilder;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -228,9 +227,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     this.defaultField = defaultField;
     setAnalyzer(schema.getQueryAnalyzer());
     // TODO in 8.0(?) remove this.  Prior to 7.2 we defaulted to allowing sub-query parsing by default
+    /*
     if (!parser.getReq().getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0)) {
       setAllowSubQueryParsing(true);
     } // otherwise defaults to false
+     */
   }
 
   // Turn on the "filter" bit and return the previous flags for the caller to save

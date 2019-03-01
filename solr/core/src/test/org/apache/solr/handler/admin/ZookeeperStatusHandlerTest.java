@@ -63,13 +63,13 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     NOTE: We do not currently test with multiple zookeepers, but the only difference is that there are multiple "details" objects and mode is "ensemble"... 
    */
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void monitorZookeeper() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
     GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
     mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(1000, TimeUnit.MILLISECONDS);
+    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
     Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");

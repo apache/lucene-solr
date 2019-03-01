@@ -469,7 +469,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return globalBufferedUpdates.bytesUsed.get();
+    return globalBufferedUpdates.ramBytesUsed();
   }
 
   @Override

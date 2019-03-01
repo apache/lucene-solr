@@ -32,7 +32,7 @@ import java.util.HashMap;
 
 public class TestNamedListCodec  extends LuceneTestCase {
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimple() throws Exception{
 
     NamedList nl = new NamedList();
@@ -96,7 +96,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterator() throws Exception{
     
     NamedList nl = new NamedList();
@@ -137,7 +137,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterable() throws Exception {
     
 
@@ -253,7 +253,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRandom() throws Exception {
     // Random r = random;
     // let's keep it deterministic since just the wrong

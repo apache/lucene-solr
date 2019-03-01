@@ -57,7 +57,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Test

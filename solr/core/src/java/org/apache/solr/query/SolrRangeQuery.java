@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -142,7 +143,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new ConstWeight(searcher, scoreMode.needsScores(), boost);
+    return new ConstWeight(searcher, scoreMode, boost);
     /*
     DocSet docs = createDocSet(searcher.getIndexReader().leaves(), searcher.getIndexReader().maxDoc());
     SolrConstantScoreQuery csq = new SolrConstantScoreQuery( docs.getTopFilter() );
@@ -176,7 +177,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
 
-  private class RangeTermsEnum extends TermsEnum {
+  private class RangeTermsEnum extends BaseTermsEnum {
 
     TermsEnum te;
     BytesRef curr;
@@ -327,17 +328,17 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     private static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
     final IndexSearcher searcher;
-    final boolean needScores;
+    final ScoreMode scoreMode;
     boolean checkedFilterCache;
     Filter filter;
     final SegState[] segStates;
 
 
-    protected ConstWeight(IndexSearcher searcher, boolean needScores, float boost) {
+    protected ConstWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       super( SolrRangeQuery.this, boost );
       this.searcher = searcher;
       this.segStates = new SegState[ searcher.getIndexReader().leaves().size() ];
-      this.needScores = needScores;
+      this.scoreMode = scoreMode;
     }
 
 
@@ -407,7 +408,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           bq.add(new TermQuery(new Term( SolrRangeQuery.this.getField(), t.term), termStates), BooleanClause.Occur.SHOULD);
         }
         Query q = new ConstantScoreQuery(bq.build());
-        final Weight weight = searcher.rewrite(q).createWeight(searcher, needScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES, score());
+        final Weight weight = searcher.rewrite(q).createWeight(searcher, scoreMode, score());
         return segStates[context.ord] = new SegState(weight);
       }
 
@@ -467,7 +468,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (disi == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), disi);
+      return new ConstantScoreScorer(this, score(), scoreMode, disi);
     }
 
     @Override

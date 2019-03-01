@@ -25,11 +25,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
@@ -73,7 +73,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
             return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
           }
         };
-        Directory directory = new SeekCountingDirectory(new RAMDirectory());
+        Directory directory = new SeekCountingDirectory(new ByteBuffersDirectory());
         // note: test explicitly disables payloads
         IndexWriter writer = new IndexWriter(
             directory,

@@ -73,4 +73,13 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   /** Transform the specified input TokenStream */
   public abstract TokenStream create(TokenStream input);
+
+  /**
+   * Normalize the specified input TokenStream
+   * While the default implementation returns input unchanged,
+   * filters that should be applied at normalization time can delegate to {@code create} method.
+   */
+  public TokenStream normalize(TokenStream input) {
+    return input;
+  }
 }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.util.Utils;
@@ -144,6 +145,19 @@ public interface MapWriter extends MapSerializable , NavigableObject {
     default EntryWriter put(CharSequence k, boolean v) throws IOException {
       put(k, (Boolean) v);
       return this;
+    }
+
+    /**This is an optimization to avoid the instanceof checks.
+     *
+     */
+    default EntryWriter put(CharSequence k, CharSequence v) throws IOException {
+      put(k, (Object)v);
+      return this;
+
+    }
+
+    default BiConsumer<CharSequence, Object> getBiConsumer(){
+      return (k, v) -> putNoEx(k,v);
     }
   }
 }

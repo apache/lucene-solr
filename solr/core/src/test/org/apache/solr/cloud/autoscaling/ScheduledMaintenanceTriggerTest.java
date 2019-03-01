@@ -28,15 +28,19 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -50,8 +54,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  *
@@ -84,13 +86,48 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
   }
 
   @Before
-  public void initTest() {
+  public void initTest() throws Exception {
+    // disable .scheduled_maintenance
+    String suspendTriggerCommand = "{" +
+        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
+        "}";
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    String setPropertiesCommand = "{" +
+        "'set-properties' : {" +
+        "'" + AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS + "': 1" +
+        "}" +
+        "}";
+    response = solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, setPropertiesCommand));
+    assertEquals(response.get("result").toString(), "success");
     triggerFired = new CountDownLatch(1);
+  }
+
+  private String addNode() throws Exception {
+    if (cloudManager instanceof SimCloudManager) {
+      return ((SimCloudManager) cloudManager).simAddNode();
+    } else {
+      return cluster.startJettySolrRunner().getNodeName();
+    }
+  }
+
+  private void stopNode(String nodeName) throws Exception {
+    if (cloudManager instanceof SimCloudManager) {
+      ((SimCloudManager) cloudManager).simRemoveNode(nodeName, true);
+    } else {
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        if (jetty.getNodeName().equals(nodeName)) {
+          cluster.stopJettySolrRunner(jetty);
+          break;
+        }
+      }
+    }
   }
 
   @After
   public void restoreDefaults() throws Exception {
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST,
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST,
         "{'set-trigger' : " + AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_DSL + "}");
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
@@ -99,7 +136,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
       String cmd = "{" +
           "'remove-listener' : {'name' : 'foo'}" +
           "}";
-      response = solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, cmd));
+      response = solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, cmd));
       assertEquals(response.get("result").toString(), "success");
     }
   }
@@ -119,9 +156,10 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     log.info(autoScalingConfig.toString());
     AutoScalingConfig.TriggerConfig triggerConfig = autoScalingConfig.getTriggerConfigs().get(AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME);
     assertNotNull(triggerConfig);
-    assertEquals(2, triggerConfig.actions.size());
+    assertEquals(3, triggerConfig.actions.size());
     assertTrue(triggerConfig.actions.get(0).actionClass.endsWith(InactiveShardPlanAction.class.getSimpleName()));
-    assertTrue(triggerConfig.actions.get(1).actionClass.endsWith(ExecutePlanAction.class.getSimpleName()));
+    assertTrue(triggerConfig.actions.get(1).actionClass.endsWith(InactiveMarkersPlanAction.class.getSimpleName()));
+    assertTrue(triggerConfig.actions.get(2).actionClass.endsWith(ExecutePlanAction.class.getSimpleName()));
     AutoScalingConfig.TriggerListenerConfig listenerConfig = autoScalingConfig.getTriggerListenerConfigs().get(AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME + ".system");
     assertNotNull(listenerConfig);
     assertEquals(AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME, listenerConfig.trigger);
@@ -154,14 +192,14 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
     @Override
     public void process(TriggerEvent event, ActionContext context) throws Exception {
-      if (context.getProperties().containsKey("inactive_shard_plan")) {
+      if (context.getProperties().containsKey("inactive_shard_plan") || context.getProperties().containsKey("inactive_markers_plan")) {
         triggerFired.countDown();
       }
     }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void testInactiveShardCleanup() throws Exception {
     String collection1 = getClass().getSimpleName() + "_collection1";
     CollectionAdminRequest.Create create1 = CollectionAdminRequest.createCollection(collection1,
@@ -193,7 +231,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'class' : '" + CapturingTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -202,13 +240,13 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "'name' : '" + AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME + "'," +
         "'event' : 'scheduled'," +
         "'startTime' : 'NOW+10SECONDS'," +
-        "'every' : '+2SECONDS'," +
+        "'every' : '+2SECONDS'," + // must be longer than the cooldown period
         "'enabled' : true," +
         "'actions' : [{'name' : 'inactive_shard_plan', 'class' : 'solr.InactiveShardPlanAction', 'ttl' : '20'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}," +
         "{'name' : 'test', 'class' : '" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -272,5 +310,70 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
 
     CloudTestUtils.clusterShape(2, 1).matches(state.getLiveNodes(), state.getCollection(collection1));
+  }
+
+  public static CountDownLatch getTriggerFired() {
+    return triggerFired;
+  }
+
+  public static class TestTriggerAction2 extends TriggerActionBase {
+
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      getTriggerFired().countDown();
+    }
+  }
+
+
+  @Test
+  public void testInactiveMarkersCleanup() throws Exception {
+    triggerFired = new CountDownLatch(1);
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'trigger1'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor': '1s'" +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{'name' : 'test', 'class' : '" + TestTriggerAction2.class.getName() + "'}]" +
+    "}}";
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : '" + AutoScaling.SCHEDULED_MAINTENANCE_TRIGGER_NAME + "'," +
+        "'event' : 'scheduled'," +
+        "'startTime' : 'NOW+20SECONDS'," +
+        "'every' : '+2SECONDS'," + // must be longer than the cooldown period!!
+        "'enabled' : true," +
+        "'actions' : [{'name' : 'inactive_markers_plan', 'class' : 'solr.InactiveMarkersPlanAction', 'ttl' : '20'}," +
+        "{'name' : 'test', 'class' : '" + TestTriggerAction.class.getName() + "'}]" +
+        "}}";
+
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    cloudManager.getTimeSource().sleep(5000);
+
+    triggerFired = new CountDownLatch(1);
+    String node = addNode();
+
+    boolean await = triggerFired.await(30, TimeUnit.SECONDS);
+    assertTrue("trigger should have fired", await);
+
+    triggerFired = new CountDownLatch(1);
+
+    // should have a marker
+    DistribStateManager stateManager = cloudManager.getDistribStateManager();
+    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node;
+    assertTrue("marker for nodeAdded doesn't exist", stateManager.hasData(nodeAddedPath));
+
+    // wait for the cleanup to fire
+    await = triggerFired.await(90, TimeUnit.SECONDS);
+    assertTrue("cleanup trigger should have fired", await);
+    assertFalse("marker for nodeAdded still exists", stateManager.hasData(nodeAddedPath));
   }
 }

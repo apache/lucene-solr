@@ -16,7 +16,6 @@
  */
 package org.apache.solr.ltr.model;
 
-import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

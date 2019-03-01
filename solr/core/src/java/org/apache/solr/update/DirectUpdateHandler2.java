@@ -42,6 +42,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -319,9 +320,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-      Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
-      if (blockDocs != null) {
-        writer.addDocuments(blockDocs);
+      Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
+      if (nestedDocs != null) {
+        writer.addDocuments(nestedDocs);
       } else {
         writer.addDocument(cmd.getLuceneDocument());
       }
@@ -425,7 +426,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return;
     }
 
-    Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
+    Term deleteTerm = getIdTerm(cmd.getIndexedId(), false);
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
@@ -813,25 +814,23 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
 
-  public static boolean commitOnClose = true;  // TODO: make this a real config option or move it to TestInjection
+  public static volatile boolean commitOnClose = true;  // TODO: make this a real config option or move it to TestInjection
 
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
 
     assert TestInjection.injectNonGracefullClose(core.getCoreContainer());
-    
+
     boolean clearRequestInfo = false;
-    solrCoreState.getCommitLock().lock();
+
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    if (SolrRequestInfo.getRequestInfo() == null) {
+      clearRequestInfo = true;
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp)); // important for debugging
+    }
     try {
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      if (SolrRequestInfo.getRequestInfo() == null) {
-        clearRequestInfo = true;
-        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));  // important for debugging
-      }
-
-
       if (!commitOnClose) {
         if (writer != null) {
           writer.rollback();
@@ -844,58 +843,65 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         return;
       }
 
-      // do a commit before we quit?     
-      boolean tryToCommit = writer != null && ulog != null && ulog.hasUncommittedChanges() && ulog.getState() == UpdateLog.State.ACTIVE;
+      // do a commit before we quit?
+      boolean tryToCommit = writer != null && ulog != null && ulog.hasUncommittedChanges()
+          && ulog.getState() == UpdateLog.State.ACTIVE;
 
+      // be tactical with this lock! closing the updatelog can deadlock when it tries to commit
+      solrCoreState.getCommitLock().lock();
       try {
-        if (tryToCommit) {
-          log.info("Committing on IndexWriter close.");
-          CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
-          cmd.openSearcher = false;
-          cmd.waitSearcher = false;
-          cmd.softCommit = false;
+        try {
+          if (tryToCommit) {
+            log.info("Committing on IndexWriter close.");
+            CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+            cmd.openSearcher = false;
+            cmd.waitSearcher = false;
+            cmd.softCommit = false;
 
-          // TODO: keep other commit callbacks from being called?
-         //  this.commit(cmd);        // too many test failures using this method... is it because of callbacks?
+            // TODO: keep other commit callbacks from being called?
+            // this.commit(cmd); // too many test failures using this method... is it because of callbacks?
 
-          synchronized (solrCoreState.getUpdateLock()) {
-            ulog.preCommit(cmd);
+            synchronized (solrCoreState.getUpdateLock()) {
+              ulog.preCommit(cmd);
+            }
+
+            // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            writer.commit();
+
+            synchronized (solrCoreState.getUpdateLock()) {
+              ulog.postCommit(cmd);
+            }
           }
-
-          // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
-          SolrIndexWriter.setCommitData(writer, cmd.getVersion());
-          writer.commit();
-
-          synchronized (solrCoreState.getUpdateLock()) {
-            ulog.postCommit(cmd);
+        } catch (Throwable th) {
+          log.error("Error in final commit", th);
+          if (th instanceof OutOfMemoryError) {
+            throw (OutOfMemoryError) th;
           }
         }
-      } catch (Throwable th) {
-        log.error("Error in final commit", th);
-        if (th instanceof OutOfMemoryError) {
-          throw (OutOfMemoryError) th;
-        }
-      }
 
-      // we went through the normal process to commit, so we don't have to artificially
-      // cap any ulog files.
-      try {
-        if (ulog != null) ulog.close(false);
-      }  catch (Throwable th) {
-        log.error("Error closing log files", th);
-        if (th instanceof OutOfMemoryError) {
-          throw (OutOfMemoryError) th;
-        }
-      }
+      } finally {
+        solrCoreState.getCommitLock().unlock();
 
-      if (writer != null) {
-        writer.close();
       }
-
     } finally {
-      solrCoreState.getCommitLock().unlock();
       if (clearRequestInfo) SolrRequestInfo.clearRequestInfo();
     }
+    // we went through the normal process to commit, so we don't have to artificially
+    // cap any ulog files.
+    try {
+      if (ulog != null) ulog.close(false);
+    } catch (Throwable th) {
+      log.error("Error closing log files", th);
+      if (th instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) th;
+      }
+    }
+
+    if (writer != null) {
+      writer.close();
+    }
+
   }
 
   @Override
@@ -951,13 +957,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     } else { // more normal path
 
-      Iterable<Document> blockDocs = cmd.getLuceneDocsIfNested();
-      boolean isBlock = blockDocs != null; // AKA nested child docs
-      Term idTerm = new Term(isBlock ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
+      Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
+      boolean isNested = nestedDocs != null; // AKA nested child docs
+      Term idTerm = getIdTerm(cmd.getIndexedId(), isNested);
       Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
-      if (isBlock) {
+      if (isNested) {
         log.debug("updateDocuments({})", cmd);
-        writer.updateDocuments(updateTerm, blockDocs);
+        writer.updateDocuments(updateTerm, nestedDocs);
       } else {
         Document luceneDocument = cmd.getLuceneDocument();
         log.debug("updateDocument({})", cmd);
@@ -975,6 +981,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
+  private Term getIdTerm(BytesRef indexedId, boolean isNested) {
+    boolean useRootId = isNested || core.getLatestSchema().isUsableForChildDocs();
+    return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), indexedId);
+  }
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoBean stuff: Statistics and Module Info

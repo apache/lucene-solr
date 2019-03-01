@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -35,7 +36,6 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -129,7 +129,10 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                  "datedv_m", "2017-06-16T01:00:00Z",
                  "datedv_m", "2017-06-16T02:00:00Z",
                  "datedv_m", "2017-06-16T03:00:00Z",
-                 "datedv_m", "2017-06-16T04:00:00Z"));
+                 "datedv_m", "2017-06-16T04:00:00Z",
+                 "sortabledv_m", "this is some text one_1",
+                 "sortabledv_m", "this is some text two_1",
+                 "sortabledv_m", "this is some text three_1"));
 
     assertU(adoc("id","7",
         "floatdv","2.1",
@@ -166,7 +169,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "int_is_t", "1",
         "int_is_t", "1",
         "int_is_t", "1",
-        "int_is_t", "1"));
+        "int_is_t", "1",
+        "sortabledv", "this is some text_1"));
     assertU(commit());
     assertU(adoc("id","8",
         "floatdv","2.1",
@@ -191,7 +195,11 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "int_is_p", "1",
         "int_is_p", "1",
         "int_is_p", "1",
-        "int_is_p", "1"));
+        "int_is_p", "1",
+        "sortabledv", "this is some text_2",
+        "sortabledv_m", "this is some text one_2",
+        "sortabledv_m", "this is some text two_2",
+        "sortabledv_m", "this is some text three_2"));
     assertU(commit());
 
 
@@ -491,6 +499,24 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     s =  h.query(req("q", "id:8", "qt", "/export", "fl", "stringdv", "sort", "intdv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"stringdv\":\"chello \\\"world\\\"\"}]}}");
+
+    // Test sortable text fields:
+    s =  h.query(req("q", "id:(1 OR 3 OR 8)", "qt", "/export", "fl", "sortabledv_m,sortabledv", "sort", "sortabledv asc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":3,\n" +
+        "    \"docs\":[{\n" +
+        "        \"sortabledv_m\":[\"this is some text one_1\"\n" +
+        "          ,\"this is some text three_1\"\n" +
+        "          ,\"this is some text two_1\"]}\n" +
+        "      ,{\n" +
+        "        \"sortabledv\":\"this is some text_1\"}\n" +
+        "      ,{\n" +
+        "        \"sortabledv_m\":[\"this is some text one_2\"\n" +
+        "          ,\"this is some text three_2\"\n" +
+        "          ,\"this is some text two_2\"],\n" +
+        "        \"sortabledv\":\"this is some text_2\"}]}}");
   }
 
   private void assertJsonEquals(String actual, String expected) {

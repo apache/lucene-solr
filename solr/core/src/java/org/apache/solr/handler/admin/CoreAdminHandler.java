@@ -194,8 +194,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
               removeTask("running", taskObject.taskId);
               if (exceptionCaught) {
                 addTask("failed", taskObject, true);
-              } else
+              } else {
                 addTask("completed", taskObject, true);
+              }
             }
           });
         } finally {
@@ -371,7 +372,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
    * Method to ensure shutting down of the ThreadPool Executor.
    */
   public void shutdown() {
-    if (parallelExecutor != null && !parallelExecutor.isShutdown())
+    if (parallelExecutor != null)
       ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
   }
 

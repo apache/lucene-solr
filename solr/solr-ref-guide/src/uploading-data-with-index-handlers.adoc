@@ -113,7 +113,10 @@ Here are examples of `<commit>` and `<optimize>` using optional attributes:
 
 ==== Delete Operations
 
-Documents can be deleted from the index in two ways. "Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema. "Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
+Documents can be deleted from the index in two ways.
+"Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema.
+It doesn't work for child/nested docs.
+"Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
 
 [source,xml]
 ----
@@ -212,7 +215,7 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,config set>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
 Here is an example XSLT stylesheet:
 
@@ -378,7 +381,7 @@ Or a list of document IDs:
 { "delete":["id1","id2"] }
 ----
 
-The value of a "delete" can be an array which contains a list of zero or more id's to be deleted. It is not a range (start and end).
+Note: Delete-by-id doesn't work for child/nested docs.
 
 You can also specify `\_version_` with each "delete":
 
@@ -568,7 +571,7 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
  ** it may be infeasible to use `required`
  ** even child documents need a unique `id`
  * You must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
- * If you associate a child document as a field (e.g. comment), that field need not be defined in the schema, and probably
+ * If you associate a child document as a field (e.g., comment), that field need not be defined in the schema, and probably
    shouldn't be as it would be confusing.  There is no child document field type.
 
 === XML Examples
@@ -640,4 +643,3 @@ For the anonymous relationship, note the special `\_childDocuments_` key whose c
   }
 ]
 ----
-

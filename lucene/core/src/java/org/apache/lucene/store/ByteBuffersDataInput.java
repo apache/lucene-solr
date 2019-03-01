@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -292,17 +290,17 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (buffers.size() == 1) {
       ByteBuffer cloned = buffers.get(0).asReadOnlyBuffer();
       cloned.position(Math.toIntExact(cloned.position() + offset));
-      cloned.limit(Math.toIntExact(length + cloned.position()));
+      cloned.limit(Math.toIntExact(cloned.position() + length));
       return Arrays.asList(cloned);
     } else {
       long absStart = buffers.get(0).position() + offset;
-      long absEnd = Math.toIntExact(absStart + length);
+      long absEnd = absStart + length;
 
       int blockBytes = ByteBuffersDataInput.determineBlockPage(buffers);
       int blockBits = Integer.numberOfTrailingZeros(blockBytes);
-      int blockMask = (1 << blockBits) - 1;
+      long blockMask = (1L << blockBits) - 1;
 
-      int endOffset = (int) absEnd & blockMask;
+      int endOffset = Math.toIntExact(absEnd & blockMask);
 
       ArrayList<ByteBuffer> cloned = 
         buffers.subList(Math.toIntExact(absStart / blockBytes), 
@@ -315,7 +313,7 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
         cloned.add(ByteBuffer.allocate(0));
       }
 
-      cloned.get(0).position((int) absStart & blockMask);
+      cloned.get(0).position(Math.toIntExact(absStart & blockMask));
       cloned.get(cloned.size() - 1).limit(endOffset);
       return cloned;
     }

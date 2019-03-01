@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -30,6 +29,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.OK;
 import static org.apache.solr.common.params.CommonParams.STATUS;
@@ -38,14 +38,17 @@ import static org.apache.solr.common.params.CommonParams.STATUS;
  * Health Check Handler for reporting the health of a specific node.
  *
  * This checks if the node is:
- * 1. Connected to zookeeper
- * 2. listed in 'live_nodes'.
+ * 1. Cores container is active.
+ * 1. Connected to zookeeper.
+ * 2. Listed in 'live_nodes' in zookeeper.
  */
 public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   CoreContainer coreContainer;
+
+  public HealthCheckHandler() {}
 
   public HealthCheckHandler(final CoreContainer coreContainer) {
     super();
@@ -54,7 +57,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   @Override
   final public void init(NamedList args) {
-
   }
 
   public CoreContainer getCoreContainer() {
@@ -67,8 +69,9 @@ public class HealthCheckHandler extends RequestHandlerBase {
     log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName());
     CoreContainer cores = getCoreContainer();
 
-    if(cores == null) {
-      rsp.setException(new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core container not initialized"));
+    // Core container should not be null and active (redundant check)
+    if(cores == null || cores.isShutDown()) {
+      rsp.setException(new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CoreContainer is either not initialized or shutting down"));
       return;
     }
     if(!cores.isZooKeeperAware()) {
@@ -94,8 +97,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
     }
 
     rsp.setHttpCaching(false);
-
-    return;
   }
 
   @Override
@@ -106,5 +107,10 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }

@@ -23,3 +23,46 @@
 // *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 
 * Due to LIR redesign in SOLR-11702, all users must be on Solr 7.3 or higher to upgrade to Solr 8
+
+* If you explicitly use BM25SimilarityFactory in your schema the absolute scoring will be lower, see SOLR-13025.
+  But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force
+  the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default 
+  SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
+  See also explanation in Reference Guide chapter "Other Schema Elements".
+
+== Solr 8 Upgrade Planning
+
+Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8.
+Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost.
+
+Solr nodes can now listen and serve HTTP/2 and HTTP/1 requests. By default, most of internal requests are sent by using HTTP/2
+therefore Solr 8.0 nodes can't talk to old nodes (7.x).
+
+However we can follow these steps to do rolling updates:
+
+* Do rolling updates as normally, but the Solr 8.0 nodes must start with `-Dsolr.http1=true` as startup parameter.
+  By using this parameter internal requests are sent by using HTTP/1.1
+* When all nodes are upgraded to 8.0, restart them, this time `-Dsolr.http1` parameter should be removed.
+
+== HTTP/2
+
+Until Solr 8, Solr nodes only support HTTP/1 requests. HTTP/1.1 practically allows only one outstanding request
+per TCP connection this means that for sending multiple requests at the same time multiple TCP connections must be
+established. This leads to waste of resources on both-sides and long GC-pause. Solr 8 with HTTP/2 support overcomes that problem by allowing
+multiple requests can be sent in parallel using a same TCP connection.
+However, Java 8 does not include an implementation of ALPN, therefore Solr will start with HTTP/1 only when SSL is enabled.
+
+{solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
+with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
+`HttpSolrClient`] and `ConcurrentUpdateSolrClient` for sending most of internal requests (sent by
+`UpdateShardHandler`, `HttpShardHandler`).
+
+However this leads to several changes in configuration and authentication setup
+
+* {solr-javadocs}/solr-core/org/apache/solr/update/UpdateShardHandler.html[`UpdateShardHandler.maxConnections`] parameter is no longer being used
+* {solr-javadocs}/solr-core/org/apache/solr/handler/component/HttpShardHandler.html[`HttpShardHandlerFactory.maxConnections`] parameter is no longer being used
+*  Custom {solr-javadocs}/solr-core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`] must provide its own setup for
+   `Http2SolrClient` through implementing
+   {solr-javadocs}/solr-core/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`],
+   if not internal requests can't be authenticated
+

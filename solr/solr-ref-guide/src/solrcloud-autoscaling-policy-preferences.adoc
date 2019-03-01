@@ -26,7 +26,11 @@ See the section <<Example: Manual Collection Creation with a Policy>> for an exa
 
 == Cluster Preferences Specification
 
-A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to which to add a replica, Solr can apply the preferences and choose the node with the fewest cores.
+A preference is a hint to Solr on how to sort nodes based on their utilization.
+
+The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node, with a precision of 1.
+Therefore, by default, when selecting a node to which to add a replica, Solr can apply the preferences and choose the node with the fewest cores.
+In the case of a tie in the number of cores, available freedisk will be used to further sort nodes.
 
 More than one preference can be added to break ties. For example, we may choose to use free disk space to break ties if the number of cores on two nodes is the same. The node with the higher free disk space can be chosen as the target of the cluster operation.
 
@@ -153,16 +157,16 @@ The `replica` attribute value can be specified in one of the following forms:
 
 <<Replica Count Constraint,Replica count constraints>> (`"replica":"..."`) and <<Core Count Constraint,core count constraints>> (`"cores":"..."`) allow specification of acceptable counts for replicas (cores tied to a collection) and cores (regardless of the collection to which they belong), respectively.
 
-You can specify one of the following as the value of a `replica` and `cores` policy rule attribute: 
+You can specify one of the following as the value of a `replica` and `cores` policy rule attribute:
 
-* an exact integer (e.g. `2`)
-* an exclusive lower integer bound (e.g. `>0`)
-* an exclusive upper integer bound (e.g. `<3`)
+* an exact integer (e.g., `2`)
+* an exclusive lower integer bound (e.g., `>0`)
+* an exclusive upper integer bound (e.g., `<3`)
 * a decimal value, interpreted as an acceptable range of core counts, from the floor of the value to the ceiling of the value, with the system preferring the rounded value (e.g., `1.6`: `1` or `2` is acceptable, and `2` is preferred)
-* a <<range-operator,range>> of acceptable replica/core counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g. `3-5`)
-* a percentage (e.g. `33%`), which is multiplied at runtime either by the number of <<Replica Selector and Rule Evaluation Context,selected replicas>> (for a `replica` constraint) or the number of cores in the cluster (for a `cores` constraint). This value is then interpreted as described above for a literal decimal value.
+* a <<range-operator,range>> of acceptable replica/core counts, as inclusive lower and upper integer bounds separated by a hyphen (e.g., `3-5`)
+* a percentage (e.g., `33%`), which is multiplied at runtime either by the number of <<Replica Selector and Rule Evaluation Context,selected replicas>> (for a `replica` constraint) or the number of cores in the cluster (for a `cores` constraint). This value is then interpreted as described above for a literal decimal value.
 
-NOTE: Using an exact integer value for count constraints is of limited utility, since collection or cluster changes could quickly invalidate them.  For example, attempting to add a third replica to each shard of a collection on a two-node cluster with policy rule `{"replica":1, "shard":"#EACH", "node":"#ANY"}` would cause a violation, since at least one node would have to host more than one replica. Percentage rules are less brittle.  Rewriting the rule as `{"replica":"50%", "shard":"#EACH", "node":"#ANY"}` eliminates the violation: `50% of 3 replicas = 1.5 replicas per node`, meaning that it's acceptable for a node to host either one or two replicas of each shard. 
+NOTE: Using an exact integer value for count constraints is of limited utility, since collection or cluster changes could quickly invalidate them.  For example, attempting to add a third replica to each shard of a collection on a two-node cluster with policy rule `{"replica":1, "shard":"#EACH", "node":"#ANY"}` would cause a violation, since at least one node would have to host more than one replica. Percentage rules are less brittle.  Rewriting the rule as `{"replica":"50%", "shard":"#EACH", "node":"#ANY"}` eliminates the violation: `50% of 3 replicas = 1.5 replicas per node`, meaning that it's acceptable for a node to host either one or two replicas of each shard.
 
 === Policy Rule Attributes
 
@@ -213,7 +217,7 @@ The port of the node to which the rule should apply.  The <<not-operator,`!` (no
 
 [[freedisk-attribute]]
 `freedisk`::
-The free disk space in gigabytes of the node. This must be a positive 64-bit integer value, or a <<percentage-function,percentage>>. If a percentage is specified, either an upper or lower bound may also be specified using the `<` or `>` operators, respectively, e.g. `>50%`, `<25%`.
+The free disk space in gigabytes of the node. This must be a positive 64-bit integer value, or a <<percentage-function,percentage>>. If a percentage is specified, either an upper or lower bound may also be specified using the `<` or `>` operators, respectively, e.g., `>50%`, `<25%`.
 
 [[host-attribute]]
 `host`::
@@ -277,7 +281,7 @@ This supports values calculated at the time of execution.
 * [[all-function]]`#ALL`: Applies to the <<replica-attribute,`replica` attribute>> only. This means all replicas that meet the rule condition.
 * [[each-function]]`#EACH`: Applies to the <<shard-attribute,`shard` attribute>> (meaning the rule should be evaluated separately for each shard), and to the attributes used to define the buckets for the <<equal-function,#EQUAL function>> (meaning all possible values for the bucket-defining attribute).
 * [[equal-function]]`#EQUAL`: Applies to the <<replica-attribute,`replica`>> and <<cores-attribute,`cores`>> attributes only. This means an equal number of replicas/cores in each bucket. The buckets can be defined using the below attributes with a value that can either be <<each-function,`#EACH`>> or a list specified with the <<array-operator,array operator (`[]`)>>:
-** <<node-attribute,`node`>> \<- <<Rule Types,global rules>>, i.e. those with the <<cores-attribute,`cores` attribute>>, may only specify this attribute
+** <<node-attribute,`node`>> \<- <<Rule Types,global rules>>, i.e., those with the <<cores-attribute,`cores` attribute>>, may only specify this attribute
 ** <<sysprop-attribute,`sysprop.*`>>
 ** <<port-attribute,`port`>>
 ** <<diskType-attribute,`diskType`>>
@@ -413,7 +417,7 @@ To create a new named policy, use the <<solrcloud-autoscaling-api.adoc#create-an
 
 The above CREATE collection command will associate a policy named `policy1` with the collection named `coll1`. Only a single policy may be associated with a collection.
 
-== Example: Manual Collection Creation with a Policy 
+== Example: Manual Collection Creation with a Policy
 
 The starting state for this example is a Solr cluster with 3 nodes: "nodeA", "nodeB", and "nodeC".  An existing 2-shard `FirstCollection` with a `replicationFactor` of 1 has one replica on "nodeB" and one on "nodeC".  The default Autoscaling preferences are in effect:
 
@@ -422,9 +426,9 @@ The starting state for this example is a Solr cluster with 3 nodes: "nodeA", "no
 
 The configured policy rule allows at most 1 core per node:
 
-[source,json]    
+[source,json]
 [ {"cores": "<2", "node": "#ANY"} ]
-    
+
 We now issue a CREATE command for a `SecondCollection` with two shards and a `replicationFactor` of 1:
 
 [source,text]
@@ -433,13 +437,13 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=SecondCollection
 ----
 
 For each of the two replicas to be created, each Solr node is tested, in order from least to most loaded: would all policy rules be satisfied if a replica were placed there using an ADDREPLICA sub-command?
- 
+
 * ADDREPLICA for `shard1`: According to the Autoscaling preferences, the least loaded node is the one with the fewest cores: "nodeA", because it hosts no cores, while the other two nodes each host one core. The test to place a replica here succeeds, because doing so causes no policy violations, since the core count after adding the replica would not exceed the configured maximum of 1.  Because "nodeA" can host the first shard's replica, Solr skips testing of the other two nodes.
 * ADDREPLICA for `shard2`: After placing the `shard1` replica, all nodes would be equally loaded, since each would have one core. The test to place the `shard2` replica fails on each node, because placement would push the node over its maximum core count.  This causes a policy violation.
- 
-Since there is no node that can host a replica for `shard2` without causing a violation, the overall CREATE command fails.  Let's try again after increasing the maximum core count on all nodes to 2: 
 
-[source,json]    
+Since there is no node that can host a replica for `shard2` without causing a violation, the overall CREATE command fails.  Let's try again after increasing the maximum core count on all nodes to 2:
+
+[source,json]
 [ {"cores": "<3", "node": "#ANY"} ]
 
-After re-issuing the `SecondCollection` CREATE command, the replica for `shard1` will be placed on "nodeA": it's least loaded, so is tested first, and no policy violation will result from placement there.  The `shard2` replica could be placed on any of the 3 nodes, since they're all equally loaded, and the chosen node will remain below its maximum core count after placement.  The CREATE command succeeds. 
+After re-issuing the `SecondCollection` CREATE command, the replica for `shard1` will be placed on "nodeA": it's least loaded, so is tested first, and no policy violation will result from placement there.  The `shard2` replica could be placed on any of the 3 nodes, since they're all equally loaded, and the chosen node will remain below its maximum core count after placement.  The CREATE command succeeds.

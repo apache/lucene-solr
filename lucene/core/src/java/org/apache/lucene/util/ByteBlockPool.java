@@ -346,7 +346,7 @@ public final class ByteBlockPool {
   }
   
   /**
-   * Reads bytes bytes out of the pool starting at the given offset with the given  
+   * Reads bytes out of the pool starting at the given offset with the given  
    * length into the given byte array at offset <tt>off</tt>.
    * <p>Note: this method allows to copy across block boundaries.</p>
    */

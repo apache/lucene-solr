@@ -31,8 +31,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.RAMOutputStream;
 
 /** This is a stupid yet functional transaction log: it never fsync's, never prunes, it's over-synchronized, it hard-wires id field name to "docid", can
  *  only handle specific docs/fields used by this test, etc.  It's just barely enough to show how a translog could work on top of NRT
@@ -41,7 +41,7 @@ import org.apache.lucene.store.RAMOutputStream;
 class SimpleTransLog implements Closeable {
 
   final FileChannel channel;
-  final RAMOutputStream buffer = new RAMOutputStream();
+  final ByteBuffersDataOutput buffer = ByteBuffersDataOutput.newResettableInstance();
   final byte[] intBuffer = new byte[4];
   final ByteBuffer intByteBuffer = ByteBuffer.wrap(intBuffer);
 
@@ -59,7 +59,7 @@ class SimpleTransLog implements Closeable {
 
   /** Appends an addDocument op */
   public synchronized long addDocument(String id, Document doc) throws IOException {
-    assert buffer.getFilePointer() == 0;
+    assert buffer.size() == 0;
     buffer.writeByte(OP_ADD_DOCUMENT);
     encode(id, doc);
     return flushBuffer();
@@ -67,7 +67,7 @@ class SimpleTransLog implements Closeable {
 
   /** Appends an updateDocument op */
   public synchronized long updateDocument(String id, Document doc) throws IOException {
-    assert buffer.getFilePointer() == 0;
+    assert buffer.size() == 0;
     buffer.writeByte(OP_UPDATE_DOCUMENT);
     encode(id, doc);
     return flushBuffer();
@@ -75,7 +75,7 @@ class SimpleTransLog implements Closeable {
 
   /** Appends a deleteDocuments op */
   public synchronized long deleteDocuments(String id) throws IOException {
-    assert buffer.getFilePointer() == 0;
+    assert buffer.size() == 0;
     buffer.writeByte(OP_DELETE_DOCUMENTS);
     buffer.writeString(id);
     return flushBuffer();
@@ -84,9 +84,8 @@ class SimpleTransLog implements Closeable {
   /** Writes buffer to the file and returns the start position. */
   private synchronized long flushBuffer() throws IOException {
     long pos = channel.position();
-    int len = (int) buffer.getFilePointer();
-    byte[] bytes = new byte[len];
-    buffer.writeTo(bytes, 0);
+    int len = Math.toIntExact(buffer.size());
+    byte[] bytes = buffer.toArrayCopy();
     buffer.reset();
 
     intBuffer[0] = (byte) (len >> 24);

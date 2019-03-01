@@ -24,9 +24,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
@@ -88,6 +90,16 @@ public class TestIntervalQuery extends LuceneTestCase {
 
   public void testOrderedNearQueryWidth4() throws IOException {
     checkHits(new IntervalQuery(field, Intervals.maxwidth(4, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
+        new int[]{0, 1, 2, 3, 5});
+  }
+
+  public void testOrderedNearQueryGaps1() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.maxgaps(1, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
+        new int[]{0, 1, 2, 5});
+  }
+
+  public void testOrderedNearQueryGaps2() throws IOException {
+    checkHits(new IntervalQuery(field, Intervals.maxgaps(2, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
         new int[]{0, 1, 2, 3, 5});
   }
 
@@ -178,4 +190,59 @@ public class TestIntervalQuery extends LuceneTestCase {
     );
     checkHits(q, new int[]{3});
   }
+
+  public void testDefinedGaps() throws IOException {
+    Query q = new IntervalQuery(field,
+        Intervals.phrase(Intervals.term("w1"), Intervals.extend(Intervals.term("w2"), 1, 0)));
+    checkHits(q, new int[]{ 1, 2, 5 });
+  }
+
+  public void testScoring() throws IOException {
+
+    IntervalsSource source = Intervals.ordered(Intervals.or(Intervals.term("w1"), Intervals.term("w2")), Intervals.term("w3"));
+
+    Query q = new IntervalQuery(field, source);
+    TopDocs td = searcher.search(q, 10);
+    assertEquals(5, td.totalHits.value);
+    assertEquals(1, td.scoreDocs[0].doc);
+    assertEquals(3, td.scoreDocs[1].doc);
+    assertEquals(0, td.scoreDocs[2].doc);
+    assertEquals(5, td.scoreDocs[3].doc);
+    assertEquals(2, td.scoreDocs[4].doc);
+
+    Query boostQ = new BoostQuery(q, 2);
+    TopDocs boostTD = searcher.search(boostQ, 10);
+    assertEquals(5, boostTD.totalHits.value);
+    for (int i = 0; i < 5; i++) {
+      assertEquals(td.scoreDocs[i].score * 2, boostTD.scoreDocs[i].score, 0);
+    }
+
+    // change the pivot - order should remain the same
+    Query q1 = new IntervalQuery(field, source, 2);
+    TopDocs td1 = searcher.search(q1, 10);
+    assertEquals(5, td1.totalHits.value);
+    assertEquals(0.5f, td1.scoreDocs[0].score, 0);  // freq=pivot
+    for (int i = 0; i < 5; i++) {
+      assertEquals(td.scoreDocs[i].doc, td1.scoreDocs[i].doc);
+    }
+
+    // increase the exp, docs higher than pivot should get a higher score, and vice versa
+    Query q2 = new IntervalQuery(field, source, 1.2f, 2f);
+    TopDocs td2 = searcher.search(q2, 10);
+    assertEquals(5, td2.totalHits.value);
+    for (int i = 0; i < 5; i++) {
+      assertEquals(td.scoreDocs[i].doc, td2.scoreDocs[i].doc);
+      if (i < 2) {
+        assertTrue(td.scoreDocs[i].score < td2.scoreDocs[i].score);
+      }
+      else {
+        assertTrue(td.scoreDocs[i].score > td2.scoreDocs[i].score);
+      }
+    }
+
+    // check valid bounds
+    expectThrows(IllegalArgumentException.class, () -> new IntervalQuery(field, source, -1));
+    expectThrows(IllegalArgumentException.class, () -> new IntervalQuery(field, source, 1, -1f));
+  }
+
 }

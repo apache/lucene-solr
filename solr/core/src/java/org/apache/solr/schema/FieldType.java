@@ -62,6 +62,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
@@ -133,6 +134,8 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
+  public boolean isUtf8Field(){return false;}
+
   /**
    * Returns true if the fields' docValues should be used for obtaining stored value
    */
@@ -157,7 +160,14 @@ public abstract class FieldType extends FieldProperties {
 
   }
 
-  // Handle additional arguments...
+  public boolean write(IteratorWriter.ItemWriter itemWriter) {
+    return false;
+  }
+
+  /**
+   * Initializes the field type.  Subclasses should usually override {@link #init(IndexSchema, Map)}
+   * which is called by this method.
+   */
   protected void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);

@@ -38,7 +38,7 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
   protected Directory getDirectory(Path file) throws IOException {
     Directory open;
     if (random().nextBoolean()) {
-      open = new RAMDirectory();
+      open = new ByteBuffersDirectory();
     } else {
       open = FSDirectory.open(file);
     }

@@ -27,25 +27,25 @@ the more advanced DSP functions its useful to develop a deeper intuition of the 
 
 The dot product operation is performed in two steps:
 
-1) Element-by-element multiplication of two vectors which produces a vector of products.
+. Element-by-element multiplication of two vectors which produces a vector of products.
 
-2) Sum the vector of products to produce a scalar result.
+. Sum the vector of products to produce a scalar result.
 
 This simple bit of math has a number of important applications.
 
 === Representing Linear Combinations
 
-The `dotProduct` performs the math of a Linear Combination. A Linear Combination has the following form:
+The `dotProduct` performs the math of a _linear combination_. A linear combination has the following form:
 
 [source,text]
 ----
 (a1*v1)+(a2*v2)...
 ----
 
-In the above example a1 and a2 are random variables that change. v1 and v2 are *constant values*.
+In the above example `a1` and `a2` are random variables that change. `v1` and `v2` are constant values.
 
 When computing the dot product the elements of two vectors are multiplied together and the results are added.
-If the first vector contains random variables and the second vector contains *constant values*
+If the first vector contains random variables and the second vector contains constant values
 then the dot product is performing a linear combination.
 
 This scenario comes up again and again in machine learning. For example both linear and logistic regression
@@ -53,7 +53,7 @@ solve for a vector of constant weights. In order to perform a prediction, a dot 
 between a random observation vector and the constant weight vector. That dot product is a linear combination because
 one of the vectors holds constant weights.
 
-Lets look at simple example of how a linear combination can be used to find the *mean* of a vector of numbers.
+Lets look at simple example of how a linear combination can be used to find the mean of a vector of numbers.
 
 In the example below two arrays are set to variables *`a`* and *`b`* and then operated on by the `dotProduct` function.
 The output of the `dotProduct` function is set to variable *`c`*.
@@ -231,7 +231,7 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 One approach to scaling the dot product is to first scale the vectors so that both vectors have a magnitude of 1. Vectors with a
-magnitude of 1, also called unit vectors, are used when comparing only the angle between vectors rather then the magnitude.
+magnitude of 1, also called unit vectors, are used when comparing only the angle between vectors rather than the magnitude.
 The `unitize` function can be used to unitize the vectors before calculating the dot product.
 
 Notice in the example below the dot product result, set to variable *`e`*, is effectively 1. When applied to unit vectors the dot product
@@ -463,7 +463,7 @@ difference in the formula when representing correlation is that the second vecto
 
 Notice in the example below that the second vector is reversed by the `rev` function before it is operated on by the `conv` function.
 The `conv` function reverses the second vector so it will be flipped back to its original order to perform the correlation calculation
-rather then the convolution calculation.
+rather than the convolution calculation.
 
 Notice in the result the highest value is 217. This is the point where the two vectors have the highest correlation.
 
@@ -734,7 +734,7 @@ the matrix which is a vector containing the real values of the fft response.
 
 The plot of the real values of the `fft` response is shown below. Notice there are two
 peaks on opposite sides of the plot. The plot is actually showing a mirrored response. The right side
-of the plot is an exact mirror of the left side. This is expected when the `fft` is run on real rather then
+of the plot is an exact mirror of the left side. This is expected when the `fft` is run on real rather than
 complex data.
 
 Also notice that the `fft` has accumulated significant power in a single peak. This is the power associated with

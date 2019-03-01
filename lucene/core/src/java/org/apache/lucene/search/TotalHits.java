@@ -35,7 +35,7 @@ public final class TotalHits {
      */
     EQUAL_TO,
     /**
-     * The total hit count is greater than or eual to {@link TotalHits#value}.
+     * The total hit count is greater than or equal to {@link TotalHits#value}.
      */
     GREATER_THAN_OR_EQUAL_TO
   }
@@ -61,6 +61,23 @@ public final class TotalHits {
     }
     this.value = value;
     this.relation = Objects.requireNonNull(relation);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    TotalHits totalHits = (TotalHits) o;
+    return value == totalHits.value && relation == totalHits.relation;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value, relation);
   }
 
   @Override

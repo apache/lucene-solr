@@ -23,5 +23,17 @@
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="id" type="string" indexed="true" stored="true"/>
+
+  <fieldType name="sortabletext" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
   <uniqueKey>id</uniqueKey>
 </schema>

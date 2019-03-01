@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -52,9 +53,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
       server = new ZkTestServer(zkDir);
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      if (makeRoot) AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     }
@@ -109,45 +107,59 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   public void testReconnect() throws Exception {
     String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
     ZkTestServer server = null;
-    SolrZkClient zkClient = null;
-    try {
-      server = new ZkTestServer(zkDir);
-      server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+    server = new ZkTestServer(zkDir);
+    server.run();
+    try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);) {
 
-      final SolrZkClient zkClientConLoss = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-      zkClient = zkClientConLoss;
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath, false, true);
 
-      zkClient.makePath("collections/collection1", false, true);
       int zkServerPort = server.getPort();
       // this tests disconnect state
       server.shutdown();
 
       Thread.sleep(80);
 
+      Thread thread = new Thread() {
+        public void run() {
+          try {
+            zkClient.makePath("collections/collection2", false);
+           // Assert.fail("Server should be down here");
+          } catch (KeeperException | InterruptedException e) {
 
-      expectThrows(KeeperException.class,
-          "Server should be down",
-          () -> zkClientConLoss.makePath("collections/collection2", false)
-      );
+          }
+        }
+      };
+
+      thread.start();
 
       // bring server back up
       server = new ZkTestServer(zkDir, zkServerPort);
-      server.run();
+      server.run(false);
 
       // TODO: can we do better?
       // wait for reconnect
       Thread.sleep(600);
 
-      try {
-        zkClient.makePath("collections/collection3", true);
-      } catch (KeeperException.ConnectionLossException e) {
-        Thread.sleep(5000); // try again in a bit
-        zkClient.makePath("collections/collection3", true);
-      }
+      Thread thread2 = new Thread() {
+        public void run() {
+          try {
+
+            zkClient.makePath("collections/collection3", true);
+
+          } catch (KeeperException e) {
+            throw new RuntimeException(e);
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+
+      thread2.start();
+
+      thread.join();
+      
+      thread2.join();
 
       assertNotNull(zkClient.exists("/collections/collection3", null, true));
       assertNotNull(zkClient.exists("/collections/collection1", null, true));
@@ -179,9 +191,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
     } finally {
 
-      if (zkClient != null) {
-        zkClient.close();
-      }
       if (server != null) {
         server.shutdown();
       }
@@ -195,8 +204,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try {
       server = new ZkTestServer(zkDir);
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       final int timeout = random().nextInt(10000) + 5000;
       

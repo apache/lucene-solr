@@ -22,7 +22,8 @@
 
 The `cartesianProduct` function turns a single tuple with a multi-valued field (i.e., an array) into multiple tuples, one for each value in the array field. That is, given a single tuple containing an array of N values for fieldA, the `cartesianProduct` function will output N tuples, each with one value from the original tuple's array. In essence, you can flatten arrays for further processing.
 
-For example, using `cartesianProduct` you can turn this tuple
+For example, using `cartesianProduct` you can turn this tuple:
+
 [source,text]
 ----
 {
@@ -31,7 +32,8 @@ For example, using `cartesianProduct` you can turn this tuple
 }
 ----
 
-into the following 3 tuples
+into the following 3 tuples:
+
 [source,text]
 ----
 {
@@ -67,7 +69,7 @@ cartesianProduct(
 
 === cartesianProduct Examples
 
-The following examples show different outputs for this source tuple
+The following examples show different outputs for this source tuple:
 
 [source,text]
 ----
@@ -1161,7 +1163,7 @@ rollup(
 )
 ----
 
-The example about shows the rollup function wrapping the search function. Notice that search function is using the `/export` handler to provide the entire result set to the rollup stream. Also notice that the search function's *sort param* matches up with the rollup's `over` parameter. This allows the rollup function to rollup the over the `a_s` field, one group at a time.
+The example about shows the rollup function wrapping the search function. Notice that search function is using the `/export` handler to provide the entire result set to the rollup stream. Also notice that the search function's `sort` parameter matches up with the rollup's `over` parameter. This allows the rollup function to rollup the over the `a_s` field, one group at a time.
 
 == scoreNodes
 

@@ -20,6 +20,8 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -43,6 +45,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertU(adoc("id","3", "shouldbeunstored","foo"));
     assertU(adoc("id","4", "amount_c", "1.50,EUR"));
     assertU(adoc("id","5", "store", "12.434,-134.1"));
+    assertU(adoc("id","6", "pubyear_ii", "123", "store_iis", "12", "price_ff", "1.3"));
     assertU(commit());
   }
 
@@ -111,8 +114,9 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     , h.query(req("q","id:[1 TO 2]", "wt","csv", "csv.header","false", "fl","id,v_ss,foo_s")));
 
     // test SOLR-2970 not returning non-stored fields by default. Compare sorted list
-    assertEquals(sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l\n")
-    , sortHeader(h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0"))));
+    assertEquals(sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l," +
+            "pubyear_ii,store_iis\n"),
+        sortHeader(h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0"))));
 
 
     // now test SolrDocumentList
@@ -229,7 +233,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     //assertions specific to multiple pseudofields functions like abs, div, exists, etc.. (SOLR-5423)
     String funcText = h.query(req("q","*", "wt","csv", "csv.header","true", "fl","XXX:id,YYY:exists(foo_i),exists(shouldbeunstored)"));
     String[] funcLines = funcText.split("\n");
-    assertEquals(6, funcLines.length);
+    assertEquals(7, funcLines.length);
     assertEquals("XXX,YYY,exists(shouldbeunstored)", funcLines[0] );
     assertEquals("1,true,false", funcLines[1] );
     assertEquals("3,false,true", funcLines[3] );
@@ -238,10 +242,47 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     //assertions specific to single function without alias (SOLR-5423)
     String singleFuncText = h.query(req("q","*", "wt","csv", "csv.header","true", "fl","exists(shouldbeunstored),XXX:id"));
     String[] singleFuncLines = singleFuncText.split("\n");
-    assertEquals(6, singleFuncLines.length);
+    assertEquals(7, singleFuncLines.length);
     assertEquals("exists(shouldbeunstored),XXX", singleFuncLines[0] );
     assertEquals("false,1", singleFuncLines[1] );
     assertEquals("true,3", singleFuncLines[3] );
+  }
+
+  @Test
+  public void testForDVEnabledFields() throws Exception {
+    // for dv enabled and useDocValueAsStored=true
+    // returns pubyear_i, store_iis but not price_ff
+    String singleFuncText = h.query(req("q","id:6", "wt","csv", "csv.header","true"));
+    String sortedHeader = sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l," +
+        "pubyear_ii,store_iis");
+    String[] singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals(sortedHeader, sortHeader(singleFuncLines[0]));
+    List<String> actualVal = Arrays.stream(singleFuncLines[1].trim().split(","))
+        .filter(val -> !val.trim().isEmpty() && !val.trim().equals("\"\""))
+        .collect(Collectors.toList());
+    assertEquals(3, actualVal.size());
+    assertTrue(actualVal.containsAll(Arrays.asList("6", "123", "12")));
+
+    // explicit fl=*
+    singleFuncText = h.query(req("q","id:6", "wt","csv", "csv.header","true", "fl", "*"));
+    sortedHeader = sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l," +
+        "pubyear_ii,store_iis");
+    singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals(sortedHeader, sortHeader(singleFuncLines[0]));
+    actualVal = Arrays.stream(singleFuncLines[1].trim().split(","))
+        .filter(val -> !val.trim().isEmpty() && !val.trim().equals("\"\""))
+        .collect(Collectors.toList());
+    assertEquals(3, actualVal.size());
+    assertTrue(actualVal.containsAll(Arrays.asList("6", "123", "12")));
+
+    // explicit price_ff
+    singleFuncText = h.query(req("q","id:6", "wt","csv", "csv.header","true", "fl", "price_ff"));
+    singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals("price_ff", singleFuncLines[0]);
+    assertEquals("1.3", singleFuncLines[1]);
   }
     
 

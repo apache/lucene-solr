@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.client.solrj.SolrClient;
@@ -39,9 +40,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
-    MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@Nightly // test is too long for non nightly
 public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
   private static MiniDFSCluster dfsCluster;
 

@@ -25,51 +25,56 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
-import org.junit.BeforeClass;
+import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static CountDownLatch triggerFiredLatch;
-  private static CountDownLatch listenerEventLatch;
+  private static volatile CountDownLatch triggerFiredLatch;
+  private static volatile CountDownLatch listenerEventLatch;
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
-  private static ZkStateReader zkStateReader;
-  private static ReentrantLock lock = new ReentrantLock();
+  private volatile ZkStateReader zkStateReader;
+  private static final ReentrantLock lock = new ReentrantLock();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     zkStateReader = cluster.getSolrClient().getZkStateReader();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+  }
+  
+  @After
+  public void teardownCluster() throws Exception {
+    shutdownCluster();
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -92,31 +97,58 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         break;
       }
     }
-    // add a node
+    // add a nodes
     JettySolrRunner node = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
     assertEquals(1, listener.addedNodes.size());
-    assertEquals(node.getNodeName(), listener.addedNodes.iterator().next());
+    assertTrue(listener.addedNodes.toString(), listener.addedNodes.contains(node.getNodeName()));
     // verify that a znode doesn't exist (no trigger)
     String pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node.getNodeName();
     assertFalse("Path " + pathAdded + " was created but there are no nodeAdded triggers", zkClient().exists(pathAdded, true));
     listener.reset();
+
     // stop overseer
     log.info("====== KILL OVERSEER 1");
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
-    assertEquals(1, listener.lostNodes.size());
-    assertEquals(overseerLeader, listener.lostNodes.iterator().next());
+
     assertEquals(0, listener.addedNodes.size());
     // wait until the new overseer is up
     Thread.sleep(5000);
-    // verify that a znode does NOT exist - there's no nodeLost trigger,
-    // so the new overseer cleaned up existing nodeLost markers
+    String newOverseerLeader;
+    do {
+      overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+      newOverseerLeader = (String) overSeerStatus.get("leader");
+    } while (newOverseerLeader == null || newOverseerLeader.equals(overseerLeader));
+    
+    assertEquals(1, listener.lostNodes.size());
+    assertEquals(overseerLeader, listener.lostNodes.iterator().next());
+    
+    
     String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
+    
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    try {
+      timeout.waitFor("zk path to go away", () -> {
+        try {
+          return !zkClient().exists(pathLost, true);
+        } catch (KeeperException e) {
+          throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+          return false;
+        }
+      });
+    } catch (TimeoutException e) {
+      // okay
+    }
+
+    // verify that a znode does NOT exist - the new overseer cleaned up existing nodeLost markers
     assertFalse("Path " + pathLost + " exists", zkClient().exists(pathLost, true));
 
     listener.reset();
@@ -133,7 +165,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -145,7 +177,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -157,7 +189,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
         "    \"class\" : \"" + AssertingListener.class.getName()  + "\"\n" +
         "  }\n" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListener);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListener);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -175,6 +207,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     // create another node
     log.info("====== ADD NODE 1");
     JettySolrRunner node1 = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
       fail("onChange listener didn't execute on cluster change");
     }
@@ -187,9 +220,29 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     listenerEventLatch.countDown(); // let the trigger thread continue
 
     assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
-    Thread.sleep(5000);
-    // nodeAdded marker should be consumed now by nodeAdded trigger
-    assertFalse("Path " + pathAdded + " should have been deleted", zkClient().exists(pathAdded, true));
+
+    // kill this node
+    listener.reset();
+    events.clear();
+    triggerFiredLatch = new CountDownLatch(1);
+
+    String node1Name = node1.getNodeName();
+    cluster.stopJettySolrRunner(node1);
+    if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
+      fail("onChange listener didn't execute on cluster change");
+    }
+    assertEquals(1, listener.lostNodes.size());
+    assertEquals(node1Name, listener.lostNodes.iterator().next());
+    // verify that a znode exists
+    String pathLost2 = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + node1Name;
+    assertTrue("Path " + pathLost2 + " wasn't created", zkClient().exists(pathLost2, true));
+
+    listenerEventLatch.countDown(); // let the trigger thread continue
+
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
+
+    // triggers don't remove markers
+    assertTrue("Path " + pathLost2 + " should still exist", zkClient().exists(pathLost2, true));
 
     listener.reset();
     events.clear();
@@ -219,8 +272,8 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
   }
 
   private static class TestLiveNodesListener implements LiveNodesListener {
-    Set<String> lostNodes = new HashSet<>();
-    Set<String> addedNodes = new HashSet<>();
+    Set<String> lostNodes = ConcurrentHashMap.newKeySet();
+    Set<String> addedNodes = ConcurrentHashMap.newKeySet();
     CountDownLatch onChangeLatch = new CountDownLatch(1);
 
     public void reset() {
@@ -230,7 +283,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+    public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
       onChangeLatch.countDown();
       Set<String> old = new HashSet<>(oldLiveNodes);
       old.removeAll(newLiveNodes);
@@ -241,6 +294,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
       if (!newLiveNodes.isEmpty()) {
         addedNodes.addAll(newLiveNodes);
       }
+      return false;
     }
   }
 

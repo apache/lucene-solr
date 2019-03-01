@@ -88,12 +88,13 @@ import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
+import org.apache.lucene.analysis.shingle.FixedShingleFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharsRef;
@@ -129,6 +130,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     // expose inconsistent offsets
     // https://issues.apache.org/jira/browse/LUCENE-4170
     avoidConditionals.add(ShingleFilter.class);
+    avoidConditionals.add(FixedShingleFilter.class);
     // FlattenGraphFilter changes the output graph entirely, so wrapping it in a condition
     // can break position lengths
     avoidConditionals.add(FlattenGraphFilter.class);
@@ -385,7 +387,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         InputStream affixStream = TestHunspellStemFilter.class.getResourceAsStream("simple.aff");
         InputStream dictStream = TestHunspellStemFilter.class.getResourceAsStream("simple.dic");
         try {
-          return new Dictionary(new RAMDirectory(), "dictionary", affixStream, dictStream);
+          return new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, dictStream);
         } catch (Exception ex) {
           Rethrow.rethrow(ex);
           return null; // unreachable code
@@ -590,7 +592,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
   static class MockRandomAnalyzer extends Analyzer {
     final long seed;
-    
+
     MockRandomAnalyzer(long seed) {
       this.seed = seed;
     }

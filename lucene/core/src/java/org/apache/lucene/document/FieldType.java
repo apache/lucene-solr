@@ -17,6 +17,9 @@
 package org.apache.lucene.document;
 
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer; // javadocs
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -41,6 +44,7 @@ public class FieldType implements IndexableFieldType  {
   private int dataDimensionCount;
   private int indexDimensionCount;
   private int dimensionNumBytes;
+  private Map<String, String> attributes;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -58,6 +62,9 @@ public class FieldType implements IndexableFieldType  {
     this.dataDimensionCount = ref.pointDataDimensionCount();
     this.indexDimensionCount = ref.pointIndexDimensionCount();
     this.dimensionNumBytes = ref.pointNumBytes();
+    if (ref.getAttributes() != null) {
+      this.attributes = new HashMap<>(ref.getAttributes());
+    }
     // Do not copy frozen!
   }
   
@@ -339,6 +346,30 @@ public class FieldType implements IndexableFieldType  {
   @Override
   public int pointNumBytes() {
     return dimensionNumBytes;
+  }
+
+  /**
+   * Puts an attribute value.
+   * <p>
+   * This is a key-value mapping for the field that the codec can use
+   * to store additional metadata.
+   * <p>
+   * If a value already exists for the field, it will be replaced with
+   * the new value. This method is not thread-safe, user must not add attributes
+   * while other threads are indexing documents with this field type.
+   *
+   * @lucene.experimental
+   */
+  public String putAttribute(String key, String value) {
+    if (attributes == null) {
+      attributes = new HashMap<>();
+    }
+    return attributes.put(key, value);
+  }
+
+  @Override
+  public Map<String, String> getAttributes() {
+    return attributes;
   }
 
   /** Prints a Field for human consumption. */

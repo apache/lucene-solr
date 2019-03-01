@@ -145,6 +145,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 
   private String addNode() throws Exception {
     JettySolrRunner solr = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     String nodeId = solr.getNodeName();
     if (simulated) {
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simAddNode(nodeId);
@@ -154,7 +155,8 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 
   private String deleteNode() throws Exception {
     String nodeId = cluster.getJettySolrRunner(0).getNodeName();
-    cluster.stopJettySolrRunner(0);
+    JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
+    cluster.waitForJettyToStop(stoppedServer);
     if (simulated) {
       ((SimCloudManager) cloudManager).getSimClusterStateProvider().simRemoveNode(nodeId);
     }

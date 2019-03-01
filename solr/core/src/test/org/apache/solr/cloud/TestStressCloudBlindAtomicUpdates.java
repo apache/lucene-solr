@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
@@ -135,7 +137,10 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      assertNotNull("Cluster contains null jetty?", jetty);
+      final URL baseUrl = jetty.getBaseUrl();
+      assertNotNull("Jetty has null baseUrl: " + jetty.toString(), baseUrl);
+      CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
     }
 
     final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
@@ -154,20 +159,28 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     TestInjection.reset();
     ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
     EXEC_SERVICE = null;
-    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
+    IOUtils.closeQuietly(CLOUD_CLIENT);
+    CLOUD_CLIENT = null;
     for (HttpSolrClient client : CLIENTS) {
-      client.close();
+      if (null == client) {
+        log.error("CLIENTS contains a null SolrClient???");
+      }
+      IOUtils.closeQuietly(client);
     }
     CLIENTS = null;
   }
   
   @Before
   private void clearCloudCollection() throws Exception {
+    TestInjection.reset();
+    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.optimize().getStatus());
-
-    TestInjection.reset();
     
+    assertEquals("Collection should be empty!",
+                 0, CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
+
     final int injectionPercentage = (int)Math.ceil(atLeast(1) / 2);
     testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
   }
@@ -176,17 +189,19 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
    * Assigns {@link #testInjection} to various TestInjection variables.  Calling this 
    * method multiple times in the same method should always result in the same setting being applied 
    * (even if {@link TestInjection#reset} was called in between.
+   *
+   * NOTE: method is currently a No-Op pending SOLR-13189
    */
   private void startTestInjection() {
-    log.info("TestInjection: fail replica, update pause, tlog pauses: " + testInjection);
-    TestInjection.failReplicaRequests = testInjection;
-    TestInjection.updateLogReplayRandomPause = testInjection;
-    TestInjection.updateRandomPause = testInjection;
+    log.info("TODO: TestInjection disabled pending solution to SOLR-13189");
+    //log.info("TestInjection: fail replica, update pause, tlog pauses: " + testInjection);
+    //TestInjection.failReplicaRequests = testInjection;
+    //TestInjection.updateLogReplayRandomPause = testInjection;
+    //TestInjection.updateRandomPause = testInjection;
   }
 
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test_dv() throws Exception {
     String field = "long_dv";
     checkExpectedSchemaField(map("name", field,
@@ -197,8 +212,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     checkField(field);
   }
+  
   @Test
-// 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test_dv_stored() throws Exception {
     String field = "long_dv_stored";
     checkExpectedSchemaField(map("name", field,
@@ -220,7 +235,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     checkField(field);
   }
-  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+
   public void test_dv_idx() throws Exception {
     String field = "long_dv_idx";
     checkExpectedSchemaField(map("name", field,
@@ -464,6 +479,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
+    client.getZkStateReader().forceUpdateCollection(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
                                                         client.getZkStateReader(),
                                                         true, true, 330);

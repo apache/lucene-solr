@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.junit.BeforeClass;
 
@@ -24,10 +23,10 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.client.solrj.impl.BinaryRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 }

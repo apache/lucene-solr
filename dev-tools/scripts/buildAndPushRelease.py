@@ -105,8 +105,8 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  Check DOAP files')
   checkDOAPfiles(version)
 
-  print('  ant clean test validate documentation-lint')
-  run('ant clean test validate documentation-lint')
+  print('  ant -Dtests.badapples=false clean test validate documentation-lint')
+  run('ant -Dtests.badapples=false clean test validate documentation-lint')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
@@ -314,7 +314,7 @@ def check_key_in_keys(gpgKeyID, local_keys):
       gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
                        (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
                        gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
-      re_to_match = r"^pub .*\n\s+%s" % gpgKeyID40Char
+      re_to_match = r"^pub .*\n\s+(%s|%s)" % (gpgKeyID40Char, gpgKeyID)
     else:
       print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
       exit(2)

@@ -45,8 +45,9 @@ def invalidPatterns = [
   (~$/\$$Id\b/$) : 'svn keyword',
   (~$/\$$Header\b/$) : 'svn keyword',
   (~$/\$$Source\b/$) : 'svn keyword',
-  (~$/^\uFEFF/$) : 'UTF-8 byte order mark'
-];
+  (~$/^\uFEFF/$) : 'UTF-8 byte order mark',
+  (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
+]
 
 def baseDir = properties['basedir'];
 def baseDirLen = baseDir.length() + 1;
@@ -148,6 +149,7 @@ ant.fileScanner{
     exclude(name: 'lucene/benchmark/temp/**')
     exclude(name: '**/CheckLoggingConfiguration.java')
     exclude(name: 'lucene/tools/src/groovy/check-source-patterns.groovy') // ourselves :-)
+    exclude(name: 'solr/core/src/test/org/apache/hadoop/**')
   }
 }.each{ f ->
   task.log('Scanning file: ' + f, Project.MSG_VERBOSE);

@@ -20,8 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.Exception;
-import java.lang.RuntimeException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;

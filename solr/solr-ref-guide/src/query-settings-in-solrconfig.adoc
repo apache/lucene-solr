@@ -126,9 +126,11 @@ If you want auto-warming of your cache, include a `regenerator` attribute with t
 
 This sets the maximum number of clauses allowed in a boolean query. This can affect range or prefix queries that expand to a query with a large number of boolean terms. If this limit is exceeded, an exception is thrown.
 
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property where present.  This provides an easy way for users to change this value in all collections without needing to search through and update all of their configs.
+
 [source,xml]
 ----
-<maxBooleanClauses>1024</maxBooleanClauses>
+<maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
 
 [WARNING]
@@ -198,7 +200,7 @@ Good query selection is key with this type of listener. It's best to choose your
 
 There are two types of events that can trigger a listener. A `firstSearcher` event occurs when a new searcher is being prepared but there is no current registered searcher to handle requests or to gain auto-warming data from (i.e., on Solr startup). A `newSearcher` event is fired whenever a new searcher is being prepared and there is a current searcher handling requests.
 
-The (commented out) examples below can be found in the `solrconfig.xml` file of the `sample_techproducts_configs` <<config-sets.adoc#config-sets,config set>>included with Solr, and demonstrate using the `solr.QuerySenderListener` class to warm a set of explicit queries:
+The (commented out) examples below can be found in the `solrconfig.xml` file of the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> included with Solr, and demonstrate using the `solr.QuerySenderListener` class to warm a set of explicit queries:
 
 [source,xml]
 ----

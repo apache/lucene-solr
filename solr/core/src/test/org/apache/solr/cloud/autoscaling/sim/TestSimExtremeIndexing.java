@@ -19,14 +19,15 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -35,13 +36,14 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
+import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  *
@@ -73,8 +75,8 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
   private static TimeSource timeSource;
   private static SolrClient solrClient;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
     timeSource = cluster.getTimeSource();
     solrClient = cluster.simGetSolrClient();
@@ -85,6 +87,11 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
   public static void tearDownCluster() throws Exception {
     solrClient = null;
   }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
+  }
 
   @Test
   public void testScaleUp() throws Exception {
@@ -92,7 +99,8 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(10);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cluster, "failed to create " + collectionName, collectionName,
+    
+    CloudTestUtils.waitForState(cluster, collectionName, 90, TimeUnit.SECONDS,
         CloudTestUtils.clusterShape(2, 2, false, true));
 
     //long waitForSeconds = 3 + random().nextInt(5);
@@ -108,9 +116,11 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
         "'actions' : [{'name' : 'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name' : 'execute_plan', 'class' : '" + ExecutePlanAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     long batchSize = BATCH_SIZE;
     for (long i = 0; i < NUM_BATCHES; i++) {

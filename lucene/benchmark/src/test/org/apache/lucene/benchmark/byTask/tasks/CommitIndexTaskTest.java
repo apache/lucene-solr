@@ -32,7 +32,7 @@ public class CommitIndexTaskTest extends BenchmarkTestCase {
     Properties props = new Properties();
     props.setProperty("writer.version", Version.LATEST.toString());
     props.setProperty("print.props", "false"); // don't print anything
-    props.setProperty("directory", "RAMDirectory");
+    props.setProperty("directory", "ByteBuffersDirectory");
     Config config = new Config(props);
     return new PerfRunData(config);
   }

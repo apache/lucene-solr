@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -76,7 +77,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(collection, "config", 1, 2)
         .process(cluster.getSolrClient());
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+    cluster.waitForActiveCollection(collection, 1, 2);
     try {
       List<String> addedIds = new ArrayList<>();
       Replica oldLeader = corruptLeader(collection, addedIds);
@@ -132,7 +133,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
           try {
             mockDir.corruptFiles(Collections.singleton(file));
-          } catch (RuntimeException | FileNotFoundException e) {
+          } catch (RuntimeException | FileNotFoundException | NoSuchFileException e) {
             // merges can lead to this exception
           }
         }
@@ -167,7 +168,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(collection, "config", 1, numReplicas)
         .process(cluster.getSolrClient());
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+    cluster.waitForActiveCollection(collection, 1, numReplicas);
 
     try {
       JettySolrRunner otherReplicaJetty = null;
@@ -176,6 +177,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard));
         log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
         otherReplicaJetty.stop();
+        cluster.waitForJettyToStop(otherReplicaJetty);
         waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
       }
 
@@ -183,9 +185,9 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
       if (otherReplicaJetty != null) {
         otherReplicaJetty.start();
+        cluster.waitForNode(otherReplicaJetty, 30);
       }
-      //TODO better way to test this
-      Thread.sleep(2000);
+
       Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
       assertEquals(leader.getName(), oldLeader.getName());
     } finally {

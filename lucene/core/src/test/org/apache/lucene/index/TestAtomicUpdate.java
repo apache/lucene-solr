@@ -163,19 +163,16 @@ public class TestAtomicUpdate extends LuceneTestCase {
     //System.out.println("Searcher 2: " + searcherThread2.count + " searchers created");
   }
 
-  /*
-    Run above stress test against RAMDirectory and then
-    FSDirectory.
-  */
+  /* */
   public void testAtomicUpdates() throws Exception {
     Directory directory;
 
-    // First in a RAM directory:
-    directory = new MockDirectoryWrapper(random(), new RAMDirectory());
+    // run against a random directory.
+    directory = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     runTest(directory);
     directory.close();
 
-    // Second in an FSDirectory:
+    // then against an FSDirectory.
     Path dirPath = createTempDir("lucene.test.atomic");
     directory = newFSDirectory(dirPath);
     runTest(directory);

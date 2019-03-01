@@ -52,7 +52,7 @@ final class WANDScorer extends Scorer {
    */
   static int scalingFactor(float f) {
     if (f < 0) {
-      throw new IllegalArgumentException("");
+      throw new IllegalArgumentException("Scores must be positive or null");
     } else if (f == 0) {
       return scalingFactor(Float.MIN_VALUE) - 1;
     } else if (Float.isInfinite(f)) {
@@ -76,14 +76,18 @@ final class WANDScorer extends Scorer {
     assert Float.isNaN(maxScore) == false;
     assert maxScore >= 0;
 
-    if (Float.isInfinite(maxScore)) {
-      return (1L << 32) - 1; // means +Infinity in practice for this scorer
-    }
-
     // NOTE: because doubles have more amplitude than floats for the
     // exponent, the scalb call produces an accurate value.
     double scaled = Math.scalb((double) maxScore, scalingFactor);
-    assert scaled <= 1 << 16 : scaled + " " + maxScore; // regular values of max_score go into 0..2^16
+
+    if (scaled > 1 << 16) {
+      // This happens if either maxScore is +Infty, or we have a scorer that
+      // returned +Infty as its maximum score over the whole range of doc IDs
+      // when computing the scaling factor in the constructor, and now returned
+      // a finite maximum score for a smaller range of doc IDs.
+      return (1L << 32) - 1; // means +Infinity in practice for this scorer
+    }
+
     return (long) Math.ceil(scaled); // round up, cast is accurate since value is <= 2^16
   }
 

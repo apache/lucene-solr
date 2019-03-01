@@ -23,6 +23,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -58,13 +60,16 @@ public class SplitShardTest extends SolrCloudTestCase {
         .createCollection(COLLECTION_NAME, "conf", 2, 1)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+    
     CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setNumSubShards(5)
         .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
     waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
             cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
-        COLLECTION_NAME, activeClusterShape(6, 1));
+        COLLECTION_NAME, activeClusterShape(6, 7));
 
     try {
       splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard2").setNumSubShards(10);
@@ -97,6 +102,35 @@ public class SplitShardTest extends SolrCloudTestCase {
       expectedException = true;
     }
     assertTrue("Expected SolrException but it didn't happen", expectedException);
+  }
+
+  @Test
+  public void testSplitFuzz() throws Exception {
+    String collectionName = "splitFuzzCollection";
+    CollectionAdminRequest
+        .createCollection(collectionName, "conf", 2, 1)
+        .setMaxShardsPerNode(100)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 2, 2);
+
+    CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
+        .setSplitFuzz(0.5f)
+        .setShardName("shard1");
+    splitShard.process(cluster.getSolrClient());
+    waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
+            cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size(),
+        collectionName, activeClusterShape(3, 4));
+    DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    Slice s1_0 = coll.getSlice("shard1_0");
+    Slice s1_1 = coll.getSlice("shard1_1");
+    long fuzz = ((long)Integer.MAX_VALUE >> 3) + 1L;
+    long delta0 = s1_0.getRange().max - s1_0.getRange().min;
+    long delta1 = s1_1.getRange().max - s1_1.getRange().min;
+    long expected0 = (Integer.MAX_VALUE >> 1) + fuzz;
+    long expected1 = (Integer.MAX_VALUE >> 1) - fuzz;
+    assertEquals("wrong range in s1_0", expected0, delta0);
+    assertEquals("wrong range in s1_1", expected1, delta1);
   }
 
 }

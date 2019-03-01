@@ -48,16 +48,29 @@ public abstract class IntervalIterator extends DocIdSetIterator {
   /**
    * The start of the current interval
    *
-   * Returns -1 if {@link #nextInterval()} has not yet been called
+   * Returns -1 if {@link #nextInterval()} has not yet been called and {@link #NO_MORE_INTERVALS}
+   * once the iterator is exhausted.
    */
   public abstract int start();
 
   /**
    * The end of the current interval
    *
-   * Returns -1 if {@link #nextInterval()} has not yet been called
+   * Returns -1 if {@link #nextInterval()} has not yet been called and {@link #NO_MORE_INTERVALS}
+   * once the iterator is exhausted.
    */
   public abstract int end();
+
+  /**
+   * The number of gaps within the current interval
+   *
+   * Note that this returns the number of gaps between the immediate sub-intervals
+   * of this interval, and does not include the gaps inside those sub-intervals.
+   *
+   * Should not be called before {@link #nextInterval()}, or after it has returned
+   * {@link #NO_MORE_INTERVALS}
+   */
+  public abstract int gaps();
 
   /**
    * Advance the iterator to the next interval

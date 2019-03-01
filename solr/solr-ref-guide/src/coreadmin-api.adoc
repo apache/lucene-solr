@@ -60,7 +60,7 @@ Your CREATE call must be able to find a configuration, or it will not succeed.
 
 When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the config requirement. There is something to note, though – if you're running SolrCloud, you should *NOT* be using the CoreAdmin API at all. Use the <<collections-api.adoc#collections-api,Collections API>>.
 
-When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the configSet parameter as documented below. If there are no config sets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
+When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the configSet parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
 
 The config and schema filenames can be specified with the `config` and `schema` parameters, but these are expert options. One thing you could do to avoid creating the `conf` directory is use `config` and `schema` parameters that point at absolute paths, but this can lead to confusing configurations unless you fully understand what you are doing.
 ====
@@ -235,7 +235,7 @@ Multi-valued, directories that would be merged.
 Multi-valued, source cores that would be merged.
 
 `async`::
-Request ID to track this action which will be processed asynchronously
+Request ID to track this action which will be processed asynchronously.
 
 
 [[coreadmin-split]]

@@ -128,6 +128,18 @@ Threads:: Return info on all JVM threads.
 v2: `api/node/threads` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
+Health:: Reporting the health of the node (_available only in SolrCloud mode_)
++
+[cols="3*.",frame=none,grid=cols,options="header"]
+|===
+|API Endpoints |Class & Javadocs |Paramset
+|v1: `solr/admin/info/health`
+
+v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |`_ADMIN_HEALTH`
+|===
+
+This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/health` or `solr/<core>/admin/health`).
+
 === Analysis Handlers
 
 [horizontal]
@@ -302,7 +314,7 @@ Custom JSON Updates:: Add and update custom JSON-formatted documents.
 
 You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>.
 
-To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request param. For the `/export` request handler, you can make a request like this:
+To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter. For the `/export` request handler, you can make a request like this:
 
 
 [.dynamic-tabs]

@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileStore;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -50,6 +51,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
@@ -87,7 +90,6 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -169,6 +171,8 @@ public class IndexFetcher {
 
   private boolean skipCommitOnMasterVersionZero = true;
 
+  private boolean clearLocalIndexFirst = false;
+
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
 
   public static class IndexFetchResult {
@@ -223,7 +227,7 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
 
-    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getDefaultConnectionManager(), true);
+    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(), true);
   }
 
   public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
@@ -358,6 +362,7 @@ public class IndexFetcher {
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload) throws IOException, InterruptedException {
 
+    this.clearLocalIndexFirst = false;
     boolean cleanupDone = false;
     boolean successfulInstall = false;
     markReplicationStart();
@@ -597,7 +602,9 @@ public class IndexFetcher {
                 // let the system know we are changing dir's and the old one
                 // may be closed
                 if (indexDir != null) {
-                  solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
+                  if (!this.clearLocalIndexFirst) {//it was closed earlier
+                    solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
+                  }
                   // Cleanup all index files not associated with any *named* snapshot.
                   solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
                 }
@@ -626,6 +633,8 @@ public class IndexFetcher {
             }
           }
         } finally {
+          solrCore.searchEnabled = true;
+          solrCore.indexEnabled = true;
           if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
@@ -804,6 +813,9 @@ public class IndexFetcher {
       props.setProperty(INDEX_REPLICATED_AT, String.valueOf(replicationTime));
       props.setProperty(PREVIOUS_CYCLE_TIME_TAKEN, String.valueOf(replicationTimeTaken));
       props.setProperty(TIMES_INDEX_REPLICATED, String.valueOf(indexCount));
+      if (clearLocalIndexFirst) {
+        props.setProperty(CLEARED_LOCAL_IDX, "true");
+      }
       if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
         props.setProperty(CONF_FILES_REPLICATED, confFiles.toString());
         props.setProperty(CONF_FILES_REPLICATED_AT, String.valueOf(replicationTime));
@@ -1008,6 +1020,19 @@ public class IndexFetcher {
         && (tmpIndexDir instanceof FSDirectory ||
         (tmpIndexDir instanceof FilterDirectory && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
 
+
+    long totalSpaceRequired = 0;
+    for (Map<String, Object> file : filesToDownload) {
+      long size = (Long) file.get(SIZE);
+      totalSpaceRequired += size;
+    }
+
+    log.info("tmpIndexDir_type  : " + tmpIndexDir.getClass() + " , " + FilterDirectory.unwrap(tmpIndexDir));
+    long usableSpace = usableDiskSpaceProvider.apply(tmpIndexDirPath);
+    if (getApproxTotalSpaceReqd(totalSpaceRequired) > usableSpace) {
+      deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
+    }
+
     for (Map<String,Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       long size = (Long) file.get(SIZE);
@@ -1039,7 +1064,83 @@ public class IndexFetcher {
     log.info("Bytes downloaded: {}, Bytes skipped downloading: {}", bytesDownloaded, bytesSkippedCopying);
     return bytesDownloaded;
   }
-  
+
+  //only for testing purposes. do not use this anywhere else
+  //-----------START----------------------
+  static BooleanSupplier testWait = () -> true;
+  static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
+  //------------ END---------------------
+
+
+  private static Long getUsableSpace(String dir) {
+    try {
+      File file = new File(dir);
+      if (!file.exists()) {
+        file = file.getParentFile();
+        if (!file.exists()) {//this is not a disk directory . so just pretend that there is enough space
+          return Long.MAX_VALUE;
+        }
+      }
+      FileStore fileStore = Files.getFileStore(file.toPath());
+      return fileStore.getUsableSpace();
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not free disk space", e);
+    }
+  }
+
+
+
+  private long getApproxTotalSpaceReqd(long totalSpaceRequired) {
+    long approxTotalSpaceReqd = (long) (totalSpaceRequired * 1.05);// add 5% extra for safety
+    approxTotalSpaceReqd += (100 * 1024 * 1024); //we should have an extra of 100MB free after everything is downloaded
+    return approxTotalSpaceReqd;
+  }
+
+  private void deleteFilesInAdvance(Directory indexDir, String indexDirPath, long usableDiskSpace, long totalSpaceRequired) throws IOException {
+    long actualSpaceReqd = totalSpaceRequired;
+    List<String> filesTobeDeleted = new ArrayList<>();
+    long clearedSpace = 0;
+    //go through each file to check if this needs to be deleted
+    for (String f : indexDir.listAll()) {
+      for (Map<String, Object> fileInfo : filesToDownload) {
+        if (f.equals(fileInfo.get(NAME))) {
+          String filename = (String) fileInfo.get(NAME);
+          long size = (Long) fileInfo.get(SIZE);
+          CompareResult compareResult = compareFile(indexDir, filename, size, (Long) fileInfo.get(CHECKSUM));
+          if (!compareResult.equal || filesToAlwaysDownloadIfNoChecksums(f, size, compareResult)) {
+            filesTobeDeleted.add(f);
+            clearedSpace += size;
+          } else {
+            /*this file will not be downloaded*/
+            actualSpaceReqd -= size;
+          }
+        }
+      }
+    }
+    if (usableDiskSpace > getApproxTotalSpaceReqd(actualSpaceReqd)) {
+      // after considering the files actually available locally we really don't need to do any delete
+      return;
+    }
+    log.info("This disk does not have enough space to download the index from leader/master. So cleaning up the local index. " +
+        " This may lead to loss of data/or node if index replication fails in between");
+    //now we should disable searchers and index writers because this core will not have all the required files
+    this.clearLocalIndexFirst = true;
+    this.solrCore.searchEnabled = false;
+    this.solrCore.indexEnabled = false;
+    solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
+    solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
+    this.solrCore.closeSearcher();
+    assert testWait.getAsBoolean();
+    solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
+    for (String f : filesTobeDeleted) {
+      try {
+        indexDir.deleteFile(f);
+      } catch (FileNotFoundException | NoSuchFileException e) {
+        //no problem , it was deleted by someone else
+      }
+    }
+  }
+
   static boolean filesToAlwaysDownloadIfNoChecksums(String filename,
       long size, CompareResult compareResult) {
     // without checksums to compare, we always download .si, .liv, segments_N,
@@ -1879,6 +1980,8 @@ public class IndexFetcher {
   static final String INDEX_REPLICATED_AT = "indexReplicatedAt";
 
   static final String TIMES_INDEX_REPLICATED = "timesIndexReplicated";
+
+  static final String CLEARED_LOCAL_IDX = "clearedLocalIndexFirst";
 
   static final String CONF_FILES_REPLICATED = "confFilesReplicated";
 

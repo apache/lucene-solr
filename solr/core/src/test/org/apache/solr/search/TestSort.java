@@ -45,8 +45,8 @@ import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -183,7 +183,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
 
   public void testSort() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     Field f = new StringField("f", "0", Field.Store.NO);
     Field f2 = new StringField("f2", "0", Field.Store.NO);
 

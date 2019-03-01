@@ -176,7 +176,14 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
   fi
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
-  SOLR_JETTY_CONFIG+=("--module=https")
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
+    echo >&2 "HTTP/2 + SSL is not support in Java 8. "
+    echo >&2 "Configure Solr with HTTP/1.1 + SSL"
+    SOLR_JETTY_CONFIG+=("--module=https8")
+  else
+    SOLR_JETTY_CONFIG+=("--module=https")
+  fi
+
   SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
@@ -220,7 +227,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
     fi
     if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
-      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEY_STORE_TYPE"
     fi
   fi
 
@@ -305,7 +312,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -1333,6 +1340,12 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
     ;;
   esac
 
+  exit $?
+fi
+
+
+if [[ "$SCRIPT_CMD" == "autoscaling" ]]; then
+  run_tool autoscaling $@
   exit $?
 fi
 

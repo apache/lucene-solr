@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFacetCloudTest {
@@ -42,9 +42,8 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
   static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
   static ArrayList<ArrayList<Integer>> intStringTestStart; 
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    cleanIndex();
+  @Before
+  public void beforeTest() throws Exception {
 
     //INT
     intLongTestStart = new ArrayList<>();

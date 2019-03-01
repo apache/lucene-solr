@@ -15,25 +15,55 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-
+<!-- Configuration for asynchronous logging -->
 <Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
         <Pattern>
-          %-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%notEmpty{
+          =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.apache.zookeeper" level="WARN"/>
-    <Logger name="org.apache.hadoop" level="WARN"/>
-    <Logger name="org.apache.directory" level="WARN"/>
-    <Logger name="org.apache.solr.hadoop" level="INFO"/>
+    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+    <AsyncLogger name="org.apache.directory" level="WARN"/>
+    <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
+    <Logger name="org.eclipse.jetty" level="INFO"/>
 
-    <Root level="INFO">
+    <AsyncRoot level="INFO">
       <AppenderRef ref="STDERR"/>
-    </Root>
+    </AsyncRoot>
   </Loggers>
 </Configuration>
+
+<!-- Configuration for synchronous logging
+     there _may_ be a very small window where log messages will not be flushed
+     to the log file on abnormal shutdown. If even this risk is unacceptable, use
+     the configuration below
+-->
+<!--Configuration>
+<Appenders>
+  <Console name="STDERR" target="SYSTEM_ERR">
+    <PatternLayout>
+      <Pattern>
+        %-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+      </Pattern>
+    </PatternLayout>
+  </Console>
+</Appenders>
+<Loggers>
+  <Logger name="org.apache.zookeeper" level="WARN"/>
+  <Logger name="org.apache.hadoop" level="WARN"/>
+  <Logger name="org.apache.directory" level="WARN"/>
+  <Logger name="org.apache.solr.hadoop" level="INFO"/>
+  <Logger name="org.eclipse.jetty" level="INFO"/>
+
+  <Root level="INFO">
+    <AppenderRef ref="STDERR"/>
+  </Root>
+</Loggers>
+</Configuration-->

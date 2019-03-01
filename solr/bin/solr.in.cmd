@@ -135,6 +135,7 @@ REM * javax.net.ssl.keyStorePassword
 REM * javax.net.ssl.trustStorePassword
 REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
 REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+REM set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
@@ -148,3 +149,9 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
+REM list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
+REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
+REM host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
+REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"

@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.update.SolrIndexSplitter;
@@ -146,7 +147,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     DocRouter.Range keyHashRange = sourceRouter.keyHashRange(splitKey);
 
     ShardHandlerFactory shardHandlerFactory = ocmh.shardHandlerFactory;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
     log.info("Hash range for split.key: {} is: {}", splitKey, keyHashRange);
     // intersect source range, keyHashRange and target range
@@ -181,7 +182,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         "targetCollection", targetCollection.getName(),
         "expireAt", RoutingRule.makeExpiryAt(timeout));
     log.info("Adding routing rule: " + m);
-    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+    ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");

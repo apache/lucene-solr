@@ -16,104 +16,83 @@
  */
 package org.apache.lucene.util.bkd;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
 
-/** Writes points to disk in a fixed-with format.
+/**
+ * Writes points to disk in a fixed-with format.
  *
- * @lucene.internal */
+ * @lucene.internal
+ * */
 public final class OfflinePointWriter implements PointWriter {
 
   final Directory tempDir;
   public final IndexOutput out;
   public final String name;
   final int packedBytesLength;
-  final boolean singleValuePerDoc;
   long count;
   private boolean closed;
-  // true if ords are written as long (8 bytes), else 4 bytes
-  private boolean longOrds;
-  private OfflinePointReader sharedReader;
-  private long nextSharedRead;
   final long expectedCount;
 
   /** Create a new writer with an unknown number of incoming points */
   public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength,
-                            boolean longOrds, String desc, long expectedCount, boolean singleValuePerDoc) throws IOException {
+                            String desc, long expectedCount) throws IOException {
     this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd_" + desc, IOContext.DEFAULT);
     this.name = out.getName();
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
-    this.longOrds = longOrds;
-    this.singleValuePerDoc = singleValuePerDoc;
     this.expectedCount = expectedCount;
   }
 
-  /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
-  public OfflinePointWriter(Directory tempDir, String name, int packedBytesLength, long count, boolean longOrds, boolean singleValuePerDoc) {
-    this.out = null;
-    this.name = name;
-    this.tempDir = tempDir;
-    this.packedBytesLength = packedBytesLength;
-    this.count = count;
-    closed = true;
-    this.longOrds = longOrds;
-    this.singleValuePerDoc = singleValuePerDoc;
-    this.expectedCount = 0;
-  }
-    
   @Override
-  public void append(byte[] packedValue, long ord, int docID) throws IOException {
-    assert packedValue.length == packedBytesLength;
+  public void append(byte[] packedValue, int docID) throws IOException {
+    assert closed == false : "Point writer is already closed";
+    assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
     out.writeBytes(packedValue, 0, packedValue.length);
     out.writeInt(docID);
-    if (singleValuePerDoc == false) {
-      if (longOrds) {
-        out.writeLong(ord);
-      } else {
-        assert ord <= Integer.MAX_VALUE;
-        out.writeInt((int) ord);
-      }
-    }
     count++;
-    assert expectedCount == 0 || count <= expectedCount;
+    assert expectedCount == 0 || count <= expectedCount:  "expectedCount=" + expectedCount + " vs count=" + count;
+  }
+
+  @Override
+  public void append(PointValue pointValue) throws IOException {
+    assert closed == false : "Point writer is already closed";
+    BytesRef packedValue = pointValue.packedValue();
+    assert packedValue.length == packedBytesLength  : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
+    out.writeBytes(packedValue.bytes, packedValue.offset, packedValue.length);
+    BytesRef docIDBytes = pointValue.docIDBytes();
+    assert docIDBytes.length == Integer.BYTES  : "[docIDBytes] must have length [" + Integer.BYTES + "] but was [" + docIDBytes.length + "]";
+    out.writeBytes(docIDBytes.bytes, docIDBytes.offset, docIDBytes.length);
+    count++;
+    assert expectedCount == 0 || count <= expectedCount : "expectedCount=" + expectedCount + " vs count=" + count;
   }
 
   @Override
   public PointReader getReader(long start, long length) throws IOException {
-    assert closed;
+    byte[] buffer  = new byte[packedBytesLength + Integer.BYTES];
+    return getReader(start, length,  buffer);
+  }
+
+  protected OfflinePointReader getReader(long start, long length, byte[] reusableBuffer) throws IOException {
+    assert closed: "point writer is still open and trying to get a reader";
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
     assert expectedCount == 0 || count == expectedCount;
-    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, longOrds, singleValuePerDoc);
+    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, reusableBuffer);
   }
 
   @Override
-  public PointReader getSharedReader(long start, long length, List<Closeable> toCloseHeroically) throws IOException {
-    if (sharedReader == null) {
-      assert start == 0;
-      assert length <= count;
-      sharedReader = new OfflinePointReader(tempDir, name, packedBytesLength, 0, count, longOrds, singleValuePerDoc);
-      toCloseHeroically.add(sharedReader);
-      // Make sure the OfflinePointReader intends to verify its checksum:
-      assert sharedReader.in instanceof ChecksumIndexInput;
-    } else {
-      assert start == nextSharedRead: "start=" + start + " length=" + length + " nextSharedRead=" + nextSharedRead;
-    }
-    nextSharedRead += length;
-    return sharedReader;
+  public long count() {
+    return count;
   }
 
   @Override
   public void close() throws IOException {
     if (closed == false) {
-      assert sharedReader == null;
       try {
         CodecUtil.writeFooter(out);
       } finally {
@@ -125,12 +104,6 @@ public final class OfflinePointWriter implements PointWriter {
 
   @Override
   public void destroy() throws IOException {
-    if (sharedReader != null) {
-      // At this point, the shared reader should have done a full sweep of the file:
-      assert nextSharedRead == count;
-      sharedReader.close();
-      sharedReader = null;
-    }
     tempDir.deleteFile(name);
   }
 

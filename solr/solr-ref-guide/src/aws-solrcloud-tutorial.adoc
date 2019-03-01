@@ -29,7 +29,7 @@ In this guide we are going to:
 . Install, configure and start Solr on newly launched EC2 instances
 * Install system prerequisites: Java 1.8 and later
 * Download latest version of Solr
-* Start the Solr nodes in cloud mode
+* Start the Solr nodes in SolrCloud mode
 . Create a collection, index documents and query the system
 * Create collection with multiple shards and replicas
 * Index documents to the newly created collection

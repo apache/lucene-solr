@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,20 +47,24 @@ import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for SolrCloud tests
  *
  * Derived tests should call {@link #configureCluster(int)} in a {@code BeforeClass}
- * static method.  This configures and starts a {@link MiniSolrCloudCluster}, available
- * via the {@code cluster} variable.  Cluster shutdown is handled automatically.
+ * static method or {@code Before} setUp method.  This configures and starts a {@link MiniSolrCloudCluster}, available
+ * via the {@code cluster} variable.  Cluster shutdown is handled automatically if using {@code BeforeClass}.
  *
  * <pre>
  *   <code>
@@ -74,7 +79,9 @@ import org.junit.Before;
  */
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
-  public static final int DEFAULT_TIMEOUT = 90;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
 
   private static class Config {
     final String name;
@@ -98,7 +105,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Optional<String> securityJson = Optional.empty();
 
     private List<Config> configs = new ArrayList<>();
-    private Map<String, String> clusterProperties = new HashMap<>();
+    private Map<String, Object> clusterProperties = new HashMap<>();
 
     /**
      * Create a builder
@@ -205,17 +212,31 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
       if (clusterProperties.size() > 0) {
         ClusterProperties props = new ClusterProperties(cluster.getSolrClient().getZkStateReader().getZkClient());
-        for (Map.Entry<String, String> entry : clusterProperties.entrySet()) {
+        for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }
       }
       return cluster;
     }
 
+    public Builder withDefaultClusterProperty(String key, String value) {
+      HashMap<String,Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
+      if (defaults == null) {
+        defaults = new HashMap<>();
+        this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
+      }
+      HashMap<String,Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
+      if (cluster == null) {
+        cluster = new HashMap<>();
+        defaults.put(CollectionAdminParams.CLUSTER, cluster);
+      }
+      cluster.put(key, value);
+      return this;
+    }
   }
 
   /** The cluster */
-  protected static MiniSolrCloudCluster cluster;
+  protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
     ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
@@ -245,8 +266,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   @Before
   public void checkClusterConfiguration() {
-    if (cluster == null)
-      throw new RuntimeException("MiniSolrCloudCluster not configured - have you called configureCluster().configure()?");
+
   }
 
   /* Cluster helper methods ************************************/
@@ -258,6 +278,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
   }
 
+  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
+    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+  }
+  
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
    *
@@ -267,11 +291,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param collection  the collection to watch
    * @param predicate   a predicate to match against the collection state
    */
-  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
+  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
+      cluster.getSolrClient().waitForState(collection, timeout, timeUnit, (n, c) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
@@ -291,8 +315,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
-      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return false;
-      return true;
+      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return true;
+      return false;
     };
   }
 
@@ -304,23 +328,55 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
+      log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
-      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return false;
-      return true;
+      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return true;
+      return false;
+    };
+  }
+  
+  public static LiveNodesPredicate containsLiveNode(String node) {
+    return (oldNodes, newNodes) -> {
+      return newNodes.contains(node);
+    };
+  }
+  
+  public static LiveNodesPredicate missingLiveNode(String node) {
+    return (oldNodes, newNodes) -> {
+      return !newNodes.contains(node);
+    };
+  }
+  
+  public static LiveNodesPredicate missingLiveNodes(List<String> nodes) {
+    return (oldNodes, newNodes) -> {
+      boolean success = true;
+      for (String lostNodeName : nodes) {
+        if (newNodes.contains(lostNodeName)) {
+          success = false;
+          break;
+        }
+      }
+      return success;
     };
   }
 
   private static boolean compareActiveReplicaCountsForShards(int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+    int activeReplicas = 0;
     for (Slice slice : collectionState) {
-      int activeReplicas = 0;
       for (Replica replica : slice) {
-        if (replica.isActive(liveNodes))
+        if (replica.isActive(liveNodes)) {
           activeReplicas++;
+        }
       }
-      if (activeReplicas != expectedReplicas)
-        return true;
     }
+    
+    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
+    
+    if (activeReplicas == expectedReplicas) {
+      return true;
+    }
+
     return false;
   }
 

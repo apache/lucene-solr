@@ -21,9 +21,6 @@ import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RandomAccessInput;
-
 /**
  * An {@link IndexInput} implementing {@link RandomAccessInput} and backed
  * by a {@link ByteBuffersDataInput}.
