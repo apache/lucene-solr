@@ -41,7 +41,7 @@ public final class HeapPointReader implements PointReader {
       this.pointValue = new HeapPointValue(block, packedBytesLength);
     } else {
       //no values
-      this.pointValue = new HeapPointValue(block, 0);
+      this.pointValue = null;
     }
   }
 
