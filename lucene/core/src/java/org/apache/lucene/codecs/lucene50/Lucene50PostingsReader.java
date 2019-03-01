@@ -270,7 +270,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     private int docUpto;                              // how many docs we've read
     private int doc;                                  // doc we last read
     private int accum;                                // accumulator for doc deltas
-    private int freq;                                 // freq we last read
 
     // Where this term's postings start in the .doc file:
     private long docTermStartFP;
@@ -285,6 +284,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     private int nextSkipDoc;
     
     private boolean needsFreq; // true if the caller actually needs frequencies
+    private boolean isFreqDecoded = true; // as we decode freqs lazily, this shows if freqs are decoded for the current block
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
@@ -320,6 +320,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
       doc = -1;
       this.needsFreq = PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
+      this.isFreqDecoded = true;
       if (indexHasFreq == false || needsFreq == false) {
         Arrays.fill(freqBuffer, 1);
       }
@@ -330,10 +331,15 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       skipped = false;
       return this;
     }
-    
+
+    // lazy loading of frequencies
     @Override
     public int freq() throws IOException {
-      return freq;
+      if (indexHasFreq && needsFreq && (isFreqDecoded == false)) {
+        forUtil.readBlock(docIn, encoded, freqBuffer); // load and decode freqs for this block
+        isFreqDecoded = true;
+      }
+      return freqBuffer[docBufferUpto-1];
     }
 
     @Override
@@ -361,24 +367,36 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       return doc;
     }
     
-    private void refillDocs() throws IOException {
+    private void refillDocs(boolean isToDecodeFreqs) throws IOException {
+      // Check if we skipped decoding of previous block freqs,
+      // and if yes, position docIn after it
+      if (indexHasFreq && needsFreq && (isFreqDecoded == false)) {
+        forUtil.skipBlock(docIn);
+      }
+      
       final int left = docFreq - docUpto;
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
+        isFreqDecoded = false;
         forUtil.readBlock(docIn, encoded, docDeltaBuffer);
 
         if (indexHasFreq) {
           if (needsFreq) {
-            forUtil.readBlock(docIn, encoded, freqBuffer);
+            if (isToDecodeFreqs) {
+              forUtil.readBlock(docIn, encoded, freqBuffer);
+              isFreqDecoded = true;
+            }
           } else {
-            forUtil.skipBlock(docIn); // skip over freqs
+            forUtil.skipBlock(docIn); // skip over freqs if we don't need them at all
           }
         }
       } else if (docFreq == 1) {
+        isFreqDecoded = true;
         docDeltaBuffer[0] = singletonDocID;
         freqBuffer[0] = (int) totalTermFreq;
       } else {
+        isFreqDecoded = true;
         // Read vInts:
         readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
       }
@@ -391,22 +409,19 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         return doc = NO_MORE_DOCS;
       }
       if (docBufferUpto == BLOCK_SIZE) {
-        refillDocs();
+        refillDocs(true);
       }
 
       accum += docDeltaBuffer[docBufferUpto];
       docUpto++;
 
       doc = accum;
-      freq = freqBuffer[docBufferUpto];
       docBufferUpto++;
       return doc;
     }
 
     @Override
     public int advance(int target) throws IOException {
-      // TODO: make frq block load lazy/skippable
-
       // current skip docID < docIDs generated from current buffer <= next skip docID
       // we don't need to skip if target is buffered already
       if (docFreq > BLOCK_SIZE && target > nextSkipDoc) {
@@ -442,6 +457,10 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
           docBufferUpto = BLOCK_SIZE;
           accum = skipper.getDoc();               // actually, this is just lastSkipEntry
           docIn.seek(skipper.getDocPointer());    // now point to the block we want to search
+          // even if freqs were not decoded from previous block, we mark them as decoded,
+          // as we don't need to skip the previous block freqs,
+          // as we have already positioned docIn where in needs to be.
+          isFreqDecoded = true;
         }
         // next time we call advance, this is used to 
         // foresee whether skipper is necessary.
@@ -451,7 +470,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         return doc = NO_MORE_DOCS;
       }
       if (docBufferUpto == BLOCK_SIZE) {
-        refillDocs();
+        refillDocs(false); // we don't need to load freqs for now (will be loaded later if necessary)
       }
 
       // Now scan... this is an inlined/pared down version
@@ -469,7 +488,6 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         }
       }
 
-      freq = freqBuffer[docBufferUpto];
       docBufferUpto++;
       return doc = accum;
     }
