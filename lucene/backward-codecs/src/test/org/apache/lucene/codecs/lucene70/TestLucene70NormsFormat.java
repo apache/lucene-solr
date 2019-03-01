@@ -18,14 +18,27 @@ package org.apache.lucene.codecs.lucene70;
 
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene80.Lucene80Codec;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
 
 /**
  * Tests Lucene70NormsFormat
  */
 public class TestLucene70NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene80Codec();
+  private final Codec codec = new FilterCodec("Lucene70", new Lucene70Codec()) {
+    @Override
+    public PostingsFormat postingsFormat() {
+      return new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return new Lucene50PostingsFormat();
+        }
+      };
+    }
+  };
   
   @Override
   protected Codec getCodec() {
