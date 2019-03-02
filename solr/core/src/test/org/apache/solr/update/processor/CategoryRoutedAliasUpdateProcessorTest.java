@@ -200,6 +200,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         newDoc(SHIPS[4]));
 
     assertInvariants(colVogon, colHoG, colStunt, colArk, colBistro);
+
+    // make sure we fail if we have no value to route on.
+    testFailedDocument(newDoc(null), "Route value is null");
+
   }
 
   private String noSpaces(String ship) {
@@ -424,9 +428,14 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   private SolrInputDocument newDoc(String routedValue) {
-    return sdoc("id", Integer.toString(++lastDocId),
-        categoryField, routedValue,
-        intField, "0"); // always 0
+    if (routedValue != null) {
+      return sdoc("id", Integer.toString(++lastDocId),
+          categoryField, routedValue,
+          intField, "0"); // always 0
+    } else {
+      return sdoc("id", Integer.toString(++lastDocId),
+          intField, "0"); // always 0
+    }
   }
 
   @Override
@@ -454,7 +463,8 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
       final UpdateResponse resp = solrClient.add(getAlias(), sdoc);
       // if we have a TolerantUpdateProcessor then we see it there)
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
-      assertTrue(errors != null && errors.toString().contains(errorMsg));
+      assertNotNull(errors);
+      assertTrue(errors.toString().contains(errorMsg));
     } catch (SolrException e) {
       assertTrue(e.getMessage().contains(errorMsg));
     }
