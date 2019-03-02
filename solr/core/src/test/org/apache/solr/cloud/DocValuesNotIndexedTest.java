@@ -98,7 +98,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("floatField", "float", 1),
             new FieldProps("dateField", "date", 1),
             new FieldProps("stringField", "string", 1),
-            new FieldProps("boolField", "boolean", 1)
+            new FieldProps("boolField", "boolean", 1),
+            new FieldProps("sortableText", "sortabletext", 1)
         ));
 
     fieldsToTestMulti =
@@ -109,10 +110,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("floatFieldMulti", "float", 5),
             new FieldProps("dateFieldMulti", "date", 5),
             new FieldProps("stringFieldMulti", "string", 5),
-            new FieldProps("boolFieldMulti", "boolean", 2)
+            new FieldProps("boolFieldMulti", "boolean", 2),
+            new FieldProps("sortableFieldMulti", "sortabletext", 5)
         ));
 
-    // Fields to test for grouping and sorting with sortMinssingFirst/Last.
+    // Fields to test for grouping and sorting with sortMissingFirst/Last.
     fieldsToTestGroupSortFirst =
         Collections.unmodifiableList(Arrays.asList(
             new FieldProps("intGSF", "int"),
@@ -121,7 +123,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("floatGSF", "float"),
             new FieldProps("dateGSF", "date"),
             new FieldProps("stringGSF", "string"),
-            new FieldProps("boolGSF", "boolean")
+            new FieldProps("boolGSF", "boolean"),
+            new FieldProps("sortableGSF", "sortabletext")
         ));
 
     fieldsToTestGroupSortLast =
@@ -132,7 +135,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("floatGSL", "float"),
             new FieldProps("dateGSL", "date"),
             new FieldProps("stringGSL", "string"),
-            new FieldProps("boolGSL", "boolean")
+            new FieldProps("boolGSL", "boolean"),
+            new FieldProps("sortableGSL", "sortabletext")
         ));
 
     List<Update> updateList = new ArrayList<>(fieldsToTestSingle.size() +
@@ -210,18 +214,18 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     final QueryResponse rsp = client.query(COLLECTION, solrQuery);
 
     for (FieldProps props : fieldsToTestSingle) {
-      testFacet(props, rsp);
+      doTestFacet(props, rsp);
     }
 
     for (FieldProps props : fieldsToTestMulti) {
-      testFacet(props, rsp);
+      doTestFacet(props, rsp);
     }
 
   }
 
   // We should be able to sort thing with missing first/last and that are _NOT_ present at all on one server.
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028")
+  //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028")
   public void testGroupingSorting() throws IOException, SolrServerException {
     CloudSolrClient client = cluster.getSolrClient();
 
@@ -314,12 +318,17 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testGroupingDVOnly() throws IOException, SolrServerException {
+    doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF");
+    doGroupingDvOnly(fieldsToTestGroupSortLast, "boolGSL");
+  }
+  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName) throws IOException, SolrServerException {
+
     List<SolrInputDocument> docs = new ArrayList<>(50);
     for (int idx = 0; idx < 49; ++idx) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", idx);
       boolean doInc = ((idx % 7) == 0);
-      for (FieldProps prop : fieldsToTestGroupSortFirst) {
+      for (FieldProps prop : fieldProps) {
         doc.addField(prop.getName(), prop.getValue(doInc));
       }
       docs.add(doc);
@@ -337,13 +346,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .commit(client, COLLECTION);
 
     // OK, we should have one group with 10 entries for null, a group with 1 entry and 7 groups with 7
-    for (FieldProps prop : fieldsToTestGroupSortFirst) {
-      // Special handling until SOLR-9802 is fixed
+    for (FieldProps prop : fieldProps) {
+
+      // Solr 9802
       if (prop.getName().startsWith("date")) continue;
-      // SOLR-9802 to here
-      
-      // TODO: gsf fails this
-      if (prop.getName().endsWith("GSF") ) continue;
 
       final SolrQuery solrQuery = new SolrQuery(
           "q", "*:*",
@@ -376,7 +382,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             case 25:
             case 24:
               ++boolCount;
-              assertEquals("We should have more counts for boolean fields!", "boolGSF", prop.getName());
+              assertEquals("We should have more counts for boolean fields!", boolName, prop.getName());
               break;
             
             default:
@@ -442,7 +448,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
 
-  private void testFacet(FieldProps props, QueryResponse rsp) {
+  private void doTestFacet(FieldProps props, QueryResponse rsp) {
     String name = props.getName();
     final List<FacetField.Count> counts = rsp.getFacetField(name).getValues();
     long expectedCount = props.getExpectedCount();
@@ -483,7 +489,7 @@ class FieldProps {
       base = Math.abs(random().nextLong());
     } else if (name.startsWith("bool")) {
       base = true; // Must start with a known value since bools only have a two values....
-    } else if (name.startsWith("string")) {
+    } else if (name.startsWith("string") || name.startsWith("sortable")) {
       base = "base_string_" + random().nextInt(1_000_000) + "_";
     } else {
       throw new RuntimeException("Should have found a prefix for the field before now!");
@@ -531,7 +537,7 @@ class FieldProps {
       base = !((boolean) base);
       return ret;
     }
-    if (name.startsWith("string")) {
+    if (name.startsWith("string") || name.startsWith("sortable")) {
       return String.format(Locale.ROOT, "%s_%08d", (String) base, counter);
     }
     throw new RuntimeException("Should have found a prefix for the field before now!");

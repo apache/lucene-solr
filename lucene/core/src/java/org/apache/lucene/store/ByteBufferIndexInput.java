@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  * For efficiency, this class requires that the buffers
  * are a power-of-two (<code>chunkSizePower</code>).
  */
-abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
+public abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
   protected final long length;
   protected final long chunkSizeMask;
   protected final int chunkSizePower;

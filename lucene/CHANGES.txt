@@ -24,9 +24,15 @@ Improvements
 
 * LUCENE-8687: Optimise radix partitioning for points on heap. (Ignacio Vera)
 
+* LUCENE-8699: Change HeapPointWriter to use a single byte array instead to a list
+  of byte arrays. In addition a new interface PointValue is added to abstract out
+  the different formats between offline and on-heap writers. (Ignacio Vera)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
+
+* LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
 
 ======================= Lucene 8.0.0 =======================
 
@@ -187,6 +193,12 @@ Changes in Runtime Behavior
   is instead calculated as a function of the sloppy frequency of the matching
   intervals. (Alan Woodward, Jim Ferenczi)
 
+* LUCENE-8635: FSTs can now remain off-heap, accessed via
+  IndexInput, and the default codec's term dictionary
+  (BlockTreeTermsReader) will now leave the FST for the terms index
+  off-heap for non-primary-key fields using MMapDirectory, reducing
+  heap usage for such fields. (Ankit Jain)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceFeatureQuery may be used to boost scores based on
@@ -222,6 +234,12 @@ New Features
 
 * LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
   underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
+
+* LUCENE-8697: GraphTokenStreamFiniteStrings correctly handles side paths 
+  containing gaps (Alan Woodward)
+
+* LUCENE-8702: Simplify intervals returned from vararg Intervals factory methods
+  (Alan Woodward)
 
 Improvements
 

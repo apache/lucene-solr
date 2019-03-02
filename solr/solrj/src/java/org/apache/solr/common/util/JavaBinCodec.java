@@ -357,7 +357,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof SolrInputField) {
-      return writeKnownType(((SolrInputField) val).getValue());
+      return writeKnownType(((SolrInputField) val).getRawValue());
     }
     if (val instanceof IteratorWriter) {
       writeIterator((IteratorWriter) val);

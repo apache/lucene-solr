@@ -287,7 +287,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
         // element, which may be interpreted by the user as a positive ack
-        ocmh.cleanupCollection(collectionName, new NamedList());
+        ocmh.cleanupCollection(collectionName, new NamedList<Object>());
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
       } else {
         log.debug("Finished create command on all shards for collection: {}", collectionName);
