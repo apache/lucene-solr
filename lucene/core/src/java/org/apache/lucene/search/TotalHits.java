@@ -35,7 +35,7 @@ public final class TotalHits {
      */
     EQUAL_TO,
     /**
-     * The total hit count is greater than or eual to {@link TotalHits#value}.
+     * The total hit count is greater than or equal to {@link TotalHits#value}.
      */
     GREATER_THAN_OR_EQUAL_TO
   }
