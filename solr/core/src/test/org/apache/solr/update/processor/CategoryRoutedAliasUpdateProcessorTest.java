@@ -126,9 +126,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, 20,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2)).setMaxCardinality(20)
+            .setMaxShardsPerNode(2))
         .process(solrClient);
     addDocsAndCommit(true,
         newDoc(somethingInChinese),
@@ -181,9 +181,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, 20,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2)).setMaxCardinality(Integer.MAX_VALUE)
+            .setMaxShardsPerNode(2))
         .process(solrClient);
 
     // now we index a document
@@ -211,27 +211,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private String noDollar(String ship) {
     return ship.replaceAll("\\$", "_");
   }
-  @Slow
-  @Test
-  public void testMissingRequiredParams() throws Exception {
-    String configName = getSaferTestName();
-    createConfigSet(configName);
-
-    List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
-    List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
-
-    // config sets leak between tests so we can't be any more specific than this on the next 2 asserts
-    assertTrue("We expect at least 2 configSets",
-        retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
-    assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
-
-    SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
-        .process(solrClient)
-    );
-    assertTrue("Create Alias should fail since not all required params were supplied", e.getMessage().contains("Not all required params were supplied"));
-  }
 
   @Slow
   @Test
@@ -257,10 +236,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
             .setMaxShardsPerNode(2))
-        .setMaxCardinality(maxCardinality)
         .setMustMatch(mustMatchRegex)
         .process(solrClient);
 
@@ -298,10 +276,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
             .setMaxShardsPerNode(2))
-        .setMaxCardinality(maxCardinality)
         .setMustMatch(mustMatchRegex)
         .process(solrClient)
     );
@@ -333,9 +310,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         retrievedConfigSetNames.size() >= expectedConfigSetNames.size());
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
-    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
         CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2)).setMaxCardinality(maxCardinality)
+            .setMaxShardsPerNode(2))
         .process(solrClient);
 
     // now we index a document
@@ -372,9 +349,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     // 4 of which are leaders, and 8 of which should fail this test.
     final int numShards = 1 + random().nextInt(4);
     final int numReplicas = 1 + random().nextInt(3);
-    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField,
+    CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, 20,
         CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas)).setMaxCardinality(20)
+            .setMaxShardsPerNode(numReplicas))
         .process(solrClient);
 
     // cause some collections to be created

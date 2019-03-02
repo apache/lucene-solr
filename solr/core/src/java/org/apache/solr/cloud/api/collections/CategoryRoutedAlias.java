@@ -78,11 +78,13 @@ public class CategoryRoutedAlias implements RoutedAlias {
   private Aliases parsedAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
   private final String aliasName;
   private final Map<String, String> aliasMetadata;
+  private final Integer maxCardinality;
   private final Pattern mustMatch;
 
   CategoryRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
     this.aliasName = aliasName;
     this.aliasMetadata = aliasMetadata;
+    this.maxCardinality = parseMaxCardinality(aliasMetadata.get(ROUTER_MAX_CARDINALITY));
     final String mustMatch = this.aliasMetadata.get(ROUTER_MUST_MATCH);
     this.mustMatch = mustMatch == null? null: compileMustMatch(mustMatch);
   }
@@ -113,12 +115,6 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
-    //Mostly this will be filled out by SOLR-13150 and SOLR-13151
-    String maxCardinality = aliasMetadata.get(ROUTER_MAX_CARDINALITY);
-    if(maxCardinality == null) {
-      return;
-    }
-
     if (this.parsedAliases == null) {
       updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController());
     }
@@ -137,7 +133,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
     }
 
     if (cols.stream()
-        .filter(x -> !x.contains(UNINITIALIZED)).count() >= Integer.valueOf(maxCardinality)) {
+        .filter(x -> !x.contains(UNINITIALIZED)).count() >= maxCardinality) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Max cardinality " + maxCardinality
           + " reached for Category Routed Alias: " + getAliasName());
     }
@@ -203,6 +199,15 @@ public class CategoryRoutedAlias implements RoutedAlias {
       throw e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  private Integer parseMaxCardinality(String maxCardinality) {
+    try {
+      return Integer.valueOf(maxCardinality);
+    } catch (NumberFormatException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ROUTER_MAX_CARDINALITY + " must be a valid Integer"
+          + ", instead got: " + maxCardinality);
     }
   }
 

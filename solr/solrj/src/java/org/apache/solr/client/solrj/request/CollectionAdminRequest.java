@@ -1619,13 +1619,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    *
    * @param aliasName the name of the alias to create.
    * @param routerField the document field to contain the timestamp to route on
+   * @param maxCardinality the maximum number of collections under this CRA
    * @param createCollTemplate Holds options to create a collection.  The "name" is ignored.
    */
   public static CreateCategoryRoutedAlias createCategoryRoutedAlias(String aliasName,
                                                             String routerField,
+                                                            int maxCardinality,
                                                             Create createCollTemplate) {
 
-    return new CreateCategoryRoutedAlias(aliasName, routerField, createCollTemplate);
+    return new CreateCategoryRoutedAlias(aliasName, routerField, maxCardinality, createCollTemplate);
   }
 
   public static class CreateCategoryRoutedAlias extends AsyncCollectionAdminRequest {
@@ -1642,16 +1644,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     private final Create createCollTemplate;
 
-    public CreateCategoryRoutedAlias(String aliasName, String routerField, Create createCollTemplate) {
+    public CreateCategoryRoutedAlias(String aliasName, String routerField, int maxCardinality, Create createCollTemplate) {
       super(CollectionAction.CREATEALIAS);
       this.aliasName = aliasName;
       this.routerField = routerField;
-      this.createCollTemplate = createCollTemplate;
-    }
-
-    public CreateCategoryRoutedAlias setMaxCardinality(int maxCardinality) {
       this.maxCardinality = maxCardinality;
-      return this;
+      this.createCollTemplate = createCollTemplate;
     }
 
     public CreateCategoryRoutedAlias setMustMatch(String regex) {
@@ -1665,10 +1663,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.add(CommonParams.NAME, aliasName);
       params.add(ROUTER_TYPE_NAME, "category");
       params.add(ROUTER_FIELD, routerField);
-
-      if (maxCardinality != null) {
-        params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
-      }
+      params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
 
       if (mustMatch != null) {
         params.add(ROUTER_MUST_MATCH, mustMatch);
