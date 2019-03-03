@@ -193,8 +193,9 @@ Bug Fixes
 * SOLR-13255 : ClasscastException when URPs try to read a String field which returns a ByteArrayUTF8CHarSequence . This is a regression
   in release 7.7 (noble)
 
-*SOLR-13299: Fix Windows startup script to disable HTTP/2 if TLS is enabled on Java 8. (Uwe Schindler)
+* SOLR-13299: Fix Windows startup script to disable HTTP/2 if TLS is enabled on Java 8. (Uwe Schindler)
 
+* SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
 
 Improvements
 ----------------------
