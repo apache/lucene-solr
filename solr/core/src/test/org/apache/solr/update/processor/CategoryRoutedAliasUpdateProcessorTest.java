@@ -203,6 +203,8 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
     // make sure we fail if we have no value to route on.
     testFailedDocument(newDoc(null), "Route value is null");
+    testFailedDocument(newDoc("foo__CRA__bar"), "7 character sequence __CRA__");
+    testFailedDocument(newDoc("fóóCRAóóbar"), "7 character sequence __CRA__");
 
   }
 
@@ -464,7 +466,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
       // if we have a TolerantUpdateProcessor then we see it there)
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertNotNull(errors);
-      assertTrue(errors.toString().contains(errorMsg));
+      assertTrue("Expected to find " + errorMsg + " in errors: " + errors.toString(),errors.toString().contains(errorMsg));
     } catch (SolrException e) {
       assertTrue(e.getMessage().contains(errorMsg));
     }

@@ -128,7 +128,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
     if (fieldValue == null) {
       throw new SolrException(BAD_REQUEST,"Route value is null");
     }
-    
+
     String dataValue = String.valueOf(fieldValue);
 
     String candidateCollectionName = buildCollectionNameFromValue(dataValue);
@@ -136,6 +136,14 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
     if (cols.contains(candidateCollectionName)) {
       return;
+    }
+
+    // this check will become very important for future work
+    int infix = candidateCollectionName.indexOf(COLLECTION_INFIX);
+    int valueStart = infix + COLLECTION_INFIX.length();
+    if (candidateCollectionName.substring(valueStart).contains(COLLECTION_INFIX)) {
+      throw new SolrException(BAD_REQUEST, "No portion of the route value may resolve to the 7 character sequence " +
+          "__CRA__");
     }
 
     if (mustMatch != null && !mustMatch.matcher(candidateCollectionName).matches()) {
