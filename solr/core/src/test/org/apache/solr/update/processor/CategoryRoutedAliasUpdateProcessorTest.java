@@ -223,16 +223,16 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   public void testMustMatch() throws Exception {
     String configName = getSaferTestName();
     createConfigSet(configName);
-    final String mustMatchRegex = ".+_solr";
+    final String mustMatchRegex = "HHS\\s.+_solr";
 
     final int maxCardinality = Integer.MAX_VALUE; // max cardinality for current test
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
     //  This tests we may pre-create the collection and it's acceptable.
-    final String colVogon = getAlias() + "__CRA__" + noSpaces(SHIPS[0]) + "_solr";
+    final String colVogon = getAlias() + "__CRA__" + noSpaces("HHS "+ SHIPS[0]) + "_solr";
 
     // we expect changes ensuring a legal collection name.
-    final String colHoG = getAlias() + "__CRA__" + noSpaces(SHIPS[1]) + "_solr";
+    final String colHoG = getAlias() + "__CRA__" + noSpaces("HHS "+ SHIPS[1]) + "_solr";
 
     List<String> retrievedConfigSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
@@ -249,13 +249,13 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         .process(solrClient);
 
     // now we index a document
-    addDocsAndCommit(true, newDoc(SHIPS[0] + "_solr"));
+    addDocsAndCommit(true, newDoc("HHS " + SHIPS[0] + "_solr"));
     //assertDocRoutedToCol(lastDocId, col23rd);
 
     String uninitialized = getAlias() + "__CRA__" + CategoryRoutedAlias.UNINITIALIZED;
     assertInvariants(colVogon, uninitialized);
 
-    addDocsAndCommit(true, newDoc(SHIPS[1] + "_solr"));
+    addDocsAndCommit(true, newDoc("HHS "+ SHIPS[1] + "_solr"));
 
     assertInvariants(colVogon, colHoG);
 

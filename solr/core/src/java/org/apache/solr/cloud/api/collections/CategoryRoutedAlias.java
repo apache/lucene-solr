@@ -146,8 +146,8 @@ public class CategoryRoutedAlias implements RoutedAlias {
           "__CRA__");
     }
 
-    if (mustMatch != null && !mustMatch.matcher(candidateCollectionName).matches()) {
-      throw new SolrException(BAD_REQUEST, "Collection name " + candidateCollectionName
+    if (mustMatch != null && !mustMatch.matcher(dataValue).matches()) {
+      throw new SolrException(BAD_REQUEST, "Route value " + dataValue
           + " does not match " + ROUTER_MUST_MATCH + ": " + mustMatch);
     }
 
