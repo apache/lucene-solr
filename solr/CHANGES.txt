@@ -58,6 +58,9 @@ Bug Fixes
 * SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors 
 (Munendra S N via Mikhail Khludnev)
 
+
+* SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
