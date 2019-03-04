@@ -323,9 +323,7 @@ public class FieldType implements IndexableFieldType  {
     } else if (indexDimensionCount == 0) {
       throw new IllegalArgumentException("when dataDimensionCount is > 0, indexDimensionCount must be > 0; got " + indexDimensionCount);
     } else if (dimensionNumBytes == 0) {
-      if (dataDimensionCount != 0) {
-        throw new IllegalArgumentException("when dimensionNumBytes is 0, dataDimensionCount must be 0; got " + dataDimensionCount);
-      }
+      throw new IllegalArgumentException("when dimensionNumBytes is 0, dataDimensionCount must be 0; got " + dataDimensionCount);
     }
 
     this.dataDimensionCount = dataDimensionCount;
