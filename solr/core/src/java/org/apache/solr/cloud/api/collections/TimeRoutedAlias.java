@@ -38,9 +38,8 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Objects;
-import org.apache.solr.cloud.ZkController;
 import com.google.common.base.MoreObjects;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.params.CommonParams;
