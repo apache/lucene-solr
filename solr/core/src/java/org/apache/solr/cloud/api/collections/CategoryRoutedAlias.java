@@ -29,6 +29,7 @@ import java.util.regex.PatternSyntaxException;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
@@ -38,6 +39,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
 public class CategoryRoutedAlias implements RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -78,11 +81,13 @@ public class CategoryRoutedAlias implements RoutedAlias {
   private Aliases parsedAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
   private final String aliasName;
   private final Map<String, String> aliasMetadata;
+  private final Integer maxCardinality;
   private final Pattern mustMatch;
 
   CategoryRoutedAlias(String aliasName, Map<String, String> aliasMetadata) {
     this.aliasName = aliasName;
     this.aliasMetadata = aliasMetadata;
+    this.maxCardinality = parseMaxCardinality(aliasMetadata.get(ROUTER_MAX_CARDINALITY));
     final String mustMatch = this.aliasMetadata.get(ROUTER_MUST_MATCH);
     this.mustMatch = mustMatch == null? null: compileMustMatch(mustMatch);
   }
@@ -113,17 +118,19 @@ public class CategoryRoutedAlias implements RoutedAlias {
 
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
-    //Mostly this will be filled out by SOLR-13150 and SOLR-13151
-    String maxCardinality = aliasMetadata.get(ROUTER_MAX_CARDINALITY);
-    if(maxCardinality == null) {
-      return;
-    }
-
     if (this.parsedAliases == null) {
       updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController());
     }
 
-    String dataValue = String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
+    Object fieldValue = cmd.getSolrInputDocument().getFieldValue(getRouteField());
+    // possible future enhancement: allow specification of an "unknown" category name to where we can send
+    // docs that are uncategorized.
+    if (fieldValue == null) {
+      throw new SolrException(BAD_REQUEST,"Route value is null");
+    }
+
+    String dataValue = String.valueOf(fieldValue);
+
     String candidateCollectionName = buildCollectionNameFromValue(dataValue);
     List<String> cols = getCollectionList(this.parsedAliases);
 
@@ -131,14 +138,22 @@ public class CategoryRoutedAlias implements RoutedAlias {
       return;
     }
 
-    if (mustMatch != null && !mustMatch.matcher(candidateCollectionName).matches()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection name " + candidateCollectionName
+    // this check will become very important for future work
+    int infix = candidateCollectionName.indexOf(COLLECTION_INFIX);
+    int valueStart = infix + COLLECTION_INFIX.length();
+    if (candidateCollectionName.substring(valueStart).contains(COLLECTION_INFIX)) {
+      throw new SolrException(BAD_REQUEST, "No portion of the route value may resolve to the 7 character sequence " +
+          "__CRA__");
+    }
+
+    if (mustMatch != null && !mustMatch.matcher(dataValue).matches()) {
+      throw new SolrException(BAD_REQUEST, "Route value " + dataValue
           + " does not match " + ROUTER_MUST_MATCH + ": " + mustMatch);
     }
 
     if (cols.stream()
-        .filter(x -> !x.contains(UNINITIALIZED)).count() >= Integer.valueOf(maxCardinality)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Max cardinality " + maxCardinality
+        .filter(x -> !x.contains(UNINITIALIZED)).count() >= maxCardinality) {
+      throw new SolrException(BAD_REQUEST, "Max cardinality " + maxCardinality
           + " reached for Category Routed Alias: " + getAliasName());
     }
   }
@@ -194,7 +209,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
           // we should see some sort of update to our aliases
           if (!updateParsedCollectionAliases(coreContainer.getZkController())) { // thus we didn't make progress...
             // this is not expected, even in known failure cases, but we check just in case
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            throw new SolrException(ErrorCode.SERVER_ERROR,
                 "We need to create a new category routed collection but for unknown reasons were unable to do so.");
           }
         }
@@ -202,7 +217,16 @@ public class CategoryRoutedAlias implements RoutedAlias {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  private Integer parseMaxCardinality(String maxCardinality) {
+    try {
+      return Integer.valueOf(maxCardinality);
+    } catch (NumberFormatException e) {
+      throw new SolrException(BAD_REQUEST, ROUTER_MAX_CARDINALITY + " must be a valid Integer"
+          + ", instead got: " + maxCardinality);
     }
   }
 
@@ -210,7 +234,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
     try {
       return Pattern.compile(mustMatch);
     } catch (PatternSyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ROUTER_MUST_MATCH + " must be a valid regular"
+      throw new SolrException(BAD_REQUEST, ROUTER_MUST_MATCH + " must be a valid regular"
           + " expression, instead got: " + mustMatch);
     }
   }
