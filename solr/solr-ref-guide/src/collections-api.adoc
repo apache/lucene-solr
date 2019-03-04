@@ -139,10 +139,14 @@ Set to `true` to clear all stored completed and failed async request responses.
 
 *Input: Valid Request ID*
 
+// tag::createalias-simple-example[]
+
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo&wt=xml
 ----
+
+//end::createalias-simple-example[]
 
 *Output*
 
