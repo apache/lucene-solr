@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-/**
- * Send the raw requests to Solr endpoints.
- */
-package org.apache.solr.prometheus.scraper;
+package org.apache.solr.prometheus.collector;
+
+public interface MetricCollector {
+  MetricSamples collect() throws Exception;
+}

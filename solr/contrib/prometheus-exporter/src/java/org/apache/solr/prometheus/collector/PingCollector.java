@@ -15,7 +15,32 @@
  * limitations under the License.
  */
 
-/**
- * Collects metrics from Solr via various endpoints.
- */
 package org.apache.solr.prometheus.collector;
+
+import org.apache.solr.prometheus.exporter.MetricsQuery;
+import org.apache.solr.prometheus.scraper.SolrScraper;
+
+public class PingCollector implements MetricCollector {
+
+  private final SolrScraper solrScraper;
+  private final MetricsQuery metricsQuery;
+
+  public PingCollector(SolrScraper solrScraper, MetricsQuery metricsQuery) {
+    this.solrScraper = solrScraper;
+    this.metricsQuery = metricsQuery;
+  }
+
+  @Override
+  public MetricSamples collect() throws Exception {
+    MetricSamples results = new MetricSamples();
+
+    solrScraper.pingAllCollections(metricsQuery)
+        .forEach((collection, metrics) -> results.addAll(metrics));
+
+    solrScraper.pingAllCores(metricsQuery)
+        .forEach((collection, metrics) -> results.addAll(metrics));
+
+    return results;
+  }
+
+}
