@@ -67,6 +67,8 @@ Bug fixes
 
 * SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
 
+* SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -284,12 +284,34 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
+  private static byte[] getBytes(Object o, boolean readAsCharSeq) throws IOException {
+    try (JavaBinCodec javabin = new JavaBinCodec(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      javabin.readStringAsCharSeq = readAsCharSeq;
+      javabin.marshal(o, baos);
+      return baos.toByteArray();
+    }
+  }
+
   private static Object getObject(byte[] bytes) throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       return jbc.unmarshal(new ByteArrayInputStream(bytes));
     }
   }
 
+
+  public void testReadAsCharSeq() throws Exception {
+    List<Object> types = new ArrayList<>();
+    SolrInputDocument idoc = new SolrInputDocument();
+    idoc.addField("foo", "bar");
+    idoc.addField("foos", Arrays.asList("bar1","bar2"));
+    idoc.addField("enumf", new EnumFieldValue(1, "foo"));
+    types.add(idoc);
+    compareObjects(
+        (List) getObject(getBytes(types, true)),
+        (List) types
+    );
+
+  }
 
   @Test
   public void testResponseChildDocuments() throws IOException {
