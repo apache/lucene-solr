@@ -102,7 +102,7 @@ If you change the analysis chain that applies to indexing events, it is strongly
 This is because all of the changes that occur due to the chain configuration are applied to documents as they are
 being indexed, and only reindexing will allow your changes to take effect on documents.
 
-While not reindexing after analyzer changes is not required, be aware that not reindexing can cause unexpected
+While reindexing after analyzer changes is not required, be aware that not reindexing can cause unexpected
 query results in many cases.
 
 For example, if you indexed a number of documents and then decide you'd like to use the `LowerCaseTokenizerFactory`
@@ -132,8 +132,9 @@ The reason for this is that subtle changes may occur in default field type defin
 
 [NOTE]
 If you have *not* changed your schema as part of an upgrade from one minor release to another (such as, from 7.x
-to 7.x), you can often get away with reindexing your documents without first deleting your index. However, when
-upgrading to a major release, you should plan to reindex your documents because of the likelihood of changes that break back-compatibility.
+to a later 7.x release), you can often skip reindexing your documents.
+However, when upgrading to a major release, you should plan to reindex your documents because of the likelihood of
+changes that break back-compatibility.
 
 == Reindexing Strategies
 
@@ -174,7 +175,12 @@ to the new collection seamlessly.
 Here is an example of creating an alias that points to a single collection:
 
 [source,bash]
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myData&collections=oldCollection
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myData&collections=newCollection
+
+Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the <<collections-api.adoc#delete,DELETE command>> of the Collections API:
+
+[source,bash]
+http://localhost:8983/solr/admin/collections?action=DELETE&name=oldCollection
 
 == Changes that Do Not Require Reindex
 
