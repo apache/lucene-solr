@@ -14,34 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 
-public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
+public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
+  final Http2SolrClient httpClient;
+  final boolean closeClient;
 
-  private final HttpClient httpClient;
-  private final boolean clientIsInternal;
-
-  public HttpClusterStateProvider(List<String> solrUrls, HttpClient httpClient) throws Exception {
-    this.httpClient = httpClient == null? HttpClientUtil.createClient(null): httpClient;
-    this.clientIsInternal = httpClient == null;
+  public Http2ClusterStateProvider(List<String> solrUrls, Http2SolrClient httpClient) throws Exception {
+    this.httpClient = httpClient == null? new Http2SolrClient.Builder().build(): httpClient;
+    this.closeClient = httpClient == null;
     init(solrUrls);
   }
 
   @Override
-  protected SolrClient getSolrClient(String baseUrl) {
-    return new HttpSolrClient.Builder().withBaseSolrUrl(baseUrl).withHttpClient(httpClient).build();
+  public void close() throws IOException {
+    if (this.closeClient && this.httpClient != null) {
+      httpClient.close();
+    }
   }
 
   @Override
-  public void close() throws IOException {
-    if (this.clientIsInternal && this.httpClient != null) {
-      HttpClientUtil.close(httpClient);
-    }
+  protected SolrClient getSolrClient(String baseUrl) {
+    return new Http2SolrClient.Builder(baseUrl).withHttpClient(httpClient).build();
   }
 }
