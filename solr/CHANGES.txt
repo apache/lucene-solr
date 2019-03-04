@@ -81,6 +81,12 @@ Bug Fixes
 * SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors 
 (Munendra S N via Mikhail Khludnev)
 
+* SOLR-13234: Prometheus Metric Exporter not threadsafe. This changes the prometheus exporter to collect metrics
+  from Solr on a fixed interval controlled by this tool and prevents concurrent collections. This change also improves
+  performance slightly by using the cluster state instead of sending multiple HTTP requests to each node to lookup
+  all the cores.
+  (Danyal Prout via shalin)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
