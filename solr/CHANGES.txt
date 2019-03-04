@@ -278,6 +278,8 @@ New Features
 
 * SOLR-13241: Add 'autoscaling' tool support to solr.cmd (Jason Gerlowski)
 
+* SOLR-13276: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider (Cao Manh Dat)
+
 Bug Fixes
 ----------------------
 
