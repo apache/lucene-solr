@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
 public abstract class QueryVisitor {
 
   /**
-   * Called by leaf queries that match on a specific term
+   * Called by leaf queries that match on specific terms
    *
    * @param query  the leaf query
    * @param terms  the terms the query will match on
