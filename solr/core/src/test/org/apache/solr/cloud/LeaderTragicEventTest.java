@@ -84,11 +84,13 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
       waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState) -> {
         Slice slice = collectionState.getSlice("shard1");
-
+        log.info("Waiting for leader: numReps={} oldLeaderName={} currentLeader={}",
+                 slice.getReplicas().size(), oldLeader.getName(), slice.getLeader());
         if (slice.getReplicas().size() != 2) return false;
         if (slice.getLeader() == null) return false;
         if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
 
+        log.info("New leader found: {}", slice.getLeader().getName());
         return true;
       });
       ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
