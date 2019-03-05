@@ -120,6 +120,8 @@ If `true`, the request will complete only when all affected replicas become acti
 The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
 See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
+Collections are first created in read-write mode but can be put in `readOnly`
+mode using the <<modifycollection, MODIFYCOLLECTION>> action.
 
 === CREATE Response
 
@@ -191,8 +193,30 @@ The attributes that can be modified are:
 * snitch
 * policy
 * withCollection
+* readOnly
+* other custom properties that use a `property.` prefix
 
 See the <<create,CREATE action>> section above for details on these attributes.
+
+==== Read-only mode
+Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
+in which any index update requests are rejected. Other collection-level actions (eg. adding /
+removing / moving replicas) are still available in this mode.
+
+The transition from the (default) read-write to read-only mode consists of the following steps:
+
+* the `readOnly` flag is changed in collection state,
+* any new update requests are rejected with 403 FORBIDDEN error code (ongoing
+  long-running requests are aborted, too),
+* a forced commit is performed to flush and commit any in-flight updates.
+
+NOTE: This may potentially take a long time if there are still major segment merges running
+ in the background.
+
+* a collection <<reload, RELOAD action>> is executed.
+
+Removing the `readOnly` property or setting it to false enables the
+processing of updates and reloads the collection.
 
 [[reload]]
 == RELOAD: Reload a Collection

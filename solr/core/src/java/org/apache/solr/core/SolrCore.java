@@ -237,6 +237,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public boolean searchEnabled = true;
   public boolean indexEnabled = true;
+  public volatile boolean readOnly = false;
 
   public Set<String> getMetricNames() {
     return metricNames;
