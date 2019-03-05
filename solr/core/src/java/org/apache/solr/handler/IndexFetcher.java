@@ -169,6 +169,7 @@ public class IndexFetcher {
 
   private boolean downloadTlogFiles = false;
 
+  //nocommit: remove
   private boolean skipCommitOnMasterVersionZero = true;
 
   private boolean clearLocalIndexFirst = false;
@@ -447,7 +448,7 @@ public class IndexFetcher {
       log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
 
       if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0 && !shouldSkipFetchWithVersionZero()) {
+        if (commit.getGeneration() != 0 && !fetchFromLeader) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit.
           log.info("New index in Master. Deleting mine...");
@@ -458,12 +459,8 @@ public class IndexFetcher {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeSlaveCommitRefresh();
-          if (skipCommitOnMasterVersionZero) {
-            openNewSearcherAndUpdateCommitPoint();
-          } else {
-            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
-            solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-          }
+          SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+          solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
         }
 
         //there is nothing to be replicated
@@ -691,14 +688,6 @@ public class IndexFetcher {
     }
   }
 
-  private boolean shouldSkipFetchWithVersionZero() {
-    CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
-    if (cd == null) {
-      return false;
-    }
-    return cd.getReplicaType() == Replica.Type.PULL;
-  }
-
   private Replica getLeaderReplica() throws InterruptedException {
     ZkController zkController = solrCore.getCoreContainer().getZkController();
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
@@ -911,6 +900,9 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a reload
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
+    if (core == null) {
+      throw new IllegalStateException("No core for name " + solrCore.getName() + " in CoreContainer. isClosed: " + solrCore.isClosed());
+    }
     try {
       Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
