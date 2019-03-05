@@ -306,6 +306,9 @@ Optimizations
 * LUCENE-8585: Index-time jump-tables for DocValues, for O(1) advance when retrieving doc values.
   (Toke Eskildsen, Adrien Grand)
 
+======================= Lucene 7.7.1 =======================
+(No Changes)
+
 ======================= Lucene 7.7.0 =======================
 
 Changes in Runtime Behavior
