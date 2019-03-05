@@ -263,19 +263,23 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     return fields;
   }
 
+  private static long parseSeedFromSegment(final SegmentReadState state) throws IOException {
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
+    try (final ChecksumIndexInput in = state.directory.openChecksumInput(seedFileName, state.context)) {
+      CodecUtil.checkIndexHeader(in, "MockRandomSeed", 0, 0, state.segmentInfo.getId(), state.segmentSuffix);
+      final long seed = in.readLong();
+      CodecUtil.checkFooter(in);
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
+      }
+      return seed;
+    }
+  }
+  
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
-    final ChecksumIndexInput in = state.directory.openChecksumInput(seedFileName, state.context);
-    CodecUtil.checkIndexHeader(in, "MockRandomSeed", 0, 0, state.segmentInfo.getId(), state.segmentSuffix);
-    final long seed = in.readLong();
-    CodecUtil.checkFooter(in);
-    if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
-    }
-    in.close();
-
+    final long seed = parseSeedFromSegment(state);
     final Random random = new Random(seed);
     
     int readBufferSize = TestUtil.nextInt(random, 1, 4096);
