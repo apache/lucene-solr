@@ -15,7 +15,24 @@
  * limitations under the License.
  */
 
-/**
- * Send the raw requests to Solr endpoints.
- */
-package org.apache.solr.prometheus.scraper;
+package org.apache.solr.prometheus.collector;
+
+import org.apache.solr.prometheus.exporter.MetricsQuery;
+import org.apache.solr.prometheus.scraper.SolrScraper;
+
+public class CollectionsCollector implements MetricCollector {
+
+  private final SolrScraper solrClient;
+  private final MetricsQuery metricsQuery;
+
+  public CollectionsCollector(SolrScraper solrClient, MetricsQuery metricsQuery) {
+    this.solrClient = solrClient;
+    this.metricsQuery = metricsQuery;
+  }
+
+  @Override
+  public MetricSamples collect() throws Exception {
+    return solrClient.collections(metricsQuery);
+  }
+
+}
