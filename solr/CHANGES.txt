@@ -98,6 +98,8 @@ Bug Fixes
 
 * SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
 
+* SOLR-13295: Reproducible failure in TestDistributedGrouping (Erick Erickson)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
