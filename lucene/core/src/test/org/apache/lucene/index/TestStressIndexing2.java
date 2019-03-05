@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.index;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,13 +33,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -115,7 +120,40 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
+  public void testRandomCorruptionIsTragic() throws Exception {
+    
+    final MockDirectoryWrapper dir = newMockDirectory();
+    dir.setCheckIndexOnClose(false); // we are corrupting it!
+    
+    final IndexWriterConfig iwc = newIndexWriterConfig();
+    final MergeScheduler ms = iwc.getMergeScheduler();
+    if (ms instanceof ConcurrentMergeScheduler) {
+      ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+    }
+    final IndexWriter w = new IndexWriter(dir, iwc);
 
+    try {
+      // NOTE: we never need to 'start' this thread, we're just going to use it's logic as a Runnable
+      CorruptibleIndexingThread th = new CorruptibleIndexingThread();
+      th.w = w;
+      th.dir = dir;
+      th.base = 0;
+      th.range = atLeast(10);
+      th.iterations = atLeast(5);
+      
+      th.run();
+      
+    } finally {
+      if (ms instanceof ConcurrentMergeScheduler) {
+        // Sneaky: CMS's merge thread will be concurrently rolling back IW due
+        // to the tragedy, with this main thread, so we have to wait here
+        // to ensure the rollback has finished, else MDW still sees open files:
+        ((ConcurrentMergeScheduler) ms).sync();
+      }
+      IOUtils.closeWhileHandlingException(w, dir);
+    }
+  }
+  
   static Term idTerm = new Term("id","");
   IndexingThread[] threads;
   static Comparator<IndexableField> fieldNameComparator = new Comparator<IndexableField>() {
@@ -765,8 +803,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
       
       ArrayList<Field> fields = new ArrayList<>();
       String idString = getIdString();
-      Field idField =  newField("id", idString, customType1);
-      fields.add(idField);
+
+      fields.add(newField("id", idString, customType1));
+      fields.add(new NumericDocValuesField("docValues", nextInt(5000)));
 
       Map<String,FieldType> tvTypes = new HashMap<>();
 
@@ -853,6 +892,26 @@ public class TestStressIndexing2 extends LuceneTestCase {
       docs.put(idString, d);
     }
 
+    public void updateDocVal() throws IOException {
+      if (docs.isEmpty()) {
+        indexDoc();
+        return;
+      }
+      
+      final String idString = (new ArrayList<>(docs.keySet())).get(nextInt(docs.size()));
+      
+      if (VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": dv update id:" + idString);
+      }
+      
+      final NumericDocValuesField val = new NumericDocValuesField("docValues", nextInt(5000));
+      w.updateDocValues(new Term("id",idString), val);
+      
+      final Document doc = docs.get(idString);
+      doc.removeFields("docValues");
+      doc.add(val);
+    }
+    
     public void deleteDoc() throws IOException {
       String idString = getIdString();
       if (VERBOSE) {
@@ -871,27 +930,108 @@ public class TestStressIndexing2 extends LuceneTestCase {
       docs.remove(idString);
     }
 
+    public void doOneRandomOp() throws IOException {
+      final int what = nextInt(100);
+      if (what < 5) {
+        deleteDoc();
+      } else if (what < 10) {
+        deleteByQuery();
+      } else if (what < 20) {
+        updateDocVal();
+      } else {
+        indexDoc();
+      }
+    }
+    
     @Override
     public void run() {
       try {
         r = new Random(base+range+seed);
         for (int i=0; i<iterations; i++) {
-          int what = nextInt(100);
-          if (what < 5) {
-            deleteDoc();
-          } else if (what < 10) {
-            deleteByQuery();
-          } else {
-            indexDoc();
-          }
+          doOneRandomOp();
         }
       } catch (Throwable e) {
         throw new RuntimeException(e);
       }
 
-      synchronized (this) {
+      synchronized (this) { // nocommit: what/why is this here?
         docs.size();
       }
+    }
+  }
+
+  public class CorruptibleIndexingThread extends IndexingThread {
+    MockDirectoryWrapper dir;
+    
+    @Override
+    public void run() {
+      assert null != dir;
+      assert null != w;
+      r = new Random(base+range+seed);
+      
+      // we're going to loop (effectively) forever
+      // introducing a small amount of corruption then attempting an index update
+      // once we encounter an exception from the index update, we will assert that the IW
+      // has recorded a traggic exception
+      
+      int totalCorruption = 0;
+      int numIndexOpsSucceded = 0;
+      boolean gotExpectedFailure = false;
+      
+      // "while (true)" safety valve, prevent infinite loop if IW is so broken it never throws exceptions
+      // NOTE: test could get very 'lucky' (need MockDirectoryWrapper.alwaysCorrupt to be publc)
+      while (totalCorruption < 999999) {
+        
+        // do some random corruption of a *few* files
+        try {
+          final List<String> allFiles = Arrays.asList(dir.listAll());
+          Collections.sort(allFiles);
+          Collections.shuffle(allFiles, r);
+          try {
+            dir.corruptFiles(allFiles.subList(0, Math.min(allFiles.size(), RANDOM_MULTIPLIER)));
+            totalCorruption++;
+          } catch (RuntimeException | FileNotFoundException | NoSuchFileException e) {
+            // merges can lead to this exception
+          }
+        } catch (IOException e) {
+          assertNull("IOException trying to corrupt", e);
+        }
+        
+        // do some index updates
+        try {
+          doOneRandomOp();
+          numIndexOpsSucceded++;
+
+          // nocommit: do a LOT of commits for now since that's where the (known) problem seems to be
+          // if (r.nextInt(100) < 10) { 
+          if (r.nextInt(100) < 50) {
+            w.commit();
+            numIndexOpsSucceded++;
+          }
+          
+        } catch (Throwable t) {
+          // NOTE: we don't use expectThrows because there's no garuntee that
+          // the update we attempt will cause an exception, but if it *does* cause an exception,
+          // then it must have been tragic.
+          //
+          // (nothing we're doing that might cause an exception should ever be "non-tragic")
+          try {
+            assertNotNull("index update encountered throwable, but no tragic event recorded: "
+                          + t.toString(),
+                          w.getTragicException());
+            assertFalse(w.isOpen());
+          } catch (AssertionError a) {
+            a.addSuppressed(t);
+            throw a;
+          }
+          gotExpectedFailure = true;
+          break;
+        }
+      }
+      assertTrue("Safety Valve: " + totalCorruption + " calls to corruptFiles() and " + numIndexOpsSucceded +
+                 " index ops succeded w/o any IndexWriter exceptions?",
+                 gotExpectedFailure);
+      
     }
   }
 }
