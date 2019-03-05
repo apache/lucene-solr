@@ -463,7 +463,7 @@ public class ResponseBuilder
     if (result.isPartialResults()) {
       rsp.getResponseHeader().asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      if(getResults().docList==null) {
+      if(getResults() != null && getResults().docList==null) {
         getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0);
       }
     }
