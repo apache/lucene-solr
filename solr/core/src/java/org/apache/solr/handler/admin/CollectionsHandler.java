@@ -935,6 +935,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }),
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
+      copyPropertiesWithPrefix(req.getParams(), m, COLL_PROP_PREFIX);
       if (m.isEmpty())  {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
@@ -942,7 +943,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
-      for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      for (String prop : m.keySet()) {
         if ("".equals(m.get(prop)))  {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
           m.put(prop, null);

@@ -32,7 +32,208 @@ Because this API has a large number of commands and options, we've grouped the c
 
 *<<replica-management.adoc#replica-management,Replica Management>>*: Add or delete a replica; set replica properties; move a replica to a different node.
 
+<<<<<<< HEAD
 == Asynchronous Calls
+=======
+`router.name`::
+The router name that will be used. The router defines how documents will be distributed among the shards. Possible values are `implicit` or `compositeId`, which is the default.
++
+The `implicit` router does not automatically route documents to different shards. Whichever shard you indicate on the indexing request (or within each document) will be used as the destination for those documents.
++
+The `compositeId` router hashes the value in the uniqueKey field and looks up that hash in the collection's clusterstate to determine which shard will receive the document, with the additional ability to manually direct the routing.
++
+When using the `implicit` router, the `shards` parameter is required. When using the `compositeId` router, the `numShards` parameter is required.
++
+For more information, see also the section <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>>.
+
+`numShards`::
+The number of shards to be created as part of the collection. This is a required parameter when the `router.name` is `compositeId`.
+
+`shards`::
+A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`. This is a required parameter when the `router.name` is `implicit`.
+
+`replicationFactor`::
+The number of replicas to be created for each shard. The default is `1`.
++
+This will create a NRT type of replica. If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters below. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`nrtReplicas`::
+The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. If you want all of your replicas to be of this type, you can simply use `replicationFactor` instead.
+
+`tlogReplicas`::
+The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`pullReplicas`::
+The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`maxShardsPerNode`::
+When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
++
+If a node is not live when the CREATE action is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas the CREATE action will spread to each node.
++
+If the entire collection can not be fit into the live nodes, no collection will be created at all. The default `maxShardsPerNode` value is `1`. A value of `-1` means unlimited. If a `policy` is also specified then the stricter of `maxShardsPerNode` and policy rules apply.
+
+`createNodeSet`::
+Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
++
+If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
++
+Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
+
+`createNodeSet.shuffle`::
+Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
++
+A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
++
+This parameter is ignored if `createNodeSet` is not also specified.
+
+`collection.configName`::
+Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configSet to create a new (and mutable) configSet named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
+
+`router.field`::
+If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
++
+Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
+
+`property._name_=_value_`::
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+`autoAddReplicas`::
+When set to `true`, enables automatic addition of replicas when the number of active replicas falls below the value set for `replicationFactor`. This may occur if a replica goes down, for example. The default is `false`, which means new replicas will not be added.
++
+While this parameter is provided as part of Solr's set of features to provide autoscaling of clusters, it is available even when you have not implemented any other part of autoscaling (such as a policy). See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for more details about this option and how it can be used.
+
+`async`::
+Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+`rule`::
+Replica placement rules. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+
+`snitch`::
+Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+
+`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
+`withCollection`::
+The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
+See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
+
+Collections are first created in read-write mode but can be put in `readOnly`
+mode using the <<modifycollection, MODIFYCOLLECTION>> action.
+
+=== CREATE Response
+
+The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using CREATE
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">3764</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3450</int>
+      </lst>
+      <str name="core">newCollection_shard1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3597</int>
+      </lst>
+      <str name="core">newCollection_shard2_replica1</str>
+    </lst>
+  </lst>
+</response>
+----
+
+[[modifycollection]]
+== MODIFYCOLLECTION: Modify Attributes of a Collection
+
+`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>_&__<attribute-name>__=__<attribute-value>__&__<another-attribute-name>__=__<another-value>__&__<yet_another_attribute_name>__=`
+
+It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+
+An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
+
+=== MODIFYCOLLECTION Parameters
+
+`collection`::
+The name of the collection to be modified. This parameter is required.
+
+`_attribute_=_value_`::
+Key-value pairs of attribute names and attribute values.
+
+At least one `_attribute_` parameter is required.
+
+The attributes that can be modified are:
+
+* maxShardsPerNode
+* replicationFactor
+* autoAddReplicas
+* collection.configName
+* rule
+* snitch
+* policy
+* withCollection
+* readOnly
+* other custom properties that use a `property.` prefix
+
+See the <<create,CREATE action>> section above for details on these attributes.
+
+==== Read-only mode
+Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
+in which any index update requests are rejected. Other collection-level actions (eg. adding /
+removing / moving replicas) are still available in this mode.
+
+The transition from the (default) read-write to read-only mode consists of the following steps:
+
+* the `readOnly` flag is changed in collection state,
+* any new update requests are rejected with 403 FORBIDDEN error code (ongoing
+  long-running requests are aborted, too),
+* a forced commit is performed to flush and commit any in-flight updates.
+
+NOTE: This may potentially take a long time if there are still major segment merges running
+ in the background.
+
+* a collection <<reload, RELOAD action>> is executed.
+
+Removing the `readOnly` property or setting it to false enables the
+processing of updates and reloads the collection.
+
+[[reload]]
+== RELOAD: Reload a Collection
+
+`/admin/collections?action=RELOAD&name=_name_`
+
+The RELOAD action is used when you have changed a configuration in ZooKeeper.
+
+=== RELOAD Parameters
+
+`name`::
+The name of the collection to reload. This parameter is required.
+
+`async`::
+Request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+>>>>>>> SOLR-13271: Read-only mode for SolrCloud collections.
 
 Some collection API calls can be long running tasks (such as SPLITSHARD, and others). Instead of waiting for a command to exit, you can optionally have the calls run asynchronously. Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<requeststatus,REQUESTSTATUS>> command at any time.
 

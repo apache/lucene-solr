@@ -70,6 +70,8 @@ New Features
 
 * SOLR-13287: Allow zplot to visualize probability distributions in Apache Zeppelin (Joel Bernstein)
 
+* SOLR-13271: Read-only mode for SolrCloud collections (ab, shalin)
+
 Bug Fixes
 ----------------------
 

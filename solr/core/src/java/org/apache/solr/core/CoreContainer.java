@@ -57,6 +57,7 @@ import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -78,6 +79,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -121,6 +123,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.OrderedExecutor;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -1449,10 +1452,36 @@ public class CoreContainer {
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
         newCore = core.reload(coreConfig);
 
+        DocCollection docCollection = null;
+        if (getZkController() != null) {
+          docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+          // turn off indexing now, before the new core is registered
+          if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
+            newCore.readOnly = true;
+          }
+        }
+
         registerCore(cd, newCore, false, false);
 
-        if (getZkController() != null) {
-          DocCollection docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+        // force commit on old core if the new one is readOnly and prevent any new updates
+        if (newCore.readOnly) {
+          RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
+          if (iwRef != null) {
+            IndexWriter iw = iwRef.get();
+            // switch old core to readOnly
+            core.readOnly = true;
+            try {
+              if (iw != null) {
+                iw.commit();
+              }
+            } finally {
+              iwRef.decref();
+            }
+          }
+        }
+
+
+        if (docCollection != null) {
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
           assert replica != null;
           if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
