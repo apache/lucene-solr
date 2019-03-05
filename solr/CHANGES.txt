@@ -29,8 +29,23 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
+Upgrade Notes
+----------------------
 
-(No Changes)
+* SOLR-13234: The Prometheus Metric Exporter now collects metrics from Solr at a fixed schedule that is controlled
+  by the exporter itself. The default interval is 60s but it can be changed by specifying the --scrape-interval
+  command line parameter to the tool. The collected metrics are cached and returned for any requests coming in before
+  the next scheduled collection. This can impact the freshness of the metrics if prometheus is configured to query the
+  tool more frequently.
+
+Bug fixes
+----------------------
+
+* SOLR-13234: Prometheus Metric Exporter not threadsafe. This changes the prometheus exporter to collect metrics
+  from Solr on a fixed interval controlled by this tool and prevents concurrent collections. This change also improves
+  performance slightly by using the cluster state instead of sending multiple HTTP requests to each node to lookup
+  all the cores.
+  (Danyal Prout via shalin)
 
 
 ==================  7.7.1 ==================

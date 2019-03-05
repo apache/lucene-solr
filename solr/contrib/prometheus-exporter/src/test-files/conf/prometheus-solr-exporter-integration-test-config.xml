@@ -18,12 +18,57 @@
 
 <config>
 
+  <settings>
+    <httpClients>
+      <connectionTimeout>10000</connectionTimeout>
+      <readTimeout>10000</readTimeout>
+    </httpClients>
+  </settings>
+
   <rules>
+
+    <search>
+      <lst name="request">
+        <lst name="query">
+          <str name="collection">collection1</str>
+          <str name="path">/select</str>
+          <lst name="params">
+            <str name="q">*:*</str>
+            <str name="start">0</str>
+            <str name="rows">0</str>
+            <str name="json.facet">
+              {
+                category: {
+                type: terms,
+                field: cat
+                }
+              }
+            </str>
+          </lst>
+        </lst>
+        <arr name="jsonQueries">
+          <str>
+            .facets.category.buckets[] as $object |
+            $object.val as $term |
+            $object.count as $value |
+            {
+              name         : "solr_facets_category",
+              type         : "GAUGE",
+              help         : "Category facets",
+              label_names  : ["term"],
+              label_values : [$term],
+              value        : $value
+            }
+          </str>
+        </arr>
+      </lst>
+    </search>
 
     <ping>
       <lst name="request">
         <lst name="query">
           <str name="path">/admin/ping</str>
+          <str name="wt">json</str>
         </lst>
         <arr name="jsonQueries">
           <str>
@@ -54,49 +99,6 @@
           </lst>
         </lst>
         <arr name="jsonQueries">
-          <!--
-            jetty metrics
-          -->
-          <!--
-          <str>
-            .metrics["solr.jetty"] | to_entries | .[] | select(.key | startswith("org.eclipse.jetty.server.handler.DefaultHandler")) | select(.key | endswith("xx-responses")) as $object |
-            $object.key | split(".") | last | split("-") | first as $status |
-            $object.value.count as $value |
-            {
-            name         : "solr_metrics_jetty_response_total",
-            type         : "COUNTER",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
-            label_names  : ["status"],
-            label_values : [$status],
-            value        : $value
-            }
-          </str>
-          <str>
-            .metrics["solr.jetty"] | to_entries | .[] | select(.key | startswith("org.eclipse.jetty.server.handler.DefaultHandler.")) | select(.key | endswith("-requests")) | select (.value | type == "object") as $object |
-            $object.key | split(".") | last | split("-") | first as $method |
-            $object.value.count as $value |
-            {
-              name         : "solr_metrics_jetty_requests_total",
-              type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
-              label_names  : ["method"],
-              label_values : [$method],
-              value        : $value
-            }
-          </str>
-          <str>
-            .metrics["solr.jetty"] | to_entries | .[] | select(.key == "org.eclipse.jetty.server.handler.DefaultHandler.dispatches") as $object |
-            $object.value.count as $value |
-            {
-              name         : "solr_metrics_jetty_dispatches_total",
-              type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
-              label_names  : [],
-              label_values : [],
-              value        : $value
-            }
-          </str>
-          -->
           <!--
             jvm metrics
           -->
@@ -1665,45 +1667,6 @@
           <str>
             .cluster.collections | to_entries | .[] | . as $object |
             $object.key as $collection |
-            $object.value.pullReplicas | tonumber as $value |
-            {
-              name         : "solr_collections_pull_replicas",
-              type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
-              label_names  : ["collection"],
-              label_values : [$collection],
-              value        : $value
-            }
-          </str>
-          <str>
-            .cluster.collections | to_entries | .[] | . as $object |
-            $object.key as $collection |
-            $object.value.nrtReplicas | tonumber as $value |
-            {
-              name         : "solr_collections_nrt_replicas",
-              type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
-              label_names  : ["collection"],
-              label_values : [$collection],
-              value        : $value
-            }
-          </str>
-          <str>
-            .cluster.collections | to_entries | .[] | . as $object |
-            $object.key as $collection |
-            $object.value.tlogReplicas | tonumber as $value |
-            {
-              name         : "solr_collections_tlog_replicas",
-              type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
-              label_names  : ["collection"],
-              label_values : [$collection],
-              value        : $value
-            }
-          </str>
-          <str>
-            .cluster.collections | to_entries | .[] | . as $object |
-            $object.key as $collection |
             $object.value.shards | to_entries | .[] | . as $shard_obj |
             $shard_obj.key as $shard |
             (if $shard_obj.value.state == "active" then 1.0 else 0.0 end) as $value |
@@ -1763,43 +1726,6 @@
         </arr>
       </lst>
     </collections>
-
-    <search>
-      <lst name="request">
-        <lst name="query">
-          <str name="collection">collection1</str>
-          <str name="path">/select</str>
-          <lst name="params">
-            <str name="q">*:*</str>
-            <str name="start">0</str>
-            <str name="rows">0</str>
-            <str name="json.facet">
-              {
-                category: {
-                  type: terms,
-                  field: cat
-                }
-              }
-            </str>
-          </lst>
-        </lst>
-        <arr name="jsonQueries">
-          <str>
-            .facets.category.buckets[] as $object |
-            $object.val as $term |
-            $object.count as $value |
-            {
-              name         : "solr_facets_category",
-              type         : "GAUGE",
-              help         : "Category facets",
-              label_names  : ["term"],
-              label_values : [$term],
-              value        : $value
-            }
-          </str>
-        </arr>
-      </lst>
-    </search>
 
   </rules>
 
