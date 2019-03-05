@@ -2151,8 +2151,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    boolean newMergesFound = updatePendingMerges(mergePolicy, trigger, maxNumSegments);
-    mergeScheduler.merge(this, trigger, newMergesFound);
+    try {
+      boolean newMergesFound = updatePendingMerges(mergePolicy, trigger, maxNumSegments);
+      mergeScheduler.merge(this, trigger, newMergesFound);
+    } catch (MergePolicy.MergeAbortedException mae) {
+      throw mae;
+    } catch (Throwable t) {
+      tragicEvent(t, "maybeMerge");
+      throw t;
+    }
   }
 
   private synchronized boolean updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
@@ -3261,6 +3268,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           }
         }
       } catch (VirtualMachineError tragedy) {
+        // nocommit: should we be catching Throwable & treating as traggic here?
+        // nocommit: if we get an IOException here does it come direct from dir, or has docWriter already tracked it as traggic?
         tragicEvent(tragedy, "prepareCommit");
         throw tragedy;
       } finally {
@@ -4839,7 +4848,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           segmentInfos.updateGeneration(toSync);
         }
       }
-    } catch (VirtualMachineError tragedy) {
+    } catch (MergePolicy.MergeAbortedException mae) {
+      throw mae;
+    } catch (Throwable tragedy) {
+      // nocommit: simonw has questions/concerns about catching Throwable here
+      // nocommit: can/should we catch something narrower?
       tragicEvent(tragedy, "startCommit");
       throw tragedy;
     }
