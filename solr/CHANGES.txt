@@ -46,6 +46,8 @@ New Features
 
 * SOLR-13276: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider (Cao Manh Dat)
 
+* SOLR-13287: Allow zplot to visualize probability distributions in Apache Zeppelin (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
