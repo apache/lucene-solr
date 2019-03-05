@@ -812,7 +812,7 @@ public class QueryComponent extends SearchComponent
       
       long numFound = 0;
       Float maxScore=null;
-      boolean partialResults = false;
+      boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -853,7 +853,7 @@ public class QueryComponent extends SearchComponent
         }
         // now that we've added the shard info, let's only proceed if we have no error.
         if (srsp.getException() != null) {
-          partialResults = true;
+          thereArePartialResults = true;
           continue;
         }
 
@@ -865,10 +865,11 @@ public class QueryComponent extends SearchComponent
           responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
         }
 
+        final boolean thisResponseIsPartial;
         if (responseHeader != null) {
-          if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            partialResults = true;
-          }
+          thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+          thereArePartialResults |= thisResponseIsPartial;
+          
           if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
             final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
             if (Boolean.TRUE.equals(ste)) {
@@ -877,6 +878,8 @@ public class QueryComponent extends SearchComponent
               segmentTerminatedEarly = Boolean.FALSE;
             }
           }
+        } else {
+          thisResponseIsPartial = false;
         }
         
         // calculate global maxScore and numDocsFound
@@ -886,7 +889,8 @@ public class QueryComponent extends SearchComponent
         numFound += docs.getNumFound();
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
-        if (sortFieldValues.size()==0 && partialResults) {
+        if (sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
+                            thisResponseIsPartial) { // but not the previous one!!
           continue; //fsv timeout yields empty sort_vlaues
         }
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
@@ -966,7 +970,7 @@ public class QueryComponent extends SearchComponent
 
       populateNextCursorMarkFromMergedShards(rb);
 
-      if (partialResults) {
+      if (thereArePartialResults) {
          rb.rsp.getResponseHeader().asShallowMap()
                    .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       }
