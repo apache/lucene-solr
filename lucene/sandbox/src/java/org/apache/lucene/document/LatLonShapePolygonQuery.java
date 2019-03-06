@@ -56,46 +56,8 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
         throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
-    if (queryRelation == QueryRelation.CONTAINS) {
-      //for contains we need to encode the polygon.
-      this.polygons = encodePolygons(polygons);
-      this.poly2D = Polygon2D.create(this.polygons);
-    } else {
-      this.polygons = polygons.clone();
-      this.poly2D = Polygon2D.create(polygons);
-    }
-  }
-
-  /**
-   * encode/decode the points for the provided polygons.
-   * */
-  protected static Polygon[] encodePolygons(Polygon[] polygons) {
-    Polygon[] clones = new Polygon[polygons.length];
-    for (int i = 0; i < polygons.length; i++) {
-      clones[i] = encodePolygon(polygons[i]);
-    }
-    return clones;
-  }
-
-   /**
-    * encode/decode the points for the provided polygon.
-    */
-  protected static Polygon encodePolygon(Polygon polygon) {
-    double[] lats = new double[polygon.getPolyLats().length];
-    double[] lons = new double[polygon.getPolyLats().length];
-    for (int i = 0; i < polygon.getPolyLats().length; i++) {
-      lats[i] = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(polygon.getPolyLat(i)));
-      lons[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
-    }
-    Polygon[] holes = polygon.getHoles();
-    if (holes != null && holes.length > 0) {
-      Polygon[] encodedHoles = new Polygon[holes.length];
-      for (int i = 0; i < holes.length; i++) {
-        encodedHoles[i] = encodePolygon(holes[i]);
-      }
-      return new Polygon(lats, lons, holes);
-    }
-    return new Polygon(lats, lons);
+    this.polygons = polygons.clone();
+    this.poly2D = Polygon2D.create(polygons);
   }
 
   @Override

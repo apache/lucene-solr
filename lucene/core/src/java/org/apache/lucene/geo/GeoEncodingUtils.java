@@ -45,6 +45,8 @@ public final class GeoEncodingUtils {
 
   public static final int MIN_LON_ENCODED = encodeLongitude(MIN_LON_INCL);
   public static final int MAX_LON_ENCODED = encodeLongitude(MAX_LON_INCL);
+  public static final double MIN_LON_DECODED = decodeLongitude(MIN_LON_ENCODED);
+  public static final double MAX_LON_DECODED = decodeLongitude(MAX_LON_ENCODED);
 
 
   // No instance:

@@ -504,9 +504,6 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       }
 
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-      if (queryRelation == QueryRelation.CONTAINS) {
-        queryPolygon = LatLonShapePolygonQuery.encodePolygons(queryPolygon);
-      }
       Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 

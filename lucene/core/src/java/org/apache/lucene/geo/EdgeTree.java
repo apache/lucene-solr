@@ -340,66 +340,43 @@ public abstract class EdgeTree {
 
     /** Returns the relation between the provided line and this edge subtree */
     Relation relateLine(double ax, double ay, double bx, double by) {
-      double minLat = StrictMath.min(ay, by);
-      double minLon = StrictMath.min(ax, bx);
-      double maxLat = StrictMath.max(ay, by);
-      double maxLon = StrictMath.max(ax, bx);
+      double lineMinLat = StrictMath.min(ay, by);
+      double lineMinLon = StrictMath.min(ax, bx);
+      double lineMaxLat = StrictMath.max(ay, by);
+      double lineMaxLon = StrictMath.max(ax, bx);
 
-      Relation r = Relation.CELL_OUTSIDE_QUERY;
-      if (minLat <= max) {
-        double thisMinLat = StrictMath.min(lat1, lat2);
-        double thisMinLon = StrictMath.min(lon1, lon2);
-        double thisMaxLat = StrictMath.max(lat1, lat2);
-        double thisMaxLon = StrictMath.max(lon1, lon2);
-//        double dy = lat1;
-//        double ey = lat2;
-//        double dx = lon1;
-//        double ex = lon2;
+      if (lineMinLat <= max) {
+        double minLat = StrictMath.min(lat1, lat2);
+        double minLon = StrictMath.min(lon1, lon2);
+        double maxLat = StrictMath.max(lat1, lat2);
+        double maxLon = StrictMath.max(lon1, lon2);
 
         // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
         // if not, don't waste our time trying more complicated stuff
-        boolean outside = (thisMaxLat < minLat) ||
-            (thisMinLat > maxLat) ||
-            (thisMaxLon < minLon) ||
-            (thisMinLon > maxLon);
+        boolean outside = (maxLat < lineMinLat) ||
+            (minLat > lineMaxLat) ||
+            (maxLon < lineMinLon) ||
+            (minLon > lineMaxLon);
 
         if (outside == false) {
-          r = lineRelateLine(ax, ay, bx, by, lon1, lat1, lon2, lat2);
-          if (r == Relation.CELL_CROSSES_QUERY) {
+          if (lineRelateLine(ax, ay, bx, by, lon1, lat1, lon2, lat2) != Relation.CELL_OUTSIDE_QUERY) {
             //if crosses then we can return
-            return r;
-          } else if (r == Relation.CELL_INSIDE_QUERY && parallel(ax, ay, bx, by, lon1, lat1, lon2, lat2)) {
-            //We need to check that the given line is fully inside this line if they are parallel.
-            if (minLat > thisMinLat || maxLat < thisMaxLat || minLon > thisMinLon || maxLon < thisMaxLon) {
-              return Relation.CELL_CROSSES_QUERY;
-            }
+            return Relation.CELL_CROSSES_QUERY;
           }
         }
         if (left != null) {
-          Relation leftRelation = left.relateLine(ax, ay, bx, by);
-          if (leftRelation == Relation.CELL_CROSSES_QUERY) {
-            return leftRelation;
-          } else if (leftRelation == Relation.CELL_INSIDE_QUERY) {
-            r = leftRelation;
+          if (left.relateLine(ax, ay, bx, by) != Relation.CELL_OUTSIDE_QUERY) {
+            return Relation.CELL_CROSSES_QUERY;
           }
         }
 
-        if (right != null && maxLat >= low) {
-          Relation rightRelation = right.relateLine(ax, ay, bx, by);
-          if (rightRelation == Relation.CELL_CROSSES_QUERY) {
-            return rightRelation;
-          } else if (rightRelation == Relation.CELL_INSIDE_QUERY) {
-            r = rightRelation;
+        if (right != null && lineMaxLat >= low) {
+          if (right.relateLine(ax, ay, bx, by) != Relation.CELL_OUTSIDE_QUERY) {
+            return Relation.CELL_CROSSES_QUERY;
           }
         }
       }
-      return r;
-    }
-
-    private static boolean parallel(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
-      int a = orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y);
-      int b = orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y);
-      return a ==0 && b ==0;
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
     /** Returns true if the box crosses any edge in this edge subtree */

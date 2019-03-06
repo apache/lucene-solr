@@ -160,21 +160,27 @@ public final class Polygon2D extends EdgeTree {
 
     WithinRelation relation = WithinRelation.DISJOINT;
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
-    if (tree.relateLine(ax, ay, bx, by) == Relation.CELL_CROSSES_QUERY) {
+    boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_DECODED && bx == GeoEncodingUtils.MAX_LON_DECODED)
+        || (ax == GeoEncodingUtils.MIN_LON_DECODED && bx == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline1 == false && tree.relateLine(ax, ay, bx, by) == Relation.CELL_CROSSES_QUERY) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.relateLine(bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+    boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_DECODED && cx == GeoEncodingUtils.MAX_LON_DECODED)
+        || (bx == GeoEncodingUtils.MIN_LON_DECODED && cx == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline2 == false && tree.relateLine(bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.relateLine(cx, cy, ax, ay) == Relation.CELL_CROSSES_QUERY) {
+    boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_DECODED && ax == GeoEncodingUtils.MAX_LON_DECODED)
+        || (cx == GeoEncodingUtils.MIN_LON_DECODED && ax == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline3 == false && tree.relateLine(cx, cy, ax, ay) == Relation.CELL_CROSSES_QUERY) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {
