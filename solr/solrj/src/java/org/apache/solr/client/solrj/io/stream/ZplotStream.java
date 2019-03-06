@@ -254,14 +254,11 @@ public class ZplotStream extends TupleStream implements Expressible {
           outTuples.add(tuple);
         }
       } else if(o instanceof List) {
-        System.out.print("Is list");
         List list = (List)o;
         if(list.get(0) instanceof Tuple) {
-          System.out.print("Are tuples");
           List<Tuple> tlist = (List<Tuple>)o;
           Tuple tuple = tlist.get(0);
           if(tuple.fields.containsKey("N")) {
-            System.out.println("Is hist");
             for(Tuple t : tlist) {
               Tuple outtuple = new Tuple(new HashMap());
               outtuple.put("x", Precision.round(((double)t.get("mean")), 2));
@@ -269,7 +266,6 @@ public class ZplotStream extends TupleStream implements Expressible {
               outTuples.add(outtuple);
             }
           } else if(tuple.fields.containsKey("count")) {
-            System.out.println("Is freq");
             for(Tuple t : tlist) {
               Tuple outtuple = new Tuple(new HashMap());
               outtuple.put("x", t.get("value"));
