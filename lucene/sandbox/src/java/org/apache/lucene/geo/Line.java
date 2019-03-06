@@ -126,13 +126,13 @@ public class Line {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("LINE(");
+    sb.append("LINESTRING(");
     for (int i = 0; i < lats.length; i++) {
-      sb.append("[")
-          .append(lats[i])
-          .append(", ")
+      sb.append("")
           .append(lons[i])
-          .append("]");
+          .append(" ")
+          .append(lats[i])
+          .append(",");
     }
     sb.append(')');
     return sb.toString();

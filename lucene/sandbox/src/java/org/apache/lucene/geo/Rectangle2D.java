@@ -193,21 +193,29 @@ public class Rectangle2D {
 
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
     EdgeTree.WithinRelation relation = EdgeTree.WithinRelation.DISJOINT;
-    if (edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
+
+    boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_ENCODED && bx == GeoEncodingUtils.MAX_LON_ENCODED)
+        || (ax == GeoEncodingUtils.MIN_LON_ENCODED && bx == GeoEncodingUtils.MIN_LON_ENCODED);
+    if (dateline1 == false && edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
       if (ab == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
         relation = EdgeTree.WithinRelation.CANDIDATE;
       }
     }
-    if (edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
+    boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_ENCODED && cx == GeoEncodingUtils.MAX_LON_ENCODED)
+        || (bx == GeoEncodingUtils.MIN_LON_ENCODED && cx == GeoEncodingUtils.MIN_LON_ENCODED);
+    if (dateline2 == false && edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
       if (bc == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
         relation = EdgeTree.WithinRelation.CANDIDATE;
       }
     }
-    if (edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
+
+    boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_ENCODED && ax == GeoEncodingUtils.MAX_LON_ENCODED)
+        || (cx == GeoEncodingUtils.MIN_LON_ENCODED && ax == GeoEncodingUtils.MIN_LON_ENCODED);
+    if (dateline3 == false && edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
       if (ca == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
@@ -330,19 +338,19 @@ public class Rectangle2D {
     }
 
     // top
-    if (GeoUtils.lineRelateLine(ax, ay, bx, by, minX, maxY, maxX, maxY) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, minX, maxY, maxX, maxY)) {
       return true;
     }
     // right
-    if (GeoUtils.lineRelateLine(ax, ay, bx, by, maxX, maxY, maxX, minY) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, maxX, maxY, maxX, minY)) {
       return true;
     }
     // bottom
-    if (GeoUtils.lineRelateLine(ax, ay, bx, by, maxX, minY, minX, minY) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, maxX, minY, minX, minY)) {
       return true;
     }
     // left
-    if (GeoUtils.lineRelateLine(ax, ay, bx, by, minX, minY, minX, maxY) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, minX, minY, minX, maxY)) {
       return true;
     }
     return false;

@@ -467,7 +467,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  queryPolygon=" + queryLine.toGeoJSON());
+          b.append("  queryPolygon=" + queryLine.toString());
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {

@@ -122,7 +122,7 @@ public final class Polygon2D extends EdgeTree {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
@@ -130,7 +130,7 @@ public final class Polygon2D extends EdgeTree {
       if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -162,7 +162,7 @@ public final class Polygon2D extends EdgeTree {
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
     boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_DECODED && bx == GeoEncodingUtils.MAX_LON_DECODED)
         || (ax == GeoEncodingUtils.MIN_LON_DECODED && bx == GeoEncodingUtils.MIN_LON_DECODED);
-    if (dateline1 == false && tree.relateLine(ax, ay, bx, by) == Relation.CELL_CROSSES_QUERY) {
+    if (dateline1 == false && tree.crossesLine(ax, ay, bx, by)) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -171,7 +171,7 @@ public final class Polygon2D extends EdgeTree {
     }
     boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_DECODED && cx == GeoEncodingUtils.MAX_LON_DECODED)
         || (bx == GeoEncodingUtils.MIN_LON_DECODED && cx == GeoEncodingUtils.MIN_LON_DECODED);
-    if (dateline2 == false && tree.relateLine(bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+    if (dateline2 == false && tree.crossesLine(bx, by, cx, cy)) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -180,7 +180,7 @@ public final class Polygon2D extends EdgeTree {
     }
     boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_DECODED && ax == GeoEncodingUtils.MAX_LON_DECODED)
         || (cx == GeoEncodingUtils.MIN_LON_DECODED && ax == GeoEncodingUtils.MIN_LON_DECODED);
-    if (dateline3 == false && tree.relateLine(cx, cy, ax, ay) == Relation.CELL_CROSSES_QUERY) {
+    if (dateline3 == false && tree.crossesLine(cx, cy, ax, ay)) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {

@@ -187,14 +187,19 @@ public final class Polygon {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder("POLYGON((");
     for (int i = 0; i < polyLats.length; i++) {
-      sb.append("[")
-      .append(polyLats[i])
-      .append(", ")
+      sb.append("")
       .append(polyLons[i])
-      .append("] ");
+      .append(" ")
+      .append(polyLats[i])
+      .append(", ");
     }
+    sb.append("")
+        .append(polyLons[0])
+        .append(" ")
+        .append(polyLats[0])
+        .append("))");
     if (holes.length > 0) {
       sb.append(", holes=");
       sb.append(Arrays.toString(holes));

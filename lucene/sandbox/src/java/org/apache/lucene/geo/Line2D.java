@@ -50,11 +50,10 @@ public final class Line2D extends EdgeTree {
 
   @Override
   protected PointValues.Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    PointValues.Relation rel =  tree.relateTriangle(ax, ay, bx, by, cx, cy);
-    if (rel == PointValues.Relation.CELL_OUTSIDE_QUERY && Tessellator.pointInTriangle(tree.lon1, tree.lat2, ax, ay, bx, by, cx, cy)) {
+    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy) || pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
     }
-    return rel;
+    return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
@@ -67,21 +66,21 @@ public final class Line2D extends EdgeTree {
 
     WithinRelation relation = WithinRelation.DISJOINT;
     //if any of the edges intersects an edge belonging to the shape then it cannot be within.
-    if (tree.relateLine(ax, ay, bx, by) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (tree.crossesLine(ax, ay, bx, by)) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.relateLine(bx, by, cx, cy) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (tree.crossesLine(bx, by, cx, cy)) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (tree.relateLine(cx, cy, ax, ay) == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (tree.crossesLine(cx, cy, ax, ay)) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {

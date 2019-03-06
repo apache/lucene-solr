@@ -22,6 +22,7 @@ import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
@@ -423,7 +424,7 @@ public class TestLatLonShape extends LuceneTestCase {
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(alat)));
 
-    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, rel);
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
 
     rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
@@ -432,7 +433,7 @@ public class TestLatLonShape extends LuceneTestCase {
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(blon)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)));
 
-    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, rel);
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
   }
 
   public void testTriangleTouchingEdges() {
@@ -445,7 +446,7 @@ public class TestLatLonShape extends LuceneTestCase {
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
     //2 shared points
     rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
@@ -453,7 +454,7 @@ public class TestLatLonShape extends LuceneTestCase {
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.75)));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
     //1 shared point
     rel = polygon2D.relateTriangle(
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
@@ -462,7 +463,7 @@ public class TestLatLonShape extends LuceneTestCase {
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.75)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.75)));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
     // 1 shared point but out
     rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
@@ -486,7 +487,7 @@ public class TestLatLonShape extends LuceneTestCase {
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
     //share one edge outside
     rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)),
