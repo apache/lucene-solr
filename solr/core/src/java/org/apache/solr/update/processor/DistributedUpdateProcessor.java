@@ -1982,9 +1982,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           long commitVersion = vinfo.getNewClock();
           cmd.setVersion(commitVersion);
           doLocalCommit(cmd);
-        } else {
-          assert TestInjection.waitForInSyncWithLeader(req.getCore(),
-              zkController, collection, cloudDesc.getShardId()) : "Core " + req.getCore() + " not in sync with leader";
         }
 
       } else if (replicaType == Replica.Type.PULL) {
