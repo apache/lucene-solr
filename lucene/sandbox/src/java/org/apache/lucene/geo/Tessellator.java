@@ -475,9 +475,11 @@ final public class Tessellator {
     final Node b2 = new Node(b);
     final Node an = a.next;
     final Node bp = b.previous;
+    //it might happen that a & b are actually the same point
+    boolean edgeFromPolygon = (a.getX() == b.getX() && a.getY() == b.getY());
 
     a.next = b;
-    a.nextEdgeFromPolygon = false;
+    a.nextEdgeFromPolygon = edgeFromPolygon;
     a.nextZ = b;
     b.previous = a;
     b.previousZ = a;
@@ -486,7 +488,7 @@ final public class Tessellator {
     an.previous = a2;
     an.previousZ = a2;
     b2.next = a2;
-    b2.nextEdgeFromPolygon = false;
+    b2.nextEdgeFromPolygon = edgeFromPolygon;
     b2.nextZ = a2;
     a2.previous = b2;
     a2.previousZ = b2;
