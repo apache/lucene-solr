@@ -356,8 +356,26 @@ public class TestLatLonShape extends LuceneTestCase {
     Query q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
     assertEquals(1, searcher.count(q));
 
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.INTERSECTS, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.DISJOINT, searchPoly);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.CONTAINS, searchPoly);
+    assertEquals(0, searcher.count(q));
+
     q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -20, 20, 170, -170);
     assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.INTERSECTS, -20, 20, 170, -170);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.DISJOINT, -20, 20, 170, -170);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.CONTAINS, -20, 20, 170, -170);
+    assertEquals(0, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
   }
@@ -403,8 +421,26 @@ public class TestLatLonShape extends LuceneTestCase {
     Query q = LatLonShape.newPolygonQuery("test", QueryRelation.CONTAINS, searchPoly);
     assertEquals(1, searcher.count(q));
 
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.INTERSECTS, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.DISJOINT, searchPoly);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
+    assertEquals(0, searcher.count(q));
+
     q = LatLonShape.newBoxQuery("test", QueryRelation.CONTAINS, -1, 1, 179, -179);
     assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.INTERSECTS, -1, 1, 179, -179);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -1, 1, 179, -179);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.DISJOINT, -1, 1, 179, -179);
+    assertEquals(0, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
   }
