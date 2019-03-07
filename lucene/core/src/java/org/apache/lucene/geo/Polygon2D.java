@@ -198,8 +198,6 @@ public final class Polygon2D extends EdgeTree {
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
 
-
-
     //check that triangle bounding box not inside shape bounding box
     if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
       return WithinRelation.DISJOINT;
