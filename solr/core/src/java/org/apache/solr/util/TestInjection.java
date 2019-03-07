@@ -128,8 +128,6 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
-  public volatile static String waitForReplicasInSync = "true:60";
-
   public volatile static String failIndexFingerprintRequests = null;
 
   public volatile static String wrongIndexFingerprint = null;
@@ -162,7 +160,6 @@ public class TestInjection {
     splitLatch = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
-    waitForReplicasInSync = "true:60";
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
@@ -428,14 +425,6 @@ public class TestInjection {
     return true;
   }
 
-  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) {
-    // NOTE: this method should do *NOTHING* unless LUCENE_TEST_CASE is non-null
-    
-    if (waitForReplicasInSync == null) return true;
-    
-    return true; // No-Op: see SOLR-12313
-  }
-  
   private static Pair<Boolean,Integer> parseValue(final String raw) {
     if (raw == null) return new Pair<>(false, 0);
     Matcher m = ENABLED_PERCENT.matcher(raw);

@@ -52,7 +52,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     System.setProperty("solr.ulog.numRecordsToKeep", String.valueOf(ULOG_NUM_RECORDS_TO_KEEP));
     // avoid creating too many files, see SOLR-7421
     System.setProperty("useCompoundFile", "true");
-    TestInjection.waitForReplicasInSync = null;
   }
 
   @AfterClass
