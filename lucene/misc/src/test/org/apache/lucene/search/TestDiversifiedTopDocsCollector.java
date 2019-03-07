@@ -477,6 +477,11 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      query.visit(visitor);
+    }
+
+    @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       if (scoreMode.needsScores() == false) {
         return query.createWeight(searcher, scoreMode, boost);

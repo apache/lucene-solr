@@ -106,6 +106,11 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".

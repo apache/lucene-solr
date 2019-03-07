@@ -60,6 +60,11 @@ public class MatchNoDocsQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
   public String toString(String field) {
     return "MatchNoDocsQuery(\"" + reason + "\")";
   }

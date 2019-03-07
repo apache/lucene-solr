@@ -155,6 +155,12 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    // TODO find some way of consuming Automata
+    visitor.visitLeaf(this);
+  }
+
+  @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());

@@ -355,6 +355,11 @@ public class TestWANDScorer extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new FilterWeight(query.createWeight(searcher, scoreMode, boost)) {
         @Override

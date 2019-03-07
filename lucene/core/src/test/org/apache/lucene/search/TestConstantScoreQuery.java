@@ -154,6 +154,11 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      in.visit(visitor);
+    }
+
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) &&
              in.equals(((QueryWrapper) other).in);

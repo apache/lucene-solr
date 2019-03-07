@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more
@@ -263,7 +264,12 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
             return q.toString(f);
         }
 
-        @Override
+      @Override
+      public void visit(QueryVisitor visitor) {
+        q.visit(visitor);
+      }
+
+      @Override
         public boolean equals(Object other) {
             return sameClassAs(other) &&
                    Objects.equals(q, ((DumbQueryWrapper) other).q);

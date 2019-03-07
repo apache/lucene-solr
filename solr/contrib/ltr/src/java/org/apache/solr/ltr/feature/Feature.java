@@ -25,6 +25,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.core.SolrResourceLoader;
@@ -130,6 +131,11 @@ public abstract class Feature extends Query {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   private boolean equalsTo(Feature other) {

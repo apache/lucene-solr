@@ -70,6 +70,11 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     
     /** Returns the field name for this query */
     public final String getField() { return query.getField(); }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
     
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {

@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg
@@ -178,5 +179,10 @@ public class MoreLikeThisQuery extends Query {
            likeText.equals(other.likeText) &&
            Arrays.equals(moreLikeFields, other.moreLikeFields) &&
            Objects.equals(stopWords, other.stopWords);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 }

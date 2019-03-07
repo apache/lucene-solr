@@ -31,6 +31,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ImpactsDISI;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -158,6 +159,11 @@ final class FeatureQuery extends Query {
       }
 
     };
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   @Override

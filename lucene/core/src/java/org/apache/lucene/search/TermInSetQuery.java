@@ -122,6 +122,12 @@ public class TermInSetQuery extends Query implements Accountable {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    // TODO should this get a SHOULD subvisitor and visit all terms?
+    visitor.visitLeaf(this);
+  }
+
+  @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
         equalsTo(getClass().cast(other));

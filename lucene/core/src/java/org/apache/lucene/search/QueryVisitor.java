@@ -27,7 +27,7 @@ import org.apache.lucene.index.Term;
  *
  * @see Query#visit(QueryVisitor)
  */
-public abstract class QueryVisitor {
+public class QueryVisitor {
 
   /**
    * Called by leaf queries that match on specific terms

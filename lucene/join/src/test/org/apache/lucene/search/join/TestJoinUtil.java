@@ -553,7 +553,12 @@ public class TestJoinUtil extends LuceneTestCase {
           };
         }
 
-        @Override
+      @Override
+      public void visit(QueryVisitor visitor) {
+
+      }
+
+      @Override
         public String toString(String field) {
           return fieldQuery.toString(field);
         }

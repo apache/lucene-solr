@@ -46,6 +46,11 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    query.visit(visitor);
+  }
+
+  @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
            query.equals(((RandomApproximationQuery) other).query);

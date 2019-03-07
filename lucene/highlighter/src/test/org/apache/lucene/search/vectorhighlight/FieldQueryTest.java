@@ -29,6 +29,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -926,6 +927,12 @@ public class FieldQueryTest extends AbstractTestCase {
       public String toString(String field) {
         return "DummyQuery";
       }
+
+      @Override
+      public void visit(QueryVisitor visitor) {
+
+      }
+
       @Override
       public boolean equals(Object o) {
         throw new AssertionError();

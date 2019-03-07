@@ -304,6 +304,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
+
+    @Override
     public String toString(String field) {
       return "SpanGap(" + field + ":" + width + ")";
     }

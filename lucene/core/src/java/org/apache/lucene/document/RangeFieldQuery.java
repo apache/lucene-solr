@@ -31,10 +31,11 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FutureArrays;
 
@@ -259,6 +260,11 @@ abstract class RangeFieldQuery extends Query {
       throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims="
           + fieldInfo.getPointDataDimensionCount()/2 + " but this query has numDims=" + numDims);
     }
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   @Override
