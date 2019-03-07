@@ -315,6 +315,15 @@ public class TestLatLonShape extends LuceneTestCase {
     q = LatLonShape.newPolygonQuery("test", QueryRelation.DISJOINT, searchPoly);
     assertEquals(0, searcher.count(q));
 
+    q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -20, 20, 170, -170);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.INTERSECTS, -20, 20, 170, -170);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.DISJOINT, -20, 20, 170, -170);
+    assertEquals(0, searcher.count(q));
+
     IOUtils.close(w, reader, dir);
   }
 
