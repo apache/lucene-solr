@@ -82,7 +82,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    TestInjection.waitForReplicasInSync = null; // We'll be explicit about this in this test
    //  cloudSolrClientMaxStaleRetries
    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
