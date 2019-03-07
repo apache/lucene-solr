@@ -122,7 +122,7 @@ public final class Polygon2D extends EdgeTree {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
@@ -130,7 +130,7 @@ public final class Polygon2D extends EdgeTree {
       if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
