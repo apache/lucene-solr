@@ -89,6 +89,9 @@ Bug fixes
 * SOLR-13410: Designated overseer wasn't able to rejoin election queue at head upon restart (Ishan Chattopadhyaya,
   Kesharee Nandan Vishwakarma)
 
+* SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
+  occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
