@@ -434,7 +434,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['label'] = coreNameToLabel(core['core']);
                   if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
                     // If core state is not active, display the real state, or if shard is inactive, display that
                     var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];

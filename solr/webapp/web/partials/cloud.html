@@ -150,15 +150,15 @@ limitations under the License.
         </thead>
         <tbody>
           <tr ng-repeat="key in nodesToShow | orderBy:'key.order'" ng-init="n = nodes[key]; h = nodes[firstLiveNodeForHost(key)]">
-              <td rowspan="{{hosts[n.host].nodes.length}}" ng-show="isFirstNodeForHost(key)">
-                <div class="host-name">{{n.host}}</div>
-                <span class="host-spec" ng-show="!showDetails[n.host]">
+              <td rowspan="{{hosts[h.host].nodes.length}}" ng-show="isFirstNodeForHost(key)">
+                <div class="host-name">{{h.host}}</div>
+                <span class="host-spec" ng-show="!showDetails[h.host]">
                   <span title="{{h.system.system.uptime}}">{{h.system.system.name}}</span> 
                   <span title="free: {{h.memFree}}">{{h.memTotal}}</span>
                   <span title="{{h.system.jvm.name}} {{h.system.jvm.version}}">Java {{h.system.jvm.spec.version}}</span>
                   <br/>Load: {{h.loadAvg}}
                 </span>
-                <div class="host-spec" ng-show="showDetails[n.host]">
+                <div class="host-spec" ng-show="showDetails[h.host]">
                   {{h.system.system.name}} {{h.system.system.version}}, {{h.system.system.availableProcessors}}cpu<br/>
                   Uptime: {{h.uptime}}<br/>
                   <span title="Used: {{h.memUsed}} - includes OS file-cache, and it is normal for it to approach 100%">Memory: {{h.memTotal}}</span><br/> 
@@ -166,7 +166,7 @@ limitations under the License.
                   Disk: <span class="{{h.diskUsedPctStyle}}" title="Nodes may use other disks too">{{h.diskTotal}} used: {{h.diskUsedPct}}%</span><br/>
                   Load: {{h.loadAvg}}
                 </div>
-                <div class="node-spec" ng-click="toggleHostDetails(n.host)">
+                <div class="node-spec" ng-click="toggleHostDetails(h.host)">
                   <a ng-show="showDetails[h.host]">hide details...</a>
                   <a ng-show="!showDetails[h.host]">show details...</a>
                 </div>
@@ -217,7 +217,7 @@ limitations under the License.
               <td ng-class="{'dead-node': n.dead}">
                 <div ng-show="!n.collections">(none)</div>
                 <div ng-repeat="c in n.collections | limitTo:showDetails[key]?999:2 track by $index">
-                  <a href="{{n.base_url + '/#/~collections/' + c}}">{{ c }}</a>
+                  <a href="{{h.base_url + '/#/~collections/' + c}}">{{ c }}</a>
                 </div>
                 <div class="more" ng-show="n.collections.length > 2 && !showDetails[key]">
                   <a ng-click="toggleDetails(key)">({{n.collections.length - 2}} more...)</a>
@@ -226,7 +226,8 @@ limitations under the License.
               <td class="scroll-height-250" ng-class="{'dead-node': n.dead}">
                   <div ng-show="!n.cores">(none)</div>
                   <div ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index">
-                    <a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core}}">{{ core.label }}</a> <span ng-show="!n.dead">({{core.numDocsHuman}} docs)</span>
+                    <div ng-show="!n.dead"><a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core + '/core-overview'}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)</div>
+                    <div ng-show="n.dead">{{ core.label }}</div>
                     <ul class="core-details" ng-show="showDetails[key] && !n.dead" >
                       <li>deleted: {{core.deletedDocsHuman}}</li>
                       <li>warmupTime: {{core.warmupTime}}</li>
