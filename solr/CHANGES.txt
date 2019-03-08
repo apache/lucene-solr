@@ -43,6 +43,8 @@ New Features
 * SOLR-13261: Make SortableTextField work with export/streaming. NOTE: requires that the field have
   useDocValuesAsStored=true (either explicit or as the default).
 
+* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
+
 * SOLR-10436: Add hashRollup Streaming Expression (Joel Bernstein)
 
 * SOLR-13276: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider (Cao Manh Dat)
@@ -87,8 +89,6 @@ Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
   disk space (noble)
-
-* SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
 * SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
