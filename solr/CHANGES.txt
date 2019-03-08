@@ -106,6 +106,8 @@ Bug Fixes
 * SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
   occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
 
+* SOLR-13244: Admin UI Nodes view fails and is empty when a node is temporarily down (janhoy)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
