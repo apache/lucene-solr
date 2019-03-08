@@ -50,8 +50,8 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
-      System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
-      System.setProperty("tests.hdfs.numdatanodes", "1");
+      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+      System.clearProperty("tests.hdfs.numdatanodes");
     }
   }
 

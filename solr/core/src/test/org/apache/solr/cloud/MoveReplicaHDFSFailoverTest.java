@@ -63,9 +63,17 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    cluster.shutdown(); // need to close before the MiniDFSCluster
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      shutdownCluster();
+    } finally {
+      try {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      } finally {
+        dfsCluster = null;
+        System.clearProperty("solr.hdfs.home");
+        System.clearProperty("solr.hdfs.blockcache.enabled");
+      }
+    }
   }
 
   @Test
@@ -204,5 +212,4 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
       solrClient.add(collection, doc);
     }
   }
-
 }

@@ -145,6 +145,8 @@ Other Changes
 
 * SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
 
+* SOLR-13307: Ensure HDFS tests clear System properties they set (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
