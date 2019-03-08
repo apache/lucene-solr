@@ -78,11 +78,11 @@ If not provided, the CREATE operation will create shard-replicas spread across a
 Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<replica-management.adoc#addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
 
 `createNodeSet.shuffle`::
-Controls wether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
+Controls whether the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
 +
 A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
 +
-This parameter is ignored if `createNodeSet` is not also specified.
+This parameter is ignored if `createNodeSet` is not also defined.
 
 `collection.configName`::
 Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configSet to create a new (and mutable) configSet named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.

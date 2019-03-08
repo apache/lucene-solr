@@ -133,7 +133,7 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `urlScheme` and `autoAddReplicas and location`. Other names are rejected with an error.
+The name of the property. Supported property names are `urlScheme`, `autoAddReplicas` and `location`. Other names are rejected with an error.
 
 `val`::
 The value of the property. If the value is empty or null, the property is unset.
