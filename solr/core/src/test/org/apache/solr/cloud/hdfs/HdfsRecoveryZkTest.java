@@ -51,9 +51,17 @@ public class HdfsRecoveryZkTest extends RecoveryZkTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    cluster.shutdown(); // need to close before the MiniDFSCluster
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      shutdownCluster(); // need to close before the MiniDFSCluster
+    } finally {
+      try {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      } finally {
+        dfsCluster = null;
+        System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+        System.clearProperty("solr.hdfs.home");
+      }
+    }
   }
 
 }
