@@ -144,7 +144,7 @@ public class PhraseHelper {
               }
             }
           }
-        });
+        }, f -> true);
       }
 
       // called on SpanQueries. Some other position-sensitive queries like PhraseQuery are converted beforehand

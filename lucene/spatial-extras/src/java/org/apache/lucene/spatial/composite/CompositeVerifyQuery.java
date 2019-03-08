@@ -17,6 +17,7 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -82,7 +83,7 @@ public class CompositeVerifyQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -60,7 +61,7 @@ public class MatchNoDocsQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

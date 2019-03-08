@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
@@ -152,7 +153,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

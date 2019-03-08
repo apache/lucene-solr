@@ -17,6 +17,7 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -82,7 +83,7 @@ public class IntersectsRPTVerifyQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

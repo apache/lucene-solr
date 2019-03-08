@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -119,8 +120,10 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

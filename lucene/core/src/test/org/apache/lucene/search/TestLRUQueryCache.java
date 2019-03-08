@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
@@ -378,7 +379,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
     }
 
@@ -977,7 +978,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
     }
 
@@ -1331,7 +1332,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
     }
 
@@ -1420,7 +1421,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
     }
 
@@ -1510,7 +1511,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
     }
   }

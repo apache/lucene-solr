@@ -309,10 +309,10 @@ public class WeightedSpanTermExtractor {
       for (final String field : fieldNames) {
         final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
+        rewrittenQuery.visit(QueryVisitor.termCollector(nonWeightedTerms), f -> true);
       }
     } else {
-      spanQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
+      spanQuery.visit(QueryVisitor.termCollector(nonWeightedTerms), f -> true);
     }
 
     List<PositionSpan> spanPositions = new ArrayList<>();
@@ -379,7 +379,7 @@ public class WeightedSpanTermExtractor {
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query, float boost) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<>();
     final IndexSearcher searcher = new IndexSearcher(getLeafContext());
-    searcher.rewrite(query).visit(QueryVisitor.termCollector(nonWeightedTerms));
+    searcher.rewrite(query).visit(QueryVisitor.termCollector(nonWeightedTerms), f -> true);
 
     for (final Term queryTerm : nonWeightedTerms) {
 

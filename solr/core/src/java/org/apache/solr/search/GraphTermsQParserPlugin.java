@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -240,7 +241,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
       visitor.visitLeaf(this);
     }
 
@@ -779,7 +780,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

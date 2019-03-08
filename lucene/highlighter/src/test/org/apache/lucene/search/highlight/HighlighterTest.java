@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -254,7 +255,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
 
       @Override
-      public void visit(QueryVisitor visitor) {
+      public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
       }
 

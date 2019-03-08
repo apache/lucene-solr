@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.IndexReader;
@@ -108,10 +109,10 @@ public final class CoveringQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (Query query : queries) {
-      query.visit(v);
+      query.visit(v, fieldSelector);
     }
   }
 

@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisiPriorityQueue;
@@ -153,7 +154,7 @@ public class LTRScoringQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

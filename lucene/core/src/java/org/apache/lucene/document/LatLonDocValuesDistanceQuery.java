@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
@@ -56,8 +57,10 @@ final class LatLonDocValuesDistanceQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -75,8 +76,10 @@ final class LongDistanceFeatureQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

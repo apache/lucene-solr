@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -86,7 +87,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 }

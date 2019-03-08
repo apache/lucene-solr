@@ -232,7 +232,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         final IndexSearcher localSearcher = new IndexSearcher(getIndexReader());
         original = localSearcher.rewrite(original);
         final Set<Term> terms = new HashSet<>();
-        original.visit(QueryVisitor.termCollector(terms));
+        original.visit(QueryVisitor.termCollector(terms), f -> true);
 
         // Make a single request to remote nodes for term
         // stats:

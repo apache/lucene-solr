@@ -144,7 +144,7 @@ public class UnifiedHighlighter {
    */
   protected static Set<Term> extractTerms(Query query) throws IOException {
     Set<Term> queryTerms = new HashSet<>();
-    EMPTY_INDEXSEARCHER.rewrite(query).visit(QueryVisitor.termCollector(queryTerms));
+    EMPTY_INDEXSEARCHER.rewrite(query).visit(QueryVisitor.termCollector(queryTerms), f -> true);
     return queryTerms;
   }
 

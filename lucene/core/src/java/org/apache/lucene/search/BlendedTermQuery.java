@@ -20,13 +20,14 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -295,9 +296,12 @@ public final class BlendedTermQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
-    v.consumeTerms(this, terms);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    Term[] termsToVisit = Arrays.stream(terms).filter(t -> fieldSelector.test(t.field())).toArray(Term[]::new);
+    if (termsToVisit.length > 0) {
+      QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+      v.consumeTerms(this, termsToVisit);
+    }
   }
 
   private static TermStates adjustFrequencies(IndexReaderContext readerContext,

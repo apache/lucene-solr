@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
@@ -107,8 +108,12 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    maskedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field)) {
+      // we treat subclauses as if they were from the mask field, so we don't want to
+      // restrict their field selection
+      maskedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), t -> true);
+    }
   }
 
   @Override

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -253,6 +254,9 @@ public class PhraseQuery extends Query {
    */
   public int getSlop() { return slop; }
 
+  /** Returns the field this query applies to */
+  public String getField() { return field; }
+
   /** Returns the list of terms in this phrase. */
   public Term[] getTerms() {
     return terms;
@@ -283,7 +287,10 @@ public class PhraseQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field) == false) {
+      return;
+    }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     v.consumeTerms(this, terms);
   }

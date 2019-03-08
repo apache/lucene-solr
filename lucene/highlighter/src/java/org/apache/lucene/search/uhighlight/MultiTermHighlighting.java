@@ -48,8 +48,8 @@ final class MultiTermHighlighting {
    */
   static CharacterRunAutomaton[] extractAutomata(Query query, Predicate<String> fieldMatcher, boolean lookInSpan) {
 
-    AutomataCollector collector = new AutomataCollector(fieldMatcher, lookInSpan);
-    query.visit(collector);
+    AutomataCollector collector = new AutomataCollector(lookInSpan);
+    query.visit(collector, fieldMatcher);
     return collector.runAutomata.toArray(new CharacterRunAutomaton[0]);
   }
 
@@ -57,11 +57,9 @@ final class MultiTermHighlighting {
 
     List<CharacterRunAutomaton> runAutomata = new ArrayList<>();
     final boolean lookInSpan;
-    final Predicate<String> fieldMatcher;
 
-    private AutomataCollector(Predicate<String> fieldMatcher, boolean lookInSpan) {
+    private AutomataCollector(boolean lookInSpan) {
       this.lookInSpan = lookInSpan;
-      this.fieldMatcher = fieldMatcher;
     }
 
     @Override
@@ -76,9 +74,6 @@ final class MultiTermHighlighting {
     public void visitLeaf(Query query) {
       if (query instanceof AutomatonQuery) {
         AutomatonQuery aq = (AutomatonQuery) query;
-        if (fieldMatcher.test(aq.getField()) == false) {
-          return;
-        }
         if (aq.isAutomatonBinary() == false) {
           // WildcardQuery, RegexpQuery
           runAutomata.add(new CharacterRunAutomaton(aq.getAutomaton()) {
@@ -94,9 +89,6 @@ final class MultiTermHighlighting {
       }
       else if (query instanceof FuzzyQuery) {
         FuzzyQuery fq = (FuzzyQuery) query;
-        if (fieldMatcher.test(fq.getField()) == false) {
-          return;
-        }
         if (fq.getMaxEdits() == 0 || fq.getPrefixLength() >= fq.getTerm().text().length()) {
           consumeTerms(query, fq.getTerm());
         }

@@ -144,7 +144,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.visit(QueryVisitor.termCollector(terms));
+    qr.visit(QueryVisitor.termCollector(terms), f -> true);
     assertEquals(1, terms.size());
   }
   
@@ -164,7 +164,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.visit(QueryVisitor.termCollector(terms));
+    qr.visit(QueryVisitor.termCollector(terms), f -> true);
     assertEquals(2, terms.size());
   }
   
@@ -178,7 +178,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     HashSet<Term> set = new HashSet<>();
-    qr.visit(QueryVisitor.termCollector(set));
+    qr.visit(QueryVisitor.termCollector(set), f -> true);
     assertEquals(2, set.size());
   }
   

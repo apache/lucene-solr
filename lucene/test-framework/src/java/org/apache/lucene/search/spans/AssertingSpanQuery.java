@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -62,8 +63,8 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    in.visit(visitor);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    in.visit(visitor, fieldSelector);
   }
 
   @Override

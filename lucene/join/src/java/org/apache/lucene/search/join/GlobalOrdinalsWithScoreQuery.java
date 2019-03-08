@@ -17,6 +17,7 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -66,7 +67,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

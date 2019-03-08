@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -484,7 +485,10 @@ public class TermAutomatonQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field) == false) {
+      return;
+    }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (BytesRef term : termToID.keySet()) {
       v.consumeTerms(this, new Term(field, term));

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -495,7 +496,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
 
     }
 

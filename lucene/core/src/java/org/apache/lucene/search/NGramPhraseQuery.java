@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -78,8 +79,10 @@ public class NGramPhraseQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    phraseQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(phraseQuery.getField())) {
+      phraseQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), f -> true);
+    }
   }
 
   @Override

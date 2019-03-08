@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -72,8 +73,10 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     public final String getField() { return query.getField(); }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-      visitor.visitLeaf(this);
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+      if (fieldSelector.test(query.getField())) {
+        visitor.visitLeaf(this);
+      }
     }
     
     @Override

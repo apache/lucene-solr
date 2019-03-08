@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
@@ -1044,8 +1045,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-      originalQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+      originalQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), fieldSelector);
     }
 
     @Override

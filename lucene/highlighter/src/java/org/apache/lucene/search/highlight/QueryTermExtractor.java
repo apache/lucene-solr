@@ -19,6 +19,7 @@ package org.apache.lucene.search.highlight;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -102,7 +103,8 @@ public final class QueryTermExtractor
    */
   public static WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName) {
     HashSet<WeightedTerm> terms = new HashSet<>();
-    query.visit(new BoostedTermExtractor(fieldName, 1, terms, prohibited));
+    Predicate<String> fieldSelector = fieldName == null ? f -> true : fieldName::equals;
+    query.visit(new BoostedTermExtractor(1, terms, prohibited), fieldSelector);
     return terms.toArray(new WeightedTerm[0]);
   }
 
@@ -120,13 +122,11 @@ public final class QueryTermExtractor
 
   private static class BoostedTermExtractor extends QueryVisitor {
 
-    final String field;
     final float boost;
     final Set<WeightedTerm> terms;
     final boolean includeProhibited;
 
-    private BoostedTermExtractor(String field, float boost, Set<WeightedTerm> terms, boolean includeProhibited) {
-      this.field = field;
+    private BoostedTermExtractor(float boost, Set<WeightedTerm> terms, boolean includeProhibited) {
       this.boost = boost;
       this.terms = terms;
       this.includeProhibited = includeProhibited;
@@ -135,9 +135,7 @@ public final class QueryTermExtractor
     @Override
     public void consumeTerms(Query query, Term... terms) {
       for (Term term : terms) {
-        if (field == null || term.field().equals(field)) {
-          this.terms.add(new WeightedTerm(boost, term.text()));
-        }
+        this.terms.add(new WeightedTerm(boost, term.text()));
       }
     }
 
@@ -145,7 +143,7 @@ public final class QueryTermExtractor
     public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
       if (parent instanceof BoostQuery) {
         float newboost = boost * ((BoostQuery)parent).getBoost();
-        return new BoostedTermExtractor(field, newboost, terms, includeProhibited);
+        return new BoostedTermExtractor(newboost, terms, includeProhibited);
       }
       if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
         return QueryVisitor.EMPTY_VISITOR;

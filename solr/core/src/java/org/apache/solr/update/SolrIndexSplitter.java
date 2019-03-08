@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.FilterCodecReader;
@@ -532,7 +533,7 @@ public class SolrIndexSplitter {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
       visitor.visitLeaf(this);
     }
   }

@@ -19,6 +19,7 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -120,8 +121,10 @@ public final class IntervalQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    intervalsSource.visit(field, visitor);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field)) {
+      intervalsSource.visit(field, visitor);
+    }
   }
 
   @Override

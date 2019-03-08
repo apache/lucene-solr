@@ -794,6 +794,6 @@ public class TestBooleanQuery extends LuceneTestCase {
       public void consumeTerms(Query query, Term... terms) {
         assertEquals(expected, terms[0]);
       }
-    });
+    }, f -> true);
   }
 }

@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.FeatureField.FeatureFunction;
 import org.apache.lucene.index.ImpactsEnum;
@@ -162,8 +163,10 @@ final class FeatureQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(fieldName)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

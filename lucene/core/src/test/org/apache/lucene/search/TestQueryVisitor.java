@@ -55,7 +55,7 @@ public class TestQueryVisitor extends LuceneTestCase {
       .add(new TermQuery(new Term("field1", "term8")), BooleanClause.Occur.MUST_NOT)
       .add(new PrefixQuery(new Term("field1", "term9")), BooleanClause.Occur.SHOULD)
       .add(new BoostQuery(new BooleanQuery.Builder()
-          .add(new BoostQuery(new TermQuery(new Term("field1", "term10")), 3), BooleanClause.Occur.MUST)
+          .add(new BoostQuery(new TermQuery(new Term("field2", "term10")), 3), BooleanClause.Occur.MUST)
           .build(), 2), BooleanClause.Occur.SHOULD)
       .build();
 
@@ -65,9 +65,9 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "t1"), new Term("field1", "tm2"),
         new Term("field1", "tm3"), new Term("field1", "term4"),
         new Term("field1", "term5"), new Term("field1", "term6"),
-        new Term("field1", "term7"), new Term("field1", "term10")
+        new Term("field1", "term7"), new Term("field2", "term10")
     ));
-    query.visit(QueryVisitor.termCollector(terms));
+    query.visit(QueryVisitor.termCollector(terms), f -> true);
     assertThat(terms, equalTo(expected));
   }
 
@@ -88,9 +88,16 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "tm3"), new Term("field1", "term4"),
         new Term("field1", "term5"), new Term("field1", "term6"),
         new Term("field1", "term7"), new Term("field1", "term8"),
-        new Term("field1", "term10")
+        new Term("field2", "term10")
     ));
-    query.visit(visitor);
+    query.visit(visitor, f -> true);
+    assertThat(terms, equalTo(expected));
+  }
+
+  public void extractTermsFromField() {
+    Set<Term> terms = new HashSet<>();
+    Set<Term> expected = new HashSet<>(Arrays.asList(new Term("field2", "term10")));
+    query.visit(QueryVisitor.termCollector(terms), "field2"::equals);
     assertThat(terms, equalTo(expected));
   }
 
@@ -122,7 +129,7 @@ public class TestQueryVisitor extends LuceneTestCase {
 
   public void testExtractTermsAndBoosts() {
     Map<Term, Float> termsToBoosts = new HashMap<>();
-    query.visit(new BoostedTermExtractor(1, termsToBoosts));
+    query.visit(new BoostedTermExtractor(1, termsToBoosts), f -> true);
     Map<Term, Float> expected = new HashMap<>();
     expected.put(new Term("field1", "t1"), 1f);
     expected.put(new Term("field1", "tm2"), 1f);
@@ -158,7 +165,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         countQuery(query);
       }
 
-    });
+    }, f -> true);
     assertEquals(4, queryCounts.get(TermQuery.class).intValue());
     assertEquals(1, queryCounts.get(PhraseQuery.class).intValue());
   }
@@ -301,7 +308,7 @@ public class TestQueryVisitor extends LuceneTestCase {
 
   public void testExtractMatchingTermSet() {
     QueryNode extractor = new ConjunctionNode();
-    query.visit(extractor);
+    query.visit(extractor, f -> true);
     Set<Term> minimumTermSet = new HashSet<>();
     extractor.collectTerms(minimumTermSet);
 

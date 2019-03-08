@@ -19,6 +19,7 @@ package org.apache.lucene.queries.payloads;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -88,8 +89,8 @@ public class PayloadScoreQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    wrappedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    wrappedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), fieldSelector);
   }
 
 

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -229,10 +230,10 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (Query q : disjuncts) {
-      q.visit(v);
+      q.visit(v, fieldSelector);
     }
   }
 

@@ -21,6 +21,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
@@ -182,7 +183,7 @@ public class MoreLikeThisQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 }

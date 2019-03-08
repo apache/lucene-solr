@@ -20,6 +20,7 @@ package org.apache.lucene.queries.function;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -63,7 +64,7 @@ public final class FunctionMatchQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -122,9 +123,17 @@ public class TermInSetQuery extends Query implements Accountable {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    // TODO should this get a SHOULD subvisitor and visit all terms?
-    visitor.visitLeaf(this);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+    List<Term> terms = new ArrayList<>();
+    TermIterator iterator = termData.iterator();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      terms.add(new Term(field, BytesRef.deepCopyOf(term)));
+    }
+    v.consumeTerms(this, terms.toArray(new Term[0]));
   }
 
   @Override

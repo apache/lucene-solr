@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -233,7 +234,9 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    query.visit(visitor.getSubVisitor(Occur.FILTER, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(getField())) {
+      query.visit(visitor.getSubVisitor(Occur.FILTER, this), f -> true);
+    }
   }
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -71,8 +72,10 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.visitLeaf(this);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(toField)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

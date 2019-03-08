@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.surround.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -54,7 +55,7 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     // TODO: implement this
     visitor.visitLeaf(this);
   }

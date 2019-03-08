@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
@@ -597,7 +598,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 }

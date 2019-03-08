@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -105,8 +106,8 @@ public final class BoostQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    query.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    query.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), fieldSelector);
   }
 
   @Override

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -124,8 +125,10 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    query.visit(visitor.getSubVisitor(Occur.MUST, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(query.getField())) {
+      query.visit(visitor.getSubVisitor(Occur.MUST, this), f -> true);
+    }
   }
 
   @Override

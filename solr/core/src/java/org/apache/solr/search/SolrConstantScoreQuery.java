@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
@@ -140,7 +141,7 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
 

@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -53,8 +54,8 @@ public final class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    q.visit(visitor);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    q.visit(visitor, fieldSelector);
   }
 
   @Override

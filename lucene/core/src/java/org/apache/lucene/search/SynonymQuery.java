@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
@@ -52,6 +53,7 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public final class SynonymQuery extends Query {
   private final Term terms[];
+  private final String field;
   
   /**
    * Creates a new SynonymQuery, matching any of the supplied terms.
@@ -72,6 +74,7 @@ public final class SynonymQuery extends Query {
     if (terms.length > BooleanQuery.getMaxClauseCount()) {
       throw new BooleanQuery.TooManyClauses();
     }
+    this.field = field;
     Arrays.sort(this.terms);
   }
 
@@ -117,7 +120,10 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(field) == false) {
+      return;
+    }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     v.consumeTerms(this, terms);
   }

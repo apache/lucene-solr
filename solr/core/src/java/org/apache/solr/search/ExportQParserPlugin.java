@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -124,7 +125,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
+    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
       visitor.visitLeaf(this);
     }
 

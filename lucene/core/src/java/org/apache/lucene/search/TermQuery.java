@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -200,8 +201,10 @@ public class TermQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    visitor.consumeTerms(this, term);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(term.field())) {
+      visitor.consumeTerms(this, term);
+    }
   }
 
   /** Prints a user-readable version of this query. */

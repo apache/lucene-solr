@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -123,8 +124,10 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(getField())) {
+      match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), fieldSelector);
+    }
   }
 
   /** Returns true iff <code>other</code> is equal to this. */

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -90,10 +91,13 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    if (fieldSelector.test(getField()) == false) {
+      return;
+    }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
     for (SpanQuery q : clauses) {
-      q.visit(v);
+      q.visit(v, f -> true);
     }
   }
 

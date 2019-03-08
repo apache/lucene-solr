@@ -17,6 +17,7 @@
 package org.apache.solr.query;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BoostQuery;
@@ -69,8 +70,8 @@ public class FilterQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
-    q.visit(visitor);
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    q.visit(visitor, fieldSelector);
   }
 
   @Override

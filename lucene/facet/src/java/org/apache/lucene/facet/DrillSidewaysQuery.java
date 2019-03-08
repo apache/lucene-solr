@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.lucene.facet.DrillSidewaysScorer.DocsAndCost;
 import org.apache.lucene.index.IndexReader;
@@ -79,7 +80,7 @@ class DrillSidewaysQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor) {
+  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
     visitor.visitLeaf(this);
   }
   
