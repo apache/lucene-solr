@@ -33,20 +33,23 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-// commented out on: 24-Dec-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028, https://issues.apache.org/jira/browse/SOLR-10191")
 public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTest {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     System.setProperty("solr.hdfs.blockcache.global", "true"); // always use global cache, this test can create a lot of directories
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.blockcache.global");
+    }
   }
   
   @Override
@@ -56,12 +59,9 @@ public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTe
     // super class may hard code directory
     useFactory("org.apache.solr.core.HdfsDirectoryFactory");
   }
-
   
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
-
 }
