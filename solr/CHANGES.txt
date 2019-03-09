@@ -75,6 +75,8 @@ New Features
 
 * SOLR-13271: Read-only mode for SolrCloud collections (ab, shalin)
 
+* SOLR-13292: Provide extended per-segment status of a collection. (ab)
+
 Bug Fixes
 ----------------------
 
