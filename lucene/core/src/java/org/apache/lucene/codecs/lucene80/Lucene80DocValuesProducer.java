@@ -1303,6 +1303,11 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
           return ords.get(start++);
         }
 
+        @Override
+        public int docValueCount() {
+          return (int)(end-start);
+        }
+
       };
     } else {
       // sparse
@@ -1356,6 +1361,18 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
           } else {
             return ords.get(start++);
           }
+        }
+
+        @Override
+        public int docValueCount() {
+          if (set == false) {
+            final int index = disi.index();
+            final long start = addresses.get(index);
+            this.start = start + 1;
+            end = addresses.get(index + 1L);
+            set = true;
+          }
+          return (int) (end - start);
         }
 
       };

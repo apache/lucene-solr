@@ -289,6 +289,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     }
 
     @Override
+    public int docValueCount() {
+      return ordCount;
+    }
+
+    @Override
     public long cost() {
       return docsWithField.cost();
     }

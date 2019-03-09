@@ -253,6 +253,11 @@ public final class DocValues {
       }
 
       @Override
+      public int docValueCount() {
+        return 0;
+      }
+
+      @Override
       public BytesRef lookupOrd(long ord) {
         return empty;
       }

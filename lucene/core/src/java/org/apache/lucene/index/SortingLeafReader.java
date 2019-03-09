@@ -510,6 +510,11 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public int docValueCount() {
+      return ords[docID].length;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }

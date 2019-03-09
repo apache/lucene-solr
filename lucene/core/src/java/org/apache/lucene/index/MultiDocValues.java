@@ -880,6 +880,11 @@ public class MultiDocValues {
     }
 
     @Override
+    public int docValueCount() {
+      return currentValues.docValueCount();
+    }
+
+    @Override
     public BytesRef lookupOrd(long ord) throws IOException {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       long segmentOrd = mapping.getFirstSegmentOrd(ord);
