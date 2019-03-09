@@ -45,13 +45,26 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
     LogWatcher watcher = null;
     int lim = random().nextInt(3) + 2;
     for (int idx = 0; idx < lim; ++idx) {
-      String msg = "This is a test message: " + idx;
+
       watcher = LogWatcher.newRegisteredLogWatcher(config, null);
 
       // First ensure there's nothing in the new watcher.
-      assertEquals(-1, watcher.getLastEvent());
+      long lastEvent = watcher.getLastEvent();
+      if (lastEvent != -1L) { // Dump some information to try to understand failure.
+        AtomicBoolean ab = new AtomicBoolean();
+        SolrDocumentList events = watcher.getHistory(-1, ab);
+
+        System.out.println("Found value is: " + ab.toString());
+
+        System.out.println("Dumping all events in this watcher:");
+        for (SolrDocument doc : events) {
+          System.out.println("   Event:'" + doc.toString() +"'");
+        }
+        fail("lastEvent was not -1, was: '" + lastEvent + "'");
+      }
 
       // Now log a message and ensure that the new watcher sees it.
+      String msg = "This is a test message: " + idx;
       log.warn(msg);
 
       // Loop to give the logger time to process the async message and notify the new watcher.
@@ -60,7 +73,7 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
       // In local testing this loop usually succeeds 1-2 tries.
       do {
         // Returns an empty (but non-null) list even if there are no messages yet.
-        SolrDocumentList events = watcher.getHistory(-1, new AtomicBoolean());
+        SolrDocumentList events = watcher.getHistory(-1, null);
         for (SolrDocument doc : events) {
           if (doc.get("message").equals(msg)) {
             foundMsg = true;
@@ -68,7 +81,7 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
           }
         }
         Thread.sleep(10);
-      } while (timeOut.hasTimedOut() == false);
+      } while (foundMsg == false && timeOut.hasTimedOut() == false);
 
       assertTrue("Should have found message " + msg + " in loop: " + idx, foundMsg);
     }
