@@ -1334,6 +1334,192 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&pro
 </response>
 ----
 
+[[colstatus]]
+== COLSTATUS: Detailed low-level status of collection's indexes
+The COLSTATUS command provides a detailed description of the collection status, including low-level index
+information about segments and field data.
+
+This command also checks the compliance of Lucene index field types with the current Solr collection
+schema and indicates the names of non-compliant fields, ie. Lucene fields with field types incompatible
+(or different) from the corresponding Solr field types declared in the current schema. Such incompatibilities may
+result from incompatible schema changes or after migration of
+data to a different major Solr release.
+
+`/admin/collections?action=COLSTATUS&collection=coll&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true`
+
+=== COLSTATUS Parameters
+
+`collection`::
+Collection name (optional). If missing then it means all collections.
+
+`coreInfo`::
+Optional boolean. If true then additional information will be provided about
+SolrCore of shard leaders.
+
+`segments`::
+Optional boolean. If true then segment information will be provided.
+
+`fieldInfo`::
+Optional boolean. If true then detailed Lucene field information will be provided
+and their corresponding Solr schema types.
+
+`sizeInfo`::
+Optional boolean. If true then additional information about the index files
+size and their RAM usage will be provided.
+
+=== COLSTATUS Response
+The response will include an overview of the collection status, the number of
+active / inactive shards and replicas, and additional index information
+of shard leaders.
+
+=== Examples using COLSTATUS
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=gettingstarted&fieldInfo=true&sizeInfo=true
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 50
+    },
+    "gettingstarted": {
+        "stateFormat": 2,
+        "znodeVersion": 16,
+        "properties": {
+            "autoAddReplicas": "false",
+            "maxShardsPerNode": "-1",
+            "nrtReplicas": "2",
+            "pullReplicas": "0",
+            "replicationFactor": "2",
+            "router": {
+                "name": "compositeId"
+            },
+            "tlogReplicas": "0"
+        },
+        "activeShards": 2,
+        "inactiveShards": 0,
+        "schemaNonCompliant": [
+            "(NONE)"
+        ],
+        "shards": {
+            "shard1": {
+                "state": "active",
+                "range": "80000000-ffffffff",
+                "replicas": {
+                    "total": 2,
+                    "active": 2,
+                    "down": 0,
+                    "recovering": 0,
+                    "recovery_failed": 0
+                },
+                "leader": {
+                    "coreNode": "core_node4",
+                    "core": "gettingstarted_shard1_replica_n1",
+                    "base_url": "http://192.168.0.80:8983/solr",
+                    "node_name": "192.168.0.80:8983_solr",
+                    "state": "active",
+                    "type": "NRT",
+                    "force_set_state": "false",
+                    "leader": "true",
+                    "segInfos": {
+                        "info": {
+                            "minSegmentLuceneVersion": "9.0.0",
+                            "commitLuceneVersion": "9.0.0",
+                            "numSegments": 40,
+                            "segmentsFileName": "segments_w",
+                            "totalMaxDoc": 686953,
+                            "userData": {
+                                "commitCommandVer": "1627350608019193856",
+                                "commitTimeMSec": "1551962478819"
+                            }
+                        },
+                        "fieldInfoLegend": [
+                            "I - Indexed",
+                            "D - DocValues",
+                            "xxx - DocValues type",
+                            "V - TermVector Stored",
+                            "O - Omit Norms",
+                            "F - Omit Term Frequencies & Positions",
+                            "P - Omit Positions",
+                            "H - Store Offsets with Positions",
+                            "p - field has payloads",
+                            "s - field uses soft deletes",
+                            ":x:x:x - point data dim : index dim : num bytes"
+                        ],
+                        "segments": {
+                            "_i": {
+                                "name": "_i",
+                                "delCount": 738,
+                                "softDelCount": 0,
+                                "hasFieldUpdates": false,
+                                "sizeInBytes": 109398213,
+                                "size": 70958,
+                                "age": "2019-03-07T12:34:24.761Z",
+                                "source": "merge",
+                                "version": "9.0.0",
+                                "createdVersionMajor": 9,
+                                "minVersion": "9.0.0",
+                                "diagnostics": {
+                                    "os": "Mac OS X",
+                                    "java.vendor": "Oracle Corporation",
+                                    "java.version": "1.8.0_191",
+                                    "java.vm.version": "25.191-b12",
+                                    "lucene.version": "9.0.0",
+                                    "mergeMaxNumSegments": "-1",
+                                    "os.arch": "x86_64",
+                                    "java.runtime.version": "1.8.0_191-b12",
+                                    "source": "merge",
+                                    "mergeFactor": "10",
+                                    "os.version": "10.14.3",
+                                    "timestamp": "1551962064761"
+                                },
+                                "attributes": {
+                                    "Lucene50StoredFieldsFormat.mode": "BEST_SPEED"
+                                },
+                                "largestFiles": {
+                                    "_i.fdt": "42.5 MB",
+                                    "_i_Lucene80_0.dvd": "35.3 MB",
+                                    "_i_Lucene50_0.pos": "11.1 MB",
+                                    "_i_Lucene50_0.doc": "10 MB",
+                                    "_i_Lucene50_0.tim": "4.3 MB"
+                                },
+                                "ramBytesUsed": {
+                                    "total": 49153,
+                                    "postings [PerFieldPostings(segment=_i formats=1)]": {
+                                        "total": 31023,
+...
+                                "fields": {
+                                    "dc": {
+                                        "flags": "I-----------",
+                                        "schemaType": "text_general"
+                                    },
+                                    "dc_str": {
+                                        "flags": "-Dsrs-------",
+                                        "schemaType": "strings"
+                                    },
+                                    "dc.title": {
+                                        "flags": "I-----------",
+                                        "docCount": 70958,
+                                        "sumDocFreq": 646756,
+                                        "sumTotalTermFreq": 671817,
+                                        "schemaType": "text_general"
+                                    },
+                                    "dc.date": {
+                                        "flags": "-Dsrn-------:1:1:8",
+                                        "schemaType": "pdates"
+                                    },
+...
+----
+
+
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
 

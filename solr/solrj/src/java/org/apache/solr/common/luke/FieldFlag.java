@@ -67,4 +67,8 @@ public enum FieldFlag {
   public String getDisplay() {
     return display;
   }
+
+  public String toString() {
+    return abbreviation + " - " + display;
+  }
 }

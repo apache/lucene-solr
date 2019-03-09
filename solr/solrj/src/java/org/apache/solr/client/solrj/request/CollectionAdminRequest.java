@@ -784,6 +784,54 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Return a SolrRequest for low-level detailed status of the collection.
+   */
+  public static ColStatus collectionStatus(String collection) {
+    return new ColStatus(collection);
+  }
+
+  public static class ColStatus extends AsyncCollectionSpecificAdminRequest {
+    protected Boolean withSegments = null;
+    protected Boolean withFieldInfo = null;
+    protected Boolean withCoreInfo = null;
+    protected Boolean withSizeInfo = null;
+
+    private ColStatus(String collection) {
+      super(CollectionAction.COLSTATUS, collection);
+    }
+
+    public ColStatus setWithSegments(boolean withSegments) {
+      this.withSegments = withSegments;
+      return this;
+    }
+
+    public ColStatus setWithFieldInfo(boolean withFieldInfo) {
+      this.withFieldInfo = withFieldInfo;
+      return this;
+    }
+
+    public ColStatus setWithCoreInfo(boolean withCoreInfo) {
+      this.withCoreInfo = withCoreInfo;
+      return this;
+    }
+
+    public ColStatus setWithSizeInfo(boolean withSizeInfo) {
+      this.withSizeInfo = withSizeInfo;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
+      params.setNonNull("segments", withSegments.toString());
+      params.setNonNull("fieldInfo", withFieldInfo.toString());
+      params.setNonNull("coreInfo", withCoreInfo.toString());
+      params.setNonNull("sizeInfo", withSizeInfo.toString());
+      return params;
+    }
+  }
+
+  /**
    * Returns a SolrRequest to delete a collection
    */
   public static Delete deleteCollection(String collection) {
