@@ -16,10 +16,10 @@
  */
 package org.apache.solr.util;
 
+import org.apache.solr.SolrTestCase;
 import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class DistanceUnitsTest extends LuceneTestCase {
+public class DistanceUnitsTest extends SolrTestCase {
 
   public void testAddNewUnits() throws Exception {
     DistanceUnits.addUnits("lightyears", 6.73430542e-12, 9.4605284e12 * DistanceUtils.KM_TO_DEG);

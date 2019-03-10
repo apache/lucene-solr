@@ -16,14 +16,13 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.lucene.util.LuceneTestCase;
-
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /**
  * Test for DelegationTokenRequests
  */
-public class TestDelegationTokenRequest extends LuceneTestCase {
+public class TestDelegationTokenRequest extends SolrTestCase {
 
   @Test
   public void testGetRequest() throws Exception {

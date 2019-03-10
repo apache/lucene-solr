@@ -19,16 +19,16 @@ package org.apache.solr.request;
 
 import java.util.Arrays;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.request.SimpleFacets.FacetMethod;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieIntField;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestFacetMethods extends LuceneTestCase {
+public class TestFacetMethods extends SolrTestCase {
 
   // TODO - make these public in FieldProperties?
   protected final static int MULTIVALUED         = 0x00000200;

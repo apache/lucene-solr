@@ -54,12 +54,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** random sorting tests with uninversion */
-public class TestFieldCacheSortRandom extends LuceneTestCase {
+public class TestFieldCacheSortRandom extends SolrTestCase {
 
   public void testRandomStringSort() throws Exception {
     testRandomStringSort(SortField.Type.STRING);

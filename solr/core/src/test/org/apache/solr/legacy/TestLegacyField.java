@@ -22,9 +22,9 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class TestLegacyField extends LuceneTestCase {
+public class TestLegacyField extends SolrTestCase {
   
   public void testLegacyDoubleField() throws Exception {
     Field fields[] = new Field[] {
