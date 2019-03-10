@@ -87,6 +87,9 @@ Bug Fixes
 * SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
   occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
 
+* SOLR-13284: NullPointerException with 500 http status on omitted or wrong wt param. 
+  It's fixed by fallback to json (Munendra S N via Mikhail Khludnev)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
