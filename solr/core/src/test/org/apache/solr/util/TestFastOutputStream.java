@@ -16,12 +16,12 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.update.MemOutputStream;
 
 import java.util.Random;
 
-public class TestFastOutputStream extends LuceneTestCase {
+public class TestFastOutputStream extends SolrTestCase {
 
   Random rand;
   byte[] arr;

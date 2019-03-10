@@ -23,12 +23,12 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
-public class TestSafeXMLParsing extends LuceneTestCase {
+public class TestSafeXMLParsing extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public void testUntrusted() throws Exception {

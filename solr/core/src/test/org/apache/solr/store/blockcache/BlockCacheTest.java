@@ -23,10 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.benmanes.caffeine.cache.*;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
-public class BlockCacheTest extends LuceneTestCase {
+public class BlockCacheTest extends SolrTestCase {
   @Test
   public void testBlockCache() {
     int blocksInTest = 2000000;
