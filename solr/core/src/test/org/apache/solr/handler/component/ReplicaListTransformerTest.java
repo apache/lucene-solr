@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -31,7 +32,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
-public class ReplicaListTransformerTest extends LuceneTestCase {
+public class ReplicaListTransformerTest extends SolrTestCase {
 
   // A transformer that keeps only matching choices
   private static class ToyMatchingReplicaListTransformer implements ReplicaListTransformer {

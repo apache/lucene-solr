@@ -17,14 +17,14 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
 import org.junit.Test;
 
 /**
  * Unit tests for {@link Builder}.
  */
-public class ConcurrentUpdateSolrClientBuilderTest extends LuceneTestCase {
+public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testRejectsMissingBaseSolrUrl() {
