@@ -499,14 +499,6 @@ public final class KoreanTokenizer extends Tokenizer {
     }
   }
 
-  private int max_int(int a, int b) {
-    if (a >= b) {
-      return a;
-    } else {
-      return b;
-    }
-  }
-
   /* Incrementally parse some more characters.  This runs
    * the viterbi search forwards "enough" so that we
    * generate some more tokens.  How much forward depends on
@@ -522,8 +514,8 @@ public final class KoreanTokenizer extends Tokenizer {
     // Index of the last character of unknown word:
     int unknownWordEndIndex = -1;
 
-    /// Largest global posAhead of user word
-    int global_posAheadMax = -1;
+    // Maximum posAhead of user word in the entire input
+    int globalMaxPosAhead = -1;
 
     // Advances over each position (character):
     while (true) {
@@ -662,40 +654,35 @@ public final class KoreanTokenizer extends Tokenizer {
       if (userFST != null) {
         userFST.getFirstArc(arc);
         int output = 0;
-        int posAheadMax = 0;
-        int output_posAheadMax = 0;
-        int arcFinalOut_posAheadMax = 0;
+        int maxPosAhead = 0;
+        int outputMaxPosAhead = 0;
+        int arcFinalOutMaxPosAhead = 0;
 
         for(int posAhead=pos;;posAhead++) {
           final int ch = buffer.get(posAhead);
-          if (ch == -1 || userFST.findTargetArc(ch, arc, arc, posAhead == pos, userFSTReader) == null) {
-            if (anyMatches
-              && posAheadMax > global_posAheadMax) {
-              if (VERBOSE) {
-                System.out.println("    USER word " + new String(buffer.get(pos, posAheadMax - pos + 1)) + " toPos=" + (posAheadMax + 1));
-              }
-              add(userDictionary,
-                posData,
-                pos,
-                posAheadMax + 1,
-                output_posAheadMax + arcFinalOut_posAheadMax,
-                Type.USER);
-              
-              global_posAheadMax = max_int(global_posAheadMax, posAheadMax);
-              break;
-            }
-            else {
-              break;
-            }
+          if (ch == -1) {
+            break;
+          }
+          if (userFST.findTargetArc(ch, arc, arc, posAhead == pos, userFSTReader) == null) {
+            break;
           }
           output += arc.output.intValue();
           if (arc.isFinal()) {
-            posAheadMax = posAhead;
-            output_posAheadMax = output;
-            arcFinalOut_posAheadMax = arc.nextFinalOutput.intValue();
+            maxPosAhead = posAhead;
+            outputMaxPosAhead = output;
+            arcFinalOutMaxPosAhead = arc.nextFinalOutput.intValue();
             anyMatches = true;
           }
         }
+
+        // Longest matching for user word
+        if (anyMatches && maxPosAhead > globalMaxPosAhead) {
+          if (VERBOSE) {
+            System.out.println("    USER word " + new String(buffer.get(pos, maxPosAhead + 1)) + " toPos=" + (maxPosAhead + 1));
+          }
+          add(userDictionary, posData, pos, maxPosAhead+1, outputMaxPosAhead+arcFinalOutMaxPosAhead, Type.USER);
+          globalMaxPosAhead = Math.max(globalMaxPosAhead, maxPosAhead);
+        } 
       }
 
       // TODO: we can be more aggressive about user
