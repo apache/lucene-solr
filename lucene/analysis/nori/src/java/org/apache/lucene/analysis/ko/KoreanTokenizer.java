@@ -515,7 +515,7 @@ public final class KoreanTokenizer extends Tokenizer {
     int unknownWordEndIndex = -1;
 
     // Maximum posAhead of user word in the entire input
-    int globalMaxPosAhead = -1;
+    int userWordMaxPosAhead = -1;
 
     // Advances over each position (character):
     while (true) {
@@ -676,12 +676,12 @@ public final class KoreanTokenizer extends Tokenizer {
         }
 
         // Longest matching for user word
-        if (anyMatches && maxPosAhead > globalMaxPosAhead) {
+        if (anyMatches && maxPosAhead > userWordMaxPosAhead) {
           if (VERBOSE) {
             System.out.println("    USER word " + new String(buffer.get(pos, maxPosAhead + 1)) + " toPos=" + (maxPosAhead + 1));
           }
           add(userDictionary, posData, pos, maxPosAhead+1, outputMaxPosAhead+arcFinalOutMaxPosAhead, Type.USER);
-          globalMaxPosAhead = Math.max(globalMaxPosAhead, maxPosAhead);
+          userWordMaxPosAhead = Math.max(userWordMaxPosAhead, maxPosAhead);
         } 
       }
 
