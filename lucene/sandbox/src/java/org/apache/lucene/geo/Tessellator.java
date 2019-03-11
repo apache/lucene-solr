@@ -762,7 +762,7 @@ final public class Tessellator {
 
       boolean equalVertex = isVertexEquals(prevNode, nextNode) || isVertexEquals(node, nextNode) || isVertexEquals(prevNode, node);
       if ((node.isSteiner == false && equalVertex)
-          || (prevNode.nextEdgeFromPolygon == node.nextEdgeFromPolygon && area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
+          || ((prevNode.nextEdgeFromPolygon == node.nextEdgeFromPolygon || node.isSteiner) && area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
         boolean nextEdgeFromPolygon;
         if (equalVertex) {
           if (isVertexEquals(node, nextNode)) {

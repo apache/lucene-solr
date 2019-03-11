@@ -533,6 +533,30 @@ public class TestTessellator extends LuceneTestCase {
     }
   }
 
+  public void testComplexPolygon27() throws Exception {
+    String wkt ="POLYGON((130.67658 33.4549747, 130.6766161 33.454976, 130.6766609 33.4549775, 130.6766642 33.454912, 130.6766212 33.4549105, 130.6766102 33.4549066, 130.6766061 33.454879, 130.6765768 33.4548779, 130.6765765 33.4548831," +
+        " 130.6765691 33.4548828, 130.6765693 33.4548793, 130.6765507 33.4548786, 130.6765509 33.4548761, 130.6765281 33.4548753, 130.6765273 33.4548919, 130.6765322 33.454892, 130.6765315 33.4549065, 130.6765323 33.4549065," +
+        " 130.6765321 33.4549107, 130.6765257 33.4549105, 130.6765238 33.454949, 130.6765515 33.45495, 130.6765512 33.4549572, 130.6765808 33.4549583, 130.67658 33.4549747)," +
+        " (130.6765844 33.4549234, 130.6765847 33.4549188, 130.6765847 33.4549188, 130.6765844 33.4549234))";
+    Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
+    Tessellator2.tessellate(polygon);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    assertTrue(tessellation.size() > 0);
+    for (Tessellator.Triangle t : tessellation) {
+      checkTriangleEdgesFromPolygon(polygon, t);
+    }
+  }
+
+  public void testComplexPolygon28() throws Exception {
+    String wkt ="POLYGON((33.3275991 -8.9353026, 33.3276122 -8.9353021, 33.3276139 -8.9353425, 33.3276095 -8.9353427, 33.3276107 -8.9353706, 33.3276074 -8.9353707, 33.3276087 -8.9354024, 33.3275766 -8.9354038, 33.3275753 -8.9353739, 33.3275354 -8.9353756, 33.3275342 -8.9353464, 33.3275184 -8.935347, 33.3275167 -8.9353066, 33.3275381 -8.9353057, 33.3275375 -8.9352901, 33.3275598 -8.9352892, 33.3275594 -8.9352808, 33.3275981 -8.9352792, 33.3275991 -8.9353026), (33.3275601 -8.9353046, 33.3275599 -8.9352988, 33.3275601 -8.9353046, 33.3275601 -8.9353046))";
+    Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    assertTrue(tessellation.size() > 0);
+    for (Tessellator.Triangle t : tessellation) {
+      checkTriangleEdgesFromPolygon(polygon, t);
+    }
+  }
+
   private void checkTriangleEdgesFromPolygon(Polygon p, Tessellator.Triangle t) {
     //System.out.println("LINESTRING(" +t.getLon(0) + " " + t.getLat(0)+ "," + t.getLon(1) + " " +  t.getLat(1)+ ")");
     assertEquals(t.fromPolygon(0), edgeFromPolygon(p, t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1)));
@@ -551,7 +575,7 @@ public class TestTessellator extends LuceneTestCase {
       if (p.getPolyLon(i) != p.getPolyLon(i + 1) || p.getPolyLat(i) != p.getPolyLat(i + 1)) {
         //Check for co-planar points
         int j = i + 2;
-        while (area(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j))) == 0) {
+        while (j - i < p.getPolyLats().length - 2 && area(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j))) == 0) {
           if (pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j)), aLon, aLat) &&
               pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j)), bLon, bLat)) {
             return true;
