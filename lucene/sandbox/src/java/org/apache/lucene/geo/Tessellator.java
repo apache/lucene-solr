@@ -478,24 +478,34 @@ final public class Tessellator {
     }
     Node next = a;
     do {
-      if (isVertexEquals(next, a)) {
-        if (isVertexEquals(next.next, b)) {
-          return next.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(next.previous, b)) {
-          return next.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(next, next.next, a) && pointInLine(next, next.next, b)) {
+        return next.nextEdgeFromPolygon;
       }
-      if (isVertexEquals(next, b)) {
-        if (isVertexEquals(next.next, a)) {
-          return next.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(next.previous, a)) {
-          return next.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(next, next.previous, a) && pointInLine(next, next.previous, b)) {
+        return next.previous.nextEdgeFromPolygon;
       }
       next = next.next;
     } while(next != a);
+    return false;
+  }
+
+  private static boolean pointInLine(Node a, Node b, Node point) {
+    double dxc = point.getLon() - a.getLon();
+    double dyc = point.getLat() - a.getLat();
+
+    double  dxl = b.getLon() - a.getLon();
+    double  dyl = b.getLat() - a.getLat();
+
+    if(dxc * dyl - dyc * dxl == 0) {
+      if (Math.abs(dxl) >= Math.abs(dyl))
+        return dxl > 0 ?
+            a.x <= point.x && point.x <= b.x :
+            b.x <= point.x && point.x <= a.x;
+      else
+        return dyl > 0 ?
+            a.y <= point.y && point.y <= b.y :
+            b.y <= point.y && point.y <= a.y;
+    }
     return false;
   }
 
@@ -518,81 +528,43 @@ final public class Tessellator {
     Node n = a.nextZ;
     while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0
         && n != null && Long.compareUnsigned(n.morton, maxZ) <= 0) {
-      if (isVertexEquals(p, a)) {
-        if (isVertexEquals(p.next, b)) {
-          return p.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(p.previous, b)) {
-          return p.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(p, p.next, a) && pointInLine(p, p.next, b)) {
+        return p.nextEdgeFromPolygon;
       }
-      if (isVertexEquals(p, b)) {
-        if (isVertexEquals(p.next, a)) {
-          return p.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(p.previous, a)) {
-          return p.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(p, p.previous, a) && pointInLine(p, p.previous, b)) {
+        return p.previous.nextEdgeFromPolygon;
       }
+
       p = p.previousZ;
 
-      if (isVertexEquals(n, a)) {
-        if (isVertexEquals(n.next, b)) {
-          return n.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(n.previous, b)) {
-          return n.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(n, n.next, a) && pointInLine(n, n.next, b)) {
+        return n.nextEdgeFromPolygon;
       }
-      if (isVertexEquals(n, b)) {
-        if (isVertexEquals(n.next, a)) {
-          return n.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(n.previous, a)) {
-          return n.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(n, n.previous, a) && pointInLine(n, n.previous, b)) {
+        return n.previous.nextEdgeFromPolygon;
       }
+
       n = n.nextZ;
     }
 
     // first look for points inside the edge in decreasing z-order
     while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0) {
-      if (isVertexEquals(p, a)) {
-        if (isVertexEquals(p.next, b)) {
-          return p.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(p.previous, b)) {
-          return p.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(p, p.next, a) && pointInLine(p, p.next, b)) {
+        return p.nextEdgeFromPolygon;
       }
-      if (isVertexEquals(p, b)) {
-        if (isVertexEquals(p.next, a)) {
-          return p.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(p.previous, a)) {
-          return p.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(p, p.previous, a) && pointInLine(p, p.previous, b)) {
+        return p.previous.nextEdgeFromPolygon;
       }
       p = p.previousZ;
     }
     // then look for points in increasing z-order
     while (n != null &&
         Long.compareUnsigned(n.morton, maxZ) <= 0) {
-      if (isVertexEquals(n, a)) {
-        if (isVertexEquals(n.next, b)) {
-          return n.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(n.previous, b)) {
-          return n.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(n, n.next, a) && pointInLine(n, n.next, b)) {
+        return n.nextEdgeFromPolygon;
       }
-      if (isVertexEquals(n, b)) {
-        if (isVertexEquals(n.next, a)) {
-          return n.nextEdgeFromPolygon;
-        }
-        if (isVertexEquals(n.previous, a)) {
-          return n.previous.nextEdgeFromPolygon;
-        }
+      if (pointInLine(n, n.previous, a) && pointInLine(n, n.previous, b)) {
+        return n.previous.nextEdgeFromPolygon;
       }
       n = n.nextZ;
     }
