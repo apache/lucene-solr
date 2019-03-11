@@ -184,9 +184,7 @@ final public class Tessellator {
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
       // Split the resulting polygon.
-      boolean fromPolygon = isVertexEquals(outerNode, holeNode) ||
-          isVertexEquals(outerNode.next, holeNode) || isVertexEquals(outerNode.previous, holeNode) ||
-          isVertexEquals(outerNode, holeNode.next) || isVertexEquals(outerNode, holeNode.previous);
+      boolean fromPolygon = pointInLine(outerNode, outerNode.next, holeNode) || pointInLine(outerNode, outerNode.previous, holeNode);
       Node node = splitPolygon(outerNode, holeNode, fromPolygon);
       // Filter the split nodes.
       filterPoints(node, node.next);
@@ -490,21 +488,25 @@ final public class Tessellator {
   }
 
   private static boolean pointInLine(Node a, Node b, Node point) {
-    double dxc = point.getLon() - a.getLon();
-    double dyc = point.getLat() - a.getLat();
+    return pointInLine(a, b, point.getLon(), point.getLat());
+  }
 
-    double  dxl = b.getLon() - a.getLon();
-    double  dyl = b.getLat() - a.getLat();
+  private static boolean pointInLine(Node a, Node b, double lon, double lat) {
+    double dxc = lon - a.getLon();
+    double dyc = lat - a.getLat();
 
-    if(dxc * dyl - dyc * dxl == 0) {
+    double dxl = b.getLon() - a.getLon();
+    double dyl = b.getLat() - a.getLat();
+
+    if (dxc * dyl - dyc * dxl == 0) {
       if (Math.abs(dxl) >= Math.abs(dyl))
         return dxl > 0 ?
-            a.x <= point.x && point.x <= b.x :
-            b.x <= point.x && point.x <= a.x;
+            a.getLon() <= lon && lon <= b.getLon() :
+            b.getLon() <= lon && lon <= a.getLon();
       else
         return dyl > 0 ?
-            a.y <= point.y && point.y <= b.y :
-            b.y <= point.y && point.y <= a.y;
+            a.getLat() <= lat && lat <= b.getLat() :
+            b.getLat() <= lat && lat <= a.getLat();
     }
     return false;
   }
@@ -600,7 +602,7 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
-    return a.next.idx != b.idx && a.previous.idx != b.idx
+    return a.next.idx != b.idx && a.previous.idx != b.idx && a.idx != b.previous.idx && a.idx != b.next.idx
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
         && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY());

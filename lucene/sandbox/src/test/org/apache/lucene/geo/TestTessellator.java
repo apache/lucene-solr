@@ -507,6 +507,32 @@ public class TestTessellator extends LuceneTestCase {
     }
   }
 
+  public void testComplexPolygon25() throws Exception {
+    String wkt ="POLYGON((8.6778468 49.8622443, 8.6782001 49.8622443, 8.6786272 49.8622443, 8.6790127 49.8622444, 8.6790127 49.8620355, 8.678775 49.8620355, 8.6780348 49.8620354, 8.6778468 49.8620354, 8.6778468 49.8622443)," +
+        " (8.6785777 49.8621738, 8.6785775 49.8620923, 8.678253 49.8620926, 8.6782532 49.8621741, 8.6785777 49.8621738), (8.6786822 49.8622191, 8.6785776 49.8622191, 8.6785777 49.8621738, 8.6785775 49.8620923, 8.6785776 49.8620566, 8.6786822 49.8620566, 8.6786822 49.8620918, 8.6786822 49.8621737, 8.6786822 49.8622191)," +
+        " (8.6786822 49.8621737, 8.6788512 49.8621737, 8.6788512 49.8620918, 8.6786822 49.8620918, 8.6786822 49.8621737)," +
+        " (8.6781491 49.8622195, 8.6782531 49.8622195, 8.6782532 49.8621741, 8.678253 49.8620926, 8.6782531 49.862057, 8.6781491 49.862057, 8.6781491 49.8620925, 8.6781491 49.8621742, 8.6781491 49.8622195)," +
+        " (8.6781491 49.8621742, 8.6781491 49.8620925, 8.6779802 49.8620925, 8.6779802 49.8621742, 8.6781491 49.8621742))";
+    Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    assertTrue(tessellation.size() > 0);
+    for (Tessellator.Triangle t : tessellation) {
+      checkTriangleEdgesFromPolygon(polygon, t);
+    }
+  }
+
+  public void testComplexPolygon26() throws Exception {
+    String wkt ="POLYGON((-123.7404617 58.3125, -123.75 58.3125, -123.75 58.375, -123.6321531 58.3749956, -123.6317004 58.3749059, -123.6314612 58.3741376, -123.6306331 58.373089, -123.6296881 58.3723157, -123.627312 58.3710664, -123.625641 58.3692493, -123.625 58.3687661, -123.625 58.3633125, -123.6283038 58.3624226, -123.6296466 58.362358, -123.6306625 58.3621921, -123.6314938 58.3618889, -123.6330286 58.3616731, -123.634273 58.3611626, -123.6349202 58.3609982, -123.6361556 58.360838, -123.6379868 58.3597587, -123.6389829 58.3594443, -123.640572 58.3586312, -123.6421679 58.3572329, -123.6423102 58.3568794, -123.6429936 58.3565215, -123.6447649 58.3562455, -123.6460215 58.3558545, -123.6483288 58.3554625, -123.6488064 58.3551774, -123.6493181 58.3550985, -123.6509318 58.3551592, -123.6521902 58.355003, -123.6527222 58.3550521, -123.6538012 58.355484, -123.6565104 58.3556346, -123.6576767 58.3553995, -123.658255 58.3554777, -123.6590797 58.3554215, -123.661566 58.3547586, -123.6622838 58.3542689, -123.6639835 58.3543382, -123.6664585 58.3541285, -123.667106 58.3539433, -123.6678853 58.3534994, -123.6687755 58.3533241, -123.6690952 58.353079, -123.6702918 58.3525596, -123.6717506 58.3522191, -123.6758233 58.3523909, -123.6775504 58.3526168, -123.6778731 58.3525654, -123.6794879 58.3529018, -123.6800906 58.352943, -123.6808703 58.3527957, -123.6823335 58.3532423, -123.6843889 58.3531901, -123.6856506 58.3528894, -123.6862467 58.352881, -123.6872887 58.3522574, -123.687291 58.351837, -123.6869332 58.3510681, -123.6854944 58.3496119, -123.6855283 58.3485283, -123.6857475 58.3482165, -123.6874383 58.3476631, -123.6881526 58.347297, -123.6891555 58.3469904, -123.6918469 58.3458955, -123.6922003 58.3455393, -123.6924054 58.345487, -123.6924623 58.3454009, -123.6921451 58.3452257, -123.6923479 58.3449385, -123.6929675 58.3445964, -123.6931148 58.3443336, -123.6929389 58.3402113, -123.6931606 58.3394585, -123.6935341 58.3389129, -123.6939308 58.3387094, -123.6945457 58.3378975, -123.6972661 58.3371942, -123.6978071 58.3368515, -123.698247 58.3361456, -123.6993662 58.335543, -123.6997906 58.3351583, -123.7002932 58.3351122, -123.7021613 58.3346463, -123.7030156 58.3343057, -123.7047178 58.3342302, -123.7065843 58.3338261, -123.7089787 58.3336356, -123.7102074 58.3333633, -123.7107549 58.333408, -123.7110472 58.3333027, -123.7133154 58.3331443, -123.7153485 58.3323084, -123.7161434 58.331143, -123.715938 58.3302021, -123.7153031 58.3295345, -123.7145757 58.3291466, -123.7131432 58.3287541, -123.71271 58.3281785, -123.7127057 58.328026, -123.7130922 58.3279172, -123.7137255 58.3279707, -123.7137126 58.3278512, -123.7130951 58.3274557, -123.7133263 58.3266082, -123.7129943 58.3263959, -123.7132633 58.3259484, -123.7135818 58.3257238, -123.7151388 58.3251321, -123.716882 58.3249537, -123.717405 58.3250354, -123.7176916 58.3251773, -123.7198942 58.3251172, -123.7224908 58.3246186, -123.7251722 58.323832, -123.7262131 58.3231875, -123.7263272 58.3229945, -123.7262397 58.3227096, -123.7265877 58.3222214, -123.7268646 58.3220995, -123.7274534 58.3220414, -123.7280048 58.3215627, -123.7287641 58.3205496, -123.7296068 58.3189724, -123.7301585 58.3184731, -123.7322935 58.3175799, -123.7340084 58.3172445, -123.7346599 58.3168323, -123.7357182 58.3164392, -123.7366318 58.315868, -123.7370013 58.3158043, -123.7378098 58.3153726, -123.7380588 58.3150939, -123.738132 58.3146245, -123.737104 58.3136785, -123.7371457 58.3132172, -123.7377165 58.3129076, -123.7381332 58.3128319, -123.7396672 58.3128703, -123.7404617 58.3125)," +
+        " (-123.7169112 58.3253866, -123.7163295 58.3254736, -123.7157654 58.325812, -123.7158944 58.327008, -123.7161972 58.3267874, -123.7164083 58.3261293, -123.7169112 58.3253866)," +
+        " (-123.7153958 58.3262135, -123.7152468 58.3262208, -123.7149697 58.3266806, -123.7148026 58.3274708, -123.7152792 58.3278612, -123.7155639 58.3274097, -123.7153958 58.3262135), (-123.7497313 58.350133, -123.7498506 58.3502042, -123.75 58.3502944, -123.7494451 58.3503224, -123.7490112 58.3500917, -123.7497313 58.350133))";
+    Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    assertTrue(tessellation.size() > 0);
+    for (Tessellator.Triangle t : tessellation) {
+      checkTriangleEdgesFromPolygon(polygon, t);
+    }
+  }
+
   private void checkTriangleEdgesFromPolygon(Polygon p, Tessellator.Triangle t) {
     //System.out.println("LINESTRING(" +t.getLon(0) + " " + t.getLat(0)+ "," + t.getLon(1) + " " +  t.getLat(1)+ ")");
     assertEquals(t.fromPolygon(0), edgeFromPolygon(p, t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1)));
@@ -518,20 +544,16 @@ public class TestTessellator extends LuceneTestCase {
 
   private boolean edgeFromPolygon(Polygon p, double aLon, double aLat, double bLon, double bLat) {
     for (int i = 0; i < p.getPolyLats().length - 1; i++) {
-      if (p.getPolyLon(i) == aLon && p.getPolyLat(i) == aLat && p.getPolyLon(i + 1) == bLon && p.getPolyLat(i + 1) == bLat) {
-        return true;
-      }
-      if (p.getPolyLon(i) == bLon && p.getPolyLat(i) == bLat && p.getPolyLon(i + 1) == aLon && p.getPolyLat(i + 1) == aLat) {
+      if (pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), aLon, aLat) &&
+          pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), bLon, bLat)) {
         return true;
       }
       if (p.getPolyLon(i) != p.getPolyLon(i + 1) || p.getPolyLat(i) != p.getPolyLat(i + 1)) {
         //Check for co-planar points
         int j = i + 2;
         while (area(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j))) == 0) {
-          if (p.getPolyLon(i) == aLon && p.getPolyLat(i) == aLat && p.getPolyLon(getIndex(p.getPolyLats().length, j)) == bLon && p.getPolyLat(getIndex(p.getPolyLats().length, j)) == bLat) {
-            return true;
-          }
-          if (p.getPolyLon(i) == bLon && p.getPolyLat(i) == bLat && p.getPolyLon(getIndex(p.getPolyLats().length, j)) == aLon && p.getPolyLat(getIndex(p.getPolyLats().length, j)) == aLat) {
+          if (pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j)), aLon, aLat) &&
+              pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(getIndex(p.getPolyLats().length, j)), p.getPolyLat(getIndex(p.getPolyLats().length, j)), bLon, bLat)) {
             return true;
           }
           j++;
@@ -559,5 +581,25 @@ public class TestTessellator extends LuceneTestCase {
   private double area(final double aX, final double aY, final double bX, final double bY,
                              final double cX, final double cY) {
     return (bY - aY) * (cX - bX) - (bX - aX) * (cY - bY);
+  }
+
+  private  boolean pointInLine(final double aX, final double aY, final double bX, final double bY, double lon, double lat) {
+    double dxc = lon - aX;
+    double dyc = lat - aY;
+
+    double dxl = bX - aX;
+    double dyl = bY - aY;
+
+    if (dxc * dyl - dyc * dxl == 0) {
+      if (Math.abs(dxl) >= Math.abs(dyl))
+        return dxl > 0 ?
+            aX <= lon && lon <= bX :
+            bX <= lon && lon <= aX;
+      else
+        return dyl > 0 ?
+            aY <= lat && lat <= bY :
+            bY <= lat && lat <= aY;
+    }
+    return false;
   }
 }
