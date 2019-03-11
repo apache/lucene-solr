@@ -129,9 +129,9 @@ public class Line {
     sb.append("LINE(");
     for (int i = 0; i < lats.length; i++) {
       sb.append("[")
-          .append(lats[i])
-          .append(", ")
           .append(lons[i])
+          .append(", ")
+          .append(lats[i])
           .append("]");
     }
     sb.append(')');

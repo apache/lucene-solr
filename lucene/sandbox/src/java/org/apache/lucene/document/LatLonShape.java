@@ -70,7 +70,10 @@ public class LatLonShape {
   /** create indexable fields for polygon geometry */
   public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
     // the lionshare of the indexing is done by the tessellator
+//    long start = System.currentTimeMillis();
     List<Triangle> tessellation = Tessellator.tessellate(polygon);
+//    long end = System.currentTimeMillis();
+//    System.out.println(end - start);
     List<LatLonTriangle> fields = new ArrayList<>();
     for (Triangle t : tessellation) {
       fields.add(new LatLonTriangle(fieldName, t));

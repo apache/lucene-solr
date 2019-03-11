@@ -18,18 +18,18 @@ package org.apache.lucene.geo;
 
 public class XYRectangle {
   /** minimum x value */
-  public final int minX;
+  public final double minX;
   /** minimum y value */
-  public final int maxX;
+  public final double maxX;
   /** maximum x value */
-  public final int minY;
+  public final double minY;
   /** maximum y value */
-  public final int maxY;
+  public final double maxY;
 
   /**
    * Constructs a bounding box by first validating the provided latitude and longitude coordinates
    */
-  public XYRectangle(int minX, int maxX, int minY, int maxY) {
+  public XYRectangle(double minX, double maxX, double minY, double maxY) {
     this.minX = minX;
     this.maxX = maxX;
     this.minY = minY;

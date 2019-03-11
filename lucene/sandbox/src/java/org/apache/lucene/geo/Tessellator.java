@@ -935,8 +935,8 @@ final public class Tessellator {
       this.vrtxIdx = vertexIndex;
       this.polyX = x;
       this.polyY = y;
-      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : Float.floatToIntBits((float)polyY[vrtxIdx]);
-      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : Float.floatToIntBits((float)polyX[vrtxIdx]);
+      this.y = isGeo ? encodeLatitude(polyY[vrtxIdx]) : XYEncodingUtils.encode(polyY[vrtxIdx]);
+      this.x = isGeo ? encodeLongitude(polyX[vrtxIdx]) : XYEncodingUtils.encode(polyX[vrtxIdx]);
       this.morton = BitUtil.interleave(this.x ^ 0x80000000, this.y ^ 0x80000000);
       this.previous = null;
       this.next = null;

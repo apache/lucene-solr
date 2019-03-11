@@ -32,12 +32,12 @@ public class XYRectangle2D {
   final int minY;
   final int maxY;
 
-  private XYRectangle2D(int minX, int maxX, int minY, int maxY) {
+  private XYRectangle2D(double minX, double maxX, double minY, double maxY) {
     this.bbox = new byte[4 * BYTES];
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minY = minY;
-    this.maxY = maxY;
+    this.minX = XYEncodingUtils.encode(minX);
+    this.maxX = XYEncodingUtils.encode(maxX);
+    this.minY = XYEncodingUtils.encode(minY);
+    this.maxY = XYEncodingUtils.encode(maxY);
     encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
   }
 

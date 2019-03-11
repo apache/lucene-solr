@@ -19,7 +19,7 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
-import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 import static java.lang.Integer.BYTES;
@@ -95,10 +95,10 @@ public class Rectangle2D {
   }
 
   /** compare this to a provided rangle bounding box **/
-  public PointValues.Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
-                                              int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    PointValues.Relation eastRelation = compareBBoxToRangeBBox(this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-    if (this.crossesDateline() && eastRelation == PointValues.Relation.CELL_OUTSIDE_QUERY) {
+  public Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
+                                  int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    Relation eastRelation = compareBBoxToRangeBBox(this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
       return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
     }
     return eastRelation;
@@ -155,24 +155,24 @@ public class Rectangle2D {
   }
 
   /** static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection) */
-  private static PointValues.Relation compareBBoxToRangeBBox(final byte[] bbox,
-                                                            int minXOffset, int minYOffset, byte[] minTriangle,
-                                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+  private static Relation compareBBoxToRangeBBox(final byte[] bbox,
+                                                 int minXOffset, int minYOffset, byte[] minTriangle,
+                                                 int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     // check bounding box (DISJOINT)
     if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
         Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
         Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
         Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0) {
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
     if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
         Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
         Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
         Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
+      return Relation.CELL_INSIDE_QUERY;
     }
-    return PointValues.Relation.CELL_CROSSES_QUERY;
+    return Relation.CELL_CROSSES_QUERY;
   }
 
   /**

@@ -55,12 +55,8 @@ public class XYShape {
 
   /** create a query to find all polygons that intersect a defined bounding box
    **/
-  public static Query newBoxQuery(String field, QueryRelation queryRelation, int minX, int maxX, int minY, int maxY) {
+  public static Query newBoxQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
     return new XYShapeBoundingBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
-  }
-
-  public static Query newBoxQuery(String field, QueryRelation queryRelation, float minX, float maxX, float minY, float maxY) {
-    return null; //new XYShapeBoundingBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
   }
 
   private static class XYTriangle extends Field {
@@ -84,7 +80,7 @@ public class XYShape {
       } else {
         bytes = ((BytesRef)fieldsData).bytes;
       }
-      LatLonShape.encodeTriangle(bytes, ax, ay, bx, by, cx, cy);
+      LatLonShape.encodeTriangle(bytes, ay, ax, by, bx, cy, cx);
     }
   }
 

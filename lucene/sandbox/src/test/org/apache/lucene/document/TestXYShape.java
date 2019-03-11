@@ -42,38 +42,38 @@ public class TestXYShape extends LuceneTestCase {
     }
   }
 
-  protected Query newRectQuery(String field, int minX, int maxX, int minY, int maxY) {
-    return XYShape.newBoxQuery(field, XYShape.QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
-  }
-
-  protected Query newRectQuery(String field, float minX, float maxX, float minY, float maxY) {
+  protected Query newRectQuery(String field, double minX, double maxX, double minY, double maxY) {
     return XYShape.newBoxQuery(field, XYShape.QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
   }
 
   /** test we can search for a point with a standard number of vertices*/
   public void testBasicIntersects() throws Exception {
-    int numVertices = TestUtil.nextInt(random(), 50, 100);
+//    int numVertices = TestUtil.nextInt(random(), 50, 100);
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     // add a random polygon document
-    Polygon p = GeoTestUtil.createRegularPolygon(0, 90, atLeast(1000000), numVertices);
-    XYPolygon xyp = new XYPolygon(p.getPolyLons(), p.getPolyLats(), XYShape.XYShapeType.INTEGER);
+//    Polygon p = GeoTestUtil.createRegularPolygon(0, 90, atLeast(1000000), numVertices);
+//    XYPolygon xyp = new XYPolygon(p.getPolyLons(), p.getPolyLats(), XYShape.XYShapeType.INTEGER);
+
+    XYPolygon xyp = new XYPolygon(new double[] {-150000.2343233d, -43234323.23432d, -73453345.23432d, -150000.2343233d},
+        new double[] {-10000.23432d, -5000.234323d, 1000000.023432d, -10000.23432d}, XYShape.XYShapeType.INTEGER);
+
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, xyp);
     writer.addDocument(document);
+    writer.forceMerge(1);
 
     ////// search /////
     // search an intersecting bbox
     IndexReader reader = writer.getReader();
     writer.close();
     IndexSearcher searcher = newSearcher(reader);
-    Query q = newRectQuery(FIELDNAME, GeoEncodingUtils.encodeLongitude(-180), GeoEncodingUtils.encodeLongitude(180),
-        GeoEncodingUtils.encodeLatitude(-90),  GeoEncodingUtils.encodeLatitude(90));
+    Query q = newRectQuery(FIELDNAME, -150010.2343233d, -150000.2343233d, -10100d, -10000.23432d);
     assertEquals(1, searcher.count(q));
 
     // search a disjoint bbox
-    q = XYShape.newBoxQuery(FIELDNAME, XYShape.QueryRelation.DISJOINT, -1000, -500, -1000, 500);
+    q = XYShape.newBoxQuery(FIELDNAME, XYShape.QueryRelation.DISJOINT, -73453355, -73453350, -20000, -10001);
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);

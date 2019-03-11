@@ -23,7 +23,7 @@ import org.apache.lucene.index.PointValues;
 public class XYShapeBoundingBoxQuery extends XYShapeQuery {
   final XYRectangle2D rectangle2D;
 
-  public XYShapeBoundingBoxQuery(String field, XYShape.QueryRelation queryRelation, int minX, int maxX, int minY, int maxY) {
+  public XYShapeBoundingBoxQuery(String field, XYShape.QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
     super(field, queryRelation);
     XYRectangle rectangle = new XYRectangle(minX, maxX, minY, maxY);
     this.rectangle2D = XYRectangle2D.create(rectangle);
