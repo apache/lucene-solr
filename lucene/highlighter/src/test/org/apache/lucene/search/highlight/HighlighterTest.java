@@ -224,7 +224,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void testHighlightingSynonymQuery() throws Exception {
     searcher = newSearcher(reader);
-    Query query = new SynonymQuery(new Term(FIELD_NAME, "jfk"), new Term(FIELD_NAME, "kennedy"));
+    Query query = new SynonymQuery.Builder(FIELD_NAME)
+        .addTerm(new Term(FIELD_NAME, "jfk"))
+        .addTerm(new Term(FIELD_NAME, "kennedy"))
+        .build();
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(scorer);
     TokenStream stream = getAnyTokenStream(FIELD_NAME, 2);
