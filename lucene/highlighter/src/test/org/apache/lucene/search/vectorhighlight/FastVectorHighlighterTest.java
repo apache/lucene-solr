@@ -544,7 +544,10 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     int docId = 0;
 
     // query1: simple synonym query
-    SynonymQuery synQuery = new SynonymQuery(new Term("field", "quick"), new Term("field", "fast"));
+    SynonymQuery synQuery = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "quick"))
+        .addTerm(new Term("field", "fast"))
+        .build();
     FieldQuery fieldQuery  = highlighter.getFieldQuery(synQuery, reader);
     String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
     assertEquals("the <b>quick</b> brown fox", bestFragments[0]);

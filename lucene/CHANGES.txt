@@ -31,6 +31,9 @@ Improvements
 * LUCENE-8703: Build point writers in the BKD tree only when they are needed.
   (Ignacio Vera)
 
+* LUCENE-8652: SynonymQuery can now deboost the document frequency of each term when
+  blending the score of the synonym. (Jim Ferenczi)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)

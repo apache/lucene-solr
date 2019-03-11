@@ -494,7 +494,9 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   public void testSynonymQuery() throws IOException {
-    Query q = new SynonymQuery(new Term(FIELD_WITH_OFFSETS, "w1"), new Term(FIELD_WITH_OFFSETS, "w2"));
+    Query q = new SynonymQuery.Builder(FIELD_WITH_OFFSETS)
+        .addTerm(new Term(FIELD_WITH_OFFSETS, "w1")).addTerm(new Term(FIELD_WITH_OFFSETS, "w2"))
+        .build();
     checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
         { 0, 0, 0, 0, 2, 1, 1, 3, 5 },
         { 1, 0, 0, 0, 2, 2, 2, 6, 8 },
@@ -507,7 +509,7 @@ public class TestMatchesIterator extends LuceneTestCase {
 
   public void testSynonymQueryNoPositions() throws IOException {
     for (String field : new String[]{ FIELD_FREQS, FIELD_DOCS_ONLY }) {
-      Query q = new SynonymQuery(new Term(field, "w1"), new Term(field, "w2"));
+      Query q = new SynonymQuery.Builder(field).addTerm(new Term(field, "w1")).addTerm(new Term(field, "w2")).build();
       checkNoPositionsMatches(q, field, new boolean[]{ true, true, true, true, false });
     }
   }
