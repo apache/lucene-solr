@@ -33,10 +33,10 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
     startMetricsExporterWithConfiguration("conf/prometheus-solr-exporter-integration-test-config.xml");
   }
 
-  private Map<String, Double> metricsWithName(Map<String, Double> allMetrics, String name) {
+  private Map<String, Double> metricsWithName(Map<String, Double> allMetrics, String desiredMetricName) {
     return allMetrics.entrySet()
         .stream()
-        .filter(entry -> entry.getKey().startsWith(name))
+        .filter(entry -> entry.getKey().startsWith(desiredMetricName))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
@@ -64,8 +64,12 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
 
   @Test
   public void jvmMetrics() throws Exception {
-    Map<String, Double> jvmMetrics = metricsWithName(getAllMetrics(), "solr_metrics_jvm_threads{item=\"terminated\"");
-    assertEquals(NUM_NODES, jvmMetrics.size());
+    Map<String, Double> jvmMetrics = metricsWithName(
+        getAllMetrics(), "solr_metrics_jvm_threads");
+
+    // Include all thread states + plus overall count + number of daemon threads + number of deadlocked threads
+    assertEquals(NUM_NODES * (Thread.State.values().length + 3),
+        jvmMetrics.size());
   }
 
   @Test
