@@ -84,18 +84,21 @@ public abstract class EdgeTree {
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
     if (minLat <= maxY && minLon <= maxX) {
-      Relation relation = internalComponentRelateTriangle(ax, ay, bx, by, cx, cy);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        return relation;
+      // if the bounding boxes are disjoint then the shapes are disjoint so no need to call the component
+      if ((maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) == false) {
+        Relation relation = componentRelateTriangle(ax, ay, bx, by, cx, cy);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
       }
       if (left != null) {
-        relation = left.relateTriangle(ax, ay, bx, by, cx, cy);
+        Relation relation = left.relateTriangle(ax, ay, bx, by, cx, cy);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
       }
       if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
-        relation = right.relateTriangle(ax, ay, bx, by, cx, cy);
+        Relation relation = right.relateTriangle(ax, ay, bx, by, cx, cy);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
@@ -107,58 +110,31 @@ public abstract class EdgeTree {
   /** Returns relation to the provided rectangle */
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     if (minLat <= maxY && minLon <= maxX) {
-      Relation relation = internalComponentRelate(minLat, maxLat, minLon, maxLon);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        return relation;
+      // if the rectangle fully encloses us, we cross.
+      if (minLat <= this.minLat && maxLat >= this.maxLat && minLon <= this.minLon && maxLon >= this.maxLon) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      // if the bounding boxes are disjoint then the shapes are disjoint so no need to call the component
+      if ((maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) == false) {
+        Relation relation = componentRelate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
       }
       if (left != null) {
-        relation = left.relate(minLat, maxLat, minLon, maxLon);
+        Relation relation = left.relate(minLat, maxLat, minLon, maxLon);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
       }
       if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
-        relation = right.relate(minLat, maxLat, minLon, maxLon);
+        Relation relation = right.relate(minLat, maxLat, minLon, maxLon);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
       }
     }
     return Relation.CELL_OUTSIDE_QUERY;
-  }
-
-  /** Returns relation to the provided rectangle for this component */
-  protected abstract Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon);
-
-  /** Returns relation to the provided triangle for this component */
-  protected abstract Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
-
-  /** Returns the Within relation to the provided triangle for this component */
-  protected abstract WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
-
-  private Relation internalComponentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    // compute bounding box of triangle
-    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
-    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
-    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
-    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
-    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    return componentRelateTriangle(ax, ay, bx, by, cx, cy);
-  }
-
-  /** Returns relation to the provided rectangle for this component */
-  protected Relation internalComponentRelate(double minLat, double maxLat, double minLon, double maxLon) {
-    // if the bounding boxes are disjoint then the shape does not cross
-    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    // if the rectangle fully encloses us, we cross.
-    if (minLat <= this.minLat && maxLat >= this.maxLat && minLon <= this.minLon && maxLon >= this.maxLon) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-    return componentRelate(minLat, maxLat, minLon, maxLon);
   }
 
   /** Used by withinTriangle to check the within relationship between a triangle and the query shape */
@@ -192,9 +168,21 @@ public abstract class EdgeTree {
     if (left != null || right != null) {
       throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
     }
+    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
     return componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-
   }
+
+  /** Returns relation to the provided rectangle for this component */
+  protected abstract Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon);
+
+  /** Returns relation to the provided triangle for this component */
+  protected abstract Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
+
+  /** Returns the Within relation to the provided triangle for this component */
+  protected abstract WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
+
 
 
   /** Creates tree from sorted components (with range low and high inclusive) */
