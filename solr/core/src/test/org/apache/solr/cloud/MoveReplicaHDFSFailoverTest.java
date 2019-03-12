@@ -52,13 +52,10 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
 
-    System.setProperty("solr.hdfs.blockcache.enabled", "false");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
     configManager.uploadConfigDir(configset("cloud-hdfs"), "conf1");
-
-    System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
 
   @AfterClass
@@ -70,8 +67,6 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
         HdfsTestUtil.teardownClass(dfsCluster);
       } finally {
         dfsCluster = null;
-        System.clearProperty("solr.hdfs.home");
-        System.clearProperty("solr.hdfs.blockcache.enabled");
       }
     }
   }

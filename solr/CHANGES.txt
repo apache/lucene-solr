@@ -158,6 +158,8 @@ Other Changes
 
 * SOLR-13307: Ensure HDFS tests clear System properties they set (Kevin Risden)
 
+* SOLR-13330: Improve HDFS tests (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
