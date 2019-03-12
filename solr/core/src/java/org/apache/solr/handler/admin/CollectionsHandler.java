@@ -520,6 +520,22 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
     }),
+    COLSTATUS_OP(COLSTATUS, (req, rsp, h) -> {
+      Map<String, Object> props = copy(req.getParams(), null,
+          COLLECTION_PROP,
+          ColStatus.CORE_INFO_PROP,
+          ColStatus.SEGMENTS_PROP,
+          ColStatus.FIELD_INFO_PROP,
+          ColStatus.SIZE_INFO_PROP);
+      // make sure we can get the name if there's "name" but not "collection"
+      if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {
+        props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
+      }
+      new ColStatus(h.coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+          h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
+          .getColStatus(rsp.getValues());
+      return null;
+    }),
     DELETE_OP(DELETE, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
 
     RELOAD_OP(RELOAD, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
@@ -935,6 +951,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }),
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
+      copyPropertiesWithPrefix(req.getParams(), m, COLL_PROP_PREFIX);
       if (m.isEmpty())  {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
@@ -942,7 +959,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
-      for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      for (String prop : m.keySet()) {
         if ("".equals(m.get(prop)))  {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
           m.put(prop, null);

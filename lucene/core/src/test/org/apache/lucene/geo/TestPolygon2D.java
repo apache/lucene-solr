@@ -25,6 +25,7 @@ import static org.apache.lucene.geo.GeoTestUtil.nextPolygon;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** Test Polygon2D impl */
 public class TestPolygon2D extends LuceneTestCase {
@@ -360,11 +361,41 @@ public class TestPolygon2D extends LuceneTestCase {
       Polygon polygon = createRegularPolygon(0, 0, randomRadius, numVertices);
       Polygon2D impl = Polygon2D.create(polygon);
       assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-90, -90, 10, -90, 10, 90));
-      assertEquals(EdgeTree.WithinRelation.CANDIDATE, impl.withinTriangle(-90, -90, true,10, -90, true,10, 90, true));
-      assertEquals(EdgeTree.WithinRelation.NOTWITHIN, impl.withinTriangle(-10, -10, true,0, -10, true,0, 30, true));
-      assertEquals(EdgeTree.WithinRelation.CANDIDATE, impl.withinTriangle(-10, -10, true,0, -10, false,0, 30, true));
-      assertEquals(EdgeTree.WithinRelation.NOTWITHIN, impl.withinTriangle(0, 0, true,1e-6, 0, true,1e-6, 1e-6, true));
-      assertEquals(EdgeTree.WithinRelation.DISJOINT, impl.withinTriangle(80, 0, true,81, 0, true,81, 1, true));
+      assertEquals(EdgeTree.WithinRelation.CANDIDATE, impl.withinTriangle(-90, -90, true, 10, -90, true, 10, 90, true));
+      assertEquals(EdgeTree.WithinRelation.NOTWITHIN, impl.withinTriangle(-10, -10, true, 0, -10, true, 0, 30, true));
+      assertEquals(EdgeTree.WithinRelation.CANDIDATE, impl.withinTriangle(-10, -10, true, 0, -10, false, 0, 30, true));
+      assertEquals(EdgeTree.WithinRelation.NOTWITHIN, impl.withinTriangle(0, 0, true, 1e-6, 0, true, 1e-6, 1e-6, true));
+      assertEquals(EdgeTree.WithinRelation.DISJOINT, impl.withinTriangle(80, 0, true, 81, 0, true, 81, 1, true));
+    }
+
+  }
+
+  public void testLineCrossingPolygonPoints() {
+    Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
+    Polygon2D polygon2D = Polygon2D.create(p);
+    Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)));
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
+  }
+
+  public void testRandomLineCrossingPolygon() {
+    Polygon p = GeoTestUtil.createRegularPolygon(0, 0, 1000, TestUtil.nextInt(random(), 100, 10000));
+    Polygon2D polygon2D = Polygon2D.create(p);
+    for (int i=0; i < 1000; i ++) {
+      double longitude = GeoTestUtil.nextLongitude();
+      double latitude = GeoTestUtil.nextLatitude();
+      Relation rel = polygon2D.relateTriangle(
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)),
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(latitude)),
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)));
+      assertNotEquals(Relation.CELL_OUTSIDE_QUERY, rel);
     }
   }
 }

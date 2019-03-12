@@ -22,6 +22,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
+
 import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
@@ -250,6 +251,7 @@ public abstract class EdgeTree {
     // lat-lon pair (in original order) of the two vertices
     final double lat1, lat2;
     final double lon1, lon2;
+    //edge belongs to the dateline
     final boolean dateline;
     /** min of this edge */
     final double low;
@@ -268,7 +270,8 @@ public abstract class EdgeTree {
       this.lon2 = lon2;
       this.low = low;
       this.max = max;
-      this.dateline = (lon1 ==MAX_LON_INCL && lon2 == MAX_LON_INCL) || (lon1 == MIN_LON_INCL && lon2 == MIN_LON_INCL);
+      this.dateline = (lon1 ==MAX_LON_INCL && lon2 == MAX_LON_INCL) ||
+          (lon1 == MIN_LON_INCL && lon2 == MIN_LON_INCL);
     }
 
     /** Returns true if the triangle crosses any edge in this edge subtree */

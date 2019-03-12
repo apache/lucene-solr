@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
@@ -65,18 +64,14 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 // TODO: longer term this should be combined with TestRecovery somehow ??
-// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
-
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
   private static String FROM_LEADER = DistribPhase.FROMLEADER.toString(); 
 
   private static int timeout=60;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
   
   private static MiniDFSCluster dfsCluster;
-
   private static String hdfsUri;
-  
   private static FileSystem fs;
   
   @BeforeClass
@@ -100,16 +95,21 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    System.clearProperty("solr.ulog.dir");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    deleteCore();
     IOUtils.closeQuietly(fs);
     fs = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    
-    hdfsDataDir = null;
-    dfsCluster = null;
+    try {
+      deleteCore();
+    } finally {
+      try {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      } finally {
+        dfsCluster = null;
+        hdfsDataDir = null;
+        System.clearProperty("solr.ulog.dir");
+        System.clearProperty("test.build.data");
+        System.clearProperty("test.cache.data");
+      }
+    }
   }
 
   @Test
@@ -135,11 +135,9 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     assertTrue("Expected to find tlogs with a replication factor of 2", foundRep2);
   }
   
-  
   @Test
   public void testLogReplay() throws Exception {
     try {
-
       DirectUpdateHandler2.commitOnClose = false;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
@@ -153,7 +151,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       };
 
       UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
-
 
       clearIndex();
       assertU(commit());
@@ -230,12 +227,10 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
-
   }
 
   @Test
   public void testBuffering() throws Exception {
-
     DirectUpdateHandler2.commitOnClose = false;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
@@ -249,7 +244,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     };
 
     UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
-
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -383,14 +377,11 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       req().close();
     }
-
   }
-
 
   @Test
   @Ignore("HDFS-3107: no truncate support yet")
   public void testDropBuffered() throws Exception {
-
     DirectUpdateHandler2.commitOnClose = false;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
@@ -499,11 +490,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
           +"]"
       );
 
-
       updateJ(jsonAdd(sdoc("id","C2", "_version_","302")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-
-
-
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
@@ -513,13 +500,10 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       req().close();
     }
-
   }
-
 
   @Test
   public void testExistOldBufferLog() throws Exception {
-
     DirectUpdateHandler2.commitOnClose = false;
 
     SolrQueryRequest req = req();
@@ -587,10 +571,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       req().close();
     }
-
   }
-
-
 
   // make sure that on a restart, versions don't start too low
   @Test
@@ -616,7 +597,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     assertJQ(req("qt","/get", "getVersions","2")
         ,"/versions==[" + v2 + "," + v1a + "]"
     );
-
   }
 
   // make sure that log isn't needlessly replayed after a clean close
@@ -635,7 +615,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     };
 
     UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
-
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -668,7 +647,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       req().close();
     }
   }
-  
   
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {
     for (int i=0; i<nDocs; i++) {
@@ -783,7 +761,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // test that a partially written last tlog entry (that will cause problems for both reverse reading and for
   // log replay) doesn't stop us from coming up, and from recovering the documents that were not cut off.
   //
-
   @Test
   public void testTruncatedLog() throws Exception {
     try {
@@ -850,7 +827,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     }
   }
 
-
   //
   // test that a corrupt tlog doesn't stop us from coming up
   //
@@ -911,8 +887,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       UpdateLog.testing_logReplayFinishHook = null;
     }
   }
-
-
 
   // in rare circumstances, two logs can be left uncapped (lacking a commit at the end signifying that all the content in the log was committed)
   @Test

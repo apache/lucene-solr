@@ -33,14 +33,14 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestNumericTerms64 extends LuceneTestCase {
+public class TestNumericTerms64 extends SolrTestCase {
   // distance of entries
   private static long distance;
   // shift the starting of the values to the left, to also have negative values:

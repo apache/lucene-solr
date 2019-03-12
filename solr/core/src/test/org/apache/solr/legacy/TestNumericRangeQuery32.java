@@ -34,14 +34,14 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestNumericRangeQuery32 extends LuceneTestCase {
+public class TestNumericRangeQuery32 extends SolrTestCase {
   // distance of entries
   private static int distance;
   // shift the starting of the values to the left, to also have negative values:

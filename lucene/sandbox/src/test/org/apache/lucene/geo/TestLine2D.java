@@ -18,7 +18,7 @@
 package org.apache.lucene.geo;
 
 import org.apache.lucene.document.TestLatLonLineShapeQueries;
-import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLine2D extends LuceneTestCase {
@@ -32,7 +32,8 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(5);
     int cx = GeoEncodingUtils.encodeLongitude(5);
     int cy = GeoEncodingUtils.encodeLatitude(4);
-    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));;
+
+    assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));;
     assertEquals(EdgeTree.WithinRelation.DISJOINT, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -45,7 +46,8 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(0);
     int cx = GeoEncodingUtils.encodeLongitude(0);
     int cy = GeoEncodingUtils.encodeLatitude(1);
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+
+    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
     assertEquals(EdgeTree.WithinRelation.NOTWITHIN, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -58,7 +60,8 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(-10);
     int cx = GeoEncodingUtils.encodeLongitude(4);
     int cy = GeoEncodingUtils.encodeLatitude(30);
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+
+    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
     assertEquals(EdgeTree.WithinRelation.CANDIDATE, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -79,11 +82,11 @@ public class TestLine2D extends LuceneTestCase {
       double tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
       double tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
 
-      PointValues.Relation r = line2D.relate(tMinY, tMaxY, tMinX, tMaxX);
-      if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy));
+      Relation r = line2D.relate(tMinY, tMaxY, tMinX, tMaxX);
+      if (r == Relation.CELL_OUTSIDE_QUERY) {
+        assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy));
         assertEquals(EdgeTree.WithinRelation.DISJOINT, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
-      } else if (line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy) == PointValues.Relation.CELL_INSIDE_QUERY) {
+      } else if (line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_INSIDE_QUERY) {
         assertNotEquals(EdgeTree.WithinRelation.CANDIDATE, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }

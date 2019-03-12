@@ -239,7 +239,7 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
     assertEquals(t1.field(), t2.field());
-    SynonymQuery q1 = new SynonymQuery(t1, t2);
+    SynonymQuery q1 = new SynonymQuery.Builder(t1.field()).addTerm(t1).addTerm(t2).build();
     BooleanQuery.Builder q2 = new BooleanQuery.Builder();
     q2.add(new TermQuery(t1), Occur.SHOULD);
     q2.add(new TermQuery(t2), Occur.SHOULD);

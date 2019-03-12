@@ -40,11 +40,11 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 
 // TODO: what happened to this test... its not actually uninverting?
-public class TestFieldCacheWithThreads extends LuceneTestCase {
+public class TestFieldCacheWithThreads extends SolrTestCase {
 
   public void test() throws Exception {
     Directory dir = newDirectory();

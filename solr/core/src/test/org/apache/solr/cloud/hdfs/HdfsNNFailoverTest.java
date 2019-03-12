@@ -35,10 +35,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 })
 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class HdfsNNFailoverTest extends BasicDistributedZkTest {
-
   private static final String COLLECTION = "collection";
   private static MiniDFSCluster dfsCluster;
-
   
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -47,8 +45,11 @@ public class HdfsNNFailoverTest extends BasicDistributedZkTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
   
   @Override
@@ -61,7 +62,7 @@ public class HdfsNNFailoverTest extends BasicDistributedZkTest {
     sliceCount = 1;
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
   }
-  
+
   protected String getSolrXml() {
     return "solr.xml";
   }

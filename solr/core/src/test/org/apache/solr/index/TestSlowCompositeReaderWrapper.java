@@ -36,10 +36,10 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 
-public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
+public class TestSlowCompositeReaderWrapper extends SolrTestCase {
 
   public void testCoreListenerOnSlowCompositeReaderWrapper() throws IOException {
     RandomIndexWriter w = new RandomIndexWriter(random(), newDirectory());

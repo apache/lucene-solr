@@ -38,6 +38,7 @@ public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrati
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.hdfs.blockcache.global", "true");
     System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
     System.setProperty("tests.hdfs.numdatanodes", "1");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
@@ -49,6 +50,7 @@ public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrati
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
+      System.clearProperty("solr.hdfs.blockcache.global");
       System.clearProperty("solr.hdfs.blockcache.blocksperbank");
       System.clearProperty("tests.hdfs.numdatanodes");
     }
