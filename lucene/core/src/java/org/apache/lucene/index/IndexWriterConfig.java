@@ -60,7 +60,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /**
    * Specifies the open mode for {@link IndexWriter}.
    */
-  public static enum OpenMode {
+  public enum OpenMode {
     /** 
      * Creates a new index or overwrites an existing one. 
      */
@@ -541,6 +541,15 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public IndexWriterConfig setSoftDeletesField(String softDeletesField) {
     this.softDeletesField = softDeletesField;
+    return this;
+  }
+
+  /**
+   * If set to true the readers opened on or inside the index writer will do best effort to minimize
+   * it's ram usage as much as possible. The default is <code>true</code>.
+   */
+  public IndexWriterConfig setMinimizeReaderRamUsage(boolean minimizeReaderRamUsage) {
+    this.minimizeReaderRamUsage = minimizeReaderRamUsage;
     return this;
   }
   

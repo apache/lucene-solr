@@ -44,14 +44,18 @@ public class IOContext {
 
   public final boolean readOnce;
 
+  public final boolean minimizeRamUsage;
+
+  public final boolean fastIdAccessRequired;
+
   public static final IOContext DEFAULT = new IOContext(Context.DEFAULT);
 
-  public static final IOContext READONCE = new IOContext(true);
+  public static final IOContext READONCE = new IOContext(true, true);
 
-  public static final IOContext READ = new IOContext(false);
+  public static final IOContext READ = new IOContext(false, true);
 
   public IOContext() {
-    this(false);
+    this(false, true);
   }
 
   public IOContext(FlushInfo flushInfo) {
@@ -60,17 +64,21 @@ public class IOContext {
     this.mergeInfo = null;
     this.readOnce = false;
     this.flushInfo = flushInfo;
+    this.minimizeRamUsage = true;
+    this.fastIdAccessRequired = false;
   }
 
   public IOContext(Context context) {
     this(context, null);
   }
 
-  private IOContext(boolean readOnce) {
+  private IOContext(boolean readOnce, boolean minimizeRamUsage) {
     this.context = Context.READ;
     this.mergeInfo = null;
     this.readOnce = readOnce;
     this.flushInfo = null;
+    this.minimizeRamUsage = minimizeRamUsage;
+    this.fastIdAccessRequired = false;
   }
 
   public IOContext(MergeInfo mergeInfo) {
@@ -84,18 +92,24 @@ public class IOContext {
     this.readOnce = false;
     this.mergeInfo = mergeInfo;
     this.flushInfo = null;
+    this.minimizeRamUsage = true;
+    this.fastIdAccessRequired = false;
   }
   
   /**
    * This constructor is used to initialize a {@link IOContext} instance with a new value for the readOnce variable. 
    * @param ctxt {@link IOContext} object whose information is used to create the new instance except the readOnce variable.
-   * @param readOnce The new {@link IOContext} object will use this value for readOnce. 
+   * @param readOnce The new {@link IOContext} object will use this value for readOnce.
+   * @param minimizeRamUsage if set to true underlying datastrucutres might minimize ram usage
    */
-  public IOContext(IOContext ctxt, boolean readOnce) {
+  public IOContext(IOContext ctxt, boolean readOnce, boolean minimizeRamUsage, boolean fastIdAccessRequired) {
     this.context = ctxt.context;
     this.mergeInfo = ctxt.mergeInfo;
     this.flushInfo = ctxt.flushInfo;
     this.readOnce = readOnce;
+    this.minimizeRamUsage = minimizeRamUsage;
+    this.fastIdAccessRequired = fastIdAccessRequired;
+
   }
 
   @Override
@@ -106,6 +120,8 @@ public class IOContext {
     result = prime * result + ((flushInfo == null) ? 0 : flushInfo.hashCode());
     result = prime * result + ((mergeInfo == null) ? 0 : mergeInfo.hashCode());
     result = prime * result + (readOnce ? 1231 : 1237);
+    result = prime * result + (fastIdAccessRequired ? 1231 : 1237);
+    result = prime * result + (minimizeRamUsage ? 1231 : 1237);
     return result;
   }
 
@@ -132,13 +148,18 @@ public class IOContext {
       return false;
     if (readOnce != other.readOnce)
       return false;
+    if (minimizeRamUsage != other.minimizeRamUsage)
+      return false;
+    if (fastIdAccessRequired != other.fastIdAccessRequired)
+      return false;
     return true;
   }
 
   @Override
   public String toString() {
     return "IOContext [context=" + context + ", mergeInfo=" + mergeInfo
-        + ", flushInfo=" + flushInfo + ", readOnce=" + readOnce + "]";
+        + ", flushInfo=" + flushInfo + ", readOnce=" + readOnce
+        + ", fastIdAccessRequired=" + fastIdAccessRequired
+        + ", minimizeRamUsage=" + minimizeRamUsage +"]";
   }
-
 }

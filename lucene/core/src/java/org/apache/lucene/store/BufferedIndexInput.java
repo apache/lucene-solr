@@ -482,5 +482,10 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     public long length() {
       return length;
     }
+
+    @Override
+    public boolean isMMapped() {
+      return base.isMMapped();
+    }
   }
 }

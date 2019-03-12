@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
 
@@ -112,6 +113,8 @@ public class LiveIndexWriterConfig {
 
   /** soft deletes field */
   protected String softDeletesField = null;
+
+  protected boolean minimizeReaderRamUsage = true;
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -499,6 +502,15 @@ public class LiveIndexWriterConfig {
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
+    sb.append("minimizeReaderRamUsage=").append(isMinimizeReaderRamUsage()).append("\n");
     return sb.toString();
+  }
+
+  /**
+   * Returns true if the readers opened on or inside the index writer will do best effort to minimize
+   * it's ram usage as much as possible. The default is <code>true</code>.
+   */
+  public boolean isMinimizeReaderRamUsage() {
+    return minimizeReaderRamUsage;
   }
 }

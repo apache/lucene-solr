@@ -39,13 +39,15 @@ import org.apache.lucene.util.NullInfoStream;
 
 public class TestReaderPool extends LuceneTestCase {
 
+  private static final IOContext context = new IOContext(IOContext.READ, false, true, true);
+
   public void testDrop() throws IOException {
     Directory directory = newDirectory();
     FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
 
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
+    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null, context);
     SegmentCommitInfo commitInfo = RandomPicks.randomFrom(random(), segmentInfos.asList());
     ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
     assertSame(readersAndUpdates, pool.get(commitInfo, false));
@@ -64,7 +66,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
 
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
+    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null, context);
     SegmentCommitInfo commitInfo = RandomPicks.randomFrom(random(), segmentInfos.asList());
     assertFalse(pool.isReaderPoolingEnabled());
     pool.release(pool.get(commitInfo, true), random().nextBoolean());
@@ -100,14 +102,14 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, context);
     int id = random().nextInt(10);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
     }
     for (SegmentCommitInfo commitInfo : segmentInfos) {
       ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
-      SegmentReader readOnlyClone = readersAndUpdates.getReadOnlyClone(IOContext.READ);
+      SegmentReader readOnlyClone = readersAndUpdates.getReadOnlyClone();
       PostingsEnum postings = readOnlyClone.postings(new Term("id", "" + id));
       boolean expectUpdate = false;
       int doc = -1;
@@ -150,7 +152,7 @@ public class TestReaderPool extends LuceneTestCase {
       assertEquals(expectUpdate, writtenToDisk);
       if (expectUpdate) {
         readersAndUpdates = pool.get(commitInfo, true);
-        SegmentReader updatedReader = readersAndUpdates.getReadOnlyClone(IOContext.READ);
+        SegmentReader updatedReader = readersAndUpdates.getReadOnlyClone();
         assertNotSame(-1, doc);
         NumericDocValues number = updatedReader.getNumericDocValues("number");
         assertEquals(doc, number.advance(doc));
@@ -168,14 +170,14 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, context);
     int id = random().nextInt(10);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
     }
     for (SegmentCommitInfo commitInfo : segmentInfos) {
       ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
-      SegmentReader readOnlyClone = readersAndUpdates.getReadOnlyClone(IOContext.READ);
+      SegmentReader readOnlyClone = readersAndUpdates.getReadOnlyClone();
       PostingsEnum postings = readOnlyClone.postings(new Term("id", "" + id));
       boolean expectUpdate = false;
       int doc = -1;
@@ -197,7 +199,7 @@ public class TestReaderPool extends LuceneTestCase {
       assertEquals(expectUpdate, writtenToDisk);
       if (expectUpdate) {
         readersAndUpdates = pool.get(commitInfo, true);
-        SegmentReader updatedReader = readersAndUpdates.getReadOnlyClone(IOContext.READ);
+        SegmentReader updatedReader = readersAndUpdates.getReadOnlyClone();
         assertNotSame(-1, doc);
         assertFalse(updatedReader.getLiveDocs().get(doc));
         readersAndUpdates.release(updatedReader);
@@ -213,7 +215,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0L,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, context);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
     }
@@ -225,7 +227,7 @@ public class TestReaderPool extends LuceneTestCase {
         while (isDone.get() == false) {
           for (SegmentCommitInfo commitInfo : segmentInfos) {
             ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
-            SegmentReader segmentReader = readersAndUpdates.getReader(IOContext.READ);
+            SegmentReader segmentReader = readersAndUpdates.getReader();
             readersAndUpdates.release(segmentReader);
             pool.release(readersAndUpdates, random().nextBoolean());
           }
@@ -247,7 +249,7 @@ public class TestReaderPool extends LuceneTestCase {
     for (int i = 0; i < reader.maxDoc(); i++) {
       for (SegmentCommitInfo commitInfo : segmentInfos) {
         ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
-        SegmentReader sr = readersAndUpdates.getReadOnlyClone(IOContext.READ);
+        SegmentReader sr = readersAndUpdates.getReadOnlyClone();
         PostingsEnum postings = sr.postings(new Term("id", "" + i));
         sr.decRef();
         if (postings != null) {
@@ -287,7 +289,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, context);
     assertEquals(0, pool.getReadersByRam().size());
 
     int ord = 0;

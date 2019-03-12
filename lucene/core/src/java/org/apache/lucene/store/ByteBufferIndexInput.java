@@ -491,4 +491,9 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       return super.buildSlice(sliceDescription, this.offset + ofs, length);
     }
   }
+
+  @Override
+  public boolean isMMapped() {
+    return true;
+  }
 }

@@ -280,4 +280,9 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
     }
     return toCopy;
   }
+
+  @Override
+  public boolean isMMapped() {
+    return true;
+  }
 }

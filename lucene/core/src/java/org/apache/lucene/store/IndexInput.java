@@ -157,4 +157,11 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
       };
     }
   }
+
+  /**
+   * Returns true iff this IndexInput is memory mapped.
+   */
+  public boolean isMMapped() {
+    return false;
+  }
 }

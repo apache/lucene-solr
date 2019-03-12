@@ -79,4 +79,9 @@ public class BufferedChecksumIndexInput extends ChecksumIndexInput {
   public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public boolean isMMapped() {
+    return main.isMMapped();
+  }
 }

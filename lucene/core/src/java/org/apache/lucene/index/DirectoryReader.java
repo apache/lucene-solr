@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /** DirectoryReader is an implementation of {@link CompositeReader}
  that can read indexes in a {@link Directory}. 
@@ -60,7 +61,17 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final Directory directory) throws IOException {
-    return StandardDirectoryReader.open(directory, null);
+    return open(directory, IOContext.READ);
+  }
+
+  /** Returns a IndexReader reading the index in the given
+   *  Directory
+   * @param directory the index directory
+   * @param context the IOContext to open this reader with
+   * @throws IOException if there is a low-level IO error
+   */
+  public static DirectoryReader open(final Directory directory, IOContext context) throws IOException {
+    return StandardDirectoryReader.open(directory, null, context);
   }
   
   /**
@@ -109,7 +120,17 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit);
+    return open(commit, IOContext.READ);
+  }
+
+  /** Expert: returns an IndexReader reading the index in the given
+   *  {@link IndexCommit}.
+   * @param commit the commit point to open
+   * @param context the IOContext to open this reader with
+   * @throws IOException if there is a low-level IO error
+   */
+  public static DirectoryReader open(final IndexCommit commit, IOContext context) throws IOException {
+    return StandardDirectoryReader.open(commit.getDirectory(), commit, context);
   }
 
   /**

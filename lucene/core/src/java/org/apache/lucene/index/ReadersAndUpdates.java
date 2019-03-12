@@ -55,6 +55,7 @@ final class ReadersAndUpdates {
 
   // Tracks how many consumers are using this instance:
   private final AtomicInteger refCount = new AtomicInteger(1);
+  private final IOContext readerContext;
 
   // Set once (null, and then maybe set, and never set again):
   private SegmentReader reader;
@@ -89,17 +90,20 @@ final class ReadersAndUpdates {
   final AtomicLong ramBytesUsed = new AtomicLong();
 
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info,
-                    PendingDeletes pendingDeletes) {
+                    PendingDeletes pendingDeletes, IOContext readerContext) {
     this.info = info;
     this.pendingDeletes = pendingDeletes;
     this.indexCreatedVersionMajor = indexCreatedVersionMajor;
+    this.readerContext = readerContext;
+    assert readerContext.fastIdAccessRequired && readerContext.readOnce == false
+        && readerContext.context == IOContext.Context.READ;
   }
 
   /** Init from a previously opened SegmentReader.
    *
    * <p>NOTE: steals incoming ref from reader. */
-  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
-    this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes);
+  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes, IOContext readerContext) throws IOException {
+    this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes, readerContext);
     this.reader = reader;
     pendingDeletes.onNewReader(reader, info);
   }
@@ -163,13 +167,13 @@ final class ReadersAndUpdates {
     }
     return count;
   }
-  
+
 
   /** Returns a {@link SegmentReader}. */
-  public synchronized SegmentReader getReader(IOContext context) throws IOException {
+  public synchronized SegmentReader getReader() throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, indexCreatedVersionMajor, context);
+      reader = new SegmentReader(info, indexCreatedVersionMajor, readerContext);
       pendingDeletes.onNewReader(reader, info);
     }
 
@@ -185,7 +189,7 @@ final class ReadersAndUpdates {
 
   public synchronized boolean delete(int docID) throws IOException {
     if (reader == null && pendingDeletes.mustInitOnDelete()) {
-      getReader(IOContext.READ).decRef(); // pass a reader to initialize the pending deletes
+      getReader().decRef(); // pass a reader to initialize the pending deletes
     }
     return pendingDeletes.delete(docID);
   }
@@ -209,9 +213,9 @@ final class ReadersAndUpdates {
    * Returns a ref to a clone. NOTE: you should decRef() the reader when you're
    * done (ie do not call close()).
    */
-  public synchronized SegmentReader getReadOnlyClone(IOContext context) throws IOException {
+  public synchronized SegmentReader getReadOnlyClone() throws IOException {
     if (reader == null) {
-      getReader(context).decRef();
+      getReader().decRef();
       assert reader != null;
     }
     // force new liveDocs
@@ -233,7 +237,7 @@ final class ReadersAndUpdates {
   private synchronized CodecReader getLatestReader() throws IOException {
     if (this.reader == null) {
       // get a reader and dec the ref right away we just make sure we have a reader
-      getReader(IOContext.READ).decRef();
+      getReader().decRef();
     }
     if (pendingDeletes.needsRefresh(reader)) {
       // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
@@ -706,7 +710,7 @@ final class ReadersAndUpdates {
       mergingUpdates.addAll(ent.getValue());
     }
     
-    SegmentReader reader = getReader(context);
+    SegmentReader reader = getReader();
     if (pendingDeletes.needsRefresh(reader)) {
       // beware of zombies:
       assert pendingDeletes.getLiveDocs() != null;

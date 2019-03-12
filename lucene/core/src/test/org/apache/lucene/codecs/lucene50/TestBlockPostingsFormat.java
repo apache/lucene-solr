@@ -35,11 +35,15 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -51,6 +55,69 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return codec;
+  }
+
+  public void testFstOffHeap() throws IOException {
+    try (Directory d = MMapDirectory.open(createTempDir())) {
+      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())))) {
+        for (int i = 0; i < 25; i++) {
+          Document doc = new Document();
+          doc.add(newStringField("id", "" + i, Field.Store.NO));
+          doc.add(newStringField("field", Character.toString((char) (97 + i)), Field.Store.NO));
+          doc.add(newStringField("field", Character.toString((char) (98 + i)), Field.Store.NO));
+          if (rarely()) {
+            w.addDocument(doc);
+          } else {
+            w.updateDocument(new Term("id", "" + i), doc);
+          }
+          if (random().nextBoolean()) {
+            w.commit();
+          }
+        }
+        try (DirectoryReader r = DirectoryReader.open(w)) {
+          for (LeafReaderContext leaf : r.leaves()) {
+            FieldReader field = (FieldReader) leaf.reader().terms("field");
+            FieldReader id = (FieldReader) leaf.reader().terms("id");
+            assertFalse(id.isFstOffHeap());
+            assertTrue(field.isFstOffHeap());
+          }
+        }
+
+        w.forceMerge(1);
+        try (DirectoryReader r = DirectoryReader.open(w)) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertFalse(id.isFstOffHeap());
+          assertTrue(field.isFstOffHeap());
+        }
+        w.commit();
+        try (DirectoryReader r = DirectoryReader.open(d)) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertTrue(id.isFstOffHeap());
+          assertTrue(field.isFstOffHeap());
+        }
+
+        try (DirectoryReader r = DirectoryReader.open(d, new IOContext(IOContext.READ, false, false, false))) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertFalse(id.isFstOffHeap());
+          assertFalse(field.isFstOffHeap());
+        }
+      }
+      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())).setMinimizeReaderRamUsage(false))) {
+        try (DirectoryReader r = DirectoryReader.open(w)) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertFalse(id.isFstOffHeap());
+          assertFalse(field.isFstOffHeap());
+        }
+      }
+    }
   }
   
   /** Make sure the final sub-block(s) are not skipped. */

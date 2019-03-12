@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -268,7 +267,7 @@ final class BufferedUpdatesStream implements Accountable {
 
     SegmentState(ReadersAndUpdates rld, IOUtils.IOConsumer<ReadersAndUpdates> onClose, SegmentCommitInfo info) throws IOException {
       this.rld = rld;
-      reader = rld.getReader(IOContext.READ);
+      reader = rld.getReader();
       startDelCount = rld.getDelCount();
       delGen = info.getBufferedDeletesGen();
       this.onClose = onClose;

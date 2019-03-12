@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.ByteBufferIndexInput;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -63,10 +63,11 @@ public final class FieldReader extends Terms implements Accountable {
   final BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
+  final boolean isFSTOffHeap;
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, IOContext context) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -90,8 +91,10 @@ public final class FieldReader extends Terms implements Accountable {
       final IndexInput clone = indexIn.clone();
       clone.seek(indexStartFP);
       // Initialize FST offheap if index is MMapDirectory and
-      // docCount != sumDocFreq implying field is not primary key
-      if (clone instanceof ByteBufferIndexInput && this.docCount != this.sumDocFreq) {
+      // docCount != sumDocFreq implying field is not primary key or if we are not using a NRT reader
+      final boolean canReadFieldOffHeap = (this.docCount != this.sumDocFreq || context.fastIdAccessRequired == false);
+      isFSTOffHeap = clone.isMMapped() && context.minimizeRamUsage && canReadFieldOffHeap;
+      if (isFSTOffHeap) {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
       } else {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
@@ -107,6 +110,7 @@ public final class FieldReader extends Terms implements Accountable {
         }
       */
     } else {
+      isFSTOffHeap = true;
       index = null;
     }
   }
@@ -211,5 +215,10 @@ public final class FieldReader extends Terms implements Accountable {
   @Override
   public String toString() {
     return "BlockTreeTerms(seg=" + parent.segment +" terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+  }
+
+
+  public boolean isFstOffHeap() {
+    return isFSTOffHeap;
   }
 }

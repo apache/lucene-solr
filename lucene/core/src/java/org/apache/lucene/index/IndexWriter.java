@@ -885,7 +885,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           enableTestPoints, this::newSegmentName,
           config, directoryOrig, directory, globalFieldNumberMap);
       readerPool = new ReaderPool(directory, directoryOrig, segmentInfos, globalFieldNumberMap,
-          bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader);
+          bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader,
+          new IOContext(IOContext.READ, false, config.isMinimizeReaderRamUsage(), true));
       if (config.getReaderPooling()) {
         readerPool.enableReaderPooling();
       }
@@ -4601,7 +4602,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
       if (readerPool.isReaderPoolingEnabled() && mergedSegmentWarmer != null) {
         final ReadersAndUpdates rld = getPooledInstance(merge.info, true);
-        final SegmentReader sr = rld.getReader(IOContext.READ);
+        final SegmentReader sr = rld.getReader();
         try {
           mergedSegmentWarmer.warm(sr);
         } finally {
@@ -5228,6 +5229,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   ReadersAndUpdates getPooledInstance(SegmentCommitInfo info, boolean create) {
     ensureOpen(false);
     return readerPool.get(info, create);
+  }
+
+  IOContext getReaderOpenContext() {
+    return readerPool.getReaderOpenContext();
   }
 
   void finished(FrozenBufferedUpdates packet) {

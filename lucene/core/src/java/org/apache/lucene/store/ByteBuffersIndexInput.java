@@ -193,5 +193,10 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
     if (in == null) {
       throw new AlreadyClosedException("Already closed.");
     }
-  }  
+  }
+
+  @Override
+  public boolean isMMapped() {
+    return true;
+  }
 }
