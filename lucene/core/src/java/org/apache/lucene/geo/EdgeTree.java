@@ -183,53 +183,6 @@ public abstract class EdgeTree {
   /** Returns the Within relation to the provided triangle for this component */
   protected abstract WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
 
-
-
-  /** Creates tree from sorted components (with range low and high inclusive) */
-  protected static EdgeTree createTree(EdgeTree components[], int low, int high, boolean splitX) {
-    if (low > high) {
-      return null;
-    }
-    final int mid = (low + high) >>> 1;
-    if (low < high) {
-      Comparator<EdgeTree> comparator;
-      if (splitX) {
-        comparator = (left, right) -> {
-          int ret = Double.compare(left.minLon, right.minLon);
-          if (ret == 0) {
-            ret = Double.compare(left.maxX, right.maxX);
-          }
-          return ret;
-        };
-      } else {
-        comparator = (left, right) -> {
-          int ret = Double.compare(left.minLat, right.minLat);
-          if (ret == 0) {
-            ret = Double.compare(left.maxY, right.maxY);
-          }
-          return ret;
-        };
-      }
-      ArrayUtil.select(components, low, high + 1, mid, comparator);
-    }
-    // add midpoint
-    EdgeTree newNode = components[mid];
-    newNode.splitX = splitX;
-    // add children
-    newNode.left = createTree(components, low, mid - 1, !splitX);
-    newNode.right = createTree(components, mid + 1, high, !splitX);
-    // pull up max values to this node
-    if (newNode.left != null) {
-      newNode.maxX = Math.max(newNode.maxX, newNode.left.maxX);
-      newNode.maxY = Math.max(newNode.maxY, newNode.left.maxY);
-    }
-    if (newNode.right != null) {
-      newNode.maxX = Math.max(newNode.maxX, newNode.right.maxX);
-      newNode.maxY = Math.max(newNode.maxY, newNode.right.maxY);
-    }
-    return newNode;
-  }
-
   /**
    * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
    * The sort value is {@code low}, which is the minimum latitude of the edge.
@@ -450,6 +403,51 @@ public abstract class EdgeTree {
     } else {
       return false;
     }
+  }
+
+  /** Creates tree from sorted components (with range low and high inclusive) */
+  protected static EdgeTree createTree(EdgeTree components[], int low, int high, boolean splitX) {
+    if (low > high) {
+      return null;
+    }
+    final int mid = (low + high) >>> 1;
+    if (low < high) {
+      Comparator<EdgeTree> comparator;
+      if (splitX) {
+        comparator = (left, right) -> {
+          int ret = Double.compare(left.minLon, right.minLon);
+          if (ret == 0) {
+            ret = Double.compare(left.maxX, right.maxX);
+          }
+          return ret;
+        };
+      } else {
+        comparator = (left, right) -> {
+          int ret = Double.compare(left.minLat, right.minLat);
+          if (ret == 0) {
+            ret = Double.compare(left.maxY, right.maxY);
+          }
+          return ret;
+        };
+      }
+      ArrayUtil.select(components, low, high + 1, mid, comparator);
+    }
+    // add midpoint
+    EdgeTree newNode = components[mid];
+    newNode.splitX = splitX;
+    // add children
+    newNode.left = createTree(components, low, mid - 1, !splitX);
+    newNode.right = createTree(components, mid + 1, high, !splitX);
+    // pull up max values to this node
+    if (newNode.left != null) {
+      newNode.maxX = Math.max(newNode.maxX, newNode.left.maxX);
+      newNode.maxY = Math.max(newNode.maxY, newNode.left.maxY);
+    }
+    if (newNode.right != null) {
+      newNode.maxX = Math.max(newNode.maxX, newNode.right.maxX);
+      newNode.maxY = Math.max(newNode.maxY, newNode.right.maxY);
+    }
+    return newNode;
   }
 
   /**
