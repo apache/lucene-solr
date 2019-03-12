@@ -17,6 +17,11 @@ Bug fixes:
 
 ======================= Lucene 8.1.0 =======================
 
+Bug fixes
+
+* LUCENE-8712: Polygon2D does not detect crossings through segment edges.
+  (Ignacio Vera)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
