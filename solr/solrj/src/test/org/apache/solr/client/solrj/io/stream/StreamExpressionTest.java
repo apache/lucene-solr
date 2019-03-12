@@ -412,51 +412,56 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testParameterSubstitution() throws Exception {
+    String oldVal = System.getProperty("StreamingExpressionMacros", "false");
+    System.setProperty("StreamingExpressionMacros", "true");
+    try {
+      new UpdateRequest()
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+          .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+          .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+          .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+          .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+      String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+      List<Tuple> tuples;
+      TupleStream stream;
 
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    List<Tuple> tuples;
-    TupleStream stream;
+      // Basic test
+      ModifiableSolrParams sParams = new ModifiableSolrParams();
+      sParams.set("expr", "merge("
+          + "${q1},"
+          + "${q2},"
+          + "on=${mySort})");
+      sParams.set(CommonParams.QT, "/stream");
+      sParams.set("q1", "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+      sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+      sParams.set("mySort", "a_f asc");
+      stream = new SolrStream(url, sParams);
+      tuples = getTuples(stream);
 
-    // Basic test
-    ModifiableSolrParams sParams = new ModifiableSolrParams();
-    sParams.set("expr", "merge("
-        + "${q1},"
-        + "${q2},"
-        + "on=${mySort})");
-    sParams.set(CommonParams.QT, "/stream");
-    sParams.set("q1", "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    sParams.set("mySort", "a_f asc");
-    stream = new SolrStream(url, sParams);
-    tuples = getTuples(stream);
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 0, 1, 3, 4);
 
-    assertEquals(4, tuples.size());
-    assertOrder(tuples, 0,1,3,4);
+      // Basic test desc
+      sParams.set("mySort", "a_f desc");
+      stream = new SolrStream(url, sParams);
+      tuples = getTuples(stream);
 
-    // Basic test desc
-    sParams.set("mySort", "a_f desc");
-    stream = new SolrStream(url, sParams);
-    tuples = getTuples(stream);
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 4, 3, 1, 0);
 
-    assertEquals(4, tuples.size());
-    assertOrder(tuples, 4, 3, 1, 0);
+      // Basic w/ multi comp
+      sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+      sParams.set("mySort", "\"a_f asc, a_s asc\"");
+      stream = new SolrStream(url, sParams);
+      tuples = getTuples(stream);
 
-    // Basic w/ multi comp
-    sParams.set("q2", "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    sParams.set("mySort", "\"a_f asc, a_s asc\"");
-    stream = new SolrStream(url, sParams);
-    tuples = getTuples(stream);
-
-    assertEquals(5, tuples.size());
-    assertOrder(tuples, 0, 2, 1, 3, 4);
+      assertEquals(5, tuples.size());
+      assertOrder(tuples, 0, 2, 1, 3, 4);
+    } finally {
+      System.setProperty("StreamingExpressionMacros", oldVal);
+    }
   }
 
 
@@ -693,8 +698,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     .withFunctionName("min", MinMetric.class)
     .withFunctionName("max", MaxMetric.class)
     .withFunctionName("avg", MeanMetric.class)
-    .withFunctionName("count", CountMetric.class);     
-  
+    .withFunctionName("count", CountMetric.class);
+
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
@@ -847,11 +852,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-    
+
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("facet", FacetStream.class)
@@ -860,7 +865,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("count", CountMetric.class);
-    
+
     // Basic test
     clause = "facet("
               +   "collection1, "
@@ -876,7 +881,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               +   "avg(a_i), avg(a_f), "
               +   "count(*)"
               + ")";
-    
+
     stream = factory.constructStream(clause);
     tuples = getTuples(stream);
 
@@ -1526,7 +1531,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("facet", FacetStream.class)
@@ -1535,7 +1540,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("count", CountMetric.class);
-    
+
     // Basic test
     clause = "facet("
               +   "collection1, "
@@ -1545,7 +1550,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               +   "bucketSizeLimit=100, "
               +   "sum(a_i), count(*)"
               + ")";
-    
+
     stream = factory.constructStream(clause);
     tuples = getTuples(stream);
 
@@ -2796,7 +2801,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(cache);
     String longQuery = "\"id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + ")\"";
-        
+
     try {
       assertSuccess("significantTerms("+COLLECTIONORALIAS+", q="+longQuery+", field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")", streamContext);
       String expr = "timeseries("+COLLECTIONORALIAS+", q="+longQuery+", start=\"2013-01-01T01:00:00.000Z\", " +
@@ -2821,7 +2826,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
                     +   "count(*)"
                     + ")";
       assertSuccess(expr, streamContext);
-      expr = "stats(" + COLLECTIONORALIAS + ", q="+longQuery+", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))"; 
+      expr = "stats(" + COLLECTIONORALIAS + ", q="+longQuery+", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))";
       assertSuccess(expr, streamContext);
       expr = "search(" + COLLECTIONORALIAS + ", q="+longQuery+", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")";
       assertSuccess(expr, streamContext);
@@ -2880,10 +2885,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     return true;
   }
-  
+
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
     String actual = (String)tuple.get(fieldName);
-    
+
     if( (null == expected && null != actual) ||
         (null != expected && null == actual) ||
         (null != expected && !expected.equals(actual))){
@@ -2901,7 +2906,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     return true;
   }
-  
+
   protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());

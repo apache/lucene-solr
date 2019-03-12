@@ -118,6 +118,7 @@ public class TestMacroExpander extends SolrTestCase {
   public void testMap() { // see SOLR-9740, the second fq param was being dropped.
     final Map<String,String[]> request = new HashMap<>();
     request.put("fq", new String[] {"zero", "${one_ref}", "two", "${three_ref}"});
+    request.put("expr", new String[] {"${one_ref}"}); // expr is for streaming expressions, no replacement by default
     request.put("one_ref",new String[] {"one"});
     request.put("three_ref",new String[] {"three"});
     Map expanded = MacroExpander.expand(request);
@@ -125,6 +126,30 @@ public class TestMacroExpander extends SolrTestCase {
     assertEquals("one", ((String[])expanded.get("fq"))[1]);
     assertEquals("two", ((String[]) expanded.get("fq"))[2]);
     assertEquals("three", ((String[]) expanded.get("fq"))[3]);
+
+    assertEquals("${one_ref}", ((String[])expanded.get("expr"))[0]);
   }
 
+  @Test
+  public void testMapExprExpandOn() {
+    final Map<String,String[]> request = new HashMap<>();
+    request.put("fq", new String[] {"zero", "${one_ref}", "two", "${three_ref}"});
+    request.put("expr", new String[] {"${one_ref}"}); // expr is for streaming expressions, no replacement by default
+    request.put("one_ref",new String[] {"one"});
+    request.put("three_ref",new String[] {"three"});
+    // I believe that so long as this is sure to be reset before the end of the test we should
+    // be fine with respect to other tests.
+    String oldVal = System.getProperty("StreamingExpressionMacros","false");
+    System.setProperty("StreamingExpressionMacros", "true");
+    try {
+      Map expanded = MacroExpander.expand(request);
+      assertEquals("zero", ((String[])expanded.get("fq"))[0]);
+      assertEquals("one", ((String[])expanded.get("fq"))[1]);
+      assertEquals("two", ((String[]) expanded.get("fq"))[2]);
+      assertEquals("three", ((String[]) expanded.get("fq"))[3]);
+      assertEquals("one", ((String[])expanded.get("expr"))[0]);
+    } finally {
+      System.setProperty("StreamingExpressionMacros", oldVal);
+    }
+  }
 }
