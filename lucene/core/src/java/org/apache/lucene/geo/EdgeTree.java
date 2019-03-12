@@ -142,28 +142,14 @@ public abstract class EdgeTree {
     /** If the shape is a candidate for within. Typically this is return if the query shape is fully inside
      * the triangle or if the query shape intersects only edges that do not belong to the original shape. */
     CANDIDATE,
-    /** Return this if if the query shape intersects an edge that does belong to the original shape or any point of
+    /** The query shape intersects an edge that does belong to the original shape or any point of
      * the triangle is inside the shape. */
     NOTWITHIN,
-    /** Return this if the query shape is disjoint with the triangle. Note that the query shape can still be
-     * within the indexed shape that corresponds to the triangle */
+    /** The query shape is disjoint with the triangle. */
     DISJOINT
   }
 
-  /**
-   *  Checks if the shape is within the provided triangle.
-   *
-   * @param ax longitude of point a of the triangle
-   * @param ay latitude of point a of the triangle
-   * @param ab if edge ab belongs to the original shape
-   * @param bx longitude of point b of the triangle
-   * @param by latitude of point b of the triangle
-   * @param bc if edge bc belongs to the original shape
-   * @param cx longitude of point c of the triangle
-   * @param cy latitude of point c of the triangle
-   * @param ca if edge ca belongs to the original shape
-   * @return the within relationship
-   */
+  /** Returns the Within relation to the provided triangle */
   public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     if (left != null || right != null) {
       throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
