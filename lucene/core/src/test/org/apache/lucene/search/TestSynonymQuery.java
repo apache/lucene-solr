@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -168,20 +169,20 @@ public class TestSynonymQuery extends LuceneTestCase {
     w.addDocument(doc);
     for (int i = 0; i < 10; ++i) {
       doc.clear();
-      doc.add(new TextField("f", "a a a a", Store.NO));
+      doc.add(new Field("f", "a a a a", ft));
       w.addDocument(doc);
       if (i % 2 == 0) {
         doc.clear();
-        doc.add(new TextField("f", "b b", Store.NO));
+        doc.add(new Field("f", "b b", ft));
         w.addDocument(doc);
       } else {
         doc.clear();
-        doc.add(new TextField("f", "a a b", Store.NO));
+        doc.add(new Field("f", "a a b", ft));
         w.addDocument(doc);
       }
     }
     doc.clear();
-    doc.add(new TextField("f", "c", Store.NO));
+    doc.add(new Field("f", "c", ft));
     w.addDocument(doc);
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
