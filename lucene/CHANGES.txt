@@ -45,6 +45,8 @@ Other
 
 * LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
 
+* LUCENE-8713: Add Line2D tests. (Ignacio Vera)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
