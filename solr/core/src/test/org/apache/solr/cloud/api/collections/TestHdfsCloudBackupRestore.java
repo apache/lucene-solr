@@ -112,7 +112,6 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
 
       if (fs instanceof DistributedFileSystem) {
