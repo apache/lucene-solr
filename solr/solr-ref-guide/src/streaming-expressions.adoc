@@ -99,10 +99,16 @@ The {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/package-summary.h
 
 [source,java]
 ----
-StreamFactory streamFactory = new DefaultStreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress());
-
-ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
+    StreamFactory streamFactory = new DefaultStreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress());
+    InjectionDefense defense = new InjectionDefense("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\"?$?\", sort=\"a_s asc\")");
+    defense.addParameter(zkhost);
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream(defense.safeExpressionString());
 ----
+
+Note that InjectionDefense need only be used if the string being inserted could contain user supplied data. See the
+javadoc for `InjectionDefense` for usage details and SOLR-12891 for an example of the potential risks.
+Also note that for security reasons normal parameter substitution no longer applies to the expr parameter
+unless the jvm has been started with `-DStreamingExpressionMacros=true` (usually via `solr.in.sh`)
 
 === Data Requirements
 

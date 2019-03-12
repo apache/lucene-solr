@@ -35,6 +35,11 @@ Upgrade Notes
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
   see commeints in the log4j2 configuration files (log4j2.xml by default).
 
+* SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming
+  expressions) Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming
+  expressions that include user supplied data to avoid risks similar to SQL injection. The legacy behavior of
+  expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup.
+
 New Features
 ----------------------
 
@@ -54,7 +59,7 @@ Upgrade Notes
 ----------------------
 When requesting the status of an async request via REQUESTSTATUS collections API, the response will
 include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
-to them being included outside those keys for backwards compatibility). See SOLR-12708 for more 
+to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
 details
 
 New Features
@@ -89,7 +94,7 @@ Bug Fixes
 
 * SOLR-12708: Async collection actions should not hide internal failures (Mano Kovacs, Varun Thacker, Tomás Fernández Löbbe)
 
-* SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors 
+* SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors
 (Munendra S N via Mikhail Khludnev)
 
 * SOLR-13234: Prometheus Metric Exporter not threadsafe. This changes the prometheus exporter to collect metrics
@@ -98,7 +103,7 @@ Bug Fixes
   all the cores.
   (Danyal Prout via shalin)
 
-* SOLR-9882: 500 error code on breaching timeAllowed by core and distributed (fsv) search, 
+* SOLR-9882: 500 error code on breaching timeAllowed by core and distributed (fsv) search,
   old and json facets (Mikhail Khludnev)
 
 * SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
@@ -108,7 +113,7 @@ Bug Fixes
 * SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
   occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
 
-* SOLR-13284: NullPointerException with 500 http status on omitted or wrong wt param. 
+* SOLR-13284: NullPointerException with 500 http status on omitted or wrong wt param.
   It's fixed by fallback to json (Munendra S N via Mikhail Khludnev)
 
 Improvements
@@ -176,7 +181,7 @@ Upgrade Notes
   it will send and can only be able to handle HTTP/1.1 requests. In case of using SSL Java 9 or latter versions are recommended.
 
 * Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through
-  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated.    
+  implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated.
 
 * LUCENE-7996: The 'func' query parser now returns scores that are equal to 0
   when a negative value is produced. This change is due to the fact that
@@ -201,7 +206,7 @@ Upgrade Notes
 
 * SOLR-12593: The "extraction" contrib (Solr Cell) no longer does any date parsing, and thus no longer has the
   "date.formats" configuration.  To ensure date strings are properly parsed, use ParseDateFieldUpdateProcessorFactory
-  (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein) 
+  (an URP) commonly registered with the name "parse-date" in "schemaless mode".  (David Smiley, Bar Rotstein)
 
 * SOLR-12643: Since Http2SolrClient does not support exposing connections related metrics. These metrics are no longer
   available 'QUERY.httpShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}',
@@ -219,7 +224,7 @@ Upgrade Notes
 
 * If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring will be lower due to SOLR-13025.
   But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force
-  the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default 
+  the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default
   SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' < 8.0.0.
   See also explanation in Reference Guide chapter "Other Schema Elements".
 
@@ -234,7 +239,7 @@ Upgrade Notes
   This choice used to be toggleable with an internal/expert "anonChildDocs" parameter flag which is now gone.
   (David Smiley)
 
-* SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. 
+* SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures.
   If you have a custom language identifier implementation you will need to adapt your code.
 
 * SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
@@ -278,7 +283,7 @@ New Features
 
 * SOLR-12799: Allow Authentication Plugins to intercept internode requests on a per-request basis.
   The BasicAuth plugin now supports a new parameter 'forwardCredentials', and when set to 'true',
-  user's BasicAuth credentials will be used instead of PKI for client initiated internode requests. (janhoy, noble) 
+  user's BasicAuth credentials will be used instead of PKI for client initiated internode requests. (janhoy, noble)
 
 * SOLR-12791: Add Metrics reporting for AuthenticationPlugin (janhoy)
 
@@ -309,7 +314,7 @@ Bug Fixes
 
 * SOLR-13058: Fix block that was synchronizing on the wrong collection in OverseerTaskProcessor (Gus Heck)
 
-* SOLR-11774: langid.map.individual now works together with langid.map.keepOrig. Also the detectLanguage() API 
+* SOLR-11774: langid.map.individual now works together with langid.map.keepOrig. Also the detectLanguage() API
   is changed to accept a Reader allowing for more memory efficient implementations (janhoy)
 
 * SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
@@ -350,7 +355,7 @@ Optimizations
 * SOLR-12725: ParseDateFieldUpdateProcessorFactory should reuse ParsePosition. (ab)
 
 * SOLR-13025: Due to LUCENE-8563, the BM25Similarity formula no longer includes the (k1+1) factor in the numerator
-  This gives a lower absolute score but doesn't affect ordering, as this is a constant factor which is the same 
+  This gives a lower absolute score but doesn't affect ordering, as this is a constant factor which is the same
   for every document. Use LegacyBM25SimilarityFactory if you need the old 6.x/7.x scoring. See also upgrade notes (janhoy)
 
 * SOLR-13130: during the ResponseBuilder.STAGE_GET_FIELDS directly copy string bytes and avoid creating String Objects (noble)
@@ -455,16 +460,16 @@ Upgrade Notes
 New Features
 ----------------------
 
-* SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting 
+* SOLR-12839: JSON 'terms' Faceting now supports a 'prelim_sort' option to use when initially selecting
   the top ranking buckets, prior to the final 'sort' option used after refinement.  (hossman)
 
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
-* SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski) 
+* SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski)
 
 * SOLR-11126: New Node-level health check handler at /admin/info/healthcheck and /node/health paths that
   checks if the node is live, connected to zookeeper and not shutdown. (Anshum Gupta, Amrit Sarkar, shalin)
-  
+
 * SOLR-12770: Make it possible to configure a host whitelist for distributed search
   (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
@@ -483,7 +488,7 @@ Bug Fixes
 
 * SOLR-12546: CVSResponseWriter omits useDocValuesAsStored=true field when fl=*
   (Munendra S N via Mikhail Khludnev)
-  
+
 * SOLR-12933: Fix SolrCloud distributed commit. (Mark Miller)
 
 * SOLR-13014: URI Too Long with large streaming expressions in SolrJ (janhoy)
