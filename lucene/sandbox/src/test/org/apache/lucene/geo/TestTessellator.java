@@ -342,7 +342,7 @@ public class TestTessellator extends LuceneTestCase {
 
   public void testComplexPolygon12() throws Exception {
     String wkt ="POLYGON((-85.418489 41.768716, -85.418482 41.767212, -85.418481 41.766867, -85.408741 41.766911, -85.408745 41.763218, -85.41744 41.763171, -85.41744 41.763335, -85.418456 41.763335, -85.418455 41.763171, -85.420528 41.763171, -85.420843 41.766839, -85.420937 41.768716, -85.418489 41.768716)," +
-        " (-85.418481 41.766867, -85.419141 41.766859, -85.419173 41.766858, -85.41923 41.766313, -85.418477 41.766272, -85.418481 41.766867))\n";
+        " (-85.418481 41.766867, -85.419141 41.766859, -85.419173 41.766858, -85.41923 41.766313, -85.418477 41.766272, -85.418481 41.766867))";
     Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
     List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
     assertTrue(tessellation.size() > 0);
