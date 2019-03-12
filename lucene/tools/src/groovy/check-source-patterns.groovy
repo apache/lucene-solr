@@ -182,7 +182,9 @@ ant.fileScanner{
       checkMockitoAssume(f, text);
     }
 
-    if (f.path.substring(baseDirLen).contains("solr/") && f.name.equals("SolrTestCase.java") == false) {
+    if (f.path.substring(baseDirLen).contains("solr/")
+        && f.name.equals("SolrTestCase.java") == false
+        && f.name.equals("TestXmlQParser.java") == false) {
       if (extendsLuceneTestCasePattern.matcher(text).find()) {
         reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
       }
