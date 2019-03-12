@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.RestartWhileUpdatingTest;
@@ -34,16 +32,15 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsRestartWhileUpdatingTest extends RestartWhileUpdatingTest {
+  private static MiniDFSCluster dfsCluster;
+
   public HdfsRestartWhileUpdatingTest() throws Exception {
     super();
   }
 
-  private static MiniDFSCluster dfsCluster;
-  
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
   }
   
   @AfterClass
@@ -52,12 +49,11 @@ public class HdfsRestartWhileUpdatingTest extends RestartWhileUpdatingTest {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
-      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
     }
   }
   
   @Override
-  protected String getDataDir(String dataDir) throws IOException {
+  protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 }

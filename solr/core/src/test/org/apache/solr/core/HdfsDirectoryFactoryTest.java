@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,7 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
@@ -55,7 +56,6 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.hdfs.blockcache.blocksperbank", "1024");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false);
   }
   
@@ -65,41 +65,42 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
-      System.clearProperty("solr.hdfs.home");
+      System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
+      System.clearProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
+      System.clearProperty(HdfsDirectoryFactory.BLOCKCACHE_ENABLED);
       System.clearProperty(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_MAXMERGESIZEMB);
-      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+      System.clearProperty(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED);
     }
   }
 
   @Test
   public void testInitArgsOrSysPropConfig() throws Exception {
     try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
-
       // test sys prop config
-      System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
+      System.setProperty(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr1");
       hdfsFactory.init(new NamedList<>());
       String dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
 
       assertTrue(dataHome.endsWith("/solr1/mock/data"));
 
-      System.clearProperty("solr.hdfs.home");
+      System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
 
       // test init args config
       NamedList<Object> nl = new NamedList<>();
-      nl.add("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr2");
+      nl.add(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr2");
       hdfsFactory.init(nl);
       dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
 
       assertTrue(dataHome.endsWith("/solr2/mock/data"));
 
       // test sys prop and init args config - init args wins
-      System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
+      System.setProperty(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr1");
       hdfsFactory.init(nl);
       dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
 
       assertTrue(dataHome.endsWith("/solr2/mock/data"));
 
-      System.clearProperty("solr.hdfs.home");
+      System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
 
       // set conf dir by sys prop
       Path confDir = createTempDir();
@@ -141,44 +142,49 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testCleanupOldIndexDirectories() throws Exception {
     try (HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
-      System.setProperty("solr.hdfs.home", HdfsTestUtil.getURI(dfsCluster) + "/solr1");
+      System.setProperty(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr1");
       hdfsFactory.init(new NamedList<>());
       String dataHome = hdfsFactory.getDataHome(new MockCoreDescriptor());
       assertTrue(dataHome.endsWith("/solr1/mock/data"));
-      System.clearProperty("solr.hdfs.home");
+      System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
 
-      FileSystem hdfs = dfsCluster.getFileSystem();
+      try(FileSystem hdfs = FileSystem.get(HdfsTestUtil.getClientConfiguration(dfsCluster))) {
+        org.apache.hadoop.fs.Path dataHomePath = new org.apache.hadoop.fs.Path(dataHome);
+        org.apache.hadoop.fs.Path currentIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index");
+        assertFalse(checkHdfsDirectory(hdfs,currentIndexDirPath));
+        hdfs.mkdirs(currentIndexDirPath);
+        assertTrue(checkHdfsDirectory(hdfs, currentIndexDirPath));
 
-      org.apache.hadoop.fs.Path dataHomePath = new org.apache.hadoop.fs.Path(dataHome);
-      org.apache.hadoop.fs.Path currentIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index");
-      assertTrue(!hdfs.isDirectory(currentIndexDirPath));
-      hdfs.mkdirs(currentIndexDirPath);
-      assertTrue(hdfs.isDirectory(currentIndexDirPath));
+        String timestamp1 = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+        org.apache.hadoop.fs.Path oldIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index." + timestamp1);
+        assertFalse(checkHdfsDirectory(hdfs,oldIndexDirPath));
+        hdfs.mkdirs(oldIndexDirPath);
+        assertTrue(checkHdfsDirectory(hdfs, oldIndexDirPath));
 
-      String timestamp1 = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
-      org.apache.hadoop.fs.Path oldIndexDirPath = new org.apache.hadoop.fs.Path(dataHomePath, "index." + timestamp1);
-      assertTrue(!hdfs.isDirectory(oldIndexDirPath));
-      hdfs.mkdirs(oldIndexDirPath);
-      assertTrue(hdfs.isDirectory(oldIndexDirPath));
+        hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString(), false);
 
-      hdfsFactory.cleanupOldIndexDirectories(dataHomePath.toString(), currentIndexDirPath.toString(), false);
+        assertTrue(checkHdfsDirectory(hdfs, currentIndexDirPath));
+        assertFalse(checkHdfsDirectory(hdfs, oldIndexDirPath));
+      }
+    }
+  }
 
-      assertTrue(hdfs.isDirectory(currentIndexDirPath));
-      assertTrue(!hdfs.isDirectory(oldIndexDirPath));
+  private boolean checkHdfsDirectory(FileSystem hdfs, org.apache.hadoop.fs.Path path) throws IOException {
+    try {
+      return hdfs.getFileStatus(path).isDirectory();
+    } catch (FileNotFoundException e) {
+      return false;
     }
   }
   
   @Test
   public void testLocalityReporter() throws Exception {
-    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-    conf.set("dfs.permissions.enabled", "false");
-
     Random r = random();
     try(HdfsDirectoryFactory factory = new HdfsDirectoryFactory()) {
       SolrMetricManager metricManager = new SolrMetricManager();
       String registry = TestUtil.randomSimpleString(r, 2, 10);
       String scope = TestUtil.randomSimpleString(r, 2, 10);
-      Map<String, String> props = new HashMap<String, String>();
+      Map<String, String> props = new HashMap<>();
       props.put(HdfsDirectoryFactory.HDFS_HOME, HdfsTestUtil.getURI(dfsCluster) + "/solr");
       props.put(HdfsDirectoryFactory.BLOCKCACHE_ENABLED, "false");
       props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
@@ -190,7 +196,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
       MetricsMap metrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper) metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality")).getGauge();
       // We haven't done anything, so there should be no data
       Map<String, Object> statistics = metrics.getValue();
-      assertEquals("Saw bytes that were not written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL), 0l,
+      assertEquals("Saw bytes that were not written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL), 0L,
           statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_TOTAL));
       assertEquals(
           "Counted bytes as local when none written: " + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_RATIO), 0,
