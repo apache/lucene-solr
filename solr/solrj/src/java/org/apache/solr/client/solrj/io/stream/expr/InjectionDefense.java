@@ -82,7 +82,6 @@ public class InjectionDefense {
   @SuppressWarnings("WeakerAccess")
   public StreamExpression safeExpression() {
     String exprStr = buildExpression();
-    System.out.println(exprStr);
     StreamExpression parsed = StreamExpressionParser.parse(exprStr);
     int actual = countExpressions(parsed);
     if (actual != expressionCount) {
