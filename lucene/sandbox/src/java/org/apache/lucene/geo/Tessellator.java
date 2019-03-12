@@ -109,11 +109,7 @@ final public class Tessellator {
       }
     }
     // Calculate the tessellation using the doubly LinkedList.
-    List<Triangle> result = earcutLinkedList(outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
-    if (result.size() == 0) {
-      throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
-    }
-
+    List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
     return result;
   }
 
@@ -272,7 +268,7 @@ final public class Tessellator {
   }
 
   /** Main ear slicing loop which triangulates the vertices of a polygon, provided as a doubly-linked list. **/
-  private static final List<Triangle> earcutLinkedList(Node currEar, final List<Triangle> tessellation,
+  private static final List<Triangle> earcutLinkedList(Polygon polygon, Node currEar, final List<Triangle> tessellation,
                                                        State state, final boolean mortonOptimized) {
     earcut : do {
       if (currEar == null || currEar.previous == currEar.next) {
@@ -321,9 +317,9 @@ final public class Tessellator {
               continue earcut;
             case SPLIT:
               // as a last resort, try splitting the remaining polygon into two
-              if (splitEarcut(currEar, tessellation, mortonOptimized) == false) {
+              if (splitEarcut(polygon, currEar, tessellation, mortonOptimized) == false) {
                 //we could not process all points. Tessellation failed
-                tessellation.clear();
+                throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
               }
               break;
           }
@@ -439,7 +435,7 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
-  private static final boolean splitEarcut(final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
+  private static final boolean splitEarcut(final Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -458,8 +454,8 @@ final public class Tessellator {
             sortByMortonWithReset(searchNode);
             sortByMortonWithReset(splitNode);
           }
-          earcutLinkedList(searchNode, tessellation, State.INIT, mortonIndexed);
-          earcutLinkedList(splitNode,  tessellation, State.INIT, mortonIndexed);
+          earcutLinkedList(polygon, searchNode, tessellation, State.INIT, mortonIndexed);
+          earcutLinkedList(polygon, splitNode,  tessellation, State.INIT, mortonIndexed);
           // Finish the iterative search
           return true;
         }
