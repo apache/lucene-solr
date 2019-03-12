@@ -179,8 +179,9 @@ final public class Tessellator {
     outerNode = fetchHoleBridge(holeNode, outerNode);
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
-      // Split the resulting polygon.
+      // compute if the bridge overlaps with a polygon edge. This can be tru if the hole touches a polygon edge.
       boolean fromPolygon = pointInLine(outerNode, outerNode.next, holeNode) || pointInLine(outerNode, outerNode.previous, holeNode);
+      // Split the resulting polygon.
       Node node = splitPolygon(outerNode, holeNode, fromPolygon);
       // Filter the split nodes.
       filterPoints(node, node.next);
@@ -412,7 +413,7 @@ final public class Tessellator {
       Node a = node.previous;
       Node b = nextNode.next;
 
-      // a self-intersection where edge (v[i-1],v[i]) crosses (v[i+1],v[i+2])
+      // a self-intersection where edge (v[i-1],v[i]) intersects (v[i+1],v[i+2])
       if (isVertexEquals(a, b) == false
           && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
           && linesIntersect(a.getX(), a.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), b.getX(), b.getY())
@@ -443,7 +444,7 @@ final public class Tessellator {
       nextNode = searchNode.next;
       Node diagonal = nextNode.next;
       while (diagonal != searchNode.previous) {
-        if(isVertexEquals(searchNode, diagonal) == false && isValidDiagonal(searchNode, diagonal)) {
+        if(isValidDiagonal(searchNode, diagonal)) {
           // Split the polygon into two at the point of the diagonal
           Node splitNode = splitPolygon(searchNode, diagonal, edgeFromPolygon(searchNode, diagonal, mortonIndexed));
           // Filter the resulting polygon.
@@ -466,6 +467,7 @@ final public class Tessellator {
     return false;
   }
 
+  /** Computes if edge defined by a and b overlaps with a polygon edge **/
   private static boolean edgeFromPolygon(Node a, Node b, boolean isMorton) {
     if (isMorton) {
       return mortonEdgeFromPolygon(a, b);
@@ -495,19 +497,20 @@ final public class Tessellator {
     double dyl = b.getLat() - a.getLat();
 
     if (dxc * dyl - dyc * dxl == 0) {
-      if (Math.abs(dxl) >= Math.abs(dyl))
+      if (Math.abs(dxl) >= Math.abs(dyl)) {
         return dxl > 0 ?
             a.getLon() <= lon && lon <= b.getLon() :
             b.getLon() <= lon && lon <= a.getLon();
-      else
+      } else {
         return dyl > 0 ?
             a.getLat() <= lat && lat <= b.getLat() :
             b.getLat() <= lat && lat <= a.getLat();
+      }
     }
     return false;
   }
 
-  /** Uses morton code for speed to determine whether or a polygon node forms a valid ear w/ adjacent nodes */
+  /** Uses morton code for speed to determine whether or not and edge defined by a and b overlaps with a polygon edge */
   private static final boolean mortonEdgeFromPolygon(final Node a, final Node b) {
     // edge bbox (flip the bits so negative encoded values are < positive encoded values)
     int minTX = StrictMath.min(a.x, b.x) ^ 0x80000000;
@@ -598,7 +601,9 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
-    return a.next.idx != b.idx && a.previous.idx != b.idx && a.idx != b.previous.idx && a.idx != b.next.idx
+    return a.next.idx != b.idx && a.previous.idx != b.idx
+        && a.idx != b.previous.idx && a.idx != b.next.idx
+        && isVertexEquals(a, b) == false
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
         && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY());
