@@ -154,6 +154,10 @@ public abstract class EdgeTree {
     if (left != null || right != null) {
       throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
     }
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
     if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
       return WithinRelation.DISJOINT;
     }
