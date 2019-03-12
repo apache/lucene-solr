@@ -58,7 +58,12 @@ IF NOT DEFINED SOLR_SSL_ENABLED (
 )
 
 IF "%SOLR_SSL_ENABLED%"=="true" (
-  set "SOLR_JETTY_CONFIG=--lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*" --module=https"
+  set "SOLR_JETTY_CONFIG=--lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
+  if !JAVA_MAJOR_VERSION! GEQ 9  (
+    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=https"
+  ) else (
+    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=https8"
+  )
   set SOLR_URL_SCHEME=https
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"

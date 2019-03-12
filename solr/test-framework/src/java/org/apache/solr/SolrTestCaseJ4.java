@@ -78,7 +78,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -162,7 +161,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /**
- * A junit4 Solr test harness that extends LuceneTestCaseJ4.
+ * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
  * To change which core is used when loading the schema and solrconfig.xml, simply
  * invoke the {@link #initCore(String, String, String, String)} method.
  */
@@ -174,7 +173,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 @RandomizeSSL()
 @ThreadLeakLingering(linger = 10000)
-public abstract class SolrTestCaseJ4 extends LuceneTestCase {
+public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -279,8 +278,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     System.setProperty("solr.httpclient.retries", "1");
     System.setProperty("solr.retries.on.forward", "1");
-    System.setProperty("solr.retries.to.followers", "1"); 
-    
+    System.setProperty("solr.retries.to.followers", "1");
+
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
@@ -348,8 +347,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       // clean up static
       sslConfig = null;
       testSolrHome = null;
-
-      StartupLoggingUtils.shutdown();
 
       IpTables.unblockAllPorts();
 

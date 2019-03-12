@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
 import org.apache.solr.common.SolrException;
@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-public class TestDelegationTokenResponse extends LuceneTestCase {
+public class TestDelegationTokenResponse extends SolrTestCase {
 
   private void delegationTokenResponse(DelegationTokenRequest request,
       DelegationTokenResponse response, String responseBody) throws Exception {

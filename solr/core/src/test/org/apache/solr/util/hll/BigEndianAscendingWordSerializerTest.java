@@ -18,13 +18,13 @@ package org.apache.solr.util.hll;
 
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /**
  * Unit tests for {@link BigEndianAscendingWordSerializer}.
  */
-public class BigEndianAscendingWordSerializerTest extends LuceneTestCase {
+public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
     /**
      * Error checking tests for constructor.
      */

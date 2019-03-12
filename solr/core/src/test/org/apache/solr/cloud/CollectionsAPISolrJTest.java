@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -599,6 +600,35 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     }
 
     fail("Timed out waiting for cluster property value");
+  }
+
+  @Test
+  public void testColStatus() throws Exception {
+    final String collectionName = "collectionStatusTest";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+
+    SolrClient client = cluster.getSolrClient();
+    // index some docs
+    for (int i = 0; i < 10; i++) {
+      client.add(collectionName, new SolrInputDocument("id", String.valueOf(i)));
+    }
+    client.commit(collectionName);
+
+    CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionName);
+    req.setWithFieldInfo(true);
+    req.setWithCoreInfo(true);
+    req.setWithSegments(true);
+    req.setWithSizeInfo(true);
+    CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
   }
 
   private static final int NUM_DOCS = 10;

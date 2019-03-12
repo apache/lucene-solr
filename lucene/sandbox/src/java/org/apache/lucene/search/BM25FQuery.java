@@ -214,7 +214,11 @@ public final class BM25FQuery extends Query {
     }
     // single field and multiple terms
     if (fieldAndWeights.size() == 1) {
-      return new SynonymQuery(fieldTerms);
+      SynonymQuery.Builder builder = new SynonymQuery.Builder(fieldTerms[0].field());
+      for (Term term : fieldTerms) {
+        builder.addTerm(term);
+      }
+      return builder.build();
     }
     return this;
   }

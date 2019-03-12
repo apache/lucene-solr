@@ -14,17 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.params;
 
-import org.apache.solr.SolrTestCase;
+package org.apache.solr.cloud;
 
-/**
- * Unit test for {@link CommonAdminParams CommonAdminParams}
- *
- * This class tests backwards compatibility of CommonAdminParams parameter constants.
- * If someone accidentally changes those constants then this test will flag that up. 
- */
-public class CommonAdminParamsTest extends SolrTestCase
-{
-  public void testAsync() { assertEquals(CommonAdminParams.ASYNC, "async"); }
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+
+@LuceneTestCase.Slow
+@SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
+
+  @Override
+  protected boolean useTlogReplicas() {
+    return true;
+  }
+
 }

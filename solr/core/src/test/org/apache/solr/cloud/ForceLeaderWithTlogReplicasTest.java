@@ -14,17 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.params;
 
-import org.apache.solr.SolrTestCase;
+package org.apache.solr.cloud;
 
-/**
- * Unit test for {@link CommonAdminParams CommonAdminParams}
- *
- * This class tests backwards compatibility of CommonAdminParams parameter constants.
- * If someone accidentally changes those constants then this test will flag that up. 
- */
-public class CommonAdminParamsTest extends SolrTestCase
-{
-  public void testAsync() { assertEquals(CommonAdminParams.ASYNC, "async"); }
+public class ForceLeaderWithTlogReplicasTest extends ForceLeaderTest {
+
+  @Override
+  protected boolean useTlogReplicas() {
+    return true;
+  }
 }

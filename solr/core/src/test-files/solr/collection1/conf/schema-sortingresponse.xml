@@ -69,6 +69,8 @@
   <field name="datedv_m" type="date" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="stringdv_m" type="string" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="sortabledv_m" type="text_gen_sort" indexed="true" stored="true" multiValued="true" />
+  <field name="sortabledv_m_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="true" useDocValuesAsStored="true"/>
+
 
   <field name="floatdv" type="float" indexed="false" stored="false" docValues="true"/>
   <field name="intdv" type="int" indexed="false" stored="false" docValues="true"/>
@@ -78,6 +80,7 @@
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true"/>
   <field name="booleandv" type="boolean" indexed="false" stored="false" docValues="true" />
   <field name="sortabledv" type="text_gen_sort" indexed="true" stored="true" multiValued="false" />
+  <field name="sortabledv_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="false" useDocValuesAsStored="true" />
 
   <dynamicField name="*_s_dv"   type="string"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
 

@@ -74,6 +74,7 @@ def sourceHeaderPattern = ~$/\[source\b.*/$;
 def blockBoundaryPattern = ~$/----\s*/$;
 def blockTitlePattern = ~$/\..*/$;
 def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
+def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
 
 def isLicense = { matcher, ratDocument ->
   licenseMatcher.reset();
@@ -179,6 +180,14 @@ ant.fileScanner{
     checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
     if (f.name.contains("Test")) {
       checkMockitoAssume(f, text);
+    }
+
+    if (f.path.substring(baseDirLen).contains("solr/")
+        && f.name.equals("SolrTestCase.java") == false
+        && f.name.equals("TestXmlQParser.java") == false) {
+      if (extendsLuceneTestCasePattern.matcher(text).find()) {
+        reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
+      }
     }
   }
   if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {

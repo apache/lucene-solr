@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -33,7 +34,7 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-public class TestLang extends LuceneTestCase {
+public class TestLang extends SolrTestCase {
 
   private static final String[] allFunctions = {
       "search", "facet", "update", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
