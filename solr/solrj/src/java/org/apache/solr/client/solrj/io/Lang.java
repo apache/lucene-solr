@@ -94,7 +94,7 @@ public class Lang {
         .withFunctionName("plist", ParallelListStream.class)
         .withFunctionName("zplot", ZplotStream.class)
         .withFunctionName("hashRollup", HashRollupStream.class)
-
+        .withFunctionName("noop", NoOpStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)

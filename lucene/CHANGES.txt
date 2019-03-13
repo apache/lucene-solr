@@ -22,6 +22,9 @@ Bug fixes
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
   (Ignacio Vera)
 
+* LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
+  overflow bug that disabled cleaning of the cache (Russell A Brown)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
