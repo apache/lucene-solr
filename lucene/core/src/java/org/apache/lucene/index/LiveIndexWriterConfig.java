@@ -114,7 +114,7 @@ public class LiveIndexWriterConfig {
   /** soft deletes field */
   protected String softDeletesField = null;
 
-  protected boolean minimizeReaderRamUsage = true;
+  protected Boolean minimizeReaderRamUsage = null;
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -502,15 +502,17 @@ public class LiveIndexWriterConfig {
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
-    sb.append("minimizeReaderRamUsage=").append(isMinimizeReaderRamUsage()).append("\n");
+    sb.append("minimizeReaderRamUsage=").append(isMinimizeReaderRamUsage() == null ? "auto" : isMinimizeReaderRamUsage()).append("\n");
     return sb.toString();
   }
 
   /**
    * Returns true if the readers opened on or inside the index writer will do best effort to minimize
-   * it's ram usage as much as possible. The default is <code>true</code>.
+   * it's ram usage as much as possible. The default is <code>null</code> if unset which means that the
+   * value is unspecified and the reader or codec will try to auto-detect if the ram minimization is possible while
+   * maintaining best read performance.
    */
-  public boolean isMinimizeReaderRamUsage() {
+  public Boolean isMinimizeReaderRamUsage() {
     return minimizeReaderRamUsage;
   }
 }

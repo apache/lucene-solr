@@ -224,9 +224,5 @@ public class MockIndexInputWrapper extends IndexInput {
     return "MockIndexInputWrapper(" + delegate + ")";
   }
 
-  @Override
-  public boolean isMMapped() {
-    return delegate.isMMapped();
-  }
 }
 

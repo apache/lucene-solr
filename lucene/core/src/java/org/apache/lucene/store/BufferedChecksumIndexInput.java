@@ -80,8 +80,4 @@ public class BufferedChecksumIndexInput extends ChecksumIndexInput {
     throw new UnsupportedOperationException();
   }
 
-  @Override
-  public boolean isMMapped() {
-    return main.isMMapped();
-  }
 }

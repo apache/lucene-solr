@@ -492,8 +492,4 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     }
   }
 
-  @Override
-  public boolean isMMapped() {
-    return true;
-  }
 }

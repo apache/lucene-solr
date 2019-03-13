@@ -17,6 +17,8 @@
 package org.apache.lucene.store;
 
 
+import java.util.Objects;
+
 /**
  * IOContext holds additional details on the merge/search context. A IOContext
  * object can never be initialized as null as passed as a parameter to either
@@ -44,18 +46,18 @@ public class IOContext {
 
   public final boolean readOnce;
 
-  public final boolean minimizeRamUsage;
+  public final Boolean minimizeRamUsage;
 
   public final boolean fastIdAccessRequired;
 
   public static final IOContext DEFAULT = new IOContext(Context.DEFAULT);
 
-  public static final IOContext READONCE = new IOContext(true, true);
+  public static final IOContext READONCE = new IOContext(true);
 
-  public static final IOContext READ = new IOContext(false, true);
+  public static final IOContext READ = new IOContext(false);
 
   public IOContext() {
-    this(false, true);
+    this(false);
   }
 
   public IOContext(FlushInfo flushInfo) {
@@ -64,7 +66,7 @@ public class IOContext {
     this.mergeInfo = null;
     this.readOnce = false;
     this.flushInfo = flushInfo;
-    this.minimizeRamUsage = true;
+    this.minimizeRamUsage = null;
     this.fastIdAccessRequired = false;
   }
 
@@ -72,12 +74,12 @@ public class IOContext {
     this(context, null);
   }
 
-  private IOContext(boolean readOnce, boolean minimizeRamUsage) {
+  private IOContext(boolean readOnce) {
     this.context = Context.READ;
     this.mergeInfo = null;
     this.readOnce = readOnce;
     this.flushInfo = null;
-    this.minimizeRamUsage = minimizeRamUsage;
+    this.minimizeRamUsage = null;
     this.fastIdAccessRequired = false;
   }
 
@@ -92,7 +94,7 @@ public class IOContext {
     this.readOnce = false;
     this.mergeInfo = mergeInfo;
     this.flushInfo = null;
-    this.minimizeRamUsage = true;
+    this.minimizeRamUsage = null;
     this.fastIdAccessRequired = false;
   }
   
@@ -102,7 +104,7 @@ public class IOContext {
    * @param readOnce The new {@link IOContext} object will use this value for readOnce.
    * @param minimizeRamUsage if set to true underlying datastrucutres might minimize ram usage
    */
-  public IOContext(IOContext ctxt, boolean readOnce, boolean minimizeRamUsage, boolean fastIdAccessRequired) {
+  public IOContext(IOContext ctxt, boolean readOnce, Boolean minimizeRamUsage, boolean fastIdAccessRequired) {
     this.context = ctxt.context;
     this.mergeInfo = ctxt.mergeInfo;
     this.flushInfo = ctxt.flushInfo;
@@ -121,7 +123,7 @@ public class IOContext {
     result = prime * result + ((mergeInfo == null) ? 0 : mergeInfo.hashCode());
     result = prime * result + (readOnce ? 1231 : 1237);
     result = prime * result + (fastIdAccessRequired ? 1231 : 1237);
-    result = prime * result + (minimizeRamUsage ? 1231 : 1237);
+    result = prime * result + (Objects.hashCode(minimizeRamUsage));
     return result;
   }
 
@@ -148,7 +150,7 @@ public class IOContext {
       return false;
     if (readOnce != other.readOnce)
       return false;
-    if (minimizeRamUsage != other.minimizeRamUsage)
+    if (Objects.equals(minimizeRamUsage, other.minimizeRamUsage) == false)
       return false;
     if (fastIdAccessRequired != other.fastIdAccessRequired)
       return false;
@@ -160,6 +162,6 @@ public class IOContext {
     return "IOContext [context=" + context + ", mergeInfo=" + mergeInfo
         + ", flushInfo=" + flushInfo + ", readOnce=" + readOnce
         + ", fastIdAccessRequired=" + fastIdAccessRequired
-        + ", minimizeRamUsage=" + minimizeRamUsage +"]";
+        + ", minimizeRamUsage=" + minimizeRamUsage == null ? "auto" : minimizeRamUsage +"]";
   }
 }

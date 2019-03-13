@@ -34,7 +34,7 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     in = null;
   }
 
@@ -193,10 +193,5 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
     if (in == null) {
       throw new AlreadyClosedException("Already closed.");
     }
-  }
-
-  @Override
-  public boolean isMMapped() {
-    return true;
   }
 }

@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBufferIndexInput;
+import org.apache.lucene.store.ByteBuffersIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -90,10 +92,12 @@ public final class FieldReader extends Terms implements Accountable {
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();
       clone.seek(indexStartFP);
+      final boolean isMMapOrInMemory = (clone instanceof ByteBufferIndexInput || clone instanceof ByteBuffersIndexInput); // try to detect if we have a fast access.
+      final boolean minimizeRamUsage = (isMMapOrInMemory && context.minimizeRamUsage == null) || (context.minimizeRamUsage != null && context.minimizeRamUsage);
       // Initialize FST offheap if index is MMapDirectory and
       // docCount != sumDocFreq implying field is not primary key or if we are not using a NRT reader
       final boolean canReadFieldOffHeap = (this.docCount != this.sumDocFreq || context.fastIdAccessRequired == false);
-      isFSTOffHeap = clone.isMMapped() && context.minimizeRamUsage && canReadFieldOffHeap;
+      isFSTOffHeap = minimizeRamUsage && canReadFieldOffHeap;
       if (isFSTOffHeap) {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
       } else {

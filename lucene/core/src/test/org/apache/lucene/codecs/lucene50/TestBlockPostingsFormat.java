@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene50;
 
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +45,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -58,7 +60,8 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
   }
 
   public void testFstOffHeap() throws IOException {
-    try (Directory d = MMapDirectory.open(createTempDir())) {
+    Path tempDir = createTempDir();
+    try (Directory d = MMapDirectory.open(tempDir)) {
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())))) {
         for (int i = 0; i < 25; i++) {
           Document doc = new Document();
@@ -109,6 +112,46 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
         }
       }
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())).setMinimizeReaderRamUsage(false))) {
+        try (DirectoryReader r = DirectoryReader.open(w)) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertFalse(id.isFstOffHeap());
+          assertFalse(field.isFstOffHeap());
+        }
+      }
+    }
+
+    try (Directory d = new SimpleFSDirectory(tempDir)) {
+      // test auto
+      try (DirectoryReader r = DirectoryReader.open(d)) {
+        assertEquals(1, r.leaves().size());
+        FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+        FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+        assertFalse(id.isFstOffHeap());
+        assertFalse(field.isFstOffHeap());
+      }
+
+      // test force off-heap
+      try (DirectoryReader r = DirectoryReader.open(d, new IOContext(IOContext.READ, false, true, false))) {
+        assertEquals(1, r.leaves().size());
+        FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+        FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+        assertTrue(id.isFstOffHeap());
+        assertTrue(field.isFstOffHeap());
+      }
+
+      // test force off-heap fast ID acces
+      try (DirectoryReader r = DirectoryReader.open(d, new IOContext(IOContext.READ, false, true, true))) {
+        assertEquals(1, r.leaves().size());
+        FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+        FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+        assertFalse(id.isFstOffHeap());
+        assertTrue(field.isFstOffHeap());
+      }
+
+      // test auto-detect with writer
+      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())))) {
         try (DirectoryReader r = DirectoryReader.open(w)) {
           assertEquals(1, r.leaves().size());
           FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
