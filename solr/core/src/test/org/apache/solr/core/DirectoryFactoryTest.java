@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DirectoryFactoryTest extends LuceneTestCase {
+public class DirectoryFactoryTest extends SolrTestCase {
 
   private static Path solrHome = null;
   private static SolrResourceLoader loader = null;

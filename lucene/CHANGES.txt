@@ -17,6 +17,14 @@ Bug fixes:
 
 ======================= Lucene 8.1.0 =======================
 
+Bug fixes
+
+* LUCENE-8712: Polygon2D does not detect crossings through segment edges.
+  (Ignacio Vera)
+
+* LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
+  overflow bug that disabled cleaning of the cache (Russell A Brown)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
@@ -31,11 +39,19 @@ Improvements
 * LUCENE-8703: Build point writers in the BKD tree only when they are needed.
   (Ignacio Vera)
 
+* LUCENE-8652: SynonymQuery can now deboost the document frequency of each term when
+  blending the score of the synonym. (Jim Ferenczi)
+
+* LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
+  the other matches. (Yeongsu Kim via Jim Ferenczi)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
 
 * LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
+
+* LUCENE-8713: Add Line2D tests. (Ignacio Vera)
 
 ======================= Lucene 8.0.0 =======================
 

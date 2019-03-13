@@ -147,14 +147,17 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    System.clearProperty("solr.hdfs.home");
-    System.clearProperty("solr.hdfs.default.backup.path");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
     IOUtils.closeQuietly(fs);
     fs = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.home");
+      System.clearProperty("solr.hdfs.default.backup.path");
+      System.clearProperty("test.build.data");
+      System.clearProperty("test.cache.data");
+    }
   }
 
   @Override
@@ -211,11 +214,10 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       assertTrue(expected.contains(d));
     }
   }
+
   @Override
   @Test
-  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void test() throws Exception {
     super.test();
   }
-
-  }
+}

@@ -72,8 +72,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.zkclienttimeout", "20000");
 
-    TestInjection.waitForReplicasInSync = null; // We'll be explicit about this in this test
-    configureCluster(4) 
+    configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     // Add proxies

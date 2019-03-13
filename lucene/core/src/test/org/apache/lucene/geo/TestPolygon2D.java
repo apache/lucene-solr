@@ -25,6 +25,7 @@ import static org.apache.lucene.geo.GeoTestUtil.nextPolygon;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** Test Polygon2D impl */
 public class TestPolygon2D extends LuceneTestCase {
@@ -336,6 +337,35 @@ public class TestPolygon2D extends LuceneTestCase {
         double[] c = random().nextBoolean() ? new double[] {polygon.getPolyLat(j), polygon.getPolyLon(j)} : new double[] {a[0], a[1]};
         assertTrue(impl.relateTriangle(a[0], a[1], b[0], b[1], c[0], c[1]) != Relation.CELL_OUTSIDE_QUERY);
       }
+    }
+  }
+
+  public void testLineCrossingPolygonPoints() {
+    Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
+    Polygon2D polygon2D = Polygon2D.create(p);
+    Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)));
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
+  }
+
+  public void testRandomLineCrossingPolygon() {
+    Polygon p = GeoTestUtil.createRegularPolygon(0, 0, 1000, TestUtil.nextInt(random(), 100, 10000));
+    Polygon2D polygon2D = Polygon2D.create(p);
+    for (int i=0; i < 1000; i ++) {
+      double longitude = GeoTestUtil.nextLongitude();
+      double latitude = GeoTestUtil.nextLatitude();
+      Relation rel = polygon2D.relateTriangle(
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)),
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(latitude)),
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)));
+      assertNotEquals(Relation.CELL_OUTSIDE_QUERY, rel);
     }
   }
 }
