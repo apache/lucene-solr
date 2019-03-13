@@ -327,31 +327,23 @@ public abstract class EdgeTree {
         }
 
         if (outside == false) {
-          // does box's top edge intersect polyline?
-          // ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
-          if (orient(cx, cy, dx, dy, minLon, maxLat) * orient(cx, cy, dx, dy, maxLon, maxLat) <= 0 &&
-              orient(minLon, maxLat, maxLon, maxLat, cx, cy) * orient(minLon, maxLat, maxLon, maxLat, dx, dy) <= 0) {
+          // does box's top edge intersect polyline? : ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
+          if (lineCrossesLine(cx, cy, dx, dy, minLon, maxLat, maxLon, maxLat)) {
             return true;
           }
 
-          // does box's right edge intersect polyline?
-          // ax = maxLon, bx = maxLon, ay = maxLat, by = minLat
-          if (orient(cx, cy, dx, dy, maxLon, maxLat) * orient(cx, cy, dx, dy, maxLon, minLat) <= 0 &&
-              orient(maxLon, maxLat, maxLon, minLat, cx, cy) * orient(maxLon, maxLat, maxLon, minLat, dx, dy) <= 0) {
+          // does box's right edge intersect polyline? : ax = maxLon, bx = maxLon, ay = maxLat, by = minLat
+          if (lineCrossesLine(cx, cy, dx, dy, maxLon, maxLat, maxLon, minLat)) {
             return true;
           }
 
-          // does box's bottom edge intersect polyline?
-          // ax = maxLon, bx = minLon, ay = minLat, by = minLat
-          if (orient(cx, cy, dx, dy, maxLon, minLat) * orient(cx, cy, dx, dy, minLon, minLat) <= 0 &&
-              orient(maxLon, minLat, minLon, minLat, cx, cy) * orient(maxLon, minLat, minLon, minLat, dx, dy) <= 0) {
+          // does box's bottom edge intersect polyline?  : ax = maxLon, bx = minLon, ay = minLat, by = minLat
+          if (lineCrossesLine(cx, cy, dx, dy, maxLon, minLat, minLon, minLat)) {
             return true;
           }
 
-          // does box's left edge intersect polyline?
-          // ax = minLon, bx = minLon, ay = minLat, by = maxLat
-          if (orient(cx, cy, dx, dy, minLon, minLat) * orient(cx, cy, dx, dy, minLon, maxLat) <= 0 &&
-              orient(minLon, minLat, minLon, maxLat, cx, cy) * orient(minLon, minLat, minLon, maxLat, dx, dy) <= 0) {
+          // does box's left edge intersect polyline? : ax = minLon, bx = minLon, ay = minLat, by = maxLat
+          if (lineCrossesLine(cx, cy, dx, dy, minLon, minLat, minLon, maxLat)) {
             return true;
           }
         }
