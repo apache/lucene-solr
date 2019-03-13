@@ -26,7 +26,7 @@ import org.apache.lucene.index.Term;
 /**
  * Allows recursion through a query tree
  *
- * @see Query#visit(QueryVisitor, Predicate) 
+ * @see Query#visit(QueryVisitor, Predicate)
  */
 public class QueryVisitor {
 

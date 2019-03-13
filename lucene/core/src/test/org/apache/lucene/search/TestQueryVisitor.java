@@ -138,7 +138,7 @@ public class TestQueryVisitor extends LuceneTestCase {
     expected.put(new Term("field1", "term5"), 3f);
     expected.put(new Term("field1", "term6"), 1f);
     expected.put(new Term("field1", "term7"), 1f);
-    expected.put(new Term("field1", "term10"), 6f);
+    expected.put(new Term("field2", "term10"), 6f);
     assertThat(termsToBoosts, equalTo(expected));
   }
 
