@@ -32,7 +32,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D rectangle implementation containing spatial logic.
@@ -148,20 +147,7 @@ public class Rectangle2D {
     return false;
   }
 
-  /**
-   *  Checks if the shape is within the provided triangle.
-   *
-   * @param ax longitude of point a of the triangle
-   * @param ay latitude of point a of the triangle
-   * @param ab if edge ab belongs to the original shape
-   * @param bx longitude of point b of the triangle
-   * @param by latitude of point b of the triangle
-   * @param bc if edge bc belongs to the original shape
-   * @param cx longitude of point c of the triangle
-   * @param cy latitude of point c of the triangle
-   * @param ca if edge ca belongs to the original shape
-   * @return the {@link EdgeTree.WithinRelation}
-   */
+  /** Returns the Within relation to the provided triangle */
   public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
     if (this.crossesDateline() == true) {
       throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");

@@ -97,7 +97,7 @@ public final class Polygon2D extends EdgeTree {
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (minLat >= tree.lat1 && maxLat <= tree.lat1 && minLon >= tree.lon2 && maxLon <= tree.lon2) {
+      if (Rectangle.containsPoint(tree.lat1, tree.lon1, minLat, maxLat, minLon, maxLon) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
       if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
@@ -140,74 +140,11 @@ public final class Polygon2D extends EdgeTree {
 
   @Override
   protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    //short cut, lines and points cannot contain a polygon
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return WithinRelation.DISJOINT;
-    }
-    // check any holes
-    if (holes != null) {
-      Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
-      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
-        return WithinRelation.NOTWITHIN;
-      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
-        return WithinRelation.DISJOINT;
-      }
-    }
-    //If any ogf the points of the triangle is within then is not within.
+    //If any of the points of the triangle is within then is not within.
     if (componentContains(ay, ax) || componentContains(by, bx) || componentContains(cy, cx)) {
       return WithinRelation.NOTWITHIN;
     }
-
-    WithinRelation relation = WithinRelation.DISJOINT;
-    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
-    boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_DECODED && bx == GeoEncodingUtils.MAX_LON_DECODED)
-        || (ax == GeoEncodingUtils.MIN_LON_DECODED && bx == GeoEncodingUtils.MIN_LON_DECODED);
-    if (dateline1 == false && tree.crossesLine(ax, ay, bx, by)) {
-      if (ab == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_DECODED && cx == GeoEncodingUtils.MAX_LON_DECODED)
-        || (bx == GeoEncodingUtils.MIN_LON_DECODED && cx == GeoEncodingUtils.MIN_LON_DECODED);
-    if (dateline2 == false && tree.crossesLine(bx, by, cx, cy)) {
-      if (bc == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_DECODED && ax == GeoEncodingUtils.MAX_LON_DECODED)
-        || (cx == GeoEncodingUtils.MIN_LON_DECODED && ax == GeoEncodingUtils.MIN_LON_DECODED);
-    if (dateline3 == false && tree.crossesLine(cx, cy, ax, ay)) {
-      if (ca == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    //if any of the edges crosses and edge that does not belong to the shape
-    // then it is a candidate for within
-    if (relation == WithinRelation.CANDIDATE) {
-      return WithinRelation.CANDIDATE;
-    }
-
-    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
-    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
-    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
-    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
-
-    //check that triangle bounding box not inside shape bounding box
-    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
-      return WithinRelation.DISJOINT;
-    }
-
-    //Check if shape is within the triangle
-    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
-      return WithinRelation.CANDIDATE;
-    }
-    return relation;
+    return super.componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
   }
 
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {

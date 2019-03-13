@@ -171,7 +171,63 @@ public abstract class EdgeTree {
   protected abstract Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
 
   /** Returns the Within relation to the provided triangle for this component */
-  protected abstract WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    //short cut, lines and points cannot contain a lines??
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
+    boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_DECODED && bx == GeoEncodingUtils.MAX_LON_DECODED)
+        || (ax == GeoEncodingUtils.MIN_LON_DECODED && bx == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline1 == false && tree.crossesLine(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_DECODED && cx == GeoEncodingUtils.MAX_LON_DECODED)
+        || (bx == GeoEncodingUtils.MIN_LON_DECODED && cx == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline2 == false && tree.crossesLine(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_DECODED && ax == GeoEncodingUtils.MAX_LON_DECODED)
+        || (cx == GeoEncodingUtils.MIN_LON_DECODED && ax == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline3 == false &&tree.crossesLine(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    //if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+
+    //check that triangle bounding box not inside shape bounding box
+    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+
+    //Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
 
   /**
    * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
@@ -320,12 +376,6 @@ public abstract class EdgeTree {
             (cy > maxLat && dy > maxLat) ||
             (cx < minLon && dx < minLon) ||
             (cx > maxLon && dx > maxLon);
-        // optimization: see if either end of the line segment is contained by the rectangle
-        if (Rectangle.containsPoint(cy, cx, minLat, maxLat, minLon, maxLon)
-            || Rectangle.containsPoint(dy, dx, minLat, maxLat, minLon, maxLon)) {
-          return true;
-        }
-
         if (outside == false) {
           // does box's top edge intersect polyline? : ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
           if (lineCrossesLine(cx, cy, dx, dy, minLon, maxLat, maxLon, maxLat)) {
