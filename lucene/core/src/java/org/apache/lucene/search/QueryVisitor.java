@@ -27,7 +27,7 @@ import org.apache.lucene.index.Term;
  *
  * @see Query#visit(QueryVisitor)
  */
-public class QueryVisitor {
+public abstract class QueryVisitor {
 
   /**
    * Called by leaf queries that match on specific terms
@@ -36,6 +36,9 @@ public class QueryVisitor {
    * @param terms  the terms the query will match on
    */
   public void consumeTerms(Query query, Term... terms) { }
+
+  // TODO it would be nice to have a way to consume 'classes' of Terms from
+  // things like AutomatonQuery
 
   /**
    * Called by leaf queries that do not match on terms
