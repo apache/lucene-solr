@@ -110,6 +110,10 @@ final public class Tessellator {
     }
     // Calculate the tessellation using the doubly LinkedList.
     List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
+    if (result.size() == 0) {
+      throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
+    }
+
     return result;
   }
 
