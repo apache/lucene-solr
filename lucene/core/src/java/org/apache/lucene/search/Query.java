@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -79,7 +78,7 @@ public abstract class Query {
    * Recurse through the query tree, visiting any child queries
    * @param visitor a QueryVisitor to be called by each query in the tree
    */
-  public abstract void visit(QueryVisitor visitor, Predicate<String> fieldSelector);
+  public abstract void visit(QueryVisitor visitor);
 
   /**
    * Override and implement query instance equivalence properly in a subclass. 

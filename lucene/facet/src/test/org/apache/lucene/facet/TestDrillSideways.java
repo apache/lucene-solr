@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -752,7 +751,7 @@ public class TestDrillSideways extends FacetTestCase {
           }
 
           @Override
-          public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+          public void visit(QueryVisitor visitor) {
 
           }
 

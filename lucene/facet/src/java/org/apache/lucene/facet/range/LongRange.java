@@ -18,7 +18,6 @@ package org.apache.lucene.facet.range;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -136,7 +135,7 @@ public final class LongRange extends Range {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
 

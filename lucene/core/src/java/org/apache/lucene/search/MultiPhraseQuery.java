@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -203,8 +202,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field) == false) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
       return;
     }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);

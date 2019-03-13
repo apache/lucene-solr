@@ -83,7 +83,7 @@ public class IntersectsRPTVerifyQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
 

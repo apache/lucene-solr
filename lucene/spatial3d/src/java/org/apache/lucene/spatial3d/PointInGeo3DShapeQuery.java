@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial3d;
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -63,8 +62,8 @@ final class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field)) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
       visitor.visitLeaf(this);
     }
   }

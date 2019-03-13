@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -186,7 +185,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
       }
 
       @Override
-      public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+      public void visit(QueryVisitor visitor) {
 
       }
     };

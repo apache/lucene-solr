@@ -17,7 +17,6 @@
 package org.apache.solr.search.join;
 
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -91,7 +90,7 @@ class BlockJoinFacetFilter extends Query implements PostFilter {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
 }

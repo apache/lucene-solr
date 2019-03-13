@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
@@ -256,7 +255,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
 

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -154,8 +153,8 @@ public class AutomatonQuery extends MultiTermQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(getField())) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
       visitor.visitLeaf(this);
     }
   }

@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Predicate;
 
 import junit.framework.Assert;
 import org.apache.lucene.index.BinaryDocValues;
@@ -68,7 +67,7 @@ public class QueryUtils {
       }
 
       @Override
-      public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) { }
+      public void visit(QueryVisitor visitor) { }
 
       @Override
       public boolean equals(Object o) {

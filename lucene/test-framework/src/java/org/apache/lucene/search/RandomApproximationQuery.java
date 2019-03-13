@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.function.Predicate;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.index.IndexReader;
@@ -47,8 +46,8 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    query.visit(visitor, fieldSelector);
+  public void visit(QueryVisitor visitor) {
+    query.visit(visitor);
   }
 
   @Override

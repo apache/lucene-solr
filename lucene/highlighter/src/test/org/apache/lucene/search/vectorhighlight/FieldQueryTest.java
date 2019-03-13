@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -931,7 +930,7 @@ public class FieldQueryTest extends AbstractTestCase {
       }
 
       @Override
-      public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+      public void visit(QueryVisitor visitor) {
 
       }
 

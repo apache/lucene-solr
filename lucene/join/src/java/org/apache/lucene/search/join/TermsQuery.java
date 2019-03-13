@@ -18,7 +18,6 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
@@ -62,7 +61,7 @@ class TermsQuery extends MultiTermQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
 

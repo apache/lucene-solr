@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -84,7 +83,7 @@ public class FunctionQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
 

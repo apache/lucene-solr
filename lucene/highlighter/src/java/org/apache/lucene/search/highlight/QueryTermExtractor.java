@@ -104,7 +104,7 @@ public final class QueryTermExtractor
   public static WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName) {
     HashSet<WeightedTerm> terms = new HashSet<>();
     Predicate<String> fieldSelector = fieldName == null ? f -> true : fieldName::equals;
-    query.visit(new BoostedTermExtractor(1, terms, prohibited), fieldSelector);
+    query.visit(new BoostedTermExtractor(1, terms, prohibited, fieldSelector));
     return terms.toArray(new WeightedTerm[0]);
   }
 
@@ -125,11 +125,19 @@ public final class QueryTermExtractor
     final float boost;
     final Set<WeightedTerm> terms;
     final boolean includeProhibited;
+    final Predicate<String> fieldSelector;
 
-    private BoostedTermExtractor(float boost, Set<WeightedTerm> terms, boolean includeProhibited) {
+    private BoostedTermExtractor(float boost, Set<WeightedTerm> terms, boolean includeProhibited,
+                                 Predicate<String> fieldSelector) {
       this.boost = boost;
       this.terms = terms;
       this.includeProhibited = includeProhibited;
+      this.fieldSelector = fieldSelector;
+    }
+
+    @Override
+    public boolean acceptField(String field) {
+      return fieldSelector.test(field);
     }
 
     @Override
@@ -143,7 +151,7 @@ public final class QueryTermExtractor
     public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
       if (parent instanceof BoostQuery) {
         float newboost = boost * ((BoostQuery)parent).getBoost();
-        return new BoostedTermExtractor(newboost, terms, includeProhibited);
+        return new BoostedTermExtractor(newboost, terms, includeProhibited, fieldSelector);
       }
       if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
         return QueryVisitor.EMPTY_VISITOR;

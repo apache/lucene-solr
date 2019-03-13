@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -123,8 +122,8 @@ public class TermInSetQuery extends Query implements Accountable {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field) == false) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
       return;
     }
     QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);

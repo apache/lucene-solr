@@ -19,7 +19,6 @@ package org.apache.lucene.queries.function;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -115,7 +114,7 @@ public class FunctionRangeQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
 

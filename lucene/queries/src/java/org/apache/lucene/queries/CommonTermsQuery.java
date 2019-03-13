@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -133,8 +132,8 @@ public class CommonTermsQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    Term[] selectedTerms = terms.stream().filter(t -> fieldSelector.test(t.field())).toArray(Term[]::new);
+  public void visit(QueryVisitor visitor) {
+    Term[] selectedTerms = terms.stream().filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
     if (selectedTerms.length > 0) {
       QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
       v.consumeTerms(this, selectedTerms);

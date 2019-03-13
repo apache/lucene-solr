@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -225,8 +224,8 @@ public final class BM25FQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    Term[] selectedTerms = Arrays.stream(fieldTerms).filter(t -> fieldSelector.test(t.field())).toArray(Term[]::new);
+  public void visit(QueryVisitor visitor) {
+    Term[] selectedTerms = Arrays.stream(fieldTerms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
     if (selectedTerms.length > 0) {
       QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
       v.consumeTerms(this, selectedTerms);

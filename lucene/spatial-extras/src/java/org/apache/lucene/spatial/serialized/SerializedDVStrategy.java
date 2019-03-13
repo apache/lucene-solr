@@ -22,7 +22,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
@@ -154,7 +153,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
 

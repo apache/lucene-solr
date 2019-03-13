@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -607,7 +606,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
 
     }
 

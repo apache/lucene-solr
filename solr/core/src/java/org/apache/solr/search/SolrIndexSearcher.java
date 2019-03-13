@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
@@ -2312,7 +2311,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
 

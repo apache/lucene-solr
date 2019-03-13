@@ -23,7 +23,6 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -592,8 +591,8 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-      wrapped.visit(visitor, fieldSelector);
+    public void visit(QueryVisitor visitor) {
+      wrapped.visit(visitor);
     }
   }
 

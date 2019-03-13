@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -72,8 +71,8 @@ public final class BlockScoreQueryWrapper extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    query.visit(visitor, fieldSelector);
+  public void visit(QueryVisitor visitor) {
+    query.visit(visitor);
   }
 
   @Override

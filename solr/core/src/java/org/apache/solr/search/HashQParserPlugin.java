@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 
 import com.google.common.primitives.Longs;
 import org.apache.lucene.index.IndexReaderContext;
@@ -116,7 +115,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
 

@@ -258,7 +258,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
               bytesRefBuilder.append(term.bytes());
             }
           }
-        }, f -> true);
+        });
         if (bytesRefBuilder.length() > 0) {
           return bytesRefBuilder.get();
         }

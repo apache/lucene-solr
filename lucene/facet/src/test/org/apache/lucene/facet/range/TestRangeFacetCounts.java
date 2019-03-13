@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -717,8 +716,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-      in.visit(visitor, fieldSelector);
+    public void visit(QueryVisitor visitor) {
+      in.visit(visitor);
     }
 
     @Override

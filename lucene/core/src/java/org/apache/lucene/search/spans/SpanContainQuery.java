@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -122,11 +121,11 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(getField())) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
       QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-      big.visit(v, f -> true);
-      little.visit(v, f -> true);
+      big.visit(v);
+      little.visit(v);
     }
   }
 

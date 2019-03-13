@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -287,8 +286,8 @@ public class PhraseQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field) == false) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
       return;
     }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);

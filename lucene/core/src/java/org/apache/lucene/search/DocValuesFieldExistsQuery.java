@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
@@ -61,8 +60,8 @@ public final class DocValuesFieldExistsQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field)) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
       visitor.visitLeaf(this);
     }
   }

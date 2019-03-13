@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
@@ -101,7 +100,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

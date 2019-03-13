@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -81,8 +80,8 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field)) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
       visitor.visitLeaf(this);
     }
   }

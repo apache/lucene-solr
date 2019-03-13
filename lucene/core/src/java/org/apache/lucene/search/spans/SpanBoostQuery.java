@@ -19,7 +19,6 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
@@ -97,9 +96,9 @@ public final class SpanBoostQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(getField())) {
-      query.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), f -> true);
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
+      query.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
     }
   }
 

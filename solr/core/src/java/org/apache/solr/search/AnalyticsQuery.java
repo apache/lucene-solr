@@ -16,8 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.util.function.Predicate;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.solr.handler.component.MergeStrategy;
@@ -82,7 +80,7 @@ public abstract class AnalyticsQuery extends ExtendedQueryBase implements PostFi
   public abstract DelegatingCollector getAnalyticsCollector(ResponseBuilder rb, IndexSearcher searcher);
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
 }

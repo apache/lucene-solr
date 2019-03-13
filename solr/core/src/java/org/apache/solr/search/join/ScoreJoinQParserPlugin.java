@@ -19,7 +19,6 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.IndexSearcher;
@@ -199,7 +198,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
   }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -86,8 +85,8 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(term.field())) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(term.field())) {
       visitor.consumeTerms(this, term);
     }
   }

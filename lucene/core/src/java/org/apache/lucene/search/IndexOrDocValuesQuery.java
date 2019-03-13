@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -109,10 +108,10 @@ public final class IndexOrDocValuesQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
-    indexQuery.visit(v, fieldSelector);
-    dvQuery.visit(v, fieldSelector);
+    indexQuery.visit(v);
+    dvQuery.visit(v);
   }
 
   @Override

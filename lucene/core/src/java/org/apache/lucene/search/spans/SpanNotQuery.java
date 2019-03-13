@@ -20,7 +20,6 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -208,10 +207,10 @@ public final class SpanNotQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(getField())) {
-      include.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), f -> true);
-      exclude.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, this), f -> true);
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
+      include.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+      exclude.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, this));
     }
   }
 

@@ -67,7 +67,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "term5"), new Term("field1", "term6"),
         new Term("field1", "term7"), new Term("field2", "term10")
     ));
-    query.visit(QueryVisitor.termCollector(terms), f -> true);
+    query.visit(QueryVisitor.termCollector(terms));
     assertThat(terms, equalTo(expected));
   }
 
@@ -90,15 +90,24 @@ public class TestQueryVisitor extends LuceneTestCase {
         new Term("field1", "term7"), new Term("field1", "term8"),
         new Term("field2", "term10")
     ));
-    query.visit(visitor, f -> true);
+    query.visit(visitor);
     assertThat(terms, equalTo(expected));
   }
 
   public void extractTermsFromField() {
-    Set<Term> terms = new HashSet<>();
+    final Set<Term> actual = new HashSet<>();
     Set<Term> expected = new HashSet<>(Arrays.asList(new Term("field2", "term10")));
-    query.visit(QueryVisitor.termCollector(terms), "field2"::equals);
-    assertThat(terms, equalTo(expected));
+    query.visit(new QueryVisitor(){
+      @Override
+      public boolean acceptField(String field) {
+        return "field2".equals(field);
+      }
+      @Override
+      public void consumeTerms(Query query, Term... terms) {
+        actual.addAll(Arrays.asList(terms));
+      }
+    });
+    assertThat(actual, equalTo(expected));
   }
 
   static class BoostedTermExtractor extends QueryVisitor {
@@ -129,7 +138,7 @@ public class TestQueryVisitor extends LuceneTestCase {
 
   public void testExtractTermsAndBoosts() {
     Map<Term, Float> termsToBoosts = new HashMap<>();
-    query.visit(new BoostedTermExtractor(1, termsToBoosts), f -> true);
+    query.visit(new BoostedTermExtractor(1, termsToBoosts));
     Map<Term, Float> expected = new HashMap<>();
     expected.put(new Term("field1", "t1"), 1f);
     expected.put(new Term("field1", "tm2"), 1f);
@@ -165,7 +174,7 @@ public class TestQueryVisitor extends LuceneTestCase {
         countQuery(query);
       }
 
-    }, f -> true);
+    });
     assertEquals(4, queryCounts.get(TermQuery.class).intValue());
     assertEquals(1, queryCounts.get(PhraseQuery.class).intValue());
   }
@@ -308,7 +317,7 @@ public class TestQueryVisitor extends LuceneTestCase {
 
   public void testExtractMatchingTermSet() {
     QueryNode extractor = new ConjunctionNode();
-    query.visit(extractor, f -> true);
+    query.visit(extractor);
     Set<Term> minimumTermSet = new HashSet<>();
     extractor.collectTerms(minimumTermSet);
 

@@ -20,7 +20,6 @@ package org.apache.solr.legacy;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -537,7 +536,7 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
   

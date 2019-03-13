@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -81,9 +80,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(match.getField())) {
-      match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this), f -> true);
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(match.getField())) {
+      match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
     }
   }
 

@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Impact;
@@ -168,8 +167,8 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field) == false) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
       return;
     }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);

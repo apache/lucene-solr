@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -66,8 +65,8 @@ public final class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    query.visit(visitor.getSubVisitor(BooleanClause.Occur.FILTER, this), fieldSelector);
+  public void visit(QueryVisitor visitor) {
+    query.visit(visitor.getSubVisitor(BooleanClause.Occur.FILTER, this));
   }
 
   /** We return this as our {@link BulkScorer} so that if the CSQ

@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -80,8 +79,8 @@ public class DocValuesNumbersQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(field)) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
       visitor.visitLeaf(this);
     }
   }

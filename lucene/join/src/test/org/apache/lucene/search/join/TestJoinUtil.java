@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Predicate;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -554,7 +553,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
       @Override
-      public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+      public void visit(QueryVisitor visitor) {
 
       }
 

@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -296,8 +295,8 @@ public final class BlendedTermQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    Term[] termsToVisit = Arrays.stream(terms).filter(t -> fieldSelector.test(t.field())).toArray(Term[]::new);
+  public void visit(QueryVisitor visitor) {
+    Term[] termsToVisit = Arrays.stream(terms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
     if (termsToVisit.length > 0) {
       QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
       v.consumeTerms(this, termsToVisit);

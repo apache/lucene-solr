@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -271,8 +270,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         }
 
       @Override
-      public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-        q.visit(visitor, fieldSelector);
+      public void visit(QueryVisitor visitor) {
+        q.visit(visitor);
       }
 
       @Override

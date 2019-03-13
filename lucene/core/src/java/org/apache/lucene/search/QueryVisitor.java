@@ -19,14 +19,13 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 
 /**
  * Allows recursion through a query tree
  *
- * @see Query#visit(QueryVisitor, Predicate)
+ * @see Query#visit(QueryVisitor)
  */
 public class QueryVisitor {
 
@@ -43,6 +42,16 @@ public class QueryVisitor {
    * @param query the query
    */
   public void visitLeaf(Query query) { }
+
+  /**
+   * Whether or not terms from this field are of interest to the visitor
+   *
+   * Implement this to avoid collecting terms from heavy queries such as {@link TermInSetQuery}
+   * that are not running on fields of interest
+   */
+  public boolean acceptField(String field) {
+    return true;
+  }
 
   /**
    * Pulls a visitor instance for visiting child clauses of a query

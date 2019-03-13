@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -80,8 +79,8 @@ public final class AssertingQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    in.visit(visitor, fieldSelector);
+  public void visit(QueryVisitor visitor) {
+    in.visit(visitor);
   }
 
 }

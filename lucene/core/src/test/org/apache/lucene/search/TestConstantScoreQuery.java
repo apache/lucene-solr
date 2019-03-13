@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -155,8 +154,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-      in.visit(visitor, fieldSelector);
+    public void visit(QueryVisitor visitor) {
+      in.visit(visitor);
     }
 
     @Override

@@ -48,8 +48,8 @@ final class MultiTermHighlighting {
    */
   static CharacterRunAutomaton[] extractAutomata(Query query, Predicate<String> fieldMatcher, boolean lookInSpan) {
 
-    AutomataCollector collector = new AutomataCollector(lookInSpan);
-    query.visit(collector, fieldMatcher);
+    AutomataCollector collector = new AutomataCollector(lookInSpan, fieldMatcher);
+    query.visit(collector);
     return collector.runAutomata.toArray(new CharacterRunAutomaton[0]);
   }
 
@@ -57,9 +57,16 @@ final class MultiTermHighlighting {
 
     List<CharacterRunAutomaton> runAutomata = new ArrayList<>();
     final boolean lookInSpan;
+    final Predicate<String> fieldMatcher;
 
-    private AutomataCollector(boolean lookInSpan) {
+    private AutomataCollector(boolean lookInSpan, Predicate<String> fieldMatcher) {
       this.lookInSpan = lookInSpan;
+      this.fieldMatcher = fieldMatcher;
+    }
+
+    @Override
+    public boolean acceptField(String field) {
+      return fieldMatcher.test(field);
     }
 
     @Override

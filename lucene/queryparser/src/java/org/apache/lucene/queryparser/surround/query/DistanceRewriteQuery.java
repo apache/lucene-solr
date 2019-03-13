@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.surround.query;
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -38,7 +37,7 @@ class DistanceRewriteQuery extends RewriteQuery<DistanceQuery> {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     // TODO implement this
     visitor.visitLeaf(this);
   }

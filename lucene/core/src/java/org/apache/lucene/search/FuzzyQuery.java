@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
@@ -156,9 +155,9 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     // TODO find some way of consuming Automata
-    if (fieldSelector.test(term.field())) {
+    if (visitor.acceptField(term.field())) {
       visitor.visitLeaf(this);
     }
   }

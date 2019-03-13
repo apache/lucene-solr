@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -261,13 +260,13 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(getField()) == false) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField()) == false) {
       return;
     }
     QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
     for (SpanQuery clause : clauses) {
-      clause.visit(v, f -> true);
+      clause.visit(v);
     }
   }
 
@@ -308,7 +307,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+    public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
     }
 

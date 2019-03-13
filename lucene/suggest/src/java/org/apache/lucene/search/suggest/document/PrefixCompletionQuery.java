@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
@@ -76,7 +75,7 @@ public class PrefixCompletionQuery extends CompletionQuery {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
+  public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
   /**

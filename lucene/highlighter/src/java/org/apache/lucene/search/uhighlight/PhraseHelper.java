@@ -133,18 +133,19 @@ public class PhraseHelper {
 
       // called on Query types that are NOT position sensitive, e.g. TermQuery
       @Override
-      protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
-          throws IOException {
+      protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost) {
         query.visit(new QueryVisitor() {
+          @Override
+          public boolean acceptField(String field) {
+            return fieldMatcher.test(field);
+          }
           @Override
           public void consumeTerms(Query query, Term... terms) {
             for (Term term : terms) {
-              if (fieldMatcher.test(term.field())) {
-                positionInsensitiveTerms.add(term.bytes());
-              }
+              positionInsensitiveTerms.add(term.bytes());
             }
           }
-        }, f -> true);
+        });
       }
 
       // called on SpanQueries. Some other position-sensitive queries like PhraseQuery are converted beforehand

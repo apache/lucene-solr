@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -79,8 +78,8 @@ public abstract class AbstractPrefixTreeQuery extends Query {
   }
 
   @Override
-  public void visit(QueryVisitor visitor, Predicate<String> fieldSelector) {
-    if (fieldSelector.test(fieldName)) {
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(fieldName)) {
       visitor.visitLeaf(this);
     }
   }
