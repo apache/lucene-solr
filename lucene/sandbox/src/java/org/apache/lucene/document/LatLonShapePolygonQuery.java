@@ -85,7 +85,7 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
     if (queryRelation == QueryRelation.WITHIN) {
       return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
-    // CROSSES
+    // INTERSECTS
     return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
