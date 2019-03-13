@@ -116,7 +116,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
-    if (core != null && !core.indexEnabled) {
+    if (core != null && (!core.indexEnabled || core.readOnly)) {
       throw new SolrException(SolrException.ErrorCode.FORBIDDEN, "Indexing is temporarily disabled");
     }
     boolean succeeded = false;

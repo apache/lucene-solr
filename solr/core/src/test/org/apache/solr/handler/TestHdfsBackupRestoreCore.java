@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.handler;
 
 import java.io.IOException;
@@ -145,14 +144,17 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    System.clearProperty("solr.hdfs.home");
-    System.clearProperty("solr.hdfs.default.backup.path");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
     IOUtils.closeQuietly(fs);
     fs = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.home");
+      System.clearProperty("solr.hdfs.default.backup.path");
+      System.clearProperty("test.build.data");
+      System.clearProperty("test.cache.data");
+    }
   }
 
   @Test

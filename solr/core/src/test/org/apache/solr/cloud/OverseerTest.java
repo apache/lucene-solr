@@ -304,10 +304,15 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    zkClient.printLayoutToStdOut();
-    server.shutdown();
+    if (null != zkClient) {
+      zkClient.printLayoutToStdOut();
+    }
+    
     System.clearProperty("solr.zkclienttimeout");
     
+    if (null != server) {
+      server.shutdown();
+    }
   }
   
   @After

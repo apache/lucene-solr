@@ -55,7 +55,7 @@ public class DistributedUpdateProcessorFactory
     DistributedUpdateProcessor distribUpdateProcessor = isZkAware ? new DistributedZkUpdateProcessor(req, rsp, next):
         new DistributedUpdateProcessor(req, rsp, next);
     // note: will sometimes return DURP (no overhead) instead of wrapping
-    return TimeRoutedAliasUpdateProcessor.wrap(req,
+    return RoutedAliasUpdateProcessor.wrap(req,
         distribUpdateProcessor);
   }
   

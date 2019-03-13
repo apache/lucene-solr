@@ -137,12 +137,11 @@ public final class StartupLoggingUtils {
    */
   @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static void shutdown() {
-
-//    if (!isLog4jActive()) {
-//      logNotSupported("Not running log4j2, could not call shutdown for async logging.");
-//      return;
-//    }
-//    LogManager.shutdown(true);
+    if (!isLog4jActive()) {
+      logNotSupported("Not running log4j2, could not call shutdown for async logging.");
+      return;
+    }
+    LogManager.shutdown(true);
   }
   /**
    * Return a string representing the current static ROOT logging level

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 import java.io.*;
@@ -29,7 +29,7 @@ import java.util.zip.GZIPOutputStream;
  *
  * @see org.apache.solr.common.util.FastInputStream
  */
-public class TestFastInputStream extends LuceneTestCase {
+public class TestFastInputStream extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testgzip() throws Exception {

@@ -113,7 +113,8 @@ public class HdfsTestUtil {
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
     System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
 
-    System.setProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean()));
+    System.setProperty("solr.hdfs.blockcache.global",
+        System.getProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean())));
 
     final MiniDFSCluster dfsCluster;
 

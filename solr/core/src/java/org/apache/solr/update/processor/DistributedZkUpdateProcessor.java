@@ -28,9 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -41,6 +38,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -63,6 +61,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
@@ -81,6 +81,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   protected List<SolrCmdDistributor.Node> nodes;
   private Set<String> skippedCoreNodeNames;
   private final String collection;
+  private boolean readOnlyCollection = false;
 
   // should we clone the document before sending it to replicas?
   // this is set to true in the constructor if the next processors in the chain
@@ -102,6 +103,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
     collection = cloudDesc.getCollectionName();
+    DocCollection coll = zkController.getClusterState().getCollectionOrNull(collection);
+    if (coll != null) {
+      // check readOnly property in coll state
+      readOnlyCollection = coll.isReadOnly();
+    }
+  }
+
+  private boolean isReadOnly() {
+    return readOnlyCollection || req.getCore().readOnly;
   }
 
   private boolean isCloneRequiredOnLeader(UpdateRequestProcessor next) {
@@ -131,6 +141,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     assert TestInjection.injectFailUpdateRequests();
 
+    if (isReadOnly()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
+
     updateCommand = cmd;
 
     List<SolrCmdDistributor.Node> nodes = null;
@@ -154,17 +168,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
         && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
 
-    CompletionService<Exception> completionService = new ExecutorCompletionService<>(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
-    Set<Future<Exception>> pending = new HashSet<>();
-
     if (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
-      if (replicaType == Replica.Type.TLOG) {
-        assert TestInjection.waitForInSyncWithLeader(req.getCore(),
-            zkController, collection, cloudDesc.getShardId()) : "Core " + req.getCore() + " not in sync with leader";
-      } else if (replicaType == Replica.Type.PULL) {
+      if (replicaType == Replica.Type.PULL) {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
-      } else {
-        // NRT replicas will always commit
+      } else if (replicaType == Replica.Type.NRT) {
         doLocalCommit(cmd);
       }
     } else {
@@ -210,6 +217,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     assert TestInjection.injectFailUpdateRequests();
+
+    if (isReadOnly()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
 
     setupRequest(cmd);
 
@@ -275,6 +286,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
       }
     }
+  }
+
+  @Override
+  public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+    if (isReadOnly()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
+
+    super.processDelete(cmd);
   }
 
   @Override
@@ -991,6 +1011,22 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (cmdDistrib != null) {
       cmdDistrib.close();
     }
+  }
+
+  @Override
+  public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    if (isReadOnly()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
+    super.processMergeIndexes(cmd);
+  }
+
+  @Override
+  public void processRollback(RollbackUpdateCommand cmd) throws IOException {
+    if (isReadOnly()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
+    super.processRollback(cmd);
   }
 
   @Override

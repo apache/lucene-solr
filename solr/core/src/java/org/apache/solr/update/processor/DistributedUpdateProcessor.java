@@ -116,7 +116,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   // used to assert we don't call finish more than once, see finish()
   private boolean finished = false;
-  
+
   protected final SolrQueryRequest req;
   protected final SolrQueryResponse rsp;
   private final AtomicUpdateDocumentMerger docMerger;
@@ -1019,7 +1019,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
   }
-  
+
   @Override
   public void finish() throws IOException {
     assertNotFinished();

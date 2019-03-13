@@ -55,9 +55,17 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    cluster.shutdown(); // need to close before the MiniDFSCluster
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      shutdownCluster(); // need to close before the MiniDFSCluster
+    } finally {
+      try {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      } finally {
+        dfsCluster = null;
+        System.clearProperty("solr.hdfs.blockcache.enabled");
+        System.clearProperty("solr.hdfs.home");
+      }
+    }
   }
 
   public void testDataDirIsNotReused() throws Exception {

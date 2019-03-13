@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +25,7 @@ import java.util.Map;
  * Unit Test Case for {@link org.apache.solr.common.params.ModifiableSolrParams
  * ModifiableSolrParams}
  */
-public class ModifiableSolrParamsTest extends LuceneTestCase {
+public class ModifiableSolrParamsTest extends SolrTestCase {
 
   @Override
   public void setUp() throws Exception
