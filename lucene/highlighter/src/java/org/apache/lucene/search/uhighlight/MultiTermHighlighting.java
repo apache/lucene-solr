@@ -65,7 +65,7 @@ final class MultiTermHighlighting {
     @Override
     public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
       if (lookInSpan == false && parent instanceof SpanQuery) {
-        return null;
+        return QueryVisitor.EMPTY_VISITOR;
       }
       return super.getSubVisitor(occur, parent);
     }
