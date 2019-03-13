@@ -19,13 +19,14 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 
 /**
  * Allows recursion through a query tree
  *
- * @see Query#visit(QueryVisitor)
+ * @see Query#visit(QueryVisitor, Predicate) 
  */
 public class QueryVisitor {
 

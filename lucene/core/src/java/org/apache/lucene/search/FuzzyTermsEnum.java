@@ -149,7 +149,6 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
    * @param prefixLength    length of a required common prefix
    * @param transpositions  {@code true} if transpositions should count as a single edit
    * @param maxEdits        the maximum edit distance of matching terms
-   * @return
    */
   public static Automaton buildAutomaton(String text, int prefixLength, boolean transpositions, int maxEdits) {
     int[] termText = stringToUTF32(text);

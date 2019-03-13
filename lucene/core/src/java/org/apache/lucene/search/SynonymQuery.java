@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Impact;
