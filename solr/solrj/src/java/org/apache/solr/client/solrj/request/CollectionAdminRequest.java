@@ -1565,8 +1565,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
-   * Returns a SolrRequest to create a routed alias. Only time based routing is supported presently,
-   * For time based routing, the start a standard Solr timestamp string (possibly with "date math").
+   * Returns a SolrRequest to create a time routed alias. For time based routing, the start
+   * should be a standard Solr timestamp string (possibly with "date math").
    *
    * @param aliasName the name of the alias to create.
    * @param start the start of the routing.  A standard Solr date: ISO-8601 or NOW with date math.
@@ -1647,6 +1647,76 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (preemptiveCreateMath != null) {
         params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
+      }
+
+      // merge the above with collectionParams.  Above takes precedence.
+      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target
+      final SolrParams collParams = createCollTemplate.getParams();
+      final Iterator<String> pIter = collParams.getParameterNamesIterator();
+      while (pIter.hasNext()) {
+        String key = pIter.next();
+        if (key.equals(CollectionParams.ACTION) || key.equals("name")) {
+          continue;
+        }
+        createCollParams.set("create-collection." + key, collParams.getParams(key));
+      }
+      return SolrParams.wrapDefaults(params, createCollParams);
+    }
+
+  }
+  /**
+   * Returns a SolrRequest to create a category routed alias.
+   *
+   * @param aliasName the name of the alias to create.
+   * @param routerField the document field to contain the timestamp to route on
+   * @param maxCardinality the maximum number of collections under this CRA
+   * @param createCollTemplate Holds options to create a collection.  The "name" is ignored.
+   */
+  public static CreateCategoryRoutedAlias createCategoryRoutedAlias(String aliasName,
+                                                            String routerField,
+                                                            int maxCardinality,
+                                                            Create createCollTemplate) {
+
+    return new CreateCategoryRoutedAlias(aliasName, routerField, maxCardinality, createCollTemplate);
+  }
+
+  public static class CreateCategoryRoutedAlias extends AsyncCollectionAdminRequest {
+
+    public static final String ROUTER_TYPE_NAME = "router.name";
+    public static final String ROUTER_FIELD = "router.field";
+    public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
+    public static final String ROUTER_MUST_MATCH = "router.mustMatch";
+
+    private final String aliasName;
+    private final String routerField;
+    private Integer maxCardinality;
+    private String mustMatch;
+
+    private final Create createCollTemplate;
+
+    public CreateCategoryRoutedAlias(String aliasName, String routerField, int maxCardinality, Create createCollTemplate) {
+      super(CollectionAction.CREATEALIAS);
+      this.aliasName = aliasName;
+      this.routerField = routerField;
+      this.maxCardinality = maxCardinality;
+      this.createCollTemplate = createCollTemplate;
+    }
+
+    public CreateCategoryRoutedAlias setMustMatch(String regex) {
+      this.mustMatch = regex;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.add(CommonParams.NAME, aliasName);
+      params.add(ROUTER_TYPE_NAME, "category");
+      params.add(ROUTER_FIELD, routerField);
+      params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+
+      if (mustMatch != null) {
+        params.add(ROUTER_MUST_MATCH, mustMatch);
       }
 
       // merge the above with collectionParams.  Above takes precedence.

@@ -175,6 +175,14 @@
             "autoDeleteAge": {
               "type": "string",
               "description": "A date math expressions yielding a time in the past. Collections covering a period of time entirely before this age will be automatically deleted."
+            },
+            "maxCardinality": {
+              "type": "integer",
+              "description": "The maximum number of categories allowed for this alias."
+            },
+            "mustMatch": {
+              "type": "string",
+              "description": "A regular expression that the value of the field specified by `router.field` must match before a corresponding collection will be created."
             }
           }
         },
