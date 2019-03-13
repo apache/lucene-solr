@@ -97,7 +97,7 @@ public final class Polygon2D extends EdgeTree {
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (minLat >= tree.lat1 && maxLat <= tree.lat1 && minLon >= tree.lon2 && maxLon <= tree.lon2) {
+      if (Rectangle.containsPoint(tree.lat1, tree.lon1, minLat, maxLat, minLon, maxLon) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
       if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
@@ -136,6 +136,15 @@ public final class Polygon2D extends EdgeTree {
       return Relation.CELL_OUTSIDE_QUERY;
     }
     return Relation.CELL_CROSSES_QUERY;
+  }
+
+  @Override
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    //If any of the points of the triangle is within then is not within.
+    if (componentContains(ay, ax) || componentContains(by, bx) || componentContains(cy, cx)) {
+      return WithinRelation.NOTWITHIN;
+    }
+    return super.componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
   }
 
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {

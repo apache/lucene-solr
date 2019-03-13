@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -45,21 +46,25 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, LatLonShape.QueryRelation queryRelation) {
-    // decode indexed triangle
-    LatLonShape.decodeTriangle(t, scratchTriangle);
-
-    int aY = scratchTriangle[0];
-    int aX = scratchTriangle[1];
-    int bY = scratchTriangle[2];
-    int bX = scratchTriangle[3];
-    int cY = scratchTriangle[4];
-    int cX = scratchTriangle[5];
+  protected boolean queryMatches(LatLonShape.Triangle triangle, LatLonShape.QueryRelation queryRelation) {
+    int aY = triangle.aY;
+    int aX = triangle.aX;
+    int bY = triangle.bY;
+    int bX = triangle.bX;
+    int cY = triangle.cY;
+    int cX = triangle.cX;
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
       return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
     }
     return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+  }
+
+  @Override
+  protected EdgeTree.WithinRelation queryWithin(LatLonShape.Triangle triangle) {
+    return rectangle2D.withinTriangle(triangle.aX, triangle.aY, triangle.ab,
+                                      triangle.bX, triangle.bY, triangle.bc,
+                                      triangle.cX, triangle.cY, triangle.ca);
   }
 
   @Override

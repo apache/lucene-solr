@@ -22,6 +22,9 @@ import java.util.Comparator;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
+
+import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
@@ -81,18 +84,21 @@ public abstract class EdgeTree {
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
     if (minLat <= maxY && minLon <= maxX) {
-      Relation relation = internalComponentRelateTriangle(ax, ay, bx, by, cx, cy);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        return relation;
+      // if the bounding boxes are disjoint then the shapes are disjoint so no need to call the component
+      if ((maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) == false) {
+        Relation relation = componentRelateTriangle(ax, ay, bx, by, cx, cy);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
       }
       if (left != null) {
-        relation = left.relateTriangle(ax, ay, bx, by, cx, cy);
+        Relation relation = left.relateTriangle(ax, ay, bx, by, cx, cy);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
       }
       if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
-        relation = right.relateTriangle(ax, ay, bx, by, cx, cy);
+        Relation relation = right.relateTriangle(ax, ay, bx, by, cx, cy);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
@@ -104,18 +110,25 @@ public abstract class EdgeTree {
   /** Returns relation to the provided rectangle */
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     if (minLat <= maxY && minLon <= maxX) {
-      Relation relation = internalComponentRelate(minLat, maxLat, minLon, maxLon);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        return relation;
+      // if the rectangle fully encloses us, we cross.
+      if (minLat <= this.minLat && maxLat >= this.maxLat && minLon <= this.minLon && maxLon >= this.maxLon) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      // if the bounding boxes are disjoint then the shapes are disjoint so no need to call the component
+      if ((maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) == false) {
+        Relation relation = componentRelate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
       }
       if (left != null) {
-        relation = left.relate(minLat, maxLat, minLon, maxLon);
+        Relation relation = left.relate(minLat, maxLat, minLon, maxLon);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
       }
       if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
-        relation = right.relate(minLat, maxLat, minLon, maxLon);
+        Relation relation = right.relate(minLat, maxLat, minLon, maxLon);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
@@ -124,37 +137,306 @@ public abstract class EdgeTree {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
+  /** Used by withinTriangle to check the within relationship between a triangle and the query shape */
+  public enum WithinRelation {
+    /** If the shape is a candidate for within. Typically this is return if the query shape is fully inside
+     * the triangle or if the query shape intersects only edges that do not belong to the original shape. */
+    CANDIDATE,
+    /** The query shape intersects an edge that does belong to the original shape or any point of
+     * the triangle is inside the shape. */
+    NOTWITHIN,
+    /** The query shape is disjoint with the triangle. */
+    DISJOINT
+  }
+
+  /** Returns the Within relation to the provided triangle */
+  public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
+    }
+    double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+    double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+    double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+    double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
+      return WithinRelation.DISJOINT;
+    }
+    return componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+  }
+
   /** Returns relation to the provided rectangle for this component */
   protected abstract Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon);
 
   /** Returns relation to the provided triangle for this component */
   protected abstract Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
 
+  /** Returns the Within relation to the provided triangle for this component */
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    //short cut, lines and points cannot contain a lines??
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
 
-  private Relation internalComponentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    // compute bounding box of triangle
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_DECODED && bx == GeoEncodingUtils.MAX_LON_DECODED)
+        || (ax == GeoEncodingUtils.MIN_LON_DECODED && bx == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline1 == false && tree.crossesLine(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_DECODED && cx == GeoEncodingUtils.MAX_LON_DECODED)
+        || (bx == GeoEncodingUtils.MIN_LON_DECODED && cx == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline2 == false && tree.crossesLine(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_DECODED && ax == GeoEncodingUtils.MAX_LON_DECODED)
+        || (cx == GeoEncodingUtils.MIN_LON_DECODED && ax == GeoEncodingUtils.MIN_LON_DECODED);
+    if (dateline3 == false &&tree.crossesLine(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    //if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
     double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
     double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
-    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
-      return Relation.CELL_OUTSIDE_QUERY;
+
+    //check that triangle bounding box not inside shape bounding box
+    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+      return WithinRelation.DISJOINT;
     }
-    return componentRelateTriangle(ax, ay, bx, by, cx, cy);
+
+    //Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
   }
 
+  /**
+   * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
+   * The sort value is {@code low}, which is the minimum latitude of the edge.
+   * {@code max} stores the maximum latitude of this edge or any children.
+   */
+  static class Edge {
+    // lat-lon pair (in original order) of the two vertices
+    final double lat1, lat2;
+    final double lon1, lon2;
+    //edge belongs to the dateline
+    final boolean dateline;
+    /** min of this edge */
+    final double low;
+    /** max latitude of this edge or any children */
+    double max;
 
-  /** Returns relation to the provided rectangle for this component */
-  protected Relation internalComponentRelate(double minLat, double maxLat, double minLon, double maxLon) {
-    // if the bounding boxes are disjoint then the shape does not cross
-    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
-      return Relation.CELL_OUTSIDE_QUERY;
+    /** left child edge, or null */
+    Edge left;
+    /** right child edge, or null */
+    Edge right;
+
+    Edge(double lat1, double lon1, double lat2, double lon2, double low, double max) {
+      this.lat1 = lat1;
+      this.lon1 = lon1;
+      this.lat2 = lat2;
+      this.lon2 = lon2;
+      this.low = low;
+      this.max = max;
+      this.dateline = (lon1 ==MAX_LON_INCL && lon2 == MAX_LON_INCL) ||
+          (lon1 == MIN_LON_INCL && lon2 == MIN_LON_INCL);
     }
-    // if the rectangle fully encloses us, we cross.
-    if (minLat <= this.minLat && maxLat >= this.maxLat && minLon <= this.minLon && maxLon >= this.maxLon) {
-      return Relation.CELL_CROSSES_QUERY;
+
+    /** Returns true if the triangle crosses any edge in this edge subtree */
+    boolean crossesTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+      // compute bounding box of triangle
+      double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
+      double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
+      double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
+      double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+
+      if (minLat <= max) {
+        double dy = lat1;
+        double ey = lat2;
+        double dx = lon1;
+        double ex = lon2;
+
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (dy < minLat && ey < minLat) ||
+            (dy > maxLat && ey > maxLat) ||
+            (dx < minLon && ex < minLon) ||
+            (dx > maxLon && ex > maxLon);
+
+        if (dateline == false && outside == false) {
+          // does triangle's first edge intersect polyline?
+          // ax, ay -> bx, by
+          if (lineCrossesLine(ax, ay, bx, by, dx, dy, ex, ey)) {
+            return true;
+          }
+          // does triangle's second edge intersect polyline?
+          // bx, by -> cx, cy
+          if (lineCrossesLine(bx, by, cx, cy, dx, dy, ex, ey)) {
+            return true;
+          }
+          // does triangle's third edge intersect polyline?
+          // cx, cy -> ax, ay
+          if (lineCrossesLine(cx, cy, ax, ay, dx, dy, ex, ey)) {
+            return true;
+          }
+        }
+
+        if (left != null) {
+          if (left.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+            return true;
+          }
+        }
+
+        if (right != null && maxLat >= low) {
+          if (right.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
-    return componentRelate(minLat, maxLat, minLon, maxLon);
+
+    /** Returns true if the line crosses any edge in this edge subtree */
+    boolean crossesLine(double ax, double ay, double bx, double by) {
+      double lineMinLat = StrictMath.min(ay, by);
+      double lineMinLon = StrictMath.min(ax, bx);
+      double lineMaxLat = StrictMath.max(ay, by);
+      double lineMaxLon = StrictMath.max(ax, bx);
+
+      if (lineMinLat <= max) {
+        double minLat = StrictMath.min(lat1, lat2);
+        double minLon = StrictMath.min(lon1, lon2);
+        double maxLat = StrictMath.max(lat1, lat2);
+        double maxLon = StrictMath.max(lon1, lon2);
+
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (maxLat < lineMinLat) ||
+            (minLat > lineMaxLat) ||
+            (maxLon < lineMinLon) ||
+            (minLon > lineMaxLon);
+
+        if (dateline == false && outside == false) {
+          if (lineCrossesLine(ax, ay, bx, by, lon1, lat1, lon2, lat2)) {
+            //if crosses then we can return
+            return true;
+          }
+        }
+        if (left != null) {
+          if (left.crossesLine(ax, ay, bx, by)) {
+            return true;
+          }
+        }
+
+        if (right != null && lineMaxLat >= low) {
+          if (right.crossesLine(ax, ay, bx, by)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    /** Returns true if the box crosses any edge in this edge subtree */
+    boolean crosses(double minLat, double maxLat, double minLon, double maxLon) {
+      // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
+      if (minLat <= max) {
+        // we compute line intersections of every polygon edge with every box line.
+        // if we find one, return true.
+        // for each box line (AB):
+        //   for each poly line (CD):
+        //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
+        double cy = lat1;
+        double dy = lat2;
+        double cx = lon1;
+        double dx = lon2;
+
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (cy < minLat && dy < minLat) ||
+            (cy > maxLat && dy > maxLat) ||
+            (cx < minLon && dx < minLon) ||
+            (cx > maxLon && dx > maxLon);
+        if (outside == false) {
+          // does box's top edge intersect polyline? : ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
+          if (lineCrossesLine(cx, cy, dx, dy, minLon, maxLat, maxLon, maxLat)) {
+            return true;
+          }
+
+          // does box's right edge intersect polyline? : ax = maxLon, bx = maxLon, ay = maxLat, by = minLat
+          if (lineCrossesLine(cx, cy, dx, dy, maxLon, maxLat, maxLon, minLat)) {
+            return true;
+          }
+
+          // does box's bottom edge intersect polyline?  : ax = maxLon, bx = minLon, ay = minLat, by = minLat
+          if (lineCrossesLine(cx, cy, dx, dy, maxLon, minLat, minLon, minLat)) {
+            return true;
+          }
+
+          // does box's left edge intersect polyline? : ax = minLon, bx = minLon, ay = minLat, by = maxLat
+          if (lineCrossesLine(cx, cy, dx, dy, minLon, minLat, minLon, maxLat)) {
+            return true;
+          }
+        }
+
+        if (left != null) {
+          if (left.crosses(minLat, maxLat, minLon, maxLon)) {
+            return true;
+          }
+        }
+
+        if (right != null && maxLat >= low) {
+          if (right.crosses(minLat, maxLat, minLon, maxLon)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  }
+
+  //This should be moved when LatLonShape is moved from sandbox!
+  /**
+   * Compute whether the given x, y point is in a triangle; uses the winding order method */
+  protected static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
+    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
+    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
+    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
+    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
+    //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
+    //coplanar points that are not part of the triangle.
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
+      int a = orient(x, y, ax, ay, bx, by);
+      int b = orient(x, y, bx, by, cx, cy);
+      if (a == 0 || b == 0 || a < 0 == b < 0) {
+        int c = orient(x, y, cx, cy, ax, ay);
+        return c == 0 || (c < 0 == (b < 0 || a < 0));
+      }
+      return false;
+    } else {
+      return false;
+    }
   }
 
   /** Creates tree from sorted components (with range low and high inclusive) */
@@ -200,189 +482,6 @@ public abstract class EdgeTree {
       newNode.maxY = Math.max(newNode.maxY, newNode.right.maxY);
     }
     return newNode;
-  }
-
-  /**
-   * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
-   * The sort value is {@code low}, which is the minimum latitude of the edge.
-   * {@code max} stores the maximum latitude of this edge or any children.
-   */
-  static class Edge {
-    // lat-lon pair (in original order) of the two vertices
-    final double lat1, lat2;
-    final double lon1, lon2;
-    //edge belongs to the dateline
-    final boolean dateline;
-    /** min of this edge */
-    final double low;
-    /** max latitude of this edge or any children */
-    double max;
-
-    /** left child edge, or null */
-    Edge left;
-    /** right child edge, or null */
-    Edge right;
-
-    Edge(double lat1, double lon1, double lat2, double lon2, double low, double max) {
-      this.lat1 = lat1;
-      this.lon1 = lon1;
-      this.lat2 = lat2;
-      this.lon2 = lon2;
-      this.low = low;
-      this.max = max;
-      dateline = (lon1 == GeoUtils.MIN_LON_INCL && lon2 == GeoUtils.MIN_LON_INCL)
-          || (lon1 == GeoUtils.MAX_LON_INCL && lon2 == GeoUtils.MAX_LON_INCL);
-    }
-
-    /** Returns true if the triangle crosses any edge in this edge subtree */
-    boolean crossesTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-      // compute bounding box of triangle
-      double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
-      double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
-      double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
-      double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
-
-      if (minLat <= max) {
-        double dy = lat1;
-        double ey = lat2;
-        double dx = lon1;
-        double ex = lon2;
-
-        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
-        // if not, don't waste our time trying more complicated stuff
-        boolean outside = (dy < minLat && ey < minLat) ||
-            (dy > maxLat && ey > maxLat) ||
-            (dx < minLon && ex < minLon) ||
-            (dx > maxLon && ex > maxLon);
-
-        if (dateline == false && outside == false) {
-          // does triangle's first edge intersect polyline?
-          // ax, ay -> bx, by
-          if (lineCrossesLine(ax, ay, bx, by, dx, dy, ex, ey)) {
-            return true;
-          }
-
-          // does triangle's second edge intersect polyline?
-          // bx, by -> cx, cy
-          if (lineCrossesLine(bx, by, cx, cy, dx, dy, ex, ey)) {
-            return true;
-          }
-
-          // does triangle's third edge intersect polyline?
-          // cx, cy -> ax, ay
-          if (lineCrossesLine(cx, cy, ax, ay, dx, dy, ex, ey)) {
-            return true;
-          }
-        }
-
-        if (left != null) {
-          if (left.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-            return true;
-          }
-        }
-
-        if (right != null && maxLat >= low) {
-          if (right.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-
-    /** Returns true if the box crosses any edge in this edge subtree */
-    boolean crosses(double minLat, double maxLat, double minLon, double maxLon) {
-      // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
-      if (minLat <= max) {
-        // we compute line intersections of every polygon edge with every box line.
-        // if we find one, return true.
-        // for each box line (AB):
-        //   for each poly line (CD):
-        //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
-        double cy = lat1;
-        double dy = lat2;
-        double cx = lon1;
-        double dx = lon2;
-
-        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
-        // if not, don't waste our time trying more complicated stuff
-        boolean outside = (cy < minLat && dy < minLat) ||
-            (cy > maxLat && dy > maxLat) ||
-            (cx < minLon && dx < minLon) ||
-            (cx > maxLon && dx > maxLon);
-        // optimization: see if either end of the line segment is contained by the rectangle
-        if (Rectangle.containsPoint(cy, cx, minLat, maxLat, minLon, maxLon)
-            || Rectangle.containsPoint(dy, dx, minLat, maxLat, minLon, maxLon)) {
-          return true;
-        }
-
-        if (outside == false) {
-          // does box's top edge intersect polyline?
-          // ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
-          if (orient(cx, cy, dx, dy, minLon, maxLat) * orient(cx, cy, dx, dy, maxLon, maxLat) <= 0 &&
-              orient(minLon, maxLat, maxLon, maxLat, cx, cy) * orient(minLon, maxLat, maxLon, maxLat, dx, dy) <= 0) {
-            return true;
-          }
-
-          // does box's right edge intersect polyline?
-          // ax = maxLon, bx = maxLon, ay = maxLat, by = minLat
-          if (orient(cx, cy, dx, dy, maxLon, maxLat) * orient(cx, cy, dx, dy, maxLon, minLat) <= 0 &&
-              orient(maxLon, maxLat, maxLon, minLat, cx, cy) * orient(maxLon, maxLat, maxLon, minLat, dx, dy) <= 0) {
-            return true;
-          }
-
-          // does box's bottom edge intersect polyline?
-          // ax = maxLon, bx = minLon, ay = minLat, by = minLat
-          if (orient(cx, cy, dx, dy, maxLon, minLat) * orient(cx, cy, dx, dy, minLon, minLat) <= 0 &&
-              orient(maxLon, minLat, minLon, minLat, cx, cy) * orient(maxLon, minLat, minLon, minLat, dx, dy) <= 0) {
-            return true;
-          }
-
-          // does box's left edge intersect polyline?
-          // ax = minLon, bx = minLon, ay = minLat, by = maxLat
-          if (orient(cx, cy, dx, dy, minLon, minLat) * orient(cx, cy, dx, dy, minLon, maxLat) <= 0 &&
-              orient(minLon, minLat, minLon, maxLat, cx, cy) * orient(minLon, minLat, minLon, maxLat, dx, dy) <= 0) {
-            return true;
-          }
-        }
-
-        if (left != null) {
-          if (left.crosses(minLat, maxLat, minLon, maxLon)) {
-            return true;
-          }
-        }
-
-        if (right != null && maxLat >= low) {
-          if (right.crosses(minLat, maxLat, minLon, maxLon)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-  }
-
-  //This should be moved when LatLonShape is moved from sandbox!
-  /**
-   * Compute whether the given x, y point is in a triangle; uses the winding order method */
-  protected static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
-    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
-    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
-    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
-    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
-    //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
-    //coplanar points that are not part of the triangle.
-    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
-      int a = orient(x, y, ax, ay, bx, by);
-      int b = orient(x, y, bx, by, cx, cy);
-      if (a == 0 || b == 0 || a < 0 == b < 0) {
-        int c = orient(x, y, cx, cy, ax, ay);
-        return c == 0 || (c < 0 == (b < 0 || a < 0));
-      }
-      return false;
-    } else {
-      return false;
-    }
   }
 
   /**

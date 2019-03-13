@@ -45,11 +45,13 @@ public final class Line2D extends EdgeTree {
     if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
       return Relation.CELL_CROSSES_QUERY;
     }
-
+    //check if line is inside the triangle
+    if (Rectangle.containsPoint(tree.lat1, tree.lon1, minLat, maxLat, minLon, maxLon)) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
-  @Override
   protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;

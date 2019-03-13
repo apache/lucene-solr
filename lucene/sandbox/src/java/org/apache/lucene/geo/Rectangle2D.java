@@ -32,7 +32,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D rectangle implementation containing spatial logic.
@@ -97,7 +96,7 @@ public class Rectangle2D {
     return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
   }
 
-  /** compare this to a provided rangle bounding box **/
+  /** compare this to a provided range bounding box **/
   public PointValues.Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
                                               int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     PointValues.Relation eastRelation = compareBBoxToRangeBBox(this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
@@ -146,6 +145,86 @@ public class Rectangle2D {
       return true;
     }
     return false;
+  }
+
+  /** Returns the Within relation to the provided triangle */
+  public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
+    if (this.crossesDateline() == true) {
+      throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
+    }
+    //short cut, lines and points cannot contain a bbox
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+    return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);
+  }
+
+  public EdgeTree.WithinRelation bboxWithinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca, int minLon, int maxLon, int minLat, int maxLat) {
+    //compute bounding box of triangle
+    int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+    int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+    int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+    int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+    //bounding boxes disjoint?
+    if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+
+    //points belong to the shape so if points are inside the rectangle then it cannot be within.
+    if (bboxContainsPoint(ax, ay, minLon, maxLon, minLat, maxLat) ||
+        bboxContainsPoint(bx, by, minLon, maxLon, minLat, maxLat) ||
+        bboxContainsPoint(cx, cy, minLon, maxLon, minLat, maxLat)) {
+      return EdgeTree.WithinRelation.NOTWITHIN;
+    }
+
+    //if any of the edges intersects an edge belonging to the shape then it cannot be within.
+    EdgeTree.WithinRelation relation = EdgeTree.WithinRelation.DISJOINT;
+
+    boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_ENCODED && bx == GeoEncodingUtils.MAX_LON_ENCODED)
+        || (ax == GeoEncodingUtils.MIN_LON_ENCODED && bx == GeoEncodingUtils.MIN_LON_ENCODED);
+    if (dateline1 == false && edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
+      if (ab == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+    boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_ENCODED && cx == GeoEncodingUtils.MAX_LON_ENCODED)
+        || (bx == GeoEncodingUtils.MIN_LON_ENCODED && cx == GeoEncodingUtils.MIN_LON_ENCODED);
+    if (dateline2 == false && edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
+      if (bc == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+
+    boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_ENCODED && ax == GeoEncodingUtils.MAX_LON_ENCODED)
+        || (cx == GeoEncodingUtils.MIN_LON_ENCODED && ax == GeoEncodingUtils.MIN_LON_ENCODED);
+    if (dateline3 == false && edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
+      if (ca == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+
+    //if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == EdgeTree.WithinRelation.CANDIDATE) {
+      return EdgeTree. WithinRelation.CANDIDATE;
+    }
+
+    //check that triangle bounding box not inside shape bounding box
+    if (tMinX > minLon || tMaxX < maxLon || tMinY > minLat || tMaxY < maxLat) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+
+    //Check if shape is within the triangle,
+    if ((Tessellator.pointInTriangle(minLon, minLat, ax, ay, bx, by, cx, cy))) {
+      return EdgeTree.WithinRelation.CANDIDATE;
+    }
+    return relation;
   }
 
   /** Checks if the rectangle contains the provided triangle **/
@@ -215,7 +294,7 @@ public class Rectangle2D {
   private static boolean bboxContainsPoint(int x, int y, int minX, int maxX, int minY, int maxY) {
     return (x < minX || x > maxX || y < minY || y > maxY) == false;
   }
-
+  
   /** static utility method to check if a bounding box contains a triangle */
   private static boolean bboxContainsTriangle(int ax, int ay, int bx, int by, int cx, int cy,
                                              int minX, int maxX, int minY, int maxY) {
@@ -244,32 +323,20 @@ public class Rectangle2D {
       return false;
     }
 
-    // shortcut: edge is a point
-    if (ax == bx && ay == by) {
-      return false;
-    }
-
     // top
-    if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
-        orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, minX, maxY, maxX, maxY)) {
       return true;
     }
-
     // right
-    if (orient(ax, ay, bx, by, maxX, maxY) * orient(ax, ay, bx, by, maxX, minY) <= 0 &&
-        orient(maxX, maxY, maxX, minY, ax, ay) * orient(maxX, maxY, maxX, minY, bx, by) <= 0) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, maxX, maxY, maxX, minY)) {
       return true;
     }
-
     // bottom
-    if (orient(ax, ay, bx, by, maxX, minY) * orient(ax, ay, bx, by, minX, minY) <= 0 &&
-        orient(maxX, minY, minX, minY, ax, ay) * orient(maxX, minY, minX, minY, bx, by) <= 0) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, maxX, minY, minX, minY)) {
       return true;
     }
-
     // left
-    if (orient(ax, ay, bx, by, minX, minY) * orient(ax, ay, bx, by, minX, maxY) <= 0 &&
-        orient(minX, minY, minX, maxY, ax, ay) * orient(minX, minY, minX, maxY, bx, by) <= 0) {
+    if (GeoUtils.lineCrossesLine(ax, ay, bx, by, minX, minY, minX, maxY)) {
       return true;
     }
     return false;

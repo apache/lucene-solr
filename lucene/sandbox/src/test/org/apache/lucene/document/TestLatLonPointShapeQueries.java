@@ -75,6 +75,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   protected static class PointValidator extends Validator {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       Point p = (Point)shape;
       double lat = quantizeLat(p.lat);
       double lon = quantizeLon(p.lon);
@@ -100,6 +103,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     private boolean testPoint(EdgeTree tree, Point p) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       double lat = quantizeLat(p.lat);
       double lon = quantizeLon(p.lon);
       // for consistency w/ the query we test the point as a triangle

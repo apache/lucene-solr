@@ -24,6 +24,7 @@ import java.util.Set;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
@@ -66,7 +67,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
   /** name of the LatLonShape indexed field */
   protected static final String FIELD_NAME = "shape";
-  private static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT};
+  private static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS};
 
   protected abstract ShapeType getShapeType();
 
@@ -95,16 +96,16 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   }
 
   /** quantizes a triangle to be consistent with index encoding */
-  protected static double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
-    return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
+  protected static double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    LatLonShape.Triangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+    return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
   }
 
   /** encode/decode a triangle */
-  protected static int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  protected static LatLonShape.Triangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     byte[] encoded = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
-    int[] decoded = new int[6];
+    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
+    LatLonShape.Triangle decoded = new LatLonShape.Triangle();
     LatLonShape.decodeTriangle(encoded, decoded);
     return decoded;
   }
@@ -279,8 +280,9 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       }
 
       // BBox
-      Rectangle rect = GeoTestUtil.nextBox();
+
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Rectangle rect = GeoTestUtil.nextBox();
       Query query = newRectQuery(FIELD_NAME, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
       if (VERBOSE) {
@@ -324,17 +326,25 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          // check quantized poly against quantized query
-          if (qMinLon > qMaxLon && rect.crossesDateline() == false) {
-            // if the quantization creates a false dateline crossing (because of encodeCeil):
-            // then do not use encodeCeil
-            qMinLon = quantizeLon(rect.minLon);
-          }
-
           if (qMinLat > qMaxLat) {
             qMinLat = quantizeLat(rect.maxLat);
           }
-          expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          if (queryRelation == QueryRelation.CONTAINS && rect.crossesDateline()) {
+            //For contains we need to call the validator for each section. It is only expected
+            //if both sides are contained.
+            expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, GeoUtils.MAX_LON_INCL, shapes[id]);
+            if (expected) {
+              expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, GeoUtils.MIN_LON_INCL, qMaxLon, shapes[id]);
+            }
+          } else {
+            // check quantized poly against quantized query
+            if (qMinLon > qMaxLon && rect.crossesDateline() == false) {
+              // if the quantization creates a false dateline crossing (because of encodeCeil):
+              // then do not use encodeCeil
+              qMinLon = quantizeLon(rect.minLon);
+            }
+            expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          }
         }
 
         if (hits.get(docID) != expected) {
@@ -436,6 +446,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
+          //Note that contains is not supported here, if not we would need to call the
+          //validator for each individual line.
           expected = getValidator(queryRelation).testLineQuery(queryLine2D, shapes[id]);
         }
 
@@ -455,7 +467,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  queryPolygon=" + queryLine.toGeoJSON());
+          b.append("  queryPolygon=" + queryLine.toString());
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -485,9 +497,14 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
       }
 
       // Polygon
-      Polygon queryPolygon = GeoTestUtil.nextPolygon();
-      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
+      int n = randomIntBetween(1, 4);
+      Polygon[] queryPolygon = new Polygon[n];
+      for (int i =0; i < n; i++) {
+        queryPolygon[i] = GeoTestUtil.nextPolygon();
+      }
+
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 
       if (VERBOSE) {
@@ -527,7 +544,19 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = getValidator(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
+          if (queryRelation == QueryRelation.CONTAINS && queryPolygon.length > 1) {
+            //For contains we need to call the validator for each polygon. It is only expected
+            //if every polygon is contained.
+            expected = true;
+            for (Polygon polygon : queryPolygon) {
+              if (getValidator(queryRelation).testPolygonQuery(Polygon2D.create(polygon), shapes[id]) == false) {
+                expected = false;
+                break;
+              }
+            }
+          } else {
+            expected = getValidator(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
+          }
         }
 
         if (hits.get(docID) != expected) {
@@ -546,7 +575,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
+          b.append("  queryPolygon=" + Arrays.toString(queryPolygon));
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {

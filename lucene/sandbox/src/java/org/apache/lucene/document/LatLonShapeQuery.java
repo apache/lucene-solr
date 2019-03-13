@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -41,9 +42,10 @@ import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Base LatLonShape Query class providing common query logic for
- * {@link LatLonShapeBoundingBoxQuery} and {@link LatLonShapePolygonQuery}
+ * {@link LatLonShapeBoundingBoxQuery}, {@link LatLonShapePolygonQuery}
+ * and {@link LatLonShapeLineQuery}
  *
- * Note: this class implements the majority of the INTERSECTS, WITHIN, DISJOINT relation logic
+ * Note: this class implements the majority of the INTERSECTS, WITHIN, DISJOINT and CONTAINS relation logic
  *
  * @lucene.experimental
  **/
@@ -51,9 +53,11 @@ abstract class LatLonShapeQuery extends Query {
   /** field name */
   final String field;
   /** query relation
-   * disjoint: {@code CELL_OUTSIDE_QUERY}
-   * intersects: {@code CELL_CROSSES_QUERY},
-   * within: {@code CELL_WITHIN_QUERY} */
+   * disjoint: {@link QueryRelation#DISJOINT},
+   * intersects: {@link QueryRelation#INTERSECTS},
+   * within: {@link QueryRelation#DISJOINT},
+   * contains: {@link QueryRelation#CONTAINS}
+   * */
   final LatLonShape.QueryRelation queryRelation;
 
   protected LatLonShapeQuery(String field, final QueryRelation queryType) {
@@ -73,7 +77,12 @@ abstract class LatLonShapeQuery extends Query {
                                                      int maxXOffset, int maxYOffset, byte[] maxTriangle);
 
   /** returns true if the provided triangle matches the query */
-  protected abstract boolean queryMatches(byte[] triangle, int[] scratchTriangle, QueryRelation queryRelation);
+  protected abstract boolean queryMatches(LatLonShape.Triangle scratchTriangle, QueryRelation queryRelation);
+
+  /**
+   * Checks if the query shape is within the provided triangle.
+   */
+  protected abstract EdgeTree.WithinRelation queryWithin(LatLonShape.Triangle triangle);
 
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle, QueryRelation queryRelation) {
@@ -81,6 +90,8 @@ abstract class LatLonShapeQuery extends Query {
     Relation r = relateRangeBBoxToQuery(LatLonShape.BYTES, 0, minTriangle, 3 * LatLonShape.BYTES, 2 * LatLonShape.BYTES, maxTriangle);
     if (queryRelation == QueryRelation.DISJOINT) {
       return transposeRelation(r);
+    } else if (queryRelation == QueryRelation.CONTAINS && r == Relation.CELL_INSIDE_QUERY) {
+      return Relation.CELL_OUTSIDE_QUERY;
     }
     return r;
   }
@@ -93,7 +104,7 @@ abstract class LatLonShapeQuery extends Query {
       /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
       protected IntersectVisitor getSparseIntersectVisitor(DocIdSetBuilder result) {
         return new IntersectVisitor() {
-          final int[] scratchTriangle = new int[6];
+          final LatLonShape.Triangle scratchTriangle = new LatLonShape.Triangle();
           DocIdSetBuilder.BulkAdder adder;
 
           @Override
@@ -108,7 +119,8 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+            LatLonShape.decodeTriangle(t, scratchTriangle);
+            if (queryMatches(scratchTriangle, QueryRelation.INTERSECTS)) {
               adder.add(docID);
             }
           }
@@ -123,11 +135,12 @@ abstract class LatLonShapeQuery extends Query {
       /** create a visitor that adds documents that match the query using a dense bitset. (Used by WITHIN, DISJOINT) */
       protected IntersectVisitor getDenseIntersectVisitor(FixedBitSet intersect, FixedBitSet disjoint, QueryRelation queryRelation) {
         return new IntersectVisitor() {
-          final int[] scratchTriangle = new int[6];
+          final LatLonShape.Triangle scratchTriangle = new LatLonShape.Triangle();
           @Override
           public void visit(int docID) throws IOException {
-            if (queryRelation == QueryRelation.DISJOINT) {
-              // if DISJOINT query set the doc in the disjoint bitset
+            if (queryRelation == QueryRelation.DISJOINT || queryRelation == QueryRelation.CONTAINS) {
+              // if DISJOINT or CONTAINS query then set the doc in the disjoint bitset
+              // For contains we assume that at least one point on the triangle belongs to the polygon
               disjoint.set(docID);
             } else {
               // for INTERSECT, and WITHIN queries we set the intersect bitset
@@ -137,10 +150,22 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, queryRelation)) {
-              intersect.set(docID);
+            LatLonShape.decodeTriangle(t, scratchTriangle);
+            if (queryRelation == QueryRelation.CONTAINS) {
+              //If disjoint, the relationship is undefined so it is not added to
+              // any of the bitsets
+              EdgeTree.WithinRelation within = queryWithin(scratchTriangle);
+              if (within == EdgeTree.WithinRelation.CANDIDATE) {
+                intersect.set(docID);
+              } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
+                disjoint.set(docID);
+              }
             } else {
-              disjoint.set(docID);
+              if (queryMatches(scratchTriangle, queryRelation)) {
+                intersect.set(docID);
+              } else {
+                disjoint.set(docID);
+              }
             }
           }
 
@@ -163,20 +188,27 @@ abstract class LatLonShapeQuery extends Query {
         };
       }
 
-      /** get a scorer supplier for all other queries (DISJOINT, WITHIN) */
+      /** get a scorer supplier for all other queries (DISJOINT, WITHIN, CONTAINS) */
       protected ScorerSupplier getScorerSupplier(LeafReader reader, PointValues values, Weight weight, ScoreMode scoreMode) throws IOException {
         if (queryRelation == QueryRelation.INTERSECTS) {
           return getIntersectScorerSupplier(reader, values, weight, scoreMode);
         }
-        //For within and disjoint we need two passes to remove false positives in case of multi-shapes.
-        FixedBitSet within = new FixedBitSet(reader.maxDoc());
-        FixedBitSet disjoint = new FixedBitSet(reader.maxDoc());
-        IntersectVisitor withinVisitor = getDenseIntersectVisitor(within, disjoint, QueryRelation.WITHIN);
-        IntersectVisitor disjointVisitor = getDenseIntersectVisitor(within, disjoint, QueryRelation.DISJOINT);
-        return new RelationScorerSupplier(values, withinVisitor, disjointVisitor, queryRelation) {
+        FixedBitSet candidates = new FixedBitSet(reader.maxDoc());
+        FixedBitSet rejected = new FixedBitSet(reader.maxDoc());
+        IntersectVisitor visitor;
+        IntersectVisitor disjointVisitor;
+        if (queryRelation == QueryRelation.CONTAINS) {
+          visitor = getDenseIntersectVisitor(candidates, rejected, queryRelation);
+          disjointVisitor = null;
+        } else {
+          //For within and disjoint we need two passes to remove false positives in case of multi-shapes.
+          visitor = getDenseIntersectVisitor(candidates, rejected, QueryRelation.WITHIN);
+          disjointVisitor = getDenseIntersectVisitor(candidates, rejected, QueryRelation.DISJOINT);
+        }
+        return new RelationScorerSupplier(values, visitor, disjointVisitor, queryRelation) {
           @Override
           public Scorer get(long leadCost) throws IOException {
-            return getScorer(LatLonShapeQuery.this, weight, within, disjoint, score(), scoreMode);
+            return getScorer(LatLonShapeQuery.this, weight, candidates, rejected, score(), scoreMode);
           }
         };
       }
@@ -287,10 +319,10 @@ abstract class LatLonShapeQuery extends Query {
       this.queryRelation = queryRelation;
     }
 
-    /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
+    /** create a visitor that clears documents that do NOT match the polygon query; used with CROSSES */
     private IntersectVisitor getInverseIntersectVisitor(LatLonShapeQuery query, FixedBitSet result, int[] cost) {
       return new IntersectVisitor() {
-        int[] scratchTriangle = new int[6];
+        LatLonShape.Triangle scratchTriangle = new LatLonShape.Triangle();
         @Override
         public void visit(int docID) {
           result.clear(docID);
@@ -299,7 +331,8 @@ abstract class LatLonShapeQuery extends Query {
 
         @Override
         public void visit(int docID, byte[] packedTriangle) {
-          if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+          LatLonShape.decodeTriangle(packedTriangle, scratchTriangle);
+          if (query.queryMatches(scratchTriangle, QueryRelation.INTERSECTS) == false) {
             result.clear(docID);
             cost[0]--;
           }
@@ -336,20 +369,20 @@ abstract class LatLonShapeQuery extends Query {
 
     /** returns a Scorer for all other (non INTERSECT) queries */
     protected Scorer getScorer(LatLonShapeQuery query, Weight weight,
-                               FixedBitSet intersect, FixedBitSet disjoint, final float boost, ScoreMode scoreMode) throws IOException {
+                               FixedBitSet candidates, FixedBitSet rejected, final float boost, ScoreMode scoreMode) throws IOException {
       values.intersect(visitor);
       if (disjointVisitor != null) {
         values.intersect(disjointVisitor);
       }
       DocIdSetIterator iterator;
       if (query.queryRelation == QueryRelation.DISJOINT) {
-        disjoint.andNot(intersect);
-        iterator = new BitSetIterator(disjoint, cost());
-      } else if (query.queryRelation == QueryRelation.WITHIN) {
-        intersect.andNot(disjoint);
-        iterator = new BitSetIterator(intersect, cost());
+        rejected.andNot(candidates);
+        iterator = new BitSetIterator(rejected, cost());
+      } else if (query.queryRelation == QueryRelation.WITHIN || query.queryRelation == QueryRelation.CONTAINS) {
+        candidates.andNot(rejected);
+        iterator = new BitSetIterator(candidates, cost());
       } else {
-        iterator = new BitSetIterator(intersect, cost());
+        iterator = new BitSetIterator(candidates, cost());
       }
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }

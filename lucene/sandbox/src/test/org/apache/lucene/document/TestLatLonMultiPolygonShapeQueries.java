@@ -42,19 +42,47 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     int n = random().nextInt(4) + 1;
     Polygon[] polygons = new Polygon[n];
     for (int i =0; i < n; i++) {
+      int  repetitions =0;
       while (true) {
         // if we can't tessellate; then random polygon generator created a malformed shape
         Polygon p = (Polygon) getShapeType().nextShape();
         try {
           Tessellator.tessellate(p);
-          polygons[i] = p;
-          break;
+          //polygons are disjoint so CONTAINS works. Note that if we intersect
+          //any shape then contains return false.
+          if (isDisjoint(polygons, p, i)) {
+            polygons[i] = p;
+            break;
+          }
+          repetitions++;
+          if (repetitions > 50) {
+            //try again
+            return nextShape();
+          }
         } catch (IllegalArgumentException e) {
           continue;
         }
       }
     }
     return polygons;
+  }
+
+  private boolean isDisjoint(Polygon[] polygons, Polygon check, int totalPolygons) {
+    if (totalPolygons == 0) {
+      return true;
+    }
+    // we use bounding boxes so we do not get polygons with shared points. we leave lot of space
+    // between polygons to prevent artifacts in the tests due to encoding.
+    for (Polygon polygon : polygons) {
+      if (polygon != null) {
+        if (polygon.minLat - 0.1 > check.maxLat || polygon.maxLat + 0.1  < check.minLat
+            || polygon.minLon - 0.1 > check.maxLon || polygon.maxLon + 0.1 < check.minLon) {
+          continue;
+        }
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -85,13 +113,13 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
 
     @Override
@@ -101,13 +129,13 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         boolean b = POLYGONVALIDATOR.testLineQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
 
     @Override
@@ -117,13 +145,13 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         boolean b = POLYGONVALIDATOR.testPolygonQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
   }
 

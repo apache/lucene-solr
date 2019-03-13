@@ -73,13 +73,13 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
         boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
 
     @Override
@@ -89,13 +89,13 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
         boolean b = LINEVALIDATOR.testLineQuery(query, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
 
     @Override
@@ -105,13 +105,13 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
         boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
   }
 
