@@ -74,15 +74,13 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, LatLonShape.Triangle scratchTriangle, QueryRelation queryRelation) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
-
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+  protected boolean queryMatches(LatLonShape.Triangle triangle, QueryRelation queryRelation) {
+    double alat = GeoEncodingUtils.decodeLatitude(triangle.aY);
+    double alon = GeoEncodingUtils.decodeLongitude(triangle.aX);
+    double blat = GeoEncodingUtils.decodeLatitude(triangle.bY);
+    double blon = GeoEncodingUtils.decodeLongitude(triangle.bX);
+    double clat = GeoEncodingUtils.decodeLatitude(triangle.cY);
+    double clon = GeoEncodingUtils.decodeLongitude(triangle.cX);
 
     if (queryRelation == QueryRelation.WITHIN) {
       return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
@@ -92,17 +90,16 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
   }
 
   @Override
-  protected EdgeTree.WithinRelation queryWithin(byte[] t, LatLonShape.Triangle scratchTriangle) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+  protected EdgeTree.WithinRelation queryWithin(LatLonShape.Triangle triangle) {
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+    double alat = GeoEncodingUtils.decodeLatitude(triangle.aY);
+    double alon = GeoEncodingUtils.decodeLongitude(triangle.aX);
+    double blat = GeoEncodingUtils.decodeLatitude(triangle.bY);
+    double blon = GeoEncodingUtils.decodeLongitude(triangle.bX);
+    double clat = GeoEncodingUtils.decodeLatitude(triangle.cY);
+    double clon = GeoEncodingUtils.decodeLongitude(triangle.cX);
 
-    return poly2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+    return poly2D.withinTriangle(alon, alat, triangle.ab, blon, blat, triangle.bc, clon, clat, triangle.ca);
 
   }
 

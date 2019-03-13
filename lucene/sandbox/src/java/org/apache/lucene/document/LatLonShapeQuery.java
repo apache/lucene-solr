@@ -76,15 +76,12 @@ abstract class LatLonShapeQuery extends Query {
                                                      int maxXOffset, int maxYOffset, byte[] maxTriangle);
 
   /** returns true if the provided triangle matches the query */
-  protected abstract boolean queryMatches(byte[] triangle, LatLonShape.Triangle scratchTriangle, QueryRelation queryRelation);
+  protected abstract boolean queryMatches(LatLonShape.Triangle scratchTriangle, QueryRelation queryRelation);
 
   /**
    * Checks if the query shape is within the provided triangle.
-   * @param triangle the encoded triangle to check
-   * @param scratchTriangle triangle helper to be used for decoding the provided encoded triangle.
-   * @return the within relationship
    */
-  protected abstract EdgeTree.WithinRelation queryWithin(byte[] triangle, LatLonShape.Triangle scratchTriangle);
+  protected abstract EdgeTree.WithinRelation queryWithin(LatLonShape.Triangle triangle);
 
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle, QueryRelation queryRelation) {
@@ -121,7 +118,8 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+            LatLonShape.decodeTriangle(t, scratchTriangle);
+            if (queryMatches(scratchTriangle, QueryRelation.INTERSECTS)) {
               adder.add(docID);
             }
           }
@@ -151,17 +149,18 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
+            LatLonShape.decodeTriangle(t, scratchTriangle);
             if (queryRelation == QueryRelation.CONTAINS) {
               //If disjoint, the relationship is undefined so it is not added to
               // any of the bitsets
-              EdgeTree.WithinRelation within = queryWithin(t, scratchTriangle);
+              EdgeTree.WithinRelation within = queryWithin(scratchTriangle);
               if (within == EdgeTree.WithinRelation.CANDIDATE) {
                 intersect.set(docID);
               } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
                 disjoint.set(docID);
               }
             } else {
-              if (queryMatches(t, scratchTriangle, queryRelation)) {
+              if (queryMatches(scratchTriangle, queryRelation)) {
                 intersect.set(docID);
               } else {
                 disjoint.set(docID);
@@ -331,7 +330,8 @@ abstract class LatLonShapeQuery extends Query {
 
         @Override
         public void visit(int docID, byte[] packedTriangle) {
-          if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+          LatLonShape.decodeTriangle(packedTriangle, scratchTriangle);
+          if (query.queryMatches(scratchTriangle, QueryRelation.INTERSECTS) == false) {
             result.clear(docID);
             cost[0]--;
           }

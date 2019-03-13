@@ -46,16 +46,13 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, LatLonShape.Triangle scratchTriangle, LatLonShape.QueryRelation queryRelation) {
-    // decode indexed triangle
-    LatLonShape.decodeTriangle(t, scratchTriangle);
-
-    int aY = scratchTriangle.aY;
-    int aX = scratchTriangle.aX;
-    int bY = scratchTriangle.bY;
-    int bX = scratchTriangle.bX;
-    int cY = scratchTriangle.cY;
-    int cX = scratchTriangle.cX;
+  protected boolean queryMatches(LatLonShape.Triangle triangle, LatLonShape.QueryRelation queryRelation) {
+    int aY = triangle.aY;
+    int aX = triangle.aX;
+    int bY = triangle.bY;
+    int bX = triangle.bX;
+    int cY = triangle.cY;
+    int cX = triangle.cX;
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
       return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
@@ -64,13 +61,10 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   }
 
   @Override
-  protected EdgeTree.WithinRelation queryWithin(byte[] t, LatLonShape.Triangle scratchTriangle) {
-    // decode indexed triangle
-    LatLonShape.decodeTriangle(t, scratchTriangle);
-
-    return rectangle2D.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
-                                      scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
-                                      scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);
+  protected EdgeTree.WithinRelation queryWithin(LatLonShape.Triangle triangle) {
+    return rectangle2D.withinTriangle(triangle.aX, triangle.aY, triangle.ab,
+                                      triangle.bX, triangle.bY, triangle.bc,
+                                      triangle.cX, triangle.cY, triangle.ca);
   }
 
   @Override
