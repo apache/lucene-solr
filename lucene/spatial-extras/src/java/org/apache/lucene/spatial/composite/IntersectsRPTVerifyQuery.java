@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
-import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
