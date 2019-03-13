@@ -42,7 +42,8 @@ import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Base LatLonShape Query class providing common query logic for
- * {@link LatLonShapeBoundingBoxQuery} and {@link LatLonShapePolygonQuery}
+ * {@link LatLonShapeBoundingBoxQuery}, {@link LatLonShapePolygonQuery}
+ * and {@link LatLonShapeLineQuery}
  *
  * Note: this class implements the majority of the INTERSECTS, WITHIN, DISJOINT and CONTAINS relation logic
  *
