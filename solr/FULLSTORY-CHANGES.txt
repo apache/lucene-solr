@@ -2,3 +2,5 @@
 
 * fs.ignoreconflicts (Scott Blum)
 * FullStory: special OOMKILLER handling for spaces (Scott Blum)
+* Remove pathological error reporting.
+* Don't serialize the entire clusterstate to log (Scott Blum)
