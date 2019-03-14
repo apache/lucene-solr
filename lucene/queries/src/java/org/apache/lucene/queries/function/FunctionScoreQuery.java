@@ -235,9 +235,9 @@ public final class FunctionScoreQuery extends Query {
 
   }
 
-  private static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
+  static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
 
-    private final DoubleValuesSource boost;
+    final DoubleValuesSource boost;
 
     private MultiplicativeBoostValuesSource(DoubleValuesSource boost) {
       this.boost = boost;
