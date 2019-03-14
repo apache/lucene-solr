@@ -25,6 +25,12 @@ Bug fixes
 * LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
   overflow bug that disabled cleaning of the cache (Russell A Brown)
 
+* LUCENE-8726: ValueSource.asDoubleValuesSource() could leak a reference to
+  IndexSearcher (Alan Woodward, Yury Pakhomov)
+
+* LUCENE-8719: FixedShingleFilter can miss shingles at the end of a token stream if
+  there are multiple paths with different lengths. (Alan Woodward)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
