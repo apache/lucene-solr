@@ -64,6 +64,13 @@ public final class FunctionScoreQuery extends Query {
   }
 
   /**
+   * @return the modifying DoubleValuesSource
+   */
+  public DoubleValuesSource getSource() {
+    return source;
+  }
+
+  /**
    * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by
    * the value of a DoubleValuesSource.
    *
@@ -188,9 +195,9 @@ public final class FunctionScoreQuery extends Query {
 
   }
 
-  private static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
+  static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
 
-    private final DoubleValuesSource boost;
+    final DoubleValuesSource boost;
 
     private MultiplicativeBoostValuesSource(DoubleValuesSource boost) {
       this.boost = boost;

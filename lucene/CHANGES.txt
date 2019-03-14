@@ -3,15 +3,20 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 7.7.2 =======================
 
-======================= Lucene 7.7.1 =======================
+Bug fixes
 
-Bug fixes:
+* LUCENE-8726: ValueSource.asDoubleValuesSource() could leak a reference to
+  IndexSearcher (Alan Woodward, Yury Pakhomov)
 
 * LUCENE-8735: FilterDirectory.getPendingDeletions now forwards to the delegate
   even the method is not abstract in the super class. This prevents issues
   where our best effort in carrying on generations in the IndexWriter since pending
   deletions are swallowed by the FilterDirectory. (Henning Andersen, Simon Willnauer)
+
+======================= Lucene 7.7.1 =======================
+(No changes)
 
 ======================= Lucene 7.7.0 =======================
 
