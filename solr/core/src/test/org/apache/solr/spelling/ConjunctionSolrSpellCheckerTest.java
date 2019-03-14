@@ -23,13 +23,13 @@ import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.LuceneLevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ConjunctionSolrSpellCheckerTest extends LuceneTestCase {
+public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
   
   public static final Class<?>[] AVAILABLE_DISTANCES = {LevenshteinDistance.class, LuceneLevenshteinDistance.class,
       JaroWinklerDistance.class, NGramDistance.class};

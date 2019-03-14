@@ -53,6 +53,8 @@ import org.noggit.CharArr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
+
 /**
  * Defines a space-efficient serialization/deserialization format for transferring data.
  * <p>
@@ -357,7 +359,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof SolrInputField) {
-      return writeKnownType(((SolrInputField) val).getValue());
+      return writeKnownType(((SolrInputField) val).getRawValue());
     }
     if (val instanceof IteratorWriter) {
       writeIterator((IteratorWriter) val);
@@ -818,7 +820,7 @@ public class JavaBinCodec implements PushWriter {
    */
   public EnumFieldValue readEnumFieldValue(DataInputInputStream dis) throws IOException {
     Integer intValue = (Integer) readVal(dis);
-    String stringValue = (String) readVal(dis);
+    String stringValue = (String) convertCharSeq (readVal(dis));
     return new EnumFieldValue(intValue, stringValue);
   }
   

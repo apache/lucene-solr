@@ -58,6 +58,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.SolrParams;
@@ -2608,6 +2609,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
           @Override
           public ClusterState getClusterState() throws IOException {
             return ClusterState.load(0, clusterState, getLiveNodes(), ZkStateReader.getCollectionPath("c1"));
+          }
+
+          @Override
+          public Map<String, Object> getClusterProperties() {
+            return Collections.singletonMap("defaults", Collections.singletonMap("cluster", Collections.singletonMap(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, false)));
           }
         };
       }

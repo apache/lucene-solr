@@ -724,12 +724,20 @@ public class HttpSolrCall {
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
   }
 
+  /**
+   * Returns {@link QueryResponseWriter} to be used.
+   * When {@link CommonParams#WT} not specified in the request or specified value doesn't have
+   * corresponding {@link QueryResponseWriter} then, returns the default query response writer
+   * Note: This method must not return null
+   */
   protected QueryResponseWriter getResponseWriter() {
-    if (core != null) return core.getQueryResponseWriter(solrReq);
-    QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
-    if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");
-    return respWriter;
-
+    String wt = solrReq.getParams().get(CommonParams.WT);
+    if (core != null) {
+      return core.getQueryResponseWriter(wt);
+    } else {
+      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(wt,
+          SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+    }
   }
 
   protected void handleAdmin(SolrQueryResponse solrResp) {

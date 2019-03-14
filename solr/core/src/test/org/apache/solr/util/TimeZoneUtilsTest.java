@@ -16,8 +16,8 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -25,7 +25,7 @@ import java.util.Random;
 import java.util.TimeZone;
 import java.util.Locale;
 
-public class TimeZoneUtilsTest extends LuceneTestCase {
+public class TimeZoneUtilsTest extends SolrTestCase {
 
   private static void assertSameRules(final String label,
                                       final TimeZone expected,

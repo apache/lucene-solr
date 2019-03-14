@@ -29,6 +29,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyFloatField;
 import org.apache.solr.legacy.LegacyIntField;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -42,7 +43,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -59,7 +59,7 @@ import org.junit.Test;
  * <p>
  * The exact score tests use TopDocs top to verify the exact score.
  */
-public class TestOrdValues extends LuceneTestCase {
+public class TestOrdValues extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

@@ -21,13 +21,13 @@ import java.io.IOException;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 
 /**
  * Test-case for RAMDirectoryFactory
  */
-public class RAMDirectoryFactoryTest extends LuceneTestCase {
+public class RAMDirectoryFactoryTest extends SolrTestCase {
 
   public void test() throws Exception {
     dotestOpenReturnsTheSameForSamePath();

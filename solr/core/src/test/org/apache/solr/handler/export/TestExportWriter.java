@@ -129,7 +129,13 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                  "datedv_m", "2017-06-16T01:00:00Z",
                  "datedv_m", "2017-06-16T02:00:00Z",
                  "datedv_m", "2017-06-16T03:00:00Z",
-                 "datedv_m", "2017-06-16T04:00:00Z"));
+                 "datedv_m", "2017-06-16T04:00:00Z",
+                 "sortabledv_m", "this is some text one_1",
+                 "sortabledv_m", "this is some text two_1",
+                 "sortabledv_m", "this is some text three_1",
+                 "sortabledv_m_udvas", "this is some text one_1",
+                 "sortabledv_m_udvas", "this is some text two_1",
+                 "sortabledv_m_udvas", "this is some text three_1"));
 
     assertU(adoc("id","7",
         "floatdv","2.1",
@@ -166,7 +172,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "int_is_t", "1",
         "int_is_t", "1",
         "int_is_t", "1",
-        "int_is_t", "1"));
+        "int_is_t", "1",
+        "sortabledv", "this is some text_1",
+        "sortabledv_udvas", "this is some text_1"));
     assertU(commit());
     assertU(adoc("id","8",
         "floatdv","2.1",
@@ -191,7 +199,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "int_is_p", "1",
         "int_is_p", "1",
         "int_is_p", "1",
-        "int_is_p", "1"));
+        "int_is_p", "1",
+        "sortabledv", "this is some text_2",
+        "sortabledv_udvas", "this is some text_2",
+        "sortabledv_m", "this is some text one_2",
+        "sortabledv_m", "this is some text two_2",
+        "sortabledv_m", "this is some text three_2",
+        "sortabledv_m_udvas", "this is some text one_2",
+        "sortabledv_m_udvas", "this is some text two_2",
+        "sortabledv_m_udvas", "this is some text three_2"
+    ));
     assertU(commit());
 
 
@@ -491,6 +508,33 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     s =  h.query(req("q", "id:8", "qt", "/export", "fl", "stringdv", "sort", "intdv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"stringdv\":\"chello \\\"world\\\"\"}]}}");
+
+    // Test sortable text fields:
+    s =  h.query(req("q", "id:(1 OR 3 OR 8)", "qt", "/export", "fl", "sortabledv_m_udvas,sortabledv_udvas", "sort", "sortabledv_udvas asc"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":3,\n" +
+        "    \"docs\":[{\n" +
+        "        \"sortabledv_m_udvas\":[\"this is some text one_1\"\n" +
+        "          ,\"this is some text three_1\"\n" +
+        "          ,\"this is some text two_1\"]}\n" +
+        "      ,{\n" +
+        "        \"sortabledv_udvas\":\"this is some text_1\"}\n" +
+        "      ,{\n" +
+        "        \"sortabledv_m_udvas\":[\"this is some text one_2\"\n" +
+        "          ,\"this is some text three_2\"\n" +
+        "          ,\"this is some text two_2\"],\n" +
+        "        \"sortabledv_udvas\":\"this is some text_2\"}]}}");
+
+    s =  h.query(req("q", "id:(1 OR 3 OR 8)", "qt", "/export", "fl", "sortabledv_m", "sort", "sortabledv_udvas asc"));
+    assertTrue("Should have 400 status when exporting sortabledv_m, it does not have useDocValuesAsStored='true'", s.contains("\"status\":400}"));
+    assertTrue("Should have a cause when exporting sortabledv_m, it does not have useDocValuesAsStored='true'", s.contains("Must have useDocValuesAsStored='true' to be used with export writer"));
+
+    s =  h.query(req("q", "id:(1 OR 3 OR 8)", "qt", "/export", "fl", "sortabledv", "sort", "sortabledv_udvas asc"));
+    assertTrue("Should have 400 status when exporting sortabledv, it does not have useDocValuesAsStored='true'", s.contains("\"status\":400}"));
+    assertTrue("Should have a cause when exporting sortabledv, it does not have useDocValuesAsStored='true'", s.contains("Must have useDocValuesAsStored='true' to be used with export writer"));
+
   }
 
   private void assertJsonEquals(String actual, String expected) {

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -30,11 +28,11 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
+import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -42,7 +40,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,6 +163,11 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
         params.put(key, System.getProperty(key));
       }
     }
+
+    // Needed to work around HADOOP-13346
+    params.put(DelegationTokenAuthenticationHandler.JSON_MAPPER_PREFIX + JsonGenerator.Feature.AUTO_CLOSE_TARGET,
+        "false");
+
     final ServletContext servletContext = new AttributeOnlyServletContext();
     if (controller != null) {
       servletContext.setAttribute(DELEGATION_TOKEN_ZK_CLIENT, controller.getZkClient());
@@ -223,25 +225,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public boolean doAuthenticate(ServletRequest req, ServletResponse rsp,
       FilterChain chain) throws Exception {
     log.debug("Request to authenticate using kerberos: "+req);
-
-    final HttpServletResponse frsp = (HttpServletResponse)rsp;
-
-    // kerberosFilter may close the stream and write to closed streams,
-    // see HADOOP-13346.  To work around, pass a PrintWriter that ignores
-    // closes
-    HttpServletResponse rspCloseShield = new HttpServletResponseWrapper(frsp) {
-      @SuppressForbidden(reason = "Hadoop DelegationTokenAuthenticationFilter uses response writer, this" +
-          "is providing a CloseShield on top of that")
-      @Override
-      public PrintWriter getWriter() throws IOException {
-        final PrintWriter pw = new PrintWriterWrapper(frsp.getWriter()) {
-          @Override
-          public void close() {};
-        };
-        return pw;
-      }
-    };
-    kerberosFilter.doFilter(req, rspCloseShield, chain);
+    kerberosFilter.doFilter(req, rsp, chain);
     String requestContinuesAttr = (String)req.getAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
     if (requestContinuesAttr == null) {
       log.warn("Could not find " + RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);

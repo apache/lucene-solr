@@ -16,65 +16,100 @@
  */
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.*;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.facet.FacetModule;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.codahale.metrics.Metered;
+import com.codahale.metrics.MetricRegistry;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
 public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int NUM_DOCS_PER_TYPE = 20;
   private static final String sleep = "2";
 
   private static final String COLLECTION = "exitable";
+  private static Map<String, Metered> fiveHundredsByNode;
   
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"))
+    Builder clusterBuilder = configureCluster(2)
+        .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
+    clusterBuilder.withMetrics(true);
+    clusterBuilder
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
-  }
 
-  @Test
-  public void test() throws Exception {
+    fiveHundredsByNode = new LinkedHashMap<>(); 
+    for (JettySolrRunner jetty: cluster.getJettySolrRunners()) {
+      MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics)jetty).getMetricRegistry();
+      Metered httpOk = (Metered) metricRegistry.getMetrics()
+          .get("org.eclipse.jetty.servlet.ServletContextHandler.2xx-responses");
+      assertTrue("expeting some http activity during collection creation",httpOk.getCount()>0);
+      
+      Metered old = fiveHundredsByNode.put(jetty.getNodeName(),
+          (Metered) metricRegistry.getMetrics()
+             .get("org.eclipse.jetty.servlet.ServletContextHandler.5xx-responses"));
+      assertNull("expecting uniq nodenames",old);
+    }
+    
     indexDocs();
-    doTimeoutTests();
   }
 
-  public void indexDocs() throws Exception {
-    int counter = 1;
+  public static void indexDocs() throws Exception {
+    int counter;
+    counter = 1;
     UpdateRequest req = new UpdateRequest();
 
     for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "a" + counter));
+      req.add(sdoc("id", Integer.toString(counter), "name", "a" + counter,
+          "num",""+counter));
 
     counter++;
     for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "b" + counter));
+      req.add(sdoc("id", Integer.toString(counter), "name", "b" + counter,
+          "num",""+counter));
 
     counter++;
     for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "dummy term doc" + counter));
+      req.add(sdoc("id", Integer.toString(counter), "name", "dummy term doc" + counter,
+          "num",""+counter));
 
     req.commit(cluster.getSolrClient(), COLLECTION);
   }
 
-  public void doTimeoutTests() throws Exception {
+  @Test
+  public void test() throws Exception {
     assertPartialResults(params("q", "name:a*", "timeAllowed", "1", "sleep", sleep));
 
     /*
@@ -99,18 +134,136 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     assertSuccess(params("q","name:b*")); // no time limitation
   }
 
+  @Test
+  public void testWhitebox() throws Exception {
+    
+    try (Trap catchIds = catchTrace(
+        new CheckMethodName("doProcessSearchByIds"), () -> {})) {
+      assertPartialResults(params("q", "{!cache=false}name:a*", "sort", "query($q,1) asc"),
+          () -> assertTrue(catchIds.hasCaught()));
+    } catch (AssertionError ae) {
+      Trap.dumpLastStackTraces(log);
+      throw ae;
+    }
+
+    // the point is to catch sort_values (fsv) timeout, between search and facet
+    // I haven't find a way to encourage fsv to read index
+    try (Trap catchFSV = catchTrace(
+        new CheckMethodName("doFieldSortValues"), () -> {})) {
+      assertPartialResults(params("q", "{!cache=false}name:a*", "sort", "query($q,1) asc"),
+          () -> assertTrue(catchFSV.hasCaught()));
+    } catch (AssertionError ae) {
+      Trap.dumpLastStackTraces(log);
+      throw ae;
+    }
+    
+    try (Trap catchClass = catchClass(
+        QueryComponent.class.getSimpleName(), () -> {  })) {
+      assertPartialResults(params("q", "{!cache=false}name:a*"),
+          ()->assertTrue(catchClass.hasCaught()));
+    }catch(AssertionError ae) {
+      Trap.dumpLastStackTraces(log);
+      throw ae;
+    }
+    try(Trap catchClass = catchClass(FacetComponent.class.getSimpleName())){
+      assertPartialResults(params("q", "{!cache=false}name:a*", "facet","true", "facet.method", "enum", 
+          "facet.field", "id"),
+          ()->assertTrue(catchClass.hasCaught()));
+    }catch(AssertionError ae) {
+      Trap.dumpLastStackTraces(log);
+      throw ae;
+    }
+
+    try (Trap catchClass = catchClass(FacetModule.class.getSimpleName())) {
+      assertPartialResults(params("q", "{!cache=false}name:a*", "json.facet", "{ ids: {"
+          + " type: range, field : num, start : 0, end : 100, gap : 10 }}"),
+          () -> assertTrue(catchClass.hasCaught()));
+    } catch (AssertionError ae) {
+      Trap.dumpLastStackTraces(log);
+      throw ae;
+    }
+  }
+
+  @Test 
+  @Repeat(iterations=5)
+  public void testCreepThenBite() throws Exception {
+    int creep=100;
+    ModifiableSolrParams params = params("q", "{!cache=false}name:a*");
+    SolrParams cases[] = new SolrParams[] {
+        params( "sort","query($q,1) asc"),
+        params("rows","0", "facet","true", "facet.method", "enum", "facet.field", "name"),
+        params("rows","0", "json.facet","{ ids: { type: range, field : num, start : 1, end : 99, gap : 9 }}")
+        }; //add more cases here 
+
+    params.add(cases[random().nextInt(cases.length)]);
+    for (; ; creep*=1.5) {
+      final int boundary = creep;
+      try(Trap catchClass = catchCount(boundary)){
+        
+        params.set("boundary", boundary);
+        QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, 
+            params);
+        assertEquals(""+rsp, rsp.getStatus(), 0);
+        assertNo500s(""+rsp);
+        if (!isPartial(rsp)) {
+          assertFalse(catchClass.hasCaught());
+          break;
+        }
+        assertTrue(catchClass.hasCaught());
+      }catch(AssertionError ae) {
+        Trap.dumpLastStackTraces(log);
+        throw ae;
+      }
+    }
+    int numBites = atLeast(100);
+    for(int bite=0; bite<numBites; bite++) {
+      int boundary = random().nextInt(creep);
+      try(Trap catchCount = catchCount(boundary)){
+        params.set("boundary", boundary);
+        QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, 
+            params);
+        assertEquals(""+rsp, rsp.getStatus(), 0);
+        assertNo500s(""+rsp);
+        assertEquals(""+creep+" ticks were sucessful; trying "+boundary+" yields "+rsp, 
+            catchCount.hasCaught(), isPartial(rsp));
+      }catch(AssertionError ae) {
+        Trap.dumpLastStackTraces(log);
+        throw ae;
+      }
+    }
+  }
+
+  public boolean isPartial(QueryResponse rsp) {
+    return Boolean.TRUE.equals(rsp.getHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+  }
+
+  public void assertNo500s(String msg) {
+    assertTrue(msg,fiveHundredsByNode.values().stream().allMatch((m)->m.getCount()==0));
+  }
+  
   /**
    * execute a request, verify that we get an expected error
    */
   public void assertPartialResults(ModifiableSolrParams p) throws Exception {
+    assertPartialResults(p, ()->{});
+  }
+  
+  public void assertPartialResults(ModifiableSolrParams p, Runnable postRequestCheck) throws Exception {
       QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, p);
-      assertEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" were expected",
-          true, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      postRequestCheck.run();
+      assertEquals(rsp.getStatus(), 0);
+      assertEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" were expected at "+rsp,
+          true, rsp.getHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      assertNo500s(""+rsp);
   }
   
   public void assertSuccess(ModifiableSolrParams p) throws Exception {
-    QueryResponse response = cluster.getSolrClient().query(COLLECTION, p);
-    assertEquals("Wrong #docs in response", NUM_DOCS_PER_TYPE - 1, response.getResults().getNumFound());
+    QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, p);
+    assertEquals(rsp.getStatus(), 0);
+    assertEquals("Wrong #docs in response", NUM_DOCS_PER_TYPE - 1, rsp.getResults().getNumFound());
+    assertNotEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" weren't expected "+rsp,
+        true, rsp.getHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+    assertNo500s(""+rsp);
   }
 }
 

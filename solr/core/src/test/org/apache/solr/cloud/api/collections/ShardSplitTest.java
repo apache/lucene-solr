@@ -343,13 +343,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitMixedReplicaTypes() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.REWRITE);
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSplitMixedReplicaTypesLink() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.LINK);
   }

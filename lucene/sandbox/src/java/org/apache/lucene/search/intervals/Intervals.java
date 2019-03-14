@@ -54,6 +54,9 @@ public final class Intervals {
    * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of terms
    */
   public static IntervalsSource phrase(String... terms) {
+    if (terms.length == 1) {
+      return Intervals.term(terms[0]);
+    }
     IntervalsSource[] sources = new IntervalsSource[terms.length];
     int i = 0;
     for (String term : terms) {
@@ -67,6 +70,9 @@ public final class Intervals {
    * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of IntervalsSources
    */
   public static IntervalsSource phrase(IntervalsSource... subSources) {
+    if (subSources.length == 1) {
+      return subSources[0];
+    }
     return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.BLOCK);
   }
 
@@ -158,6 +164,9 @@ public final class Intervals {
    * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
   public static IntervalsSource ordered(IntervalsSource... subSources) {
+    if (subSources.length == 1) {
+      return subSources[0];
+    }
     return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
   }
 
@@ -181,6 +190,9 @@ public final class Intervals {
    * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
    */
   public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
+    if (subSources.length == 1) {
+      return subSources[0];
+    }
     return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources),
         allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
   }

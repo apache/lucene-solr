@@ -64,7 +64,7 @@ public class TriggerSetPropertiesIntegrationTest extends SolrCloudTestCase {
    * Test that we can add/remove triggers to a scheduler, and change the config on the fly, and still get
    * expected behavior 
    */
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testSetProperties() throws Exception {
     final JettySolrRunner runner = cluster.getJettySolrRunner(0);
     final SolrResourceLoader resourceLoader = runner.getCoreContainer().getResourceLoader();

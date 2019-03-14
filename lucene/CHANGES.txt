@@ -17,6 +17,14 @@ Bug fixes:
 
 ======================= Lucene 8.1.0 =======================
 
+Bug fixes
+
+* LUCENE-8712: Polygon2D does not detect crossings through segment edges.
+  (Ignacio Vera)
+
+* LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
+  overflow bug that disabled cleaning of the cache (Russell A Brown)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
@@ -24,9 +32,26 @@ Improvements
 
 * LUCENE-8687: Optimise radix partitioning for points on heap. (Ignacio Vera)
 
+* LUCENE-8699: Change HeapPointWriter to use a single byte array instead to a list
+  of byte arrays. In addition a new interface PointValue is added to abstract out
+  the different formats between offline and on-heap writers. (Ignacio Vera)
+
+* LUCENE-8703: Build point writers in the BKD tree only when they are needed.
+  (Ignacio Vera)
+
+* LUCENE-8652: SynonymQuery can now deboost the document frequency of each term when
+  blending the score of the synonym. (Jim Ferenczi)
+
+* LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
+  the other matches. (Yeongsu Kim via Jim Ferenczi)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
+
+* LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
+
+* LUCENE-8713: Add Line2D tests. (Ignacio Vera)
 
 ======================= Lucene 8.0.0 =======================
 
@@ -133,6 +158,8 @@ API Changes
 * LUCENE-8609: Remove IndexWriter#numDocs() and IndexWriter#maxDoc() in favor
   of IndexWriter#getDocStats(). (Simon Willnauer)
 
+* LUCENE-8292: Make TermsEnum fully abstract. (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8333: Switch MoreLikeThis.setMaxDocFreqPct to use maxDoc instead of
@@ -185,6 +212,12 @@ Changes in Runtime Behavior
   is instead calculated as a function of the sloppy frequency of the matching
   intervals. (Alan Woodward, Jim Ferenczi)
 
+* LUCENE-8635: FSTs can now remain off-heap, accessed via
+  IndexInput, and the default codec's term dictionary
+  (BlockTreeTermsReader) will now leave the FST for the terms index
+  off-heap for non-primary-key fields using MMapDirectory, reducing
+  heap usage for such fields. (Ankit Jain)
+
 New Features
 
 * LUCENE-8340: LongPoint#newDistanceFeatureQuery may be used to boost scores based on
@@ -220,6 +253,12 @@ New Features
 
 * LUCENE-8655: Add a getter in FunctionScoreQuery class in order to access to the 
   underlying DoubleValuesSource. (Gérald Quaire via Alan Woodward)
+
+* LUCENE-8697: GraphTokenStreamFiniteStrings correctly handles side paths 
+  containing gaps (Alan Woodward)
+
+* LUCENE-8702: Simplify intervals returned from vararg Intervals factory methods
+  (Alan Woodward)
 
 Improvements
 
@@ -282,6 +321,9 @@ Optimizations
 
 * LUCENE-8585: Index-time jump-tables for DocValues, for O(1) advance when retrieving doc values.
   (Toke Eskildsen, Adrien Grand)
+
+======================= Lucene 7.7.1 =======================
+(No Changes)
 
 ======================= Lucene 7.7.0 =======================
 

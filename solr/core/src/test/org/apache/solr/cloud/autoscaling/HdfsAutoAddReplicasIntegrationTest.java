@@ -14,50 +14,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cloud.autoscaling;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.solr.cloud.MoveReplicaHDFSTest;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-@LuceneTestCase.Slow
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
-    MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
-})
-//commented 23-AUG-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
+@Slow
 @Nightly
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+})
 @TimeoutSuite(millis = TimeUnits.HOUR)
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13060")
 public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrationTest {
-
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.hdfs.blockcache.enabled", "false");
+    System.setProperty("solr.hdfs.blockcache.global", "true");
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
+    System.setProperty("tests.hdfs.numdatanodes", "1");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-
-    ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
-
-    System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    cluster.shutdown(); // need to close before the MiniDFSCluster
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.blockcache.global");
+      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+      System.clearProperty("tests.hdfs.numdatanodes");
+    }
+  }
+
+  @Override
+  protected String getConfigSet() {
+    return "cloud-hdfs";
   }
 }

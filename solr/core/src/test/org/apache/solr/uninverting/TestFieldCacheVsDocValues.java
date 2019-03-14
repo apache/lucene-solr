@@ -45,14 +45,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
-public class TestFieldCacheVsDocValues extends LuceneTestCase {
+public class TestFieldCacheVsDocValues extends SolrTestCase {
   
   @Override
   public void setUp() throws Exception {

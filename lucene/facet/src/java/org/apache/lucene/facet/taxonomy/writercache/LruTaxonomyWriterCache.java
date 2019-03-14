@@ -112,7 +112,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     // visible to us we need to make sure that the changes have been
     // committed and we reopen the reader. Because this is a slow
     // operation, we don't delete entries one-by-one but rather in bulk
-    // (put() removes the 2/3rd oldest entries).
+    // (put() removes the 1/3rd oldest entries).
     if (ret) {
       cache.makeRoomLRU();
     }

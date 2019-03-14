@@ -103,6 +103,9 @@ The path to the configuration file that defines the Solr metrics to read. The de
 `-n`, `--num-threads`::
 The number of threads. The `solr-exporter` creates thread pools for requests to Solr. Request latency can be improved by increasing the number of threads. The default is `1`.
 
+`-s`, `--scrape-interval`::
+The number of seconds between collecting metrics from Solr. The `solr-exporter` collects metrics from Solr every few seconds controlled by this setting. These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool. The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr. The default value is 60 seconds.
+
 The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:9983/solr/admin/metrics`.
 
 == Exporter Configuration

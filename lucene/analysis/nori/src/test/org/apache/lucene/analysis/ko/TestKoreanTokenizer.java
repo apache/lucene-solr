@@ -287,6 +287,20 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         new POS.Tag[]{POS.Tag.NNG, POS.Tag.NNG, POS.Tag.NNG},
         new POS.Tag[]{POS.Tag.NNG, POS.Tag.NNG, POS.Tag.NNG}
     );
+
+    assertAnalyzesTo(analyzer, "대한민국날씨",
+        new String[]{"대한민국날씨"},
+        new int[]{0},
+        new int[]{6},
+        new int[]{1}
+    );
+
+    assertAnalyzesTo(analyzer, "21세기대한민국",
+        new String[]{"21세기대한민국"},
+        new int[]{0},
+        new int[]{8},
+        new int[]{1}
+    );
   }
 
   public void testInterpunct() throws IOException {
