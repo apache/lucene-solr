@@ -109,6 +109,11 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public boolean equals(Object obj) {
       if (super.equals(obj) == false) {
         return false;

@@ -16,6 +16,11 @@
  */
 package org.apache.lucene.search.highlight.custom;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -25,6 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
@@ -34,11 +40,6 @@ import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.WeightedSpanTerm;
 import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Tests the extensibility of {@link WeightedSpanTermExtractor} and
@@ -173,6 +174,11 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       return new TermQuery(term);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.consumeTerms(this, term);
     }
 
     @Override

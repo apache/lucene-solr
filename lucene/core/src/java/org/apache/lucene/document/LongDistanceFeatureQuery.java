@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -27,11 +26,11 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
@@ -76,6 +75,13 @@ final class LongDistanceFeatureQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
+  @Override
   public String toString(String field) {
     return getClass().getSimpleName() + "(field=" + field + ",origin=" + origin + ",pivotDistance=" + pivotDistance + ")";
   }
@@ -88,9 +94,6 @@ final class LongDistanceFeatureQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return false;
       }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

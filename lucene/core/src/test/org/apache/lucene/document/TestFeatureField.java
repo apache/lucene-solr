@@ -17,15 +17,10 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -270,27 +265,6 @@ public class TestFeatureField extends LuceneTestCase {
 
     reader.close();
     dir.close();
-  }
-
-  public void testExtractTerms() throws IOException {
-    IndexReader reader = new MultiReader();
-    IndexSearcher searcher = newSearcher(reader);
-    Query query = FeatureField.newLogQuery("field", "term", 2f, 42);
-
-    Weight weight = searcher.createWeight(query, ScoreMode.COMPLETE_NO_SCORES, 1f);
-    Set<Term> terms = new HashSet<>();
-    weight.extractTerms(terms);
-    assertEquals(Collections.emptySet(), terms);
-
-    terms = new HashSet<>();
-    weight = searcher.createWeight(query, ScoreMode.COMPLETE, 1f);
-    weight.extractTerms(terms);
-    assertEquals(Collections.singleton(new Term("field", "term")), terms);
-
-    terms = new HashSet<>();
-    weight = searcher.createWeight(query, ScoreMode.TOP_SCORES, 1f);
-    weight.extractTerms(terms);
-    assertEquals(Collections.singleton(new Term("field", "term")), terms);
   }
 
   public void testDemo() throws IOException {

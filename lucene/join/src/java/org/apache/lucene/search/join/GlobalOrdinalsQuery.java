@@ -17,7 +17,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -29,6 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -58,6 +58,11 @@ final class GlobalOrdinalsQuery extends Query {
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
     this.indexReaderContextId = indexReaderContextId;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   @Override
@@ -106,9 +111,6 @@ final class GlobalOrdinalsQuery extends Query {
       super(query, boost);
       this.approximationWeight = approximationWeight;
     }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {}
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {

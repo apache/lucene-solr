@@ -39,6 +39,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -325,6 +326,11 @@ public class NearestFuzzyQuery extends Query {
   private boolean equalsTo(NearestFuzzyQuery other) {
     return Objects.equals(analyzer, other.analyzer) &&
         Objects.equals(fieldVals, other.fieldVals);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
 }
