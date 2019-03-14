@@ -11,7 +11,7 @@ API Changes
   removed. (Dawid Weiss)
 
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
-  removed (Alan Woodward, Simon Willnauer, David Smiley)
+  removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
 
 Bug fixes:
 
@@ -27,7 +27,8 @@ API Changes
   visitor down to any child queries, or call a visitX() or consumeX() method
   on it.  All locations in the code that called Weight.extractTerms() 
   have been changed to use this API, and the extractTerms() method has 
-  been deprecated. (Alan Woodward, Simon Willnauer, David Smiley)
+  been deprecated. (Alan Woodward, Simon Willnauer, David Smiley, Luca
+  Cavanna)
 
 Bug fixes
 
