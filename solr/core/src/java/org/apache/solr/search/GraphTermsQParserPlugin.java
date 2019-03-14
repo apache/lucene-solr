@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -51,6 +50,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -239,6 +239,11 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return builder.toString();
     }
 
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
+
     private class WeightOrDocIdSet {
       final Weight weight;
       final DocIdSet set;
@@ -266,14 +271,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       }
 
       return new ConstantScoreWeight(this, boost) {
-
-        @Override
-        public void extractTerms(Set<Term> terms) {
-          // no-op
-          // This query is for abuse cases when the number of terms is too high to
-          // run efficiently as a BooleanQuery. So likewise we hide its terms in
-          // order to protect highlighters
-        }
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
@@ -779,6 +776,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
     }
     sb.append("}");
     return sb.toString();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   protected abstract String toString(byte[] value);

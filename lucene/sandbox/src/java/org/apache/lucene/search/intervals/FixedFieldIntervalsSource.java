@@ -19,11 +19,10 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.QueryVisitor;
 
 class FixedFieldIntervalsSource extends IntervalsSource {
 
@@ -46,8 +45,8 @@ class FixedFieldIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
-    source.extractTerms(this.field, terms);
+  public void visit(String field, QueryVisitor visitor) {
+    source.visit(this.field, visitor);
   }
 
   @Override

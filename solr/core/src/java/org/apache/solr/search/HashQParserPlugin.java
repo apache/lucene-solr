@@ -31,6 +31,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
@@ -111,6 +112,11 @@ public class HashQParserPlugin extends QParserPlugin {
       return keys.equals(other.keys) &&
              workers == other.workers && 
              worker == other.worker;
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     public HashQuery(String[] keys, int workers, int worker) {

@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Impact;
@@ -54,7 +53,9 @@ import org.apache.lucene.util.PriorityQueue;
  * term frequencies for the document.
  */
 public final class SynonymQuery extends Query {
+
   private final TermAndBoost terms[];
+  private final String field;
 
   /**
    * A builder for {@link SynonymQuery}.
@@ -102,7 +103,7 @@ public final class SynonymQuery extends Query {
      */
     public SynonymQuery build() {
       Collections.sort(terms, Comparator.comparing(a -> a.term));
-      return new SynonymQuery(terms.toArray(new TermAndBoost[0]));
+      return new SynonymQuery(terms.toArray(new TermAndBoost[0]), field);
     }
   }
   
@@ -111,8 +112,9 @@ public final class SynonymQuery extends Query {
    * <p>
    * The terms must all have the same field.
    */
-  private SynonymQuery(TermAndBoost[] terms) {
+  private SynonymQuery(TermAndBoost[] terms, String field) {
     this.terms = Objects.requireNonNull(terms);
+    this.field = field;
   }
 
   public List<Term> getTerms() {
@@ -165,6 +167,16 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    Term[] ts = Arrays.stream(terms).map(t -> t.term).toArray(Term[]::new);
+    v.consumeTerms(this, ts);
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     if (scoreMode.needsScores()) {
       return new SynonymWeight(this, searcher, scoreMode, boost);
@@ -206,13 +218,6 @@ public final class SynonymQuery extends Query {
         this.simWeight = similarity.scorer(boost, collectionStats, pseudoStats);
       } else {
         this.simWeight = null; // no terms exist at all, we won't use similarity
-      }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (TermAndBoost term : SynonymQuery.this.terms) {
-        terms.add(term.term);
       }
     }
 

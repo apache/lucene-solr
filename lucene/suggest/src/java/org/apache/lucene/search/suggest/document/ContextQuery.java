@@ -24,6 +24,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -334,6 +335,11 @@ public class ContextQuery extends CompletionQuery {
   @Override
   public int hashCode() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
 }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Objects;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
@@ -50,6 +49,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
@@ -999,15 +999,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
-      @Override
-      protected List<Query> preMultiTermQueryRewrite(Query query) {
-        if (query instanceof MyWrapperSpanQuery) {
-          return Collections.singletonList(((MyWrapperSpanQuery) query).originalQuery);
-        }
-        return null;
-      }
-    };
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
 
     int docId = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
 
@@ -1049,6 +1041,11 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     @Override
     public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return originalQuery.createWeight(searcher, scoreMode, boost);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      originalQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
     }
 
     @Override

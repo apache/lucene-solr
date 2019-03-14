@@ -60,6 +60,13 @@ public final class DocValuesFieldExistsQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
     return new ConstantScoreWeight(this, boost) {
       @Override
