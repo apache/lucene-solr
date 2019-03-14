@@ -1,5 +1,16 @@
 = Indexing and Basic Data Operations
-:page-children: introduction-to-solr-indexing, post-tool, uploading-data-with-index-handlers, uploading-data-with-solr-cell-using-apache-tika, uploading-structured-data-store-data-with-the-data-import-handler, updating-parts-of-documents, detecting-languages-during-indexing, de-duplication, content-streams, reindexing
+:page-children: introduction-to-solr-indexing, +
+  post-tool, +
+  uploading-data-with-index-handlers, +
+  indexing-nested-documents, +
+  uploading-data-with-solr-cell-using-apache-tika, +
+  uploading-structured-data-store-data-with-the-data-import-handler, +
+  updating-parts-of-documents, +
+  detecting-languages-during-indexing, +
+  de-duplication, +
+  content-streams, +
+  reindexing
+
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,6 +37,8 @@ This section describes how Solr adds data to its index. It covers the following 
 * *<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>*: Information about using Solr's Index Handlers to upload XML/XSLT, JSON and CSV data.
 
 * *<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>*: Index any JSON of your choice
+
+* *<<indexing-nested-documents.adoc#indexing-nested-documents,Indexing Nested Documents>>*: Detailed information about indexing and schema configuration for nested documents.
 
 * *<<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>*: Information about using the Solr Cell framework to upload data for indexing.
 
