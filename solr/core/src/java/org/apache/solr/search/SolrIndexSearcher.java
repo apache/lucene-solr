@@ -2310,6 +2310,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return "SolrFilter";
     }
 
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
+
     private class FilterSet extends DocIdSet {
       private final DocIdSet docIdSet;
       private final LeafReaderContext context;

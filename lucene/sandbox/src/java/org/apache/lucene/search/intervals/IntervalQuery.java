@@ -30,6 +30,7 @@ import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -121,6 +122,13 @@ public final class IntervalQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      intervalsSource.visit(field, visitor);
+    }
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -147,7 +155,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public void extractTerms(Set<Term> terms) {
-      intervalsSource.extractTerms(field, terms);
+      intervalsSource.visit(field, QueryVisitor.termCollector(terms));
     }
 
     @Override

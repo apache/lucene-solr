@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 
 /**
@@ -235,6 +235,14 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     }
 
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (Query q : disjuncts) {
+      q.visit(v);
+    }
   }
 
   /** Prettyprint us.

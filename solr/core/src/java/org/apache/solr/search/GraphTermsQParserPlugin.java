@@ -51,6 +51,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -237,6 +238,11 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       }
 
       return builder.toString();
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     private class WeightOrDocIdSet {
@@ -779,6 +785,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
     }
     sb.append("}");
     return sb.toString();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   protected abstract String toString(byte[] value);

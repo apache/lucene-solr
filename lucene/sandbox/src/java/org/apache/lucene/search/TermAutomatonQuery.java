@@ -29,8 +29,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -491,5 +491,16 @@ public class TermAutomatonQuery extends Query {
     
     // TODO: we could maybe also rewrite to union of PhraseQuery (pull all finite strings) if it's "worth it"?
     return this;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (BytesRef term : termToID.keySet()) {
+      v.consumeTerms(this, new Term(field, term));
+    }
   }
 }

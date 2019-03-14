@@ -53,7 +53,9 @@ import org.apache.lucene.util.PriorityQueue;
  * term frequencies for the document.
  */
 public final class SynonymQuery extends Query {
+
   private final TermAndBoost terms[];
+  private final String field;
 
   /**
    * A builder for {@link SynonymQuery}.
@@ -101,7 +103,7 @@ public final class SynonymQuery extends Query {
      */
     public SynonymQuery build() {
       Collections.sort(terms);
-      return new SynonymQuery(terms.toArray(new TermAndBoost[0]));
+      return new SynonymQuery(terms.toArray(new TermAndBoost[0]), field);
     }
   }
 
@@ -131,6 +133,7 @@ public final class SynonymQuery extends Query {
       }
     }
     Arrays.sort(this.terms);
+    this.field = field;
   }
   
   /**
@@ -138,8 +141,9 @@ public final class SynonymQuery extends Query {
    * <p>
    * The terms must all have the same field.
    */
-  private SynonymQuery(TermAndBoost[] terms) {
+  private SynonymQuery(TermAndBoost[] terms, String field) {
     this.terms = Objects.requireNonNull(terms);
+    this.field = field;
   }
 
   public List<Term> getTerms() {
@@ -189,6 +193,16 @@ public final class SynonymQuery extends Query {
       return terms[0].boost == 1f ? new TermQuery(terms[0].term) : new BoostQuery(new TermQuery(terms[0].term), terms[0].boost);
     }
     return this;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    Term[] ts = Arrays.stream(terms).map(t -> t.term).toArray(Term[]::new);
+    v.consumeTerms(this, ts);
   }
 
   @Override

@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
@@ -31,6 +32,7 @@ import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -117,6 +119,11 @@ public final class FunctionScoreQuery extends Query {
     if (rewritten == in)
       return this;
     return new FunctionScoreQuery(rewritten, source);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    in.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
   }
 
   @Override

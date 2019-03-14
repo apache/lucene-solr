@@ -72,6 +72,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PhraseQuery.Builder;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -253,6 +254,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         query.add(new Term(FIELD_NAME, "long"));
         query.add(new Term(FIELD_NAME, "very"));
         return query;
+      }
+
+      @Override
+      public void visit(QueryVisitor visitor) {
+
       }
 
       @Override

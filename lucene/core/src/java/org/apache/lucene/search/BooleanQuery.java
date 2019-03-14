@@ -451,6 +451,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     return super.rewrite(reader);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    for (BooleanClause.Occur occur : clauseSets.keySet()) {
+      if (clauseSets.get(occur).size() > 0) {
+        QueryVisitor v = visitor.getSubVisitor(occur, this);
+        for (Query q : clauseSets.get(occur)) {
+          q.visit(v);
+        }
+      }
+    }
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {

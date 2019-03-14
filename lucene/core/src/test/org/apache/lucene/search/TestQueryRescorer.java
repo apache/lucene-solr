@@ -500,6 +500,11 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public String toString(String field) {
       return "FixedScoreQuery " + idToNum.length + " ids; reverse=" + reverse;
     }

@@ -33,8 +33,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -120,6 +120,20 @@ public class TermInSetQuery extends Query implements Accountable {
       return new ConstantScoreQuery(bq.build());
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+    List<Term> terms = new ArrayList<>();
+    TermIterator iterator = termData.iterator();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      terms.add(new Term(field, BytesRef.deepCopyOf(term)));
+    }
+    v.consumeTerms(this, terms.toArray(new Term[0]));
   }
 
   @Override

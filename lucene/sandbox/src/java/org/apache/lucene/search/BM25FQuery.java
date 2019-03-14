@@ -223,6 +223,15 @@ public final class BM25FQuery extends Query {
     return this;
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    Term[] selectedTerms = Arrays.stream(fieldTerms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    if (selectedTerms.length > 0) {
+      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      v.consumeTerms(this, selectedTerms);
+    }
+  }
+
   private BooleanQuery rewriteToBoolean() {
     // rewrite to a simple disjunction if the score is not needed.
     BooleanQuery.Builder bq = new BooleanQuery.Builder();

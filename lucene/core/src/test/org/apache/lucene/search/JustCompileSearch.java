@@ -154,6 +154,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public boolean equals(Object obj) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

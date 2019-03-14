@@ -110,6 +110,14 @@ public final class CoveringQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (Query query : queries) {
+      query.visit(v);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final List<Weight> weights = new ArrayList<>(queries.size());
     for (Query query : queries) {

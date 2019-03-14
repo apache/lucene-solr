@@ -183,6 +183,11 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
       public String toString(String field) {
         return "dummy";
       }
+
+      @Override
+      public void visit(QueryVisitor visitor) {
+
+      }
     };
     mtq.setRewriteMethod(method);
     final Query q1 = searcher.rewrite(mtq);

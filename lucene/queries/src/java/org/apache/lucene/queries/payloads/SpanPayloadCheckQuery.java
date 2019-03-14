@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.payloads;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +28,11 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
@@ -75,6 +78,13 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       return new SpanPayloadCheckQuery((SpanQuery)matchRewritten, payloadToMatch);
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(match.getField())) {
+      match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    }
   }
 
   /**

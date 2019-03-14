@@ -27,6 +27,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -84,6 +85,11 @@ public class FunctionQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context)).explain(doc);
     }
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   protected class AllScorer extends Scorer {
@@ -149,7 +155,6 @@ public class FunctionQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher, boost);
   }
-
 
   /** Prints a user-readable version of this query. */
   @Override

@@ -64,6 +64,11 @@ public final class ConstantScoreQuery extends Query {
     return super.rewrite(reader);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    query.visit(visitor.getSubVisitor(BooleanClause.Occur.FILTER, this));
+  }
+
   /** We return this as our {@link BulkScorer} so that if the CSQ
    *  wraps a query with its own optimized top-level
    *  scorer (e.g. BooleanScorer) we can use that

@@ -255,6 +255,9 @@ public class PhraseQuery extends Query {
    */
   public int getSlop() { return slop; }
 
+  /** Returns the field this query applies to */
+  public String getField() { return field; }
+
   /** Returns the list of terms in this phrase. */
   public Term[] getTerms() {
     return terms;
@@ -282,6 +285,15 @@ public class PhraseQuery extends Query {
     } else {
       return super.rewrite(reader);
     }
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    v.consumeTerms(this, terms);
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {

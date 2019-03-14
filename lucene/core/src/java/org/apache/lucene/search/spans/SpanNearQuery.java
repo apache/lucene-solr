@@ -31,8 +31,10 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
@@ -266,6 +268,17 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField()) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    for (SpanQuery clause : clauses) {
+      clause.visit(v);
+    }
+  }
+
+  @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
            equalsTo(getClass().cast(other));
@@ -299,6 +312,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     @Override
     public String getField() {
       return field;
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     @Override

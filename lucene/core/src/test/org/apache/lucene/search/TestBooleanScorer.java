@@ -119,6 +119,11 @@ public class TestBooleanScorer extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public boolean equals(Object obj) {
       return this == obj;
     }

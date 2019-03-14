@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -286,7 +287,7 @@ public class GraphQuery extends Query {
     public void extractTerms(Set<Term> terms) {
       // NoOp for now , not used.. / supported
     }
-    
+
   }
   
   private static class GraphScorer extends Scorer {
@@ -441,5 +442,10 @@ public class GraphQuery extends Query {
            Objects.equals(toField, other.toField) &&
            Objects.equals(traversalFilter, other.traversalFilter);
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
 }

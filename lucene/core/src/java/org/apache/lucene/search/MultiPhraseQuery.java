@@ -204,6 +204,18 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    for (Term[] terms : termArrays) {
+      QueryVisitor sv = v.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      sv.consumeTerms(this, terms);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Map<Term,TermStates> termStates = new HashMap<>();
     return new PhraseWeight(this, field, searcher, scoreMode) {

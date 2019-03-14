@@ -379,6 +379,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) &&
              id == ((DummyQuery) other).id;
@@ -973,6 +978,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public String toString(String field) {
       return "BadQuery";
     }
@@ -1327,6 +1337,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public String toString(String field) {
       return "NoCacheQuery";
     }
@@ -1408,6 +1423,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
           };
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -1493,6 +1513,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
   }
 

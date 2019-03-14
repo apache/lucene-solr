@@ -26,9 +26,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 
@@ -209,7 +211,16 @@ public final class SpanNotQuery extends SpanQuery {
     }
     return super.rewrite(reader);
   }
-    /** Returns true iff <code>o</code> is equal to this. */
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
+      include.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+      exclude.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST_NOT, this));
+    }
+  }
+
+  /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
