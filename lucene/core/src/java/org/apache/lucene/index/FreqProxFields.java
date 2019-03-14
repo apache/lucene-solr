@@ -180,11 +180,6 @@ class FreqProxFields extends Fields {
       }
     }
 
-    @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
     public void seekExact(long ord) {
       this.ord = (int) ord;
       int textStart = postingsArray.textStarts[sortedTermIDs[this.ord]];

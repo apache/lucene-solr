@@ -908,11 +908,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return seekCeil(text) == SeekStatus.FOUND;
-    }
-    
-    @Override
     public void seekExact(long ord) throws IOException {
       throw new UnsupportedOperationException();
     }
