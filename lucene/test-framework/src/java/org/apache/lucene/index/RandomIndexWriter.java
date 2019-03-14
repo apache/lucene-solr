@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -198,16 +199,7 @@ public class RandomIndexWriter implements Closeable {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     if (docCount++ == flushAt) {
       if (r.nextBoolean()) {
-        if (LuceneTestCase.VERBOSE) {
-          System.out.println("RIW.add/updateDocument: now flushing the largest writer at docCount=" + docCount);
-        }
-        int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
-        int numFlushes = Math.min(1, r.nextInt(activeThreadStateCount+1));
-        for (int i = 0; i < numFlushes; i++) {
-          if (w.flushNextBuffer() == false) {
-            break; // stop once we didn't flush anything
-          }
-        }
+        flushAllBuffersSequentially();
       } else if (r.nextBoolean()) {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("RIW.add/updateDocument: now doing a flush at docCount=" + docCount);
@@ -223,6 +215,19 @@ public class RandomIndexWriter implements Closeable {
       if (flushAtFactor < 2e6) {
         // gradually but exponentially increase time b/w flushes
         flushAtFactor *= 1.05;
+      }
+    }
+  }
+
+  private void flushAllBuffersSequentially() throws IOException {
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("RIW.add/updateDocument: now flushing the largest writer at docCount=" + docCount);
+    }
+    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    int numFlushes = Math.min(1, r.nextInt(activeThreadStateCount+1));
+    for (int i = 0; i < numFlushes; i++) {
+      if (w.flushNextBuffer() == false) {
+        break; // stop once we didn't flush anything
       }
     }
   }
@@ -312,9 +317,30 @@ public class RandomIndexWriter implements Closeable {
   
   public long commit() throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    if (r.nextInt(10) == 0) {
+      AtomicReference<Throwable> exception = new AtomicReference<>();
+      Thread t = new Thread(() -> {
+        try {
+          flushAllBuffersSequentially();
+        } catch (IOException e) {
+          exception.set(e);
+        }
+      });
+      t.start();
+      long seqId = w.commit();
+      try {
+        t.join();
+      } catch (InterruptedException e) {
+        throw new AssertionError(e);
+      }
+      if (exception.get() != null) {
+        throw new AssertionError(exception.get());
+      }
+      return seqId;
+    }
     return w.commit();
   }
-  
+
   public IndexWriter.DocStats getDocStats() {
     return w.getDocStats();
   }
@@ -328,8 +354,8 @@ public class RandomIndexWriter implements Closeable {
     return getReader(true, false);
   }
 
-  private boolean doRandomForceMerge = true;
-  private boolean doRandomForceMergeAssert = true;
+  private boolean doRandomForceMerge;
+  private boolean doRandomForceMergeAssert;
 
   public void forceMergeDeletes(boolean doWait) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
@@ -491,7 +517,7 @@ public class RandomIndexWriter implements Closeable {
    * Simple interface that is executed for each <tt>TP</tt> {@link InfoStream} component
    * message. See also {@link RandomIndexWriter#mockIndexWriter(Random, Directory, IndexWriterConfig, TestPoint)}
    */
-  public static interface TestPoint {
-    public abstract void apply(String message);
+  public interface TestPoint {
+    void apply(String message);
   }
 }
