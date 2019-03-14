@@ -156,10 +156,7 @@ public class Rectangle2D {
     if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
       return EdgeTree.WithinRelation.DISJOINT;
     }
-    return bboxWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca, minX, maxX, minY, maxY);
-  }
 
-  public EdgeTree.WithinRelation bboxWithinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca, int minLon, int maxLon, int minLat, int maxLat) {
     //compute bounding box of triangle
     int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
     int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
@@ -171,9 +168,9 @@ public class Rectangle2D {
     }
 
     //points belong to the shape so if points are inside the rectangle then it cannot be within.
-    if (bboxContainsPoint(ax, ay, minLon, maxLon, minLat, maxLat) ||
-        bboxContainsPoint(bx, by, minLon, maxLon, minLat, maxLat) ||
-        bboxContainsPoint(cx, cy, minLon, maxLon, minLat, maxLat)) {
+    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(bx, by, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(cx, cy, minX, maxX, minY, maxY)) {
       return EdgeTree.WithinRelation.NOTWITHIN;
     }
 
@@ -182,7 +179,7 @@ public class Rectangle2D {
 
     boolean dateline1 = (ax == GeoEncodingUtils.MAX_LON_ENCODED && bx == GeoEncodingUtils.MAX_LON_ENCODED)
         || (ax == GeoEncodingUtils.MIN_LON_ENCODED && bx == GeoEncodingUtils.MIN_LON_ENCODED);
-    if (dateline1 == false && edgeIntersectsBox(ax, ay, bx, by, minLon, maxLon, minLat, maxLat) == true) {
+    if (dateline1 == false && edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
       if (ab == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
@@ -191,7 +188,7 @@ public class Rectangle2D {
     }
     boolean dateline2 = (bx == GeoEncodingUtils.MAX_LON_ENCODED && cx == GeoEncodingUtils.MAX_LON_ENCODED)
         || (bx == GeoEncodingUtils.MIN_LON_ENCODED && cx == GeoEncodingUtils.MIN_LON_ENCODED);
-    if (dateline2 == false && edgeIntersectsBox(bx, by, cx, cy, minLon, maxLon, minLat, maxLat) == true) {
+    if (dateline2 == false && edgeIntersectsBox(bx, by, cx, cy, minX, maxX, minY, maxY) == true) {
       if (bc == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
@@ -201,7 +198,7 @@ public class Rectangle2D {
 
     boolean dateline3 = (cx == GeoEncodingUtils.MAX_LON_ENCODED && ax == GeoEncodingUtils.MAX_LON_ENCODED)
         || (cx == GeoEncodingUtils.MIN_LON_ENCODED && ax == GeoEncodingUtils.MIN_LON_ENCODED);
-    if (dateline3 == false && edgeIntersectsBox(cx, cy, ax, ay, minLon, maxLon, minLat, maxLat) == true) {
+    if (dateline3 == false && edgeIntersectsBox(cx, cy, ax, ay, minX, maxX, minY, maxY) == true) {
       if (ca == true) {
         return EdgeTree.WithinRelation.NOTWITHIN;
       } else {
@@ -215,13 +212,8 @@ public class Rectangle2D {
       return EdgeTree. WithinRelation.CANDIDATE;
     }
 
-    //check that triangle bounding box not inside shape bounding box
-    if (tMinX > minLon || tMaxX < maxLon || tMinY > minLat || tMaxY < maxLat) {
-      return EdgeTree.WithinRelation.DISJOINT;
-    }
-
     //Check if shape is within the triangle,
-    if ((Tessellator.pointInTriangle(minLon, minLat, ax, ay, bx, by, cx, cy))) {
+    if ((Tessellator.pointInTriangle(minX, minY, ax, ay, bx, by, cx, cy))) {
       return EdgeTree.WithinRelation.CANDIDATE;
     }
     return relation;
