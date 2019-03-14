@@ -295,7 +295,7 @@ New Features
 
 * SOLR-12639: Umbrella JIRA for adding support HTTP/2 (Cao Manh Dat)
 
-* SOLR-12768: Improved nested document support, and enabled in the default schema with the presence of _nest_path_.
+* SOLR-12768, SOLR-13129: Improved nested document support, and enabled in the default schema with the presence of _nest_path_.
   When this field is present, certain things happen automatically.  An internal URP is automatically used to populate
   it.  The [child] (doc transformer) will return a hierarchy with relationships; no params needed.  The relationship
   path is indexed for use in queries (can be disabled if not needed).  Also, child documents needn't provide a uniqueKey
