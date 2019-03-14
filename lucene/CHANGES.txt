@@ -28,6 +28,9 @@ Bug fixes
 * LUCENE-8726: ValueSource.asDoubleValuesSource() could leak a reference to
   IndexSearcher (Alan Woodward, Yury Pakhomov)
 
+* LUCENE-8719: FixedShingleFilter can miss shingles at the end of a token stream if
+  there are multiple paths with different lengths. (Alan Woodward)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
