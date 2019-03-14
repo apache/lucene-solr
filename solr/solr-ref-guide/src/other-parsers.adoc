@@ -24,7 +24,7 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<uploading-data-with-index-handlers.adoc#nested-child-documents, indexed as nested documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
 
 The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
 
