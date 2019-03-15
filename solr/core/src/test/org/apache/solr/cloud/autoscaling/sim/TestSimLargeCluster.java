@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
@@ -246,6 +247,41 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         newMoveReplicaOps - moveReplicaOps < flakyReplicas);
   }
 
+  @Test
+  public void testCreateLargeSimCollections() throws Exception {
+    SolrClient solrClient = cluster.simGetSolrClient();
+
+    final int numCollections = atLeast(10);
+    for (int i = 0; i < numCollections; i++) {
+      final int numShards = TestUtil.nextInt(random(), 5, 20);
+      final int nReps = TestUtil.nextInt(random(), 10, 25);
+      final int tReps = TestUtil.nextInt(random(), 10, 25);
+      final int pReps = TestUtil.nextInt(random(), 10, 25);
+      final int repsPerShard = (nReps + tReps + pReps);
+      final int totalCores = repsPerShard * numShards;
+      final int maxShardsPerNode = atLeast(2) + (totalCores / NUM_NODES);
+      final String name = "large_sim_collection" + i;
+      
+      final CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection
+        (name, "conf", numShards, nReps, tReps, pReps);
+      create.setMaxShardsPerNode(maxShardsPerNode);
+      create.setAutoAddReplicas(false);
+      
+      log.info("CREATE: {}", create);
+      create.process(solrClient);
+
+      // Since our current goal is to try and find situations where cores are just flat out missing
+      // no matter how long we wait, let's be excessive and generous in our timeout.
+      // (REMINDER: this uses the cluster's timesource, and ADDREPLICA has a hardcoded delay of 500ms)
+      CloudTestUtils.waitForState(cluster, name, totalCores, TimeUnit.SECONDS,
+                                  CloudTestUtils.clusterShape(numShards, repsPerShard, false, true));
+      
+      final CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(name);
+      log.info("DELETE: {}", delete);
+      delete.process(solrClient);
+    }
+  }
+  
   @Test
   public void testAddNode() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
