@@ -59,7 +59,7 @@ public class AuditEvent {
   private String solrIp;
   private String resource;
   private String httpMethod;
-  private String queryString;
+  private String httpQueryString;
   private EventType eventType;
   private AuthorizationResponse autResponse;
   private String requestType;
@@ -121,7 +121,7 @@ public class AuditEvent {
     this.clientIp = httpRequest.getRemoteAddr();
     this.resource = httpRequest.getContextPath();
     this.httpMethod = httpRequest.getMethod();
-    this.queryString = httpRequest.getQueryString();
+    this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
 
@@ -159,7 +159,8 @@ public class AuditEvent {
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
     this.resource = authorizationContext.getResource();
     this.requestType = authorizationContext.getRequestType().toString();
-    authorizationContext.getParams().toMap(this.solrParams);
+    // TODO: Insert params???
+    //authorizationContext.getParams().toMap(this.solrParams);
   }
 
   /**
@@ -246,8 +247,8 @@ public class AuditEvent {
     return httpMethod;
   }
 
-  public String getQueryString() {
-    return queryString;
+  public String getHttpQueryString() {
+    return httpQueryString;
   }
 
   public EventType getEventType() {
@@ -355,8 +356,8 @@ public class AuditEvent {
     return this;
   }
 
-  public AuditEvent setQueryString(String queryString) {
-    this.queryString = queryString;
+  public AuditEvent setHttpQueryString(String httpQueryString) {
+    this.httpQueryString = httpQueryString;
     return this;
   }
 

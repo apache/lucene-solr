@@ -17,190 +17,93 @@
 package org.apache.solr.security;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Validate that audit logging works in a live cluster
  */
 @LuceneTestCase.Slow
+@SolrTestCaseJ4.SuppressSSL
 public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
-  protected static final int NUM_SERVERS = 2;
-  protected static final int NUM_SHARDS = 2;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected static final int NUM_SERVERS = 1;
+  protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
-  private final String COLLECTION = "jwtColl";
-  private String jwtTestToken;
+  private final String COLLECTION = "auditCollection";
   private String baseUrl;
-  private JsonWebSignature jws;
-  private String jwtTokenWrongSignature;
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    
-    configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
-        .configure();
-    baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-
-    String jwkJSON = "{\n" +
-        "  \"kty\": \"RSA\",\n" +
-        "  \"d\": \"i6pyv2z3o-MlYytWsOr3IE1olu2RXZBzjPRBNgWAP1TlLNaphHEvH5aHhe_CtBAastgFFMuP29CFhaL3_tGczkvWJkSveZQN2AHWHgRShKgoSVMspkhOt3Ghha4CvpnZ9BnQzVHnaBnHDTTTfVgXz7P1ZNBhQY4URG61DKIF-JSSClyh1xKuMoJX0lILXDYGGcjVTZL_hci4IXPPTpOJHV51-pxuO7WU5M9252UYoiYyCJ56ai8N49aKIMsqhdGuO4aWUwsGIW4oQpjtce5eEojCprYl-9rDhTwLAFoBtjy6LvkqlR2Ae5dKZYpStljBjK8PJrBvWZjXAEMDdQ8PuQ\",\n" +
-        "  \"e\": \"AQAB\",\n" +
-        "  \"use\": \"sig\",\n" +
-        "  \"kid\": \"test\",\n" +
-        "  \"alg\": \"RS256\",\n" +
-        "  \"n\": \"jeyrvOaZrmKWjyNXt0myAc_pJ1hNt3aRupExJEx1ewPaL9J9HFgSCjMrYxCB1ETO1NDyZ3nSgjZis-jHHDqBxBjRdq_t1E2rkGFaYbxAyKt220Pwgme_SFTB9MXVrFQGkKyjmQeVmOmV6zM3KK8uMdKQJ4aoKmwBcF5Zg7EZdDcKOFgpgva1Jq-FlEsaJ2xrYDYo3KnGcOHIt9_0NQeLsqZbeWYLxYni7uROFncXYV5FhSJCeR4A_rrbwlaCydGxE0ToC_9HNYibUHlkJjqyUhAgORCbNS8JLCJH8NUi5sDdIawK9GTSyvsJXZ-QHqo4cMUuxWV5AJtaRGghuMUfqQ\"\n" +
-        "}";
-
-    PublicJsonWebKey jwk = RsaJsonWebKey.Factory.newPublicJwk(jwkJSON);
-    JwtClaims claims = JWTAuthPluginTest.generateClaims();
-    jws = new JsonWebSignature();
-    jws.setPayload(claims.toJson());
-    jws.setKey(jwk.getPrivateKey());
-    jws.setKeyIdHeaderValue(jwk.getKeyId());
-    jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-
-    jwtTestToken = jws.getCompactSerialization();
-    
-    PublicJsonWebKey jwk2 = RsaJwkGenerator.generateJwk(2048);
-    jwk2.setKeyId("k2");
-    JsonWebSignature jws2 = new JsonWebSignature();
-    jws2.setPayload(claims.toJson());
-    jws2.setKey(jwk2.getPrivateKey());
-    jws2.setKeyIdHeaderValue(jwk2.getKeyId());
-    jws2.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-    jwtTokenWrongSignature = jws2.getCompactSerialization();
-
-    cluster.waitForAllNodes(10);
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    shutdownCluster();
     super.tearDown();
   }
 
-  @Test(expected = IOException.class)
-  public void infoRequestWithoutToken() throws Exception {
-    get(baseUrl + "/admin/info/system", null);
-  }
-
   @Test
-  public void testMetrics() throws Exception {
-    boolean isUseV2Api = random().nextBoolean();
-    String authcPrefix = "/admin/authentication";
-    if(isUseV2Api){
-      authcPrefix = "/____v2/cluster/security/authentication";
+  public void test() throws Exception {
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    try (CallbackReceiver receiver = new CallbackReceiver()) {
+      int callbackPort = receiver.getPort();
+
+      executorService.submit(receiver);
+
+      log.info("Starting cluster with callbackPort {}", callbackPort);
+      String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
+      securityJson = securityJson.replace("_PORT_", Integer.toString(callbackPort));
+      configureCluster(NUM_SERVERS)// nodes
+          .withSecurityJson(securityJson)
+          .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+          .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
+          .configure();
+      baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+
+      cluster.waitForAllNodes(10);
+
+      String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+
+      createCollection(COLLECTION);
+
+      get(baseUrl + "/" + COLLECTION + "/query?q=*:*");
+      assertEquals(1, receiver.getCount());
+    } finally {
+      shutdownCluster();       
+      executorService.shutdown();
     }
-    String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    CloseableHttpClient cl = HttpClientUtil.createClient(null);
-    
-    createCollection(COLLECTION);
-    
-    // Missing token
-    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
-    assertAuthMetricsMinimums(2, 1, 0, 0, 1, 0);
-    executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", jws);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20, jws);
-    // Pass through
-    verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
-    // Now succeeds since blockUnknown=false 
-    get(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
-    executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", null);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, jws);
-
-    assertAuthMetricsMinimums(9, 4, 4, 0, 1, 0);
-    
-    // Wrong Credentials
-    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTokenWrongSignature);
-    assertAuthMetricsMinimums(10, 4, 4, 1, 1, 0);
-
-    // JWT parse error
-    getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", "foozzz");
-    assertAuthMetricsMinimums(11, 4, 4, 1, 1, 1);
-    
-    HttpClientUtil.close(cl);
-  }
-
-  @Test
-  public void createCollectionUpdateAndQueryDistributed() throws Exception {
-    // Admin request will use PKI inter-node auth from Overseer, and succeed
-    createCollection(COLLECTION);
-    
-    // Now update three documents
-    assertAuthMetricsMinimums(1, 1, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(12, 12, 0, 0, 0, 0);
-    Pair<String,Integer> result = post(baseUrl + "/" + COLLECTION + "/update?commit=true", "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(13, 13, 0, 0, 0, 0);
-    
-    // First a non distributed query
-    result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*&distrib=false", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
-
-    // Now do a distributed query, using JWTAuth for inter-node
-    result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtTestToken);
-    assertEquals(Integer.valueOf(200), result.second());
-    assertAuthMetricsMinimums(9, 9, 0, 0, 0, 0);
-    
-    // Delete
-    assertEquals(200, get(baseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION, jwtTestToken).second().intValue());
-    assertAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
-    assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
-  }
-
-  private void getAndFail(String url, String token) {
-    try {
-      get(url, token);
-      fail("Request to " + url + " with token " + token + " should have failed");
-    } catch(Exception e) { /* Fall through */ }
   }
   
-  private Pair<String, Integer> get(String url, String token) throws IOException {
+  private Pair<String, Integer> get(String url) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
-    if (token != null)
-      createConn.setRequestProperty("Authorization", "Bearer " + token);
     BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent(), StandardCharsets.UTF_8));
     String result = br2.lines().collect(Collectors.joining("\n"));
     int code = createConn.getResponseCode();
@@ -208,45 +111,52 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  private Pair<String, Integer> post(String url, String json, String token) throws IOException {
-    URL createUrl = new URL(url);
-    HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
-    con.setRequestMethod("POST");
-    con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
-    if (token != null)
-      con.setRequestProperty("Authorization", "Bearer " + token);
-
-    con.setDoOutput(true);
-    OutputStream os = con.getOutputStream();
-    os.write(json.getBytes(StandardCharsets.UTF_8));
-    os.flush();
-    os.close();
-
-    con.connect();
-    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) con.getContent(), StandardCharsets.UTF_8));
-    String result = br2.lines().collect(Collectors.joining("\n"));
-    int code = con.getResponseCode();
-    con.disconnect();
-    return new Pair<>(result, code);
-  }
-
   private void createCollection(String collectionName) throws IOException {
-    assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=2", jwtTestToken).second().intValue());
-    cluster.waitForActiveCollection(collectionName, 2, 2);
+    assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=" + NUM_SHARDS).second().intValue());
+    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR);
   }
 
-  private void executeCommand(String url, HttpClient cl, String payload, JsonWebSignature jws) throws IOException, JoseException {
-    HttpPost httpPost;
-    HttpResponse r;
-    httpPost = new HttpPost(url);
-    if (jws != null)
-      setAuthorizationHeader(httpPost, "Bearer " + jws.getCompactSerialization());
-    httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    r = cl.execute(httpPost);
-    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
-    assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
-    assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+  private class CallbackReceiver implements Runnable, AutoCloseable {
+    private final ServerSocket serverSocket;
+    private AtomicInteger count = new AtomicInteger();
+    private AtomicInteger errors = new AtomicInteger();
+    
+    public CallbackReceiver() throws IOException {
+      serverSocket = new ServerSocket(0);
+    }
+
+    public int getCount() {
+      return count.get();
+    }
+
+    public int getErrors() {
+      return errors.get();
+    }
+    
+    public int getPort() {
+      return serverSocket.getLocalPort();
+    }
+
+    @Override
+    public void run() {
+      try {
+        Socket socket = serverSocket.accept();
+        InputStream is = socket.getInputStream();
+        DataInputStream dis = new DataInputStream(is);
+        int b;
+        while (true) {
+          b = dis.readByte();
+          log.info("Callback=" + b);
+          count.incrementAndGet();
+        }
+      } catch (IOException e) { 
+        log.info("Socket closed");
+      }
+    }
+
+    @Override
+    public void close() throws Exception {
+      serverSocket.close();
+    }
   }
 }

@@ -90,4 +90,7 @@ AuditLoggerPlugin developers can choose to make audit logging asynchronous by su
 }
 ----
 
-It is not possible to enable async audit logging unless the plugin extends the `AsyncAuditLoggerPlugin`.   
+It is not possible to enable async audit logging unless the plugin extends the `AsyncAuditLoggerPlugin`.
+
+== Metrics
+AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers.
