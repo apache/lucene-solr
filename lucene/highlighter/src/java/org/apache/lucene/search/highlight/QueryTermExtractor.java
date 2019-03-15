@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 package org.apache.lucene.search.highlight;
+
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * Utility class used to extract the terms used in a query, plus any weights.
@@ -100,10 +101,10 @@ public final class QueryTermExtractor
    * @param fieldName  The fieldName used to filter query terms
    * @return an array of the terms used in a query, plus their weights.
    */
-  public static final WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName)
-  {
-    HashSet<WeightedTerm> terms=new HashSet<>();
-    getTerms(query, 1f, terms,prohibited,fieldName);
+  public static WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName) {
+    HashSet<WeightedTerm> terms = new HashSet<>();
+    Predicate<String> fieldSelector = fieldName == null ? f -> true : fieldName::equals;
+    query.visit(new BoostedTermExtractor(1, terms, prohibited, fieldSelector));
     return terms.toArray(new WeightedTerm[0]);
   }
 
@@ -119,50 +120,45 @@ public final class QueryTermExtractor
       return getTerms(query,prohibited,null);
   }
 
-  private static final void getTerms(Query query, float boost, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName) {
-    try {
-      if (query instanceof BoostQuery) {
-        BoostQuery boostQuery = (BoostQuery) query;
-        getTerms(boostQuery.getQuery(), boost * boostQuery.getBoost(), terms, prohibited, fieldName);
-      } else if (query instanceof BooleanQuery)
-        getTermsFromBooleanQuery((BooleanQuery) query, boost, terms, prohibited, fieldName);
-      else {
-        HashSet<Term> nonWeightedTerms = new HashSet<>();
-        try {
-          EMPTY_INDEXSEARCHER.createWeight(EMPTY_INDEXSEARCHER.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(nonWeightedTerms);
-        } catch (IOException bogus) {
-          throw new RuntimeException("Should not happen on an empty index", bogus);
-        }
-        for (Iterator<Term> iter = nonWeightedTerms.iterator(); iter.hasNext(); ) {
-          Term term = iter.next();
-          if ((fieldName == null) || (term.field().equals(fieldName))) {
-            terms.add(new WeightedTerm(boost, term.text()));
-          }
-        }
-      }
-    } catch (UnsupportedOperationException ignore) {
-      //this is non-fatal for our purposes
-    }
-  }
+  private static class BoostedTermExtractor extends QueryVisitor {
 
-  /**
-   * extractTerms is currently the only query-independent means of introspecting queries but it only reveals
-   * a list of terms for that query - not the boosts each individual term in that query may or may not have.
-   * "Container" queries such as BooleanQuery should be unwrapped to get at the boost info held
-   * in each child element.
-   * Some discussion around this topic here:
-   * http://www.gossamer-threads.com/lists/lucene/java-dev/34208?search_string=introspection;#34208
-   * Unfortunately there seemed to be limited interest in requiring all Query objects to implement
-   * something common which would allow access to child queries so what follows here are query-specific
-   * implementations for accessing embedded query elements.
-   */
-  private static final void getTermsFromBooleanQuery(BooleanQuery query, float boost, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName)
-  {
-    for (BooleanClause clause : query)
-    {
-      if (prohibited || clause.getOccur()!=BooleanClause.Occur.MUST_NOT)
-        getTerms(clause.getQuery(), boost, terms, prohibited, fieldName);
+    final float boost;
+    final Set<WeightedTerm> terms;
+    final boolean includeProhibited;
+    final Predicate<String> fieldSelector;
+
+    private BoostedTermExtractor(float boost, Set<WeightedTerm> terms, boolean includeProhibited,
+                                 Predicate<String> fieldSelector) {
+      this.boost = boost;
+      this.terms = terms;
+      this.includeProhibited = includeProhibited;
+      this.fieldSelector = fieldSelector;
     }
+
+    @Override
+    public boolean acceptField(String field) {
+      return fieldSelector.test(field);
+    }
+
+    @Override
+    public void consumeTerms(Query query, Term... terms) {
+      for (Term term : terms) {
+        this.terms.add(new WeightedTerm(boost, term.text()));
+      }
+    }
+
+    @Override
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+      if (parent instanceof BoostQuery) {
+        float newboost = boost * ((BoostQuery)parent).getBoost();
+        return new BoostedTermExtractor(newboost, terms, includeProhibited, fieldSelector);
+      }
+      if (occur == BooleanClause.Occur.MUST_NOT && includeProhibited == false) {
+        return QueryVisitor.EMPTY_VISITOR;
+      }
+      return this;
+    }
+
   }
 
 }

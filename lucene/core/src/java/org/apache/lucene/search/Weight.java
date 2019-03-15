@@ -18,12 +18,10 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -60,14 +58,6 @@ public abstract class Weight implements SegmentCacheable {
   protected Weight(Query query) {
     this.parentQuery = query;
   }
-
-  /**
-   * Expert: adds all terms occurring in this query to the terms set. If the
-   * {@link Weight} was created with {@code needsScores == true} then this
-   * method will only extract terms which are used for scoring, otherwise it
-   * will extract all terms which are used for matching.
-   */
-  public abstract void extractTerms(Set<Term> terms);
 
   /**
    * Returns {@link Matches} for a specific document, or {@code null} if the document

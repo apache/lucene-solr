@@ -18,7 +18,7 @@
 
 Once you have indexed the content you need in your Solr index, you will want to start thinking about your strategy for dealing with changes to those documents. Solr supports three approaches to updating documents that have only partially changed.
 
-The first is _<<Atomic Updates,atomic updates>>_. This approach allows changing only one or more fields of a document without having to re-index the entire document.
+The first is _<<Atomic Updates,atomic updates>>_. This approach allows changing only one or more fields of a document without having to reindex the entire document.
 
 The second approach is known as _<<In-Place Updates,in-place updates>>_. This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
 
@@ -105,7 +105,7 @@ The resulting document in our collection will be:
 
 == In-Place Updates
 
-In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is re-indexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not re-indexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences, there is no functional difference between atomic updates and in-place updates.
+In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences, there is no functional difference between atomic updates and in-place updates.
 
 An atomic update operation is performed using this approach only when the fields to be updated meet these three conditions:
 

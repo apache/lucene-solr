@@ -144,7 +144,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
@@ -168,7 +168,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    *
    *  <p>Currently this returns {@link MMapDirectory} for Linux, MacOSX, Solaris,
    *  and Windows 64-bit JREs, {@link NIOFSDirectory} for other

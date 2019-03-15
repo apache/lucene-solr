@@ -27,10 +27,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermStatistics;
@@ -157,26 +157,32 @@ public class ExactStatsCache extends StatsCache {
     Query q = rb.getQuery();
     try {
       HashSet<Term> terms = new HashSet<>();
-      searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1).extractTerms(terms);
-      IndexReaderContext context = searcher.getTopReaderContext();
       HashMap<String,TermStats> statsMap = new HashMap<>();
       HashMap<String,CollectionStats> colMap = new HashMap<>();
-      for (Term t : terms) {
-        TermStates termStates = TermStates.build(context, t, true);
-
-        if (!colMap.containsKey(t.field())) { // collection stats for this field
-          CollectionStatistics collectionStatistics = searcher.localCollectionStatistics(t.field());
-          if (collectionStatistics != null) {
-            colMap.put(t.field(), new CollectionStats(collectionStatistics));
+      IndexSearcher statsCollectingSearcher = new IndexSearcher(searcher.getIndexReader()){
+        @Override
+        public CollectionStatistics collectionStatistics(String field) throws IOException {
+          CollectionStatistics cs = super.collectionStatistics(field);
+          if (cs != null) {
+            colMap.put(field, new CollectionStats(cs));
           }
+          return cs;
         }
 
-        TermStatistics tst = searcher.localTermStatistics(t, termStates);
-        if (tst == null) { // skip terms that are not present here
-          continue;
+        @Override
+        public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
+          TermStatistics ts = super.termStatistics(term, context);
+          if (ts == null) {
+            return null;
+          }
+          terms.add(term);
+          statsMap.put(term.toString(), new TermStats(term.field(), ts));
+          return ts;
         }
+      };
+      statsCollectingSearcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
 
-        statsMap.put(t.toString(), new TermStats(t.field(), tst));
+      for (Term t : terms) {
         rb.rsp.add(TERMS_KEY, t.toString());
       }
       if (statsMap.size() != 0) { //Don't add empty keys

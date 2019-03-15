@@ -110,7 +110,6 @@
     <!-- Hadoop MiniKdc Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerby-config" rev="${/org.apache.kerby/kerby-config}" conf="test.MiniKdc"/>
-    <dependency org="org.apache.kerby" name="kerby-kerb" rev="${/org.apache.kerby/kerby-kerb}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerb-client" rev="${/org.apache.kerby/kerb-client}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerb-common" rev="${/org.apache.kerby/kerb-common}" conf="test.MiniKdc"/>
     <dependency org="org.apache.kerby" name="kerb-crypto" rev="${/org.apache.kerby/kerb-crypto}" conf="test.MiniKdc"/>
@@ -133,6 +132,7 @@
     <dependency org="org.codehaus.janino" name="janino" rev="${/org.codehaus.janino/janino}" conf="compile"/>
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
+    <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
 

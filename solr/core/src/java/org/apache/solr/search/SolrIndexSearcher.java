@@ -1713,7 +1713,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       set = DocSetUtil.getDocSet(setCollector, this);
 
       totalHits = topCollector.getTotalHits();
-      assert (totalHits == set.size());
+      assert (totalHits == set.size()) || qr.isPartialResults();
 
       TopDocs topDocs = topCollector.topDocs(0, len);
       if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
@@ -2308,6 +2308,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     @Override
     public String toString(String field) {
       return "SolrFilter";
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     private class FilterSet extends DocIdSet {

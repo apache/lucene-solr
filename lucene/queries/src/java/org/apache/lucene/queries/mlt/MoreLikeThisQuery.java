@@ -16,17 +16,18 @@
  */
 package org.apache.lucene.queries.mlt;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.Objects;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg
@@ -178,5 +179,10 @@ public class MoreLikeThisQuery extends Query {
            likeText.equals(other.likeText) &&
            Arrays.equals(moreLikeFields, other.moreLikeFields) &&
            Objects.equals(stopWords, other.stopWords);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 }

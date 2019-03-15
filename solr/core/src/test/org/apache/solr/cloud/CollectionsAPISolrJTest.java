@@ -25,19 +25,25 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -45,15 +51,19 @@ import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
@@ -63,14 +73,18 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
   public void beforeTest() throws Exception {
     configureCluster(4)
     .addConfig("conf", configset("cloud-minimal"))
+    .addConfig("conf2", configset("cloud-dynamic"))
     .configure();
     
     // clear any persisted auto scaling configuration
@@ -588,6 +602,193 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     }
 
     fail("Timed out waiting for cluster property value");
+  }
+
+  @Test
+  public void testColStatus() throws Exception {
+    final String collectionName = "collectionStatusTest";
+    CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+
+    SolrClient client = cluster.getSolrClient();
+    byte[] binData = collectionName.getBytes("UTF-8");
+    // index some docs
+    for (int i = 0; i < 10; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", String.valueOf(i));
+      doc.addField("number_i", i);
+      doc.addField("number_l", i);
+      doc.addField("number_f", i);
+      doc.addField("number_d", i);
+      doc.addField("number_ti", i);
+      doc.addField("number_tl", i);
+      doc.addField("number_tf", i);
+      doc.addField("number_td", i);
+      doc.addField("point", i + "," + i);
+      doc.addField("pointD", i + "," + i);
+      doc.addField("store", (i * 5) + "," + (i * 5));
+      doc.addField("boolean_b", true);
+      doc.addField("multi_int_with_docvals", i);
+      doc.addField("string_s", String.valueOf(i));
+      doc.addField("tv_mv_string", "this is a test " + i);
+      doc.addField("timestamp_dt", new Date());
+      doc.addField("timestamp_tdt", new Date());
+      doc.addField("payload", binData);
+      client.add(collectionName, doc);
+    }
+    client.commit(collectionName);
+
+    CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionName);
+    req.setWithFieldInfo(true);
+    req.setWithCoreInfo(true);
+    req.setWithSegments(true);
+    req.setWithSizeInfo(true);
+    CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    List<Object> nonCompliant = (List<Object>)rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
+    assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
+    assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
+    NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
+  }
+
+  private static final int NUM_DOCS = 10;
+
+  @Test
+  public void testReadOnlyCollection() throws Exception {
+    final String collectionName = "readOnlyTest";
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .process(solrClient);
+
+    solrClient.setDefaultCollection(collectionName);
+
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+
+    // verify that indexing works
+    List<SolrInputDocument> docs = new ArrayList<>();
+    for (int i = 0; i < NUM_DOCS; i++) {
+      docs.add(new SolrInputDocument("id", String.valueOf(i), "string_s", String.valueOf(i)));
+    }
+    solrClient.add(docs);
+    solrClient.commit();
+    // verify the docs exist
+    QueryResponse rsp = solrClient.query(params(CommonParams.Q, "*:*"));
+    assertEquals("initial num docs", NUM_DOCS, rsp.getResults().getNumFound());
+
+    // index more but don't commit
+    docs.clear();
+    for (int i = NUM_DOCS; i < NUM_DOCS * 2; i++) {
+      docs.add(new SolrInputDocument("id", String.valueOf(i), "string_s", String.valueOf(i)));
+    }
+    solrClient.add(docs);
+
+    Replica leader
+        = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
+
+    final AtomicReference<Long> coreStartTime = new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
+
+    // Check for value change
+    CollectionAdminRequest.modifyCollection(collectionName,
+        Collections.singletonMap(ZkStateReader.READ_ONLY, "true"))
+        .process(solrClient);
+
+    DocCollection coll = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    assertNotNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
+    assertEquals(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY).toString(), "true");
+
+    // wait for the expected collection reload
+    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
+      long restartTime = 0;
+      try {
+        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+      } catch (Exception e) {
+        log.warn("Exception getting core start time: {}", e.getMessage());
+        return false;
+      }
+      return restartTime > coreStartTime.get();
+    });
+
+    coreStartTime.set(getCoreStatus(leader).getCoreStartTime().getTime());
+
+    // check for docs - reloading should have committed the new docs
+    // this also verifies that searching works in read-only mode
+    rsp = solrClient.query(params(CommonParams.Q, "*:*"));
+    assertEquals("num docs after turning on read-only", NUM_DOCS * 2, rsp.getResults().getNumFound());
+
+    // try sending updates
+    try {
+      solrClient.add(new SolrInputDocument("id", "shouldFail"));
+      fail("add() should fail in read-only mode");
+    } catch (Exception e) {
+      // expected - ignore
+    }
+    try {
+      solrClient.deleteById("shouldFail");
+      fail("deleteById() should fail in read-only mode");
+    } catch (Exception e) {
+      // expected - ignore
+    }
+    try {
+      solrClient.deleteByQuery("id:shouldFail");
+      fail("deleteByQuery() should fail in read-only mode");
+    } catch (Exception e) {
+      // expected - ignore
+    }
+    try {
+      solrClient.commit();
+      fail("commit() should fail in read-only mode");
+    } catch (Exception e) {
+      // expected - ignore
+    }
+    try {
+      solrClient.optimize();
+      fail("optimize() should fail in read-only mode");
+    } catch (Exception e) {
+      // expected - ignore
+    }
+    try {
+      solrClient.rollback();
+      fail("rollback() should fail in read-only mode");
+    } catch (Exception e) {
+      // expected - ignore
+    }
+
+    // Check for removing value
+    // setting to empty string is equivalent to removing the property, see SOLR-12507
+    CollectionAdminRequest.modifyCollection(collectionName,
+        Collections.singletonMap(ZkStateReader.READ_ONLY, ""))
+        .process(cluster.getSolrClient());
+    coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    assertNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
+
+    // wait for the expected collection reload
+    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
+      long restartTime = 0;
+      try {
+        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+      } catch (Exception e) {
+        log.warn("Exception getting core start time: {}", e.getMessage());
+        return false;
+      }
+      return restartTime > coreStartTime.get();
+    });
+
+    // check that updates are working now
+    docs.clear();
+    for (int i = NUM_DOCS * 2; i < NUM_DOCS * 3; i++) {
+      docs.add(new SolrInputDocument("id", String.valueOf(i), "string_s", String.valueOf(i)));
+    }
+    solrClient.add(docs);
+    solrClient.commit();
+    rsp = solrClient.query(params(CommonParams.Q, "*:*"));
+    assertEquals("num docs after turning off read-only", NUM_DOCS * 3, rsp.getResults().getNumFound());
   }
 
 

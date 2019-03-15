@@ -328,7 +328,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeAdded() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
@@ -624,7 +624,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLostTriggerWithDeleteNodePreferredOp() throws Exception {
     String collectionNamePrefix = "testNodeLostTriggerWithDeleteNodePreferredOp";
     int numCollections = 1 + random().nextInt(3), numShards = 1 + random().nextInt(3);

@@ -22,17 +22,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
@@ -89,6 +90,17 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField()) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (SpanQuery q : clauses) {
+      q.visit(v);
+    }
+  }
+
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanOr([");
@@ -131,13 +143,6 @@ public final class SpanOrQuery extends SpanQuery {
     public SpanOrWeight(IndexSearcher searcher, Map<Term, TermStates> terms, List<SpanWeight> subWeights, float boost) throws IOException {
       super(SpanOrQuery.this, searcher, terms, boost);
       this.subWeights = subWeights;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (final SpanWeight w: subWeights) {
-        w.extractTerms(terms);
-      }
     }
 
     @Override

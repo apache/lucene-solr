@@ -82,7 +82,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    TestInjection.waitForReplicasInSync = null; // We'll be explicit about this in this test
    //  cloudSolrClientMaxStaleRetries
    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
@@ -130,7 +129,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
   
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -472,7 +471,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     if (removeReplica) {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT).process(cluster.getSolrClient());
     } else {
-      leaderJetty.stop();
+      leaderJetty.start();
     }
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     unIgnoreException("No registered leader was found"); // Should have a leader from now on

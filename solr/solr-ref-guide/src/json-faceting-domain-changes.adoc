@@ -72,7 +72,10 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-filter
 The value of `filter` can be a single query to treat as a filter, or a JSON list of filter queries.  Each query can be:
 
 * a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`.
+The referred parameter might have 0 (absent) or many values.
+** When no values specified, no filter is applied and no error is thrown
+** When many values are specified, each value is parsed and used as filters
 
 When a `filter` option is combined with other `domain` changing options, the filtering is applied _after_ the other domain changes take place.
 
@@ -165,13 +168,16 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-query-
 The value of `query` can be a single query, or a JSON list of queries.  Each query can be:
 
 * a string containing a query in Solr query syntax
-* a reference to a request parameter containing Solr query syntax, of the form: `{param: <request_param_name>}`
+* a reference to a request parameter containing Solr query syntax, of the form: `{param : <request_param_name>}`.
+The referred parameter might have 0 (absent) or many values.
+** When no values specified, no error is thrown
+** When many values are specified, each value is parsed and used as queries
 
 NOTE: While a `query` domain can be combined with an additional domain `filter`, It is not possible to also use `excludeTags`, because the tags would be meaningless: The `query` domain already completely ignores the top-level query and all previous filters.
 
 == Block Join Domain Changes
 
-When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` or `blockParent` domain options can be used transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
+When a collection contains <<indexing-nested-documents.adoc#indexing-nested-documents, Nested Documents>>, the `blockChildren` or `blockParent` domain options can be used transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
 
 Both of these options work similarly to the corresponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain.
 

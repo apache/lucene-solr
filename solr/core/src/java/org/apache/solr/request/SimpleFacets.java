@@ -38,6 +38,7 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
@@ -828,7 +829,11 @@ public class SimpleFacets {
             return result;
           } catch (SolrException se) {
             throw se;
-          } catch (Exception e) {
+          } 
+          catch(ExitableDirectoryReader.ExitingReaderException timeout) {
+            throw timeout;
+          }
+          catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR,
                                     "Exception during facet.field: " + facetValue, e);
           } finally {

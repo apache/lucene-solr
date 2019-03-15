@@ -30,7 +30,7 @@ import org.apache.lucene.store.IndexInput;
  * revision will contain files from a single source. However, some applications
  * may require to treat a collection of indexes as a single entity so that the
  * files from all sources are replicated together, to guarantee consistency
- * beween them. For example, an application which indexes facets will need to
+ * between them. For example, an application which indexes facets will need to
  * replicate both the search and taxonomy indexes together, to guarantee that
  * they match at the client side.
  * 
@@ -60,7 +60,7 @@ public interface Revision extends Comparable<Revision> {
   
   /**
    * Returns an {@link IndexInput} for the given fileName and source. It is the
-   * caller's respnsibility to close the {@link IndexInput} when it has been
+   * caller's responsibility to close the {@link IndexInput} when it has been
    * consumed.
    */
   public InputStream open(String source, String fileName) throws IOException;

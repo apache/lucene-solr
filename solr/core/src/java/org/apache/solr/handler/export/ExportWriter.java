@@ -58,6 +58,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IntValueFieldType;
 import org.apache.solr.schema.LongValueFieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
@@ -69,7 +70,21 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 
+/**
+ * Prepares and writes the documents requested by /export requests
+ *
+ * {@link ExportWriter} gathers and sorts the documents for a core using "stream sorting".
+ * <p>
+ * Stream sorting works by repeatedly processing and modifying a bitmap of matching documents.  Each pass over the
+ * bitmap identifies the smallest {@link #DOCUMENT_BATCH_SIZE} docs that haven't been sent yet and stores them in a
+ * Priority Queue.  They are then exported (written across the wire) and marked as sent (unset in the bitmap).
+ * This process repeats until all matching documents have been sent.
+ * <p>
+ * This streaming approach is light on memory (only {@link #DOCUMENT_BATCH_SIZE} documents are ever stored in memory at
+ * once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
+ */
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
+  private static final int DOCUMENT_BATCH_SIZE = 30000;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
@@ -211,72 +226,77 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   }
 
+  protected void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
+    queue.reset();
+    SortDoc top = queue.top();
+    for (int i = 0; i < leaves.size(); i++) {
+      sortDoc.setNextReader(leaves.get(i));
+      DocIdSetIterator it = new BitSetIterator(sets[i], 0); // cost is not useful here
+      int docId;
+      while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        sortDoc.setValues(docId);
+        if (top.lessThan(sortDoc)) {
+          top.setValues(sortDoc);
+          top = queue.updateTop();
+        }
+      }
+    }
+  }
+
+  protected int transferBatchToArrayForOutput(SortQueue queue, SortDoc[] destinationArr) {
+    int outDocsIndex = -1;
+    for (int i = 0; i < queue.maxSize; i++) {
+      SortDoc s = queue.pop();
+      if (s.docId > -1) {
+        destinationArr[++outDocsIndex] = s;
+      }
+    }
+
+    return outDocsIndex;
+  }
+
+  protected void addDocsToItemWriter(List<LeafReaderContext> leaves, IteratorWriter.ItemWriter writer, SortDoc[] docsToExport, int outDocsIndex) throws IOException {
+    try {
+      for (int i = outDocsIndex; i >= 0; --i) {
+        SortDoc s = docsToExport[i];
+        writer.add((MapWriter) ew -> {
+          writeDoc(s, leaves, ew);
+          s.reset();
+        });
+      }
+    } catch (Throwable e) {
+      Throwable ex = e;
+      while (ex != null) {
+        String m = ex.getMessage();
+        if (m != null && m.contains("Broken pipe")) {
+          throw new IgnoreException();
+        }
+        ex = ex.getCause();
+      }
+
+      if (e instanceof IOException) {
+        throw ((IOException) e);
+      } else {
+        throw new IOException(e);
+      }
+    }
+  }
+
   protected void writeDocs(SolrQueryRequest req, IteratorWriter.ItemWriter writer, Sort sort) throws IOException {
-    //Write the data.
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
     SortDoc sortDoc = getSortDoc(req.getSearcher(), sort.getSort());
     int count = 0;
-    int queueSize = 30000;
-    if (totalHits < 30000) {
-      queueSize = totalHits;
-    }
+    final int queueSize = Math.min(DOCUMENT_BATCH_SIZE, totalHits);
+
     SortQueue queue = new SortQueue(queueSize, sortDoc);
     SortDoc[] outDocs = new SortDoc[queueSize];
 
     while (count < totalHits) {
-      //long begin = System.nanoTime();
-      queue.reset();
-      SortDoc top = queue.top();
-      for (int i = 0; i < leaves.size(); i++) {
-        sortDoc.setNextReader(leaves.get(i));
-        DocIdSetIterator it = new BitSetIterator(sets[i], 0); // cost is not useful here
-        int docId;
-        while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          sortDoc.setValues(docId);
-          if (top.lessThan(sortDoc)) {
-            top.setValues(sortDoc);
-            top = queue.updateTop();
-          }
-        }
-      }
-
-      int outDocsIndex = -1;
-
-      for (int i = 0; i < queueSize; i++) {
-        SortDoc s = queue.pop();
-        if (s.docId > -1) {
-          outDocs[++outDocsIndex] = s;
-        }
-      }
-
-      //long end = System.nanoTime();
+      identifyLowestSortingUnexportedDocs(leaves, sortDoc, queue);
+      int outDocsIndex = transferBatchToArrayForOutput(queue, outDocs);
 
       count += (outDocsIndex + 1);
-
-      try {
-        for (int i = outDocsIndex; i >= 0; --i) {
-          SortDoc s = outDocs[i];
-          writer.add((MapWriter) ew -> {
-            writeDoc(s, leaves, ew);
-            s.reset();
-          });
-        }
-      } catch (Throwable e) {
-        Throwable ex = e;
-        while (ex != null) {
-          String m = ex.getMessage();
-          if (m != null && m.contains("Broken pipe")) {
-            throw new IgnoreException();
-          }
-          ex = ex.getCause();
-        }
-
-        if (e instanceof IOException) {
-          throw ((IOException) e);
-        } else {
-          throw new IOException(e);
-        }
-      }
+      addDocsToItemWriter(leaves, writer, outDocs, outDocsIndex);
     }
   }
 
@@ -312,9 +332,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (!schemaField.hasDocValues()) {
         throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
-
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
+
+      if (fieldType instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
+        throw new IOException(schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+      }
+
       if (fieldType instanceof IntValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
@@ -339,7 +363,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           writers[i] = new DoubleFieldWriter(field);
         }
-      } else if (fieldType instanceof StrField) {
+      } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
         } else {
@@ -358,7 +382,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           writers[i] = new BoolFieldWriter(field, fieldType);
         }
       } else {
-        throw new IOException("Export fields must either be one of the following types: int,float,long,double,string,date,boolean");
+        throw new IOException("Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
     }
     return writers;
@@ -376,6 +400,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
       if (!schemaField.hasDocValues()) {
         throw new IOException(field + " must have DocValues to use this feature.");
+      }
+
+      if (ft instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
+        throw new IOException(schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
       }
 
       if (ft instanceof IntValueFieldType) {
@@ -402,7 +430,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           sortValues[i] = new LongValue(field, new LongAsc());
         }
-      } else if (ft instanceof StrField) {
+      } else if (ft instanceof StrField || ft instanceof SortableTextField) {
         LeafReader reader = searcher.getSlowAtomicReader();
         SortedDocValues vals = reader.getSortedDocValues(field);
         if (reverse) {
@@ -428,7 +456,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           sortValues[i] = new StringValue(vals, field, new IntAsc());
         }
       } else {
-        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean");
+        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
     }
     //SingleValueSortDoc etc are specialized classes which don't have array lookups. On benchmarking large datasets

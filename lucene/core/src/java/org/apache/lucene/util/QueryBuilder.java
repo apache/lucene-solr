@@ -416,7 +416,7 @@ public class QueryBuilder {
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
-    
+
     stream.reset();
     while (stream.incrementToken()) {
       if (posIncrAtt.getPositionIncrement() != 0) {
@@ -650,7 +650,11 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
-    return new SynonymQuery(terms);
+    SynonymQuery.Builder builder = new SynonymQuery.Builder(terms[0].field());
+    for (Term term : terms) {
+      builder.addTerm(term);
+    }
+    return builder.build();
   }
 
   /**

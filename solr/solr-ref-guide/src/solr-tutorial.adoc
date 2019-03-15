@@ -322,7 +322,7 @@ The response indicates that there are 4 hits (`"numFound":4`). We've only includ
 
 Note the `responseHeader` before the documents. This header will include the parameters you have set for the search. By default it shows only the parameters _you_ have set for this query, which in this case is only your query term.
 
-The documents we got back include all the fields for each document that were indexed. This is, again, default behavior. If you want to restrict the fields in the response, you can use the `fl` param, which takes a comma-separated list of field names. This is one of the available fields on the query form in the Admin UI.
+The documents we got back include all the fields for each document that were indexed. This is, again, default behavior. If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names. This is one of the available fields on the query form in the Admin UI.
 
 Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again. Or, to specify it with curl:
 
@@ -585,7 +585,7 @@ First, we are using a "managed schema", which is configured to only be modified 
 
 Second, we are using "field guessing", which is configured in the `solrconfig.xml` file (and includes most of Solr's various configuration settings). Field guessing is designed to allow us to start using Solr without having to define all the fields we think will be in our documents before trying to index them. This is why we call it "schemaless", because you can start quickly and let Solr create fields for you as it encounters them in documents.
 
-Sounds great! Well, not really, there are limitations. It's a bit brute force, and if it guesses wrong, you can't change much about a field after data has been indexed without having to re-index. If we only have a few thousand documents that might not be bad, but if you have millions and millions of documents, or, worse, don't have access to the original data anymore, this can be a real problem.
+Sounds great! Well, not really, there are limitations. It's a bit brute force, and if it guesses wrong, you can't change much about a field after data has been indexed without having to reindex. If we only have a few thousand documents that might not be bad, but if you have millions and millions of documents, or, worse, don't have access to the original data anymore, this can be a real problem.
 
 For these reasons, the Solr community does not recommend going to production without a schema that you have defined yourself. By this we mean that the schemaless features are fine to start with, but you should still always make sure your schema matches your expectations for how you want your data indexed and how users are going to query it.
 
@@ -706,7 +706,7 @@ On the Admin UI Query tab, if you check the `facet` checkbox, you'll see a few f
 .Facet options in the Query screen
 image::images/solr-tutorial/tutorial-admin-ui-facet-options.png[Solr Quick Start: Query tab facet options]
 
-To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` param. If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
+To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` parameter. If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
 
 `curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
 
@@ -936,7 +936,7 @@ Go ahead and edit any of the existing example data files, change some of the dat
 
 === Deleting Data
 
-If you need to iterate a few times to get your schema right, you may want to delete documents to clear out the collection and try again. Note, however, that merely removing documents doesn't change the underlying field definitions. Essentially, this will allow you to re-index your data after making changes to fields for your needs.
+If you need to iterate a few times to get your schema right, you may want to delete documents to clear out the collection and try again. Note, however, that merely removing documents doesn't change the underlying field definitions. Essentially, this will allow you to reindex your data after making changes to fields for your needs.
 
 You can delete data by POSTing a delete command to the update URL and specifying the value of the document's unique key field, or a query that matches multiple documents (be careful with that one!). We can use `bin/post` to delete documents also if we structure the request properly.
 
@@ -960,7 +960,7 @@ Jump ahead to the overall <<Wrapping Up,wrap up>> when you're ready to stop Solr
 
 Solr has sophisticated geospatial support, including searching within a specified distance range of a given location (or within a bounding box), sorting by distance, or even boosting results by the distance.
 
-Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities. To re-index this data, see <<index-the-techproducts-data,Exercise 1>>.
+Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities. To reindex this data, see <<index-the-techproducts-data,Exercise 1>>.
 
 Spatial queries can be combined with any other types of queries, such as in this example of querying for "ipod" within 10 kilometers from San Francisco:
 

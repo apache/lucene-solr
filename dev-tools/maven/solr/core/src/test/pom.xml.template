@@ -144,6 +144,7 @@
               <excludes>
                 <!-- TODO: remove this - imported code -->
                 <exclude>org/apache/solr/internal/**/*.class</exclude>
+                <exclude>org/apache/hadoop/**</exclude>
               </excludes>
             </configuration>
           </execution>

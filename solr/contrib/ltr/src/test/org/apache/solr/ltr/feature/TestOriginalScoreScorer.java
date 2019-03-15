@@ -20,10 +20,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class TestOriginalScoreScorer extends LuceneTestCase {
+public class TestOriginalScoreScorer extends SolrTestCase {
 
   @Test
   public void testOverridesAbstractScorerMethods() {

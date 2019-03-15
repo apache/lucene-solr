@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.geo;
 
+import org.apache.lucene.index.PointValues.Relation;
+
 /**
  * 2D line implementation represented as a balanced interval tree of edges.
  * <p>
@@ -36,5 +38,26 @@ public final class Line2D extends EdgeTree {
       components[i] = new Line2D(lines[i]);
     }
     return (Line2D)createTree(components, 0, components.length - 1, false);
+  }
+
+  @Override
+  protected Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
+    if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+
+    return Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  @Override
+  protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+    //check if line is inside triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+    return Relation.CELL_OUTSIDE_QUERY;
   }
 }

@@ -20,13 +20,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
@@ -39,6 +40,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
@@ -125,6 +127,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     return buffer.toString();
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
   private String endpoint(BytesRef ref) {
     if (ref == null) return "*";
     String toStr = Term.toString(ref);
@@ -176,7 +183,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
 
-  private class RangeTermsEnum extends TermsEnum {
+  private class RangeTermsEnum extends BaseTermsEnum {
 
     TermsEnum te;
     BytesRef curr;

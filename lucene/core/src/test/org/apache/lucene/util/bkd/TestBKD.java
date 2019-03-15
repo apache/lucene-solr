@@ -667,8 +667,16 @@ public class TestBKD extends LuceneTestCase {
     List<Long> toMerge = null;
     List<MergeState.DocMap> docMaps = null;
     int seg = 0;
-
-    BKDWriter w = new BKDWriter(numValues, dir, "_" + seg, numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length);
+    //we force sometimes to provide a bigger  point count
+    long maxDocs = Long.MIN_VALUE;
+    if (random().nextBoolean()) {
+       maxDocs  = docValues.length;
+    } else {
+      while (maxDocs < docValues.length) {
+        maxDocs = random().nextLong();
+      }
+    }
+    BKDWriter w = new BKDWriter(numValues, dir, "_" + seg, numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode, maxMB, maxDocs);
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
     IndexInput in = null;
 
@@ -971,7 +979,7 @@ public class TestBKD extends LuceneTestCase {
         public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
           IndexOutput out = in.createTempOutput(prefix, suffix, context);
           //System.out.println("prefix=" + prefix + " suffix=" + suffix);
-          if (corrupted == false && suffix.equals("bkd_left1")) {
+          if (corrupted == false && suffix.equals("bkd_left0")) {
             //System.out.println("now corrupt byte=" + x + " prefix=" + prefix + " suffix=" + suffix);
             corrupted = true;
             return new CorruptingIndexOutput(dir0, 22072, out);

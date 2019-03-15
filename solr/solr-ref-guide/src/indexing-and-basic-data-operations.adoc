@@ -1,5 +1,16 @@
 = Indexing and Basic Data Operations
-:page-children: introduction-to-solr-indexing, post-tool, uploading-data-with-index-handlers, uploading-data-with-solr-cell-using-apache-tika, uploading-structured-data-store-data-with-the-data-import-handler, updating-parts-of-documents, detecting-languages-during-indexing, de-duplication, content-streams
+:page-children: introduction-to-solr-indexing, +
+  post-tool, +
+  uploading-data-with-index-handlers, +
+  indexing-nested-documents, +
+  uploading-data-with-solr-cell-using-apache-tika, +
+  uploading-structured-data-store-data-with-the-data-import-handler, +
+  updating-parts-of-documents, +
+  detecting-languages-during-indexing, +
+  de-duplication, +
+  content-streams, +
+  reindexing
+
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -27,6 +38,8 @@ This section describes how Solr adds data to its index. It covers the following 
 
 * *<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>*: Index any JSON of your choice
 
+* *<<indexing-nested-documents.adoc#indexing-nested-documents,Indexing Nested Documents>>*: Detailed information about indexing and schema configuration for nested documents.
+
 * *<<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>*: Information about using the Solr Cell framework to upload data for indexing.
 
 * *<<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>*: Information about uploading and indexing data from a structured data store.
@@ -38,6 +51,8 @@ This section describes how Solr adds data to its index. It covers the following 
 * *<<de-duplication.adoc#de-duplication,De-Duplication>>*: Information about configuring Solr to mark duplicate documents as they are indexed.
 
 * *<<content-streams.adoc#content-streams,Content Streams>>*: Information about streaming content to Solr Request Handlers.
+
+* *<<reindexing.adoc#reindexing,Reindexing>>*: Details about when reindexing is required or recommended, and some strategies for completely reindexing your documents.
 
 == Indexing Using Client APIs
 

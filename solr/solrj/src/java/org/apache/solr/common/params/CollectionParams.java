@@ -79,7 +79,8 @@ public interface CollectionParams {
     DELETEALIAS(true, LockLevel.COLLECTION),
     ALIASPROP(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
-    MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION),
+    MAINTAINTIMEROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
+    MAINTAINCATEGORYROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),
@@ -121,7 +122,8 @@ public interface CollectionParams {
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
-    MERGESHARDS(true, LockLevel.SHARD)
+    MERGESHARDS(true, LockLevel.SHARD),
+    COLSTATUS(true, LockLevel.NONE)
     ;
     public final boolean isWrite;
 

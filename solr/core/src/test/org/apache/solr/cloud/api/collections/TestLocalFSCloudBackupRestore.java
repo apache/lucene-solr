@@ -16,7 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,7 +35,9 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   public static void setupClass() throws Exception {
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
 
     boolean whitespacesInPath = random().nextBoolean();
     if (whitespacesInPath) {
@@ -44,7 +48,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   }
 
   @Override
-  public String getCollectionName() {
+  public String getCollectionNamePrefix() {
     return "backuprestore";
   }
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -589,7 +590,7 @@ public class DocTermOrds implements Accountable {
    * "wrap" our own terms index around the original IndexReader. 
    * Only valid if there are terms for this field rom the original reader
    */
-  private final class OrdWrappedTermsEnum extends TermsEnum {
+  private final class OrdWrappedTermsEnum extends BaseTermsEnum {
     private final TermsEnum termsEnum;
     private BytesRef term;
     private long ord = -indexInterval-1;          // force "real" seek

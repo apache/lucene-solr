@@ -26,7 +26,37 @@ When planning your Solr upgrade, consider the customizations you have made to yo
 
 Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
+== Upgrading to 8.x Releases
+
+=== Solr 8.1
+
+*Logging*
+
+Solr 8.1 changed the default log4j2 logging mode from synchronous to asynchronous. This will improve logging throughput and reduce system contention at the cost of a _slight_ chance that some logging messages may be missed in the event of abnormal Solr termination.
+
+If even this slight risk is unacceptable, the log4j configuration file ../server/resources/log4j2.xml has the synchronous logging configuration in a commented section and can be edited to re-enable synchronous logging.
+
 == Upgrading to 7.x Releases
+
+=== Solr 7.7
+
+See the https://wiki.apache.org/solr/ReleaseNote77[7.7 Release Notes] for an overview of the main new features in Solr 7.7.
+
+When upgrading to Solr 7.7.x, users should be aware of the following major changes from v7.6:
+
+*Admin UI*
+
+* The Admin UI now presents a login screen for any users with authentication enabled on their cluster.  Clusters with <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>> will prompt users to enter a username and password.  On clusters configured to use <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication>>, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
++
+The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests were subject to authentication prior to 7.7 and still are today.  The login screen changes only the user experience of providing this authentication.
+
+*Distributed Requests*
+
+* The `shards` parameter, used to manually select the shards and replicas that receive distributed requests, now checks nodes against a whitelist of acceptable values for security reasons.
++
+In SolrCloud mode this whitelist is automatically configured to contain all live nodes.  In standalone mode the whitelist is empty by default.  Upgrading users who use the `shards` parameter in standalone mode can correct this value by setting the `shardsWhitelist` property in any `shardHandler` configurations in their `solrconfig.xml` file.
++
+For more information, see the <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Distributed Request>> documentation.
 
 === Solr 7.6
 

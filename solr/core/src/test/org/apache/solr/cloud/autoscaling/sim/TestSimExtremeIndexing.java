@@ -46,8 +46,10 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
- *
+ * TODO: test can easily fail w/a count that is too low by a small amount (unrelated to BATCH_SIZE)
+ * TODO: test should not need arbitrary sleep calls if code + test are both working properly w/o concurrency bugs
  */
+@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12923")
 @TimeoutSuite(millis = 48 * 3600 * 1000)
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.NodeLostTrigger=INFO;org.apache.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.ComputePlanAction=INFO;org.apache.solr.cloud.autoscaling.ExecutePlanAction=DEBUG;org.apache.solr.cloud.autoscaling.ScheduledTriggers=DEBUG")
 //@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.NodeLostTrigger=INFO;org.apache.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.CloudTestUtils=TRACE")

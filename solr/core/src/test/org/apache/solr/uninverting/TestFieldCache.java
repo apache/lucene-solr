@@ -54,7 +54,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.junit.AfterClass;
@@ -62,7 +62,7 @@ import org.junit.BeforeClass;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
-public class TestFieldCache extends LuceneTestCase {
+public class TestFieldCache extends SolrTestCase {
   private static LeafReader reader;
   private static int NUM_DOCS;
   private static int NUM_ORDS;

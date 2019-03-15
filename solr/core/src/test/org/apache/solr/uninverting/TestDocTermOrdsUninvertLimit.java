@@ -26,11 +26,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
-public class TestDocTermOrdsUninvertLimit extends LuceneTestCase {
+public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
 
   /* UnInvertedField had a reference block limitation of 2^24. This unit test triggered it.
    *

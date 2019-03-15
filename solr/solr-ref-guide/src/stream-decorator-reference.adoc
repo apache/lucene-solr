@@ -1163,7 +1163,7 @@ rollup(
 )
 ----
 
-The example about shows the rollup function wrapping the search function. Notice that search function is using the `/export` handler to provide the entire result set to the rollup stream. Also notice that the search function's *sort param* matches up with the rollup's `over` parameter. This allows the rollup function to rollup the over the `a_s` field, one group at a time.
+The example about shows the rollup function wrapping the search function. Notice that search function is using the `/export` handler to provide the entire result set to the rollup stream. Also notice that the search function's `sort` parameter matches up with the rollup's `over` parameter. This allows the rollup function to rollup the over the `a_s` field, one group at a time.
 
 == scoreNodes
 

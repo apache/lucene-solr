@@ -19,11 +19,10 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * An IntervalsSource that filters the intervals from another IntervalsSource
@@ -83,8 +82,8 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
-    in.extractTerms(field, terms);
+  public void visit(String field, QueryVisitor visitor) {
+    in.visit(field, visitor);
   }
 
   @Override

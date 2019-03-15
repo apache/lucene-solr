@@ -39,6 +39,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 
@@ -71,6 +72,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
   private final String policy;
+  private final Boolean readOnly;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, Integer.MAX_VALUE, ZkStateReader.CLUSTER_STATE);
@@ -99,6 +101,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
     this.policy = (String) props.get(Policy.POLICY);
     this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
+    Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
+    this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
     
     verifyProp(props, RULE);
     verifyProp(props, SNITCH);
@@ -152,6 +156,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
       case AUTO_ADD_REPLICAS:
+      case READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
       case "rule":
@@ -272,6 +277,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public DocRouter getRouter() {
     return router;
+  }
+
+  public boolean isReadOnly() {
+    return readOnly;
   }
 
   @Override

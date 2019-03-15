@@ -124,7 +124,7 @@ A default style can be configured by specifying an `args` parameter in your `sol
 
 === [child] - ChildDocTransformerFactory
 
-This transformer returns all <<uploading-data-with-index-handlers.adoc#nested-child-documents,descendant documents>> of each parent document matching your query in a flat list nested inside the matching parent document. This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
+This transformer returns all <<indexing-nested-documents.adoc#indexing-nested-documents,descendant documents>> of each parent document matching your query in a flat list nested inside the matching parent document. This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
 
 [source,plain]
 ----
@@ -133,10 +133,10 @@ fl=id,[child parentFilter=doc_type:book childFilter=doc_type:chapter limit=100]
 
 Note that this transformer can be used even though the query itself is not a <<other-parsers.adoc#block-join-query-parsers,Block Join query>>.
 
-When using this transformer, the `parentFilter` parameter must be specified, and works the same as in all Block Join Queries. Additional optional parameters are:
+When using this transformer, the `parentFilter` parameter must be specified _unless_ the schema declares `\_nest_path_`.  It works the same as in all Block Join Queries. Additional optional parameters are:
 
 `childFilter`::
-A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.
+A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.  This query supports a special syntax to match nested doc patterns so long as `\_nest_path_` is defined in the schema and the query contains a `/` preceding the first `:`.  Example: `childFilter=/comments/content:recipe`  Further details of this are experimental.
 
 `limit`::
 The maximum number of child documents to be returned per parent document. The default is `10`.

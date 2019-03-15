@@ -127,6 +127,23 @@ public final class StartupLoggingUtils {
   }
 
   /**
+   * Perhaps odd to put in startup utils, but this is where the logging-init code is so it seems logical to put the
+   * shutdown here too.
+   *
+   * Tests are particularly sensitive to this call or the object release tracker will report "lmax.disruptor" not
+   * terminating when asynch logging (new default as of 8.1) is enabled.
+   *
+   *
+   */
+  @SuppressForbidden(reason = "Legitimate log4j2 access")
+  public static void shutdown() {
+    if (!isLog4jActive()) {
+      logNotSupported("Not running log4j2, could not call shutdown for async logging.");
+      return;
+    }
+    LogManager.shutdown(true);
+  }
+  /**
    * Return a string representing the current static ROOT logging level
    * @return a string TRACE, DEBUG, WARN, ERROR or INFO representing current log level. Default is INFO
    */

@@ -19,7 +19,7 @@ package org.apache.lucene.facet.taxonomy.writercache;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
- * An an LRU cache of mapping from name to int.
+ * An LRU cache of mapping from name to int.
  * Used to cache Ordinals of category paths.
  * It uses as key, hash of the path instead of the path.
  * This way the cache takes less RAM, but correctness depends on
