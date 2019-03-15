@@ -110,7 +110,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   }
 
   /** use {@link GeoTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
-  public Line nextLine() {
+  public static Line nextLine() {
     Polygon poly = GeoTestUtil.nextPolygon();
     double[] lats = new double[poly.numPoints() - 1];
     double[] lons = new double[lats.length];

@@ -1,0 +1,151 @@
+= Indexing Nested Child Documents
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr supports indexing nested documents, described here, and ways to <<searching-nested-documents.adoc#searching-nested-documents,search and retrieve>> them very efficiently.
+By way of example, nested documents in Solr can be used to bind a blog post (parent document) with comments (child documents)
+-- or products as parent documents and sizes, colors, or other variations as child documents. +
+The parent with all children is referred to as a nested document or "block" and it explains some of the nomenclature of related features.
+At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
+ and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child documents to the result documents.
+In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "query time join",
+ since the relationships are already stored in the index and do not need to be computed.
+However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
+Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
+
+[NOTE]
+====
+.Limitation
+With the exception of in-place updates, the whole block must be updated or deleted together, not separately.  For some applications this may result in tons of extra indexing and thus may be a deal-breaker.
+====
+
+== Schema Configuration
+
+ * The schema must include an indexed field `\_root_`. Solr automatically populates this with the value of the top/parent ID. +
+ `<field name="\_root_" type="string" indexed="true" stored="false" docValues="false" />`
+ * `\_nest_path_` is populated by Solr automatically with the path of the document in the hierarchy for non-root documents. This field is optional. +
+ `<fieldType name="\_nest_path_" class="solr.NestPathField" />
+  <field name="\_nest_path_" type="_nest_path_" />`
+ * `\_nest_parent_` is populated by Solr automatically to store the ID of each document's parent document (if there is one). This field is optional. +
+ `<field name="\_nest_parent_" type="string" indexed="true" stored="true"/>`
+ * Nested documents are very much documents in their own right even if certain nested documents hold different information from the parent.
+   Therefore:
+ ** a field can only be configured one way no matter what sort of document uses it
+ ** it may be infeasible to use `required`
+ ** even child documents need a unique ID
+ * Even though child documents are provided as field values syntactically and with SolrJ, it's a matter of syntax and it isn't an actual field in the schema.
+  Consequently, the field need not be defined in the schema and probably shouldn't be as it would be confusing.
+  There is no child document field type, at least not yet.
+
+=== Rudimentary Root-only Schemas
+
+These schemas do not contain any other nested related fields apart from `\_root_`.
+Many schemas in existence are this way simply because default configSets are this way, even if the application isn't using nested documents.
+If an application uses nested documents with such a schema, keep in mind that that some related features aren't as effective since there is less information.  Mainly the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer returns matching children in a flat list (not nested) and it's attached to the parent using the special field name `\_childDocuments_`.
+
+With such a schema, typically you should have a field that differentiates a root doc from any nested children.
+However this isn't strictly necessary; so long as it's possible to write a query that can select only root documents somehow.
+Such a query is needed for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer to function.
+
+=== XML Examples
+
+Here are two documents and their child documents.
+It illustrates two styles of adding child documents: the first is associated via a field "comment" (preferred),
+and the second is done in the classic way now referred to as an "anonymous" or "unlabelled" child document.
+This field label relationship is available to the URP chain in Solr but is ultimately discarded unless the special fields are defined.
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="ID">1</field>
+    <field name="title">Solr adds block join support</field>
+    <field name="content_type">parentDocument</field>
+    <field name="content">
+      <doc>
+        <field name="ID">2</field>
+        <field name="comments">SolrCloud supports it too!</field>
+      </doc>
+    </field>
+  </doc>
+  <doc>
+    <field name="ID">3</field>
+    <field name="title">New Lucene and Solr release is out</field>
+    <field name="content_type">parentDocument</field>
+    <doc>
+      <field name="ID">4</field>
+      <field name="comments">Lots of new features</field>
+    </doc>
+  </doc>
+</add>
+----
+
+In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument".
+We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
+
+=== JSON Examples
+
+This example is equivalent to the XML example above.
+Again, the field labelled relationship is preferred.
+The labelled relationship here is one child document but could have been wrapped in array brackets.
+For the anonymous relationship, note the special `\_childDocuments_` key whose contents must be an array of child documents.
+
+[source,json]
+----
+[
+  {
+    "ID": "1",
+    "title": "Solr adds block join support",
+    "content_type": "parentDocument",
+    "comments": [{
+        "ID": "2",
+        "content": "SolrCloud supports it too!"
+      },
+      {
+        "ID": "3",
+        "content": "New filter syntax"
+      }
+    ]
+  },
+  {
+    "ID": "4",
+    "title": "New Lucene and Solr release is out",
+    "content_type": "parentDocument",
+    "_childDocuments_": [
+      {
+        "ID": "5",
+        "comments": "Lots of new features"
+      }
+    ]
+  }
+]
+----
+
+.Root-Only Mode
+[NOTE]
+ In Root-only schemas, these two documents will result in the same docs being indexed (Root-only schemas do not honor nested relationships).
+ When queried, child docs will be appended to the _childDocuments_ field/key.
+
+=== Important: Maintaining Integrity with Updates and Deletes
+
+Nested documents (children and all) can simply be replaced by adding a new document with more or fewer documents as an application desires.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
+
+Do *not* add a root document that has the same ID of a child document.  _This will violate integrity assumptions that Solr expects._
+
+To delete a nested document, you can delete it by the ID of the root document.
+If you try to use an ID of a child document, nothing will happen since only root document IDs are considered.
+If you use Solr's delete-by-query APIs, you *have to be careful* to ensure that no children remain of any documents that are being deleted.  _Doing otherwise will violate integrity assumptions that Solr expects._

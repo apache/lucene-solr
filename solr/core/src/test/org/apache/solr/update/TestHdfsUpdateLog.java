@@ -37,13 +37,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
 public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
-  
   private static MiniDFSCluster dfsCluster;
-
   private static String hdfsUri;
-  
   private static FileSystem fs;
   
   @BeforeClass
@@ -69,22 +65,25 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    System.clearProperty("solr.ulog.dir");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    deleteCore();
     IOUtils.closeQuietly(fs);
     fs = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    
-    hdfsDataDir = null;
-    dfsCluster = null;
+    try {
+      deleteCore();
+    } finally {
+      try {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      } finally {
+        hdfsDataDir = null;
+        dfsCluster = null;
+        System.clearProperty("solr.ulog.dir");
+        System.clearProperty("test.build.data");
+        System.clearProperty("test.cache.data");
+      }
+    }
   }
 
   @Test
-  //28-June-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testFSThreadSafety() throws Exception {
-
     final SolrQueryRequest req = req();
     final UpdateHandler uhandler = req.getCore().getUpdateHandler();
     ((DirectUpdateHandler2) uhandler).getCommitTracker().setTimeUpperBound(100);
@@ -131,15 +130,11 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
         }
       }
     };
-    
-
 
     thread.start();
     thread2.start();
     thread.join();
     thread2.join();
-    
   }
-
 }
 

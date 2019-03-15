@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  * Unit test for {@link CommonParams}
@@ -24,7 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * This class tests backwards compatibility of CommonParams parameter constants.
  * If someone accidentally changes those constants then this test will flag that up.
  */
-public class CommonParamsTest extends LuceneTestCase
+public class CommonParamsTest extends SolrTestCase
 {
   public void testStart() { assertEquals("start", CommonParams.START); }
   public void testStartDefault() { assertEquals(0, CommonParams.START_DEFAULT); }

@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -82,6 +84,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void beforeTest() throws Exception {
     configureCluster(4)
     .addConfig("conf", configset("cloud-minimal"))
+    .addConfig("conf2", configset("cloud-dynamic"))
     .configure();
     
     // clear any persisted auto scaling configuration
@@ -599,6 +602,59 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     }
 
     fail("Timed out waiting for cluster property value");
+  }
+
+  @Test
+  public void testColStatus() throws Exception {
+    final String collectionName = "collectionStatusTest";
+    CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+
+    SolrClient client = cluster.getSolrClient();
+    byte[] binData = collectionName.getBytes("UTF-8");
+    // index some docs
+    for (int i = 0; i < 10; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", String.valueOf(i));
+      doc.addField("number_i", i);
+      doc.addField("number_l", i);
+      doc.addField("number_f", i);
+      doc.addField("number_d", i);
+      doc.addField("number_ti", i);
+      doc.addField("number_tl", i);
+      doc.addField("number_tf", i);
+      doc.addField("number_td", i);
+      doc.addField("point", i + "," + i);
+      doc.addField("pointD", i + "," + i);
+      doc.addField("store", (i * 5) + "," + (i * 5));
+      doc.addField("boolean_b", true);
+      doc.addField("multi_int_with_docvals", i);
+      doc.addField("string_s", String.valueOf(i));
+      doc.addField("tv_mv_string", "this is a test " + i);
+      doc.addField("timestamp_dt", new Date());
+      doc.addField("timestamp_tdt", new Date());
+      doc.addField("payload", binData);
+      client.add(collectionName, doc);
+    }
+    client.commit(collectionName);
+
+    CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionName);
+    req.setWithFieldInfo(true);
+    req.setWithCoreInfo(true);
+    req.setWithSegments(true);
+    req.setWithSizeInfo(true);
+    CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    List<Object> nonCompliant = (List<Object>)rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
+    assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
+    assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
+    NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
+    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
   }
 
   private static final int NUM_DOCS = 10;

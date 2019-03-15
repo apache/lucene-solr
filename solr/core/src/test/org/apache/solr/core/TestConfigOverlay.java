@@ -19,11 +19,11 @@ package org.apache.solr.core;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 import static org.apache.solr.core.ConfigOverlay.isEditableProp;
 
-public class TestConfigOverlay extends LuceneTestCase {
+public class TestConfigOverlay extends SolrTestCase {
 
   public void testPaths() {
     assertTrue(isEditableProp("updateHandler/autoCommit/maxDocs", true, null));

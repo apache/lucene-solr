@@ -42,6 +42,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
@@ -587,6 +588,11 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     @Override
     public int hashCode() {
       return wrapped.hashCode();
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      wrapped.visit(visitor);
     }
   }
 

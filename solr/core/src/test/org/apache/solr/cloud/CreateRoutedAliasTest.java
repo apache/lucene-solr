@@ -282,7 +282,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "&router.interval=%2B30MINUTE" +
         "&create-collection.collection.configName=_default" +
         "&create-collection.numShards=1");
-    assertFailure(get, "Only 'time' routed aliases is supported right now");
+    assertFailure(get, " is not in supported types, ");
   }
 
   @Test

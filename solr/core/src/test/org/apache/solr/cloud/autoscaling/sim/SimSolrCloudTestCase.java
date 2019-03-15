@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,12 +59,29 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     clusterNodeCount = nodeCount;
   }
 
+  @After
+  private void checkBackgroundTaskFailureCount() {
+    if (cluster != null) {
+      assertBackgroundTaskFailureCount(cluster);
+    }
+  }
+  
+  protected static void assertBackgroundTaskFailureCount(SimCloudManager c) {
+    assert null != c;
+    assertEquals("Cluster had background tasks submitted which failed",
+                 0, c.getBackgroundTaskFailureCount());
+  }
+  
   @AfterClass
   public static void shutdownCluster() throws Exception {
     if (cluster != null) {
-      cluster.close();
+      try {
+        cluster.close();
+        assertBackgroundTaskFailureCount(cluster);
+      } finally {
+        cluster = null;
+      }
     }
-    cluster = null;
   }
 
   protected static void assertAutoscalingUpdateComplete() throws Exception {

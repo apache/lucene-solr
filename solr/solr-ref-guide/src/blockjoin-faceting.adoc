@@ -41,7 +41,7 @@ This example shows how you could add this search components to `solrconfig.xml` 
 
 This component can be added into any search request handler. This component work with distributed search in SolrCloud mode.
 
-Documents should be added in children-parent blocks as described in <<uploading-data-with-index-handlers.adoc#nested-child-documents,indexing nested child documents>>. Examples:
+Documents should be added in children-parent blocks as described in <<indexing-nested-documents.adoc#indexing-nested-documents,indexing nested child documents>>. Examples:
 
 .Sample document
 [source,xml]

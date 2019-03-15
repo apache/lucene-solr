@@ -16,9 +16,9 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class FacetFieldTest extends LuceneTestCase {
+public class FacetFieldTest extends SolrTestCase {
 
   public void testGetValues() {
     FacetField facetField = new FacetField("field");

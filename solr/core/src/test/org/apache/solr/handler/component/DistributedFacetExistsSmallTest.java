@@ -125,7 +125,9 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.prefix", prefixes[rand.nextInt(prefixes.length)]);
     }
 
-    if (rand.nextInt(100) < 20) {
+    // don't bother trying to to test facet.missing=true + facet.limit=0
+    // distrib & non-distrib are known to behave differently in this 
+    if (rand.nextInt(100) < 20 && 0 < params.getInt("facet.limit", 100)) {
       params.add("facet.missing", "true");
     }
     
@@ -133,13 +135,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.mincount", rand.nextBoolean() ? "0": "1" );
     }
     
-    final boolean shardRespondsWithMissingEvenLimitIsZero = 
-          params.getBool("facet.missing", false) && params.getInt("facet.limit", 100)==0;
-
     query(params);
-    if (shardRespondsWithMissingEvenLimitIsZero ) {
-      handle.remove(null);
-    }
   }
   
   private void checkInvalidMincount() throws SolrServerException, IOException {
