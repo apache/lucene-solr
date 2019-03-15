@@ -481,7 +481,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(newStringField("id", "id", Field.Store.NO));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
 
              
