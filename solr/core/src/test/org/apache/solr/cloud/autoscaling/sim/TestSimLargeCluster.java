@@ -251,12 +251,13 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   public void testCreateLargeSimCollections() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
 
-    final int numCollections = atLeast(10);
+    final int numCollections = atLeast(5);
     for (int i = 0; i < numCollections; i++) {
+      // wide and shallow, or deep and narrow...
       final int numShards = TestUtil.nextInt(random(), 5, 20);
-      final int nReps = TestUtil.nextInt(random(), 10, 25);
-      final int tReps = TestUtil.nextInt(random(), 10, 25);
-      final int pReps = TestUtil.nextInt(random(), 10, 25);
+      final int nReps = TestUtil.nextInt(random(), 2, 25 - numShards);
+      final int tReps = TestUtil.nextInt(random(), 2, 25 - numShards);
+      final int pReps = TestUtil.nextInt(random(), 2, 25 - numShards);
       final int repsPerShard = (nReps + tReps + pReps);
       final int totalCores = repsPerShard * numShards;
       final int maxShardsPerNode = atLeast(2) + (totalCores / NUM_NODES);
@@ -273,7 +274,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       // Since our current goal is to try and find situations where cores are just flat out missing
       // no matter how long we wait, let's be excessive and generous in our timeout.
       // (REMINDER: this uses the cluster's timesource, and ADDREPLICA has a hardcoded delay of 500ms)
-      CloudTestUtils.waitForState(cluster, name, totalCores, TimeUnit.SECONDS,
+      CloudTestUtils.waitForState(cluster, name, 2 * totalCores, TimeUnit.SECONDS,
                                   CloudTestUtils.clusterShape(numShards, repsPerShard, false, true));
       
       final CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(name);
