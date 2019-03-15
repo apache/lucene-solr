@@ -20,8 +20,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -314,29 +315,50 @@ public class RandomIndexWriter implements Closeable {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     return w.deleteDocuments(q);
   }
-  
+
   public long commit() throws IOException {
+    return commit(r.nextInt(10) == 0);
+  }
+  
+  public long commit(boolean flushConcurrently) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    if (r.nextInt(10) == 0) {
-      AtomicReference<Throwable> exception = new AtomicReference<>();
-      Thread t = new Thread(() -> {
+    if (flushConcurrently) {
+      List<Throwable> throwableList = new CopyOnWriteArrayList<>();
+      Thread thread = new Thread(() -> {
         try {
           flushAllBuffersSequentially();
-        } catch (IOException e) {
-          exception.set(e);
+        } catch (Throwable e) {
+          throwableList.add(e);
         }
       });
-      t.start();
-      long seqId = w.commit();
+      thread.start();
       try {
-        t.join();
-      } catch (InterruptedException e) {
-        throw new AssertionError(e);
+        return w.commit();
+      } catch (Throwable t) {
+        throwableList.add(t);
+      } finally {
+        try {
+          // make sure we wait for the thread to join otherwise it might still be processing events
+          // and the IW won't be fully closed in the case of a fatal exception
+          thread.join();
+        } catch (InterruptedException e) {
+          throwableList.add(e);
+        }
       }
-      if (exception.get() != null) {
-        throw new AssertionError(exception.get());
+      if (throwableList.size() != 0) {
+        Throwable primary = throwableList.get(0);
+        for (int i = 1; i < throwableList.size(); i++) {
+          primary.addSuppressed(throwableList.get(i));
+        }
+        if (primary instanceof IOException) {
+          throw (IOException)primary;
+        } else if (primary instanceof RuntimeException) {
+          throw (RuntimeException)primary;
+        } else {
+          throw new AssertionError(primary);
+        }
       }
-      return seqId;
+
     }
     return w.commit();
   }
