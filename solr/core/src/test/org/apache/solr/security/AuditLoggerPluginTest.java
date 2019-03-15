@@ -101,8 +101,8 @@ public class AuditLoggerPluginTest extends LuceneTestCase {
   
   @Test
   public void audit() {
-    plugin.audit(EVENT_ANONYMOUS_REJECTED);
-    plugin.audit(EVENT_REJECTED);
+    plugin.doAudit(EVENT_ANONYMOUS_REJECTED);
+    plugin.doAudit(EVENT_REJECTED);
     assertEquals(1, plugin.typeCounts.get("ANONYMOUS_REJECTED").get());
     assertEquals(1, plugin.typeCounts.get("REJECTED").get());
     assertEquals(2, plugin.events.size());

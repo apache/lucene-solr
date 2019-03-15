@@ -465,7 +465,7 @@ public class HttpSolrCall {
     if (solrDispatchFilter.abortErrorMessage != null) {
       sendError(500, solrDispatchFilter.abortErrorMessage);
       if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ERROR, getReq()));
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, getReq()));
       }
       return RETURN;
     }
@@ -487,7 +487,7 @@ public class HttpSolrCall {
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
           if (shouldAudit(EventType.REJECTED)) {
-            cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.REJECTED, req, context));
+            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
           }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
@@ -495,12 +495,12 @@ public class HttpSolrCall {
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
           if (shouldAudit(EventType.UNAUTHORIZED)) {
-            cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
           }
           return RETURN;
         }
         if (shouldAudit(EventType.AUTHORIZED)) {
-          cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.AUTHORIZED, req, context));
+          cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHORIZED, req, context));
         }
       }
 
@@ -529,7 +529,7 @@ public class HttpSolrCall {
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
             execute(solrRsp);
             if (shouldAudit(EventType.COMPLETED)) {
-              cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+              cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
             }
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
@@ -546,7 +546,7 @@ public class HttpSolrCall {
       }
     } catch (Throwable ex) {
       if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.ERROR, ex, req));
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
       }
       sendError(ex);
       // walk the the entire cause chain to search for an Error
@@ -747,7 +747,7 @@ public class HttpSolrCall {
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
     if (shouldAudit(EventType.COMPLETED)) {
-      cores.getAuditLoggerPlugin().audit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+      cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
     }
   }
 

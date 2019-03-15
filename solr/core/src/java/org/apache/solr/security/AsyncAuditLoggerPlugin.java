@@ -24,11 +24,15 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base class for asynchronous audit logging. Extend this class for queued logging events
+ * Base class for asynchronous audit logging. Extend this class for queued logging events.
+ * This interface may change in next release and is marked experimental
+ * @since 8.1.0
+ * @lucene.experimental
  */
 public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -41,6 +45,7 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
   private BlockingQueue<AuditEvent> queue;
   private boolean blockAsync;
   private int blockingQueueSize;
+  
 
   /**
    * Enqueues an {@link AuditEvent} to a queue and returns immediately.
@@ -102,5 +107,13 @@ public abstract class AsyncAuditLoggerPlugin extends AuditLoggerPlugin implement
         log.warn("Exception when attempting to audit log asynchronously", ex);
       }
     }
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    super.initializeMetrics(manager, registryName, tag, scope);
+    manager.registerGauge(this, registryName, () -> blockingQueueSize,"queueSizeMax", true, "queueSizeMax", getCategory().toString());
+    manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(),"queueSize", true, "queueSize", getCategory().toString());
+    metricNames.add("queueSize");
   }
 }

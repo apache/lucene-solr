@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Audit logger that writes to the Solr log
+ * Audit logger that writes to the Solr log.
+ * This interface may change in next release and is marked experimental
+ * @since 8.1.0
  * @lucene.experimental
  */
 public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {

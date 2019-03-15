@@ -39,6 +39,10 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     { "class" : "solr.MyOtherAuditPlugin"}
  *   ]
  * </pre>
+ *
+ * This interface may change in next release and is marked experimental
+ * @since 8.1.0
+ * @lucene.experimental
  */
 public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements ResourceLoaderAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -35,7 +35,10 @@ import org.slf4j.MDC;
 import static org.apache.solr.security.AuditEvent.EventType.ANONYMOUS;
 
 /**
- * Audit event that takes request and auth context as input to be able to audit log custom things
+ * Audit event that takes request and auth context as input to be able to audit log custom things.
+ * This interface may change in next release and is marked experimental
+ * @since 8.1.0
+ * @lucene.experimental
  */
 public class AuditEvent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

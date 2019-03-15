@@ -48,7 +48,7 @@ public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
   
   @Test
   public void audit() {
-    plugin.audit(EVENT_ANONYMOUS);
+    plugin.doAudit(EVENT_ANONYMOUS);
   }
 
   @Test

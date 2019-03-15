@@ -43,7 +43,7 @@ public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
     al.inform(new SolrResourceLoader());
     al.init(config);
 
-    al.audit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
+    al.doAudit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
     assertEquals(1, ((MockAuditLoggerPlugin)al.plugins.get(1)).events.size());
 
     assertEquals(0, config.size());

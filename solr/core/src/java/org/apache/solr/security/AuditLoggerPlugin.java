@@ -23,23 +23,44 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base class for Audit logger plugins
+ * Base class for Audit logger plugins.
+ * This interface may change in next release and is marked experimental
+ * @since 8.1.0
+ * @lucene.experimental
  */
-public abstract class AuditLoggerPlugin implements Closeable {
+public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
 
   protected AuditEventFormatter formatter;
+  MetricRegistry registry;
+  Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  
+  protected String registryName;
+  protected SolrMetricManager metricManager;
+  protected Meter numErrors = new Meter();
+  protected Meter numLogged = new Meter();
+  protected Timer requestTimes = new Timer();
+  protected Counter totalTime = new Counter();
 
   // Event types to be logged by default
   protected List<String> eventTypes = Arrays.asList(
@@ -55,6 +76,23 @@ public abstract class AuditLoggerPlugin implements Closeable {
    */
   public abstract void audit(AuditEvent event);
 
+  /**
+   * Called by the framework, and takes care of metrics  
+   */
+  public final void doAudit(AuditEvent event) {
+    Timer.Context timer = requestTimes.time();
+    numLogged.mark();
+    try {
+      audit(event);
+    } catch(Exception e) {
+      numErrors.mark();
+      throw e;
+    } finally {
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
+    }
+  }
+  
   /**
    * Initialize the plugin from security.json.
    * This method removes parameters from config object after consuming, so subclasses can check for config errors.
@@ -86,6 +124,44 @@ public abstract class AuditLoggerPlugin implements Closeable {
   
   public void setFormatter(AuditEventFormatter formatter) {
     this.formatter = formatter;
+  }
+  
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
+    // Metrics
+    registry = manager.registry(registryName);
+    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
+    numLogged = manager.meter(this, registryName, "logged", getCategory().toString(), scope);
+    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
+    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
+    metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime"));
+  }
+  
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return "Auditlogger Plugin " + this.getClass().getName();
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.SECURITY;
+  }
+  
+  @Override
+  public Set<String> getMetricNames() {
+    return metricNames;
+  }
+
+  @Override
+  public MetricRegistry getMetricRegistry() {
+    return registry;
   }
   
   /**
