@@ -967,6 +967,21 @@ public class SimCloudManager implements SolrCloudManager {
         log.warn("Callable interupted", ignored);
         throw ignored;
       } catch (Throwable t) {
+        // be forgiving of errors that occured as a result of interuption, even if
+        // the inner Callable didn't realize it...
+        if (Thread.currentThread().isInterrupted()) {
+          log.warn("Callable interupted w/o noticing", t);
+          throw t;
+        }
+        Throwable cause = t;
+        while ((cause = cause.getCause()) != null) {
+          if (cause instanceof InterruptedException) {
+            log.warn("Callable threw wrapped InterruptedException", t);
+            throw t;
+          }
+        }
+
+        // in all other situations, this is a problem that should be tracked in the failCounter
         failCounter.incrementAndGet();
         log.error("Callable failed", t);
         throw t;
