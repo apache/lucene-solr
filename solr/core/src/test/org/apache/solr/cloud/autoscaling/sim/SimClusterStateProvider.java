@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
-import java.lang.InterruptedException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
