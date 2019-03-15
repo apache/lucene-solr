@@ -99,6 +99,8 @@ Bug Fixes
 * SOLR-13284: NullPointerException with 500 http status on omitted or wrong wt param.
   It's fixed by fallback to json (Munendra S N via Mikhail Khludnev)
 
+* SOLR-13244: Admin UI Nodes view fails and is empty when a node is temporarily down (janhoy)
+
 Improvements
 ----------------------
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
