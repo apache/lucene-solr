@@ -86,6 +86,7 @@ public class Utils {
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
   public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
   public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
+  public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
