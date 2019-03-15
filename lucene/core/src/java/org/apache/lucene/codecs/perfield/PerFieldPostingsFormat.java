@@ -247,7 +247,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     private final String segment;
     
     // clone for merge
-    FieldsReader(FieldsReader other) throws IOException {
+    FieldsReader(FieldsReader other) {
       Map<FieldsProducer,FieldsProducer> oldToNew = new IdentityHashMap<>();
       // First clone all formats
       for(Map.Entry<String,FieldsProducer> ent : other.formats.entrySet()) {
@@ -346,7 +346,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public FieldsProducer getMergeInstance() throws IOException {
+    public FieldsProducer getMergeInstance() {
       return new FieldsReader(this);
     }
 

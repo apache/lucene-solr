@@ -91,7 +91,7 @@ final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
   }
 
   @Override
-  public NormsProducer getMergeInstance() throws IOException {
+  public NormsProducer getMergeInstance() {
     Lucene70NormsProducer clone;
     try {
       clone = (Lucene70NormsProducer) super.clone();
@@ -227,6 +227,80 @@ final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
   }
 
   private IndexInput getDisiInput(FieldInfo field, NormsEntry entry) throws IOException {
+    if (merging == false) {
+      return data.slice("docs", entry.docsWithFieldOffset, entry.docsWithFieldLength);
+    }
+
+    IndexInput in = disiInputs.get(field.number);
+    if (in == null) {
+      in = data.slice("docs", entry.docsWithFieldOffset, entry.docsWithFieldLength);
+      disiInputs.put(field.number, in);
+    }
+
+    final IndexInput inF = in; // same as in but final
+
+    // Wrap so that reads can be interleaved from the same thread if two
+    // norms instances are pulled and consumed in parallel. Merging usually
+    // doesn't need this feature but CheckIndex might, plus we need merge
+    // instances to behave well and not be trappy.
+    return new IndexInput("docs") {
+
+      long offset = 0;
+
+      @Override
+      public void readBytes(byte[] b, int off, int len) throws IOException {
+        inF.seek(offset);
+        offset += len;
+        inF.readBytes(b, off, len);
+      }
+
+      @Override
+      public byte readByte() throws IOException {
+        throw new UnsupportedOperationException("Unused by IndexedDISI");
+      }
+
+      @Override
+      public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+        throw new UnsupportedOperationException("Unused by IndexedDISI");
+      }
+
+      @Override
+      public short readShort() throws IOException {
+        inF.seek(offset);
+        offset += Short.BYTES;
+        return inF.readShort();
+      }
+
+      @Override
+      public long readLong() throws IOException {
+        inF.seek(offset);
+        offset += Long.BYTES;
+        return inF.readLong();
+      }
+
+      @Override
+      public void seek(long pos) throws IOException {
+        offset = pos;
+      }
+
+      @Override
+      public long length() {
+        throw new UnsupportedOperationException("Unused by IndexedDISI");
+      }
+
+      @Override
+      public long getFilePointer() {
+        return offset;
+      }
+
+      @Override
+      public void close() throws IOException {
+        throw new UnsupportedOperationException("Unused by IndexedDISI");
+      }
+    };
+  }
+
+  private IndexInput getDisiInput2(FieldInfo field, NormsEntry entry) throws IOException {
     IndexInput slice = null;
     if (merging) {
       slice = disiInputs.get(field.number);
