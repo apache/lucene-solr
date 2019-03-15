@@ -15,6 +15,10 @@ Bug fixes
   where our best effort in carrying on generations in the IndexWriter since pending
   deletions are swallowed by the FilterDirectory. (Henning Andersen, Simon Willnauer)
 
+* LUCENE-8688: TieredMergePolicy#findForcedMerges now tries to create the
+  cheapest merges that allow the index to go down to `maxSegmentCount` segments
+  or less. (Armin Braun via Adrien Grand)
+
 ======================= Lucene 7.7.1 =======================
 (No changes)
 
