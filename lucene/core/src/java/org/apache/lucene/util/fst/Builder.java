@@ -69,6 +69,8 @@ public class Builder<T> {
 
   private final IntsRefBuilder lastInput = new IntsRefBuilder();
 
+  final boolean useDirectArcAddressing;
+
   // NOTE: cutting this over to ArrayList instead loses ~6%
   // in build performance on 9.8M Wikipedia terms; so we
   // left this as an array:
@@ -92,12 +94,12 @@ public class Builder<T> {
   BytesStore bytes;
 
   /**
-   * Instantiates an FST/FSA builder without any pruning. A shortcut
-   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
-   * boolean, int, Outputs, boolean, int)} with pruning options turned off.
+   * Instantiates an FST/FSA builder without any pruning. A shortcut to {@link
+   * #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs, boolean, int, boolean)} with
+   * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, false);
   }
 
   /**
@@ -148,12 +150,13 @@ public class Builder<T> {
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 boolean allowArrayArcs, int bytesPageBits) {
+                 boolean allowArrayArcs, int bytesPageBits, boolean useDirectArcAddressing) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
     this.allowArrayArcs = allowArrayArcs;
+    this.useDirectArcAddressing = useDirectArcAddressing;
     fst = new FST<>(inputType, outputs, bytesPageBits);
     bytes = fst.bytes;
     assert bytes != null;

@@ -1082,12 +1082,14 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
       if (FST.targetHasArcs(arc)) {
         // System.out.println("  targetHasArcs");
         result.grow(1+upto);
-        
+        if (arc.target < 0 || arc.target > Integer.MAX_VALUE) {
+          assert(arc.target >= 0);
+          assert(arc.target < Integer.MAX_VALUE);
+        }
         fr.index.readFirstRealTargetArc(arc.target, arc, fstReader);
 
         if (arc.bytesPerArc != 0) {
           // System.out.println("  array arcs");
-
           int low = 0;
           int high = arc.numArcs-1;
           int mid = 0;

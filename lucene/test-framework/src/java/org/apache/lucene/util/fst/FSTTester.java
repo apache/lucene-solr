@@ -279,7 +279,7 @@ public class FSTTester<T> {
                                               allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
                                               outputs,
                                               true,
-                                              15);
+                                              15, true);
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {
@@ -301,7 +301,7 @@ public class FSTTester<T> {
       out.close();
       IndexInput in = dir.openInput("fst.bin", context);
       try {
-        fst = new FST<>(in, outputs);
+        fst = new FST<T>(in, outputs);
       } finally {
         in.close();
         dir.deleteFile("fst.bin");
@@ -812,3 +812,4 @@ public class FSTTester<T> {
     }
   }
 }
+
