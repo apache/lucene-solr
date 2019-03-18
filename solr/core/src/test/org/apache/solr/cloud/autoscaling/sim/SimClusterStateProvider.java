@@ -190,7 +190,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param initialState initial cluster state
    */
   public void simSetClusterState(ClusterState initialState) throws Exception {
-    lock.lock();
+    lock.lockInterruptibly();
     try {
       collProperties.clear();
       sliceProperties.clear();
@@ -2148,20 +2148,24 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   @Override
   public ClusterState getClusterState() throws IOException {
     ensureNotClosed();
-    lock.lock();
     try {
-      Map<String, DocCollection> states = getCollectionStates();
-      ClusterState state = new ClusterState(clusterStateVersion, liveNodes.get(), states);
-      return state;
-    } finally {
-      lock.unlock();
+      lock.lockInterruptibly();
+      try {
+        Map<String, DocCollection> states = getCollectionStates();
+        ClusterState state = new ClusterState(clusterStateVersion, liveNodes.get(), states);
+        return state;
+      } finally {
+        lock.unlock();
+      }
+    } catch (InterruptedException e) {
+      throw new IOException(e);
     }
   }
 
   // this method uses a simple cache in collectionsStatesRef. Operations that modify
   // cluster state should always reset this cache so that the changes become visible
-  private Map<String, DocCollection> getCollectionStates() throws IOException {
-    lock.lock();
+  private Map<String, DocCollection> getCollectionStates() throws IOException, InterruptedException {
+    lock.lockInterruptibly();
     try {
       Map<String, DocCollection> collectionStates = collectionsStatesRef.get();
       if (collectionStates != null) {
