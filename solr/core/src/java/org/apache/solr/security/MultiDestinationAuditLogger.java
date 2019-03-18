@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,5 +115,23 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   @Override
   public void inform(ResourceLoader loader) {
     this.loader = loader;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    super.initializeMetrics(manager, registryName, tag, scope);
+    plugins.forEach(p -> p.initializeMetrics(manager, registryName, tag, scope));
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+    plugins.forEach(p -> {
+      try {
+        p.close();
+      } catch (IOException e) {
+        log.error("Exception trying to close {}", p.getName());
+      }
+    });
   }
 }
