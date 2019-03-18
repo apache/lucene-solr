@@ -120,10 +120,10 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   }
 
   /**
-   * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
+   * This is the method that each Audit plugin has to implement to do the actual logging.
    * @param event the audit event
    */
-  public abstract void audit(AuditEvent event);
+  protected abstract void audit(AuditEvent event);
 
   /**
    * Called by the framework, and takes care of metrics  
