@@ -38,6 +38,7 @@ Authentication makes sure you know the identity of your users. Supported authent
 * <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
 * <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
+* <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
 
 === Authorization plugins
 Authorization makes sure that only users with the necessary roles/permissions can access any given resource.
