@@ -16,10 +16,14 @@
  */
 package org.apache.solr.security;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.Socket;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -60,7 +64,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
     delay = Integer.parseInt((String) pluginConfig.get("delay"));
     try {
       socket = new Socket("localhost", callbackPort);
-      out = new PrintWriter(socket.getOutputStream(), true);
+      out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
