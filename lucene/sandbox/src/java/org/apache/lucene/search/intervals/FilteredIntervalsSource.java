@@ -18,7 +18,10 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.MatchesIterator;
@@ -82,6 +85,24 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public Collection<IntervalsSource> getDisjunctions() {
+    Collection<IntervalsSource> inner = in.getDisjunctions();
+    if (inner.size() == 1) {
+      return Collections.singleton(this);
+    }
+    return inner.stream().map(this::wrap).collect(Collectors.toSet());
+  }
+
+  private IntervalsSource wrap(IntervalsSource in) {
+    return new FilteredIntervalsSource(name, in) {
+      @Override
+      protected boolean accept(IntervalIterator it) {
+        return FilteredIntervalsSource.this.accept(it);
+      }
+    };
+  }
+
+  @Override
   public void visit(String field, QueryVisitor visitor) {
     in.visit(field, visitor);
   }
@@ -89,7 +110,7 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (o == null || o instanceof FilteredIntervalsSource == false) return false;
     FilteredIntervalsSource that = (FilteredIntervalsSource) o;
     return Objects.equals(name, that.name) &&
         Objects.equals(in, that.in);

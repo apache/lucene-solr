@@ -184,7 +184,7 @@ public final class Intervals {
     if (subSources.length == 1) {
       return subSources[0];
     }
-    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
   }
 
   /**
@@ -210,7 +210,7 @@ public final class Intervals {
     if (subSources.length == 1) {
       return subSources[0];
     }
-    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources),
+    return new ConjunctionIntervalsSource(Arrays.asList(subSources),
         allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
   }
 

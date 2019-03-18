@@ -28,6 +28,25 @@ import org.apache.lucene.util.PriorityQueue;
  */
 abstract class IntervalFunction {
 
+  /**
+   * BLOCK and ordered near queries may need to rewrite inner disjunctions if they
+   * contain sources that are prefixes of another source
+   *
+   * eg BLOCK(a, OR(b, BLOCK(b, c)), d) must be rewritten, otherwise it will not
+   * match documents containing "a b c d"
+   */
+  abstract boolean rewriteDisjunctions();
+
+  /**
+   * @return {@code true} if the function eagerly advances its subintervals to minimize itself
+   */
+  abstract boolean isMinimizing();
+
+  /**
+   * @return {@code true} if the function returns the values of one subinterval filtered by another
+   */
+  abstract boolean isFiltering();
+
   @Override
   public abstract int hashCode();
 
@@ -42,7 +61,7 @@ abstract class IntervalFunction {
    */
   public abstract IntervalIterator apply(List<IntervalIterator> iterators);
 
-  static final IntervalFunction BLOCK = new SingletonFunction("BLOCK") {
+  static final IntervalFunction BLOCK = new SingletonFunction("BLOCK", false, true, false) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       return new BlockIntervalIterator(iterators);
@@ -105,7 +124,7 @@ abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the subiterators appear in a given order
    */
-  static final IntervalFunction ORDERED = new SingletonFunction("ORDERED") {
+  static final IntervalFunction ORDERED = new SingletonFunction("ORDERED", true, true, false) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
       return new OrderedIntervalIterator(intervalIterators);
@@ -182,7 +201,7 @@ abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the subiterators appear in any order
    */
-  static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED") {
+  static final IntervalFunction UNORDERED = new SingletonFunction("UNORDERED", true, false, false) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> intervalIterators) {
       return new UnorderedIntervalIterator(intervalIterators, true);
@@ -192,7 +211,7 @@ abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the subiterators appear in any order, and do not overlap
    */
-  static final IntervalFunction UNORDERED_NO_OVERLAP = new SingletonFunction("UNORDERED_NO_OVERLAP") {
+  static final IntervalFunction UNORDERED_NO_OVERLAP = new SingletonFunction("UNORDERED_NO_OVERLAP", true, false, false) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       return new UnorderedIntervalIterator(iterators, false);
@@ -346,7 +365,7 @@ abstract class IntervalFunction {
   /**
    * Returns an interval over iterators where the first iterator contains intervals from the second
    */
-  static final IntervalFunction CONTAINING = new SingletonFunction("CONTAINING") {
+  static final IntervalFunction CONTAINING = new SingletonFunction("CONTAINING", false, false, true) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       if (iterators.size() != 2)
@@ -375,7 +394,7 @@ abstract class IntervalFunction {
   /**
    * Return an iterator over intervals where the first iterator is contained by intervals from the second
    */
-  static final IntervalFunction CONTAINED_BY = new SingletonFunction("CONTAINED_BY") {
+  static final IntervalFunction CONTAINED_BY = new SingletonFunction("CONTAINED_BY", false, false, true) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       if (iterators.size() != 2)
@@ -404,7 +423,7 @@ abstract class IntervalFunction {
     }
   };
 
-  static final IntervalFunction OVERLAPPING = new SingletonFunction("OVERLAPPING") {
+  static final IntervalFunction OVERLAPPING = new SingletonFunction("OVERLAPPING", false, false, true) {
     @Override
     public IntervalIterator apply(List<IntervalIterator> iterators) {
       if (iterators.size() != 2)
@@ -476,9 +495,30 @@ abstract class IntervalFunction {
   private static abstract class SingletonFunction extends IntervalFunction {
 
     private final String name;
+    private final boolean rewriteDisjunctions;
+    private final boolean isMinimizing;
+    private final boolean isFiltering;
 
-    protected SingletonFunction(String name) {
+    protected SingletonFunction(String name, boolean isMinimizing, boolean rewriteDisjunctions, boolean isFiltering) {
       this.name = name;
+      this.rewriteDisjunctions = rewriteDisjunctions;
+      this.isMinimizing = isMinimizing;
+      this.isFiltering = isFiltering;
+    }
+
+    @Override
+    boolean rewriteDisjunctions() {
+      return rewriteDisjunctions;
+    }
+
+    @Override
+    boolean isMinimizing() {
+      return isMinimizing;
+    }
+
+    @Override
+    boolean isFiltering() {
+      return isFiltering;
     }
 
     @Override

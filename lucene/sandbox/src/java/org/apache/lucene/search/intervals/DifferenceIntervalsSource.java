@@ -18,7 +18,10 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -60,6 +63,15 @@ class DifferenceIntervalsSource extends IntervalsSource {
     }
     IntervalIterator difference = function.apply(IntervalMatches.wrapMatches(minIt, doc), IntervalMatches.wrapMatches(subIt, doc));
     return IntervalMatches.asMatches(difference, minIt, doc);
+  }
+
+  @Override
+  public Collection<IntervalsSource> getDisjunctions() {
+    Collection<IntervalsSource> inner = minuend.getDisjunctions();
+    if (inner.size() == 1) {
+      return Collections.singleton(this);
+    }
+    return inner.stream().map(s -> new DifferenceIntervalsSource(s, subtrahend, function)).collect(Collectors.toSet());
   }
 
   @Override

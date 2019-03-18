@@ -31,7 +31,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 
 public class TestIntervalQuery extends LuceneTestCase {
 
@@ -166,14 +165,38 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{});
   }
 
-  // The Vigna paper doesn't deal with prefix disjunctions.  For now, we keep the same
-  // logic as detailed in the paper, but we may want to address it in future so that tests
-  // like the one below will pass
-  @Ignore
   public void testNestedOr() throws IOException {
     Query q = new IntervalQuery(field, Intervals.phrase(
         Intervals.term("coordinate"),
         Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrWithGaps() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("coordinate"),
+        Intervals.or(Intervals.term("genome"), Intervals.extend(Intervals.term("mapping"), 1, 0)),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrWithinDifference() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("coordinate"),
+        Intervals.notContaining(
+            Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
+            Intervals.term("wibble")),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrWithinConjunctionFilter() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("coordinate"),
+        Intervals.containing(
+            Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
+            Intervals.term("genome")),
         Intervals.term("research")));
     checkHits(q, new int[]{ 6, 7 });
   }
