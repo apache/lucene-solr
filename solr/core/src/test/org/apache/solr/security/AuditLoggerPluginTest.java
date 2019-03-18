@@ -21,11 +21,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AuditLoggerPluginTest extends LuceneTestCase {
+public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   protected static final Date SAMPLE_DATE = new Date(1234567890);
   protected static final AuditEvent EVENT_ANONYMOUS = new AuditEvent(AuditEvent.EventType.ANONYMOUS)
       .setHttpMethod("GET")

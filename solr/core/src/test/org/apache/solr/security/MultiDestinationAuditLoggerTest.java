@@ -21,12 +21,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
-import org.junit.After;
 import org.junit.Test;
 
-public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
+public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
   @Test
   public void init() throws IOException {
     MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();

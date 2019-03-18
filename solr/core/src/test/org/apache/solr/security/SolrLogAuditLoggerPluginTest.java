@@ -17,20 +17,18 @@
 
 package org.apache.solr.security;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_ANONYMOUS;
 import static org.apache.solr.security.AuditLoggerPluginTest.EVENT_AUTHENTICATED;
 
-public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
+public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   private SolrLogAuditLoggerPlugin plugin;
   private HashMap<String, Object> config;
 

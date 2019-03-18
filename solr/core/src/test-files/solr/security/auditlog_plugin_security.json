@@ -1,6 +1,7 @@
 {
   "auditlogging": {
     "class": "solr.CallbackAuditLoggerPlugin",
-    "callbackPort": "_PORT_"
+    "callbackPort": "_PORT_",
+    "async": _ASYNC_
   }
 }

@@ -61,7 +61,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final String PARAM_QUEUE_SIZE = "queueSize";
   private static final String PARAM_NUM_THREADS = "numThreads";
   private static final int DEFAULT_QUEUE_SIZE = 4096;
-  private static final int DEFAULT_NUM_THREADS = 1;
+  private static final int DEFAULT_NUM_THREADS = 2;
 
   private BlockingQueue<AuditEvent> queue;
   private boolean async;
@@ -87,6 +87,36 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       EventType.UNAUTHORIZED.name(),
       EventType.ANONYMOUS_REJECTED.name());
   private ExecutorService executorService;
+  private boolean closed;
+
+  /**
+   * Initialize the plugin from security.json.
+   * This method removes parameters from config object after consuming, so subclasses can check for config errors.
+   * @param pluginConfig the config for the plugin
+   */
+  public void init(Map<String, Object> pluginConfig) {
+    formatter = new JSONAuditEventFormatter();
+    if (pluginConfig.containsKey(PARAM_EVENT_TYPES)) {
+      eventTypes = (List<String>) pluginConfig.get(PARAM_EVENT_TYPES);
+    }
+    pluginConfig.remove(PARAM_EVENT_TYPES);
+    
+    async = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_ASYNC, true)));
+    blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
+    blockingQueueSize = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE))) : 1;
+    int numThreads = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_NUM_THREADS, DEFAULT_NUM_THREADS))) : 1;
+    pluginConfig.remove(PARAM_ASYNC);
+    pluginConfig.remove(PARAM_BLOCKASYNC);
+    pluginConfig.remove(PARAM_QUEUE_SIZE);
+    pluginConfig.remove(PARAM_NUM_THREADS);
+    queue = new ArrayBlockingQueue<>(blockingQueueSize);
+    if (async) {
+      executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrjNamedThreadFactory("audit"));
+      executorService.submit(this);
+    }
+    pluginConfig.remove("class");
+    log.debug("AuditLogger initialized in {} mode with event types {}", async?"async":"syncronous", eventTypes);
+  }
 
   /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
@@ -139,56 +169,23 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   @Override
   public void run() {
-    while (true) {
-      Timer.Context timer = null;
+    while (!closed && !Thread.currentThread().isInterrupted()) {
       try {
         AuditEvent event = queue.take();
-        numLogged.mark();
-        timer = requestTimes.time();
+        Timer.Context timer = requestTimes.time();
         audit(event);
+        numLogged.mark();
+        totalTime.inc(timer.stop());
       } catch (InterruptedException e) {
         log.warn("Interrupted while waiting for next audit log event");
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
         log.warn("Exception when attempting to audit log asynchronously", ex);
         numErrors.mark();
-      } finally {
-        if (timer != null) {
-          totalTime.inc(timer.stop());
-        }
       }
     }
   }
   
-  /**
-   * Initialize the plugin from security.json.
-   * This method removes parameters from config object after consuming, so subclasses can check for config errors.
-   * @param pluginConfig the config for the plugin
-   */
-  public void init(Map<String, Object> pluginConfig) {
-    formatter = new JSONAuditEventFormatter();
-    if (pluginConfig.containsKey(PARAM_EVENT_TYPES)) {
-      eventTypes = (List<String>) pluginConfig.get(PARAM_EVENT_TYPES);
-    }
-    pluginConfig.remove(PARAM_EVENT_TYPES);
-    
-    async = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_ASYNC, false)));
-    blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
-    blockingQueueSize = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE))) : 1;
-    int numThreads = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_NUM_THREADS, DEFAULT_NUM_THREADS))) : 1;
-    pluginConfig.remove(PARAM_ASYNC);
-    pluginConfig.remove(PARAM_BLOCKASYNC);
-    pluginConfig.remove(PARAM_QUEUE_SIZE);
-    pluginConfig.remove(PARAM_NUM_THREADS);
-    queue = new ArrayBlockingQueue<>(blockingQueueSize);
-    if (async) {
-      executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrjNamedThreadFactory("audit"));
-      executorService.submit(this);
-    }
-    pluginConfig.remove("class");
-    log.debug("AuditLogger initialized in {} mode with event types {}", async?"async":"syncronous", eventTypes);
-  }
-
   /**
    * Checks whether this event type should be logged based on "eventTypes" config parameter.
    *
@@ -279,6 +276,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
 
   @Override
   public void close() throws IOException {
+    closed = true;
     if (executorService != null) {
       executorService.shutdownNow();
     }

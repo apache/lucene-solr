@@ -855,6 +855,9 @@ public class CoreContainer {
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
     }
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
+    if (auditloggerPlugin != null) {
+      auditloggerPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/auditlogging");
+    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
@@ -1021,6 +1024,16 @@ public class CoreContainer {
       }
     } catch (Exception e) {
       log.warn("Exception while closing authentication plugin.", e);
+    }
+
+    // It should be safe to close the auditlogger plugin at this point.
+    try {
+      if (auditloggerPlugin != null) {
+        auditloggerPlugin.plugin.close();
+        auditloggerPlugin = null;
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing auditlogger plugin.", e);
     }
 
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort

@@ -25,6 +25,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Special test-only audit logger which will send the path (e.g. /select) as a callback to the running test
+ */
 public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private int callbackPort;
@@ -37,8 +40,9 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
    */
   @Override
   public void audit(AuditEvent event) {
-    log.info("Received audit event, type={}", event.getEventType());
-    out.append('l');
+    out.write(event.getResource() + "\n");
+    out.flush();
+    log.info("Sent audit callback {} to localhost:{}", event.getResource(), callbackPort);
   }
 
   @Override
@@ -46,8 +50,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
     super.init(pluginConfig);
     callbackPort = Integer.parseInt((String) pluginConfig.get("callbackPort"));
     try {
-      socket = new Socket("127.0.0.1", callbackPort);
-//      socket.bind(new InetSocketAddress(InetAddress.getLocalHost(), callbackPort));
+      socket = new Socket("localhost", callbackPort);
       out = new PrintWriter(socket.getOutputStream(), true);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -56,6 +59,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
 
   @Override
   public void close() throws IOException { 
+    super.close();
     socket.close();
   }
 }

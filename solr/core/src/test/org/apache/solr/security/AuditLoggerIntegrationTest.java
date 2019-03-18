@@ -17,28 +17,22 @@
 package org.apache.solr.security;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.net.HttpURLConnection;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
-import org.apache.solr.common.util.Pair;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +40,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Validate that audit logging works in a live cluster
  */
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
 public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -55,82 +48,68 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
   private final String COLLECTION = "auditCollection";
-  private String baseUrl;
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @Test
+  public void testSynchronous() throws Exception {
+    doTest(false);     
   }
 
   @Test
-  public void test() throws Exception {
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    try (CallbackReceiver receiver = new CallbackReceiver()) {
-      int callbackPort = receiver.getPort();
-
-      executorService.submit(receiver);
-
-      log.info("Starting cluster with callbackPort {}", callbackPort);
-      String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
-      securityJson = securityJson.replace("_PORT_", Integer.toString(callbackPort));
-      configureCluster(NUM_SERVERS)// nodes
-          .withSecurityJson(securityJson)
-          .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-          .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
-          .configure();
-      baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-
-      cluster.waitForAllNodes(10);
-
-      String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-
-      createCollection(COLLECTION);
-
-      get(baseUrl + "/" + COLLECTION + "/query?q=*:*");
-      assertEquals(1, receiver.getCount());
-    } finally {
-      shutdownCluster();       
-      executorService.shutdown();
-    }
+  public void testAsync() throws Exception {
+    doTest(true);     
   }
   
-  private Pair<String, Integer> get(String url) throws IOException {
-    URL createUrl = new URL(url);
-    HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
-    BufferedReader br2 = new BufferedReader(new InputStreamReader((InputStream) createConn.getContent(), StandardCharsets.UTF_8));
-    String result = br2.lines().collect(Collectors.joining("\n"));
-    int code = createConn.getResponseCode();
-    createConn.disconnect();
-    return new Pair<>(result, code);
+  void doTest(boolean async) throws Exception {
+    CallbackReceiver receiver = new CallbackReceiver();
+    int callbackPort = receiver.getPort();
+
+    // Kicking off background thread for listening to the audit logger callbacks
+    Thread receiverThread = new DefaultSolrThreadFactory("auditTestCallback").newThread(receiver);
+    receiverThread.start();
+
+    String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
+    securityJson = securityJson.replace("_PORT_", Integer.toString(callbackPort));
+    securityJson = securityJson.replace("_ASYNC_", Boolean.toString(async));
+    configureCluster(NUM_SERVERS)// nodes
+        .withSecurityJson(securityJson)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
+    
+    cluster.waitForAllNodes(10);
+
+    CloudSolrClient client = cluster.getSolrClient();
+    client.request(CollectionAdminRequest.Create.createCollection(COLLECTION, 1, 1));
+    client.query(COLLECTION, params("q", "*:*"));
+    
+    if (async) Thread.sleep(1000); // Allow for async callbacks to arrive
+    
+    assertEquals(3, receiver.getTotalCount());
+    assertEquals(1, receiver.getCountForPath("/select"));
+    assertEquals(1, receiver.getCountForPath("/admin/collections"));
+    assertEquals(1, receiver.getCountForPath("/admin/cores"));
+    receiverThread.interrupt();
+    receiver.close();
+    shutdownCluster();       
   }
 
-  private void createCollection(String collectionName) throws IOException {
-    assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=" + NUM_SHARDS).second().intValue());
-    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR);
-  }
-
+  /**
+   * Listening for socket callbacks in background thread from the custom CallbackAuditLoggerPlugin
+   */
   private class CallbackReceiver implements Runnable, AutoCloseable {
     private final ServerSocket serverSocket;
     private AtomicInteger count = new AtomicInteger();
-    private AtomicInteger errors = new AtomicInteger();
-    
+    private Map<String,AtomicInteger> resourceCounts = new HashMap<>();
+
     public CallbackReceiver() throws IOException {
       serverSocket = new ServerSocket(0);
     }
 
-    public int getCount() {
+    public int getTotalCount() {
       return count.get();
     }
 
-    public int getErrors() {
-      return errors.get();
+    public int getCountForPath(String path) {
+      return resourceCounts.getOrDefault(path, new AtomicInteger()).get();
     }
     
     public int getPort() {
@@ -139,18 +118,26 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     @Override
     public void run() {
+      log.info("Listening for audit callbacks on on port {}", serverSocket.getLocalPort());
       try {
         Socket socket = serverSocket.accept();
-        InputStream is = socket.getInputStream();
-        DataInputStream dis = new DataInputStream(is);
-        int b;
-        while (true) {
-          b = dis.readByte();
-          log.info("Callback=" + b);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        while (!Thread.currentThread().isInterrupted()) {
+          if (!reader.ready()) continue;
+          
+          String r = reader.readLine();
+          log.info("Received audit event for path " + r);
           count.incrementAndGet();
+          AtomicInteger resourceCounter = resourceCounts.get(r);
+          if (resourceCounter == null) {
+            resourceCounter = new AtomicInteger(1);
+            resourceCounts.put(r, resourceCounter);
+          } else {
+            resourceCounter.incrementAndGet();
+          }
         }
       } catch (IOException e) { 
-        log.info("Socket closed");
+        log.info("Socket closed", e);
       }
     }
 

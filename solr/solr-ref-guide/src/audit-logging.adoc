@@ -43,19 +43,33 @@ By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHO
 == Configuration in security.json
 Audit logging is configured in `security.json` under the `auditlogging` key.
 
-The example `security.json` below configures audit logging to Solr default log file, enabling logging of all available event types.
+The example `security.json` below configures synchronous audit logging to Solr default log file. 
 
 [source,json]
 ----
 {
   "auditlogging":{
-     "class":"solr.SolrLogAuditLoggerPlugin",
-     "eventTypes": ["AUTHENTICATED", "REJECTED", "ANONYMOUS", 
-                    "ANONYMOUS_REJECTED", "AUTHORIZED", "UNAUTHORIZED", 
-                    "COMPLETED", "ERROR"]
+     "class": "solr.SolrLogAuditLoggerPlugin"
   }
 }
 ----
+
+To make audit logging happen asynchronously in the backgroun, add the parameter `async: true`. This will cause the events to be put on a queue for asynchronous logging by one or more background threads. You may optionally also configure queue size, number of threads and whether it should block when the queue is full or discard events.
+
+[source,json]
+----
+{
+  "auditlogging":{
+     "class": "solr.SolrLogAuditLoggerPlugin",
+     "async": true,
+     "blockAsync" : false,
+     "numThreads" : 2,
+     "queueSize" : 4096
+  }
+}
+----
+
+The defaults are `async: false`, `blockAsync: false`, `queueSize: 4096` and `numThreads: 2`.
 
 === Chaining multiple loggers
 Using the `MultiDestinationAuditLogger` you can configure multiple audit logger plugins in a chain, to log to multiple destinations, as follows:
@@ -74,23 +88,6 @@ Using the `MultiDestinationAuditLogger` you can configure multiple audit logger 
   }
 }
 ----
-
-=== Synchronous vs asynchronous audit logging
-AuditLoggerPlugin developers can choose to make audit logging asynchronous by subclassing the `AsyncAuditLoggerPlugin` base class intead of the normal `AuditLoggerPlugin`. This will cause the event to be put on a queue and for asynchronous loggging by a background thread. For Audit loggers with async support, you can also configure queue size, number of threads and whether it should block when the queue is full:
-
-[source,json]
-----
-{
-  "auditlogging":{
-     "class" : "solr.MyAsyncAuditLogger",
-     "blockAsync" : false,
-     "numThreads" : 2,
-     "queueSize" : 4096
-  }
-}
-----
-
-It is not possible to enable async audit logging unless the plugin extends the `AsyncAuditLoggerPlugin`.
 
 == Metrics
 AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers.
