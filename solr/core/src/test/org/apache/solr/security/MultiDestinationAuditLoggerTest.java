@@ -16,17 +16,19 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.After;
 import org.junit.Test;
 
 public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
   @Test
-  public void init() {
+  public void init() throws IOException {
     MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");
@@ -51,7 +53,7 @@ public class MultiDestinationAuditLoggerTest extends LuceneTestCase {
   }
 
   @Test
-  public void wrongConfigParam() {
+  public void wrongConfigParam() throws IOException {
     MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");

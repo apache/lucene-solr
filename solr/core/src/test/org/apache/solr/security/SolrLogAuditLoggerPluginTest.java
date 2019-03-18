@@ -17,10 +17,13 @@
 
 package org.apache.solr.security;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.HashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,10 +40,13 @@ public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
     plugin = new SolrLogAuditLoggerPlugin();
     config = new HashMap<>();
     plugin.init(config);
+    closeAfterTest(plugin);
   }
 
   @Test(expected = SolrException.class)
-  public void badConfig() {
+  public void badConfig() throws IOException {
+    plugin.close();
+    plugin = new SolrLogAuditLoggerPlugin();
     config = new HashMap<>();
     config.put("invalid", "parameter");
     plugin.init(config);
@@ -57,5 +63,5 @@ public class SolrLogAuditLoggerPluginTest extends LuceneTestCase {
         plugin.formatter.formatEvent(EVENT_ANONYMOUS));
     assertEquals("type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" username=\"Jan\" resource=\"/collection1\" collections=null", 
         plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
-  } 
+  }
 }

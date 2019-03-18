@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
@@ -74,7 +73,4 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
         break;
     }
   }
-
-  @Override
-  public void close() throws IOException {}
 }

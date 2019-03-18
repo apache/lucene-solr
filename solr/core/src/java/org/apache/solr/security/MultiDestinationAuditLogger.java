@@ -104,9 +104,6 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   }
 
   @Override
-  public void close() {}
-
-  @Override
   public void inform(ResourceLoader loader) {
     this.loader = loader;
   }

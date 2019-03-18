@@ -24,7 +24,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -34,6 +37,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -47,9 +52,21 @@ import org.slf4j.LoggerFactory;
  * @since 8.1.0
  * @lucene.experimental
  */
-public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
+  
+  private static final String PARAM_ASYNC = "async";
+  private static final String PARAM_BLOCKASYNC = "blockAsync";
+  private static final String PARAM_QUEUE_SIZE = "queueSize";
+  private static final String PARAM_NUM_THREADS = "numThreads";
+  private static final int DEFAULT_QUEUE_SIZE = 4096;
+  private static final int DEFAULT_NUM_THREADS = 1;
+
+  private BlockingQueue<AuditEvent> queue;
+  private boolean async;
+  private boolean blockAsync;
+  private int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
   MetricRegistry registry;
@@ -69,6 +86,7 @@ public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, Solr
       EventType.REJECTED.name(),
       EventType.UNAUTHORIZED.name(),
       EventType.ANONYMOUS_REJECTED.name());
+  private ExecutorService executorService;
 
   /**
    * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
@@ -80,16 +98,65 @@ public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, Solr
    * Called by the framework, and takes care of metrics  
    */
   public final void doAudit(AuditEvent event) {
-    Timer.Context timer = requestTimes.time();
-    numLogged.mark();
-    try {
-      audit(event);
-    } catch(Exception e) {
-      numErrors.mark();
-      throw e;
-    } finally {
-      long elapsed = timer.stop();
-      totalTime.inc(elapsed);
+    if (async) {
+      auditAsync(event);
+    } else {
+      Timer.Context timer = requestTimes.time();
+      numLogged.mark();
+      try {
+        audit(event);
+      } catch(Exception e) {
+        numErrors.mark();
+        throw e;
+      } finally {
+        totalTime.inc(timer.stop());
+      }
+    }
+  }
+
+  /**
+   * Enqueues an {@link AuditEvent} to a queue and returns immediately.
+   * A background thread will pull events from this queue and call {@link #audit(AuditEvent)}
+   * @param event the audit event
+   */
+  public final void auditAsync(AuditEvent event) {
+    if (blockAsync) {
+      try {
+        queue.put(event);
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while waiting to insert AuditEvent into blocking queue");
+        Thread.currentThread().interrupt();
+      }
+    } else {
+      if (!queue.offer(event)) {
+        log.warn("Audit log async queue is full (size={}), not blocking since {}", blockingQueueSize, PARAM_BLOCKASYNC + "==false");
+      }
+    }
+  }
+
+  /**
+   * Pick next event from async queue and call {@link #audit(AuditEvent)}
+   */
+  @Override
+  public void run() {
+    while (true) {
+      Timer.Context timer = null;
+      try {
+        AuditEvent event = queue.take();
+        numLogged.mark();
+        timer = requestTimes.time();
+        audit(event);
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while waiting for next audit log event");
+        Thread.currentThread().interrupt();
+      } catch (Exception ex) {
+        log.warn("Exception when attempting to audit log asynchronously", ex);
+        numErrors.mark();
+      } finally {
+        if (timer != null) {
+          totalTime.inc(timer.stop());
+        }
+      }
     }
   }
   
@@ -104,8 +171,22 @@ public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, Solr
       eventTypes = (List<String>) pluginConfig.get(PARAM_EVENT_TYPES);
     }
     pluginConfig.remove(PARAM_EVENT_TYPES);
+    
+    async = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_ASYNC, false)));
+    blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
+    blockingQueueSize = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE))) : 1;
+    int numThreads = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_NUM_THREADS, DEFAULT_NUM_THREADS))) : 1;
+    pluginConfig.remove(PARAM_ASYNC);
+    pluginConfig.remove(PARAM_BLOCKASYNC);
+    pluginConfig.remove(PARAM_QUEUE_SIZE);
+    pluginConfig.remove(PARAM_NUM_THREADS);
+    queue = new ArrayBlockingQueue<>(blockingQueueSize);
+    if (async) {
+      executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrjNamedThreadFactory("audit"));
+      executorService.submit(this);
+    }
     pluginConfig.remove("class");
-    log.debug("AuditLogger initialized with event types {}", eventTypes);
+    log.debug("AuditLogger initialized in {} mode with event types {}", async?"async":"syncronous", eventTypes);
   }
 
   /**
@@ -136,7 +217,10 @@ public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, Solr
     numLogged = manager.meter(this, registryName, "logged", getCategory().toString(), scope);
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime"));
+    manager.registerGauge(this, registryName, () -> blockingQueueSize,"queueCapacity", true, "queueCapacity", getCategory().toString());
+    manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(),"queueSize", true, "queueSize", getCategory().toString());
+    manager.registerGauge(this, registryName, () -> async,"async", true, "async", getCategory().toString());
+    metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime", "queueCapacity", "queueSize", "async"));
   }
   
   @Override
@@ -190,6 +274,13 @@ public abstract class AuditLoggerPlugin implements Closeable, SolrInfoBean, Solr
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error converting Event to JSON", e);
       }
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (executorService != null) {
+      executorService.shutdownNow();
     }
   }
 }
