@@ -32,6 +32,7 @@ and enabling any of these will immediately take effect across the whole cluster.
 Read the chapter <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Configuring security plugins in security.json>>
 to learn how to work with the `security.json` file.
 
+[#securing-solr-auth-plugins]
 === Authentication plugins
 Authentication makes sure you know the identity of your users. Supported authentication plugins are:
 
@@ -50,7 +51,7 @@ The authorization plugins shipping with Solr are:
 Audit logging will record an audit trail of important events in your cluster, such as users being authenticated,
 or access being denied to admin APIs. Learn more about audit logging and how to implement an audit logger plugin here:
 
-* <<audit-logging.adoc,Audit Logging Framework>>
+* <<audit-logging.adoc#audit-logging,Audit Logging Framework>>
 
 == Securing Zookeeper traffic
 Zookeeper is a central and important part of a SolrCloud cluster and understanding how to secure

@@ -22,6 +22,7 @@ Audit loggers are pluggable to suit any possible format or log destination.
 [quote]
 An audit trail (also called audit log) is a security-relevant chronological record, set of records, and/or destination and source of records that provide documentary evidence of the sequence of activities that have affected at any time a specific operation, procedure, or event. (https://en.wikipedia.org/wiki/Audit_trail[Wikipedia])
 
+[#audit-event-types]
 == Event types
 These are the event types triggered by the framework:
 
