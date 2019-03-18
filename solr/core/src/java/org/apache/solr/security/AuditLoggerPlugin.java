@@ -28,6 +28,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -276,9 +277,16 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
 
   @Override
   public void close() throws IOException {
-    closed = true;
     if (executorService != null) {
-      executorService.shutdownNow();
+      log.info("Shutting down async Auditlogger background thread(s)");
+      executorService.shutdown();
+      try {
+        executorService.awaitTermination(20, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        log.info("Auditlogger background threads did not complete work in 20 seconds, queue size is {}. Forcing termination.", queue.size());
+        executorService.shutdownNow();
+      }
     }
+    closed = true;
   }
 }

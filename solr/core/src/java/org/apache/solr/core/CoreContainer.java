@@ -382,7 +382,6 @@ public class CoreContainer {
       auditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
           getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
-      // Read and pass the authorization context to the plugin
       auditloggerPlugin.plugin.init(auditConf);
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
