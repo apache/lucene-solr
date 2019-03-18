@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -49,16 +50,17 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   private static final String PARAM_PLUGINS = "plugins";
   private ResourceLoader loader;
   List<AuditLoggerPlugin> plugins = new ArrayList<>();
+  List<String> pluginNames = new ArrayList<>();
 
   /**
-   * Audits an event. The event should be a {@link AuditEvent} to be able to pull context info.
+   * Passes the AuditEvent to all sub plugins in parallel. The event should be a {@link AuditEvent} to be able to pull context info.
    * @param event the audit event
    */
   @Override
   public void audit(AuditEvent event) {
-    plugins.forEach(plugin -> {
-      log.debug("Passing auditEvent to plugin {}", plugin.getClass().getName());
-      plugin.audit(event);
+    log.debug("Passing auditEvent to plugins {}", pluginNames);
+    plugins.parallelStream().forEach(plugin -> {
+      plugin.doAudit(event);
     });
   }
 
@@ -69,6 +71,10 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   @Override
   public void init(Map<String, Object> pluginConfig) {
     super.init(pluginConfig);
+    if (async) {
+      log.warn(MultiDestinationAuditLogger.class.getName() + " cannot run in async mode");
+      async = false;
+    }
     if (!pluginConfig.containsKey(PARAM_PLUGINS)) {
       log.warn("No plugins configured");
     } else {
@@ -76,11 +82,12 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       List<Map<String, Object>> pluginList = (List<Map<String, Object>>) pluginConfig.get(PARAM_PLUGINS);
       pluginList.forEach(pluginConf -> plugins.add(createPlugin(pluginConf)));
       pluginConfig.remove(PARAM_PLUGINS);
+      pluginNames = plugins.stream().map(AuditLoggerPlugin::getName).collect(Collectors.toList());
     }
     if (pluginConfig.size() > 0) {
       log.error("Plugin config was not fully consumed. Remaining parameters are {}", pluginConfig);
     }
-    log.info("Initialized {} audit plugins", plugins.size());
+    log.info("Initialized {} audit plugins: {}", plugins.size(), pluginNames);
   }
 
   @Override

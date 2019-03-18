@@ -64,10 +64,10 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final int DEFAULT_QUEUE_SIZE = 4096;
   private static final int DEFAULT_NUM_THREADS = 2;
 
-  private BlockingQueue<AuditEvent> queue;
-  private boolean async;
-  private boolean blockAsync;
-  private int blockingQueueSize;
+  BlockingQueue<AuditEvent> queue;
+  boolean async;
+  boolean blockAsync;
+  int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
   MetricRegistry registry;
@@ -172,7 +172,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   public void run() {
     while (!closed && !Thread.currentThread().isInterrupted()) {
       try {
-        AuditEvent event = queue.take();
+        AuditEvent event = queue.poll(1000, TimeUnit.MILLISECONDS);
+        if (event == null) continue;
         Timer.Context timer = requestTimes.time();
         audit(event);
         numLogged.mark();
@@ -209,15 +210,16 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
     this.metricManager = manager;
     this.registryName = registryName;
+    String className = this.getClass().getSimpleName();
     // Metrics
     registry = manager.registry(registryName);
-    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
-    numLogged = manager.meter(this, registryName, "logged", getCategory().toString(), scope);
-    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
-    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    manager.registerGauge(this, registryName, () -> blockingQueueSize,"queueCapacity", true, "queueCapacity", getCategory().toString());
-    manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(),"queueSize", true, "queueSize", getCategory().toString());
-    manager.registerGauge(this, registryName, () -> async,"async", true, "async", getCategory().toString());
+    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope, className);
+    numLogged = manager.meter(this, registryName, "count", getCategory().toString(), scope, className);
+    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope, className);
+    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope, className);
+    manager.registerGauge(this, registryName, () -> blockingQueueSize,"queueCapacity", true, "queueCapacity", getCategory().toString(), scope, className);
+    manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(),"queueSize", true, "queueSize", getCategory().toString(), scope, className);
+    manager.registerGauge(this, registryName, () -> async,"async", true, "async", getCategory().toString(), scope, className);
     metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime", "queueCapacity", "queueSize", "async"));
   }
   
@@ -278,15 +280,17 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   @Override
   public void close() throws IOException {
     if (executorService != null) {
-      log.info("Shutting down async Auditlogger background thread(s)");
-      executorService.shutdown();
-      try {
-        executorService.awaitTermination(20, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        log.info("Auditlogger background threads did not complete work in 20 seconds, queue size is {}. Forcing termination.", queue.size());
-        executorService.shutdownNow();
+      int timeSlept = 0;
+      while (!queue.isEmpty() && timeSlept < 30) {
+        try {
+          log.info("Async auditlogger queue still has {} elements, sleeping to let it drain...", queue.size());
+          Thread.sleep(1000);
+          timeSlept ++;
+        } catch (InterruptedException e) {}
       }
+      closed = true;
+      log.info("Shutting down async Auditlogger background thread(s)");
+      executorService.shutdownNow();
     }
-    closed = true;
   }
 }

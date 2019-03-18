@@ -20,6 +20,7 @@ package org.apache.solr.security;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
@@ -75,6 +76,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     super.setUp();
     plugin = new MockAuditLoggerPlugin();
     config = new HashMap<>();
+    config.put("async", false);
     plugin.init(config);
   }
   
@@ -82,6 +84,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   public void init() {
     config = new HashMap<>();
     config.put("eventTypes", Arrays.asList("REJECTED"));
+    config.put("async", false);
     plugin.init(config);
     assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
     assertFalse(plugin.shouldLog(EVENT_UNAUTHORIZED.getEventType()));
@@ -103,8 +106,8 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   public void audit() {
     plugin.doAudit(EVENT_ANONYMOUS_REJECTED);
     plugin.doAudit(EVENT_REJECTED);
-    assertEquals(1, plugin.typeCounts.get("ANONYMOUS_REJECTED").get());
-    assertEquals(1, plugin.typeCounts.get("REJECTED").get());
+    assertEquals(1, plugin.typeCounts.getOrDefault("ANONYMOUS_REJECTED", new AtomicInteger()).get());
+    assertEquals(1, plugin.typeCounts.getOrDefault("REJECTED", new AtomicInteger()).get());
     assertEquals(2, plugin.events.size());
   }
   

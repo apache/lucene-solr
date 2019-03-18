@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,34 +33,40 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   private SolrLogAuditLoggerPlugin plugin;
   private HashMap<String, Object> config;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     plugin = new SolrLogAuditLoggerPlugin();
     config = new HashMap<>();
-    plugin.init(config);
-    closeAfterTest(plugin);
+    config.put("async", false);
   }
 
   @Test(expected = SolrException.class)
   public void badConfig() throws IOException {
-    plugin.close();
-    plugin = new SolrLogAuditLoggerPlugin();
-    config = new HashMap<>();
     config.put("invalid", "parameter");
     plugin.init(config);
   }
   
   @Test
   public void audit() {
+    plugin.init(config);
     plugin.doAudit(EVENT_ANONYMOUS);
   }
 
   @Test
   public void eventFormatter() {
+    plugin.init(config);
     assertEquals("type=\"ANONYMOUS\" message=\"Anonymous\" method=\"GET\" username=\"null\" resource=\"/collection1\" collections=null", 
         plugin.formatter.formatEvent(EVENT_ANONYMOUS));
     assertEquals("type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" username=\"Jan\" resource=\"/collection1\" collections=null", 
         plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    plugin.close();
   }
 }

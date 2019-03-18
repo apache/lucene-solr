@@ -2,6 +2,7 @@
   "auditlogging": {
     "class": "solr.CallbackAuditLoggerPlugin",
     "callbackPort": "_PORT_",
-    "async": _ASYNC_
+    "async": _ASYNC_,
+    "delay": "_DELAY_"
   }
 }

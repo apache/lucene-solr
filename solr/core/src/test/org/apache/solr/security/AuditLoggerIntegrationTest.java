@@ -51,15 +51,20 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testSynchronous() throws Exception {
-    doTest(false);     
+    doTest(false, 0);     
   }
 
   @Test
   public void testAsync() throws Exception {
-    doTest(true);     
+    doTest(true, 0);     
+  }
+
+  @Test
+  public void testAsyncWithQueue() throws Exception {
+    doTest(true, 100);     
   }
   
-  void doTest(boolean async) throws Exception {
+  void doTest(boolean async, int delay) throws Exception {
     CallbackReceiver receiver = new CallbackReceiver();
     int callbackPort = receiver.getPort();
 
@@ -70,6 +75,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
     securityJson = securityJson.replace("_PORT_", Integer.toString(callbackPort));
     securityJson = securityJson.replace("_ASYNC_", Boolean.toString(async));
+    securityJson = securityJson.replace("_DELAY_", Integer.toString(delay));
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(securityJson)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -78,18 +84,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     cluster.waitForAllNodes(10);
 
     CloudSolrClient client = cluster.getSolrClient();
-    client.request(CollectionAdminRequest.Create.createCollection(COLLECTION, 1, 1));
-    client.query(COLLECTION, params("q", "*:*"));
+    CollectionAdminRequest.listCollections(client);
+    client.request(CollectionAdminRequest.getClusterStatus());
+    client.request(CollectionAdminRequest.getOverseerStatus());
     
-    if (async) Thread.sleep(1000); // Allow for async callbacks to arrive
-    
+    shutdownCluster();       
     assertEquals(3, receiver.getTotalCount());
-    assertEquals(1, receiver.getCountForPath("/select"));
-    assertEquals(1, receiver.getCountForPath("/admin/collections"));
-    assertEquals(1, receiver.getCountForPath("/admin/cores"));
+    assertEquals(3, receiver.getCountForPath("/admin/collections"));
+
     receiverThread.interrupt();
     receiver.close();
-    shutdownCluster();       
   }
 
   /**
@@ -118,8 +122,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     @Override
     public void run() {
-      log.info("Listening for audit callbacks on on port {}", serverSocket.getLocalPort());
       try {
+        log.info("Listening for audit callbacks on on port {}", serverSocket.getLocalPort());
         Socket socket = serverSocket.accept();
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         while (!Thread.currentThread().isInterrupted()) {

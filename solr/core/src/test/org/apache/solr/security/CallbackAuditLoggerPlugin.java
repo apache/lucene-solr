@@ -33,6 +33,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
   private int callbackPort;
   private Socket socket;
   private PrintWriter out;
+  private int delay;
 
   /**
    * Opens a socket to send a callback, e.g. to a running test client
@@ -40,6 +41,13 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
    */
   @Override
   public void audit(AuditEvent event) {
+    if (delay > 0) {
+      log.info("Sleeping for {}ms before sending callback", delay);
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException e) {
+      }
+    }
     out.write(event.getResource() + "\n");
     out.flush();
     log.info("Sent audit callback {} to localhost:{}", event.getResource(), callbackPort);
@@ -49,6 +57,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
   public void init(Map<String, Object> pluginConfig) {
     super.init(pluginConfig);
     callbackPort = Integer.parseInt((String) pluginConfig.get("callbackPort"));
+    delay = Integer.parseInt((String) pluginConfig.get("delay"));
     try {
       socket = new Socket("localhost", callbackPort);
       out = new PrintWriter(socket.getOutputStream(), true);

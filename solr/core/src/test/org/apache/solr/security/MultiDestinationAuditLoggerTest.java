@@ -31,13 +31,16 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     MultiDestinationAuditLogger al = new MultiDestinationAuditLogger();
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");
+    config.put("async", false);
     ArrayList<Map<String, Object>> plugins = new ArrayList<Map<String, Object>>();
 
     Map<String,Object> conf1 = new HashMap<>();
     conf1.put("class", "solr.SolrLogAuditLoggerPlugin");
+    conf1.put("async", false);
     plugins.add(conf1);
     Map<String,Object> conf2 = new HashMap<>();
     conf2.put("class", "solr.MockAuditLoggerPlugin");
+    conf2.put("async", false);
     plugins.add(conf2);
     config.put("plugins", plugins);
 
