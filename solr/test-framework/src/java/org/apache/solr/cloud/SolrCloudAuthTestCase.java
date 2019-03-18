@@ -59,12 +59,15 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final List<String> AUTH_METRICS_KEYS = Arrays.asList("errors", "requests", "authenticated", 
       "passThrough", "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime");
-  private static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors");
+  private static final List<String> AUTH_METRICS_METER_KEYS = Arrays.asList("errors", "count");
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
   private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
   private static final String METRICS_PREFIX = "SECURITY./authentication.";
   public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
-  
+  private static final List<String> AUDIT_METRICS_KEYS = Arrays.asList("count");
+  private static final List<String> AUTH_METRICS_TO_COMPARE = Arrays.asList("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors");
+  private static final List<String> AUDIT_METRICS_TO_COMPARE = Arrays.asList("count");
+
   /**
    * Used to check metric counts for PKI auth
    */
@@ -85,7 +88,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * Common test method to be able to check security from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
-  Map<String,Long> countAuthMetrics(String prefix) {
+  Map<String,Long> countSecurityMetrics(String prefix, List<String> keys) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
     cluster.getJettySolrRunners().forEach(r -> {
       MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
@@ -94,14 +97,14 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     });
 
     Map<String,Long> counts = new HashMap<>();
-    AUTH_METRICS_KEYS.forEach(k -> {
+    keys.forEach(k -> {
       counts.put(k, sumCount(prefix, k, metrics));
     });
     return counts;
   } 
   
   /**
-   * Common test method to be able to check security from any authentication plugin
+   * Common test method to be able to check auth metrics from any authentication plugin
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
    */
   private void assertAuthMetricsMinimums(String prefix, int requests, int authenticated, int passThrough, int failWrongCredentials, int failMissingCredentials, int errors) throws InterruptedException {
@@ -113,13 +116,13 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
     expectedCounts.put("errors", (long) errors);
 
-    Map<String, Long> counts = countAuthMetrics(prefix);
-    boolean success = isMetricsEqualOrLarger(expectedCounts, counts);
+    Map<String, Long> counts = countSecurityMetrics(prefix, AUTH_METRICS_KEYS);
+    boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
     if (!success) {
       log.info("First metrics count assert failed, pausing 2s before re-attempt");
       Thread.sleep(2000);
-      counts = countAuthMetrics(prefix);
-      success = isMetricsEqualOrLarger(expectedCounts, counts);
+      counts = countSecurityMetrics(prefix, AUTH_METRICS_KEYS);
+      success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
     }
     
     assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
@@ -130,8 +133,29 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     }
   }
 
-  private boolean isMetricsEqualOrLarger(Map<String, Long> expectedCounts, Map<String, Long> actualCounts) {
-    return Stream.of("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors")
+  /**
+   * Common test method to be able to check audit metrics
+   * @param className the class name to be used for composing prefix, e.g. "SECURITY./auditlogging/SolrLogAuditLoggerPlugin" 
+   */
+  protected void assertAuditMetricsMinimums(String className, int count, int errors) throws InterruptedException {
+    String prefix = "SECURITY./auditlogging." + className + ".";
+    Map<String, Long> expectedCounts = new HashMap<>();
+    expectedCounts.put("count", (long) count);
+
+    Map<String, Long> counts = countSecurityMetrics(prefix, AUDIT_METRICS_KEYS);
+    boolean success = isMetricsEqualOrLarger(AUDIT_METRICS_TO_COMPARE, expectedCounts, counts);
+    if (!success) {
+      log.info("First metrics count assert failed, pausing 2s before re-attempt");
+      Thread.sleep(2000);
+      counts = countSecurityMetrics(prefix, AUDIT_METRICS_KEYS);
+      success = isMetricsEqualOrLarger(AUDIT_METRICS_TO_COMPARE, expectedCounts, counts);
+    }
+    
+    assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
+  }
+  
+  private boolean isMetricsEqualOrLarger(List<String> metricsToCompare, Map<String, Long> expectedCounts, Map<String, Long> actualCounts) {
+    return metricsToCompare.stream()
         .allMatch(k -> actualCounts.get(k).intValue() >= expectedCounts.get(k).intValue());
   }
 

@@ -88,6 +88,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     client.request(CollectionAdminRequest.getClusterStatus());
     client.request(CollectionAdminRequest.getOverseerStatus());
     
+    assertAuditMetricsMinimums(CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+
     shutdownCluster();       
     assertEquals(3, receiver.getTotalCount());
     assertEquals(3, receiver.getCountForPath("/admin/collections"));
