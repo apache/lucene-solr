@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
