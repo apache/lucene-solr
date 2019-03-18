@@ -150,7 +150,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * A background thread will pull events from this queue and call {@link #audit(AuditEvent)}
    * @param event the audit event
    */
-  public final void auditAsync(AuditEvent event) {
+  protected final void auditAsync(AuditEvent event) {
     if (blockAsync) {
       try {
         queue.put(event);
