@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -418,7 +417,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       // keep queries simple, just use str fields - not point of test
       clauses.add(strfield(fieldNum) + ":" + randFieldValue(fieldNum));
     }
-    return "(" + StringUtils.join(clauses, " OR ") + ")";
+    return "(" + String.join(" OR ", clauses) + ")";
   }
   
   /**

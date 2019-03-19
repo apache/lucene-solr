@@ -129,6 +129,8 @@ Improvements
 
 * SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
 
+* SOLR-9079: Remove commons-lang as a dependency (Kevin Risden)
+
 Other Changes
 ----------------------
 

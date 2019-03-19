@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -338,7 +337,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     loaders.add("builtin");
     engine.setProperty("builtin.resource.loader.instance", new ClasspathResourceLoader());
 
-    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, StringUtils.join(loaders,','));
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, String.join(",", loaders));
 
     engine.setProperty(RuntimeConstants.INPUT_ENCODING, "UTF-8");
 
