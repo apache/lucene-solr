@@ -126,6 +126,9 @@ Bug Fixes
 
 * SOLR-13244: Admin UI Nodes view fails and is empty when a node is temporarily down (janhoy)
 
+* SOLR-13253: IndexSchema.getResourceLoader was being used to load non-schema things, which can be a memory leak if
+  "shareSchema" and other circumstances occur.  Furthermore it's reference to SolrConfig was removed. (David Smiley)
+
 Improvements
 ----------------------
 
