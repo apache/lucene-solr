@@ -44,6 +44,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -100,9 +101,8 @@ public final class ManagedIndexSchema extends IndexSchema {
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
   ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable, 
-                     String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) 
-      throws KeeperException, InterruptedException {
-    super(solrConfig, name, is);
+                     String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
+    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1320,10 +1320,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
   
-  private ManagedIndexSchema(final SolrConfig solrConfig, final SolrResourceLoader loader, boolean isMutable,
-                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) 
-      throws KeeperException, InterruptedException {
-    super(solrConfig, loader);
+  private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
+                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
+    super(luceneVersion, loader);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1340,22 +1339,9 @@ public final class ManagedIndexSchema extends IndexSchema {
    * @return A shallow copy of this schema
    */
    ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
-    ManagedIndexSchema newSchema = null;
-    try {
-      newSchema = new ManagedIndexSchema
-          (solrConfig, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
-    } catch (KeeperException e) {
-      final String msg = "Error instantiating ManagedIndexSchema";
-      log.error(msg, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.warn("", e);
-    }
+     ManagedIndexSchema newSchema = new ManagedIndexSchema
+         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
 
-    assert newSchema != null;
-    
     newSchema.name = name;
     newSchema.version = version;
     newSchema.similarity = similarity;
