@@ -24,7 +24,7 @@ Versions of Major Components
 ---------------------
 Apache Tika 1.19.1
 Carrot2 3.16.0
-Velocity 1.7 and Velocity Tools 2.0
+Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
@@ -40,6 +40,10 @@ Upgrade Notes
   expressions that include user supplied data to avoid risks similar to SQL injection. The legacy behavior of
   expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
   (Gus Heck).
+
+* SOLR-13335: Velocity and Velocity Tools were both upgraded as part of this release. Velocity upgraded from 1.7 to 2.0.
+  Please see https://velocity.apache.org/engine/2.0/upgrading.html about upgrading. Velocity Tools upgraded from 2.0 to
+  3.0. For more details, please see https://velocity.apache.org/tools/3.0/upgrading.html for details about the upgrade.
 
 New Features
 ----------------------
@@ -82,7 +86,6 @@ Bug Fixes
 
 * SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors
 (Munendra S N via Mikhail Khludnev)
-
 
 * SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
 
@@ -162,6 +165,8 @@ Other Changes
   (Bar Rotstein, David Smiley)
 
 * SOLR-13342: Remove dom4j from Solr (Kevin Risden)
+
+* SOLR-13335: Upgrade to velocity 2.0 and velocity-tools 3.0 (Kevin Risden)
 
 ==================  8.0.0 ==================
 
