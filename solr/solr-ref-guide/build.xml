@@ -241,7 +241,7 @@
         <attribute key="ivy-log4j-version" value="${ivyversions.org.log4j.major.version}" />
         <attribute key="ivy-opennlp-version" value="${ivyversions./org.apache.opennlp/opennlp-tools}" />
         <attribute key="ivy-tika-version" value="${ivyversions.org.apache.tika.version}" />
-        <attribute key="ivy-velocity-tools-version" value="${ivyversions./org.apache.velocity/velocity-tools}" />
+        <attribute key="ivy-velocity-tools-version" value="${ivyversions.org.apache.velocity.tools.version}" />
         <attribute key="ivy-zookeeper-version" value="${ivyversions./org.apache.zookeeper/zookeeper}" />
       </asciidoctor:convert>
     </sequential>
