@@ -149,6 +149,9 @@ public class ColStatus {
         sliceMap.add("leader", leaderMap);
         leaderMap.add("coreNode", leader.getName());
         leaderMap.addAll(leader.getProperties());
+        if (!leader.isActive(clusterState.getLiveNodes())) {
+          continue;
+        }
         String url = ZkCoreNodeProps.getCoreUrl(leader);
         try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
           ModifiableSolrParams params = new ModifiableSolrParams();

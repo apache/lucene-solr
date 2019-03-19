@@ -86,6 +86,10 @@ New Features
 
 * SOLR-13292: Provide extended per-segment status of a collection. (ab)
 
+* SOLR-11127: REINDEXCOLLECTION command for re-indexing of existing collections. This issue also adds
+  a back-compat check of the .system collection to notify users of potential compatibility issues after
+  upgrades or schema changes. (ab)
+
 Bug Fixes
 ----------------------
 
