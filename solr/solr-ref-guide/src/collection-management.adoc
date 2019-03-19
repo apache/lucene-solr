@@ -75,7 +75,7 @@ Allows defining the nodes to spread the new collection across. The format is a c
 +
 If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
 +
-Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
+Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<replica-management.adoc#addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
 
 `createNodeSet.shuffle`::
 Controls whether the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
@@ -119,7 +119,7 @@ The name of the collection with which all replicas of this collection must be co
 See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
 Collections are first created in read-write mode but can be put in `readOnly`
-mode using the <<modifycollection, MODIFYCOLLECTION>> action.
+mode using the <<collection-management.adoc#modifycollection, MODIFYCOLLECTION>> action.
 
 === CREATE Response
 
@@ -718,7 +718,7 @@ The BACKUP command will backup Solr indexes and configurations for a specified c
 The name of the collection to be backed up. This parameter is required.
 
 `location`::
-The location on a shared drive for the backup command to write to. Alternately it can be set as a <<clusterprop,cluster property>>.
+The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -739,7 +739,7 @@ The collection created will be have the same number of shards and replicas as th
 
 While restoring, if a configSet with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configSet in ZooKeeper and use that.
 
-You can use the collection <<createalias,CREATEALIAS>> command to make sure clients don't need to change the endpoint to query or index against the newly restored collection.
+You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> command to make sure clients don't need to change the endpoint to query or index against the newly restored collection.
 
 === RESTORE Parameters
 
@@ -747,7 +747,7 @@ You can use the collection <<createalias,CREATEALIAS>> command to make sure clie
 The collection where the indexes will be restored into. This parameter is required.
 
 `location`::
-The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<clusterprop,cluster property>>.
+The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.

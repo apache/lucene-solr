@@ -23,15 +23,9 @@ A replica is a physical copy of a shard.
 [[addreplica]]
 == ADDREPLICA: Add Replica
 
-<<<<<<< HEAD
-Add a replica to a shard in a collection. The node name can be specified if the replica is to be created in a specific node.
-
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
-=======
 Add one or more replicas to a shard in a collection. The node name can be specified if the replica is to be created in a specific node. Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
 
 The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replica(s) but only when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 
 `/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
 
@@ -51,9 +45,6 @@ If the exact shard name is not known, users may pass the `\_route_` value and th
 Ignored if the `shard` parameter is also specified.
 
 `node`::
-<<<<<<< HEAD
-The name of the node where the replica should be created.
-=======
 The name of the node where the replica should be created (optional).
 
 `createNodeSet`::
@@ -62,7 +53,6 @@ A comma-separated list of nodes among which the best ones will be chosen to plac
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 
 NOTE: If neither `node` nor `createNodeSet` are specified then the best node(s) from among all the live nodes in the cluster are chosen.
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 
 `instanceDir`::
 The instanceDir for the core that will be created.
@@ -73,16 +63,6 @@ The directory in which the core should be created.
 `type`::
 The type of replica to create. These possible values are allowed:
 +
-<<<<<<< HEAD
---
-* `nrt`: The NRT type maintains a transaction log and updates its index locally. This is the default and the most commonly used.
-* `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
-* `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
---
-+
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
-
-=======
 * `nrt`: The NRT type maintains a transaction log and updates its index locally. This is the default and the most commonly used.
 * `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
 * `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
@@ -98,7 +78,6 @@ The number of `tlog` replicas that should be created (optional, defaults to 1 if
 `pullReplicas`::
 The number of `pull` replicas that should be created (optional, defaults to 1 if `type` is `pull` otherwise 0).
 
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 `property._name_=_value_`::
 Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
 
@@ -112,11 +91,8 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 
 *Input*
 
-<<<<<<< HEAD
-=======
 Create a replica for the "test" collection on the node "192.167.1.2:8983_solr".
 
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr&wt=xml
@@ -143,8 +119,6 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&
 </response>
 ----
 
-<<<<<<< HEAD
-=======
 *Input*
 
 Create a replica for the "gettingstarted" collection with one PULL replica and one TLOG replica.
@@ -182,7 +156,6 @@ http://localhost:8983/solr/admin/collections?action=addreplica&collection=gettin
 }
 ----
 
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 

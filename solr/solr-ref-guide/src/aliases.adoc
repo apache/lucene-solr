@@ -21,23 +21,23 @@
 Since version 6, SolrCloud has had the ability to query one or more collections via an alternative name. These
 alternative names for collections are known as aliases, and are useful when you want to:
 
-1. Atomically switch to using a newly (re)indexed collection with zero down time (by re-defining the alias)
-1. Insulate the client programming versus changes in collection names
-1. Issue a single query against several collections with identical schemas
+. Atomically switch to using a newly (re)indexed collection with zero down time (by re-defining the alias)
+. Insulate the client programming versus changes in collection names
+. Issue a single query against several collections with identical schemas
 
 It's also possible to send update commands to aliases, but this is rarely useful if the
   alias refers to more than one collection (as in case 3 above).
 Since there is no logic by which to distribute documents among the collections, all updates will simply be
   directed to the first collection in the list.
 
-Standard aliases are created and updated using the <<collections-api.adoc#createalias,CREATEALIAS>> command.
+Standard aliases are created and updated using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command.
 The current list of collections that are members of an alias can be verified via the
-  <<collections-api.adoc#clusterstatus,CLUSTERSTATUS>> command.
+  <<cluster-node-management.adoc#clusterstatus,CLUSTERSTATUS>> command.
 The full definition of all aliases including metadata about that alias (in the case of routed aliases, see below)
-  can be verified via the <<collections-api.adoc#listaliases,LISTALIASES>> command.
+  can be verified via the <<collection-aliasing.adoc#listaliases,LISTALIASES>> command.
 Alternatively this information is available by checking `/aliases.json` in zookeeper via a zookeeper
   client or in the <<cloud-screens.adoc#tree-view,tree page>> of the cloud menu in the admin UI.
-Aliases may be deleted via the <<collections-api.adoc#deletealias,DELETEALIAS>> command.
+Aliases may be deleted via the <<collection-aliasing.adoc#deletealias,DELETEALIAS>> command.
 The underlying collections are *unaffected* by this command.
 
 TIP: Any alias (standard or routed) that references multiple collections may complicate relevancy.
@@ -91,9 +91,9 @@ If you need to store a lot of timestamped data in Solr, such as logs or IoT sens
 
 === How It Works
 
-First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with some
+First you create a time routed aliases using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command with some
   router settings.
-Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+Most of the settings are editable at a later time using the <<collection-aliasing.adoc#aliasprop,ALIASPROP>> command.
 
 The first collection will be created automatically, along with an alias pointing to it.
 Each underlying Solr "core" in a collection that is a member of a TRA has a special core property referencing the alias.
@@ -164,9 +164,9 @@ that must be segregated into collections for cluster management or security reas
 
 === How It Works
 
-First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with some
+First you create a time routed aliases using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command with some
   router settings.
- Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+ Most of the settings are editable at a later time using the <<collection-aliasing.adoc#aliasprop,ALIASPROP>> command.
 
 The alias will be created with a special place-holder collection which will always be named
  `myAlias__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA__TEMP`. The first document indexed into the CRA
@@ -175,7 +175,7 @@ The alias will be created with a special place-holder collection which will alwa
  a new value for the field is encountered.
 
 CAUTION: To guard against runaway collection creation options for limiting the total number of categories, and for
-rejecting values that don't match a regular expression are provided (see <<collections-api.adoc#createalias,CREATEALIAS>> for
+rejecting values that don't match a regular expression are provided (see <<collection-aliasing.adoc#createalias,CREATEALIAS>> for
 details). Note that by providing very large or very permissive values for these options you are accepting the risk that
 garbled data could potentially create thousands of collections and bring your cluster to a grinding halt.
 
@@ -219,10 +219,10 @@ Unlike time routed aliases, there is no way to predict the next value so such pa
 There is no automated means of removing a category. If a category needs to be removed from a CRA
 the following procedure is recommended:
 
-1. Ensure that no documents with the value corresponding to the category to be removed will be sent
+. Ensure that no documents with the value corresponding to the category to be removed will be sent
    either by stopping indexing or by fixing the incoming data stream
-1. Modify the alias definition in zookeeper, removing the collection corresponding to the category.
-1. Delete the collection corresponding to the category. Note that if the collection is not removed
+. Modify the alias definition in zookeeper, removing the collection corresponding to the category.
+. Delete the collection corresponding to the category. Note that if the collection is not removed
    from the alias first, this step will fail.
 
 === Limitations & Assumptions

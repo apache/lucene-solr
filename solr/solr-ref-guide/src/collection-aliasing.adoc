@@ -47,7 +47,7 @@ While it is possible to send updates to an alias spanning multiple collections, 
   updates to the correct collection.
 Since the only routing strategy at present is time oriented, these are also called *Time Routed Aliases* (TRAs).
 A TRA manages an alias and a time sequential series of collections that it will both create and optionally delete on-demand.
-See <<time-routed-aliases.adoc#time-routed-aliases,Time Routed Aliases>> for some important high-level information
+See <<aliases.adoc#time-routed-aliases,Time Routed Aliases>> for some important high-level information
   before getting started.
 
 NOTE: Presently this is only supported for temporal fields stored as a
@@ -117,7 +117,7 @@ The field to inspect to determine which underlying collection an incoming docume
 This field is required on all incoming documents.
 
 `create-collection.*`::
-The * wildcard can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
+The * wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`. All other fields
 are identical in requirements and naming except that we insist that the configset be explicitly specified.
 The configset must be created beforehand, either uploaded or copied and modified.
 It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.

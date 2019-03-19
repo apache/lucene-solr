@@ -32,11 +32,7 @@ Fetch the cluster status including collections, shards, replicas, configuration 
 === CLUSTERSTATUS Parameters
 
 `collection`::
-<<<<<<< HEAD
-The collection name for which information is requested. If omitted, information on all collections in the cluster will be returned.
-=======
 The collection or alias name for which information is requested. If omitted, information on all collections in the cluster will be returned. If an alias is supplied, information on the collections in the alias will be returned.
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 
 `shard`::
 The shard(s) for which information is requested. Multiple shard names can be specified as a comma-separated list.
@@ -126,10 +122,6 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 }
 ----
 
-<<<<<<< HEAD
-
-=======
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [[clusterprop]]
 == CLUSTERPROP: Cluster Properties
 
@@ -140,12 +132,8 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-<<<<<<< HEAD
-The name of the property. Supported property names are `urlScheme`, `autoAddReplicas` and `location`. Other names are rejected with an error.
-=======
 The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud` , `location`, `maxCoresPerNode` and `urlScheme`. Other properties can be set
 (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 
 `val`::
 The value of the property. If the value is empty or null, the property is unset.
@@ -175,41 +163,6 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 </response>
 ----
 
-<<<<<<< HEAD
-=== Deeply Nested Cluster Properties ===
-
-==== `collectionDefaults` ====
-It is possible to set cluster-wide default values for certain attributes of a collection.
-
-
-*Example 1: Set/update default values*
-[source]
-----
-curl -X POST -H 'Content-type:application/json' --data-binary '
-{ "set-obj-property" : {
-    "collectionDefaults" : {
-        "numShards" : 2,
-        "nrtReplicas" : 1,
-        "tlogReplicas" : 1,
-        "pullReplicas" : 1,
-
-   }
-}' http://localhost:8983/api/cluster
-----
-
-*Example 2: Unset the value of `nrtReplicas` alone*
-[source]
-----
-curl -X POST -H 'Content-type:application/json' --data-binary '
-{ "set-obj-property" : {
-    "collectionDefaults" : {
-        "nrtReplicas" : null,
-   }
-}' http://localhost:8983/api/cluster
-----
-
-*Example 2: Unset all values in `collectionDefaults`*
-=======
 === Setting Cluster-Wide Defaults
 
 It is possible to set cluster-wide default values for certain attributes of a collection, using the `defaults` parameter.
@@ -248,17 +201,10 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 ----
 
 *Unset all values in `defaults`*
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [source]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
 { "set-obj-property" : {
-<<<<<<< HEAD
-    "collectionDefaults" : null
-}' http://localhost:8983/api/cluster
-----
-
-=======
     "defaults" : null
 }' http://localhost:8983/api/cluster
 ----
@@ -268,7 +214,6 @@ replaced with `defaults`. Using the `collectionDefaults` parameter in Solr 7.4 o
  but the format of the properties will automatically be converted to the new nested structure.
 Support for the `collectionDefaults` will be removed in Solr 9.
 
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes
 
@@ -368,11 +313,7 @@ Time in seconds to wait until new replicas are created, and until leader replica
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
 
-<<<<<<< HEAD
 
-
-=======
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 == DELETENODE: Delete Replicas in a Node
 
 Deletes all replicas of all collections in that node. Please note that the node itself will remain as a live node after this operation.
@@ -387,10 +328,6 @@ The node to be removed. This parameter is required.
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-<<<<<<< HEAD
-
-=======
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [[addrole]]
 == ADDROLE: Add a Role
 
@@ -548,10 +485,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
  }
 ----
 
-<<<<<<< HEAD
-
-=======
->>>>>>> SOLR-13235: split Collections API page into several & fix references throughout Guide
 [[migratestateformat]]
 == MIGRATESTATEFORMAT: Migrate Cluster State
 
