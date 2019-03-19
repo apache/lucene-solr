@@ -19,7 +19,7 @@ package org.apache.solr.request;
 import java.util.function.Predicate;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * An implementation of {@link Predicate} which returns true if the BytesRef contains a given substring.

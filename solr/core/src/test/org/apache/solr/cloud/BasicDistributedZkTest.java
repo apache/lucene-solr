@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
@@ -540,7 +539,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         }
 
         // any combination of replica alternatives should give same numDocs
-        String replicas = StringUtils.join(replicaAlts.toArray(), "|");
+        String replicas = String.join("|", replicaAlts);
         query.set("shards", replicas);
         numDocs = client.query(query).getResults().getNumFound();
         assertTrue("numDocs < 0 for replicas "+replicas+" via "+client,
@@ -571,11 +570,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             }
           }
           Collections.shuffle(replicas, random());
-          randomShards.add(StringUtils.join(replicas, "|"));
+          randomShards.add(String.join("|", replicas));
         }
       }
     }
-    String randShards = StringUtils.join(randomShards, ",");
+    String randShards = String.join(",", randomShards);
     query.set("shards", randShards);
     for (SolrClient client : this.clients) {
       assertEquals("numDocs for "+randShards+" via "+client,

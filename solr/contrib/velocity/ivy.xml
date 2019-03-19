@@ -24,6 +24,7 @@
   </configurations>
   <dependencies>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile"/>
+    <dependency org="commons-lang" name="commons-lang" rev="${/commons-lang/commons-lang}" conf="compile"/>
     <dependency org="org.apache.velocity" name="velocity" rev="${/org.apache.velocity/velocity}" conf="compile"/>
     <dependency org="org.apache.velocity" name="velocity-tools" rev="${/org.apache.velocity/velocity-tools}" conf="compile"/>
 
