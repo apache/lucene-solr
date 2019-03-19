@@ -29,9 +29,14 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
+Bug Fixes
+----------------------
 
 * SOLR-10506: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
   (Torsten Bøgh Köster, Christine Poerschke, Jörg Rathlev, Mike Drob)
+
+* SOLR-12514: Rule-base Authorization plugin skips authorization if querying node does not have collection
+  replica (noble)
 
 ==================  6.6.5 ==================
 
