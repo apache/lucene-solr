@@ -107,6 +107,7 @@ Bug Fixes
 
 Improvements
 ----------------------
+
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
   disk space (noble)
 
@@ -151,6 +152,9 @@ Other Changes
 * SOLR-13330: Improve HDFS tests (Kevin Risden)
 
 * SOLR-8033: Remove debug if branch in HdfsTransactionLog (Kevin Risden)
+
+* SOLR-12955: Refactored DistributedUpdateProcessor to put SolrCloud functionality into a subclass.
+  (Bar Rotstein, David Smiley)
 
 ==================  8.0.0 ==================
 
