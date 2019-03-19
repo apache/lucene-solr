@@ -160,6 +160,8 @@ Other Changes
 
 * SOLR-13330: Improve HDFS tests (Kevin Risden)
 
+* SOLR-8033: Remove debug if branch in HdfsTransactionLog (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
