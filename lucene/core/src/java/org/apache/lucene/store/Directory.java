@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection; // for javadocs
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.IOUtils;
@@ -48,6 +49,12 @@ import org.apache.lucene.util.IOUtils;
  * @see FilterDirectory
  */
 public abstract class Directory implements Closeable {
+
+  /**
+   * Reader only attributes for this directory.
+   */
+  private Map<String, String> readerAttributes;
+
   /**
    * Returns names of all files stored in this directory.
    * The output must be in sorted (UTF-16, java's {@link String#compareTo}) order.
@@ -209,5 +216,23 @@ public abstract class Directory implements Closeable {
    */
   public Set<String> getPendingDeletions() throws IOException {
     return Collections.emptySet();
+  }
+
+  /**
+   * Sets reader only attributes for this directory.
+   *
+   * @lucene.internal
+   */
+  public void setReaderAttributes(Map<String, String> readerAttributes) {
+    this.readerAttributes = readerAttributes;
+  }
+
+  /**
+   * Returns reader only attributes for this directory.
+   *
+   * @lucene.internal
+   */
+  public Map<String, String> getReaderAttributes() {
+    return this.readerAttributes;
   }
 }

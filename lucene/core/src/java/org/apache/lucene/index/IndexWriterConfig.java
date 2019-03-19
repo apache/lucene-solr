@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -482,6 +483,15 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     return this;
   }
 
+  /**
+   * Sets read time attributes that will be loaded into SegmentReadState while
+   * opening the index
+   */
+  public IndexWriterConfig setReaderAttributes(Map<String, String> readerAttributes) {
+    this.readerAttributes = readerAttributes;
+    return this;
+  }
+
   /** We only allow sorting on these types */
   private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
                                                                                      SortField.Type.LONG,
@@ -507,6 +517,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(super.toString());
+    sb.append("readerAttributes=").append(this.readerAttributes).append("\n");
     sb.append("writer=").append(writer.get()).append("\n");
     return sb.toString();
   }

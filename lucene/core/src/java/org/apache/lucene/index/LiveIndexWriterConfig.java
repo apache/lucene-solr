@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -49,6 +49,10 @@ public class LiveIndexWriterConfig {
   /** {@link IndexDeletionPolicy} controlling when commit
    *  points are deleted. */
   protected volatile IndexDeletionPolicy delPolicy;
+
+  // modified by IndexWriterConfig
+  /** Atributes used by SegmentReadState during index open */
+  protected Map<String, String> readerAttributes;
 
   /** {@link IndexCommit} that {@link IndexWriter} is
    *  opened on. */
@@ -203,7 +207,11 @@ public class LiveIndexWriterConfig {
   public double getRAMBufferSizeMB() {
     return ramBufferSizeMB;
   }
-  
+
+  public Map<String, String> getReaderAttributes() {
+    return this.readerAttributes;
+  }
+
   /**
    * Determines the minimal number of documents required before the buffered
    * in-memory documents are flushed as a new Segment. Large values generally

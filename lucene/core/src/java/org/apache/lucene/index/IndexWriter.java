@@ -733,6 +733,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       directoryOrig = d;
       directory = new LockValidatingDirectoryWrapper(d, writeLock);
 
+      directoryOrig.setReaderAttributes(config.getReaderAttributes());
       analyzer = config.getAnalyzer();
       mergeScheduler = config.getMergeScheduler();
       mergeScheduler.setInfoStream(infoStream);

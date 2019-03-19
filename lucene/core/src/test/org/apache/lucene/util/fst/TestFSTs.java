@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +41,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -313,7 +315,8 @@ public class TestFSTs extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
-    final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
+    final IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64)
+        .setReaderAttributes(new HashMap<String, String>() {{put(FieldReader.FST_OFFHEAP_ATTRIBUTE, "true");}});
     final Path tempDir = createTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
@@ -847,7 +850,8 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: cycle=" + cycle);
       }
       RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-                                                  newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+                                                  newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                                                      .setReaderAttributes(new HashMap<String, String>() {{put(FieldReader.FST_OFFHEAP_ATTRIBUTE, "true");}}));
       Document doc = new Document();
       Field idField = newStringField("id", "", Field.Store.NO);
       doc.add(idField);
@@ -977,7 +981,8 @@ public class TestFSTs extends LuceneTestCase {
     Directory dir = newDirectory();
 
     RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-                                                newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+                                                newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                                                    .setReaderAttributes(new HashMap<String, String>() {{put(FieldReader.FST_OFFHEAP_ATTRIBUTE, "true");}}));
     Document doc = new Document();
     Field f = newStringField("field", "", Field.Store.NO);
     doc.add(f);

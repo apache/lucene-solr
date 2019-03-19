@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.blocktree;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -45,6 +46,8 @@ public final class FieldReader extends Terms implements Accountable {
 
   // private final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
+  public static final String FST_OFFHEAP_ATTRIBUTE = "fst.offheap";
+
   private static final long BASE_RAM_BYTES_USED =
       RamUsageEstimator.shallowSizeOfInstance(FieldReader.class)
       + 3 * RamUsageEstimator.shallowSizeOfInstance(BytesRef.class);
@@ -67,6 +70,12 @@ public final class FieldReader extends Terms implements Accountable {
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
               long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+    this(parent, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount, indexStartFP, longsSize, indexIn, minTerm, maxTerm, null);
+  }
+
+
+  FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
+              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, Map<String, String> readerAttributes) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -88,10 +97,13 @@ public final class FieldReader extends Terms implements Accountable {
 
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();
+      //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
       clone.seek(indexStartFP);
-      // Initialize FST offheap if index is MMapDirectory and
-      // docCount != sumDocFreq implying field is not primary key
-      if (clone instanceof ByteBufferIndexInput && this.docCount != this.sumDocFreq) {
+
+      final boolean fstOffHeap = readerAttributes != null && "true".equals(readerAttributes.get(FST_OFFHEAP_ATTRIBUTE));
+      // Initialize FST offheap if the fst.offheap reader attribute is set or index is
+      // MMapDirectory and docCount != sumDocFreq implying field is not primary key
+      if (fstOffHeap || (clone instanceof ByteBufferIndexInput && this.docCount != this.sumDocFreq)) {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
       } else {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
