@@ -181,7 +181,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  private String referencedByAlias(String collection, Aliases aliases) {
+  public static String referencedByAlias(String collection, Aliases aliases) {
     Objects.requireNonNull(aliases);
     return aliases.getCollectionAliasListMap().entrySet().stream()
         .filter(e -> e.getValue().contains(collection))
