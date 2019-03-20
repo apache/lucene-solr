@@ -27,7 +27,10 @@ package org.apache.lucene.analysis.util;
  * characters, etc)
  *
  * @lucene.experimental
+ *
+ * @deprecated Removed from 8.0 onwards, please see LUCENE-8497 for replacement details.
  */
+@Deprecated
 public interface MultiTermAwareComponent {
   /** Returns an analysis component to handle analysis if multi-term queries.
    * The returned component must be a TokenizerFactory, TokenFilterFactory or CharFilterFactory.
