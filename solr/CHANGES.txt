@@ -126,8 +126,12 @@ Bug Fixes
 
 * SOLR-13244: Admin UI Nodes view fails and is empty when a node is temporarily down (janhoy)
 
+* SOLR-13253: IndexSchema.getResourceLoader was being used to load non-schema things, which can be a memory leak if
+  "shareSchema" and other circumstances occur.  Furthermore it's reference to SolrConfig was removed. (David Smiley)
+
 Improvements
 ----------------------
+
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
   disk space (noble)
 
@@ -165,6 +169,9 @@ Other Changes
 * SOLR-13330: Improve HDFS tests (Kevin Risden)
 
 * SOLR-8033: Remove debug if branch in HdfsTransactionLog (Kevin Risden)
+
+* SOLR-12955: Refactored DistributedUpdateProcessor to put SolrCloud functionality into a subclass.
+  (Bar Rotstein, David Smiley)
 
 ==================  8.0.0 ==================
 

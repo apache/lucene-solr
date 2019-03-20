@@ -168,19 +168,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-    try {
-      schema = new ManagedIndexSchema(config, loadedResource, inputSource, isMutable, 
-                                      managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
-    } catch (KeeperException e) {
-      final String msg = "Error instantiating ManagedIndexSchema";
-      log.error(msg, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.warn("", e);
-    }
-
+    schema = new ManagedIndexSchema(config, loadedResource, inputSource, isMutable,
+                                    managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
       upgradeToManagedSchema();

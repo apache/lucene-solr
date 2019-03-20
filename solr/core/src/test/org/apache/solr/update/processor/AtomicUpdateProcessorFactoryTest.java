@@ -232,7 +232,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
           try {
             factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-                new DistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
+                createDistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
                     new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
           } catch (IOException e) {
           }

@@ -81,6 +81,9 @@ Other
 
 * LUCENE-8713: Add Line2D tests. (Ignacio Vera)
 
+* LUCENE-8729: Workaround: Disable accessibility doclints (Java 13+),
+  so compilation with recent JDK succeeds.  (Uwe Schindler)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
