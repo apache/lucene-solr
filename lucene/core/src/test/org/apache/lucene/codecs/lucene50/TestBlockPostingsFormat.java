@@ -63,7 +63,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     try (Directory d = MMapDirectory.open(tempDir)) {
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())))) {
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < 50; i++) {
           Document doc = new Document();
           doc.add(newStringField("id", "" + i, Field.Store.NO));
           doc.add(newStringField("field", Character.toString((char) (97 + i)), Field.Store.NO));

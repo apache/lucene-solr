@@ -50,7 +50,7 @@ public class SegmentReadState {
   public final String segmentSuffix;
 
   /**
-   * True iff this SegmentReadState is opened from an index writer.
+   * True iff this SegmentReadState is opened from an IndexWriter.
    */
   public final boolean openedFromWriter;
 
