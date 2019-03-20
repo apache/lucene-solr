@@ -68,6 +68,11 @@ Improvements
 * LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
   the other matches. (Yeongsu Kim via Jim Ferenczi)
 
+Changes in Runtime Behavior
+
+* LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
+  from an IndexWriter. (Simon Willnauer)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
