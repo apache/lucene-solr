@@ -73,7 +73,18 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     
     assertU(adoc("id", "30", "shingle23", "A B X D E"));
 
+    assertU(adoc("id", "40", "wdf_partspreserve", "you just can't"));
+
+
     assertU(commit());
+  }
+
+  @Test
+  public void testSpanNearQuerySlop() {
+
+    assertQ(req("q", "wdf_partspreserve:\"you can't\"~2")
+        , "//*[@numFound='1']"
+    );
   }
 
   @Test

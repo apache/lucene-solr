@@ -44,6 +44,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -559,6 +561,21 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
         if (slop != mpq.getSlop()) {
           query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+        }
+      } else if (query instanceof SpanNearQuery) {
+        SpanNearQuery snq = (SpanNearQuery) query;
+
+        if(slop != snq.getSlop()) {
+          SpanNearQuery.Builder builder = new SpanNearQuery.Builder(
+          snq.getField(), false);
+
+          SpanQuery[] clauses = snq.getClauses();
+          for(int i = 0; i < clauses.length; i++) {
+            builder.addClause(clauses[i]);
+          }
+
+          builder.setSlop(slop);
+          query = builder.build();
         }
       }
     }
