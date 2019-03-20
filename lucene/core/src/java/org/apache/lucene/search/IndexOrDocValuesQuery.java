@@ -17,13 +17,11 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
 /**
  * A query that uses either an index structure (points or terms) or doc values
@@ -110,15 +108,17 @@ public final class IndexOrDocValuesQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    indexQuery.visit(v);
+    dvQuery.visit(v);
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Weight indexWeight = indexQuery.createWeight(searcher, scoreMode, boost);
     final Weight dvWeight = dvQuery.createWeight(searcher, scoreMode, boost);
     return new Weight(this) {
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        indexWeight.extractTerms(terms);
-      }
-
       @Override
       public Matches matches(LeafReaderContext context, int doc) throws IOException {
         // We need to check a single doc, so the dv query should perform better

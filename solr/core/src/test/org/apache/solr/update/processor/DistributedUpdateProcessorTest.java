@@ -34,11 +34,10 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testShouldBufferUpdate() {
+  public void testShouldBufferUpdateZk() {
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
     DistributedUpdateProcessor processor = new DistributedUpdateProcessor(
         req, null, null, null);
-
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     // applying buffer updates, isReplayOrPeerSync flag doesn't matter
     assertFalse(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
@@ -49,6 +48,5 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
     cmd.prevVersion = 10;
     assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
   }
-
 
 }

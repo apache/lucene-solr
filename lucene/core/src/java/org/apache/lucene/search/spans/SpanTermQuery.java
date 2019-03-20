@@ -21,18 +21,18 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 
 /** Matches spans containing a term.
@@ -84,6 +84,13 @@ public class SpanTermQuery extends SpanQuery {
     return new SpanTermWeight(context, searcher, scoreMode.needsScores() ? Collections.singletonMap(term, context) : null, boost);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(term.field())) {
+      visitor.consumeTerms(this, term);
+    }
+  }
+
   public class SpanTermWeight extends SpanWeight {
 
     final TermStates termStates;
@@ -92,11 +99,6 @@ public class SpanTermQuery extends SpanQuery {
       super(SpanTermQuery.this, searcher, terms, boost);
       this.termStates = termStates;
       assert termStates != null : "TermStates must not be null";
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      terms.add(term);
     }
 
     @Override

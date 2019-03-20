@@ -82,7 +82,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
     } catch (IOException | URISyntaxException e) {
       throw new RuntimeException(e);
@@ -257,7 +256,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture == null);
+      assertNull(rinfoFuture);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
@@ -295,7 +294,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
 
       rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
 
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
@@ -341,7 +340,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
       // apply a single update
@@ -409,7 +408,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture == null);
+      assertNull(rinfoFuture);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
@@ -737,7 +736,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       //
       addDocs(1, start, new LinkedList<Long>()); // don't add this to the versions list because we are going to lose it...
       h.close();
-      files = HdfsUpdateLog.getLogList(fs, new Path(logDir));;
+      files = HdfsUpdateLog.getLogList(fs, new Path(logDir));
       Arrays.sort(files);
 
       FSDataOutputStream dos = fs.create(new Path(new Path(logDir), files[files.length-1]), (short)1);
@@ -850,7 +849,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       Arrays.sort(files);
 
       FSDataOutputStream dos = fs.create(new Path(logDir, files[files.length-1]), (short)1);
-      dos.write(new byte[(int)800]);  // zero out file
+      dos.write(new byte[800]);  // zero out file
       dos.close();
 
 
@@ -920,34 +919,31 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       Arrays.sort(files);
       String fname = files[files.length-1];
 
-      FSDataOutputStream dos = fs.append(new Path(logDir, files[files.length-1]));
-      dos.writeLong(0xffffffffffffffffL);
-      dos.writeChars("This should be appended to a good log file, representing a bad partially written record.");
-      dos.close();
-      
-      FSDataInputStream dis = fs.open(new Path(logDir, files[files.length-1]));
-      byte[] content = new byte[(int)dis.available()];
+      try(FSDataOutputStream dos = fs.append(new Path(logDir, files[files.length-1]))) {
+        dos.writeLong(0xffffffffffffffffL);
+        dos.writeChars("This should be appended to a good log file, representing a bad partially written record.");
+      }
 
-      dis.readFully(content);
+      try(FSDataInputStream dis = fs.open(new Path(logDir, files[files.length-1]))) {
+        byte[] content = new byte[dis.available()];
+        dis.readFully(content);
 
-      dis.close();
+        // Now make a newer log file with just the IDs changed.  NOTE: this may not work if log format changes too much!
+        findReplace("AAAAAA".getBytes(StandardCharsets.UTF_8), "aaaaaa".getBytes(StandardCharsets.UTF_8), content);
+        findReplace("BBBBBB".getBytes(StandardCharsets.UTF_8), "bbbbbb".getBytes(StandardCharsets.UTF_8), content);
+        findReplace("CCCCCC".getBytes(StandardCharsets.UTF_8), "cccccc".getBytes(StandardCharsets.UTF_8), content);
 
-      // Now make a newer log file with just the IDs changed.  NOTE: this may not work if log format changes too much!
-      findReplace("AAAAAA".getBytes(StandardCharsets.UTF_8), "aaaaaa".getBytes(StandardCharsets.UTF_8), content);
-      findReplace("BBBBBB".getBytes(StandardCharsets.UTF_8), "bbbbbb".getBytes(StandardCharsets.UTF_8), content);
-      findReplace("CCCCCC".getBytes(StandardCharsets.UTF_8), "cccccc".getBytes(StandardCharsets.UTF_8), content);
+        // WARNING... assumes format of .00000n where n is less than 9
+        long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
+        String fname2 = String.format(Locale.ROOT,
+            UpdateLog.LOG_FILENAME_PATTERN,
+            UpdateLog.TLOG_NAME,
+            logNumber + 1);
 
-      // WARNING... assumes format of .00000n where n is less than 9
-      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
-      String fname2 = String.format(Locale.ROOT,
-          UpdateLog.LOG_FILENAME_PATTERN,
-          UpdateLog.TLOG_NAME,
-          logNumber + 1);
-      
-      dos = fs.create(new Path(logDir, fname2), (short)1);
-      dos.write(content);
-      dos.close();
-      
+        try(FSDataOutputStream dos = fs.create(new Path(logDir, fname2), (short)1)) {
+          dos.write(content);
+        }
+      }
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
@@ -971,9 +967,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     for(;;) {
       idx = indexOf(from, data, idx + from.length);  // skip over previous match
       if (idx < 0) break;
-      for (int i=0; i<to.length; i++) {
-        data[idx+i] = to[i];
-      }
+      System.arraycopy(to, 0, data, idx, to.length);
     }
   }
   

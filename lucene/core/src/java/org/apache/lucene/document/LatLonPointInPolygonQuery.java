@@ -33,6 +33,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -73,6 +74,13 @@ final class LatLonPointInPolygonQuery extends Query {
     this.field = field;
     this.polygons = polygons.clone();
     // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

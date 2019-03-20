@@ -44,6 +44,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -54,8 +55,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** random sorting tests with uninversion */
@@ -295,6 +296,11 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
           return true;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override

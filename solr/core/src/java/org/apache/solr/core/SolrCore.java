@@ -1388,7 +1388,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = schema.getResourceLoader().newInstance(info.className, CodecFactory.class);
+      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {

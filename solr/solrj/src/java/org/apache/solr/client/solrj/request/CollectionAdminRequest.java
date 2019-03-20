@@ -784,6 +784,90 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Returns a SolrRequest to reindex a collection
+   */
+  public static ReindexCollection reindexCollection(String collection) {
+    return new ReindexCollection(collection);
+  }
+
+  public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
+    String target;
+    String query;
+    String fields;
+    String configName;
+    Boolean removeSource;
+    String cmd;
+    Integer batchSize;
+    Map<String, Object> collectionParams = new HashMap<>();
+
+    private ReindexCollection(String collection) {
+      super(CollectionAction.REINDEXCOLLECTION, collection);
+    }
+
+    /** Target collection name (null if the same). */
+    public ReindexCollection setTarget(String target) {
+      this.target = target;
+      return this;
+    }
+
+    /** Set optional command (eg. abort, status). */
+    public ReindexCollection setCommand(String command) {
+      this.cmd = command;
+      return this;
+    }
+
+    /** Query matching the documents to reindex (default is '*:*'). */
+    public ReindexCollection setQuery(String query) {
+      this.query = query;
+      return this;
+    }
+
+    /** Fields to reindex (the same syntax as {@link CommonParams#FL}), default is '*'. */
+    public ReindexCollection setFields(String fields) {
+      this.fields = fields;
+      return this;
+    }
+
+    /** Remove source collection after success. Default is false. */
+    public ReindexCollection setRemoveSource(boolean removeSource) {
+      this.removeSource = removeSource;
+      return this;
+    }
+
+    /** Copy documents in batches of this size. Default is 100. */
+    public ReindexCollection setBatchSize(int batchSize) {
+      this.batchSize = batchSize;
+      return this;
+    }
+
+    /** Config name for the target collection. Default is the same as source. */
+    public ReindexCollection setConfigName(String configName) {
+      this.configName = configName;
+      return this;
+    }
+
+    /** Set other supported collection CREATE parameters. */
+    public ReindexCollection setCollectionParam(String key, Object value) {
+      this.collectionParams.put(key, value);
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.setNonNull("target", target);
+      params.setNonNull("cmd", cmd);
+      params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
+      params.setNonNull(CommonParams.Q, query);
+      params.setNonNull(CommonParams.FL, fields);
+      params.setNonNull("removeSource", removeSource);
+      params.setNonNull(CommonParams.ROWS, batchSize);
+      collectionParams.forEach((k, v) -> params.setNonNull(k, v));
+      return params;
+    }
+  }
+
+  /**
    * Return a SolrRequest for low-level detailed status of the collection.
    */
   public static ColStatus collectionStatus(String collection) {
@@ -823,10 +907,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
-      params.setNonNull("segments", withSegments.toString());
-      params.setNonNull("fieldInfo", withFieldInfo.toString());
-      params.setNonNull("coreInfo", withCoreInfo.toString());
-      params.setNonNull("sizeInfo", withSizeInfo.toString());
+      params.setNonNull("segments", withSegments);
+      params.setNonNull("fieldInfo", withFieldInfo);
+      params.setNonNull("coreInfo", withCoreInfo);
+      params.setNonNull("sizeInfo", withSizeInfo);
       return params;
     }
   }

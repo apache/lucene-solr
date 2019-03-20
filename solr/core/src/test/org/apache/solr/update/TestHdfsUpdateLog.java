@@ -50,14 +50,11 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } catch (URISyntaxException e) {
+    } catch (IOException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
-    
+
     System.setProperty("solr.ulog.dir", hdfsUri + "/solr/shard1");
     
     initCore("solrconfig-tlog.xml","schema15.xml");

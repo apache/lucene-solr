@@ -535,6 +535,17 @@ limitations under the License.
   color: red;
 }
 
+#content #cloud #nodes-content .node-down
+{
+  font-weight: bold;
+  font-size: 12px;
+}
+
+#content #cloud #nodes-content .dead-node
+{
+  background-color: salmon;
+}
+
 /* Styling of reload and details buttons */
 #content #cloud #controls,
 #content #cloud #frame #zk-status-content #zk-controls

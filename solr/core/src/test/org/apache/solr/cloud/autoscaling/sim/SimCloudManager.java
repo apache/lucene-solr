@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -124,7 +125,12 @@ public class SimCloudManager implements SolrCloudManager {
   private final Map<String, Map<String, AtomicInteger>> eventCounts = new ConcurrentHashMap<>();
   private final MockSearchableSolrClient solrClient;
   private final Map<String, AtomicLong> opCounts = new ConcurrentSkipListMap<>();
-
+  /** 
+   * @see #submit
+   * @see #getBackgroundTaskFailureCount
+   * @see LoggingCallable
+   */
+  private final AtomicLong backgroundTaskFailureCounter = new AtomicLong(0);
 
   private ExecutorService simCloudManagerPool;
   private Overseer.OverseerThread triggerThread;
@@ -565,13 +571,26 @@ public class SimCloudManager implements SolrCloudManager {
 
   /**
    * Submit a task to execute in a thread pool.
+   * Every callable submitted will be wrapped such that errors not handled w/in the callable 
+   * will be logged and counted for later assertions.
+   *
    * @param callable task to execute
    * @return future to obtain results
+   * @see #getBackgroundTaskFailureCount
    */
   public <T> Future<T> submit(Callable<T> callable) {
-    return simCloudManagerPool.submit(callable);
+    return simCloudManagerPool.submit(new LoggingCallable(backgroundTaskFailureCounter, callable));
   }
-
+  /** 
+   * Returns a total count of the number of tasks submitted to {@link #submit} that have failed 
+   * with any throwable other then <code>InteruptedException</code>
+   *
+   * @see #submit
+   */
+  public long getBackgroundTaskFailureCount() {
+    return backgroundTaskFailureCounter.get();
+  }
+  
   // ---------- type-safe methods to obtain simulator components ----------
   public SimClusterStateProvider getSimClusterStateProvider() {
     return clusterStateProvider;
@@ -650,8 +669,16 @@ public class SimCloudManager implements SolrCloudManager {
   @Override
   public SolrResponse request(SolrRequest req) throws IOException {
     try {
-      Future<SolrResponse> rsp = submit(() -> simHandleSolrRequest(req));
-      return rsp.get();
+      // NOTE: we're doing 2 odd things here:
+      // 1) rather then calling simHandleSolrRequest directly, we're submitting it to the
+      //    executor service and immediately waiting on the Future.
+      //    - This can introduce a delays if there are a lot of existing background tasks submitted
+      // 2) we use simCloudManagerPool directly, instead of using the public submit() method
+      //    - this is because there may be "user level" errors (ie: bad input) deliberately generated
+      //      by the testcase.  we're going to immediately catch & re-throw any exceptions, so we don't
+      //      need/want to be wrapped in a LoggingCallable w/getBackgroundTaskFailureCount() tracking
+      Future<SolrResponse> rsp = simCloudManagerPool.submit(() -> simHandleSolrRequest(req));
+      return rsp.get(120, TimeUnit.SECONDS); // longer then this and something is seriously wrong
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -885,6 +912,10 @@ public class SimCloudManager implements SolrCloudManager {
 
   @Override
   public void close() throws IOException {
+    // make sure we shutdown the pool first, so any in active background tasks get interupted
+    // before we start closing resources they may be using.
+    simCloudManagerPool.shutdownNow();
+    
     if (metricsHistoryHandler != null) {
       IOUtils.closeQuietly(metricsHistoryHandler);
     }
@@ -900,7 +931,6 @@ public class SimCloudManager implements SolrCloudManager {
       Thread.currentThread().interrupt();
     }
     IOUtils.closeQuietly(objectCache);
-    simCloudManagerPool.shutdownNow();
   }
 
   /**
@@ -909,5 +939,53 @@ public class SimCloudManager implements SolrCloudManager {
    */
   public OverseerTriggerThread getOverseerTriggerThread() {
     return ((OverseerTriggerThread) triggerThread.getThread());
+  }
+
+  /**
+   * Wrapper for any Callable that will log a warn/error in the event of InterruptException/Throwable.  
+   * Also increments the passed in counter so the CloudManger can later report total errors programatically.
+   *
+   * @see #submit
+   * @see #getBackgroundTaskFailureCount
+   */
+  private static final class LoggingCallable<T> implements Callable<T> {
+    
+    final AtomicLong failCounter;
+    final Callable<T> inner;
+    
+    public LoggingCallable(final AtomicLong failCounter, final Callable<T> inner) {
+      assert null != failCounter;
+      assert null != inner;
+      this.failCounter = failCounter;
+      this.inner = inner;
+    }
+    
+    public T call() throws Exception {
+      try {
+        return inner.call();
+      } catch (InterruptedException ignored) {
+        log.warn("Callable interupted", ignored);
+        throw ignored;
+      } catch (Throwable t) {
+        // be forgiving of errors that occured as a result of interuption, even if
+        // the inner Callable didn't realize it...
+        if (Thread.currentThread().isInterrupted()) {
+          log.warn("Callable interupted w/o noticing", t);
+          throw t;
+        }
+        Throwable cause = t;
+        while ((cause = cause.getCause()) != null) {
+          if (cause instanceof InterruptedException) {
+            log.warn("Callable threw wrapped InterruptedException", t);
+            throw t;
+          }
+        }
+
+        // in all other situations, this is a problem that should be tracked in the failCounter
+        failCounter.incrementAndGet();
+        log.error("Callable failed", t);
+        throw t;
+      }
+    }
   }
 }

@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -376,6 +375,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return true;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -973,6 +977,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public String toString(String field) {
       return "BadQuery";
     }
@@ -1305,11 +1314,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new Weight(this) {
         @Override
-        public void extractTerms(Set<Term> terms) {
-
-        }
-
-        @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
@@ -1324,6 +1328,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return false;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -1411,6 +1420,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other);
     }
@@ -1493,6 +1507,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
   }
 

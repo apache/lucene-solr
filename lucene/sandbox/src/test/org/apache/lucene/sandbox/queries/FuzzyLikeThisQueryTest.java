@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.sandbox.queries;
 
+import java.io.IOException;
+import java.util.HashSet;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -25,15 +28,12 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.HashSet;
 
 public class FuzzyLikeThisQueryTest extends LuceneTestCase {
   private Directory directory;
@@ -81,7 +81,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     flt.addTerms("smith", "name", 2, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    searcher.createWeight(q, ScoreMode.COMPLETE, 1f).extractTerms(queryTerms);
+    q.visit(QueryVisitor.termCollector(queryTerms));
     assertTrue("Should have variant smythe", queryTerms.contains(new Term("name", "smythe")));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     assertTrue("Should have variant smyth", queryTerms.contains(new Term("name", "smyth")));
@@ -98,7 +98,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     flt.addTerms("jonathin smoth", "name", 2, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    searcher.createWeight(q, ScoreMode.COMPLETE, 1f).extractTerms(queryTerms);
+    q.visit(QueryVisitor.termCollector(queryTerms));
     assertTrue("Should have variant jonathan", queryTerms.contains(new Term("name", "jonathan")));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     TopDocs topDocs = searcher.search(flt, 1);
@@ -116,7 +116,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     // don't fail here just because the field doesn't exits
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    searcher.createWeight(q, ScoreMode.COMPLETE, 1f).extractTerms(queryTerms);
+    q.visit(QueryVisitor.termCollector(queryTerms));
     assertTrue("Should have variant jonathan", queryTerms.contains(new Term("name", "jonathan")));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     TopDocs topDocs = searcher.search(flt, 1);
@@ -133,7 +133,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     flt.addTerms("fernando smith", "name", 2, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
-    searcher.createWeight(q, ScoreMode.COMPLETE, 1f).extractTerms(queryTerms);
+    q.visit(QueryVisitor.termCollector(queryTerms));
     assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
     TopDocs topDocs = searcher.search(flt, 1);
     ScoreDoc[] sd = topDocs.scoreDocs;

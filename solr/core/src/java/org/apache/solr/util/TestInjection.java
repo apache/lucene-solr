@@ -126,6 +126,10 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
+  public volatile static CountDownLatch reindexLatch = null;
+
+  public volatile static String reindexFailure = null;
+
   public volatile static String failIndexFingerprintRequests = null;
 
   public volatile static String wrongIndexFingerprint = null;
@@ -156,6 +160,8 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
     splitLatch = null;
+    reindexLatch = null;
+    reindexFailure = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
@@ -416,6 +422,35 @@ public class TestInjection {
       try {
         log.info("Waiting in ReplicaMutator for up to 60s");
         return splitLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
+  public static boolean injectReindexFailure() {
+    if (reindexFailure != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(reindexFailure);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        log.info("Test injection failure");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Test injection failure");
+      }
+    }
+    return true;
+  }
+
+
+  public static boolean injectReindexLatch() {
+    if (reindexLatch != null) {
+      try {
+        log.info("Waiting in ReindexCollectionCmd for up to 60s");
+        return reindexLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

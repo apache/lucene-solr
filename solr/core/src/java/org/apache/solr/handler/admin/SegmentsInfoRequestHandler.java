@@ -386,8 +386,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
         nonCompliant.add("docValues", "schema=" + sf.getType().getUninversionType(sf) + ", segment=false");
       }
       if (!sf.hasDocValues() &&
-          fi.getDocValuesType() != DocValuesType.NONE &&
-          fi.getIndexOptions() != IndexOptions.NONE) {
+          fi.getDocValuesType() != DocValuesType.NONE) {
         nonCompliant.add("docValues", "schema=false, segment=" + fi.getDocValuesType().toString());
       }
       if (!sf.isPolyField()) { // difficult to find all sub-fields in a general way
@@ -395,7 +394,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
           nonCompliant.add("indexed", "schema=" + sf.indexed() + ", segment=" + fi.getIndexOptions());
         }
       }
-      if (sf.omitNorms() != (fi.omitsNorms() || hasPoints)) {
+      if (!hasPoints && (sf.omitNorms() != fi.omitsNorms())) {
         nonCompliant.add("omitNorms", "schema=" + sf.omitNorms() + ", segment=" + fi.omitsNorms());
       }
       if (sf.storeTermVector() != fi.hasVectors()) {
