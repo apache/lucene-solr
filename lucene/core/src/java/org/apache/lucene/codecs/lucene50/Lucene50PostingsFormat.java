@@ -19,6 +19,8 @@ package org.apache.lucene.codecs.lucene50;
 
 
 import java.io.IOException;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -389,6 +391,26 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
+  private final OffHeapFST offHeapFST;
+
+  /**
+   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
+   */
+  public enum OffHeapFST {
+    /**
+     * Always read FSTs from disk.
+     * An exception is made for ID fields in an IndexWriter context which are always laoded into memory
+     */
+    ALWAYS,
+    /**
+     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
+     */
+    NEVER,
+    /**
+     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
+     */
+    AUTO
+  }
 
   /**
    * Fixed packed block size, number of integers encoded in 
@@ -400,18 +422,19 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, OffHeapFST.AUTO);
   }
 
   /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, OffHeapFST offHeapFST) {
     super("Lucene50");
     BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
     this.minTermBlockSize = minTermBlockSize;
     this.maxTermBlockSize = maxTermBlockSize;
+    this.offHeapFST = offHeapFST;
   }
 
   @Override
@@ -443,7 +466,7 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state);
+      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, offHeapFST);
       success = true;
       return ret;
     } finally {

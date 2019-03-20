@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -67,7 +68,7 @@ public final class FieldReader extends Terms implements Accountable {
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter) throws IOException {
+              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, boolean loadFSTOffHeap) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -84,21 +85,18 @@ public final class FieldReader extends Terms implements Accountable {
     // if (DEBUG) {
     //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
     // }
-
     rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
-
+    // Initialize FST offheap if index is MMapDirectory and
+    // docCount != sumDocFreq implying field is not primary key
+    isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && loadFSTOffHeap;
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();
       clone.seek(indexStartFP);
-      // Initialize FST offheap if index is MMapDirectory and
-      // docCount != sumDocFreq implying field is not primary key
-      isFSTOffHeap = clone instanceof ByteBufferIndexInput && ((this.docCount != this.sumDocFreq) || openedFromWriter == false);
       if (isFSTOffHeap) {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
       } else {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
       }
-        
       /*
         if (false) {
         final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
@@ -110,7 +108,6 @@ public final class FieldReader extends Terms implements Accountable {
       */
     } else {
       index = null;
-      isFSTOffHeap = false;
     }
   }
 

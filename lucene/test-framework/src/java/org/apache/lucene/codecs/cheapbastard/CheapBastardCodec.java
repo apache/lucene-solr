@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.cheapbastard;
 
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.util.TestUtil;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */
@@ -26,7 +27,7 @@ import org.apache.lucene.util.TestUtil;
 public class CheapBastardCodec extends FilterCodec {
   
   // TODO: would be better to have no terms index at all and bsearch a terms dict
-  private final PostingsFormat postings = TestUtil.getDefaultPostingsFormat(100, 200);
+  private final PostingsFormat postings = TestUtil.getDefaultPostingsFormat(100, 200, Lucene50PostingsFormat.OffHeapFST.ALWAYS);
 
   public CheapBastardCodec() {
     super("CheapBastard", TestUtil.getDefaultCodec());

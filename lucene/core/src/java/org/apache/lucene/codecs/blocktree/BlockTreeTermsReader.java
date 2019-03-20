@@ -28,12 +28,14 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.store.ByteBufferIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -118,7 +120,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, Lucene50PostingsFormat.OffHeapFST offHeapFST) throws IOException {
     boolean success = false;
     
     this.postingsReader = postingsReader;
@@ -159,7 +161,20 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
       }
-
+      final boolean loadFSTOffHeap;
+      switch (offHeapFST) {
+        case NEVER:
+          loadFSTOffHeap = false;
+          break;
+        case ALWAYS:
+          loadFSTOffHeap = true;
+          break;
+        case AUTO:
+          loadFSTOffHeap = indexIn instanceof ByteBufferIndexInput;
+          break;
+        default:
+          throw new IllegalStateException("unknown enum constant: " + offHeapFST);
+      }
       for (int i = 0; i < numFields; ++i) {
         final int field = termsIn.readVInt();
         final long numTerms = termsIn.readVLong();
@@ -193,7 +208,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name,       
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter));
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, loadFSTOffHeap));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
