@@ -190,7 +190,7 @@ public class RandomCodec extends AssertingCodec {
 
     add(avoidCodecs,
         TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock,
-            RandomPicks.randomFrom(random, Lucene50PostingsFormat.OffHeapFST.values())),
+            RandomPicks.randomFrom(random, Lucene50PostingsFormat.FSTLoadMode.values())),
         new FSTPostingsFormat(),
         new FSTOrdPostingsFormat(),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),

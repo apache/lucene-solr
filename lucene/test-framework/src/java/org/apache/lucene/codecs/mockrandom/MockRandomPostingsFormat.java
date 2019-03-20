@@ -316,7 +316,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new BlockTreeTermsReader(postingsReader, state, Lucene50PostingsFormat.OffHeapFST.AUTO);
+        fields = new BlockTreeTermsReader(postingsReader, state, Lucene50PostingsFormat.FSTLoadMode.AUTO);
         success = true;
       } finally {
         if (!success) {

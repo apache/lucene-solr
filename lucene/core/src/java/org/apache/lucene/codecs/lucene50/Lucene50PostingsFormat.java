@@ -16,11 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
-
 import java.io.IOException;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -355,6 +351,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 
 public final class Lucene50PostingsFormat extends PostingsFormat {
+
+  public static final String MODE_KEY = Lucene50PostingsFormat.class.getSimpleName() + ".fstMode";
+
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -391,21 +390,21 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
-  private final OffHeapFST offHeapFST;
+  private final FSTLoadMode fstLoadMode;
 
   /**
    * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
    */
-  public enum OffHeapFST {
+  public enum FSTLoadMode {
     /**
      * Always read FSTs from disk.
      * An exception is made for ID fields in an IndexWriter context which are always laoded into memory
      */
-    ALWAYS,
+    OFF_HEAP,
     /**
      * Never read FSTs from disk ie. all fields FSTs are loaded into memory
      */
-    NEVER,
+    ON_HEAP,
     /**
      * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
      */
@@ -422,19 +421,19 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, OffHeapFST.AUTO);
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, FSTLoadMode.AUTO);
   }
 
   /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, OffHeapFST offHeapFST) {
+  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, FSTLoadMode fstLoadMode) {
     super("Lucene50");
     BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
     this.minTermBlockSize = minTermBlockSize;
     this.maxTermBlockSize = maxTermBlockSize;
-    this.offHeapFST = offHeapFST;
+    this.fstLoadMode = fstLoadMode;
   }
 
   @Override
@@ -445,7 +444,7 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
-
+    state.segmentInfo.putAttribute(MODE_KEY, fstLoadMode.name());
     boolean success = false;
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
@@ -464,9 +463,14 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
+    String fstLoadModeKey = state.segmentInfo.getAttribute(MODE_KEY);
+    FSTLoadMode fstLoadMode = FSTLoadMode.AUTO;
+    if (fstLoadModeKey != null) {
+      fstLoadMode = FSTLoadMode.valueOf(fstLoadModeKey);
+    }
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, offHeapFST);
+      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, fstLoadMode);
       success = true;
       return ret;
     } finally {

@@ -120,7 +120,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, Lucene50PostingsFormat.OffHeapFST offHeapFST) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, Lucene50PostingsFormat.FSTLoadMode fstLoadMode) throws IOException {
     boolean success = false;
     
     this.postingsReader = postingsReader;
@@ -162,18 +162,18 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
       }
       final boolean loadFSTOffHeap;
-      switch (offHeapFST) {
-        case NEVER:
+      switch (fstLoadMode) {
+        case ON_HEAP:
           loadFSTOffHeap = false;
           break;
-        case ALWAYS:
+        case OFF_HEAP:
           loadFSTOffHeap = true;
           break;
         case AUTO:
           loadFSTOffHeap = indexIn instanceof ByteBufferIndexInput;
           break;
         default:
-          throw new IllegalStateException("unknown enum constant: " + offHeapFST);
+          throw new IllegalStateException("unknown enum constant: " + fstLoadMode);
       }
       for (int i = 0; i < numFields; ++i) {
         final int field = termsIn.readVInt();
