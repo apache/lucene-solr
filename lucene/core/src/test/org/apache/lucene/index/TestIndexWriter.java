@@ -3691,4 +3691,65 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
+  public void testMaintainNextWriteInfosWhenOpenPrevCommit() throws Exception {
+    String softDeletesField = "soft_deletes";
+    IOUtils.IOConsumer<IndexWriter> updates = w -> {
+      int numDocs = random().nextInt(100);
+      for (int i = 0; i < numDocs; i++) {
+        int docId = random().nextInt(5);
+        Document doc = new Document();
+        doc.add(new StringField("id", String.valueOf(docId), Field.Store.YES));
+        doc.add(new StringField("f-" + random().nextInt(10), String.valueOf(random().nextInt(100)), Field.Store.YES));
+        if (random().nextBoolean()) {
+          w.updateDocument(new Term("id", String.valueOf(docId)), doc);
+        } else {
+          w.softUpdateDocument(new Term("id", String.valueOf(docId)), doc, new NumericDocValuesField(softDeletesField, 1));
+        }
+        if (random().nextInt(100) < 10) {
+          w.flush();
+        }
+        if (random().nextInt(100) < 10) {
+          w.commit();
+        }
+      }
+    };
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig();
+    iwc.setSoftDeletesField(softDeletesField);
+    iwc.setMergePolicy(new SoftDeletesRetentionMergePolicy(softDeletesField, MatchAllDocsQuery::new, newMergePolicy()));
+    iwc.setIndexDeletionPolicy(new TestDirectoryReaderReopen.KeepAllCommits());
+    IndexWriter w1 = new IndexWriter(dir, iwc);
+    updates.accept(w1);
+    w1.flush();
+    w1.close();
+    Map<String, SegmentCommitInfo> prevSis = new HashMap<>();
+    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
+    for (IndexCommit commit : commits) {
+      SegmentInfos si = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+      for (SegmentCommitInfo sci : si) {
+        prevSis.put(sci.info.name, sci);
+      }
+    }
+    // have a reader that points to the last commit while rollback IndexWriter to the previous commit
+    DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
+    iwc = new IndexWriterConfig();
+    iwc.setMergePolicy(new SoftDeletesRetentionMergePolicy(softDeletesField, MatchAllDocsQuery::new, NoMergePolicy.INSTANCE));
+    iwc.setSoftDeletesField(softDeletesField);
+    iwc.setIndexCommit(commits.get(random().nextInt(commits.size())));
+    IndexWriter w2 = new IndexWriter(dir, iwc);
+    w2.commit();
+    w2.close();
+    for (SegmentCommitInfo sci : SegmentInfos.readLatestCommit(dir)) {
+      SegmentCommitInfo prevSci = prevSis.get(sci.info.name);
+      assertTrue(prevSci.getNextDelGen() + " > " + sci.getNextDelGen(), prevSci.getNextDelGen() <= sci.getNextDelGen());
+      assertTrue(prevSci.getNextDelGen() + " > " + sci.getNextDelGen(), prevSci.getNextWriteFieldInfosGen() <= sci.getNextWriteFieldInfosGen());
+      assertTrue(prevSci.getNextDelGen() + " > " + sci.getNextDelGen(), prevSci.getNextWriteDocValuesGen() <= sci.getNextWriteDocValuesGen());
+    }
+    iwc = new IndexWriterConfig();
+    iwc.setSoftDeletesField(softDeletesField);
+    IndexWriter w3 = new IndexWriter(dir, iwc);
+    updates.accept(w3);
+    w3.close();
+    IOUtils.close(reader, dir);
+  }
 }

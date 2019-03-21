@@ -140,7 +140,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
             Collections.emptyMap(), // attributes
             null /* indexSort */);
         info.setFiles(Collections.emptyList());
-        infos.add(new SegmentCommitInfo(info, random().nextInt(1), 0, -1, -1, -1));
+        infos.add(new SegmentCommitInfo(info, random().nextInt(1), 0, -1, 1, -1, 1, -1, 1));
       }
       MergePolicy.MergeSpecification forcedDeletesMerges = mp.findForcedDeletesMerges(infos, context);
       if (forcedDeletesMerges != null) {
@@ -208,7 +208,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
         name, maxDoc, false, TestUtil.getDefaultCodec(), Collections.emptyMap(), id,
         Collections.singletonMap(IndexWriter.SOURCE, source), null);
     info.setFiles(Collections.singleton(name + "_size=" + Long.toString((long) (sizeMB * 1024 * 1024)) + ".fake"));
-    return new SegmentCommitInfo(info, numDeletedDocs, 0, 0, 0, 0);
+    return new SegmentCommitInfo(info, numDeletedDocs, 0, 0, 1, 0, 1, 0, 1);
   }
 
   /** A directory that computes the length of a file based on its name. */
@@ -327,7 +327,9 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       int newDelCount = sci.getDelCount() + segDeletes;
       assert newDelCount <= sci.info.maxDoc();
       if (newDelCount < sci.info.maxDoc()) { // drop fully deleted segments
-        SegmentCommitInfo newInfo = new SegmentCommitInfo(sci.info, sci.getDelCount() + segDeletes, 0, sci.getDelGen() + 1, sci.getFieldInfosGen(), sci.getDocValuesGen());
+        SegmentCommitInfo newInfo = new SegmentCommitInfo(sci.info, sci.getDelCount() + segDeletes, 0,
+            sci.getDelGen() + 1,  sci.getNextWriteDelGen() + 1, sci.getFieldInfosGen(), sci.getNextWriteFieldInfosGen(),
+            sci.getDocValuesGen(), sci.getNextWriteDocValuesGen());
         newInfoList.add(newInfo);
       }
       numDeletes -= segDeletes;

@@ -91,16 +91,25 @@ public class SegmentCommitInfo {
    * @param docValuesGen
    *          DocValues generation number (used to name doc-values updates files)
    */
-  public SegmentCommitInfo(SegmentInfo info, int delCount, int softDelCount, long delGen, long fieldInfosGen, long docValuesGen) {
+  public SegmentCommitInfo(SegmentInfo info, int delCount, int softDelCount,
+                           long delGen, long nextWriteDelGen,
+                           long fieldInfosGen, long nextWriteFieldInfosGen,
+                           long docValuesGen, long nextWriteDocValuesGen) {
     this.info = info;
     this.delCount = delCount;
     this.softDelCount = softDelCount;
+
+    assert delGen < nextWriteDelGen : delGen + " >= " + nextWriteDelGen;
     this.delGen = delGen;
-    this.nextWriteDelGen = delGen == -1 ? 1 : delGen + 1;
+    this.nextWriteDelGen = nextWriteDelGen;
+
+    assert fieldInfosGen < nextWriteFieldInfosGen : fieldInfosGen + " >= " + nextWriteFieldInfosGen;
     this.fieldInfosGen = fieldInfosGen;
-    this.nextWriteFieldInfosGen = fieldInfosGen == -1 ? 1 : fieldInfosGen + 1;
+    this.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
+
+    assert docValuesGen < nextWriteDocValuesGen : docValuesGen + " >= " + nextWriteDocValuesGen;
     this.docValuesGen = docValuesGen;
-    this.nextWriteDocValuesGen = docValuesGen == -1 ? 1 : docValuesGen + 1;
+    this.nextWriteDocValuesGen = nextWriteDocValuesGen;
   }
   
   /** Returns the per-field DocValues updates files. */
@@ -366,15 +375,8 @@ public class SegmentCommitInfo {
 
   @Override
   public SegmentCommitInfo clone() {
-    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, docValuesGen);
-    // Not clear that we need to carry over nextWriteDelGen
-    // (i.e. do we ever clone after a failed write and
-    // before the next successful write?), but just do it to
-    // be safe:
-    other.nextWriteDelGen = nextWriteDelGen;
-    other.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
-    other.nextWriteDocValuesGen = nextWriteDocValuesGen;
-    
+    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, softDelCount,
+        delGen, nextWriteDelGen, fieldInfosGen, nextWriteFieldInfosGen, docValuesGen, nextWriteDocValuesGen);
     // deep clone
     for (Entry<Integer,Set<String>> e : dvUpdatesFiles.entrySet()) {
       other.dvUpdatesFiles.put(e.getKey(), new HashSet<>(e.getValue()));

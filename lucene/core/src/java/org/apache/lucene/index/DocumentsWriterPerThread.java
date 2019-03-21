@@ -477,7 +477,7 @@ final class DocumentsWriterPerThread {
       pendingUpdates.clearDeleteTerms();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
-      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L);
+      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, 1L, -1L, 1L, -1L, 1L);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
         infoStream.message("DWPT", "new segment has " + flushState.softDelCountOnFlush + " soft-deleted docs");

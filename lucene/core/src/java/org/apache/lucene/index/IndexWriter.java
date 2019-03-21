@@ -2984,7 +2984,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
 
       merger.merge();                // merge 'em
-      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, numSoftDeleted, -1L, -1L, -1L);
+      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, numSoftDeleted, -1L, 1L, -1L, 1L, -1L, 1L);
 
       info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       trackingDir.clearCreatedFiles();
@@ -3061,8 +3061,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     SegmentInfo newInfo = new SegmentInfo(directoryOrig, info.info.getVersion(), info.info.getMinVersion(), segName, info.info.maxDoc(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
                                           info.info.getDiagnostics(), info.info.getId(), info.info.getAttributes(), info.info.getIndexSort());
-    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getSoftDelCount(), info.getDelGen(),
-                                                               info.getFieldInfosGen(), info.getDocValuesGen());
+    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getSoftDelCount(),
+        info.getDelGen(), info.getNextWriteDelGen(), info.getFieldInfosGen(), info.getNextWriteFieldInfosGen(),
+        info.getDocValuesGen(), info.getNextWriteDocValuesGen());
 
     newInfo.setFiles(info.info.files());
     newInfoPerCommit.setFieldInfosFiles(info.getFieldInfosFiles());
@@ -4253,7 +4254,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
     setDiagnostics(si, SOURCE_MERGE, details);
-    merge.setMergeInfo(new SegmentCommitInfo(si, 0, 0, -1L, -1L, -1L));
+    merge.setMergeInfo(new SegmentCommitInfo(si, 0, 0, -1L, 1L, -1L, 1L, -1L, 1L));
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merge seg=" + merge.info.info.name + " " + segString(merge.segments));
