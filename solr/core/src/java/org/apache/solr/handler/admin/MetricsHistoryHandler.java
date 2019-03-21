@@ -434,7 +434,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           }
         }
       } catch (Exception e) {
-        e.printStackTrace();
+        log.warn("Exception retrieving local metrics for group {}: {}", group, e);
       }
     }
   }
@@ -580,6 +580,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
             s.update();
           }
         } catch (Exception e) {
+          log.warn("Exception storing sample in RrdDb for group {}: {}", group, e);
         }
       });
     });
@@ -632,6 +633,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         RrdDb newDb = new RrdDb(def, factory);
         return newDb;
       } catch (IOException e) {
+        log.warn("Can't create RrdDb for registry {}, group {}: {}", registry, group, e);
         return null;
       }
     });
