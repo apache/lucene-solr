@@ -40,6 +40,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -60,7 +61,8 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
 
   public void testFstOffHeap() throws IOException {
     Path tempDir = createTempDir();
-    try (Directory d = MMapDirectory.open(tempDir)) {
+    try (Directory d = FSDirectory.open(tempDir)) {
+      assumeTrue("only works with mmap directory", d instanceof MMapDirectory);
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())))) {
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
         for (int i = 0; i < 50; i++) {
