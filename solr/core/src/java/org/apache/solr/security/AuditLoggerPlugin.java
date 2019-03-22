@@ -110,8 +110,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     pluginConfig.remove(PARAM_BLOCKASYNC);
     pluginConfig.remove(PARAM_QUEUE_SIZE);
     pluginConfig.remove(PARAM_NUM_THREADS);
-    queue = new ArrayBlockingQueue<>(blockingQueueSize);
     if (async) {
+      queue = new ArrayBlockingQueue<>(blockingQueueSize);
       executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrjNamedThreadFactory("audit"));
       executorService.submit(this);
     }
@@ -152,6 +152,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * @param event the audit event
    */
   protected final void auditAsync(AuditEvent event) {
+    assert(async);
     if (blockAsync) {
       try {
         queue.put(event);
@@ -171,6 +172,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   @Override
   public void run() {
+    assert(async);
     while (!closed && !Thread.currentThread().isInterrupted()) {
       try {
         AuditEvent event = queue.poll(1000, TimeUnit.MILLISECONDS);
@@ -219,9 +221,11 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     numLogged = manager.meter(this, registryName, "count", getCategory().toString(), scope, className);
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope, className);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope, className);
-    manager.registerGauge(this, registryName, () -> blockingQueueSize,"queueCapacity", true, "queueCapacity", getCategory().toString(), scope, className);
-    manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(),"queueSize", true, "queueSize", getCategory().toString(), scope, className);
-    manager.registerGauge(this, registryName, () -> async,"async", true, "async", getCategory().toString(), scope, className);
+    if (async) {
+      manager.registerGauge(this, registryName, () -> blockingQueueSize, "queueCapacity", true, "queueCapacity", getCategory().toString(), scope, className);
+      manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(), "queueSize", true, "queueSize", getCategory().toString(), scope, className);
+    }
+    manager.registerGauge(this, registryName, () -> async, "async", true, "async", getCategory().toString(), scope, className);
     metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime", "queueCapacity", "queueSize", "async"));
   }
   
@@ -281,7 +285,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
 
   @Override
   public void close() throws IOException {
-    if (executorService != null) {
+    if (async && executorService != null) {
       int timeSlept = 0;
       while (!queue.isEmpty() && timeSlept < 30) {
         try {
