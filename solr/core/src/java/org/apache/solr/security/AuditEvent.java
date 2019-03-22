@@ -433,8 +433,8 @@ public class AuditEvent {
       this.eventType = ERROR;
       this.level = ERROR.level;
       this.message = ERROR.message;
+      setStatus(statusFromException(exception));
     }
-    setStatus(statusFromException(exception));
   }
 
 }
