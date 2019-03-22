@@ -62,7 +62,8 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   public void audit(AuditEvent event) {
     log.debug("Passing auditEvent to plugins {}", pluginNames);
     plugins.parallelStream().forEach(plugin -> {
-      plugin.doAudit(event);
+      if (plugin.shouldLog(event.getEventType()))
+        plugin.doAudit(event);
     });
   }
 
