@@ -85,9 +85,11 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
 
   /**
    * Common test method to be able to check security from any authentication plugin
+   * @param cluster the MiniSolrCloudCluster to fetch metrics from
    * @param prefix the metrics key prefix, currently "SECURITY./authentication." for basic auth and "SECURITY./authentication/pki." for PKI 
+   * @param keys what keys to examine
    */
-  Map<String,Long> countSecurityMetrics(String prefix, List<String> keys) {
+  Map<String,Long> countSecurityMetrics(MiniSolrCloudCluster cluster, String prefix, List<String> keys) {
     List<Map<String, Metric>> metrics = new ArrayList<>();
     cluster.getJettySolrRunners().forEach(r -> {
       MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
@@ -115,12 +117,12 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
     expectedCounts.put("errors", (long) errors);
 
-    Map<String, Long> counts = countSecurityMetrics(prefix, AUTH_METRICS_KEYS);
+    Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
     boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
     if (!success) {
       log.info("First metrics count assert failed, pausing 2s before re-attempt");
       Thread.sleep(2000);
-      counts = countSecurityMetrics(prefix, AUTH_METRICS_KEYS);
+      counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
       success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
     }
     
@@ -136,17 +138,17 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * Common test method to be able to check audit metrics
    * @param className the class name to be used for composing prefix, e.g. "SECURITY./auditlogging/SolrLogAuditLoggerPlugin" 
    */
-  protected void assertAuditMetricsMinimums(String className, int count, int errors) throws InterruptedException {
+  protected void assertAuditMetricsMinimums(MiniSolrCloudCluster cluster, String className, int count, int errors) throws InterruptedException {
     String prefix = "SECURITY./auditlogging." + className + ".";
     Map<String, Long> expectedCounts = new HashMap<>();
     expectedCounts.put("count", (long) count);
 
-    Map<String, Long> counts = countSecurityMetrics(prefix, AUDIT_METRICS_KEYS);
+    Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUDIT_METRICS_KEYS);
     boolean success = isMetricsEqualOrLarger(AUDIT_METRICS_TO_COMPARE, expectedCounts, counts);
     if (!success) {
       log.info("First metrics count assert failed, pausing 2s before re-attempt");
       Thread.sleep(2000);
-      counts = countSecurityMetrics(prefix, AUDIT_METRICS_KEYS);
+      counts = countSecurityMetrics(cluster, prefix, AUDIT_METRICS_KEYS);
       success = isMetricsEqualOrLarger(AUDIT_METRICS_TO_COMPARE, expectedCounts, counts);
     }
     

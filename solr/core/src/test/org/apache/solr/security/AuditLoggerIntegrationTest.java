@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -56,7 +57,6 @@ import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
 import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
 
-
 /**
  * Validate that audit logging works in a live cluster
  */
@@ -67,66 +67,70 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
-  private CallbackReceiver receiver;
-  private int callbackPort;
-  private Thread receiverThread;
+  // Use a harness per thread to be able to beast this test
+  ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    receiver = new CallbackReceiver();
-    callbackPort = receiver.getPort();
-    receiverThread = new DefaultSolrThreadFactory("auditTestCallback").newThread(receiver);
-    receiverThread.start();
+    testHarness.set(new AuditTestHarness());
   }
 
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    testHarness.get().close();
+  }
+  
   @Test
   public void testSynchronous() throws Exception {
-    setupCluster(false, 0);
+    setupCluster(false, 0, false);
     runAdminCommands();
-    assertAuditMetricsMinimums(CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
-    shutdownCluster();
-    assertThreeAdminEvents(receiver);
+    assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+    testHarness.get().shutdownCluster();
+    assertThreeAdminEvents();
   }
   
   @Test
   public void testAsync() throws Exception {
-    setupCluster(true, 0);
+    setupCluster(true, 0, false);
     runAdminCommands();
-    assertAuditMetricsMinimums(CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
-    shutdownCluster();
-    assertThreeAdminEvents(receiver);
+    assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+    testHarness.get().shutdownCluster();
+    assertThreeAdminEvents();
   }
 
   @Test
   public void testAsyncWithQueue() throws Exception {
-    setupCluster(true, 100);
+    setupCluster(true, 100, false);
     runAdminCommands();
-    assertAuditMetricsMinimums(CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
-    shutdownCluster();
-    assertThreeAdminEvents(receiver);
+    assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+    testHarness.get().shutdownCluster();
+    assertThreeAdminEvents();
   }
 
   @Test
   public void searchWithException() throws Exception {
-    setupCluster(false, 0);
+    setupCluster(false, 0, false);
     try {
-      cluster.getSolrClient().request(CollectionAdminRequest.createCollection("test", 1, 1));
-      cluster.getSolrClient().query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
+      testHarness.get().cluster.getSolrClient().request(CollectionAdminRequest.createCollection("test", 1, 1));
+      testHarness.get().cluster.getSolrClient().query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
       fail("Query should fail");
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(3);
+      CallbackReceiver receiver = testHarness.get().receiver;
       assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/cores");
       assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections");
-      assertAuditEvent(receiver.popEvent(), ERROR,"/select", "READ", null, 500);
+      assertAuditEvent(receiver.popEvent(), ERROR,"/select", "READ", null, 400);
     }
   }
 
   @Test
   public void auth() throws Exception {
     setupCluster(false, 0, true);
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = testHarness.get().cluster.getSolrClient();
     try {
       CollectionAdminRequest.List request = new CollectionAdminRequest.List();
       client.request(request);
@@ -137,8 +141,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       fail("Call should fail with 401");
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(3);
+      CallbackReceiver receiver = testHarness.get().receiver;
       assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections", "action", "LIST");
-      assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections", "ADMIN", "solr", 0, "action", "LIST");
+      assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections", "ADMIN", "solr", 200, "action", "LIST");
       assertAuditEvent(receiver.popEvent(), REJECTED, "/admin/collections", "ADMIN", null,401);
     }
     try {
@@ -148,6 +153,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       fail("Call should fail with 403");
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(1);
+      CallbackReceiver receiver = testHarness.get().receiver;
       assertAuditEvent(receiver.popEvent(), UNAUTHORIZED, "/admin/collections", "ADMIN", null,403);
     }
   }
@@ -180,42 +186,43 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private void waitForAuditEventCallbacks(int number) throws InterruptedException {
-    while(receiver.count.get() < number) { 
-      Thread.sleep(100); 
+    CallbackReceiver receiver = testHarness.get().receiver;
+    int count = 0;
+    while(receiver.buffer.size() < number) { 
+      Thread.sleep(100);
+      if (++count >= 10) fail("Failed waiting for " + number + " callbacks");
     }
   }
 
   private void runAdminCommands() throws IOException, SolrServerException {
-    SolrClient client = cluster.getSolrClient();
+    SolrClient client = testHarness.get().cluster.getSolrClient();
     CollectionAdminRequest.listCollections(client);
     client.request(getClusterStatus());
     client.request(getOverseerStatus());
   }
 
-  private void assertThreeAdminEvents(CallbackReceiver receiver) {
+  private void assertThreeAdminEvents() throws Exception {
+    CallbackReceiver receiver = testHarness.get().receiver;
+    waitForAuditEventCallbacks(3);
     assertEquals(3, receiver.getTotalCount());
     assertEquals(3, receiver.getCountForPath("/admin/collections"));
     
-    AuditEvent e = receiver.getHistory().pop();
+    AuditEvent e = receiver.getBuffer().pop();
     assertEquals(COMPLETED, e.getEventType());
     assertEquals("GET", e.getHttpMethod());
     assertEquals("action=LIST&wt=javabin&version=2", e.getHttpQueryString());
     assertEquals("LIST", e.getSolrParamAsString("action"));
     assertEquals("javabin", e.getSolrParamAsString("wt"));
 
-    e = receiver.getHistory().pop();
+    e = receiver.getBuffer().pop();
     assertEquals(COMPLETED, e.getEventType());
     assertEquals("GET", e.getHttpMethod());
     assertEquals("CLUSTERSTATUS", e.getSolrParamAsString("action"));
 
-    e = receiver.getHistory().pop();
+    e = receiver.getBuffer().pop();
     assertEquals(COMPLETED, e.getEventType());
     assertEquals("GET", e.getHttpMethod());
     assertEquals("OVERSEERSTATUS", e.getSolrParamAsString("action"));
-  }
-
-  private void setupCluster(boolean async, int delay) throws Exception {
-    setupCluster(async, delay, false);
   }
 
   private static String AUTH_SECTION = ",\n" +
@@ -231,26 +238,19 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   
   void setupCluster(boolean async, int delay, boolean enableAuth) throws Exception {
     String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
-    securityJson = securityJson.replace("_PORT_", Integer.toString(callbackPort));
+    securityJson = securityJson.replace("_PORT_", Integer.toString(testHarness.get().callbackPort));
     securityJson = securityJson.replace("_ASYNC_", Boolean.toString(async));
     securityJson = securityJson.replace("_DELAY_", Integer.toString(delay));
     securityJson = securityJson.replace("_AUTH_", enableAuth ? AUTH_SECTION : "");
-    configureCluster(NUM_SERVERS)// nodes
+    MiniSolrCloudCluster myCluster = new Builder(NUM_SERVERS, createTempDir())
         .withSecurityJson(securityJson)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+        .build();
     
-    cluster.waitForAllNodes(10);
+    myCluster.waitForAllNodes(10);
+    testHarness.get().setCluster(myCluster);
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    shutdownCluster();
-    receiverThread.interrupt();
-    receiver.close();
-  }
 
   /**
    * Listening for socket callbacks in background thread from the custom CallbackAuditLoggerPlugin
@@ -259,7 +259,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     private final ServerSocket serverSocket;
     private AtomicInteger count = new AtomicInteger();
     private Map<String,AtomicInteger> resourceCounts = new HashMap<>();
-    private LinkedList<AuditEvent> history = new LinkedList<>();
+    private LinkedList<AuditEvent> buffer = new LinkedList<>();
 
     public CallbackReceiver() throws IOException {
       serverSocket = new ServerSocket(0);
@@ -288,7 +288,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
           ObjectMapper om = new ObjectMapper();
           om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
           AuditEvent event = om.readValue(reader.readLine(), AuditEvent.class);
-          history.add(event);
+          buffer.add(event);
           String r = event.getResource();
           log.info("Received audit event for path " + r);
           count.incrementAndGet();
@@ -310,12 +310,42 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       serverSocket.close();
     }
 
-    public LinkedList<AuditEvent> getHistory() {
-      return history;
+    public LinkedList<AuditEvent> getBuffer() {
+      return buffer;
     }
 
     public AuditEvent popEvent() {
-      return history.pop();
+      return buffer.pop();
+    }
+  }
+
+  private class AuditTestHarness implements AutoCloseable {
+    CallbackReceiver receiver;
+    int callbackPort;
+    Thread receiverThread;
+    private MiniSolrCloudCluster cluster;
+
+    public AuditTestHarness() throws IOException {
+      receiver = new CallbackReceiver();
+      callbackPort = receiver.getPort();
+      receiverThread = new DefaultSolrThreadFactory("auditTestCallback").newThread(receiver);;
+      receiverThread.start();
+    }
+
+    @Override
+    public void close() throws Exception {
+      shutdownCluster();
+      receiverThread.interrupt();
+      receiver.close();
+      receiverThread = null;
+    }
+
+    public void shutdownCluster() throws Exception {
+      cluster.shutdown();
+    }
+
+    public void setCluster(MiniSolrCloudCluster cluster) {
+      this.cluster = cluster;
     }
   }
 }

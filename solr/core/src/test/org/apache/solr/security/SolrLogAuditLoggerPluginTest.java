@@ -57,9 +57,9 @@ public class SolrLogAuditLoggerPluginTest extends SolrTestCaseJ4 {
   @Test
   public void eventFormatter() {
     plugin.init(config);
-    assertEquals("type=\"ANONYMOUS\" message=\"Anonymous\" method=\"GET\" requestType=\"null\" username=\"null\" resource=\"/collection1\" params=\"null\" collections=null", 
+    assertEquals("type=\"ANONYMOUS\" message=\"Anonymous\" method=\"GET\" status=\"-1\" requestType=\"null\" username=\"null\" resource=\"/collection1\" queryString=\"null\" collections=null", 
         plugin.formatter.formatEvent(EVENT_ANONYMOUS));
-    assertEquals("type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" requestType=\"null\" username=\"Jan\" resource=\"/collection1\" params=\"null\" collections=null", 
+    assertEquals("type=\"AUTHENTICATED\" message=\"Authenticated\" method=\"GET\" status=\"-1\" requestType=\"null\" username=\"Jan\" resource=\"/collection1\" queryString=\"null\" collections=null", 
         plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
   }
 

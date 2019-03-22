@@ -70,23 +70,25 @@ public class AuditEvent {
 
   /* Predefined event types. Custom types can be made through constructor */
   public enum EventType {
-    AUTHENTICATED("Authenticated", "User successfully authenticated", Level.INFO),
-    REJECTED("Rejected", "Authentication request rejected", Level.WARN),
-    ANONYMOUS("Anonymous", "Request proceeds with unknown user", Level.INFO),
-    ANONYMOUS_REJECTED("AnonymousRejected", "Request from unknown user rejected", Level.WARN),
-    AUTHORIZED("Authorized", "Authorization succeeded", Level.INFO),
-    UNAUTHORIZED("Unauthorized", "Authorization failed", Level.WARN),
-    COMPLETED("Completed", "Request completed", Level.INFO),
-    ERROR("Error", "Request was not executed due to an error", Level.ERROR);
+    AUTHENTICATED("Authenticated", "User successfully authenticated", Level.INFO, -1),
+    REJECTED("Rejected", "Authentication request rejected", Level.WARN, 401),
+    ANONYMOUS("Anonymous", "Request proceeds with unknown user", Level.INFO, -1),
+    ANONYMOUS_REJECTED("AnonymousRejected", "Request from unknown user rejected", Level.WARN, 401),
+    AUTHORIZED("Authorized", "Authorization succeeded", Level.INFO, -1),
+    UNAUTHORIZED("Unauthorized", "Authorization failed", Level.WARN, 403),
+    COMPLETED("Completed", "Request completed", Level.INFO, 200),
+    ERROR("Error", "Request was not executed due to an error", Level.ERROR, 500);
     
     private final String message;
     private String explanation;
     private final Level level;
+    private int status;
 
-    EventType(String message, String explanation, Level level) {
+    EventType(String message, String explanation, Level level, int status) {
       this.message = message;
       this.explanation = explanation;
       this.level = level;
+      this.status = status;
     }
   }
 
@@ -99,15 +101,7 @@ public class AuditEvent {
   public AuditEvent(EventType eventType) {
     this.date = new Date();
     this.eventType = eventType;
-    if (EventType.REJECTED == this.eventType) {
-      this.status = 401;
-    }
-    if (EventType.UNAUTHORIZED == this.eventType) {
-      this.status = 403;
-    }
-    if (EventType.ERROR == this.eventType) {
-      this.status = 500;
-    }
+    this.status = eventType.status;
     this.level = eventType.level;
     this.message = eventType.message;
   }
@@ -117,8 +111,7 @@ public class AuditEvent {
   }
   
   // Constructor for testing only
-  protected AuditEvent() {
-  }
+  protected AuditEvent() { }
   
   /**
    * Event based on an HttpServletRequest, typically used during authentication. 
@@ -193,18 +186,6 @@ public class AuditEvent {
     setQTime(qTime);
     setException(exception);
   }
-
-  private int statusFromException(Throwable exception) {
-    int status = 0;
-    if (exception != null ) {
-      if (exception instanceof SolrException)
-        status = ((SolrException)exception).code();
-      else
-        status = 500;
-    }
-    return status;
-  }
-
 
   private HashMap<String, String> getHeadersFromRequest(HttpServletRequest httpRequest) {
     HashMap<String, String> h = new HashMap<>();
@@ -433,8 +414,8 @@ public class AuditEvent {
       this.eventType = ERROR;
       this.level = ERROR.level;
       this.message = ERROR.message;
-      setStatus(statusFromException(exception));
+      if (exception instanceof SolrException)
+        status = ((SolrException)exception).code();
     }
   }
-
 }
