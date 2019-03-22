@@ -39,7 +39,7 @@ COMPLETED;Request completed successfully
 ERROR;Request was not executed due to an error
 |===
 
-By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged.
+By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged. What eventTypes are logged can be configured with the `eventTypes` configuration parameter. 
 
 == Configuration in security.json
 Audit logging is configured in `security.json` under the `auditlogging` key.
@@ -55,7 +55,7 @@ The example `security.json` below configures synchronous audit logging to Solr d
 }
 ----
 
-To make audit logging happen asynchronously in the backgroun, add the parameter `async: true`. This will cause the events to be put on a queue for asynchronous logging by one or more background threads. You may optionally also configure queue size, number of threads and whether it should block when the queue is full or discard events.
+By default any AuditLogger plugin configured will log asynchronously in the background to avoid slowing down the requests. To make audit logging happen synchronously, add the parameter `async: false`. For async logging, you may optionally also configure queue size, number of threads and whether it should block when the queue is full or discard events:
 
 [source,json]
 ----
@@ -65,12 +65,17 @@ To make audit logging happen asynchronously in the backgroun, add the parameter 
      "async": true,
      "blockAsync" : false,
      "numThreads" : 2,
-     "queueSize" : 4096
+     "queueSize" : 4096,
+     "eventTypes": ["REJECTED", "ANONYMOUS_REJECTED", "UNAUTHORIZED", "COMPLETED" "ERROR"]
   }
 }
 ----
 
-The defaults are `async: false`, `blockAsync: false`, `queueSize: 4096` and `numThreads: 2`.
+The defaults are `async: true`, `blockAsync: false`, `queueSize: 4096` and `numThreads: 2`.
+
+Other parameters supported are:
+
+ 
 
 === Chaining multiple loggers
 Using the `MultiDestinationAuditLogger` you can configure multiple audit logger plugins in a chain, to log to multiple destinations, as follows:
