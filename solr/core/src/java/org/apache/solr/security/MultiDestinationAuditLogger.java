@@ -94,7 +94,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
 
   @Override
   public boolean shouldLog(AuditEvent.EventType eventType) {
-    return plugins.stream().anyMatch(p -> p.shouldLog(eventType));
+    return super.shouldLog(eventType) || plugins.stream().anyMatch(p -> p.shouldLog(eventType));
   }
 
   private AuditLoggerPlugin createPlugin(Map<String, Object> auditConf) {

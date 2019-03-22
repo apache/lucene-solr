@@ -18,6 +18,7 @@ package org.apache.solr.security;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,15 +33,18 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");
     config.put("async", false);
+    config.put("eventTypes", Arrays.asList(AuditEvent.EventType.COMPLETED));
     ArrayList<Map<String, Object>> plugins = new ArrayList<Map<String, Object>>();
 
     Map<String,Object> conf1 = new HashMap<>();
     conf1.put("class", "solr.SolrLogAuditLoggerPlugin");
     conf1.put("async", false);
+    conf1.put("eventTypes", Arrays.asList(AuditEvent.EventType.ANONYMOUS));
     plugins.add(conf1);
     Map<String,Object> conf2 = new HashMap<>();
     conf2.put("class", "solr.MockAuditLoggerPlugin");
     conf2.put("async", false);
+    conf2.put("eventTypes", Arrays.asList(AuditEvent.EventType.AUTHENTICATED));
     plugins.add(conf2);
     config.put("plugins", plugins);
 
@@ -49,6 +53,12 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
 
     al.doAudit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
     assertEquals(1, ((MockAuditLoggerPlugin)al.plugins.get(1)).events.size());
+    
+    assertFalse(al.shouldLog(AuditEvent.EventType.ERROR));
+    assertFalse(al.shouldLog(AuditEvent.EventType.UNAUTHORIZED));
+    assertTrue(al.shouldLog(AuditEvent.EventType.COMPLETED));
+    assertTrue(al.shouldLog(AuditEvent.EventType.ANONYMOUS));
+    assertTrue(al.shouldLog(AuditEvent.EventType.AUTHENTICATED));
 
     assertEquals(0, config.size());
     al.close();

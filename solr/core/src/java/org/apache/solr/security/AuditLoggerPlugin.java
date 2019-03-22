@@ -198,7 +198,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * @return true if this event type should be logged 
    */
   public boolean shouldLog(EventType eventType) {
-    boolean shouldLog = eventTypes.contains(eventType.name()); 
+    boolean shouldLog = eventTypes.contains(eventType); 
     if (!shouldLog) {
       log.debug("Event type {} is not configured for audit logging", eventType.name());
     }
