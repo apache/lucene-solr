@@ -4,5 +4,5 @@
     "callbackPort": "_PORT_",
     "async": _ASYNC_,
     "delay": "_DELAY_"
-  }
+  }_AUTH_
 }

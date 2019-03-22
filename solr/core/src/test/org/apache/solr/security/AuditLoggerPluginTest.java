@@ -113,9 +113,9 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   
   @Test
   public void jsonEventFormatter() {
-    assertEquals("{\"message\":\"Anonymous\",\"level\":\"INFO\",\"date\":" + SAMPLE_DATE.getTime() + ",\"solrPort\":0,\"resource\":\"/collection1\",\"httpMethod\":\"GET\",\"eventType\":\"ANONYMOUS\",\"status\":-1,\"qtime\":-1.0}", 
+    assertEquals("{\"message\":\"Anonymous\",\"level\":\"INFO\",\"date\":" + SAMPLE_DATE.getTime() + ",\"solrParams\":{},\"solrPort\":0,\"resource\":\"/collection1\",\"httpMethod\":\"GET\",\"eventType\":\"ANONYMOUS\",\"status\":-1,\"qtime\":-1.0}", 
         plugin.formatter.formatEvent(EVENT_ANONYMOUS));
-    assertEquals("{\"message\":\"Authenticated\",\"level\":\"INFO\",\"date\":1234567890,\"username\":\"Jan\",\"solrPort\":0,\"resource\":\"/collection1\",\"httpMethod\":\"GET\",\"eventType\":\"AUTHENTICATED\",\"status\":-1,\"qtime\":-1.0}", 
+    assertEquals("{\"message\":\"Authenticated\",\"level\":\"INFO\",\"date\":" + SAMPLE_DATE.getTime() + ",\"username\":\"Jan\",\"solrParams\":{},\"solrPort\":0,\"resource\":\"/collection1\",\"httpMethod\":\"GET\",\"eventType\":\"AUTHENTICATED\",\"status\":-1,\"qtime\":-1.0}", 
         plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
   } 
   

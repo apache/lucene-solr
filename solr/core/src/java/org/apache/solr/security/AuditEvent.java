@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.security.AuditEvent.EventType.ANONYMOUS;
+import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 
 /**
  * Audit event that takes request and auth context as input to be able to audit log custom things.
@@ -53,7 +54,7 @@ public class AuditEvent {
   private List<String> collections;
   private Map<String, Object> context;
   private HashMap<String, String> headers;
-  private Map<String, Object> solrParams;
+  private Map<String, Object> solrParams = new HashMap<>();
   private String solrHost;
   private int solrPort;
   private String solrIp;
@@ -98,12 +99,25 @@ public class AuditEvent {
   public AuditEvent(EventType eventType) {
     this.date = new Date();
     this.eventType = eventType;
+    if (EventType.REJECTED == this.eventType) {
+      this.status = 401;
+    }
+    if (EventType.UNAUTHORIZED == this.eventType) {
+      this.status = 403;
+    }
+    if (EventType.ERROR == this.eventType) {
+      this.status = 500;
+    }
     this.level = eventType.level;
     this.message = eventType.message;
   }
 
   public AuditEvent(EventType eventType, HttpServletRequest httpRequest) {
     this(eventType, null, httpRequest);
+  }
+  
+  // Constructor for testing only
+  protected AuditEvent() {
   }
   
   /**
@@ -133,7 +147,7 @@ public class AuditEvent {
         this.requestType = AuthorizationContext.RequestType.WRITE.name();
     }
 
-    setException(exception);
+    if (exception != null) setException(exception);
 
     Principal principal = httpRequest.getUserPrincipal();
     if (principal != null) {
@@ -159,8 +173,9 @@ public class AuditEvent {
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
     this.resource = authorizationContext.getResource();
     this.requestType = authorizationContext.getRequestType().toString();
-    // TODO: Insert params???
-    //authorizationContext.getParams().toMap(this.solrParams);
+    authorizationContext.getParams().forEach(p -> {
+      this.solrParams.put(p.getKey(), p.getValue());
+    });
   }
 
   /**
@@ -275,6 +290,14 @@ public class AuditEvent {
     return solrParams;
   }
 
+  public String getSolrParamAsString(String key) {
+    Object v = getSolrParams().get(key);
+    if (v instanceof List && ((List) v).size() > 0) {
+      return String.valueOf(((List) v).get(0));
+    }
+    return null;
+  }
+  
   public AuthorizationResponse getAutResponse() {
     return autResponse;
   }
@@ -287,7 +310,7 @@ public class AuditEvent {
     return requestType;
   }
 
-  public long getStatus() {
+  public int getStatus() {
     return status;
   }
 
@@ -406,6 +429,11 @@ public class AuditEvent {
 
   public void setException(Throwable exception) {
     this.exception = exception;
+    if (exception != null) {
+      this.eventType = ERROR;
+      this.level = ERROR.level;
+      this.message = ERROR.message;
+    }
     setStatus(statusFromException(exception));
   }
 

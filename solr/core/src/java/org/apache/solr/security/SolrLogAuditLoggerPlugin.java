@@ -44,8 +44,11 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
             .append("type=\"").append(event.getEventType().name()).append("\"")
             .append(" message=\"").append(event.getMessage()).append("\"")
             .append(" method=\"").append(event.getHttpMethod()).append("\"")
+            .append(" status=\"").append(event.getStatus()).append("\"")
+            .append(" requestType=\"").append(event.getRequestType()).append("\"")
             .append(" username=\"").append(event.getUsername()).append("\"")
             .append(" resource=\"").append(event.getResource()).append("\"")
+            .append(" queryString=\"").append(event.getHttpQueryString()).append("\"")
             .append(" collections=").append(event.getCollections()).toString());
     if (pluginConfig.size() > 0) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Plugin config was not fully consumed. Remaining parameters are " + pluginConfig);

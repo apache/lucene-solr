@@ -528,8 +528,12 @@ public class HttpSolrCall {
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
             execute(solrRsp);
-            if (shouldAudit(EventType.COMPLETED)) {
-              cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+            if (shouldAudit()) {
+              EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+              if (shouldAudit(eventType)) {
+                cores.getAuditLoggerPlugin().doAudit(
+                    new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+              }
             }
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
@@ -567,8 +571,12 @@ public class HttpSolrCall {
 
   }
 
+  private boolean shouldAudit() {
+    return cores.getAuditLoggerPlugin() != null;
+  }
+
   private boolean shouldAudit(AuditEvent.EventType eventType) {
-    return cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(eventType);
+    return shouldAudit() && cores.getAuditLoggerPlugin().shouldLog(eventType);
   }
 
   private boolean shouldAuthorize() {

@@ -50,9 +50,9 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
       } catch (InterruptedException e) {
       }
     }
-    out.write(event.getResource() + "\n");
+    out.write(formatter.formatEvent(event) + "\n");
     out.flush();
-    log.info("Sent audit callback {} to localhost:{}", event.getResource(), callbackPort);
+    log.info("Sent audit callback {} to localhost:{}", formatter.formatEvent(event), callbackPort);
   }
 
   @Override

@@ -126,7 +126,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   protected abstract void audit(AuditEvent event);
 
   /**
-   * Called by the framework, and takes care of metrics  
+   * Called by the framework, and takes care of metrics tracking and to dispatch
+   * to either synchronous or async logging.
    */
   public final void doAudit(AuditEvent event) {
     if (async) {
