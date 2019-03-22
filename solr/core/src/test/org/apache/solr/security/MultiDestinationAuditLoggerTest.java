@@ -33,22 +33,23 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     Map<String,Object> config = new HashMap<>();
     config.put("class", "solr.MultiDestinationAuditLogger");
     config.put("async", false);
-    config.put("eventTypes", Arrays.asList(AuditEvent.EventType.COMPLETED));
+    config.put("eventTypes", Arrays.asList(AuditEvent.EventType.COMPLETED.name()));
     ArrayList<Map<String, Object>> plugins = new ArrayList<Map<String, Object>>();
 
     Map<String,Object> conf1 = new HashMap<>();
     conf1.put("class", "solr.SolrLogAuditLoggerPlugin");
     conf1.put("async", false);
-    conf1.put("eventTypes", Arrays.asList(AuditEvent.EventType.ANONYMOUS));
+    conf1.put("eventTypes", Arrays.asList(AuditEvent.EventType.ANONYMOUS.name()));
     plugins.add(conf1);
     Map<String,Object> conf2 = new HashMap<>();
     conf2.put("class", "solr.MockAuditLoggerPlugin");
     conf2.put("async", false);
-    conf2.put("eventTypes", Arrays.asList(AuditEvent.EventType.AUTHENTICATED));
+    conf2.put("eventTypes", Arrays.asList(AuditEvent.EventType.AUTHENTICATED.name()));
     plugins.add(conf2);
     config.put("plugins", plugins);
 
-    al.inform(new SolrResourceLoader());
+    SolrResourceLoader loader = new SolrResourceLoader();
+    al.inform(loader);
     al.init(config);
 
     al.doAudit(new AuditEvent(AuditEvent.EventType.ANONYMOUS).setUsername("me"));
@@ -62,6 +63,7 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
 
     assertEquals(0, config.size());
     al.close();
+    loader.close();
   }
 
   @Test

@@ -72,11 +72,8 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
    */
   @Override
   public void init(Map<String, Object> pluginConfig) {
+    pluginConfig.put(PARAM_ASYNC, false); // Force the multi plugin to synchronous operation
     super.init(pluginConfig);
-    if (async) {
-      log.warn(MultiDestinationAuditLogger.class.getName() + " cannot run in async mode");
-      async = false;
-    }
     if (!pluginConfig.containsKey(PARAM_PLUGINS)) {
       log.warn("No plugins configured");
     } else {

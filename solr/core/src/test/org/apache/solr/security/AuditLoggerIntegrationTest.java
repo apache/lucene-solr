@@ -190,7 +190,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     int count = 0;
     while(receiver.buffer.size() < number) { 
       Thread.sleep(100);
-      if (++count >= 10) fail("Failed waiting for " + number + " callbacks");
+      if (++count >= 30) fail("Failed waiting for " + number + " callbacks");
     }
   }
 

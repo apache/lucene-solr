@@ -57,7 +57,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
   
-  private static final String PARAM_ASYNC = "async";
+  static final String PARAM_ASYNC = "async";
   private static final String PARAM_BLOCKASYNC = "blockAsync";
   private static final String PARAM_QUEUE_SIZE = "queueSize";
   private static final String PARAM_NUM_THREADS = "numThreads";
@@ -198,7 +198,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * @return true if this event type should be logged 
    */
   public boolean shouldLog(EventType eventType) {
-    boolean shouldLog = eventTypes.contains(eventType); 
+    boolean shouldLog = eventTypes.contains(eventType.name()); 
     if (!shouldLog) {
       log.debug("Event type {} is not configured for audit logging", eventType.name());
     }
