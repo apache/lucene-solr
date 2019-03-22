@@ -22,10 +22,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
-import org.junit.Before;
 import org.junit.Test;
 
 public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
@@ -66,8 +64,6 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     assertTrue(al.shouldLog(AuditEvent.EventType.AUTHENTICATED));
 
     assertEquals(0, config.size());
-    
-    
     
     al.close();
     loader.close();
