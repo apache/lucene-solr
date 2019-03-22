@@ -103,6 +103,9 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       }
       log.info("Initializing auditlogger plugin: " + klas);
       AuditLoggerPlugin p = loader.newInstance(klas, AuditLoggerPlugin.class);
+      if (p.getClass().equals(this.getClass())) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot nest MultiDestinationAuditLogger");
+      }
       p.init(auditConf);
       return p;
     } else {
@@ -123,7 +126,6 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
 
   @Override
   public void close() throws IOException {
-    super.close();
     plugins.forEach(p -> {
       try {
         p.close();
@@ -131,5 +133,6 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
         log.error("Exception trying to close {}", p.getName());
       }
     });
+    super.close();
   }
 }
