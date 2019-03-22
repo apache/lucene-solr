@@ -161,6 +161,8 @@ Other Changes
 * SOLR-12955: Refactored DistributedUpdateProcessor to put SolrCloud functionality into a subclass.
   (Bar Rotstein, David Smiley)
 
+* SOLR-13342: Remove dom4j from Solr (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
