@@ -133,7 +133,7 @@ final class CompletionFieldsProducer extends FieldsProducer {
   }
 
   @Override
-  public FieldsProducer getMergeInstance() throws IOException {
+  public FieldsProducer getMergeInstance() {
     return new CompletionFieldsProducer(delegateFieldsProducer, readers);
   }
 

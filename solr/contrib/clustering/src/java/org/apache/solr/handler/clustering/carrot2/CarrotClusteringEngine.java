@@ -27,11 +27,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -388,7 +388,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       
       // Create a Carrot2 document
       Document carrotDocument = new Document(getConcatenated(sdoc, titleFieldSpec),
-              snippet, ObjectUtils.toString(sdoc.getFieldValue(urlField), ""));
+              snippet, Objects.toString(sdoc.getFieldValue(urlField), ""));
       
       // Store Solr id of the document, we need it to map document instances 
       // found in clusters back to identifiers.
@@ -401,7 +401,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           
           // Use the first Carrot2-supported language
           for (Object l : languages) {
-            String lang = ObjectUtils.toString(l, "");
+            String lang = Objects.toString(l, "");
             
             if (languageCodeMap.containsKey(lang)) {
               lang = languageCodeMap.get(lang);
@@ -475,7 +475,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         // Join multiple values with a period so that Carrot2 does not pick up
         // phrases that cross field value boundaries (in most cases it would
         // create useless phrases).
-        result.append(ObjectUtils.toString(ite.next())).append(" . ");
+        result.append(Objects.toString(ite.next(), "")).append(" . ");
       }
     }
     return result.toString().trim();

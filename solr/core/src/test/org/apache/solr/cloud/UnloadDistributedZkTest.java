@@ -31,7 +31,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
@@ -42,6 +41,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -54,23 +54,19 @@ import java.util.concurrent.TimeUnit;
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class UnloadDistributedZkTest extends BasicDistributedZkTest {
-
-  protected String getSolrXml() {
-    return "solr.xml";
-  }
-  
   public UnloadDistributedZkTest() {
     super();
   }
 
+  protected String getSolrXml() {
+    return "solr.xml";
+  }
+
   @Test
-  //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void test() throws Exception {
-    
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
-    
+
     testUnloadShardAndCollection();
   }
 
@@ -78,9 +74,9 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       boolean shouldBePresent, int expectedSliceCount) throws Exception {
     final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     Boolean isPresent = null; // null meaning "don't know"
-    while (null == isPresent || shouldBePresent != isPresent.booleanValue()) {
+    while (null == isPresent || shouldBePresent != isPresent) {
       final DocCollection docCollection = getCommonCloudSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName);
-      final Collection<Slice> slices = (docCollection != null) ? docCollection.getSlices() : null;
+      final Collection<Slice> slices = (docCollection != null) ? docCollection.getSlices() : Collections.emptyList();
       if (timeout.hasTimedOut()) {
         printLayout();
         fail("checkCoreNamePresenceAndSliceCount failed:"
@@ -88,14 +84,12 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
             +" shouldBePresent="+shouldBePresent+" isPresent="+isPresent
             +" expectedSliceCount="+expectedSliceCount+" actualSliceCount="+slices.size());
       }
-      if (expectedSliceCount == (slices == null ? 0 : slices.size())) {
+      if (expectedSliceCount == slices.size()) {
         isPresent = false;
-        if (slices != null) {
-          for (Slice slice : slices) {
-            for (Replica replica : slice.getReplicas()) {
-              if (coreName.equals(replica.get("core"))) {
-                isPresent = true;
-              }
+        for (Slice slice : slices) {
+          for (Replica replica : slice.getReplicas()) {
+            if (coreName.equals(replica.get("core"))) {
+              isPresent = true;
             }
           }
         }
@@ -105,7 +99,6 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
   }
 
   private void testUnloadShardAndCollection() throws Exception{
-
     final int numShards = 2;
 
     final String collection = "test_unload_shard_and_collection";
@@ -285,7 +278,6 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leaderProps.getCoreName());
-      SolrParams p = (ModifiableSolrParams) unloadCmd.getParams();
       collectionClient.request(unloadCmd);
     }
     tries = 50;
@@ -335,7 +327,6 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       assertEquals(found1, found3);
       assertEquals(found3, found4);
     }
-    
   }
   
   private void testUnloadLotsOfCores() throws Exception {
@@ -343,7 +334,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     try (final HttpSolrClient adminClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
       int numReplicas = atLeast(3);
       ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-          5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+          5, TimeUnit.SECONDS, new SynchronousQueue<>(),
           new DefaultSolrThreadFactory("testExecutor"));
       try {
         // create the cores
@@ -353,7 +344,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       }
 
       executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-          TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+          TimeUnit.SECONDS, new SynchronousQueue<>(),
           new DefaultSolrThreadFactory("testExecutor"));
       try {
         for (int j = 0; j < numReplicas; j++) {
@@ -374,5 +365,4 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       }
     }
   }
-
 }

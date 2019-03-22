@@ -1028,7 +1028,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
   /** Wraps a SortedSetDocValues but with additional asserts */
   public static class AssertingPointValues extends PointValues {
-
+    private final Thread creationThread = Thread.currentThread();
     private final PointValues in;
 
     /** Sole constructor. */
@@ -1048,11 +1048,13 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
+      assertThread("Points", creationThread);
       in.intersect(new AssertingIntersectVisitor(in.getNumDataDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
     }
 
     @Override
     public long estimatePointCount(IntersectVisitor visitor) {
+      assertThread("Points", creationThread);
       long cost = in.estimatePointCount(visitor);
       assert cost >= 0;
       return cost;
@@ -1060,36 +1062,43 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public byte[] getMinPackedValue() throws IOException {
+      assertThread("Points", creationThread);
       return Objects.requireNonNull(in.getMinPackedValue());
     }
 
     @Override
     public byte[] getMaxPackedValue() throws IOException {
+      assertThread("Points", creationThread);
       return Objects.requireNonNull(in.getMaxPackedValue());
     }
 
     @Override
     public int getNumDataDimensions() throws IOException {
+      assertThread("Points", creationThread);
       return in.getNumDataDimensions();
     }
 
     @Override
     public int getNumIndexDimensions() throws IOException {
+      assertThread("Points", creationThread);
       return in.getNumIndexDimensions();
     }
 
     @Override
     public int getBytesPerDimension() throws IOException {
+      assertThread("Points", creationThread);
       return in.getBytesPerDimension();
     }
 
     @Override
     public long size() {
+      assertThread("Points", creationThread);
       return in.size();
     }
 
     @Override
     public int getDocCount() {
+      assertThread("Points", creationThread);
       return in.getDocCount();
     }
 

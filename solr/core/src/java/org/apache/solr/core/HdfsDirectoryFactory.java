@@ -531,7 +531,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           boolean accept = false;
           String pathName = path.getName();
           try {
-            accept = fs.isDirectory(path) && !path.equals(currentIndexDirPath) &&
+            accept = fs.getFileStatus(path).isDirectory() && !path.equals(currentIndexDirPath) &&
                 (pathName.equals("index") || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
           } catch (IOException e) {
             log.error("Error checking if path {} is an old index directory, caused by: {}", path, e);

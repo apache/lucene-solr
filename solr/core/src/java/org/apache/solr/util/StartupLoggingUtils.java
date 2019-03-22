@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
@@ -133,7 +134,8 @@ public final class StartupLoggingUtils {
    * Tests are particularly sensitive to this call or the object release tracker will report "lmax.disruptor" not
    * terminating when asynch logging (new default as of 8.1) is enabled.
    *
-   *
+   * Expert, there are rarely good reasons for this to be called outside of the test framework. If you are tempted to
+   * call this for running Solr, you should probably be using synchronous logging.
    */
   @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static void shutdown() {
@@ -141,8 +143,38 @@ public final class StartupLoggingUtils {
       logNotSupported("Not running log4j2, could not call shutdown for async logging.");
       return;
     }
+    flushAllLoggers();
     LogManager.shutdown(true);
   }
+
+  /**
+   * This is primarily for tests to insure that log messages don't bleed from one test case to another, see:
+   * SOLR-13268.
+   *
+   * However, if there are situations where we want to insure that all log messages for all loggers are flushed,
+   * this method can be called by anyone. It should _not_ affect Solr in any way except, perhaps, a slight delay
+   * while messages are being flushed.
+   *
+   * Expert, there are rarely good reasons for this to be called outside of the test framework. If you are tempted to
+   * call this for running Solr, you should probably be using synchronous logging.
+   */
+  @SuppressForbidden(reason = "Legitimate log4j2 access")
+  public static void flushAllLoggers() {
+    if (!isLog4jActive()) {
+      logNotSupported("Not running log4j2, could not call shutdown for async logging.");
+      return;
+    }
+
+    final LoggerContext logCtx = ((LoggerContext) LogManager.getContext(false));
+    for (final org.apache.logging.log4j.core.Logger logger : logCtx.getLoggers()) {
+      for (final Appender appender : logger.getAppenders().values()) {
+        if (appender instanceof AbstractOutputStreamAppender) {
+          ((AbstractOutputStreamAppender) appender).getManager().flush();
+        }
+      }
+    }
+  }
+
   /**
    * Return a string representing the current static ROOT logging level
    * @return a string TRACE, DEBUG, WARN, ERROR or INFO representing current log level. Default is INFO

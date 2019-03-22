@@ -368,7 +368,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       return true;
     }
     // if phase==TOLEADER, we can't just assume we are the leader... let the normal logic check.
-    return !distribProc.isLeader(cmd);
+    distribProc.setupRequest(cmd);
+    return !distribProc.isLeader();
   }
 
   @Override

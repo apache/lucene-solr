@@ -89,7 +89,7 @@ final class SegmentCoreReaders {
   private final Set<IndexReader.ClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<IndexReader.ClosedListener>());
   
-  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
+  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, boolean openedFromWriter, IOContext context) throws IOException {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
@@ -107,7 +107,7 @@ final class SegmentCoreReaders {
 
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, context);
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, openedFromWriter, context);
       final PostingsFormat format = codec.postingsFormat();
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);

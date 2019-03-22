@@ -35,7 +35,6 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -109,7 +108,6 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
 
       if (fs instanceof DistributedFileSystem) {
@@ -147,13 +145,17 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     IOUtils.closeQuietly(fs);
     fs = null;
     try {
-      HdfsTestUtil.teardownClass(dfsCluster);
+      SolrTestCaseJ4.resetFactory();
     } finally {
-      dfsCluster = null;
-      System.clearProperty("solr.hdfs.home");
-      System.clearProperty("solr.hdfs.default.backup.path");
-      System.clearProperty("test.build.data");
-      System.clearProperty("test.cache.data");
+      try {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      } finally {
+        dfsCluster = null;
+        System.clearProperty("solr.hdfs.home");
+        System.clearProperty("solr.hdfs.default.backup.path");
+        System.clearProperty("test.build.data");
+        System.clearProperty("test.cache.data");
+      }
     }
   }
 
@@ -180,12 +182,12 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    try (SolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (HttpSolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
         BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
-        CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, coreName, null);
+        CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, coreName, null);
         while (!checkBackupStatus.success) {
           checkBackupStatus.fetchStatus();
           Thread.sleep(1000);

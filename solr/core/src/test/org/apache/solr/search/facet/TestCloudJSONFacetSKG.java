@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.lang.StringUtils;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -300,7 +298,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static String buildORQuery(String... clauses) {
     assert 0 < clauses.length;
-    return "(" + StringUtils.join(clauses, " OR ") + ")";
+    return "(" + String.join(" OR ", clauses) + ")";
   }
   
   /**

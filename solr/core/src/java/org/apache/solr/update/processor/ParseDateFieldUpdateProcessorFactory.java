@@ -36,7 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.commons.lang.LocaleUtils;
+import org.apache.commons.lang3.LocaleUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -171,7 +171,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
     if (null != localeParam) {
       locale = LocaleUtils.toLocale(localeParam);
     } else {
-      locale = LocaleUtils.toLocale("en_US"); // because well-known patterns assume this
+      locale = Locale.US; // because well-known patterns assume this
     }
 
     Object defaultTimeZoneParam = args.remove(DEFAULT_TIME_ZONE_PARAM);

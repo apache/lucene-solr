@@ -43,13 +43,10 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
     configureCluster(2)
         .configure();
 
-    System.setProperty("solr.hdfs.blockcache.enabled", "false");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
     configManager.uploadConfigDir(configset("cloud-hdfs"), "conf1");
-
-    System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
 
 
@@ -62,8 +59,6 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
         HdfsTestUtil.teardownClass(dfsCluster);
       } finally {
         dfsCluster = null;
-        System.clearProperty("solr.hdfs.blockcache.enabled");
-        System.clearProperty("solr.hdfs.home");
       }
     }
   }

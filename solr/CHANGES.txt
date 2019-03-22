@@ -88,6 +88,10 @@ New Features
 
 * SOLR-13292: Provide extended per-segment status of a collection. (ab)
 
+* SOLR-11127: REINDEXCOLLECTION command for re-indexing of existing collections. This issue also adds
+  a back-compat check of the .system collection to notify users of potential compatibility issues after
+  upgrades or schema changes. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -124,12 +128,18 @@ Bug Fixes
 
 * SOLR-13244: Admin UI Nodes view fails and is empty when a node is temporarily down (janhoy)
 
+* SOLR-13253: IndexSchema.getResourceLoader was being used to load non-schema things, which can be a memory leak if
+  "shareSchema" and other circumstances occur.  Furthermore it's reference to SolrConfig was removed. (David Smiley)
+
 Improvements
 ----------------------
+
 * SOLR-12999: Index replication could delete segments before downloading segments from master if there is not enough
   disk space (noble)
 
 * SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
+
+* SOLR-9079: Remove commons-lang as a dependency (Kevin Risden)
 
 Other Changes
 ----------------------
@@ -159,6 +169,13 @@ Other Changes
 * SOLR-13268: Clean up any test failures resulting from defaulting to async logging (Erick Erickson)
 
 * SOLR-13307: Ensure HDFS tests clear System properties they set (Kevin Risden)
+
+* SOLR-13330: Improve HDFS tests (Kevin Risden)
+
+* SOLR-8033: Remove debug if branch in HdfsTransactionLog (Kevin Risden)
+
+* SOLR-12955: Refactored DistributedUpdateProcessor to put SolrCloud functionality into a subclass.
+  (Bar Rotstein, David Smiley)
 
 ==================  8.0.0 ==================
 
@@ -317,6 +334,9 @@ New Features
 
 * SOLR-13241: Add 'autoscaling' tool support to solr.cmd (Jason Gerlowski)
 
+* SOLR-11126: New Node-level health check handler at /admin/info/healthcheck and /node/health paths that
+  checks if the node is live, connected to zookeeper and not shutdown. (Anshum Gupta, Amrit Sarkar, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -474,9 +494,6 @@ New Features
 * SOLR-7896: Add a login page to Admin UI, with initial support for Basic Auth (janhoy)
 
 * SOLR-13116: Add Admin UI login support for Kerberos (janhoy, Jason Gerlowski)
-
-* SOLR-11126: New Node-level health check handler at /admin/info/healthcheck and /node/health paths that
-  checks if the node is live, connected to zookeeper and not shutdown. (Anshum Gupta, Amrit Sarkar, shalin)
 
 * SOLR-12770: Make it possible to configure a host whitelist for distributed search
   (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)

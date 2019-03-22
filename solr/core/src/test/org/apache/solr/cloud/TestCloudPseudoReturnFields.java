@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -732,7 +731,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       
       Collections.shuffle(fl, random);
 
-      final SolrParams singleFl = params("q","*:*", "rows", "1","fl",StringUtils.join(fl.toArray(),','));
+      final SolrParams singleFl = params("q","*:*", "rows", "1","fl",String.join(",", fl));
       final ModifiableSolrParams multiFl = params("q","*:*", "rows", "1");
       for (String item : fl) {
         multiFl.add("fl",item);
@@ -767,7 +766,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       
       Collections.shuffle(fl, random);
 
-      final SolrParams singleFl = params("fl",StringUtils.join(fl.toArray(),','));
+      final SolrParams singleFl = params("fl",String.join(",", fl));
       final ModifiableSolrParams multiFl = params();
       for (String item : fl) {
         multiFl.add("fl",item);
