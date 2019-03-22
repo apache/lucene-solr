@@ -754,8 +754,12 @@ public class HttpSolrCall {
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
-    if (shouldAudit(EventType.COMPLETED)) {
-      cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.COMPLETED, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+    if (shouldAudit()) {
+      EventType eventType = solrResp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+      if (shouldAudit(eventType)) {
+        cores.getAuditLoggerPlugin().doAudit(
+            new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+      }
     }
   }
 
