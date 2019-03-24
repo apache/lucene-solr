@@ -287,6 +287,7 @@
       <zipfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}" includes="**/*.sh,**/*.bat" filemode="755"/>
     </zip>
     <make-checksums file="${dist.dir}/lucene-${version}.zip"/>
   </target>
@@ -310,6 +311,7 @@
       <tarfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}" includes="**/*.sh,**/*.bat" filemode="755"/>
     </tar>
     <make-checksums file="${dist.dir}/lucene-${version}.tgz"/>
   </target>
