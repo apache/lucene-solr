@@ -41,6 +41,10 @@ Upgrade Notes
   expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
   (Gus Heck).
 
+* SOLR-13324: URLClassifyProcessor#getCanonicalUrl now throws MalformedURLException rather than hiding it. Although the
+  present code is unlikely to produce such an exception it may be possible in future changes or in subclasses.
+  Currently this change should only effect compatibility of custom code overriding this method (Gus Heck).
+
 New Features
 ----------------------
 * SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
