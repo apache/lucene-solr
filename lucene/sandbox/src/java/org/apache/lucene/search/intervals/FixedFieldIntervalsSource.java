@@ -58,8 +58,8 @@ class FixedFieldIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public Collection<IntervalsSource> getDisjunctions() {
-    Collection<IntervalsSource> inner = source.getDisjunctions();
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    Collection<IntervalsSource> inner = source.pullUpDisjunctions();
     if (inner.size() == 1) {
       return Collections.singleton(this);
     }

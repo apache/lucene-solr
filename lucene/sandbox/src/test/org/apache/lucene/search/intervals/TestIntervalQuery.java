@@ -70,7 +70,8 @@ public class TestIntervalQuery extends LuceneTestCase {
       "w2 w1",
       "w2 w1 w3 w2 w4",
       "coordinate genome mapping research",
-      "coordinate genome research"
+      "coordinate genome research",
+      "greater new york"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -199,6 +200,11 @@ public class TestIntervalQuery extends LuceneTestCase {
             Intervals.term("genome")),
         Intervals.term("research")));
     checkHits(q, new int[]{ 6, 7 });
+
+    q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("greater"),
+        Intervals.or(Intervals.phrase("new", "york"), Intervals.term("york"))));
+    checkHits(q, new int[]{ 8 });
   }
 
   public void testUnordered() throws IOException {
@@ -212,6 +218,21 @@ public class TestIntervalQuery extends LuceneTestCase {
         )
     );
     checkHits(q, new int[]{3});
+  }
+
+  public void testNestedOrInUnorderedMaxGaps() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.maxgaps(1, Intervals.unordered(
+            Intervals.or(Intervals.term("coordinate"), Intervals.phrase("coordinate", "genome")),
+            Intervals.term("research"))
+    ));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrInContainedBy() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.containedBy(
+        Intervals.term("genome"),
+        Intervals.or(Intervals.term("coordinate"), Intervals.ordered(Intervals.term("coordinate"), Intervals.term("research")))));
+    checkHits(q, new int[]{ 6, 7 });
   }
 
   public void testDefinedGaps() throws IOException {

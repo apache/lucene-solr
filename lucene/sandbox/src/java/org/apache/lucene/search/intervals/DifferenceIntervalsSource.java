@@ -66,8 +66,8 @@ class DifferenceIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public Collection<IntervalsSource> getDisjunctions() {
-    Collection<IntervalsSource> inner = minuend.getDisjunctions();
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    Collection<IntervalsSource> inner = minuend.pullUpDisjunctions();
     if (inner.size() == 1) {
       return Collections.singleton(this);
     }

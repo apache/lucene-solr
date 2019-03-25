@@ -155,7 +155,7 @@ class OffsetIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public Collection<IntervalsSource> getDisjunctions() {
+  public Collection<IntervalsSource> pullUpDisjunctions() {
     return Collections.singleton(this);
   }
 

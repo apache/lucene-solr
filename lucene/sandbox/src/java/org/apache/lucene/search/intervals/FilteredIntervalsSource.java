@@ -32,15 +32,59 @@ import org.apache.lucene.search.QueryVisitor;
  */
 public abstract class FilteredIntervalsSource extends IntervalsSource {
 
+  public static IntervalsSource maxGaps(IntervalsSource in, int maxGaps) {
+    Collection<IntervalsSource> disjunctions = in.pullUpDisjunctions();
+    return Intervals.or(disjunctions.stream().map(s -> new MaxGaps(s, maxGaps)).collect(Collectors.toList()));
+  }
+
+  private static class MaxGaps extends FilteredIntervalsSource {
+
+    private final int maxGaps;
+
+    MaxGaps(IntervalsSource in, int maxGaps) {
+      super("MAXGAPS/" + maxGaps, in);
+      this.maxGaps = maxGaps;
+    }
+
+    @Override
+    protected boolean accept(IntervalIterator it) {
+      return it.gaps() <= maxGaps;
+    }
+  }
+
+  public static IntervalsSource maxWidth(IntervalsSource in, int maxWidth) {
+    return new MaxWidth(in, maxWidth);
+  }
+
+  private static class MaxWidth extends FilteredIntervalsSource {
+
+    private final int maxWidth;
+
+    MaxWidth(IntervalsSource in, int maxWidth) {
+      super("MAXWIDTH/" + maxWidth, in);
+      this.maxWidth = maxWidth;
+    }
+
+    @Override
+    protected boolean accept(IntervalIterator it) {
+      return (it.end() - it.start()) + 1 <= maxWidth;
+    }
+
+    @Override
+    public Collection<IntervalsSource> pullUpDisjunctions() {
+      return Disjunctions.pullUp(in, s -> new MaxWidth(s, maxWidth));
+    }
+  }
+
   private final String name;
-  private final IntervalsSource in;
+  protected final IntervalsSource in;
 
   /**
    * Create a new FilteredIntervalsSource
    * @param name  the name of the filter
    * @param in    the source to filter
    */
-  public FilteredIntervalsSource(String name, IntervalsSource in) {
+  private FilteredIntervalsSource(String name, IntervalsSource in) {
     this.name = name;
     this.in = in;
   }
@@ -85,21 +129,8 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public Collection<IntervalsSource> getDisjunctions() {
-    Collection<IntervalsSource> inner = in.getDisjunctions();
-    if (inner.size() == 1) {
-      return Collections.singleton(this);
-    }
-    return inner.stream().map(this::wrap).collect(Collectors.toSet());
-  }
-
-  private IntervalsSource wrap(IntervalsSource in) {
-    return new FilteredIntervalsSource(name, in) {
-      @Override
-      protected boolean accept(IntervalIterator it) {
-        return FilteredIntervalsSource.this.accept(it);
-      }
-    };
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singletonList(this);
   }
 
   @Override

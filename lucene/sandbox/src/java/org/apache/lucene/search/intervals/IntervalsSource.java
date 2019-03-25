@@ -70,7 +70,7 @@ public abstract class IntervalsSource {
    *
    * Most implementations can return {@code Collections.singleton(this)}
    */
-  public abstract Collection<IntervalsSource> getDisjunctions();
+  public abstract Collection<IntervalsSource> pullUpDisjunctions();
 
   @Override
   public abstract int hashCode();

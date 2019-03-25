@@ -118,12 +118,12 @@ public class TestIntervals extends LuceneTestCase {
             if (i >= expected[id].length) {
               fail("Unexpected match in doc " + id + ": " + intervals);
             }
-            assertEquals("Wrong start value in doc " + id, expected[id][i], pos);
+            assertEquals(source + ": wrong start value in doc " + id, expected[id][i], pos);
             assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
             assertEquals("Wrong end value in doc " + id, expected[id][i + 1], intervals.end());
             i += 2;
           }
-          assertEquals("Wrong number of endpoints in doc " + id, expected[id].length, i);
+          assertEquals(source + ": wrong number of endpoints in doc " + id, expected[id].length, i);
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.start());
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.end());
           if (i > 0)

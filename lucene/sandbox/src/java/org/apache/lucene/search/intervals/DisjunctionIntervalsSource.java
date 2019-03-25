@@ -46,7 +46,12 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   private static Collection<IntervalsSource> simplify(Collection<IntervalsSource> sources) {
     Set<IntervalsSource> simplified = new HashSet<>();
     for (IntervalsSource source : sources) {
-      simplified.addAll(source.getDisjunctions());
+      if (source instanceof DisjunctionIntervalsSource) {
+        simplified.addAll(source.pullUpDisjunctions());
+      }
+      else {
+        simplified.add(source);
+      }
     }
     return simplified;
   }
@@ -114,7 +119,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public Collection<IntervalsSource> getDisjunctions() {
+  public Collection<IntervalsSource> pullUpDisjunctions() {
     return subSources;
   }
 

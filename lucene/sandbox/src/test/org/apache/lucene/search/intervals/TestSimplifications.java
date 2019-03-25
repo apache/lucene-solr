@@ -74,17 +74,4 @@ public class TestSimplifications extends LuceneTestCase {
     assertEquals(Intervals.or(Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")), actual);
   }
 
-  public void testDisjunctionSimplificationPreservesFilters() {
-    // or(a, MAXGAPS/3(or(c, d)) => or(a, MAXGAPS/3(c), MAXGAPS/3(d))
-    IntervalsSource actual = Intervals.or(
-        Intervals.term("a"),
-        Intervals.maxgaps(3, Intervals.or(Intervals.term("c"), Intervals.term("d"))));
-    IntervalsSource expected = Intervals.or(
-        Intervals.term("a"),
-        Intervals.maxgaps(3, Intervals.term("c")),
-        Intervals.maxgaps(3, Intervals.term("d")));
-    System.out.println(actual);
-    assertEquals(expected, actual);
-  }
-
 }

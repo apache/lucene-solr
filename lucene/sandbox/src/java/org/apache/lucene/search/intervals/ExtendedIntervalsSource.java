@@ -73,8 +73,8 @@ class ExtendedIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public Collection<IntervalsSource> getDisjunctions() {
-    Collection<IntervalsSource> inner = source.getDisjunctions();
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    Collection<IntervalsSource> inner = source.pullUpDisjunctions();
     if (inner.size() == 0) {
       return Collections.singleton(this);
     }
