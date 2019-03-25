@@ -171,4 +171,34 @@ public class TestDisjunctionRewrites extends LuceneTestCase {
     assertEquals(expected, actual);
   }
 
+  public void testNotContainedBy() {
+    // the 'big' interval should not be minimized, the 'small' one should be
+    // NOT_CONTAINED_BY(or(BLOCK("a", "b"), "a"), or(BLOCK("c", "d"), "d"))
+    // => or(NOT_CONTAINED_BY(or(BLOCK("a", "b"), "a"), BLOCK("c", "d"))), NOT_CONTAINED_BY(or(BLOCK("a", "b"), "a"), "d"))
+    IntervalsSource actual = notContainedBy(or(phrase("a", "b"), term("a")), or(phrase("c", "d"), term("d")));
+    IntervalsSource expected = or(
+        notContainedBy(or(phrase("a", "b"), term("a")), phrase("c", "d")),
+        notContainedBy(or(phrase("a", "b"), term("a")), term("d"))
+    );
+    assertEquals(expected, actual);
+  }
+
+  public void testNotContaining() {
+    // the 'big' interval should not be minimized, the 'small' one should be
+    // NOT_CONTAINING(or(BLOCK("a", "b"), "a"), or(BLOCK("c", "d"), "d"))
+    // => or(NOT_CONTAINING(BLOCK("a", "b"), or(BLOCK("c", "d"), "d")), NOT_CONTAINING("a", or(BLOCK("c", "d"), "d")))
+    IntervalsSource actual = notContaining(or(phrase("a", "b"), term("a")), or(phrase("c", "d"), term("d")));
+    IntervalsSource expected = or(
+        notContaining(phrase("a", "b"), or(phrase("c", "d"), term("d"))),
+        notContaining(term("a"), or(phrase("c", "d"), term("d")))
+    );
+    assertEquals(expected, actual);
+  }
+
+  public void testBlockedRewrites() {
+    IntervalsSource actual = phrase(term("a"), or(false, phrase("b", "c"), term("c")));
+    IntervalsSource ifRewritten = or(phrase("a", "b", "c"), phrase("a", "c"));
+    assertNotEquals(ifRewritten, actual);
+  }
+
 }

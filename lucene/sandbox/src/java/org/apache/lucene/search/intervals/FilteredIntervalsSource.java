@@ -33,8 +33,7 @@ import org.apache.lucene.search.QueryVisitor;
 public abstract class FilteredIntervalsSource extends IntervalsSource {
 
   public static IntervalsSource maxGaps(IntervalsSource in, int maxGaps) {
-    Collection<IntervalsSource> disjunctions = in.pullUpDisjunctions();
-    return Intervals.or(disjunctions.stream().map(s -> new MaxGaps(s, maxGaps)).collect(Collectors.toList()));
+    return Intervals.or(in.pullUpDisjunctions().stream().map(s -> new MaxGaps(s, maxGaps)).collect(Collectors.toList()));
   }
 
   private static class MaxGaps extends FilteredIntervalsSource {

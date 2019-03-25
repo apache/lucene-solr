@@ -33,6 +33,15 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * These sources implement minimum-interval algorithms taken from the paper
  * <a href="http://vigna.di.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics.pdf">
  * Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics</a>
+ *
+ * By default, sources that are sensitive to internal gaps (e.g. PHRASE and MAXGAPS) will
+ * rewrite their sub-sources so that disjunctions of different lengths are pulled up
+ * to the top of the interval tree.  For example, PHRASE(or(PHRASE("a", "b", "c"), "b"), "c")
+ * will automatically rewrite itself to OR(PHRASE("a", "b", "c", "c"), PHRASE("b", "c"))
+ * to ensure that documents containing "b c" are matched.  This can lead to less efficient
+ * queries, as more terms need to be loaded (for example, the "c" iterator above is loaded
+ * twice), so if you care more about speed than about accuracy you can use the
+ * {@link #or(boolean, IntervalsSource...)} factory method to prevent rewriting.
  */
 public final class Intervals {
 
@@ -93,21 +102,49 @@ public final class Intervals {
 
   /**
    * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * Automatically rewrites if wrapped by an interval sources that is sensitive to
+   * internal gaps
    */
   public static IntervalsSource or(IntervalsSource... subSources) {
-    if (subSources.length == 1)
-      return subSources[0];
-    return new DisjunctionIntervalsSource(Arrays.asList(subSources));
+    return or(true, Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * @param rewrite      if {@code false}, do not rewrite intervals that are sensitive to
+   *                     internal gaps; this may run more efficiently, but can miss valid
+   *                     hits due to minimization
+   * @param subSources   the sources to combine
+   */
+  public static IntervalsSource or(boolean rewrite, IntervalsSource... subSources) {
+    return or(rewrite, Arrays.asList(subSources));
   }
 
   /**
    * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
    */
   public static IntervalsSource or(List<IntervalsSource> subSources) {
+    return or(true, subSources);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * @param rewrite      if {@code false}, do not rewrite intervals that are sensitive to
+   *                     internal gaps; this may run more efficiently, but can miss valid
+   *                     hits due to minimization
+   * @param subSources   the sources to combine
+   */
+  public static IntervalsSource or(boolean rewrite, List<IntervalsSource> subSources) {
     if (subSources.size() == 1) {
       return subSources.get(0);
     }
-    return new DisjunctionIntervalsSource(subSources);
+    if (rewrite) {
+      return new DisjunctionIntervalsSource(subSources);
+    }
+    return new NoRewriteDisjunctionIntervalsSource(subSources);
   }
 
   /**
@@ -225,7 +262,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource nonOverlapping(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NON_OVERLAPPING);
+    return new NonOverlappingIntervalsSource(minuend, subtrahend);
   }
 
   /**
@@ -249,8 +286,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notWithin(IntervalsSource minuend, int positions, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions),
-        DifferenceIntervalFunction.NON_OVERLAPPING);
+    return new NonOverlappingIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions));
   }
 
   /**
@@ -274,7 +310,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notContaining(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NOT_CONTAINING);
+    return NotContainingIntervalsSource.build(minuend, subtrahend);
   }
 
   /**
@@ -300,7 +336,7 @@ public final class Intervals {
    * @param big     the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notContainedBy(IntervalsSource small, IntervalsSource big) {
-    return new DifferenceIntervalsSource(small, big, DifferenceIntervalFunction.NOT_CONTAINED_BY);
+    return NotContainedByIntervalsSource.build(small, big);
   }
 
   /**
