@@ -24,26 +24,28 @@ import java.nio.charset.StandardCharsets;
 /**
  * Tries to guess a config based on an InputStream.
  *
+ * @deprecated Classes in this package are not used in any code other than it's own tests and will be removed in 9.0
  */
+@Deprecated
 public class CSVConfigGuesser {
 
     /** The stream to read */
     private InputStream in;
-    /** 
+    /**
      * if the file has a field header (need this info, to be able to guess better)
      * Defaults to false
      */
     private boolean hasFieldHeader = false;
     /** The found config */
     protected CSVConfig config;
-    
+
     /**
-     * 
+     *
      */
     public CSVConfigGuesser() {
         this.config = new CSVConfig();
     }
-    
+
     /**
      * @param in the inputstream to guess from
      */
@@ -51,11 +53,11 @@ public class CSVConfigGuesser {
         this();
         setInputStream(in);
     }
-    
+
     public void setInputStream(InputStream in) {
         this.in = in;
     }
-    
+
     /**
      * Allow override.
      * @return the inputstream that was set.
@@ -63,11 +65,11 @@ public class CSVConfigGuesser {
     protected InputStream getInputStream() {
         return in;
     }
-    
+
     /**
-     * Guess the config based on the first 10 (or less when less available) 
+     * Guess the config based on the first 10 (or less when less available)
      * records of a CSV file.
-     * 
+     *
      * @return the guessed config.
      */
     public CSVConfig guess() {
@@ -104,12 +106,12 @@ public class CSVConfigGuesser {
         config = null;
         return conf;
     }
-    
+
     protected void analyseLines(String[] lines) {
         guessFixedWidth(lines);
         guessFieldSeparator(lines);
     }
-    
+
     /**
      * Guess if this file is fixedwidth.
      * Just basing the fact on all lines being of the same length
@@ -128,7 +130,7 @@ public class CSVConfigGuesser {
             }
         }
     }
-        
+
 
     protected void guessFieldSeparator(String[] lines) {
         if (config.isFixedWidth()) {
@@ -138,7 +140,7 @@ public class CSVConfigGuesser {
         for (int i = 0; i < lines.length; i++) {
         }
     }
-    
+
     protected void guessFixedWidthSeparator(String[] lines) {
         // keep track of the fieldlength
         int previousMatch = -1;
@@ -152,7 +154,7 @@ public class CSVConfigGuesser {
                 if (last != lines[j].charAt(i)) {
                     charMatches = false;
                     break;
-                } 
+                }
             }
             if (charMatches) {
                 if (previousMatch == -1) {
@@ -166,7 +168,7 @@ public class CSVConfigGuesser {
         }
     }
     /**
-     * 
+     *
      * @return if the field uses a field header. Defaults to false.
      */
     public boolean hasFieldHeader() {
@@ -180,6 +182,6 @@ public class CSVConfigGuesser {
     public void setHasFieldHeader(boolean hasFieldHeader) {
         this.hasFieldHeader = hasFieldHeader;
     }
-    
- 
+
+
 }

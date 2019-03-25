@@ -24,7 +24,9 @@ import java.util.Map;
 /**
  * CSVWriter
  *
+ * @deprecated Classes in this package are not used in any code other than it's own tests and will be removed in 9.0
  */
+@Deprecated
 public class CSVWriter {
 
     /** The CSV config **/
@@ -32,11 +34,11 @@ public class CSVWriter {
     /** The writer **/
     private Writer writer;
     /**
-     * 
+     *
      */
     public CSVWriter() {
     }
-    
+
     public CSVWriter(CSVConfig config) {
         setConfig(config);
     }
@@ -73,7 +75,7 @@ public class CSVWriter {
             e.printStackTrace();
         }
     }
-    
+
     protected String writeValue(CSVField field, String value) throws Exception {
         if (config.isFixedWidth()) {
             if (value.length() < field.getSize()) {
@@ -120,7 +122,7 @@ public class CSVWriter {
     public void setConfig(CSVConfig config) {
         this.config = config;
     }
-    
+
     /**
      * Set the writer to write the CSV file to.
      * @param writer the writer.

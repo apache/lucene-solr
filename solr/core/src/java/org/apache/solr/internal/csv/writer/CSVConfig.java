@@ -25,7 +25,9 @@ import java.util.List;
 /**
  * The CSVConfig is used to configure the CSV writer
  *
+ * @deprecated Classes in this package are not used in any code other than it's own tests and will be removed in 9.0
  */
+@Deprecated
 public class CSVConfig {
 
     /** specifies if it is a fixed width csv file **/
@@ -39,7 +41,7 @@ public class CSVConfig {
     public static final int FILLLEFT = 1;
     /** Fill content to the right. Mainly usable together with fixedWidth **/
     public static final int FILLRIGHT = 2;
-    
+
     /** The fill pattern */
     private int fill;
     /** The fill char. Defaults to a space */
@@ -57,19 +59,19 @@ public class CSVConfig {
     /** Specifies if the end of the line needs to be trimmed */
     private boolean endTrimmed = false;
     /**
-     * 
+     *
      */
     public CSVConfig() {
         super();
     }
-    
+
     /**
      * @return if the CSV file is fixedWidth
      */
     public boolean isFixedWidth() {
         return fixedWidth;
     }
-    
+
     /**
      * Specify if the CSV file is fixed width.
      * Defaults to false
@@ -78,14 +80,14 @@ public class CSVConfig {
     public void setFixedWidth(boolean fixedWidth) {
         this.fixedWidth = fixedWidth;
     }
-    
+
     public void addField(CSVField field) {
         if (fields == null) {
             fields = new ArrayList();
         }
         fields.add(field);
     }
-    
+
     /**
      * Set the fields that should be used by the writer.
      * This will overwrite currently added fields completely!
@@ -97,7 +99,7 @@ public class CSVConfig {
         }
         fields = new ArrayList(Arrays.asList(csvFields));
     }
-    
+
     /**
      * Set the fields that should be used by the writer
      * @param csvField a collection with fields. If null it will do nothing
@@ -119,7 +121,7 @@ public class CSVConfig {
         }
         return csvFields;
     }
-    
+
     public CSVField getField(String name) {
         if (fields == null || name == null) {
             return null;
@@ -150,7 +152,7 @@ public class CSVConfig {
     }
 
     /**
-     * 
+     *
      * @return the fillchar. Defaults to a space.
      */
     public char getFillChar() {
@@ -188,7 +190,7 @@ public class CSVConfig {
     }
 
     /**
-     * Specify if the writer should ignore the delimiter. 
+     * Specify if the writer should ignore the delimiter.
      * @param ignoreDelimiter defaults to false.
      */
     public void setIgnoreDelimiter(boolean ignoreDelimiter) {
@@ -219,7 +221,7 @@ public class CSVConfig {
     }
 
     /**
-     * Specify if the writer should ignore the value delimiter. 
+     * Specify if the writer should ignore the value delimiter.
      * @param ignoreValueDelimiter defaults to false.
      */
     public void setIgnoreValueDelimiter(boolean ignoreValueDelimiter) {
@@ -239,7 +241,7 @@ public class CSVConfig {
     public void setFieldHeader(boolean fieldHeader) {
         this.fieldHeader = fieldHeader;
     }
-    
+
     /**
      * TODO..
      * @see java.lang.Object#equals(java.lang.Object)
@@ -258,8 +260,8 @@ public class CSVConfig {
     /**
      * Creates a config based on a stream. It tries to guess<br>
      * NOTE : The stream will be closed.
-     * @param inputStream the inputstream. 
-     * @return the guessed config. 
+     * @param inputStream the inputstream.
+     * @return the guessed config.
      */
     public static CSVConfig guessConfig(InputStream inputStream) {
         return null;
@@ -279,5 +281,5 @@ public class CSVConfig {
         this.endTrimmed = endTrimmed;
     }
 
-    
+
 }

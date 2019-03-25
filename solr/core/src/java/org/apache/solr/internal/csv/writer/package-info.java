@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Internal classes used for reading/writing CSV
+ *
+ * @deprecated Classes in this package are not used in any code other than it's own tests and will be removed in 9.0
  */
 package org.apache.solr.internal.csv.writer;
 

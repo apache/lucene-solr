@@ -18,8 +18,9 @@ package org.apache.solr.internal.csv.writer;
 
 
 /**
- * 
+ * @deprecated Classes in this package are not used in any code other than it's own tests and will be removed in 9.0
  */
+@Deprecated
 public class CSVField {
 
     private String name;
@@ -28,7 +29,7 @@ public class CSVField {
     private boolean overrideFill;
 
     /**
-     * 
+     *
      */
     public CSVField() {
     }
@@ -55,7 +56,7 @@ public class CSVField {
     public String getName() {
         return name;
     }
-    
+
     /**
      * Set the name of the field
      * @param name the name
@@ -65,7 +66,7 @@ public class CSVField {
     }
 
     /**
-     * 
+     *
      * @return the size of the field
      */
     public int getSize() {
@@ -96,10 +97,10 @@ public class CSVField {
         overrideFill = true;
         this.fill = fill;
     }
-    
+
     /**
      * Does this field override fill ?
-     * 
+     *
      */
     public boolean overrideFill() {
         return overrideFill;
