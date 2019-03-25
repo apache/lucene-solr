@@ -26,7 +26,6 @@ import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
@@ -280,7 +279,7 @@ public class InetAddressPoint extends Field {
                 new Comparator<byte[]>() {
                   @Override
                   public int compare(byte[] a, byte[] b) {
-                    return FutureArrays.compareUnsigned(a, 0, BYTES, b, 0, BYTES);
+                    return Arrays.compareUnsigned(a, 0, BYTES, b, 0, BYTES);
                   }
                 });
 

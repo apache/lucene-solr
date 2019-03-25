@@ -25,8 +25,8 @@
   
   <property name="Name" value="Solr" />
   
-  <!-- solr uses Java 8 -->
-  <property name="javac.release" value="8"/>
+  <!-- solr uses Java 11 -->
+  <property name="javac.release" value="11"/>
   <property name="javac.args" value="-Xlint:-deprecation"/>
   <property name="javac.profile.args" value=""/>
 

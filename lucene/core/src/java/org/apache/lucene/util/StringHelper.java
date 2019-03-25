@@ -41,7 +41,7 @@ public abstract class StringHelper {
    * @return The number of common elements (from the start of each).
    */
   public static int bytesDifference(BytesRef priorTerm, BytesRef currentTerm) {
-    int mismatch = FutureArrays.mismatch(priorTerm.bytes, priorTerm.offset, priorTerm.offset + priorTerm.length, 
+    int mismatch = Arrays.mismatch(priorTerm.bytes, priorTerm.offset, priorTerm.offset + priorTerm.length, 
                                          currentTerm.bytes, currentTerm.offset, currentTerm.offset + currentTerm.length);
     if (mismatch < 0) {
       throw new IllegalArgumentException("terms out of order: priorTerm=" + priorTerm + ",currentTerm=" + currentTerm);
@@ -77,7 +77,7 @@ public abstract class StringHelper {
     if (ref.length < prefix.length) {
       return false;
     }
-    return FutureArrays.equals(ref, 0, prefix.length,
+    return Arrays.equals(ref, 0, prefix.length,
                                prefix.bytes, prefix.offset, prefix.offset + prefix.length);
   }
 
@@ -97,7 +97,7 @@ public abstract class StringHelper {
     if (ref.length < prefix.length) {
       return false;
     }
-    return FutureArrays.equals(ref.bytes, ref.offset, ref.offset + prefix.length, 
+    return Arrays.equals(ref.bytes, ref.offset, ref.offset + prefix.length, 
                                prefix.bytes, prefix.offset, prefix.offset + prefix.length);
   }
 
@@ -118,7 +118,7 @@ public abstract class StringHelper {
     if (startAt < 0) {
       return false;
     }
-    return FutureArrays.equals(ref.bytes, ref.offset + startAt, ref.offset + startAt + suffix.length,
+    return Arrays.equals(ref.bytes, ref.offset + startAt, ref.offset + startAt + suffix.length,
                                suffix.bytes, suffix.offset, suffix.offset + suffix.length);
   }
 
