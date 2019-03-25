@@ -143,6 +143,17 @@ public class TestDisjunctionRewrites extends LuceneTestCase {
     assertEquals(expected, actual);
   }
 
+  public void testNestedFixField() {
+    // PHRASE(a, FIXFIELD(field, or(PHRASE(a, b), b)), c)
+    // => or(PHRASE(a, FIXFIELD(PHRASE(a, b)), c), PHRASE(a, FIXFIELD(b), c))
+    IntervalsSource actual = phrase(term("a"), fixField("field", or(phrase("a", "b"), term("b"))), term("c"));
+    IntervalsSource expected = or(
+        phrase(term("a"), fixField("field", phrase("a", "b")), term("c")),
+        phrase(term("a"), fixField("field", term("b")), term("c"))
+    );
+    assertEquals(expected, actual);
+  }
+
   public void testContainedBy() {
     // the 'big' interval should not be minimized, the 'small' one should be
     // CONTAINED_BY(or("s", BLOCK("s", "t")), MAXGAPS/4(or(ORDERED("a", "b"), ORDERED("c", "d"))))
