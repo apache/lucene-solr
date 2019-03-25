@@ -45,6 +45,9 @@ Upgrade Notes
   present code is unlikely to produce such an exception it may be possible in future changes or in subclasses.
   Currently this change should only effect compatibility of custom code overriding this method (Gus Heck).
 
+* SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
+  confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
+
 New Features
 ----------------------
 * SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
