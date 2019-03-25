@@ -191,6 +191,8 @@ Other Changes
 
 * SOLR-13335: Upgrade to velocity 2.0 and velocity-tools 3.0 (Kevin Risden)
 
+* SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
