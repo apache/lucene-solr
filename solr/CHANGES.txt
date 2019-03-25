@@ -84,6 +84,8 @@ Bug fixes
 
 * SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
 
+* SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
