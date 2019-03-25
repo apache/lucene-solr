@@ -2171,7 +2171,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <sources />
                 
         <classpath refid="javadoc.classpath"/>
-        <arg line="--release ${javac.release}"/>
+        <arg line="-html5 --release ${javac.release}"/>
         <arg line="${javadoc.doclint.args}"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
