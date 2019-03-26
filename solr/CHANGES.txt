@@ -47,6 +47,9 @@ Bug Fixes
 * SOLR-12770: Make it possible to configure a host whitelist for distributed search
   (Christine Poerschke, janhoy, Erick Erickson, Tomás Fernández Löbbe)
 
+* SOLR-13301: Don't allow modifications to jmx.serviceUrl via Config API (CVE-2019-0192)
+  (Michael Stepankin, Tomás Fernández Löbbe) 
+
 ==================  6.6.5 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
