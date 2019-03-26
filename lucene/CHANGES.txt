@@ -5,6 +5,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 8.0.1 =======================
 
+Bug fixes:
+
+* LUCENE-8735: FilterDirectory.getPendingDeletions now forwards to the delegate
+  even the method is not abstract in the super class. This prevents issues
+  where our best effort in carrying on generations in the IndexWriter since pending
+  deletions are swallowed by the FilterDirectory. (Henning Andersen, Simon Willnauer)
+
 Other
 
 * LUCENE-8729: Workaround: Disable accessibility doclints (Java 13+),
