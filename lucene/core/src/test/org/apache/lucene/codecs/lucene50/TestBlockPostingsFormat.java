@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene50;
 
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,11 +36,16 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -51,6 +57,73 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return codec;
+  }
+
+  public void testFstOffHeap() throws IOException {
+    Path tempDir = createTempDir();
+    try (Directory d = FSDirectory.open(tempDir)) {
+      assumeTrue("only works with mmap directory", d instanceof MMapDirectory);
+      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())))) {
+        DirectoryReader readerFromWriter = DirectoryReader.open(w);
+        for (int i = 0; i < 50; i++) {
+          Document doc = new Document();
+          doc.add(newStringField("id", "" + i, Field.Store.NO));
+          doc.add(newStringField("field", Character.toString((char) (97 + i)), Field.Store.NO));
+          doc.add(newStringField("field", Character.toString((char) (98 + i)), Field.Store.NO));
+          if (rarely()) {
+            w.addDocument(doc);
+          } else {
+            w.updateDocument(new Term("id", "" + i), doc);
+          }
+          if (random().nextBoolean()) {
+            w.commit();
+          }
+
+          if (random().nextBoolean()) {
+            DirectoryReader newReader = DirectoryReader.openIfChanged(readerFromWriter);
+            if (newReader != null) {
+              readerFromWriter.close();
+              readerFromWriter = newReader;
+            }
+            for (LeafReaderContext leaf : readerFromWriter.leaves()) {
+              FieldReader field = (FieldReader) leaf.reader().terms("field");
+              FieldReader id = (FieldReader) leaf.reader().terms("id");
+              assertFalse(id.isFstOffHeap());
+              assertTrue(field.isFstOffHeap());
+            }
+          }
+        }
+        readerFromWriter.close();
+
+        w.forceMerge(1);
+        try (DirectoryReader r = DirectoryReader.open(w)) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertFalse(id.isFstOffHeap());
+          assertTrue(field.isFstOffHeap());
+        }
+        w.commit();
+        try (DirectoryReader r = DirectoryReader.open(d)) {
+          assertEquals(1, r.leaves().size());
+          FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+          FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+          assertTrue(id.isFstOffHeap());
+          assertTrue(field.isFstOffHeap());
+        }
+      }
+    }
+
+    try (Directory d = new SimpleFSDirectory(tempDir)) {
+      // test auto
+      try (DirectoryReader r = DirectoryReader.open(d)) {
+        assertEquals(1, r.leaves().size());
+        FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+        FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+        assertFalse(id.isFstOffHeap());
+        assertFalse(field.isFstOffHeap());
+      }
+    }
   }
   
   /** Make sure the final sub-block(s) are not skipped. */

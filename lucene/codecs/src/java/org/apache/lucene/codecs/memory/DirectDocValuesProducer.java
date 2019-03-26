@@ -80,7 +80,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   static final int VERSION_CURRENT = VERSION_START;
   
   // clone for merge: when merging we don't do any instances.put()s
-  DirectDocValuesProducer(DirectDocValuesProducer original) throws IOException {
+  DirectDocValuesProducer(DirectDocValuesProducer original) {
     assert Thread.holdsLock(original);
     numerics.putAll(original.numerics);
     binaries.putAll(original.binaries);
@@ -606,7 +606,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
   
   @Override
-  public synchronized DocValuesProducer getMergeInstance() throws IOException {
+  public synchronized DocValuesProducer getMergeInstance() {
     return new DirectDocValuesProducer(this);
   }
 

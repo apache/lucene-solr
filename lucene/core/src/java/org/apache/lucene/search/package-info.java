@@ -398,12 +398,6 @@
  *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(Explanation, long) SimScorer#explain(Explanation freq, long norm)}.
  *             </li>
  *             <li>
- *                 {@link org.apache.lucene.search.Weight#extractTerms(java.util.Set) extractTerms(Set&lt;Term&gt; terms)} &mdash; Extract terms that
- *                 this query operates on. This is typically used to support distributed search: knowing the terms that a query operates on helps
- *                 merge index statistics of these terms so that scores are computed over a subset of the data like they would if all documents
- *                 were in the same index.
- *             </li>
- *             <li>
  *                 {@link org.apache.lucene.search.Weight#matches matches(LeafReaderContext context, int doc)} &mdash; Give information about positions
  *                 and offsets of matches. This is typically useful to implement highlighting.
  *             </li>

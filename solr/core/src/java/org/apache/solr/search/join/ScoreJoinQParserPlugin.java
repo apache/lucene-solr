@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
@@ -194,6 +195,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
              Objects.equals(fromQuery, other.fromQuery) &&
              Objects.equals(scoreMode, other.scoreMode) &&
              Objects.equals(toField, other.toField);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
   }
 

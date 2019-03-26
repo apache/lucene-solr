@@ -17,6 +17,9 @@
 package org.apache.lucene.search;
 
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -34,9 +37,6 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -111,11 +111,7 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
     this.term = term;
     
     // convert the string into a utf32 int[] representation for fast comparisons
-    final String utf16 = term.text();
-    this.termText = new int[utf16.codePointCount(0, utf16.length())];
-    for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp)) {
-      termText[j++] = cp = utf16.codePointAt(i);
-    }
+    this.termText = stringToUTF32(term.text());
     this.termLength = termText.length;
 
     this.dfaAtt = atts.addAttribute(LevenshteinAutomataAttribute.class);
@@ -133,16 +129,10 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
     CompiledAutomaton[] prevAutomata = dfaAtt.automata();
     if (prevAutomata == null) {
       prevAutomata = new CompiledAutomaton[maxEdits+1];
-
-      LevenshteinAutomata builder = 
-        new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength), transpositions);
-
-      String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
+      Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
       for (int i = 0; i <= maxEdits; i++) {
-        Automaton a = builder.toAutomaton(i, prefix);
-        prevAutomata[i] = new CompiledAutomaton(a, true, false);
+        prevAutomata[i] = new CompiledAutomaton(automata[i], true, false);
       }
-
       // first segment computes the automata, and we share with subsequent segments via this Attribute:
       dfaAtt.setAutomata(prevAutomata);
     }
@@ -151,6 +141,46 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
     bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     bottomTerm = maxBoostAtt.getCompetitiveTerm();
     bottomChanged(null);
+  }
+
+  /**
+   * Builds a binary Automaton to match a fuzzy term
+   * @param text            the term to match
+   * @param prefixLength    length of a required common prefix
+   * @param transpositions  {@code true} if transpositions should count as a single edit
+   * @param maxEdits        the maximum edit distance of matching terms
+   */
+  public static Automaton buildAutomaton(String text, int prefixLength, boolean transpositions, int maxEdits) {
+    int[] termText = stringToUTF32(text);
+    Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
+    return automata[automata.length - 1];
+  }
+
+  private static int[] stringToUTF32(String text) {
+    int[] termText = new int[text.codePointCount(0, text.length())];
+    for (int cp, i = 0, j = 0; i < text.length(); i += Character.charCount(cp)) {
+      termText[j++] = cp = text.codePointAt(i);
+    }
+    return termText;
+  }
+
+  private static Automaton[] buildAutomata(int[] termText, int prefixLength, boolean transpositions, int maxEdits) {
+    if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
+      throw new IllegalArgumentException("max edits must be 0.." + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + ", inclusive; got: " + maxEdits);
+    }
+    if (prefixLength < 0) {
+      throw new IllegalArgumentException("prefixLength cannot be less than 0");
+    }
+    Automaton[] automata = new Automaton[maxEdits + 1];
+    int termLength = termText.length;
+    prefixLength = Math.min(prefixLength, termLength);
+    String suffix = UnicodeUtil.newString(termText, prefixLength, termText.length - prefixLength);
+    LevenshteinAutomata builder = new LevenshteinAutomata(suffix, transpositions);
+    String prefix = UnicodeUtil.newString(termText, 0, prefixLength);
+    for (int i = 0; i <= maxEdits; i++) {
+      automata[i] = builder.toAutomaton(i, prefix);
+    }
+    return automata;
   }
   
   /**

@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -671,11 +670,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
       this.in = in;
       this.policy = policy;
       used = new AtomicBoolean(false);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      in.extractTerms(terms);
     }
 
     @Override

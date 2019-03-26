@@ -82,7 +82,10 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
    *
    * Queries that use DoubleValuesSource objects should call rewrite() during
    * {@link Query#createWeight(IndexSearcher, ScoreMode, float)} rather than during
-   * {@link Query#rewrite(IndexReader)} to avoid IndexReader reference leakage
+   * {@link Query#rewrite(IndexReader)} to avoid IndexReader reference leakage.
+   *
+   * For the same reason, implementations that cache references to the IndexSearcher
+   * should return a new object from this method.
    */
   public abstract DoubleValuesSource rewrite(IndexSearcher reader) throws IOException;
 

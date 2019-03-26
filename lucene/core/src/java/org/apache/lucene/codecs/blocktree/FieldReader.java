@@ -63,10 +63,11 @@ public final class FieldReader extends Terms implements Accountable {
   final BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
+  final boolean isFSTOffHeap;
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -91,7 +92,8 @@ public final class FieldReader extends Terms implements Accountable {
       clone.seek(indexStartFP);
       // Initialize FST offheap if index is MMapDirectory and
       // docCount != sumDocFreq implying field is not primary key
-      if (clone instanceof ByteBufferIndexInput && this.docCount != this.sumDocFreq) {
+      isFSTOffHeap = clone instanceof ByteBufferIndexInput && ((this.docCount != this.sumDocFreq) || openedFromWriter == false);
+      if (isFSTOffHeap) {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
       } else {
         index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
@@ -108,6 +110,7 @@ public final class FieldReader extends Terms implements Accountable {
       */
     } else {
       index = null;
+      isFSTOffHeap = false;
     }
   }
 
@@ -212,4 +215,12 @@ public final class FieldReader extends Terms implements Accountable {
   public String toString() {
     return "BlockTreeTerms(seg=" + parent.segment +" terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
   }
+
+  /**
+   * Returns <code>true</code> iff the FST is read off-heap.
+   */
+  public boolean isFstOffHeap() {
+    return isFSTOffHeap;
+  }
+
 }

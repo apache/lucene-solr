@@ -429,7 +429,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
               }
             } catch (InvalidJwtException e) {
               // Whether or not the JWT has expired being one common reason for invalidity
-              System.out.println("Exception is " + e.getClass().getName() + ", " + e.getMessage() + ", code=" + e.getErrorDetails().get(0).getErrorCode());
               if (e.hasExpired()) {
                 return new JWTAuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
               }
@@ -526,7 +525,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
     }
-    response.addHeader(HttpHeaders.WWW_AUTHENTICATE, org.apache.commons.lang.StringUtils.join(wwwAuthParams, ", "));
+    response.addHeader(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
     response.addHeader(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
     response.sendError(httpCode, message);
     log.info("JWT Authentication attempt failed: {}", message);

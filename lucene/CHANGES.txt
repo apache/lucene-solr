@@ -10,12 +10,25 @@ API Changes
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been 
   removed. (Dawid Weiss)
 
+* LUCENE-3041: The deprecated Weight#extractTerms() method has been 
+  removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
+
 Bug fixes:
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
 ======================= Lucene 8.1.0 =======================
+
+API Changes
+
+* LUCENE-3041: A query introspection API has been added.  Queries should
+  implement a visit() method, taking a QueryVisitor, and either pass the
+  visitor down to any child queries, or call a visitX() or consumeX() method
+  on it.  All locations in the code that called Weight.extractTerms() 
+  have been changed to use this API, and the extractTerms() method has 
+  been deprecated. (Alan Woodward, Simon Willnauer, David Smiley, Luca
+  Cavanna)
 
 Bug fixes
 
@@ -24,6 +37,16 @@ Bug fixes
 
 * LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
   overflow bug that disabled cleaning of the cache (Russell A Brown)
+
+* LUCENE-8726: ValueSource.asDoubleValuesSource() could leak a reference to
+  IndexSearcher (Alan Woodward, Yury Pakhomov)
+
+* LUCENE-8719: FixedShingleFilter can miss shingles at the end of a token stream if
+  there are multiple paths with different lengths. (Alan Woodward)
+
+* LUCENE-8688: TieredMergePolicy#findForcedMerges now tries to create the
+  cheapest merges that allow the index to go down to `maxSegmentCount` segments
+  or less. (Armin Braun via Adrien Grand)
 
 Improvements
 
@@ -45,6 +68,11 @@ Improvements
 * LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
   the other matches. (Yeongsu Kim via Jim Ferenczi)
 
+Changes in Runtime Behavior
+
+* LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
+  from an IndexWriter. (Simon Willnauer)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
@@ -52,6 +80,9 @@ Other
 * LUCENE-8685: Refactor LatLonShape tests. (Ignacio Vera)
 
 * LUCENE-8713: Add Line2D tests. (Ignacio Vera)
+
+* LUCENE-8729: Workaround: Disable accessibility doclints (Java 13+),
+  so compilation with recent JDK succeeds.  (Uwe Schindler)
 
 ======================= Lucene 8.0.0 =======================
 

@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -87,6 +88,7 @@ public class Utils {
   public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();
   public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
   public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
+  public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -571,7 +573,7 @@ public class Utils {
     VersionedData data = null;
     try {
       data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException e) {
+    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
       return Collections.emptyMap();
     }
     if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();

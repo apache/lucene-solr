@@ -229,7 +229,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     // check that all dirs are gone
     for (String dataDir : dataDirs) {
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       try(FileSystem fs = FileSystem.get(new URI(HdfsTestUtil.getURI(dfsCluster)), conf)) {
         assertFalse(
             "Data directory exists after collection removal : " + dataDir,

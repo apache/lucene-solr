@@ -216,8 +216,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         DaemonStream d = daemons.remove(id);
         if (d != null) {
           d.close();
+          rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
+        } else {
+          rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
         }
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
       }
     }
   }

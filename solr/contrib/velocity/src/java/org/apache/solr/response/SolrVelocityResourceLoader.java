@@ -17,13 +17,13 @@
 package org.apache.solr.response;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 
-import org.apache.commons.collections.ExtendedProperties;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.resource.Resource;
 import org.apache.velocity.runtime.resource.loader.ResourceLoader;
+import org.apache.velocity.util.ExtProperties;
 
 /**
   * Velocity resource loader wrapper around Solr resource loader
@@ -37,13 +37,13 @@ public class SolrVelocityResourceLoader extends ResourceLoader {
   }
 
   @Override
-  public void init(ExtendedProperties extendedProperties) {
+  public void init(ExtProperties extendedProperties) {
   }
 
   @Override
-  public InputStream getResourceStream(String template_name) throws ResourceNotFoundException {
+  public Reader getResourceReader(String source, String encoding) throws ResourceNotFoundException {
     try {
-      return loader.openResource("velocity/" + template_name);
+      return buildReader(loader.openResource("velocity/" + source), encoding);
     } catch (IOException ioe) {
       throw new ResourceNotFoundException(ioe);
     }

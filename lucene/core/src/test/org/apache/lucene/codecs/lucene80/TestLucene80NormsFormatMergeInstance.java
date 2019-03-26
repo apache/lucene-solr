@@ -14,10 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Internal classes used for reading/writing CSV
+package org.apache.lucene.codecs.lucene80;
+
+/**
+ * Test the merge instance of the Lucene80 norms format.
  */
-package org.apache.solr.internal.csv.writer;
+public class TestLucene80NormsFormatMergeInstance extends TestLucene80NormsFormat {
 
+  @Override
+  protected boolean shouldTestMergeInstance() {
+    return true;
+  }
 
+}

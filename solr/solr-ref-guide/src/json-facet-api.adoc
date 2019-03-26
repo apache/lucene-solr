@@ -757,7 +757,7 @@ Most stat facet functions (`avg`, `sumsq`, etc.) allow users to perform math com
 
 === uniqueBlock() and Block Join Counts
 
-When a collection contains <<uploading-data-with-index-handlers.adoc#nested-child-documents, Block Join child documents>>, the `blockChildren` and `blockParent` <<json-faceting-domain-changes.adoc#block-join-domain-changes, domain changes>> can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).
+When a collection contains <<indexing-nested-documents.adoc#indexing-nested-documents, Nested Documents>>, the `blockChildren` and `blockParent` <<json-faceting-domain-changes.adoc#block-join-domain-changes, domain changes>> can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).
 But if you only need to know the _count_ of all the blocks that exist in the current domain, a more efficient option is the `uniqueBlock()` aggregate function.
 
 Suppose we have products with multiple SKUs, and we want to count products for each color.

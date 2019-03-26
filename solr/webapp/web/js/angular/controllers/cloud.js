@@ -107,6 +107,10 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
+function coreNameToLabel(name) {
+  return name.replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
+}
+
 var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
@@ -160,6 +164,17 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     return nodesInHost[0] === node;
   };
   
+  // Returns the first live node for this host, to make sure we pick host-level metrics from a live node
+  $scope.firstLiveNodeForHost = function(key) {
+    var hostName = key.split(":")[0]; 
+    var liveNodesInHost = $scope.filteredNodes.filter(function (key) {
+      return key.startsWith(hostName);
+    }).filter(function (key) {
+      return $scope.live_nodes.includes(key);
+    });
+    return liveNodesInHost.length > 0 ? liveNodesInHost[0] : key; 
+  };
+
   // Initializes the cluster state, list of nodes, collections etc
   $scope.initClusterState = function() {
     var nodes = {};
@@ -183,6 +198,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           for (var replicaName in replicas) {
             var core = replicas[replicaName];
             core.name = replicaName;
+            core.label = coreNameToLabel(core['core']);
             core.collection = collection.name;
             core.shard = shard.name;
             core.shard_state = shard.state;
@@ -320,7 +336,15 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
       }
     }
-    nodesParam = nodesToShow.join(',');
+    nodesParam = nodesToShow.filter(function (node) {
+      return live_nodes.includes(node); 
+    }).join(',');
+    var deadNodes = nodesToShow.filter(function (node) {
+      return !live_nodes.includes(node);
+    });
+    deadNodes.forEach(function (node) {
+      nodes[node]['dead'] = true;
+    });
     $scope.nextEnabled = $scope.from + pageSize < filteredHosts.length;
     $scope.prevEnabled = $scope.from - pageSize >= 0;
     nodesToShow.sort();
@@ -410,7 +434,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['label'] = core['core'].replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
                   if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
                     // If core state is not active, display the real state, or if shard is inactive, display that
                     var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];

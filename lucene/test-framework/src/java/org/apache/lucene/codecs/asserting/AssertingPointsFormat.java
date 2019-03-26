@@ -60,17 +60,21 @@ public final class AssertingPointsFormat extends PointsFormat {
 
   @Override
   public PointsReader fieldsReader(SegmentReadState state) throws IOException {
-    return new AssertingPointsReader(state.segmentInfo.maxDoc(), in.fieldsReader(state));
+    return new AssertingPointsReader(state.segmentInfo.maxDoc(), in.fieldsReader(state), false);
   }
 
   
   static class AssertingPointsReader extends PointsReader {
     private final PointsReader in;
     private final int maxDoc;
+    private final boolean merging;
+    private final Thread creationThread;
     
-    AssertingPointsReader(int maxDoc, PointsReader in) {
+    AssertingPointsReader(int maxDoc, PointsReader in, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
+      this.merging = merging;
+      this.creationThread = Thread.currentThread();
       // do a few simple checks on init
       assert toString() != null;
       assert ramBytesUsed() >= 0;
@@ -85,6 +89,9 @@ public final class AssertingPointsFormat extends PointsFormat {
 
     @Override
     public PointValues getValues(String field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("PointsReader", creationThread);
+      }
       PointValues values = this.in.getValues(field);
       if (values == null) {
         return null;
@@ -112,8 +119,8 @@ public final class AssertingPointsFormat extends PointsFormat {
     }
     
     @Override
-    public PointsReader getMergeInstance() throws IOException {
-      return new AssertingPointsReader(maxDoc, in.getMergeInstance());
+    public PointsReader getMergeInstance() {
+      return new AssertingPointsReader(maxDoc, in.getMergeInstance(), true);
     }
 
     @Override
