@@ -15,6 +15,10 @@ API Changes
   been deprecated. (Alan Woodward, Simon Willnauer, David Smiley, Luca
   Cavanna)
 
+* LUCENE-8735: Directory.getPendingDeletions is now abstract to ensure
+  subclasses override it. FilterDirectory now delegates the call, ensuring
+  correct default behaviour for subclasses. (Henning Andersen)
+
 Bug fixes
 
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
