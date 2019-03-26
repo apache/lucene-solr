@@ -38,6 +38,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -203,6 +204,25 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       update.add(doc);
       update.setCommitWithin(100);
       cluster.getSolrClient().request(update, COLLECTION);
+
+      //Test for SOLR-12514. Create a new jetty . This jetty does not have the collection.
+      //Make a request to that jetty and it should fail
+      JettySolrRunner aNewJetty = cluster.startJettySolrRunner();
+      SolrClient aNewClient = aNewJetty.newClient();
+      UpdateRequest delQuery = null;
+      delQuery = new UpdateRequest().deleteByQuery("*:*");
+      delQuery.setBasicAuthCredentials("harry","HarryIsUberCool");
+      delQuery.process(aNewClient, COLLECTION);//this should succeed
+      try {
+        delQuery = new UpdateRequest().deleteByQuery("*:*");
+        delQuery.process(aNewClient, COLLECTION);
+        fail("This should not have succeeded without credentials");
+      } catch (HttpSolrClient.RemoteSolrException e) {
+        assertTrue(e.getMessage().contains("Unauthorized request"));
+      } finally {
+        aNewClient.close();
+        aNewJetty.stop();
+      }
 
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");

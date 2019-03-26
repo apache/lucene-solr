@@ -155,6 +155,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     System.clearProperty("hostContext");
   }
 
+  @SuppressWarnings("deprecation")
+  @BeforeClass
+  public static void setSolrDisableShardsWhitelist() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
+  }
+
+  @SuppressWarnings("deprecation")
+  @AfterClass
+  public static void clearSolrDisableShardsWhitelist() throws Exception {
+    systemClearPropertySolrDisableShardsWhitelist();
+  }
+
   private static String getHostContextSuitableForServletContext() {
     String ctx = System.getProperty("hostContext","/solr");
     if ("".equals(ctx)) ctx = "/solr";

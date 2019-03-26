@@ -47,7 +47,7 @@ public class TestConfigOverlay extends LuceneTestCase {
     assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
     assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
     assertTrue(isEditableProp("jmx.agentId", false, null));
-    assertTrue(isEditableProp("jmx.serviceUrl", false, null));
+    assertFalse(isEditableProp("jmx.serviceUrl", false, null));
     assertTrue(isEditableProp("jmx.rootName", false, null));
 
     assertTrue(isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));

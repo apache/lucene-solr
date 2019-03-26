@@ -15,29 +15,44 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
-import org.apache.lucene.index.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
+import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.client.solrj.response.TermsResponse;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
@@ -62,6 +77,20 @@ public class TermsComponent extends SearchComponent {
   public static final int UNLIMITED_MAX_COUNT = -1;
   public static final String COMPONENT_NAME = "terms";
 
+  // This needs to be created here too, because Solr doesn't call init(...) on default components. Bug?
+  private WhitelistHostChecker whitelistHostChecker = new WhitelistHostChecker(
+      null, 
+      !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
+
+  @Override
+  public void init( NamedList args )
+  {
+    super.init(args);
+    whitelistHostChecker = new WhitelistHostChecker(
+        (String) args.get(HttpShardHandlerFactory.INIT_SHARDS_WHITELIST), 
+        !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
+  }
+  
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
@@ -81,7 +110,27 @@ public class TermsComponent extends SearchComponent {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No shards.qt parameter specified");
       }
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
+      checkShardsWhitelist(rb, lst);
       rb.shards = lst.toArray(new String[lst.size()]);
+    }
+  }
+
+  protected void checkShardsWhitelist(final ResponseBuilder rb, final List<String> lst) {
+    final List<String> urls = new LinkedList<String>();
+    for (final String ele : lst) {
+      urls.addAll(StrUtils.splitSmart(ele, '|'));
+    }
+    
+    if (whitelistHostChecker.isWhitelistHostCheckingEnabled() && rb.req.getCore().getCoreContainer().getZkController() == null && !whitelistHostChecker.hasExplicitWhitelist()) {
+      throw new SolrException(ErrorCode.FORBIDDEN, "TermsComponent "+HttpShardHandlerFactory.INIT_SHARDS_WHITELIST
+          +" not configured but required when using the '"+ShardParams.SHARDS+"' parameter with the TermsComponent."
+          +HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+    } else {
+      ClusterState cs = null;
+      if (rb.req.getCore().getCoreContainer().getZkController() != null) {
+        cs = rb.req.getCore().getCoreContainer().getZkController().getClusterState();
+      }
+      whitelistHostChecker.checkWhitelist(cs, urls.toString(), urls);
     }
   }
 
@@ -601,4 +650,5 @@ public class TermsComponent extends SearchComponent {
   public Category getCategory() {
     return Category.QUERY;
   }
+
 }

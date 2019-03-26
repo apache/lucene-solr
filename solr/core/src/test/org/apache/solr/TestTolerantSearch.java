@@ -56,6 +56,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
     createJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
@@ -105,6 +106,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     jetty.stop();
     jetty=null;
     resetExceptionIgnores();
+    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @SuppressWarnings("unchecked")
