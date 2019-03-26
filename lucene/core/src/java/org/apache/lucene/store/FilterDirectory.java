@@ -117,6 +117,8 @@ public abstract class FilterDirectory extends Directory {
 
   @Override
   public Set<String> getPendingDeletions() throws IOException {
-    return super.getPendingDeletions();
+    // even the method is not abstract in the super class we delegate here since
+    // it's made abstract in 8.1 and fixes a pretty bad bug in LUCENE-8735
+    return in.getPendingDeletions();
   }
 }
