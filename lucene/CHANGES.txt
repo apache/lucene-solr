@@ -7,10 +7,6 @@ http://s.apache.org/luceneversions
 
 API Changes
 
-* LUCENE-8735: Directory.getPendingDeletions is now abstract to ensure
-  subclasses override it. FilterDirectory now delegates the call, ensuring
-  correct default behaviour for subclasses. (Henning Andersen)
-
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been 
   removed. (Dawid Weiss)
 
@@ -33,6 +29,10 @@ API Changes
   have been changed to use this API, and the extractTerms() method has 
   been deprecated. (Alan Woodward, Simon Willnauer, David Smiley, Luca
   Cavanna)
+
+* LUCENE-8735: Directory.getPendingDeletions is now abstract to ensure
+  subclasses override it. FilterDirectory now delegates the call, ensuring
+  correct default behaviour for subclasses. (Henning Andersen)
 
 Bug fixes
 
