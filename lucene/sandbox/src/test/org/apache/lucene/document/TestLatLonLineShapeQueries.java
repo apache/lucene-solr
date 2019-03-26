@@ -82,13 +82,13 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
       Line line = (Line)shape;
       Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        int[] decoded = encodeDecodeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        LatLonShape.Triangle decoded = encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
           }
         } else {
-          if (rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
             return queryRelation == QueryRelation.INTERSECTS;
           }
         }
@@ -109,7 +109,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     private boolean testLine(EdgeTree queryPoly, Line line) {
 
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = quantizeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        double[] qTriangle = quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;

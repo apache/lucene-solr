@@ -95,16 +95,16 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   }
 
   /** quantizes a triangle to be consistent with index encoding */
-  protected static double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
-    return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
+  protected static double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    LatLonShape.Triangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+    return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
   }
 
   /** encode/decode a triangle */
-  protected static int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  protected static LatLonShape.Triangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     byte[] encoded = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
-    int[] decoded = new int[6];
+    LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
+    LatLonShape.Triangle decoded = new LatLonShape.Triangle();
     LatLonShape.decodeTriangle(encoded, decoded);
     return decoded;
   }

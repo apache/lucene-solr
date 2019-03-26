@@ -18,12 +18,12 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.geo.Tessellator.Triangle;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -70,9 +70,9 @@ public class LatLonShape {
   /** create indexable fields for polygon geometry */
   public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
     // the lionshare of the indexing is done by the tessellator
-    List<Triangle> tessellation = Tessellator.tessellate(polygon);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
     List<LatLonTriangle> fields = new ArrayList<>();
-    for (Triangle t : tessellation) {
+    for (Tessellator.Triangle t : tessellation) {
       fields.add(new LatLonTriangle(fieldName, t));
     }
     return fields.toArray(new Field[fields.size()]);
@@ -118,19 +118,21 @@ public class LatLonShape {
    * these triangles are encoded and inserted as separate indexed POINT fields
    */
   private static class LatLonTriangle extends Field {
-
+    //Constructor for points and lines
     LatLonTriangle(String name, double aLat, double aLon, double bLat, double bLon, double cLat, double cLon) {
       super(name, TYPE);
-      setTriangleValue(encodeLongitude(aLon), encodeLatitude(aLat), encodeLongitude(bLon), encodeLatitude(bLat), encodeLongitude(cLon), encodeLatitude(cLat));
+      setTriangleValue(encodeLongitude(aLon), encodeLatitude(aLat), true, encodeLongitude(bLon), encodeLatitude(bLat), true, encodeLongitude(cLon), encodeLatitude(cLat), true);
     }
 
-    LatLonTriangle(String name, Triangle t) {
+    LatLonTriangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
-      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2));
+      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.fromPolygon(0),
+                       t.getEncodedX(1), t.getEncodedY(1), t.fromPolygon(1),
+                       t.getEncodedX(2), t.getEncodedY(2), t.fromPolygon(2));
     }
 
 
-    public void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {
+    public void setTriangleValue(int aX, int aY, boolean abFromShape, int bX, int bY, boolean bcFromShape, int cX, int cY, boolean caFromShape) {
       final byte[] bytes;
 
       if (fieldsData == null) {
@@ -139,7 +141,7 @@ public class LatLonShape {
       } else {
         bytes = ((BytesRef) fieldsData).bytes;
       }
-      encodeTriangle(bytes, aY, aX, bY, bX, cY, cX);
+      encodeTriangle(bytes, aY, aX, abFromShape, bY, bX, bcFromShape, cY, cX, caFromShape);
     }
   }
 
@@ -162,7 +164,7 @@ public class LatLonShape {
    * Triangles are encoded with CCW orientation and might be rotated to limit the number of possible reconstructions to 2^3.
    * Reconstruction always happens from west to east.
    */
-  public static void encodeTriangle(byte[] bytes, int aLat, int aLon, int bLat, int bLon, int cLat, int cLon) {
+  public static void encodeTriangle(byte[] bytes, int aLat, int aLon, boolean abFromShape, int bLat, int bLon, boolean bcFromShape, int cLat, int cLon, boolean caFromShape) {
     assert bytes.length == 7 * BYTES;
     int aX;
     int bX;
@@ -170,6 +172,7 @@ public class LatLonShape {
     int aY;
     int bY;
     int cY;
+    boolean ab, bc, ca;
     //change orientation if CW
     if (GeoUtils.orient(aLon, aLat, bLon, bLat, cLon, cLat) == -1) {
       aX = cLon;
@@ -178,6 +181,10 @@ public class LatLonShape {
       aY = cLat;
       bY = bLat;
       cY = aLat;
+      //reorder edges
+      ab = bcFromShape;
+      bc = abFromShape;
+      ca = caFromShape;
     } else {
       aX = aLon;
       bX = bLon;
@@ -185,27 +192,38 @@ public class LatLonShape {
       aY = aLat;
       bY = bLat;
       cY = cLat;
+      ab = abFromShape;
+      bc = bcFromShape;
+      ca = caFromShape;
     }
     //rotate edges and place minX at the beginning
     if (bX < aX || cX < aX) {
       if (bX < cX) {
         int tempX = aX;
         int tempY = aY;
+        boolean tempBool = ab;
         aX = bX;
         aY = bY;
+        ab = bc;
         bX = cX;
         bY = cY;
+        bc = ca;
         cX = tempX;
         cY = tempY;
+        ca = tempBool;
       } else if (cX < aX) {
         int tempX = aX;
         int tempY = aY;
+        boolean tempBool = ab;
         aX = cX;
         aY = cY;
+        ab = ca;
         cX = bX;
         cY = bY;
+        ca = bc;
         bX = tempX;
         bY = tempY;
+        bc = tempBool;
       }
     } else if (aX == bX && aX == cX) {
       //degenerated case, all points with same longitude
@@ -214,21 +232,29 @@ public class LatLonShape {
         if (bY < cY) {
           int tempX = aX;
           int tempY = aY;
+          boolean tempBool = ab;
           aX = bX;
           aY = bY;
+          ab = bc;
           bX = cX;
           bY = cY;
+          bc = ca;
           cX = tempX;
           cY = tempY;
+          ca = tempBool;
         } else if (cY < aY) {
           int tempX = aX;
           int tempY = aY;
+          boolean tempBool = ab;
           aX = cX;
           aY = cY;
+          ab = ca;
           cX = bX;
           cY = bY;
+          ca = bc;
           bX = tempX;
           bY = tempY;
+          bc = tempBool;
         }
       }
     }
@@ -278,6 +304,9 @@ public class LatLonShape {
     } else {
       throw new IllegalArgumentException("Could not encode the provided triangle");
     }
+    bits |= (ab) ? (1 << 3) : 0;
+    bits |= (bc) ? (1 << 4) : 0;
+    bits |= (ca) ? (1 << 5) : 0;
     NumericUtils.intToSortableBytes(minY, bytes, 0);
     NumericUtils.intToSortableBytes(minX, bytes, BYTES);
     NumericUtils.intToSortableBytes(maxY, bytes, 2 * BYTES);
@@ -288,82 +317,133 @@ public class LatLonShape {
   }
 
   /**
-   * Decode a triangle encoded by {@link LatLonShape#encodeTriangle(byte[], int, int, int, int, int, int)}.
+   * Decode a triangle encoded by {@link LatLonShape#encodeTriangle(byte[], int, int, boolean, int, int, boolean, int, int, boolean)}.
    */
-  public static void decodeTriangle(byte[] t, int[] triangle) {
-    assert triangle.length == 6;
-    int bits = NumericUtils.sortableBytesToInt(t, 6 * LatLonShape.BYTES);
+  public static void decodeTriangle(byte[] t, Triangle triangle) {
+    final int aX, aY, bX, bY, cX, cY;
+    final boolean ab, bc, ca;
+    final int bits = NumericUtils.sortableBytesToInt(t, 6 * LatLonShape.BYTES);
     //extract the first three bits
     int tCode = (((1 << 3) - 1) & (bits >> 0));
     switch (tCode) {
       case MINY_MINX_MAXY_MAXX_Y_X:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
         break;
       case MINY_MINX_Y_X_MAXY_MAXX:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
         break;
       case MAXY_MINX_Y_X_MINY_MAXX:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
         break;
       case MAXY_MINX_MINY_MAXX_Y_X:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
         break;
       case Y_MINX_MINY_X_MAXY_MAXX:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
         break;
       case Y_MINX_MINY_MAXX_MAXY_X:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
         break;
       case MAXY_MINX_MINY_X_Y_MAXX:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
         break;
       case MINY_MINX_Y_MAXX_MAXY_X:
-        triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
-        triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
-        triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
-        triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
-        triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
-        triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
+        aY = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES);
+        aX = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES);
+        bY = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES);
+        cY = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES);
+        cX = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES);
         break;
       default:
         throw new IllegalArgumentException("Could not decode the provided triangle");
     }
     //Points of the decoded triangle must be co-planar or CCW oriented
-    assert GeoUtils.orient(triangle[1], triangle[0], triangle[3], triangle[2], triangle[5], triangle[4]) >= 0;
+    assert GeoUtils.orient(aX, aY, bX, bY, cX, cY) >= 0;
+    ab = (bits & 1 << 3) == 1 << 3;
+    bc = (bits & 1 << 4) == 1 << 4;
+    ca = (bits & 1 << 5) == 1 << 5;
+    triangle.setValues(aX, aY, ab, bX, bY, bc, cX, cY, ca);
+  }
+
+  /**
+   * Represents a decoded triangle using {@link LatLonShape#decodeTriangle(byte[], Triangle)}.
+   */
+  public static class Triangle {
+    //Triangle vertices
+    public int aX, aY, bX, bY, cX, cY;
+    //Represent if edges belongs to original shape
+    public boolean ab, bc, ca;
+
+    public Triangle() {
+    }
+
+    private void setValues(int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
+      this.aX = aX;
+      this.aY = aY;
+      this.ab = ab;
+      this.bX = bX;
+      this.bY = bY;
+      this.bc = bc;
+      this.cX = cX;
+      this.cY = cY;
+      this.ca = ca;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(aX, aY, bX, bY, cX, cY, ab, bc, ca);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      Triangle other  = (Triangle) o;
+      return aX == other.aX && bX == other.bX && cX == other.cX
+          && aY == other.aY && bY == other.bY && cY == other.cY
+          && ab == other.ab && bc == other.bc && ca == other.ca;
+    }
+
+    /** pretty print the triangle vertices */
+    public String toString() {
+      String result = aX + ", " + aY + " " +
+          bX + ", " + bY + " " +
+          cX + ", " + cY + " " + "[" + ab + "," +bc + "," + ca + "]";
+      return result;
+    }
   }
 }
