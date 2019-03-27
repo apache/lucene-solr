@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -53,6 +53,7 @@ import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
@@ -77,6 +78,7 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -539,6 +541,35 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETE_OP(DELETE, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
 
     RELOAD_OP(RELOAD, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
+
+    REINDEXCOLLECTION_OP(REINDEXCOLLECTION, (req, rsp, h) -> {
+      Map<String, Object> m = copy(req.getParams().required(), null, NAME);
+      copy(req.getParams(), m,
+          ReindexCollectionCmd.COMMAND,
+          ReindexCollectionCmd.REMOVE_SOURCE,
+          ReindexCollectionCmd.TARGET,
+          ZkStateReader.CONFIGNAME_PROP,
+          NUM_SLICES,
+          NRT_REPLICAS,
+          PULL_REPLICAS,
+          TLOG_REPLICAS,
+          REPLICATION_FACTOR,
+          MAX_SHARDS_PER_NODE,
+          POLICY,
+          CREATE_NODE_SET,
+          CREATE_NODE_SET_SHUFFLE,
+          AUTO_ADD_REPLICAS,
+          "shards",
+          STATE_FORMAT,
+          CommonParams.ROWS,
+          CommonParams.Q,
+          CommonParams.FL);
+      if (req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP) != null) {
+        m.put(ZkStateReader.CONFIGNAME_PROP, req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP));
+      }
+      copyPropertiesWithPrefix(req.getParams(), m, "router.");
+      return m;
+    }),
 
     SYNCSHARD_OP(SYNCSHARD, (req, rsp, h) -> {
       String collection = req.getParams().required().get("collection");

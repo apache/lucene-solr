@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -736,7 +735,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static final String makePath(String... args) {
-    return StringUtils.join(args, File.separator);
+    return String.join(File.separator, args);
   }
 
   @Test

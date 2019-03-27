@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.TlogReplayBufferedWhileIndexingTest;
@@ -42,7 +40,6 @@ public class HdfsTlogReplayBufferedWhileIndexingTest extends TlogReplayBufferedW
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
   
@@ -52,12 +49,11 @@ public class HdfsTlogReplayBufferedWhileIndexingTest extends TlogReplayBufferedW
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
-      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
     }
   }
   
   @Override
-  protected String getDataDir(String dataDir) throws IOException {
+  protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 }

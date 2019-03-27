@@ -39,8 +39,6 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.hdfs.blockcache.blocksperbank", "512");
-    System.setProperty("tests.hdfs.numdatanodes", "1");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
 
@@ -50,8 +48,6 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
-      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
-      System.clearProperty("tests.hdfs.numdatanodes");
     }
   }
 

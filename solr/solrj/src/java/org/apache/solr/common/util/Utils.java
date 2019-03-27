@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -572,7 +573,7 @@ public class Utils {
     VersionedData data = null;
     try {
       data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException e) {
+    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
       return Collections.emptyMap();
     }
     if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();

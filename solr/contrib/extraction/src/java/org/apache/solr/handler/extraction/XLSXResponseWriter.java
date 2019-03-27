@@ -27,12 +27,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.apache.lucene.index.IndexableField;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -43,19 +40,13 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.response.TabularResponseWriter;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 
 public class XLSXResponseWriter extends RawResponseWriter {
@@ -94,10 +85,7 @@ public class XLSXResponseWriter extends RawResponseWriter {
   }
 }
 
-class XLSXWriter extends TextResponseWriter {
-
-  SolrQueryRequest req;
-  SolrQueryResponse rsp;
+class XLSXWriter extends TabularResponseWriter {
 
   static class SerialWriteWorkbook {
     SXSSFWorkbook swb;
@@ -172,45 +160,14 @@ class XLSXWriter extends TextResponseWriter {
 
   private Map<String,XLField> xlFields = new LinkedHashMap<String,XLField>();
 
-  public XLSXWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp){
+  public XLSXWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
-    this.req = req;
-    this.rsp = rsp;
   }
 
   public void writeResponse(OutputStream out, LinkedHashMap<String, String> colNamesMap,
                             LinkedHashMap<String, Integer> colWidthsMap) throws IOException {
-    SolrParams params = req.getParams();
 
-    Collection<String> fields = returnFields.getRequestedFieldNames();
-    Object responseObj = rsp.getValues().get("response");
-    boolean returnOnlyStored = false;
-    if (fields==null||returnFields.hasPatternMatching()) {
-      if (responseObj instanceof SolrDocumentList) {
-        // get the list of fields from the SolrDocumentList
-        if(fields==null) {
-          fields = new LinkedHashSet<String>();
-        }
-        for (SolrDocument sdoc: (SolrDocumentList)responseObj) {
-          fields.addAll(sdoc.getFieldNames());
-        }
-      } else {
-        // get the list of fields from the index
-        Iterable<String> all = req.getSearcher().getFieldNames();
-        if (fields == null) {
-          fields = Sets.newHashSet(all);
-        } else {
-          Iterables.addAll(fields, all);
-        }
-      }
-      if (returnFields.wantsScore()) {
-        fields.add("score");
-      } else {
-        fields.remove("score");
-      }
-      returnOnlyStored = true;
-    }
-
+    Collection<String> fields = getFields();
     for (String field : fields) {
       if (!returnFields.wantsField(field)) {
         continue;
@@ -222,15 +179,13 @@ class XLSXWriter extends TextResponseWriter {
         continue;
       }
 
+      if (shouldSkipField(field)) {
+        continue;
+      }
       SchemaField sf = schema.getFieldOrNull(field);
       if (sf == null) {
         FieldType ft = new StrField();
         sf = new SchemaField(field, ft);
-      }
-
-      // Return only stored fields, unless an explicit field list is specified
-      if (returnOnlyStored && sf != null && !sf.stored()) {
-        continue;
       }
 
       XLField xlField = new XLField();
@@ -264,15 +219,7 @@ class XLSXWriter extends TextResponseWriter {
     wb.setHeaderRow();
     wb.addRow();
 
-    if (responseObj instanceof ResultContext) {
-      writeDocuments(null, (ResultContext)responseObj );
-    }
-    else if (responseObj instanceof DocList) {
-      ResultContext ctx = new BasicResultContext((DocList)responseObj, returnFields, null, null, req);
-      writeDocuments(null, ctx );
-    } else if (responseObj instanceof SolrDocumentList) {
-      writeSolrDocumentList(null, (SolrDocumentList)responseObj, returnFields );
-    }
+    writeResponse(rsp.getResponse());
 
     wb.flush(out);
     wb = null;
@@ -281,23 +228,6 @@ class XLSXWriter extends TextResponseWriter {
   @Override
   public void close() throws IOException {
     super.close();
-  }
-
-  @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
-  }
-
-  @Override
-  public void writeStartDocumentList(String name,
-                                     long start, int size, long numFound, Float maxScore) throws IOException
-  {
-    // nothing
-  }
-
-  @Override
-  public void writeEndDocumentList() throws IOException
-  {
-    // nothing
   }
 
   //NOTE: a document cannot currently contain another document
@@ -344,10 +274,6 @@ class XLSXWriter extends TextResponseWriter {
   @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     wb.writeCell(val);
-  }
-
-  @Override
-  public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
   }
 
   @Override
@@ -401,11 +327,6 @@ class XLSXWriter extends TextResponseWriter {
   @Override
   public void writeDouble(String name, String val) throws IOException {
     wb.writeCell(val);
-  }
-
-  @Override
-  public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, val.toInstant().toString());
   }
 
   @Override
