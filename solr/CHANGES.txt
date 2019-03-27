@@ -111,6 +111,9 @@ Bug Fixes
 * SOLR-13253: IndexSchema.getResourceLoader was being used to load non-schema things, which can be a memory leak if
   "shareSchema" and other circumstances occur.  Furthermore it's reference to SolrConfig was removed. (David Smiley)
 
+* SOLR-7414: CSVResponseWriter & XLSXResponseWriter return empty field when fl alias is combined with '*' selector
+  (Michael Lawrence, Munendra S N, Ishan Chattopadhyaya) 
+
 Improvements
 ----------------------
 
