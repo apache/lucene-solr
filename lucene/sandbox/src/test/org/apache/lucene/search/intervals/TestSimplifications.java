@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSimplifications extends LuceneTestCase {
 
   public void testStringPhrases() {
+    // BLOCK(term) => term
     IntervalsSource actual = Intervals.phrase("term");
     assertEquals(Intervals.term("term"), actual);
   }
@@ -32,18 +33,45 @@ public class TestSimplifications extends LuceneTestCase {
   }
 
   public void testOrdered() {
+    // ORDERED(term) => term
     IntervalsSource actual = Intervals.ordered(Intervals.term("term"));
     assertEquals(Intervals.term("term"), actual);
   }
 
   public void testUnordered() {
+    // UNORDERED(term) => term
     IntervalsSource actual = Intervals.unordered(Intervals.term("term"));
     assertEquals(Intervals.term("term"), actual);
   }
 
   public void testUnorderedOverlaps() {
-    IntervalsSource actual = Intervals.unordered(true, Intervals.term("term"));
+    // UNORDERED_NO_OVERLAPS(term) => term
+    IntervalsSource actual = Intervals.unordered(false, Intervals.term("term"));
     assertEquals(Intervals.term("term"), actual);
+  }
+
+  public void testDisjunctionRemovesDuplicates() {
+    // or(a, b, a) => or(a, b)
+    IntervalsSource actual = Intervals.or(Intervals.term("a"), Intervals.term("b"), Intervals.term("a"));
+    assertEquals(Intervals.or(Intervals.term("a"), Intervals.term("b")), actual);
+  }
+
+  public void testPhraseSimplification() {
+    // BLOCK(BLOCK(a, b), c) => BLOCK(a, b, c)
+    IntervalsSource actual = Intervals.phrase(Intervals.phrase(Intervals.term("a"), Intervals.term("b")), Intervals.term("c"));
+    assertEquals(Intervals.phrase(Intervals.term("a"), Intervals.term("b"), Intervals.term("c")), actual);
+
+    // BLOCK(a, BLOCK(b, BLOCK(c, d))) => BLOCK(a, b, c, d)
+    actual = Intervals.phrase(Intervals.term("a"), Intervals.phrase(Intervals.term("b"),
+        Intervals.phrase(Intervals.term("c"), Intervals.term("d"))));
+    assertEquals(Intervals.phrase(Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")), actual);
+  }
+
+  public void testDisjunctionSimplification() {
+    // or(a, or(b, or(c, d))) => or(a, b, c, d)
+    IntervalsSource actual = Intervals.or(Intervals.term("a"), Intervals.or(Intervals.term("b"),
+        Intervals.or(Intervals.term("c"), Intervals.term("d"))));
+    assertEquals(Intervals.or(Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")), actual);
   }
 
 }
