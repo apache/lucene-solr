@@ -17,23 +17,45 @@
 
 package org.apache.lucene.search.intervals;
 
+import java.io.IOException;
 import java.util.Arrays;
 
-/**
- * An intervals source that combines two other sources, requiring both of them to
- * be present in order to match, but using the minExtent of one of them
- */
-class FilteringConjunctionIntervalsSource extends ConjunctionIntervalsSource {
+abstract class FilteringIntervalIterator extends ConjunctionIntervalIterator {
 
-  private final IntervalsSource source;
+  final IntervalIterator a;
+  final IntervalIterator b;
 
-  FilteringConjunctionIntervalsSource(IntervalsSource source, IntervalsSource filter, IntervalFunction function) {
-    super(Arrays.asList(source, filter), function);
-    this.source = source;
+  boolean bpos;
+
+  protected FilteringIntervalIterator(IntervalIterator a, IntervalIterator b) {
+    super(Arrays.asList(a, b));
+    this.a = a;
+    this.b = b;
   }
 
   @Override
-  public int minExtent() {
-    return source.minExtent();
+  public int start() {
+    if (bpos == false) {
+      return NO_MORE_INTERVALS;
+    }
+    return a.start();
+  }
+
+  @Override
+  public int end() {
+    if (bpos == false) {
+      return NO_MORE_INTERVALS;
+    }
+    return a.end();
+  }
+
+  @Override
+  public int gaps() {
+    return a.gaps();
+  }
+
+  @Override
+  protected void reset() throws IOException {
+    bpos = b.nextInterval() != NO_MORE_INTERVALS;
   }
 }

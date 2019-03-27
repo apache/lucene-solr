@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,11 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
       minExtent += subExtents[i];
     }
     return minExtent;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singleton(this);
   }
 
   @Override

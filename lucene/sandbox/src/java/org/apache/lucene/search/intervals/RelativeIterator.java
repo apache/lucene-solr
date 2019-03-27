@@ -18,75 +18,66 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
-import java.util.Objects;
 
-/**
- * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link #accept()} function
- */
-public abstract class IntervalFilter extends IntervalIterator {
+abstract class RelativeIterator extends IntervalIterator {
 
-  protected final IntervalIterator in;
+  final IntervalIterator a;
+  final IntervalIterator b;
 
-  /**
-   * Create a new filter
-   */
-  public IntervalFilter(IntervalIterator in) {
-    this.in = Objects.requireNonNull(in);
+  boolean bpos;
+
+  RelativeIterator(IntervalIterator a, IntervalIterator b) {
+    this.a = a;
+    this.b = b;
   }
 
   @Override
   public int docID() {
-    return in.docID();
+    return a.docID();
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return in.nextDoc();
+    int doc = a.nextDoc();
+    reset();
+    return doc;
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return in.advance(target);
+    int doc = a.advance(target);
+    reset();
+    return doc;
   }
 
   @Override
   public long cost() {
-    return in.cost();
+    return a.cost();
+  }
+
+  protected void reset() throws IOException {
+    int doc = a.docID();
+    bpos = b.docID() == doc ||
+        (b.docID() < doc && b.advance(doc) == doc);
   }
 
   @Override
   public int start() {
-    return in.start();
+    return a.start();
   }
 
   @Override
   public int end() {
-    return in.end();
+    return a.end();
   }
 
   @Override
   public int gaps() {
-    return in.gaps();
+    return a.gaps();
   }
 
   @Override
   public float matchCost() {
-    return in.matchCost();
+    return a.matchCost() + b.matchCost();
   }
-
-  /**
-   * @return {@code true} if the wrapped iterator's interval should be passed on
-   */
-  protected abstract boolean accept();
-
-  @Override
-  public final int nextInterval() throws IOException {
-    int next;
-    do {
-      next = in.nextInterval();
-    }
-    while (next != IntervalIterator.NO_MORE_INTERVALS && accept() == false);
-    return next;
-  }
-
 }

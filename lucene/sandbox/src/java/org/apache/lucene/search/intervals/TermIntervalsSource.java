@@ -18,6 +18,8 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
@@ -206,6 +208,11 @@ class TermIntervalsSource extends IntervalsSource {
   @Override
   public int minExtent() {
     return 1;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singleton(this);
   }
 
   @Override
