@@ -38,6 +38,7 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -290,12 +291,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         usr = principal.getName();
       }
     } else {
-      if (!isSolrThread()) {
-        //if this is not running inside a Solr threadpool (as in testcases)
-        // then no need to add any header
-        return Optional.empty();
-      }
-      //this request seems to be originated from Solr itself
       usr = "$"; //special name to denote the user is the node itself
     }
 
