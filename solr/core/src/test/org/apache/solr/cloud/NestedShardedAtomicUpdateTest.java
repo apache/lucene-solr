@@ -17,9 +17,11 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -89,13 +91,11 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
       doc = sdoc("id", "b", "grandChildren", map("add", sdocs(sdoc("id", ids[i], "level_s", "grand_child"))));
 
-      indexDoc(client, params, doc);
-      client.commit();
+      indexDocAndRandomlyCommit(client, params, doc);
 
       doc = sdoc("id", "c", "inplace_updatable_int", map("inc", "1"));
 
-      indexDoc(client, params, doc);
-      client.commit();
+      indexDocAndRandomlyCommit(client, params, doc);
 
       // assert RTG request respects _route_ param
       QueryResponse routeRsp = client.query(params("qt","/get", "id","b", "_route_", "a"));
@@ -104,6 +104,7 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       assertEquals("b", results.getFieldValue("id"));
 
       // assert all docs are indexed under the same root
+      client.commit();
       assertEquals(0, client.query(new ModifiableSolrParams().set("q", "-_root_:a")).getResults().size());
 
       // assert all docs are indexed inside the same block
@@ -137,27 +138,22 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
     int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDoc(aClient, params, doc);
-
-    aClient.commit();
+    indexDocAndRandomlyCommit(aClient, params, doc);
 
     doc = sdoc("id", "a", "children", map("add", sdocs(sdoc("id", "b", "level_s", "child"))));
 
-    indexDoc(aClient, params, doc);
-    aClient.commit();
+    indexDocAndRandomlyCommit(aClient, params, doc);
 
     doc = sdoc("id", "b", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
 
-    indexDoc(aClient, params, doc);
-    aClient.commit();
+    indexDocAndRandomlyCommit(aClient, params, doc);
 
     int i = 0;
     for (SolrClient client : clients) {
 
       doc = sdoc("id", "c", "inplace_updatable_int", map("inc", "1"));
 
-      indexDoc(client, params, doc);
-      client.commit();
+      indexDocAndRandomlyCommit(client, params, doc);
 
       // assert RTG request respects _route_ param
       QueryResponse routeRsp = client.query(params("qt","/get", "id","b", "_route_", "a"));
@@ -166,6 +162,7 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       assertEquals("b", results.getFieldValue("id"));
 
       // assert all docs are indexed under the same root
+      client.commit();
       assertEquals(0, client.query(new ModifiableSolrParams().set("q", "-_root_:a")).getResults().size());
 
       // assert all docs are indexed inside the same block
@@ -181,6 +178,13 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       SolrDocument grandChild = grandChildren.get(0);
       assertEquals(++i, grandChild.getFirstValue("inplace_updatable_int"));
       assertEquals("c", grandChild.getFieldValue("id"));
+    }
+  }
+
+  private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
+    indexDoc(client, params, sdoc);
+    if (random().nextBoolean()) {
+      client.commit();
     }
   }
 
