@@ -82,6 +82,9 @@ Improvements
 * LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
   the other matches. (Yeongsu Kim via Jim Ferenczi)
 
+* LUCENE-8732: ConstantScoreQuery can now early terminate the query if the minimum score is
+  greater than the constant score and total hits are not requested. (Jim Ferenczi)
+
 Changes in Runtime Behavior
 
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
