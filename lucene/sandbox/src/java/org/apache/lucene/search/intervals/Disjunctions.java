@@ -74,6 +74,10 @@ final class Disjunctions {
     return disjuncts.stream().map(function).collect(Collectors.toList());
   }
 
+  // Separate out disjunctions into individual sources
+  // Clauses that have a minExtent of 1 are grouped together and treated as a single
+  // source, as any overlapping intervals of length 1 can be treated as identical,
+  // and we know that all combinatorial sources have a minExtent > 1
   private static List<IntervalsSource> splitDisjunctions(IntervalsSource source) {
     List<IntervalsSource> singletons = new ArrayList<>();
     List<IntervalsSource> nonSingletons = new ArrayList<>();
