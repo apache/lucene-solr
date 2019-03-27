@@ -112,7 +112,9 @@ Bug Fixes
   "shareSchema" and other circumstances occur.  Furthermore it's reference to SolrConfig was removed. (David Smiley)
 
 * SOLR-7414: CSVResponseWriter & XLSXResponseWriter return empty field when fl alias is combined with '*' selector
-  (Michael Lawrence, Munendra S N, Ishan Chattopadhyaya) 
+  (Michael Lawrence, Munendra S N, Ishan Chattopadhyaya)
+
+* SOLR-13351: Workaround for VELOCITY-908 (Kevin Risden)
 
 Improvements
 ----------------------
