@@ -58,6 +58,10 @@ Bug fixes
   matching.  This behaviour can be disabled if users are more interested
   in speed rather than accuracy of matching. (Alan Woodward, Jim Ferenczi)
 
+* LUCENE-8741: ValueSource.fromDoubleValuesSource() was casting to
+  Scorer instead of Scorable, leading to ClassCastExceptions (Markus Jelsma,
+  Alan Woodward)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
