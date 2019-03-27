@@ -41,7 +41,7 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-public class TestSQLHandler2 extends SolrCloudTestCase {
+public class TestSQLHandler extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
   private static final int TIMEOUT = DEFAULT_TIMEOUT;
