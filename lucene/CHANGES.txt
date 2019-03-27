@@ -37,6 +37,12 @@ Bug fixes
   cheapest merges that allow the index to go down to `maxSegmentCount` segments
   or less. (Armin Braun via Adrien Grand)
 
+* LUCENE-8477: Interval disjunctions could miss valid hits if some of the
+  clauses of the disjunction are minimized away.  We now rewrite intervals
+  if a source contains a disjunction and the internal gaps matter for
+  matching.  This behaviour can be disabled if users are more interested
+  in speed rather than accuracy of matching. (Alan Woodward, Jim Ferenczi)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
