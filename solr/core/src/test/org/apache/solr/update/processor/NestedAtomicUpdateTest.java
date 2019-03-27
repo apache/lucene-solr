@@ -35,7 +35,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class AtomicUpdateBlockTest extends SolrTestCaseJ4 {
+public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   private final static String VERSION = "_version_";
 

@@ -27,9 +27,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
 
-public class AtomicUpdateBlockShardedTest extends AbstractFullDistribZkTestBase {
+public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase {
 
-  public AtomicUpdateBlockShardedTest() {
+  public NestedShardedAtomicUpdateTest() {
     stress = 0;
     sliceCount = 4;
     schemaString = "sharded-block-schema.xml";
