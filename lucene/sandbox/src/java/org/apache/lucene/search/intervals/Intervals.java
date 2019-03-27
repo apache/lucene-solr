@@ -103,7 +103,7 @@ public final class Intervals {
   /**
    * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
    *
-   * Automatically rewrites if wrapped by an interval sources that is sensitive to
+   * Automatically rewrites if wrapped by an interval source that is sensitive to
    * internal gaps
    */
   public static IntervalsSource or(IntervalsSource... subSources) {
