@@ -19,3 +19,4 @@ org.apache.lucene.codecs.compressing.FastCompressingCodec
 org.apache.lucene.codecs.compressing.FastDecompressionCompressingCodec
 org.apache.lucene.codecs.compressing.HighCompressionCompressingCodec
 org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec
+org.apache.lucene.codecs.uniformsplit.UniformSplitTestingCodec

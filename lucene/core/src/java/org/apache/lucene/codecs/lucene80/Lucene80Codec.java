@@ -91,7 +91,11 @@ public class Lucene80Codec extends Codec {
    *             flushed/merged segments.
    */
   public Lucene80Codec(Mode mode) {
-    super("Lucene80");
+    this("Lucene80", mode);
+  }
+  
+  protected Lucene80Codec(String name, Mode mode) {
+    super(name);
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
     this.defaultFormat = new Lucene50PostingsFormat();
   }
