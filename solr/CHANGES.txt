@@ -116,6 +116,9 @@ Bug Fixes
 
 * SOLR-13351: Workaround for VELOCITY-908 (Kevin Risden)
 
+ * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+
+
 Improvements
 ----------------------
 
