@@ -58,12 +58,11 @@ import org.slf4j.LoggerFactory;
 public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
-  
   static final String PARAM_ASYNC = "async";
-  private static final String PARAM_BLOCKASYNC = "blockAsync";
-  private static final String PARAM_QUEUE_SIZE = "queueSize";
-  private static final String PARAM_NUM_THREADS = "numThreads";
-  private static final String PARAM_MUTE_RULES = "muteRules";
+  static final String PARAM_BLOCKASYNC = "blockAsync";
+  static final String PARAM_QUEUE_SIZE = "queueSize";
+  static final String PARAM_NUM_THREADS = "numThreads";
+  static final String PARAM_MUTE_RULES = "muteRules";
   private static final int DEFAULT_QUEUE_SIZE = 4096;
   private static final int DEFAULT_NUM_THREADS = 2;
 
@@ -73,8 +72,11 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
-  MetricRegistry registry;
-  Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private MetricRegistry registry;
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private ExecutorService executorService;
+  private boolean closed;
+  private MuteRules muteRules;
   
   protected String registryName;
   protected SolrMetricManager metricManager;
@@ -90,9 +92,6 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       EventType.REJECTED.name(),
       EventType.UNAUTHORIZED.name(),
       EventType.ANONYMOUS_REJECTED.name());
-  private ExecutorService executorService;
-  private boolean closed;
-  private MuteRules muteRules;
 
   /**
    * Initialize the plugin from security.json.
@@ -333,9 +332,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
               rules.add(Collections.singletonList(parseRule(l)));
             } else if (l instanceof List) {
               List<MuteRule> rl = new ArrayList<>();
-              ((List) l).forEach(r -> {
-                rl.add(parseRule(r));
-              });
+              ((List) l).forEach(r -> rl.add(parseRule(r)));
               rules.add(rl);
             }
           });
@@ -373,7 +370,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unkonwn mute rule " + rule);
         }
       } catch (ClassCastException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The rules in " + PARAM_MUTE_RULES + " configuration must be strings or list fo strings");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The rules in " + PARAM_MUTE_RULES + " configuration must be list of strings or list of list of strings");
       }
     }
 

@@ -72,7 +72,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
   // Use a harness per thread to be able to beast this test
-  ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
+  private ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
 
   @Override
   @Before
@@ -251,7 +251,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       "    \"permissions\":[{\"name\":\"collection-admin-edit\",\"role\":\"admin\"}]\n" +
       "  }\n";
   
-  void setupCluster(boolean async, int delay, boolean enableAuth, String muteRulesJson) throws Exception {
+  private void setupCluster(boolean async, int delay, boolean enableAuth, String muteRulesJson) throws Exception {
     String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
     securityJson = securityJson.replace("_PORT_", Integer.toString(testHarness.get().callbackPort));
     securityJson = securityJson.replace("_ASYNC_", Boolean.toString(async));
@@ -277,15 +277,15 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     private Map<String,AtomicInteger> resourceCounts = new HashMap<>();
     private LinkedList<AuditEvent> buffer = new LinkedList<>();
 
-    public CallbackReceiver() throws IOException {
+    CallbackReceiver() throws IOException {
       serverSocket = new ServerSocket(0);
     }
 
-    public int getTotalCount() {
+    int getTotalCount() {
       return count.get();
     }
 
-    public int getCountForPath(String path) {
+    int getCountForPath(String path) {
       return resourceCounts.getOrDefault(path, new AtomicInteger()).get();
     }
     
@@ -326,11 +326,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       serverSocket.close();
     }
 
-    public LinkedList<AuditEvent> getBuffer() {
+    protected LinkedList<AuditEvent> getBuffer() {
       return buffer;
     }
 
-    public AuditEvent popEvent() {
+    protected AuditEvent popEvent() {
       return buffer.pop();
     }
   }
@@ -341,10 +341,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     Thread receiverThread;
     private MiniSolrCloudCluster cluster;
 
-    public AuditTestHarness() throws IOException {
+    AuditTestHarness() throws IOException {
       receiver = new CallbackReceiver();
       callbackPort = receiver.getPort();
-      receiverThread = new DefaultSolrThreadFactory("auditTestCallback").newThread(receiver);;
+      receiverThread = new DefaultSolrThreadFactory("auditTestCallback").newThread(receiver);
       receiverThread.start();
     }
 
