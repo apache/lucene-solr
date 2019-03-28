@@ -135,7 +135,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   public final void doAudit(AuditEvent event) {
     if (shouldMute(event)) {
-      log.warn("Event muted due to mute rule(s)");
+      log.debug("Event muted due to mute rule(s)");
       return;
     }
     if (async) {
