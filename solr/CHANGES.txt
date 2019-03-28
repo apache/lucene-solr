@@ -46,6 +46,23 @@ Bug fixes
   all the cores.
   (Danyal Prout via shalin)
 
+==================  7.7.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.13
+Jetty 9.4.14.v20181114
+
+Bug Fixes
+----------------------
+
+* SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
