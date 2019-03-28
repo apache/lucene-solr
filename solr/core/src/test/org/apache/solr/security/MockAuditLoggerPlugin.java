@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,9 +47,6 @@ public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
       typeCounts.put(type, new AtomicInteger(0));
     typeCounts.get(type).incrementAndGet();
   }
-
-  @Override
-  public void close() throws IOException { /* ignored */ }
 
   public void reset() {
     events.clear();

@@ -17,12 +17,17 @@
 
 package org.apache.solr.security;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,6 +72,22 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
       .setMessage("Error occurred")
       .setDate(SAMPLE_DATE)
       .setResource("/collection1");
+  protected static final AuditEvent EVENT_UPDATE = new AuditEvent(AuditEvent.EventType.ERROR)
+      .setUsername("updateuser")
+      .setHttpMethod("POST")
+      .setRequestType(AuditEvent.RequestType.UPDATE)
+      .setMessage("Success")
+      .setDate(SAMPLE_DATE)
+      .setCollections(Collections.singletonList("updatecoll"))
+      .setResource("/update");
+  protected static final AuditEvent EVENT_STREAMING = new AuditEvent(AuditEvent.EventType.ERROR)
+      .setUsername("streaminguser")
+      .setHttpMethod("POST")
+      .setRequestType(AuditEvent.RequestType.STREAMING)
+      .setMessage("Success")
+      .setDate(SAMPLE_DATE)
+      .setCollections(Collections.singletonList("streamcoll"))
+      .setResource("/stream");
 
   private MockAuditLoggerPlugin plugin;
   private HashMap<String, Object> config;
@@ -79,11 +100,18 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     config.put("async", false);
     plugin.init(config);
   }
-  
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    plugin.close();
+    super.tearDown();
+  }
+
   @Test
   public void init() {
     config = new HashMap<>();
-    config.put("eventTypes", Arrays.asList("REJECTED"));
+    config.put("eventTypes", Collections.singletonList("REJECTED"));
     config.put("async", false);
     plugin.init(config);
     assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
@@ -101,7 +129,27 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     assertFalse(plugin.shouldLog(EVENT_AUTHENTICATED.getEventType()));    
     assertFalse(plugin.shouldLog(EVENT_AUTHORIZED.getEventType()));
   }
+
+  @Test(expected = SolrException.class)
+  public void invalidMuteRule() {
+    config.put("muteRules", Collections.singletonList("foo:bar"));
+    plugin.init(config);
+  }
   
+  @Test
+  public void shouldMute() {
+    List<Object> rules = new ArrayList<>();
+    rules.add("STREAMING");
+    rules.add(Arrays.asList("user:updateuser", "collection:updatecoll"));
+    config.put("muteRules",rules); 
+    plugin.init(config);
+    assertFalse(plugin.shouldMute(EVENT_ANONYMOUS));
+    assertTrue(plugin.shouldMute(EVENT_STREAMING));
+    assertTrue(plugin.shouldMute(EVENT_UPDATE));
+    EVENT_UPDATE.setUsername("john");
+    assertFalse(plugin.shouldMute(EVENT_UPDATE));
+  }
+
   @Test
   public void audit() {
     plugin.doAudit(EVENT_ANONYMOUS_REJECTED);

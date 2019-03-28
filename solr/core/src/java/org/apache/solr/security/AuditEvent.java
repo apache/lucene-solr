@@ -19,11 +19,14 @@ package org.apache.solr.security;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
@@ -43,8 +46,8 @@ import static org.apache.solr.security.AuditEvent.EventType.ERROR;
  */
 public class AuditEvent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private StringBuffer requestUrl;
   private String nodeName;
-
   private String message;
   private Level level;
   private Date date;
@@ -53,7 +56,7 @@ public class AuditEvent {
   private String clientIp;
   private List<String> collections;
   private Map<String, Object> context;
-  private HashMap<String, String> headers;
+  private Map<String, String> headers;
   private Map<String, Object> solrParams = new HashMap<>();
   private String solrHost;
   private int solrPort;
@@ -63,11 +66,11 @@ public class AuditEvent {
   private String httpQueryString;
   private EventType eventType;
   private AuthorizationResponse autResponse;
-  private String requestType;
+  private RequestType requestType;
   private double QTime = -1;
   private int status = -1;
   private Throwable exception;
-
+  
   /* Predefined event types. Custom types can be made through constructor */
   public enum EventType {
     AUTHENTICATED("Authenticated", "User successfully authenticated", Level.INFO, -1),
@@ -79,10 +82,10 @@ public class AuditEvent {
     COMPLETED("Completed", "Request completed", Level.INFO, 200),
     ERROR("Error", "Request was not executed due to an error", Level.ERROR, 500);
     
-    private final String message;
-    private String explanation;
-    private final Level level;
-    private int status;
+    public final String message;
+    public String explanation;
+    public final Level level;
+    public int status;
 
     EventType(String message, String explanation, Level level, int status) {
       this.message = message;
@@ -110,7 +113,7 @@ public class AuditEvent {
     this(eventType, null, httpRequest);
   }
   
-  // Constructor for testing only
+  // Constructor for testing and deserialization only
   protected AuditEvent() { }
   
   /**
@@ -130,15 +133,10 @@ public class AuditEvent {
     this.httpMethod = httpRequest.getMethod();
     this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
+    this.requestUrl = httpRequest.getRequestURL();
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
 
-    switch (this.httpMethod) {
-      case "GET":
-        this.requestType = AuthorizationContext.RequestType.READ.name();
-      case "POST":
-      case "PUT":
-        this.requestType = AuthorizationContext.RequestType.WRITE.name();
-    }
+    setRequestType(findRequestType());
 
     if (exception != null) setException(exception);
 
@@ -165,7 +163,7 @@ public class AuditEvent {
     this.collections = authorizationContext.getCollectionRequests()
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
     this.resource = authorizationContext.getResource();
-    this.requestType = authorizationContext.getRequestType().toString();
+    this.requestType = RequestType.convertType(authorizationContext.getRequestType());
     authorizationContext.getParams().forEach(p -> {
       this.solrParams.put(p.getKey(), p.getValue());
     });
@@ -203,6 +201,23 @@ public class AuditEvent {
     ERROR  // Used when there is an exception or error during auth / authz
   }
 
+  public enum RequestType {
+    ADMIN, SEARCH, UPDATE, STREAMING, UNKNOWN;
+    
+    static RequestType convertType(AuthorizationContext.RequestType ctxReqType) {
+      switch (ctxReqType) {
+        case ADMIN:
+          return RequestType.ADMIN;
+        case READ:
+          return RequestType.SEARCH;
+        case WRITE:
+          return RequestType.UPDATE;
+        default:
+          return RequestType.UNKNOWN;
+      }
+    }
+  }
+  
   public String getMessage() {
     return message;
   }
@@ -263,7 +278,7 @@ public class AuditEvent {
     return solrPort;
   }
 
-  public HashMap<String, String> getHeaders() {
+  public Map<String, String> getHeaders() {
     return headers;
   }
 
@@ -287,7 +302,7 @@ public class AuditEvent {
     return nodeName;
   }
 
-  public String getRequestType() {
+  public RequestType getRequestType() {
     return requestType;
   }
 
@@ -302,8 +317,17 @@ public class AuditEvent {
   public Throwable getException() {
     return exception;
   }
-  
+
+  public StringBuffer getRequestUrl() {
+    return requestUrl;
+  }
+
   // Setters, builder style
+  
+  public AuditEvent setRequestUrl(StringBuffer requestUrl) {
+    this.requestUrl = requestUrl;
+    return this;
+  }
   
   public AuditEvent setSession(String session) {
     this.session = session;
@@ -380,7 +404,7 @@ public class AuditEvent {
     return this;
   }
 
-  public AuditEvent setHeaders(HashMap<String, String> headers) {
+  public AuditEvent setHeaders(Map<String, String> headers) {
     this.headers = headers;
     return this;
   }
@@ -395,20 +419,22 @@ public class AuditEvent {
     return this;
   }
 
-  public AuditEvent setRequestType(String requestType) {
+  public AuditEvent setRequestType(RequestType requestType) {
     this.requestType = requestType;
     return this;
   }
 
-  public void setQTime(double QTime) {
+  public AuditEvent setQTime(double QTime) {
     this.QTime = QTime;
+    return this;
   }
 
-  public void setStatus(int status) {
+  public AuditEvent setStatus(int status) {
     this.status = status;
+    return this;
   }
 
-  public void setException(Throwable exception) {
+  public AuditEvent setException(Throwable exception) {
     this.exception = exception;
     if (exception != null) {
       this.eventType = ERROR;
@@ -417,5 +443,34 @@ public class AuditEvent {
       if (exception instanceof SolrException)
         status = ((SolrException)exception).code();
     }
+    return this;
   }
+
+  private RequestType findRequestType() {
+    if (ADMIN_PATH_REGEXES.stream().map(Pattern::compile)
+            .anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
+    if (SEARCH_PATH_REGEXES.stream().map(Pattern::compile)
+                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
+    if (INDEXING_PATH_REGEXES.stream().map(Pattern::compile)
+                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
+    if (STREAMING_PATH_REGEXES.stream().map(Pattern::compile)
+                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    return RequestType.UNKNOWN;
+  }
+  
+  private static final List<String> ADMIN_PATH_REGEXES = Arrays.asList(
+      "^/solr/admin/.*",
+      "^/api/(c|collections)/$",
+      "^/api/(c|collections)/[^/]+/config$",
+      "^/api/(c|collections)/[^/]+/schema$",
+      "^/api/(c|collections)/[^/]+/shards.*",
+      "^/api/cores.*$",
+      "^/api/node$",
+      "^/api/cluster$");
+
+  private static final List<String> STREAMING_PATH_REGEXES = Collections.singletonList(".*/stream.*");
+
+  private static final List<String> INDEXING_PATH_REGEXES = Collections.singletonList(".*/update.*");
+
+  private static final List<String> SEARCH_PATH_REGEXES = Arrays.asList(".*/select.*", ".*/query.*");
 }

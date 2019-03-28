@@ -43,6 +43,8 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.security.AuditEvent.EventType;
+import org.apache.solr.security.AuditEvent.RequestType;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -56,6 +58,8 @@ import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
 import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
+import static org.apache.solr.security.AuditEvent.RequestType.ADMIN;
+import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
 
 /**
  * Validate that audit logging works in a live cluster
@@ -86,7 +90,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   
   @Test
   public void testSynchronous() throws Exception {
-    setupCluster(false, 0, false);
+    setupCluster(false, 0, false, null);
     runAdminCommands();
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
     testHarness.get().shutdownCluster();
@@ -95,7 +99,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   
   @Test
   public void testAsync() throws Exception {
-    setupCluster(true, 0, false);
+    setupCluster(true, 0, false, null);
     runAdminCommands();
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
     testHarness.get().shutdownCluster();
@@ -104,7 +108,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testAsyncWithQueue() throws Exception {
-    setupCluster(true, 100, false);
+    setupCluster(true, 100, false, null);
     runAdminCommands();
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
     testHarness.get().shutdownCluster();
@@ -112,8 +116,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  public void testMuteAdminListCollections() throws Exception {
+    setupCluster(false, 0, false, "[ [ \"path:/admin\", \"param:action=LIST\" ], \"UNKNOWN\" ]");
+    runAdminCommands();
+    CallbackReceiver receiver = testHarness.get().receiver;
+    assertEquals(2, receiver.getBuffer().size()); // Only get two events, since the LIST event was muted
+  }
+
+  @Test
   public void searchWithException() throws Exception {
-    setupCluster(false, 0, false);
+    setupCluster(false, 0, false, null);
     try {
       testHarness.get().cluster.getSolrClient().request(CollectionAdminRequest.createCollection("test", 1, 1));
       testHarness.get().cluster.getSolrClient().query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
@@ -123,13 +135,13 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       CallbackReceiver receiver = testHarness.get().receiver;
       assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/cores");
       assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections");
-      assertAuditEvent(receiver.popEvent(), ERROR,"/select", "READ", null, 400);
+      assertAuditEvent(receiver.popEvent(), ERROR,"/select", SEARCH, null, 400);
     }
   }
 
   @Test
   public void auth() throws Exception {
-    setupCluster(false, 0, true);
+    setupCluster(false, 0, true, null);
     CloudSolrClient client = testHarness.get().cluster.getSolrClient();
     try {
       CollectionAdminRequest.List request = new CollectionAdminRequest.List();
@@ -142,9 +154,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(3);
       CallbackReceiver receiver = testHarness.get().receiver;
-      assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections", "action", "LIST");
-      assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections", "ADMIN", "solr", 200, "action", "LIST");
-      assertAuditEvent(receiver.popEvent(), REJECTED, "/admin/collections", "ADMIN", null,401);
+      assertAuditEvent(receiver.popEvent(), COMPLETED, "/admin/collections", ADMIN, null, 200, "action", "LIST");
+      AuditEvent e = receiver.popEvent();
+      System.out.println(new AuditLoggerPlugin.JSONAuditEventFormatter().formatEvent(e));
+      assertAuditEvent(e, COMPLETED, "/admin/collections", ADMIN, "solr", 200, "action", "LIST");
+      assertAuditEvent(receiver.popEvent(), REJECTED, "/admin/collections", ADMIN, null,401);
     }
     try {
       CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection("test", 1, 1);
@@ -154,15 +168,15 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(1);
       CallbackReceiver receiver = testHarness.get().receiver;
-      assertAuditEvent(receiver.popEvent(), UNAUTHORIZED, "/admin/collections", "ADMIN", null,403);
+      assertAuditEvent(receiver.popEvent(), UNAUTHORIZED, "/admin/collections", ADMIN, null,403);
     }
   }
 
-  private void assertAuditEvent(AuditEvent e, AuditEvent.EventType type, String path, String... params) {
+  private void assertAuditEvent(AuditEvent e, EventType type, String path, String... params) {
     assertAuditEvent(e, type, path, null, null,null, params);
   }
 
-  private void assertAuditEvent(AuditEvent e, AuditEvent.EventType type, String path, String requestType, String username, Integer status, String... params) {
+  private void assertAuditEvent(AuditEvent e, EventType type, String path, RequestType requestType, String username, Integer status, String... params) {
     assertEquals(type, e.getEventType());
     assertEquals(path, e.getResource());
     if (requestType != null) {
@@ -218,6 +232,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(COMPLETED, e.getEventType());
     assertEquals("GET", e.getHttpMethod());
     assertEquals("CLUSTERSTATUS", e.getSolrParamAsString("action"));
+    System.out.println("*** " + new AuditLoggerPlugin.JSONAuditEventFormatter().formatEvent(e));
 
     e = receiver.getBuffer().pop();
     assertEquals(COMPLETED, e.getEventType());
@@ -236,12 +251,13 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       "    \"permissions\":[{\"name\":\"collection-admin-edit\",\"role\":\"admin\"}]\n" +
       "  }\n";
   
-  void setupCluster(boolean async, int delay, boolean enableAuth) throws Exception {
+  void setupCluster(boolean async, int delay, boolean enableAuth, String muteRulesJson) throws Exception {
     String securityJson = FileUtils.readFileToString(TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(), StandardCharsets.UTF_8);
     securityJson = securityJson.replace("_PORT_", Integer.toString(testHarness.get().callbackPort));
     securityJson = securityJson.replace("_ASYNC_", Boolean.toString(async));
     securityJson = securityJson.replace("_DELAY_", Integer.toString(delay));
     securityJson = securityJson.replace("_AUTH_", enableAuth ? AUTH_SECTION : "");
+    securityJson = securityJson.replace("_MUTERULES_", muteRulesJson != null ? muteRulesJson : "[]");
     MiniSolrCloudCluster myCluster = new Builder(NUM_SERVERS, createTempDir())
         .withSecurityJson(securityJson)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -341,7 +357,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     }
 
     public void shutdownCluster() throws Exception {
-      cluster.shutdown();
+      if (cluster != null) cluster.shutdown();
     }
 
     public void setCluster(MiniSolrCloudCluster cluster) {

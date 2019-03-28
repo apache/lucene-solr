@@ -20,7 +20,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +63,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final String PARAM_BLOCKASYNC = "blockAsync";
   private static final String PARAM_QUEUE_SIZE = "queueSize";
   private static final String PARAM_NUM_THREADS = "numThreads";
+  private static final String PARAM_MUTE_RULES = "muteRules";
   private static final int DEFAULT_QUEUE_SIZE = 4096;
   private static final int DEFAULT_NUM_THREADS = 2;
 
@@ -89,6 +92,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       EventType.ANONYMOUS_REJECTED.name());
   private ExecutorService executorService;
   private boolean closed;
+  private MuteRules muteRules;
 
   /**
    * Initialize the plugin from security.json.
@@ -106,6 +110,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
     blockingQueueSize = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE))) : 1;
     int numThreads = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_NUM_THREADS, DEFAULT_NUM_THREADS))) : 1;
+    muteRules = new MuteRules(pluginConfig.get(PARAM_MUTE_RULES));
     pluginConfig.remove(PARAM_ASYNC);
     pluginConfig.remove(PARAM_BLOCKASYNC);
     pluginConfig.remove(PARAM_QUEUE_SIZE);
@@ -130,6 +135,10 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * to either synchronous or async logging.
    */
   public final void doAudit(AuditEvent event) {
+    if (shouldMute(event)) {
+      log.debug("Event muted due to mute rule(s)");
+      return;
+    }
     if (async) {
       auditAsync(event);
     } else {
@@ -144,6 +153,15 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         totalTime.inc(timer.stop());
       }
     }
+  }
+
+  /**
+   * Returns true if any of the configured mute rules matches. The inner lists are ORed, while rules inside
+   * inner lists are ANDed
+   * @param event the audit event
+   */
+  protected boolean shouldMute(AuditEvent event) {
+    return muteRules.shouldMute(event);
   }
 
   /**
@@ -292,11 +310,84 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
           log.info("Async auditlogger queue still has {} elements, sleeping to let it drain...", queue.size());
           Thread.sleep(1000);
           timeSlept ++;
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException ignored) {}
       }
       closed = true;
       log.info("Shutting down async Auditlogger background thread(s)");
       executorService.shutdownNow();
     }
+  }
+
+  /**
+   * Set of rules for when audit logging should be muted.
+   */
+  private class MuteRules {
+    private List<List<MuteRule>> rules;
+
+    MuteRules(Object o) {
+      rules = new ArrayList<>();
+      if (o != null) {
+        if (o instanceof List) {
+          ((List)o).forEach(l -> {
+            if (l instanceof String) {
+              rules.add(Collections.singletonList(parseRule(l)));
+            } else if (l instanceof List) {
+              List<MuteRule> rl = new ArrayList<>();
+              ((List) l).forEach(r -> {
+                rl.add(parseRule(r));
+              });
+              rules.add(rl);
+            }
+          });
+        } else {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The " + PARAM_MUTE_RULES + " configuration must be a list");
+        }
+      }
+    }
+
+    private MuteRule parseRule(Object ruleObj) {
+      try {
+        String rule = (String) ruleObj;
+        try {
+          AuditEvent.RequestType requestType = AuditEvent.RequestType.valueOf(rule);
+          return event -> event.getRequestType() != null && event.getRequestType().equals(requestType);
+        } catch (IllegalArgumentException e2) {
+          if (rule.startsWith("collection:")) {
+            return event -> event.getCollections().contains(rule.substring("collection:".length()));
+          }
+          if (rule.startsWith("user:")) {
+            return event -> event.getUsername() != null && event.getUsername().equals(rule.substring("user:".length()));
+          }
+          if (rule.startsWith("path:")) {
+            return event -> event.getResource().startsWith(rule.substring("path:".length()));
+          }
+          if (rule.startsWith("ip:")) {
+            return event -> event.getClientIp().equals(rule.substring("ip:".length()));
+          }
+          if (rule.startsWith("param:")) {
+            String[] kv = rule.substring("param:".length()).split("=");
+            if (kv.length == 2) {
+              return event -> event.getSolrParams().getOrDefault(kv[0],"").equals(kv[1]);
+            }
+          }
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unkonwn mute rule " + rule);
+        }
+      } catch (ClassCastException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The rules in " + PARAM_MUTE_RULES + " configuration must be strings or list fo strings");
+      }
+    }
+
+    /**
+     * Returns true if any of the configured mute rules matches. The inner lists are ORed, while rules inside
+     * inner lists are ANDed
+     */
+    boolean shouldMute(AuditEvent event) {
+      if (rules == null) return false;
+      return rules.stream().anyMatch(rl -> rl.stream().allMatch(r -> r.shouldMute(event)));
+    }
+  }
+
+  public interface MuteRule {
+    boolean shouldMute(AuditEvent event);
   }
 }
