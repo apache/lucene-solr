@@ -119,8 +119,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   public void testMuteAdminListCollections() throws Exception {
     setupCluster(false, 0, false, "[ [ \"path:/admin\", \"param:action=LIST\" ], \"UNKNOWN\" ]");
     runAdminCommands();
-    CallbackReceiver receiver = testHarness.get().receiver;
-    assertEquals(2, receiver.getBuffer().size()); // Only get two events, since the LIST event was muted
+    testHarness.get().shutdownCluster();
+    waitForAuditEventCallbacks(2);
+    assertEquals(2, testHarness.get().receiver.getBuffer().size());
   }
 
   @Test
