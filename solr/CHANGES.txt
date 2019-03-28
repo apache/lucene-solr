@@ -57,6 +57,8 @@ Bug fixes
 * SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
   Ishan Chattopadhyaya)
 
+  * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
