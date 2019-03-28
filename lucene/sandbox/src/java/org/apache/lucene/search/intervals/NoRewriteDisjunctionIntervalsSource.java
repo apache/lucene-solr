@@ -14,10 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Internal classes used for reading/writing CSV
- */
-package org.apache.solr.internal.csv.writer;
 
+package org.apache.lucene.search.intervals;
 
+import java.util.Collection;
+import java.util.Collections;
+
+class NoRewriteDisjunctionIntervalsSource extends DisjunctionIntervalsSource {
+
+  public NoRewriteDisjunctionIntervalsSource(Collection<IntervalsSource> subSources) {
+    super(subSources);
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singletonList(this);
+  }
+}

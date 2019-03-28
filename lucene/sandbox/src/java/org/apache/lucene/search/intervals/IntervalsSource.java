@@ -18,6 +18,7 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.MatchesIterator;
@@ -63,6 +64,13 @@ public abstract class IntervalsSource {
    * Return the minimum possible width of an interval returned by this source
    */
   public abstract int minExtent();
+
+  /**
+   * Expert: return the set of disjunctions that make up this IntervalsSource
+   *
+   * Most implementations can return {@code Collections.singleton(this)}
+   */
+  public abstract Collection<IntervalsSource> pullUpDisjunctions();
 
   @Override
   public abstract int hashCode();

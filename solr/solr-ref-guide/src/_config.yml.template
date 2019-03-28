@@ -84,7 +84,7 @@ solr-attributes: &solr-attributes-ref
   ivy-log4j-version: "${ivyversions.org.apache.logging.log4j.version}"
   ivy-opennlp-version: "${ivyversions./org.apache.opennlp/opennlp-tools}"
   ivy-tika-version: "${ivyversions.org.apache.tika.version}"
-  ivy-velocity-tools-version: "${ivyversions./org.apache.velocity/velocity-tools}"
+  ivy-velocity-tools-version: "${ivyversions.org.apache.velocity.tools.version}"
   ivy-zookeeper-version: "${ivyversions./org.apache.zookeeper/zookeeper}"
 
 asciidoctor:
