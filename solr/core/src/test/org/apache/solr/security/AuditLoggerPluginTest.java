@@ -56,6 +56,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
       .setResource("/collection1");
   protected static final AuditEvent EVENT_AUTHORIZED = new AuditEvent(AuditEvent.EventType.AUTHORIZED)
       .setUsername("Per")
+      .setClientIp("192.168.0.10")
       .setHttpMethod("GET")
       .setMessage("Async")
       .setDate(SAMPLE_DATE)
@@ -71,7 +72,8 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
       .setHttpMethod("POST")
       .setMessage("Error occurred")
       .setDate(SAMPLE_DATE)
-      .setResource("/collection1");
+      .setSolrParams(Collections.singletonMap("action", Collections.singletonList("DELETE")))
+      .setResource("/admin/collections");
   protected static final AuditEvent EVENT_UPDATE = new AuditEvent(AuditEvent.EventType.COMPLETED)
       .setUsername("updateuser")
       .setHttpMethod("POST")
@@ -142,20 +144,16 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     List<Object> rules = new ArrayList<>();
     rules.add("type:STREAMING");
     rules.add(Arrays.asList("user:updateuser", "collection:updatecoll"));
-    rules.add(Arrays.asList("type:UPDATE", "param:commit=true"));
+    rules.add(Arrays.asList("path:/admin/collection", "param:action=DELETE"));
     rules.add("ip:192.168.0.10");
     config.put("muteRules",rules); 
     plugin.init(config);
     assertFalse(plugin.shouldMute(EVENT_ANONYMOUS));
-    assertTrue(plugin.shouldMute(EVENT_STREAMING));
-    assertTrue(plugin.shouldMute(EVENT_UPDATE));
-    assertTrue(plugin.shouldMute(EVENT_UPDATE));
-    EVENT_UPDATE.setUsername("john");
-    assertFalse(plugin.shouldMute(EVENT_UPDATE));
-    EVENT_UPDATE.setSolrParams(Collections.singletonMap("commit", Collections.singletonList("true")));
-    assertTrue(plugin.shouldMute(EVENT_UPDATE));
-    EVENT_ANONYMOUS.setClientIp("192.168.0.10");
-    assertTrue(plugin.shouldMute(EVENT_ANONYMOUS));
+    assertFalse(plugin.shouldMute(EVENT_AUTHENTICATED));
+    assertTrue(plugin.shouldMute(EVENT_STREAMING));  // type:STREAMING
+    assertTrue(plugin.shouldMute(EVENT_UPDATE));     // updateuser, updatecoll
+    assertTrue(plugin.shouldMute(EVENT_ERROR));      // admin/collection action=DELETE
+    assertTrue(plugin.shouldMute(EVENT_AUTHORIZED)); // ip
   }
 
   @Test
