@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
@@ -83,26 +84,10 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
+    public boolean testComponentTreeQuery(ComponentTree query, Object shape) {
       Point[] points = (Point[]) shape;
       for (Point p : points) {
-        boolean b = POINTVALIDATOR.testLineQuery(query, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
-    }
-
-    @Override
-    public boolean testPolygonQuery(Polygon2D query, Object shape) {
-      Point[] points = (Point[]) shape;
-      for (Point p : points) {
-        boolean b = POINTVALIDATOR.testPolygonQuery(query, p);
+        boolean b = POINTVALIDATOR.testComponentTreeQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

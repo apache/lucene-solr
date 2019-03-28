@@ -25,43 +25,43 @@ public class TestLine2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     Line line = new Line(new double[] {0, 1, 2, 3}, new double[] {0, 0, 2, 2});
-    Line2D line2D = Line2D.create(line);
+    ComponentTree line2D = Line2D.create(line);
     int ax = GeoEncodingUtils.encodeLongitude(4);
     int ay = GeoEncodingUtils.encodeLatitude(4);
     int bx = GeoEncodingUtils.encodeLongitude(5);
     int by = GeoEncodingUtils.encodeLatitude(5);
     int cx = GeoEncodingUtils.encodeLongitude(5);
     int cy = GeoEncodingUtils.encodeLatitude(4);
-    assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));;
+    assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.relateTriangle(ax, ay, bx, by , cx, cy));;
   }
 
   public void testTriangleIntersects() {
     Line line = new Line(new double[] {0.5, 0, 1, 2, 3}, new double[] {0.5, 0, 0, 2, 2});
-    Line2D line2D = Line2D.create(line);
+    ComponentTree line2D = Line2D.create(line);
     int ax = GeoEncodingUtils.encodeLongitude(0.0);
     int ay = GeoEncodingUtils.encodeLatitude(0.0);
     int bx = GeoEncodingUtils.encodeLongitude(1);
     int by = GeoEncodingUtils.encodeLatitude(0);
     int cx = GeoEncodingUtils.encodeLongitude(0);
     int cy = GeoEncodingUtils.encodeLatitude(1);
-    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.relateTriangle(ax, ay, bx, by , cx, cy));
   }
 
   public void testTriangleContains() {
     Line line = new Line(new double[] {0.5, 0, 1, 2, 3}, new double[] {0.5, 0, 0, 2, 2});
-    Line2D line2D = Line2D.create(line);
+    ComponentTree line2D = Line2D.create(line);
     int ax = GeoEncodingUtils.encodeLongitude(-10);
     int ay = GeoEncodingUtils.encodeLatitude(-10);
     int bx = GeoEncodingUtils.encodeLongitude(4);
     int by = GeoEncodingUtils.encodeLatitude(-10);
     int cx = GeoEncodingUtils.encodeLongitude(4);
     int cy = GeoEncodingUtils.encodeLatitude(30);
-    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.relateTriangle(ax, ay, bx, by , cx, cy));
   }
 
   public void testRandomTriangles() {
     Line line = TestLatLonLineShapeQueries.nextLine();
-    Line2D line2D = Line2D.create(line);
+    ComponentTree line2D = Line2D.create(line);
 
     for (int i =0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();
@@ -78,7 +78,7 @@ public class TestLine2D extends LuceneTestCase {
 
       Relation r = line2D.relate(tMinY, tMaxY, tMinX, tMaxX);
       if (r == Relation.CELL_OUTSIDE_QUERY) {
-        assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy));
+        assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.relateTriangle(ax, ay, bx, by, cx, cy));
       }
     }
   }

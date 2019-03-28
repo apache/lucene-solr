@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.geo;
 
+import java.util.Objects;
+
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
@@ -23,53 +25,27 @@ import org.apache.lucene.index.PointValues.Relation;
  * <p>
  * Loosely based on the algorithm described in <a href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
+ *
  * @lucene.internal
  */
-// Both Polygon.contains() and Polygon.crossesSlowly() loop all edges, and first check that the edge is within a range.
-// we just organize the edges to do the same computations on the same subset of edges more efficiently.
-public final class Polygon2D extends EdgeTree {
-  // each component/hole is a node in an augmented 2d kd-tree: we alternate splitting between latitude/longitude,
-  // and pull up max values for both dimensions to each parent node (regardless of split).
+public final class Polygon2D implements Component {
+
   /** tree of holes, or null */
-  private final Polygon2D holes;
+  private final Polygon polygon;
+  private final ComponentTree holes;
+  private final EdgeTree edge;
+  private final Rectangle box;
 
-  private Polygon2D(Polygon polygon, Polygon2D holes) {
-    super(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon, polygon.getPolyLats(), polygon.getPolyLons());
+  private Polygon2D(Polygon polygon, ComponentTree holes) {
+    this.polygon = polygon;
     this.holes = holes;
+    this.edge = EdgeTree.createTree(polygon.getPolyLats(), polygon.getPolyLons());
+    this.box = new Rectangle(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon);
   }
 
-  /**
-   * Returns true if the point is contained within this polygon.
-   * <p>
-   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
-   * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
-   */
+  @Override
   public boolean contains(double latitude, double longitude) {
-    if (latitude <= maxY && longitude <= maxX) {
-      if (componentContains(latitude, longitude)) {
-        return true;
-      }
-      if (left != null) {
-        if (((Polygon2D)left).contains(latitude, longitude)) {
-          return true;
-        }
-      }
-      if (right != null && ((splitX == false && latitude >= minLat) || (splitX && longitude >= minLon))) {
-        if (((Polygon2D)right).contains(latitude, longitude)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /** Returns true if the point is contained within this polygon component. */
-  private boolean componentContains(double latitude, double longitude) {
-    // check bounding box
-    if (latitude < minLat || latitude > maxLat || longitude < minLon || longitude > maxLon) {
-      return false;
-    }
-    if (contains(tree, latitude, longitude)) {
+    if (edge.contains(latitude, longitude)) {
       if (holes != null && holes.contains(latitude, longitude)) {
         return false;
       }
@@ -79,7 +55,12 @@ public final class Polygon2D extends EdgeTree {
   }
 
   @Override
-  protected Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
+  public Rectangle getBoundingBox() {
+    return box;
+  }
+
+  @Override
+  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     // check any holes
     if (holes != null) {
       Relation holeRelation = holes.relate(minLat, maxLat, minLon, maxLon);
@@ -92,15 +73,15 @@ public final class Polygon2D extends EdgeTree {
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minLat, maxLat, minLon, maxLon);
     if (numCorners == 4) {
-      if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+      if (edge.crosses(minLat, maxLat, minLon, maxLon)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (minLat >= tree.lat1 && maxLat <= tree.lat1 && minLon >= tree.lon2 && maxLon <= tree.lon2) {
+      if (minLat >= edge.lat1 && maxLat <= edge.lat1 && minLon >= edge.lon2 && maxLon <= edge.lon2) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+      if (edge.crosses(minLat, maxLat, minLon, maxLon)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -109,7 +90,7 @@ public final class Polygon2D extends EdgeTree {
   }
 
   @Override
-  protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     // check any holes
     if (holes != null) {
       Relation holeRelation = holes.relateTriangle(ax, ay, bx, by, cx, cy);
@@ -122,15 +103,15 @@ public final class Polygon2D extends EdgeTree {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
-      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      if (edge.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      if (ComponentTree.pointInTriangle(edge.lon1, edge.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      if (edge.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -140,106 +121,81 @@ public final class Polygon2D extends EdgeTree {
 
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
     int containsCount = 0;
-    if (componentContains(ay, ax)) {
+    if (edge.contains(ay, ax)) {
       containsCount++;
     }
-    if (componentContains(by, bx)) {
+    if (edge.contains(by, bx)) {
       containsCount++;
     }
     if (containsCount == 1) {
       return containsCount;
     }
-    if (componentContains(cy, cx)) {
+    if (edge.contains(cy, cx)) {
       containsCount++;
     }
     return containsCount;
+  }
+
+  @Override
+  public String toString() {
+    return "Polygon2D{" +
+        "polygon=" + polygon +
+        '}';
   }
 
   // returns 0, 4, or something in between
   private int numberOfCorners(double minLat, double maxLat, double minLon, double maxLon) {
     int containsCount = 0;
-    if (componentContains(minLat, minLon)) {
+    if (edge.contains(minLat, minLon)) {
       containsCount++;
     }
-    if (componentContains(minLat, maxLon)) {
+    if (edge.contains(minLat, maxLon)) {
       containsCount++;
     }
     if (containsCount == 1) {
       return containsCount;
     }
-    if (componentContains(maxLat, maxLon)) {
+    if (edge.contains(maxLat, maxLon)) {
       containsCount++;
     }
     if (containsCount == 2) {
       return containsCount;
     }
-    if (componentContains(maxLat, minLon)) {
+    if (edge.contains(maxLat, minLon)) {
       containsCount++;
     }
     return containsCount;
   }
 
-  /** Builds a Polygon2D from multipolygon */
-  public static Polygon2D create(Polygon... polygons) {
-    Polygon2D components[] = new Polygon2D[polygons.length];
-    for (int i = 0; i < components.length; i++) {
-      Polygon gon = polygons[i];
-      Polygon gonHoles[] = gon.getHoles();
-      Polygon2D holes = null;
-      if (gonHoles.length > 0) {
-        holes = create(gonHoles);
-      }
-      components[i] = new Polygon2D(gon, holes);
-    }
-    return (Polygon2D)createTree(components, 0, components.length - 1, false);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Polygon2D polygon2D = (Polygon2D) o;
+    return Objects.equals(polygon, polygon2D.polygon);
   }
 
-  /**
-   * Returns true if the point crosses this edge subtree an odd number of times
-   * <p>
-   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
-   * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
-   */
-  // ported to java from https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html
-  // original code under the BSD license (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
-  //
-  // Copyright (c) 1970-2003, Wm. Randolph Franklin
-  //
-  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-  // documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-  // to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-  //
-  // 1. Redistributions of source code must retain the above copyright
-  //    notice, this list of conditions and the following disclaimers.
-  // 2. Redistributions in binary form must reproduce the above copyright
-  //    notice in the documentation and/or other materials provided with
-  //    the distribution.
-  // 3. The name of W. Randolph Franklin may not be used to endorse or
-  //    promote products derived from this Software without specific
-  //    prior written permission.
-  //
-  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-  // IN THE SOFTWARE.
-  private static boolean contains(Edge tree, double latitude, double longitude) {
-    // crossings algorithm is an odd-even algorithm, so we descend the tree xor'ing results along our path
-    boolean res = false;
-    if (latitude <= tree.max) {
-      if (tree.lat1 > latitude != tree.lat2 > latitude) {
-        if (longitude < (tree.lon1 - tree.lon2) * (latitude - tree.lat2) / (tree.lat1 - tree.lat2) + tree.lon2) {
-          res = true;
-        }
-      }
-      if (tree.left != null) {
-        res ^= contains(tree.left, latitude, longitude);
-      }
-      if (tree.right != null && latitude >= tree.low) {
-        res ^= contains(tree.right, latitude, longitude);
-      }
+  @Override
+  public int hashCode() {
+    return Objects.hash(polygon);
+  }
+
+  /** Builds a Component from polygon */
+  public static Component createComponent(Polygon polygon) {
+    Polygon gonHoles[] = polygon.getHoles();
+    ComponentTree holes = null;
+    if (gonHoles.length > 0) {
+      holes = create(gonHoles);
     }
-    return res;
+    return new Polygon2D(polygon, holes);
+  }
+
+  /** Builds a Component tree from multipolygon */
+  public static ComponentTree create(Polygon... polygons) {
+    Component components[] = new Component[polygons.length];
+    for (int i = 0; i < components.length; i++) {
+      components[i] = createComponent(polygons[i]);
+    }
+    return ComponentTree.create(components);
   }
 }

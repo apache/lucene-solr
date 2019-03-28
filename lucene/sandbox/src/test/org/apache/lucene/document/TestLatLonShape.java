@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
@@ -334,7 +335,7 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
                                   new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
-    Polygon2D polygon2D = Polygon2D.create(polygon);
+    ComponentTree polygon2D = Polygon2D.create(polygon);
     PointValues.Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(blon)),
@@ -356,7 +357,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    ComponentTree polygon2D = Polygon2D.create(p);
     //3 shared points
     PointValues.Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),

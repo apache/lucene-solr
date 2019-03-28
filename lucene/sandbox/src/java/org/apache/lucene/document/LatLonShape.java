@@ -19,9 +19,13 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.geo.Component;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.Tessellator.Triangle;
 import org.apache.lucene.index.PointValues;
@@ -104,14 +108,60 @@ public class LatLonShape {
    *  note: does not support dateline crossing
    **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
-    return new LatLonShapeLineQuery(field, queryRelation, lines);
+    if (lines == null) {
+      throw new IllegalArgumentException("lines must not be null");
+    }
+    if (lines.length == 0) {
+      throw new IllegalArgumentException("lines must not be empty");
+    }
+    for (int i = 0; i < lines.length; ++i) {
+      if (lines[i] == null) {
+        throw new IllegalArgumentException("line[" + i + "] must not be null");
+      } else if (lines[i].minLon > lines[i].maxLon) {
+        throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
+      }
+    }
+    ComponentTree tree = Line2D.create(lines.clone());
+    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
   }
 
   /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
    *  note: does not support dateline crossing
    **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
-    return new LatLonShapePolygonQuery(field, queryRelation, polygons);
+    if (polygons == null) {
+      throw new IllegalArgumentException("polygons must not be null");
+    }
+    if (polygons.length == 0) {
+      throw new IllegalArgumentException("polygons must not be empty");
+    }
+    for (int i = 0; i < polygons.length; i++) {
+      if (polygons[i] == null) {
+        throw new IllegalArgumentException("polygon[" + i + "] must not be null");
+      } else if (polygons[i].minLon > polygons[i].maxLon) {
+        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
+      }
+    }
+    ComponentTree tree = Polygon2D.create(polygons.clone());
+    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
+  }
+
+  public static Query newCollectionQuery(String field, QueryRelation queryRelation, Component... components) {
+    if (components == null) {
+      throw new IllegalArgumentException("Component must not be null");
+    }
+    if (components.length == 0) {
+      throw new IllegalArgumentException("Component must not be empty");
+    }
+    for (int i = 0; i < components.length; i++) {
+      if (components[i] == null) {
+        throw new IllegalArgumentException("Component[" + i + "] must not be null");
+      } else if (components[i].getBoundingBox().minLon > components[i].getBoundingBox().maxLon) {
+        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
+      }
+    }
+    ComponentTree tree = ComponentTree.create(components);
+    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}

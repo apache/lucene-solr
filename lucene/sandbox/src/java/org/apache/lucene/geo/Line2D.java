@@ -16,48 +16,93 @@
  */
 package org.apache.lucene.geo;
 
+import java.util.Objects;
+
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * 2D line implementation represented as a balanced interval tree of edges.
- * <p>
- * Line {@code Line2D} Construction takes {@code O(n log n)} time for sorting and tree construction.
- * {@link #relate relate()} are {@code O(n)}, but for most practical lines are much faster than brute force.
+ * 2D line implementation. It respresents the line as a balanced interval tree of edges
+ * using an {@link EdgeTree}.
+ *
  * @lucene.internal
  */
-public final class Line2D extends EdgeTree {
+public final class Line2D implements Component {
+
+  private final Line line;
+  private final EdgeTree tree;
+  private final Rectangle box;
 
   private Line2D(Line line) {
-    super(line.minLat, line.maxLat, line.minLon, line.maxLon, line.getLats(), line.getLons());
-  }
-
-  /** create a Line2D edge tree from provided array of Linestrings */
-  public static Line2D create(Line... lines) {
-    Line2D components[] = new Line2D[lines.length];
-    for (int i = 0; i < components.length; ++i) {
-      components[i] = new Line2D(lines[i]);
-    }
-    return (Line2D)createTree(components, 0, components.length - 1, false);
+    this.line = line;
+    tree = EdgeTree.createTree(line.getLats(), line.getLons());
+    box = new Rectangle(line.minLat, line.maxLat, line.minLon, line.maxLon);
   }
 
   @Override
-  protected Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
+  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
       return Relation.CELL_CROSSES_QUERY;
     }
-
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
-  protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+  public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     //check if line is inside triangle
-    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
+    if (ComponentTree.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
   }
+
+  @Override
+  public boolean contains(double lat, double lon) {
+    if (relateTriangle(lon, lat, lon, lat, lon, lat) != Relation.CELL_OUTSIDE_QUERY) {
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public Rectangle getBoundingBox() {
+    return box;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Line2D line2D = (Line2D) o;
+    return Objects.equals(line, line2D.line);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(line);
+  }
+
+  @Override
+  public String toString() {
+    return "Line2D{" +
+        "line=" + line +
+        '}';
+  }
+
+  /** Builds a Component from polygon */
+  public static Component createComponent(Line line) {
+    return new Line2D(line);
+  }
+
+  /** create a Line2D edge tree from provided array of Linestrings */
+  public static ComponentTree create(Line... lines) {
+    Component[] components = new Component[lines.length];
+    for (int i = 0; i < components.length; ++i) {
+      components[i] = createComponent(lines[i]);
+    }
+    return ComponentTree.create(components);
+  }
+
 }

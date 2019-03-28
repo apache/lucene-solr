@@ -16,47 +16,34 @@
  */
 package org.apache.lucene.document;
 
-import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary.
+ * Finds all previously indexed shapes that intersect the specified arbitrary component tree.
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePolygonQuery extends LatLonShapeQuery {
-  final Polygon[] polygons;
-  final private Polygon2D poly2D;
+final class LatLonShapeComponentTreeQuery extends LatLonShapeQuery {
+  final private ComponentTree componentTree;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
    */
-  public LatLonShapePolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+  public LatLonShapeComponentTreeQuery(String field, QueryRelation queryRelation, ComponentTree componentTree) {
     super(field, queryRelation);
-    if (polygons == null) {
-      throw new IllegalArgumentException("polygons must not be null");
+    if (componentTree == null) {
+      throw new IllegalArgumentException("componentTree must not be null");
     }
-    if (polygons.length == 0) {
-      throw new IllegalArgumentException("polygons must not be empty");
-    }
-    for (int i = 0; i < polygons.length; i++) {
-      if (polygons[i] == null) {
-        throw new IllegalArgumentException("polygon[" + i + "] must not be null");
-      } else if (polygons[i].minLon > polygons[i].maxLon) {
-        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
-      }
-    }
-    this.polygons = polygons.clone();
-    this.poly2D = Polygon2D.create(polygons);
+    this.componentTree = componentTree;
   }
 
   @Override
@@ -69,7 +56,7 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLat, maxLat, minLon, maxLon);
+    return componentTree.relate(minLat, maxLat, minLon, maxLon);
   }
 
   @Override
@@ -84,10 +71,10 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
 
     if (queryRelation == QueryRelation.WITHIN) {
-      return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      return componentTree.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
     // INTERSECTS
-    return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+    return componentTree.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
@@ -100,19 +87,19 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(" + polygons[0].toGeoJSON() + ")");
+    sb.append(componentTree.toString());
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(polygons, ((LatLonShapePolygonQuery)o).polygons);
+    return super.equalsTo(o) &&  Objects.equals(componentTree, ((LatLonShapeComponentTreeQuery)o).componentTree);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(polygons);
+    hash = 31 * hash + Objects.hashCode(componentTree);
     return hash;
   }
 }

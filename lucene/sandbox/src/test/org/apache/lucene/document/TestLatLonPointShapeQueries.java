@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -90,16 +90,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testPoint(line2d, (Point) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Polygon2D poly2d, Object shape) {
-      return testPoint(poly2d, (Point) shape);
-    }
-
-    private boolean testPoint(EdgeTree tree, Point p) {
+    public boolean testComponentTreeQuery(ComponentTree tree, Object shape) {
+      Point p = (Point) shape;
       double lat = quantizeLat(p.lat);
       double lon = quantizeLon(p.lon);
       // for consistency w/ the query we test the point as a triangle

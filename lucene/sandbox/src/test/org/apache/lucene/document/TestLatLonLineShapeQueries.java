@@ -19,11 +19,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -97,17 +95,8 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testLine(line2d, (Line) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Polygon2D poly2d, Object shape) {
-      return testLine(poly2d, (Line) shape);
-    }
-
-    private boolean testLine(EdgeTree queryPoly, Line line) {
-
+    public boolean testComponentTreeQuery(ComponentTree queryPoly, Object shape) {
+      Line line = (Line) shape;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = quantizeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
         Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
