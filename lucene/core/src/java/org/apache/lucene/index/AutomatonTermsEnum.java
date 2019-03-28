@@ -99,14 +99,19 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       if (runAutomaton.run(term.bytes, term.offset, term.length))
         return linear ? AcceptStatus.YES : AcceptStatus.YES_AND_SEEK;
       else
-        return (linear && term.compareTo(linearUpperBound) < 0) ? 
+        return isLinearState(term) ?
             AcceptStatus.NO : AcceptStatus.NO_AND_SEEK;
     } else {
-      return (linear && term.compareTo(linearUpperBound) < 0) ? 
+      return isLinearState(term) ?
           AcceptStatus.NO : AcceptStatus.NO_AND_SEEK;
     }
   }
   
+  /** True if the current state of the automata is best iterated linearly (without seeking). */
+  protected boolean isLinearState(BytesRef term) {
+    return linear && term.compareTo(linearUpperBound) < 0;
+  }
+
   @Override
   protected BytesRef nextSeekTerm(final BytesRef term) throws IOException {
     //System.out.println("ATE.nextSeekTerm term=" + term);
