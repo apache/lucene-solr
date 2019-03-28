@@ -135,7 +135,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   public final void doAudit(AuditEvent event) {
     if (shouldMute(event)) {
-      log.debug("Event muted due to mute rule(s)");
+      log.warn("Event muted due to mute rule(s)");
       return;
     }
     if (async) {
@@ -345,32 +345,33 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     private MuteRule parseRule(Object ruleObj) {
       try {
         String rule = (String) ruleObj;
-        try {
-          AuditEvent.RequestType requestType = AuditEvent.RequestType.valueOf(rule);
-          return event -> event.getRequestType() != null && event.getRequestType().equals(requestType);
-        } catch (IllegalArgumentException e2) {
-          if (rule.startsWith("collection:")) {
-            return event -> event.getCollections().contains(rule.substring("collection:".length()));
-          }
-          if (rule.startsWith("user:")) {
-            return event -> event.getUsername() != null && event.getUsername().equals(rule.substring("user:".length()));
-          }
-          if (rule.startsWith("path:")) {
-            return event -> event.getResource().startsWith(rule.substring("path:".length()));
-          }
-          if (rule.startsWith("ip:")) {
-            return event -> event.getClientIp().equals(rule.substring("ip:".length()));
-          }
-          if (rule.startsWith("param:")) {
-            String[] kv = rule.substring("param:".length()).split("=");
-            if (kv.length == 2) {
-              return event -> event.getSolrParams().getOrDefault(kv[0],"").equals(kv[1]);
-            }
-          }
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unkonwn mute rule " + rule);
+        if (rule.startsWith("type:")) {
+          AuditEvent.RequestType muteType = AuditEvent.RequestType.valueOf(rule.substring("type:".length()));
+          return event -> event.getRequestType() != null && event.getRequestType().equals(muteType);          
         }
-      } catch (ClassCastException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The rules in " + PARAM_MUTE_RULES + " configuration must be list of strings or list of list of strings");
+        if (rule.startsWith("collection:")) {
+          return event -> event.getCollections() != null && event.getCollections().contains(rule.substring("collection:".length()));
+        }
+        if (rule.startsWith("user:")) {
+          return event -> event.getUsername() != null && event.getUsername().equals(rule.substring("user:".length()));
+        }
+        if (rule.startsWith("path:")) {
+          return event -> event.getResource() != null && event.getResource().startsWith(rule.substring("path:".length()));
+        }
+        if (rule.startsWith("ip:")) {
+          return event -> event.getClientIp() != null && event.getClientIp().equals(rule.substring("ip:".length()));
+        }
+        if (rule.startsWith("param:")) {
+          String[] kv = rule.substring("param:".length()).split("=");
+          if (kv.length == 2) {
+            return event -> event.getSolrParams() != null && kv[1].equals(event.getSolrParamAsString(kv[0]));
+          } else {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The 'param' muteRule must be of format 'param:key=value', got " + rule);
+          }
+        }
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unkonwn mute rule " + rule);
+      } catch (ClassCastException | IllegalArgumentException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "There was a problem parsing muteRules. Must be a list of valid rule strings", e);
       }
     }
 

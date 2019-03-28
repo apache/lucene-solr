@@ -57,7 +57,7 @@ public class AuditEvent {
   private List<String> collections;
   private Map<String, Object> context;
   private Map<String, String> headers;
-  private Map<String, Object> solrParams = new HashMap<>();
+  private Map<String, List<String>> solrParams = new HashMap<>();
   private String solrHost;
   private int solrPort;
   private String solrIp;
@@ -165,7 +165,7 @@ public class AuditEvent {
     this.resource = authorizationContext.getResource();
     this.requestType = RequestType.convertType(authorizationContext.getRequestType());
     authorizationContext.getParams().forEach(p -> {
-      this.solrParams.put(p.getKey(), p.getValue());
+      this.solrParams.put(p.getKey(), Arrays.asList(p.getValue()));
     });
   }
 
@@ -282,14 +282,14 @@ public class AuditEvent {
     return headers;
   }
 
-  public Map<String, Object> getSolrParams() {
+  public Map<String, List<String>> getSolrParams() {
     return solrParams;
   }
 
   public String getSolrParamAsString(String key) {
-    Object v = getSolrParams().get(key);
-    if (v instanceof List && ((List) v).size() > 0) {
-      return String.valueOf(((List) v).get(0));
+    List<String> v = getSolrParams().get(key);
+    if (v != null && v.size() > 0) {
+      return String.valueOf((v).get(0));
     }
     return null;
   }
@@ -409,7 +409,7 @@ public class AuditEvent {
     return this;
   }
 
-  public AuditEvent setSolrParams(Map<String, Object> solrParams) {
+  public AuditEvent setSolrParams(Map<String, List<String>> solrParams) {
     this.solrParams = solrParams;
     return this;
   }

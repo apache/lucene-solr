@@ -72,15 +72,16 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
       .setMessage("Error occurred")
       .setDate(SAMPLE_DATE)
       .setResource("/collection1");
-  protected static final AuditEvent EVENT_UPDATE = new AuditEvent(AuditEvent.EventType.ERROR)
+  protected static final AuditEvent EVENT_UPDATE = new AuditEvent(AuditEvent.EventType.COMPLETED)
       .setUsername("updateuser")
       .setHttpMethod("POST")
       .setRequestType(AuditEvent.RequestType.UPDATE)
       .setMessage("Success")
       .setDate(SAMPLE_DATE)
       .setCollections(Collections.singletonList("updatecoll"))
+      .setRequestType(AuditEvent.RequestType.UPDATE)
       .setResource("/update");
-  protected static final AuditEvent EVENT_STREAMING = new AuditEvent(AuditEvent.EventType.ERROR)
+  protected static final AuditEvent EVENT_STREAMING = new AuditEvent(AuditEvent.EventType.COMPLETED)
       .setUsername("streaminguser")
       .setHttpMethod("POST")
       .setRequestType(AuditEvent.RequestType.STREAMING)
@@ -139,15 +140,22 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   @Test
   public void shouldMute() {
     List<Object> rules = new ArrayList<>();
-    rules.add("STREAMING");
+    rules.add("type:STREAMING");
     rules.add(Arrays.asList("user:updateuser", "collection:updatecoll"));
+    rules.add(Arrays.asList("type:UPDATE", "param:commit=true"));
+    rules.add("ip:192.168.0.10");
     config.put("muteRules",rules); 
     plugin.init(config);
     assertFalse(plugin.shouldMute(EVENT_ANONYMOUS));
     assertTrue(plugin.shouldMute(EVENT_STREAMING));
     assertTrue(plugin.shouldMute(EVENT_UPDATE));
+    assertTrue(plugin.shouldMute(EVENT_UPDATE));
     EVENT_UPDATE.setUsername("john");
     assertFalse(plugin.shouldMute(EVENT_UPDATE));
+    EVENT_UPDATE.setSolrParams(Collections.singletonMap("commit", Collections.singletonList("true")));
+    assertTrue(plugin.shouldMute(EVENT_UPDATE));
+    EVENT_ANONYMOUS.setClientIp("192.168.0.10");
+    assertTrue(plugin.shouldMute(EVENT_ANONYMOUS));
   }
 
   @Test
