@@ -83,7 +83,7 @@ The below example will mute logging for all `UPDATE` requests as well as all req
 {
   "auditlogging":{
     "class": "solr.SolrLogAuditLoggerPlugin"
-    "muteRules": [ "UPDATE", "user:johndoe", "ip:192.168.0.10" ]
+    "muteRules": [ "type:SEARCH", "user:johndoe", "ip:192.168.0.10" ]
   }
 }
 ----
@@ -96,7 +96,7 @@ An update rule may also be a list, in which case all must be true. The following
   "auditlogging":{
     "class": "solr.SolrLogAuditLoggerPlugin"
     "muteRules": [ 
-      [ "UPDATE", "ip:192.168.0.10" ],
+      [ "type:UPDATE", "ip:192.168.0.10" ],
       [ "path:/admin/collections", "param:action=LIST" ],
       [ "path:/admin/collections", "param:collection=test" ]
     ]
@@ -106,7 +106,7 @@ An update rule may also be a list, in which case all must be true. The following
 
 Valid rules are:
 
-* `ADMIN`, `SEARCH`, `UPDATE`, `STREAMING`, `UNKNOWN` (request types)
+* `type:<request-type>` (request-type by name: `ADMIN`, `SEARCH`, `UPDATE`, `STREAMING`, `UNKNOWN`)
 * `collection:<collection-name>` (collection by name)
 * `user:<userid>` (user by userid)
 * `path:</path/to/handler>` (request path relative to `/solr` or for search/update requests relative to collection. Path is prefix matched, i.e. `/admin` will mute any sub path as well.

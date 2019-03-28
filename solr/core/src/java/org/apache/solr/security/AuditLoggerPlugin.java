@@ -109,7 +109,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     blockAsync = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCKASYNC, false)));
     blockingQueueSize = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_QUEUE_SIZE, DEFAULT_QUEUE_SIZE))) : 1;
     int numThreads = async ? Integer.parseInt(String.valueOf(pluginConfig.getOrDefault(PARAM_NUM_THREADS, DEFAULT_NUM_THREADS))) : 1;
-    muteRules = new MuteRules(pluginConfig.get(PARAM_MUTE_RULES));
+    muteRules = new MuteRules(pluginConfig.remove(PARAM_MUTE_RULES));
     pluginConfig.remove(PARAM_ASYNC);
     pluginConfig.remove(PARAM_BLOCKASYNC);
     pluginConfig.remove(PARAM_QUEUE_SIZE);
