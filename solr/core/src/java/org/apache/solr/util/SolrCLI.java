@@ -78,6 +78,7 @@ import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -4092,7 +4093,8 @@ public class SolrCLI {
     private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
       if (cli.hasOption(argName)) {
         final String value = cli.getOptionValue(argName);
-        if (Boolean.parseBoolean(value)) {
+        final Boolean parsedBoolean = BooleanUtils.toBooleanObject(value);
+        if (parsedBoolean == null) {
           echo("Argument [" + argName + "] must be either true or false, but was [" + value + "]");
           exit(1);
         }

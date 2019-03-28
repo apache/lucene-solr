@@ -198,6 +198,8 @@ Other Changes
 
 * SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
 
+* SOLR-13353: Add SolrCli AuthTool test (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
