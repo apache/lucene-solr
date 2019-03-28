@@ -41,7 +41,7 @@ public class Point2D implements Component {
 
   @Override
   public PointValues.Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    if (ComponentTree.pointInTriangle(lon, lat, ax, ay, bx, by, cx, cy)) {
+    if (Component.pointInTriangle(lon, lat, ax, ay, bx, by, cx, cy)) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_OUTSIDE_QUERY;

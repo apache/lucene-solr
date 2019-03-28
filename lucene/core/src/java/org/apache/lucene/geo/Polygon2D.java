@@ -32,11 +32,11 @@ public final class Polygon2D implements Component {
 
   /** tree of holes, or null */
   private final Polygon polygon;
-  private final ComponentTree holes;
+  private final Component holes;
   private final EdgeTree edge;
   private final Rectangle box;
 
-  private Polygon2D(Polygon polygon, ComponentTree holes) {
+  private Polygon2D(Polygon polygon, Component holes) {
     this.polygon = polygon;
     this.holes = holes;
     this.edge = EdgeTree.createTree(polygon.getPolyLats(), polygon.getPolyLons());
@@ -108,7 +108,7 @@ public final class Polygon2D implements Component {
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (ComponentTree.pointInTriangle(edge.lon1, edge.lat1, ax, ay, bx, by, cx, cy) == true) {
+      if (Component.pointInTriangle(edge.lon1, edge.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
       if (edge.crossesTriangle(ax, ay, bx, by, cx, cy)) {
@@ -183,7 +183,7 @@ public final class Polygon2D implements Component {
   /** Builds a Component from polygon */
   public static Component createComponent(Polygon polygon) {
     Polygon gonHoles[] = polygon.getHoles();
-    ComponentTree holes = null;
+    Component holes = null;
     if (gonHoles.length > 0) {
       holes = create(gonHoles);
     }
@@ -191,7 +191,7 @@ public final class Polygon2D implements Component {
   }
 
   /** Builds a Component tree from multipolygon */
-  public static ComponentTree create(Polygon... polygons) {
+  public static Component create(Polygon... polygons) {
     Component components[] = new Component[polygons.length];
     for (int i = 0; i < components.length; i++) {
       components[i] = createComponent(polygons[i]);

@@ -52,7 +52,7 @@ public final class Line2D implements Component {
       return Relation.CELL_CROSSES_QUERY;
     }
     //check if line is inside triangle
-    if (ComponentTree.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
+    if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
@@ -97,7 +97,7 @@ public final class Line2D implements Component {
   }
 
   /** create a Line2D edge tree from provided array of Linestrings */
-  public static ComponentTree create(Line... lines) {
+  public static Component create(Line... lines) {
     Component[] components = new Component[lines.length];
     for (int i = 0; i < components.length; ++i) {
       components[i] = createComponent(lines[i]);

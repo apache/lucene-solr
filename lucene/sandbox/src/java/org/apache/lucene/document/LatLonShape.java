@@ -121,8 +121,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
       }
     }
-    ComponentTree tree = Line2D.create(lines.clone());
-    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
+    Component tree = Line2D.create(lines.clone());
+    return new LatLonShapeComponentQuery(field, queryRelation, tree);
   }
 
   /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
@@ -142,8 +142,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
-    ComponentTree tree = Polygon2D.create(polygons.clone());
-    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
+    Component tree = Polygon2D.create(polygons.clone());
+    return new LatLonShapeComponentQuery(field, queryRelation, tree);
   }
 
   public static Query newCollectionQuery(String field, QueryRelation queryRelation, Component... components) {
@@ -160,8 +160,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
-    ComponentTree tree = ComponentTree.create(components);
-    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
+    Component tree = ComponentTree.create(components);
+    return new LatLonShapeComponentQuery(field, queryRelation, tree);
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}

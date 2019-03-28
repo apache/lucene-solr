@@ -181,7 +181,7 @@ public final class GeoEncodingUtils {
   /** Create a predicate that checks whether points are within a polygon.
    *  It works the same way as {@link #createDistancePredicate}.
    *  @lucene.internal */
-  public static PolygonPredicate createPolygonPredicate(Polygon[] polygons, ComponentTree tree) {
+  public static PolygonPredicate createPolygonPredicate(Polygon[] polygons, Component tree) {
     final Rectangle boundingBox = Rectangle.fromPolygon(polygons);
     final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
         box.minLat, box.maxLat, box.minLon, box.maxLon);
@@ -344,14 +344,14 @@ public final class GeoEncodingUtils {
   /** A predicate that checks whether a given point is within a polygon. */
   public static class PolygonPredicate extends Grid {
 
-    private final ComponentTree tree;
+    private final Component tree;
 
     private PolygonPredicate(
         int latShift, int lonShift,
         int latBase, int lonBase,
         int maxLatDelta, int maxLonDelta,
         byte[] relations,
-        ComponentTree tree) {
+        Component tree) {
       super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
       this.tree = tree;
     }

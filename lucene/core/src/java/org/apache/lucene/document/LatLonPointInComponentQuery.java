@@ -19,7 +19,7 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.lucene.geo.ComponentTree;
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -47,16 +47,16 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
  *
  *  @lucene.experimental */
 
-final class LatLonPointInComponentTreeQuery extends Query {
+final class LatLonPointInComponentQuery extends Query {
   final String field;
-  final ComponentTree componentTree;
+  final Component component;
 
-  LatLonPointInComponentTreeQuery(String field, ComponentTree componentTree) {
+  LatLonPointInComponentQuery(String field, Component component) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
     this.field = field;
-    this.componentTree = componentTree;
+    this.component = component;
   }
 
   @Override
@@ -108,7 +108,7 @@ final class LatLonPointInComponentTreeQuery extends Query {
                            public void visit(int docID, byte[] packedValue) {
                              double lat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(packedValue, 0));
                              double lon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES));
-                             if (componentTree.contains(lat, lon)) {
+                             if (component.contains(lat, lon)) {
                                adder.add(docID);
                              }
                            }
@@ -120,7 +120,7 @@ final class LatLonPointInComponentTreeQuery extends Query {
                              double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
                              double cellMaxLat = decodeLatitude(maxPackedValue, 0);
                              double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
-                             return componentTree.relate(cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
+                             return component.relate(cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
                            }
                          });
 
@@ -144,7 +144,7 @@ final class LatLonPointInComponentTreeQuery extends Query {
     final int prime = 31;
     int result = classHash();
     result = prime * result + field.hashCode();
-    result = prime * result + Objects.hashCode(componentTree);
+    result = prime * result + Objects.hashCode(component);
     return result;
   }
 
@@ -154,9 +154,9 @@ final class LatLonPointInComponentTreeQuery extends Query {
            equalsTo(getClass().cast(other));
   }
 
-  private boolean equalsTo(LatLonPointInComponentTreeQuery other) {
+  private boolean equalsTo(LatLonPointInComponentQuery other) {
     return field.equals(other.field) &&
-           Objects.equals(componentTree, other.componentTree);
+           Objects.equals(component, other.component);
   }
 
   @Override
@@ -169,7 +169,7 @@ final class LatLonPointInComponentTreeQuery extends Query {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(Objects.toString(componentTree));
+    sb.append(Objects.toString(component));
     return sb.toString();
   }
 }
