@@ -793,7 +793,7 @@ public class CloudSolrClient extends SolrClient {
         final LBHttpSolrClient.Req lbRequest = entry.getValue();
         try {
           MDC.put("CloudSolrClient.url", url);
-          responseFutures.put(url, threadPool.submit(() -> lbClient.request(lbRequest).getResponse()));
+          responseFutures.put(url, threadPool.submit(() -> lbClient.request(lbRequest).getRsp().getResponse()));
         } finally {
           MDC.remove("CloudSolrClient.url");
         }
@@ -826,7 +826,7 @@ public class CloudSolrClient extends SolrClient {
         String url = entry.getKey();
         LBHttpSolrClient.Req lbRequest = entry.getValue();
         try {
-          NamedList<Object> rsp = lbClient.request(lbRequest).getResponse();
+          NamedList<Object> rsp = lbClient.request(lbRequest).getRsp().getResponse();
           shardResponses.add(url, rsp);
         } catch (Exception e) {
           if(e instanceof SolrException) {
@@ -861,8 +861,8 @@ public class CloudSolrClient extends SolrClient {
       Collections.shuffle(urlList, rand);
       LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(nonRoutableRequest, urlList);
       try {
-        LBHttpSolrClient.Rsp rsp = lbClient.request(req);
-        shardResponses.add(urlList.get(0), rsp.getResponse());
+        ResponseAndException responseAndException = lbClient.request(req);
+        shardResponses.add(urlList.get(0), responseAndException.getRsp().getResponse());
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, urlList.get(0), e);
       }
@@ -1380,7 +1380,7 @@ public class CloudSolrClient extends SolrClient {
     }
 
     LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(request, theUrlList);
-    LBHttpSolrClient.Rsp rsp = lbClient.request(req);
+    LBHttpSolrClient.Rsp rsp = lbClient.request(req).getRsp();
     return rsp.getResponse();
   }
 

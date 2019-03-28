@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.ResponseAndException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -116,6 +117,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int connectionsEvictorSleepDelay = UpdateShardHandlerConfig.DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY;
 
   protected UpdateShardHandler.IdleConnectionsEvictor idleConnectionsEvictor;
+
   private WhitelistHostChecker whitelistHostChecker = null;
 
   private String scheme = null;
@@ -334,7 +336,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * @param urls The list of solr server urls to load balance across
    * @return The response from the request
    */
-  public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
+  public ResponseAndException makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
     throws SolrServerException, IOException {
     return loadbalancer.request(new LBHttpSolrClient.Req(req, urls));
   }

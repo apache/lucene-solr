@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -350,69 +351,45 @@ public class LBHttpSolrClient extends SolrClient {
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  public Rsp request(Req req) throws SolrServerException, IOException {
-    Rsp rsp = new Rsp();
-    Exception ex = null;
+  public ResponseAndException request(Req req) throws SolrServerException, IOException {
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    List<ServerWrapper> skipped = null;
+    final int numDeadServersToTry = req.getNumDeadServersToTry();
+    List<ServerWrapper> skipped = new ArrayList<>(numDeadServersToTry);
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
     long timeOutTime = System.nanoTime() + timeAllowedNano;
-    for (String serverStr : req.getServers()) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
-        break;
-      }
-      
+
+    //query in parallel
+    Optional<ResponseAndException> aliveResponseAndException = req.getServers().parallelStream().map(serverStr ->{
       serverStr = normalize(serverStr);
+
       // if the server is currently a zombie, just skip to the next one
       ServerWrapper wrapper = zombieServers.get(serverStr);
       if (wrapper != null) {
-        // System.out.println("ZOMBIE SERVER QUERIED: " + serverStr);
-        final int numDeadServersToTry = req.getNumDeadServersToTry();
-        if (numDeadServersToTry > 0) {
-          if (skipped == null) {
-            skipped = new ArrayList<>(numDeadServersToTry);
-            skipped.add(wrapper);
-          }
-          else if (skipped.size() < numDeadServersToTry) {
-            skipped.add(wrapper);
-          }
+        //only add to retry list if the number of dead servers to retry list hasn't been filled yet
+        if (skipped.size() < numDeadServersToTry) {
+          skipped.add(wrapper);
         }
-        continue;
+        return null;
       }
-      try {
-        MDC.put("LBHttpSolrClient.url", serverStr);
-        HttpSolrClient client = makeSolrClient(serverStr);
+      else{
+        return getResponseAndException(req, isNonRetryable, true, serverStr, makeSolrClient(serverStr));
+      }
+    }).findAny();
 
-        ex = doRequest(client, req, rsp, isNonRetryable, false, null);
-        if (ex == null) {
-          return rsp; // SUCCESS
-        }
-      } finally {
-        MDC.remove("LBHttpSolrClient.url");
+    if(aliveResponseAndException.isPresent()){
+      return aliveResponseAndException.get();
+    }
+    else{
+      Optional<ResponseAndException> deadResponseAndException = skipped.parallelStream().map(wrapper -> {
+        return getResponseAndException(req, isNonRetryable, true, wrapper.getKey(), wrapper.client);
+      }).findAny();
+
+      if(deadResponseAndException.isPresent()){
+        return deadResponseAndException.get();
       }
     }
-
-    // try the servers we previously skipped
-    if (skipped != null) {
-      for (ServerWrapper wrapper : skipped) {
-        if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
-          break;
-        }
-
-        try {
-          MDC.put("LBHttpSolrClient.url", wrapper.client.getBaseURL());
-          ex = doRequest(wrapper.client, req, rsp, isNonRetryable, true, wrapper.getKey());
-          if (ex == null) {
-            return rsp; // SUCCESS
-          }
-        } finally {
-          MDC.remove("LBHttpSolrClient.url");
-        }
-      }
-    }
-
 
     final String solrServerExceptionMessage;
     if (timeAllowedExceeded) {
@@ -420,12 +397,23 @@ public class LBHttpSolrClient extends SolrClient {
     } else {
       solrServerExceptionMessage = "No live SolrServers available to handle this request";
     }
-    if (ex == null) {
-      throw new SolrServerException(solrServerExceptionMessage);
-    } else {
-      throw new SolrServerException(solrServerExceptionMessage+":" + zombieServers.keySet(), ex);
-    }
 
+
+    throw new SolrServerException(solrServerExceptionMessage+":" + zombieServers.keySet());
+
+  }
+
+  private ResponseAndException getResponseAndException(Req req, boolean isNonRetryable, boolean isZombie, String serverStr, HttpSolrClient client) {
+    try {
+      MDC.put("LBHttpSolrClient.url", serverStr);
+      Rsp rsp = new Rsp();
+      return new ResponseAndException(rsp, doRequest(client, req, rsp, isNonRetryable, isZombie, null));
+    } catch(IOException | SolrServerException e){
+      throw new RuntimeException(e);
+    }
+    finally {
+      MDC.remove("LBHttpSolrClient.url");
+    }
   }
 
   protected Exception addZombie(HttpSolrClient server, Exception e) {

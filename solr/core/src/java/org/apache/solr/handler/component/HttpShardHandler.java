@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.ResponseAndException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -164,7 +165,9 @@ public class HttpShardHandler extends ShardHandler {
             ssr.nl = client.request(req);
           }
         } else {
-          LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+          ResponseAndException responseAndException = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+          //TODO handle new runtime Exceptions and log /handle runtime exceptions with specific causes??
+          LBHttpSolrClient.Rsp rsp = responseAndException.getRsp();
           ssr.nl = rsp.getResponse();
           srsp.setShardAddress(rsp.getServer());
         }
