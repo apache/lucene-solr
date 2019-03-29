@@ -22,11 +22,8 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * 2D geometry collection implementation represented as a balanced interval tree of edges.
- * <p>
- * Construction takes {@code O(n log n)} time for sorting and tree construction.
- * {@link #relate relate()} are {@code O(n)}, but for most
- * collections are much faster than brute force.
+ * 2D geometry collection implementation represented as a balanced interval tree of {@link Component}.
+ *
  * @lucene.internal
  */
 public class ComponentTree implements Component {

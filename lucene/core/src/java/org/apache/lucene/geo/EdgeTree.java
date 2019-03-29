@@ -25,6 +25,10 @@ import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
  * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
  * The sort value is {@code low}, which is the minimum latitude of the edge.
  * {@code max} stores the maximum latitude of this edge or any children.
+ *
+ * Construction takes {@code O(n log n)} time for sorting and tree construction.
+ * {@link #crosses crosses()} are {@code O(n)}, but for most
+ * cases are much faster than brute force.
  */
 class EdgeTree {
 
