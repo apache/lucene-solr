@@ -140,18 +140,16 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   }
 
   private boolean predefinedPermissionAppliesToRequest(Permission predefinedPermission, AuthorizationContext context) {
-    if (context.getHandler() instanceof PermissionNameProvider) {
+    if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
+      return true; //'ALL' applies to everything!
+    } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
+      return false; // We're not 'ALL', and the handler isn't associated with any other predefined permissions
+    } else {
       PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
-      if (permissionName == null || !predefinedPermission.name.equals(permissionName.name)) {
-        return false;
-      }
-    } else {
-      //all is special. it can match any
-      if(predefinedPermission.wellknownName != PermissionNameProvider.Name.ALL) return false;
-    }
 
-    return true;
+      return permissionName != null && predefinedPermission.name.equals(permissionName.name);
+    }
   }
 
   private boolean customPermissionAppliesToRequest(Permission customPermission, AuthorizationContext context) {

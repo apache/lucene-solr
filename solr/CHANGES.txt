@@ -59,6 +59,8 @@ Bug fixes
 
   * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
 
+* SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
