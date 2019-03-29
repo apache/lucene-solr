@@ -20,12 +20,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+import com.google.common.base.Strings;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
@@ -229,6 +232,21 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
             "Did not count block as local after setting hostname: "
                 + statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL),
             long_bytes, statistics.get(HdfsLocalityReporter.LOCALITY_BYTES_LOCAL));
+      }
+    }
+  }
+
+  @Test
+  public void testIsAbsolute() throws Exception {
+    try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
+      String relativePath = Strings.repeat(
+          RandomStrings.randomAsciiAlphanumOfLength(random(), random().nextInt(10) + 1) + '/',
+          random().nextInt(5) + 1);
+      assertFalse(hdfsFactory.isAbsolute(relativePath));
+      assertFalse(hdfsFactory.isAbsolute("/" + relativePath));
+
+      for(String rootPrefix : Arrays.asList("file://", "hdfs://", "s3a://", "foo://")) {
+        assertTrue(hdfsFactory.isAbsolute(rootPrefix + relativePath));
       }
     }
   }
