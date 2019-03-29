@@ -78,6 +78,7 @@ public class SimpleIniFileTest extends LuceneTestCase {
     assertNull(sections.get("section2").get("b2"));
   }
 
+  @Test
   public void testGet() throws IOException {
     Path path = saveTestIni();
     SimpleIniFile iniFile = new SimpleIniFile();
