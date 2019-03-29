@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,6 +84,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   protected Meter numErrors = new Meter();
   protected Meter numLogged = new Meter();
   protected Timer requestTimes = new Timer();
+  protected Timer queuedTime = new Timer();
   protected Counter totalTime = new Counter();
 
   // Event types to be logged by default
@@ -194,6 +196,9 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       try {
         AuditEvent event = queue.poll(1000, TimeUnit.MILLISECONDS);
         if (event == null) continue;
+        if (event.getDate() != null) {
+          queuedTime.update(new Date().getTime() - event.getDate().getTime(), TimeUnit.MILLISECONDS);
+        }
         Timer.Context timer = requestTimes.time();
         audit(event);
         numLogged.mark();
@@ -241,6 +246,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     if (async) {
       manager.registerGauge(this, registryName, () -> blockingQueueSize, "queueCapacity", true, "queueCapacity", getCategory().toString(), scope, className);
       manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(), "queueSize", true, "queueSize", getCategory().toString(), scope, className);
+      queuedTime = manager.timer(this, registryName, "queuedTime", getCategory().toString(), scope, className);
     }
     manager.registerGauge(this, registryName, () -> async, "async", true, "async", getCategory().toString(), scope, className);
     metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime", "queueCapacity", "queueSize", "async"));

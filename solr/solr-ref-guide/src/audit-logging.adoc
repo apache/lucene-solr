@@ -74,9 +74,9 @@ ERROR;Request was not executed due to an error
 By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged. What eventTypes are logged can be configured with the `eventTypes` configuration parameter. 
 
 === Muting certain events
-The configuration parameter `muteRules` lets you mute logging for certain events. You may specify multiple rules and combination of rules that will cause muting. You can mute by event type, request type, username, collection name, path, request parameters or IP address. We'll explain through examples:
+The configuration parameter `muteRules` lets you mute logging for certain events. You may specify multiple rules and combination of rules that will cause muting. You can mute by request type, username, collection name, path, request parameters or IP address. We'll explain through examples:
 
-The below example will mute logging for all `UPDATE` requests as well as all requests made my user johndoe or from IP address 192.168.0.10:
+The below example will mute logging for all `SEARCH` requests as well as all requests made my user `johndoe` or from IP address `192.168.0.10`:
 
 [source,json]
 ----
@@ -88,7 +88,7 @@ The below example will mute logging for all `UPDATE` requests as well as all req
 }
 ----
 
-An update rule may also be a list, in which case all must be true. The following muteRules will mute update events from IP 192.168.0.10. It will also mute LIST collection admin requests as well as all collection admin requests for the collection named "test":
+An mute rule may also be a list, in which case all must be true for muting to happen. The following muteRules will mute all events from IP `192.168.0.10`. It will also mute collection admin requests with action=LIST as well as all collection admin requests for the collection named `test`. Note how you can mix single string rules with lists of rules that must all match:
 
 [source,json]
 ----
@@ -96,7 +96,7 @@ An update rule may also be a list, in which case all must be true. The following
   "auditlogging":{
     "class": "solr.SolrLogAuditLoggerPlugin"
     "muteRules": [ 
-      [ "type:UPDATE", "ip:192.168.0.10" ],
+      "ip:192.168.0.10",
       [ "path:/admin/collections", "param:action=LIST" ],
       [ "path:/admin/collections", "param:collection=test" ]
     ]
@@ -133,4 +133,13 @@ Using the `MultiDestinationAuditLogger` you can configure multiple audit logger 
 ----
 
 == Metrics
-AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers.
+AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers. The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g. `SolrLogAuditLoggerPlugin`. The individual metrics are:
+
+* `count` (type: meter. Records number and rate of audit logs done) 
+* `errors` (type: meter. Records number and rate of errors)
+* `requestTimes` (type: timer. Records latency and perceniles for logging performance)
+* `totalTime` (type: counter. Records total time spent)
+* `queueCapacity` (type: gauge. Records the max size of the async logging queue)
+* `queueSize` (type: gauge. Records the number of events currently waiting in the queue)
+* `queuedTime` (type: timer. Records the amount of time events waited in queue. Adding this with requestTimes you get total time from event to logging complete)
+* `async` (type: gauge. Tells whether this logger is in async mode)
