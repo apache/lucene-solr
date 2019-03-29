@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
@@ -111,6 +114,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     setupCluster(true, 100, false, null);
     runAdminCommands();
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
+    ArrayList<MetricRegistry> registries = getMetricsReigstries(testHarness.get().cluster);
+    Timer timer = ((Timer) registries.get(0).getMetrics().get("SECURITY./auditlogging.CallbackAuditLoggerPlugin.queuedTime"));
+    double meanTimeOnQueue = timer.getSnapshot().getMean() / 1000000; // Convert to ms
+    assertTrue(meanTimeOnQueue > 50);
     testHarness.get().shutdownCluster();
     assertThreeAdminEvents();
   }
@@ -209,6 +216,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
+  private ArrayList<MetricRegistry> getMetricsReigstries(MiniSolrCloudCluster cluster) {
+    ArrayList<MetricRegistry> registries = new ArrayList<>();
+    cluster.getJettySolrRunners().forEach(r -> {
+      MetricRegistry registry = r.getCoreContainer().getMetricManager().registry("solr.node");
+      assertNotNull(registry);
+      registries.add(registry);
+    });
+    return registries;
+  }
+  
   private void runAdminCommands() throws IOException, SolrServerException {
     SolrClient client = testHarness.get().cluster.getSolrClient();
     CollectionAdminRequest.listCollections(client);
