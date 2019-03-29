@@ -20,7 +20,6 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * Internal tree node: represents geometry edge from lat1,lon1 to lat2,lon2.
@@ -111,7 +110,10 @@ class EdgeTree {
     double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
+    return crossesTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy);
+  }
 
+  private boolean crossesTriangle( double minLat, double maxLat, double minLon, double maxLon, double ax, double ay, double bx, double by, double cx, double cy) {
     if (minLat <= max) {
       double dy = lat1;
       double ey = lat2;
@@ -126,33 +128,22 @@ class EdgeTree {
           (dx > maxLon && ex > maxLon);
 
       if (dateline == false && outside == false) {
-        // does triangle's first edge intersect polyline?
-        // ax, ay -> bx, by
-        if (lineCrossesLine(ax, ay, bx, by, dx, dy, ex, ey)) {
-          return true;
-        }
-
-        // does triangle's second edge intersect polyline?
-        // bx, by -> cx, cy
-        if (lineCrossesLine(bx, by, cx, cy, dx, dy, ex, ey)) {
-          return true;
-        }
-
-        // does triangle's third edge intersect polyline?
-        // cx, cy -> ax, ay
-        if (lineCrossesLine(cx, cy, ax, ay, dx, dy, ex, ey)) {
+        // does triangle's edges intersect polyline?
+        if (lineCrossesLine(ax, ay, bx, by, dx, dy, ex, ey) ||
+            lineCrossesLine(bx, by, cx, cy, dx, dy, ex, ey) ||
+            lineCrossesLine(cx, cy, ax, ay, dx, dy, ex, ey)) {
           return true;
         }
       }
 
       if (left != null) {
-        if (left.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+        if (left.crossesTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy)) {
           return true;
         }
       }
 
       if (right != null && maxLat >= low) {
-        if (right.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+        if (right.crossesTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy)) {
           return true;
         }
       }
@@ -180,38 +171,13 @@ class EdgeTree {
           (cy > maxLat && dy > maxLat) ||
           (cx < minLon && dx < minLon) ||
           (cx > maxLon && dx > maxLon);
-      // optimization: see if either end of the line segment is contained by the rectangle
-      if (Rectangle.containsPoint(cy, cx, minLat, maxLat, minLon, maxLon)
-          || Rectangle.containsPoint(dy, dx, minLat, maxLat, minLon, maxLon)) {
-        return true;
-      }
 
       if (outside == false) {
-        // does box's top edge intersect polyline?
-        // ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
-        if (orient(cx, cy, dx, dy, minLon, maxLat) * orient(cx, cy, dx, dy, maxLon, maxLat) <= 0 &&
-            orient(minLon, maxLat, maxLon, maxLat, cx, cy) * orient(minLon, maxLat, maxLon, maxLat, dx, dy) <= 0) {
-          return true;
-        }
-
-        // does box's right edge intersect polyline?
-        // ax = maxLon, bx = maxLon, ay = maxLat, by = minLat
-        if (orient(cx, cy, dx, dy, maxLon, maxLat) * orient(cx, cy, dx, dy, maxLon, minLat) <= 0 &&
-            orient(maxLon, maxLat, maxLon, minLat, cx, cy) * orient(maxLon, maxLat, maxLon, minLat, dx, dy) <= 0) {
-          return true;
-        }
-
-        // does box's bottom edge intersect polyline?
-        // ax = maxLon, bx = minLon, ay = minLat, by = minLat
-        if (orient(cx, cy, dx, dy, maxLon, minLat) * orient(cx, cy, dx, dy, minLon, minLat) <= 0 &&
-            orient(maxLon, minLat, minLon, minLat, cx, cy) * orient(maxLon, minLat, minLon, minLat, dx, dy) <= 0) {
-          return true;
-        }
-
-        // does box's left edge intersect polyline?
-        // ax = minLon, bx = minLon, ay = minLat, by = maxLat
-        if (orient(cx, cy, dx, dy, minLon, minLat) * orient(cx, cy, dx, dy, minLon, maxLat) <= 0 &&
-            orient(minLon, minLat, minLon, maxLat, cx, cy) * orient(minLon, minLat, minLon, maxLat, dx, dy) <= 0) {
+        // does rectangle's edges intersect polyline?
+        if (lineCrossesLine(minLon, maxLat, maxLon, maxLat, cx, cy, dx, dy) ||
+            lineCrossesLine(maxLon, maxLat, maxLon, minLat, cx, cy, dx, dy) ||
+            lineCrossesLine(maxLon, minLat, minLon, minLat, cx, cy, dx, dy) ||
+            lineCrossesLine(minLon, minLat, minLon, maxLat, cx, cy, dx, dy)) {
           return true;
         }
       }

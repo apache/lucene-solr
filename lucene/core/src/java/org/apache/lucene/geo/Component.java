@@ -25,12 +25,15 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  * Defines the spatial relations a component needs to support
  */
 public interface Component {
-  /** relates this component with a bounding box**/
-  PointValues.Relation relate(double minY, double maxY, double minX, double maxX);
-  /** relates this component with a triangle**/
-  PointValues.Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
   /** relates this component with a point**/
   boolean contains(double lat, double lon);
+
+  /** relates this component with a bounding box**/
+  PointValues.Relation relate(double minY, double maxY, double minX, double maxX);
+
+  /** relates this component with a triangle**/
+  PointValues.Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
+
   /** bounding box for this component **/
   Rectangle getBoundingBox();
 

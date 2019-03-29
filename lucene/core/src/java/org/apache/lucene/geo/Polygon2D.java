@@ -30,11 +30,11 @@ import org.apache.lucene.index.PointValues.Relation;
  */
 public final class Polygon2D implements Component {
 
-  /** tree of holes, or null */
   private final Polygon polygon;
-  private final Component holes;
   private final EdgeTree edge;
   private final Rectangle box;
+  /** Holes component or null */
+  private final Component holes;
 
   private Polygon2D(Polygon polygon, Component holes) {
     this.polygon = polygon;
@@ -43,6 +43,11 @@ public final class Polygon2D implements Component {
     this.box = new Rectangle(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon);
   }
 
+  /**
+   * <p>
+   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
+   * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
+   */
   @Override
   public boolean contains(double latitude, double longitude) {
     if (edge.contains(latitude, longitude)) {
@@ -52,11 +57,6 @@ public final class Polygon2D implements Component {
       return true;
     }
     return false;
-  }
-
-  @Override
-  public Rectangle getBoundingBox() {
-    return box;
   }
 
   @Override
@@ -78,10 +78,8 @@ public final class Polygon2D implements Component {
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (minLat >= edge.lat1 && maxLat <= edge.lat1 && minLon >= edge.lon2 && maxLon <= edge.lon2) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (edge.crosses(minLat, maxLat, minLon, maxLon)) {
+      if (Rectangle.containsPoint(edge.lat1, edge.lon1, minLat, maxLat, minLon, maxLon) ||
+          edge.crosses(minLat, maxLat, minLon, maxLon)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -108,15 +106,19 @@ public final class Polygon2D implements Component {
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (Component.pointInTriangle(edge.lon1, edge.lat1, ax, ay, bx, by, cx, cy) == true) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (edge.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      if (Component.pointInTriangle(edge.lon1, edge.lat1, ax, ay, bx, by, cx, cy) ||
+          edge.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
     }
     return Relation.CELL_CROSSES_QUERY;
+  }
+
+
+  @Override
+  public Rectangle getBoundingBox() {
+    return box;
   }
 
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
@@ -134,13 +136,6 @@ public final class Polygon2D implements Component {
       containsCount++;
     }
     return containsCount;
-  }
-
-  @Override
-  public String toString() {
-    return "Polygon2D{" +
-        "polygon=" + polygon +
-        '}';
   }
 
   // returns 0, 4, or something in between
@@ -178,6 +173,13 @@ public final class Polygon2D implements Component {
   @Override
   public int hashCode() {
     return Objects.hash(polygon);
+  }
+
+  @Override
+  public String toString() {
+    return "Polygon2D{" +
+        "polygon=" + polygon +
+        '}';
   }
 
   /** Builds a Component from polygon */

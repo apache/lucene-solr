@@ -21,7 +21,7 @@ import java.util.Objects;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * 2D line implementation. It respresents the line as a balanced interval tree of edges
+ * 2D line implementation. It represents the line as a balanced interval tree of edges
  * using an {@link EdgeTree}.
  *
  * @lucene.internal
@@ -40,7 +40,8 @@ public final class Line2D implements Component {
 
   @Override
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
-    if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+    if (Rectangle.containsPoint(tree.lat1, tree.lon1, minLat, maxLat, minLon, maxLon) ||
+        tree.crosses(minLat, maxLat, minLon, maxLon)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
@@ -48,11 +49,8 @@ public final class Line2D implements Component {
 
   @Override
   public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-    //check if line is inside triangle
-    if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
+    if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) ||
+        tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
