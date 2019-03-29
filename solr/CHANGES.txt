@@ -72,6 +72,8 @@ New Features
   a back-compat check of the .system collection to notify users of potential compatibility issues after
   upgrades or schema changes. (ab)
 
+* SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
+
 Bug Fixes
 ----------------------
 
@@ -116,8 +118,7 @@ Bug Fixes
 
 * SOLR-13351: Workaround for VELOCITY-908 (Kevin Risden)
 
- * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
-
+* SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
 
 Improvements
 ----------------------
