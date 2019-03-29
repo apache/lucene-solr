@@ -115,7 +115,6 @@ public final class Polygon2D implements Component {
     return Relation.CELL_CROSSES_QUERY;
   }
 
-
   @Override
   public Rectangle getBoundingBox() {
     return box;
