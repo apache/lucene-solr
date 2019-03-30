@@ -104,16 +104,21 @@ final class SubtypeCollector<T> implements Runnable {
   private static boolean isSubclassOf(Class<?> clazz, Class<?> superType) {
     String superTypeName = superType.getName();
     cache.putIfAbsent(superTypeName, new HashSet<>());
+    if (cache.get(superTypeName).contains(clazz.getName())) {
+      return true;
+    }
+
+    // remember class hierarchy during traversing
+    Set<String> set = new HashSet<>();
+    set.add(clazz.getName());
     Class<?> c = clazz.getSuperclass();
     while (c != null) {
       synchronized (cache.get(superTypeName)) {
-        if (cache.get(superTypeName).contains(clazz.getName())) {
-          return true;
-        }
         if (c.getName().equals(superTypeName)) {
-          cache.get(superTypeName).add(clazz.getName());
+          cache.get(superTypeName).addAll(set);
           return true;
         }
+        set.add(c.getName());
       }
       c = c.getSuperclass();
     }
