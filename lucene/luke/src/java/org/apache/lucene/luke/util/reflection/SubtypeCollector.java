@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
@@ -35,7 +35,7 @@ final class SubtypeCollector<T> implements Runnable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Map<String, Set<String>> cache = new HashMap<>();
+  private static final Map<String, Set<String>> cache = new ConcurrentHashMap<>();
 
   private final Set<URL> urls = new HashSet<>();
 
@@ -106,12 +106,14 @@ final class SubtypeCollector<T> implements Runnable {
     cache.putIfAbsent(superTypeName, new HashSet<>());
     Class<?> c = clazz.getSuperclass();
     while (c != null) {
-      if (cache.get(superTypeName).contains(clazz.getName())) {
-        return true;
-      }
-      if (c.getName().equals(superTypeName)) {
-        cache.get(superTypeName).add(clazz.getName());
-        return true;
+      synchronized (cache.get(superTypeName)) {
+        if (cache.get(superTypeName).contains(clazz.getName())) {
+          return true;
+        }
+        if (c.getName().equals(superTypeName)) {
+          cache.get(superTypeName).add(clazz.getName());
+          return true;
+        }
       }
       c = c.getSuperclass();
     }
