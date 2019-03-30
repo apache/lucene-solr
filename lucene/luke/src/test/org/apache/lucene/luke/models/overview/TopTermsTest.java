@@ -17,9 +17,9 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import org.junit.Test;
-
 import java.util.List;
+
+import org.junit.Test;
 
 public class TopTermsTest extends OverviewTestBase {
 

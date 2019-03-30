@@ -17,20 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.luke.app.DirectoryHandler;
-import org.apache.lucene.luke.app.DirectoryObserver;
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.IndexObserver;
-import org.apache.lucene.luke.app.LukeState;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.commits.Commit;
-import org.apache.lucene.luke.models.commits.Commits;
-import org.apache.lucene.luke.models.commits.CommitsFactory;
-import org.apache.lucene.luke.models.commits.File;
-import org.apache.lucene.luke.models.commits.Segment;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -58,6 +44,20 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.luke.app.DirectoryHandler;
+import org.apache.lucene.luke.app.DirectoryObserver;
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.IndexObserver;
+import org.apache.lucene.luke.app.LukeState;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.commits.Commit;
+import org.apache.lucene.luke.models.commits.Commits;
+import org.apache.lucene.luke.models.commits.CommitsFactory;
+import org.apache.lucene.luke.models.commits.File;
+import org.apache.lucene.luke.models.commits.Segment;
 
 /** Provider of the Commits panel */
 public final class CommitsPanelProvider {

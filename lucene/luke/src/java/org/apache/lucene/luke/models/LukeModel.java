@@ -17,16 +17,16 @@
 
 package org.apache.lucene.luke.models;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Objects;
+
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Objects;
 
 /**
  * Abstract model class. It holds index reader object and provides basic features for all concrete sub classes.

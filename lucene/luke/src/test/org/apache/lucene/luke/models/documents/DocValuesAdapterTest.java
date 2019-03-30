@@ -17,6 +17,9 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import java.io.IOException;
+import java.util.Collections;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -30,9 +33,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Collections;
 
 public class DocValuesAdapterTest extends DocumentsTestBase {
 

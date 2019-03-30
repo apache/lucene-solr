@@ -17,18 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.IndexObserver;
-import org.apache.lucene.luke.app.LukeState;
-import org.apache.lucene.luke.app.desktop.MessageBroker;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.overview.Overview;
-import org.apache.lucene.luke.models.overview.OverviewFactory;
-import org.apache.lucene.luke.models.overview.TermCountsOrder;
-import org.apache.lucene.luke.models.overview.TermStats;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -59,6 +47,18 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.IndexObserver;
+import org.apache.lucene.luke.app.LukeState;
+import org.apache.lucene.luke.app.desktop.MessageBroker;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.overview.Overview;
+import org.apache.lucene.luke.models.overview.OverviewFactory;
+import org.apache.lucene.luke.models.overview.TermCountsOrder;
+import org.apache.lucene.luke.models.overview.TermStats;
 
 /** Provider of the Overview panel */
 public final class OverviewPanelProvider {

@@ -17,32 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.IndexObserver;
-import org.apache.lucene.luke.app.LukeState;
-import org.apache.lucene.luke.app.desktop.MessageBroker;
-import org.apache.lucene.luke.app.desktop.components.dialog.HelpDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.documents.AddDocumentDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.documents.DocValuesDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.documents.StoredValueDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.documents.TermVectorDialogFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.HelpHeaderRenderer;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.documents.DocValues;
-import org.apache.lucene.luke.models.documents.DocumentField;
-import org.apache.lucene.luke.models.documents.Documents;
-import org.apache.lucene.luke.models.documents.DocumentsFactory;
-import org.apache.lucene.luke.models.documents.TermPosting;
-import org.apache.lucene.luke.models.documents.TermVectorEntry;
-import org.apache.lucene.luke.util.BytesRefUtils;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -83,6 +57,32 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.IndexObserver;
+import org.apache.lucene.luke.app.LukeState;
+import org.apache.lucene.luke.app.desktop.MessageBroker;
+import org.apache.lucene.luke.app.desktop.components.dialog.HelpDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.documents.AddDocumentDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.documents.DocValuesDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.documents.StoredValueDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.documents.TermVectorDialogFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.HelpHeaderRenderer;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.documents.DocValues;
+import org.apache.lucene.luke.models.documents.DocumentField;
+import org.apache.lucene.luke.models.documents.Documents;
+import org.apache.lucene.luke.models.documents.DocumentsFactory;
+import org.apache.lucene.luke.models.documents.TermPosting;
+import org.apache.lucene.luke.models.documents.TermVectorEntry;
+import org.apache.lucene.luke.util.BytesRefUtils;
 
 /** Provider of the Documents panel */
 public final class DocumentsPanelProvider implements DocumentsTabOperator {

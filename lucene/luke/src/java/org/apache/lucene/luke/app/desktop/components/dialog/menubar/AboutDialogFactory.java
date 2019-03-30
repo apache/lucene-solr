@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.ImageUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.URLLabel;
-import org.apache.lucene.luke.models.LukeException;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -49,6 +40,15 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.io.IOException;
 import java.net.URISyntaxException;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.ImageUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.URLLabel;
+import org.apache.lucene.luke.models.LukeException;
 
 /** Factory of about dialog */
 public final class AboutDialogFactory implements DialogOpener.DialogFactory {

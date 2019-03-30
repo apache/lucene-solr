@@ -17,16 +17,16 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.misc.HighFreqTerms;
-
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.misc.HighFreqTerms;
 
 /**
  * An utility class that collects terms and their statistics in a specific field.
@@ -63,6 +63,6 @@ final class TopTerms {
       topTermsCache.put(field, topTerms);
     }
 
-    return ImmutableList.copyOf(topTermsCache.get(field));
+    return Collections.unmodifiableList(topTermsCache.get(field));
   }
 }

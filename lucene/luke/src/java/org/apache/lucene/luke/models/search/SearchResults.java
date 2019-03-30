@@ -17,22 +17,21 @@
 
 package org.apache.lucene.luke.models.search;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TotalHits;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TotalHits;
 
 /**
  * Holder for a search result page.
@@ -93,7 +92,7 @@ public final class SearchResults {
    * Returns the documents of the current page.
    */
   public List<Doc> getHits() {
-    return ImmutableList.copyOf(hits);
+    return Collections.unmodifiableList(hits);
   }
 
   /**
@@ -153,7 +152,7 @@ public final class SearchResults {
      * Returns the field data of this document.
      */
     public Map<String, String[]> getFieldValues() {
-      return ImmutableMap.copyOf(fieldValues);
+      return Collections.unmodifiableMap(fieldValues);
     }
 
     private Doc() {

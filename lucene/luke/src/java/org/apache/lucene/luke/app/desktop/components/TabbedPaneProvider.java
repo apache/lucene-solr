@@ -17,6 +17,11 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import java.io.IOException;
+
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.DirectoryObserver;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -25,11 +30,6 @@ import org.apache.lucene.luke.app.LukeState;
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.TabUtils;
-
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import java.io.IOException;
 
 /** Provider of the Tabbed pane */
 public final class TabbedPaneProvider implements TabSwitcherProxy.TabSwitcher {

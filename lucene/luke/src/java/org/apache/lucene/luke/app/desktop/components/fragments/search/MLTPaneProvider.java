@@ -17,18 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.components.TabSwitcherProxy;
-import org.apache.lucene.luke.app.desktop.components.TabbedPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
-import org.apache.lucene.luke.app.desktop.components.TableModelBase;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.search.MLTConfig;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -50,6 +38,18 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.components.TabSwitcherProxy;
+import org.apache.lucene.luke.app.desktop.components.TabbedPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
+import org.apache.lucene.luke.app.desktop.components.TableModelBase;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.search.MLTConfig;
 
 /** Provider of the MLT pane */
 public final class MLTPaneProvider implements MLTTabOperator {

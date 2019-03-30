@@ -17,22 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import java.lang.invoke.MethodHandles;
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.models.tools.IndexTools;
-import org.apache.lucene.luke.models.tools.IndexToolsFactory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.SuppressForbidden;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -53,12 +37,28 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.models.tools.IndexTools;
+import org.apache.lucene.luke.models.tools.IndexToolsFactory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.SuppressForbidden;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Factory of create index dialog */
 public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {

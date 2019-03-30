@@ -17,9 +17,9 @@
 
 package org.apache.lucene.luke.models.commits;
 
-import org.apache.lucene.index.SegmentCommitInfo;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.SegmentCommitInfo;
 
 /**
  * Holder for a segment.

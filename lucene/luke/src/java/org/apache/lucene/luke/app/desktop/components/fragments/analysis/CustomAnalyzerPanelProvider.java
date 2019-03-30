@@ -17,24 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.lucene.luke.app.desktop.MessageBroker;
-import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditFiltersDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditFiltersMode;
-import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditParamsDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditParamsMode;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.ListUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.app.desktop.util.lang.Callable;
-import org.apache.lucene.luke.models.analysis.Analysis;
-import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
-import org.apache.lucene.util.SuppressForbidden;
-
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -70,6 +52,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.apache.lucene.luke.app.desktop.MessageBroker;
+import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditFiltersDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditFiltersMode;
+import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditParamsDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.analysis.EditParamsMode;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.ListUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.lang.Callable;
+import org.apache.lucene.luke.models.analysis.Analysis;
+import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
+import org.apache.lucene.util.SuppressForbidden;
 
 /** Provider of the custom analyzer panel */
 public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOperator {
@@ -668,7 +667,7 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     if (index < 0 || index > cfParamsList.size()) {
       throw new IllegalArgumentException();
     }
-    return ImmutableMap.copyOf(cfParamsList.get(index));
+    return Collections.unmodifiableMap(cfParamsList.get(index));
   }
 
   @Override
@@ -694,7 +693,7 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     if (index < 0 || index > tfParamsList.size()) {
       throw new IllegalArgumentException();
     }
-    return ImmutableMap.copyOf(tfParamsList.get(index));
+    return Collections.unmodifiableMap(tfParamsList.get(index));
   }
 
   @Override

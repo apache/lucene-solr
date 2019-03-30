@@ -17,12 +17,12 @@
 
 package org.apache.lucene.luke.models.commits;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.luke.models.LukeException;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.luke.models.LukeException;
 
 /**
  * A dedicated interface for Luke's Commits tab.

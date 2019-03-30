@@ -17,11 +17,11 @@
 
 package org.apache.lucene.luke.models.documents;
 
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.util.BytesRef;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Holder for doc values.

@@ -17,22 +17,6 @@
 
 package org.apache.lucene.luke.models.analysis;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.util.AttributeImpl;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
-
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -42,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -49,26 +34,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.luke.util.reflection.ClassScanner;
+import org.apache.lucene.util.AttributeImpl;
 
 /** Default implementation of {@link AnalysisImpl} */
 public final class AnalysisImpl implements Analysis {
 
-  private final List<Class<? extends Analyzer>> presetAnalyzerTypes;
+  private List<Class<? extends Analyzer>> presetAnalyzerTypes;
 
   private Analyzer analyzer;
-
-  public AnalysisImpl() {
-    presetAnalyzerTypes = new ArrayList<>();
-    for (Class<? extends Analyzer> clazz : getInstantiableSubTypesBuiltIn(Analyzer.class)) {
-      try {
-        // add to presets if no args constructor is available
-        clazz.getConstructor();
-        presetAnalyzerTypes.add(clazz);
-      } catch (NoSuchMethodException e) {
-      }
-    }
-  }
 
   @Override
   public void addExternalJars(List<String> jarFiles) {
@@ -97,7 +82,19 @@ public final class AnalysisImpl implements Analysis {
 
   @Override
   public Collection<Class<? extends Analyzer>> getPresetAnalyzerTypes() {
-    return ImmutableList.copyOf(presetAnalyzerTypes);
+    if (Objects.isNull(presetAnalyzerTypes)) {
+      List<Class<? extends Analyzer>> types = new ArrayList<>();
+      for (Class<? extends Analyzer> clazz : getInstantiableSubTypesBuiltIn(Analyzer.class)) {
+        try {
+          // add to presets if no args constructor is available
+          clazz.getConstructor();
+          types.add(clazz);
+        } catch (NoSuchMethodException e) {
+        }
+      }
+      presetAnalyzerTypes = Collections.unmodifiableList(types);
+    }
+    return presetAnalyzerTypes;
   }
 
   @Override
@@ -116,11 +113,9 @@ public final class AnalysisImpl implements Analysis {
   }
 
   private <T> List<Class<? extends T>> getInstantiableSubTypesBuiltIn(Class<T> superType) {
-    Reflections reflections = new Reflections(new ConfigurationBuilder()
-        .setUrls(ClasspathHelper.forPackage("org.apache.lucene"))
-        .setScanners(new SubTypesScanner())
-        .filterInputsBy(new FilterBuilder().include("org\\.apache\\.lucene\\.analysis.*")));
-    return reflections.getSubTypesOf(superType).stream()
+    ClassScanner scanner = new ClassScanner("org.apache.lucene.analysis", getClass().getClassLoader());
+    Set<Class<? extends T>> types = scanner.scanSubTypes(superType);
+    return types.stream()
         .filter(type -> !Modifier.isAbstract(type.getModifiers()))
         .filter(type -> !type.getSimpleName().startsWith("Mock"))
         .sorted(Comparator.comparing(Class::getName))

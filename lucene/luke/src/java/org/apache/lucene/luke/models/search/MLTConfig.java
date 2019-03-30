@@ -17,12 +17,12 @@
 
 package org.apache.lucene.luke.models.search;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.lucene.queries.mlt.MoreLikeThis;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+
+import org.apache.lucene.queries.mlt.MoreLikeThis;
 
 /**
  * Configurations for MoreLikeThis query.
@@ -71,7 +71,7 @@ public final class MLTConfig {
   }
 
   private MLTConfig(Builder builder) {
-    this.fields = ImmutableList.copyOf(builder.fields);
+    this.fields = Collections.unmodifiableList(builder.fields);
     this.maxDocFreq = builder.maxDocFreq;
     this.minDocFreq = builder.minDocFreq;
     this.minTermFreq = builder.minTermFreq;

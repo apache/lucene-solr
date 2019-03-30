@@ -17,11 +17,11 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.models.analysis.Analysis;
-
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.models.analysis.Analysis;
 
 /** Operator of the custom analyzer panel */
 public interface CustomAnalyzerPanelOperator extends ComponentOperatorRegistry.ComponentOperator {

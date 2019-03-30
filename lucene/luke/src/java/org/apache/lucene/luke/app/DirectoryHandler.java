@@ -17,13 +17,13 @@
 
 package org.apache.lucene.luke.app;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /** Directory open/close handler */
 public final class DirectoryHandler extends AbstractHandler<DirectoryObserver> {

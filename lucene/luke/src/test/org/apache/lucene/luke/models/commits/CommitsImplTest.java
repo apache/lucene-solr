@@ -17,6 +17,12 @@
 
 package org.apache.lucene.luke.models.commits;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -30,12 +36,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 // See: https://github.com/DmitryKey/luke/issues/111
 @LuceneTestCase.SuppressCodecs({

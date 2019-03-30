@@ -17,17 +17,17 @@
 
 package org.apache.lucene.luke.models.search;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * A dedicated interface for Luke's Search tab.

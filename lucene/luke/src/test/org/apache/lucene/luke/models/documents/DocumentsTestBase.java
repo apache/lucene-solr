@@ -17,6 +17,9 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import java.io.IOException;
+import java.nio.file.Path;
+
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,9 +35,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.IOException;
-import java.nio.file.Path;
 
 public abstract class DocumentsTestBase extends LuceneTestCase {
   protected IndexReader reader;

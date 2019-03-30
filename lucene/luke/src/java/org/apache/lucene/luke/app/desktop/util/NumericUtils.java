@@ -17,15 +17,13 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import com.google.common.base.Strings;
-
 import java.util.Arrays;
 
 /** Utilities for handling numeric values */
 public class NumericUtils {
 
   public static int[] convertToIntArray(String value, boolean ignoreException) throws NumberFormatException {
-    if (Strings.isNullOrEmpty(value)) {
+    if (StringUtils.isNullOrEmpty(value)) {
       return new int[]{0};
     }
     try {
@@ -40,7 +38,7 @@ public class NumericUtils {
   }
 
   public static long[] convertToLongArray(String value, boolean ignoreException) throws NumberFormatException {
-    if (Strings.isNullOrEmpty(value)) {
+    if (StringUtils.isNullOrEmpty(value)) {
       return new long[]{0};
     }
     try {
@@ -55,7 +53,7 @@ public class NumericUtils {
   }
 
   public static float[] convertToFloatArray(String value, boolean ignoreException) throws NumberFormatException {
-    if (Strings.isNullOrEmpty(value)) {
+    if (StringUtils.isNullOrEmpty(value)) {
       return new float[]{0};
     }
     try {
@@ -75,7 +73,7 @@ public class NumericUtils {
   }
 
   public static double[] convertToDoubleArray(String value, boolean ignoreException) throws NumberFormatException {
-    if (Strings.isNullOrEmpty(value)) {
+    if (StringUtils.isNullOrEmpty(value)) {
       return new double[]{0};
     }
     try {

@@ -17,6 +17,12 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import java.awt.event.ActionEvent;
+import java.io.IOException;
+
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.DirectoryObserver;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -33,12 +39,6 @@ import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.util.Version;
-
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import java.awt.event.ActionEvent;
-import java.io.IOException;
 
 /** Provider of the MenuBar */
 public final class MenuBarProvider {

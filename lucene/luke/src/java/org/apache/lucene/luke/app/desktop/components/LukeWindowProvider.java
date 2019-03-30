@@ -17,20 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.luke.app.DirectoryHandler;
-import org.apache.lucene.luke.app.DirectoryObserver;
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.IndexObserver;
-import org.apache.lucene.luke.app.LukeState;
-import org.apache.lucene.luke.app.desktop.MessageBroker;
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.ImageUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.TextAreaAppender;
-import org.apache.lucene.util.Version;
-
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -47,6 +33,20 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.io.IOException;
+
+import org.apache.lucene.luke.app.DirectoryHandler;
+import org.apache.lucene.luke.app.DirectoryObserver;
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.IndexObserver;
+import org.apache.lucene.luke.app.LukeState;
+import org.apache.lucene.luke.app.desktop.MessageBroker;
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.ImageUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.TextAreaAppender;
+import org.apache.lucene.util.Version;
 
 /** Provider of the root window */
 public final class LukeWindowProvider implements LukeWindowOperator {

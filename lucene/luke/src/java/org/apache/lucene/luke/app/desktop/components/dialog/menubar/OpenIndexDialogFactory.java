@@ -17,27 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import java.lang.invoke.MethodHandles;
-import org.apache.lucene.luke.app.DirectoryHandler;
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.util.SuppressForbidden;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -59,13 +38,32 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.luke.app.DirectoryHandler;
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.luke.util.reflection.ClassScanner;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.lucene.util.SuppressForbidden;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Factory of open index dialog */
 public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory {
@@ -127,9 +125,14 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
     readOnlyCB.addActionListener(listeners::toggleReadOnly);
     readOnlyCB.setOpaque(false);
 
-    for (String clazzName : supportedDirImpls()) {
-      dirImplCombo.addItem(clazzName);
-    }
+    // Scanning all Directory types will take time...
+    ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("load-directory-types"));
+    executorService.execute(() -> {
+      for (String clazzName : supportedDirImpls()) {
+        dirImplCombo.addItem(clazzName);
+      }
+    });
+    executorService.shutdown();
     dirImplCombo.setPreferredSize(new Dimension(350, 30));
     dirImplCombo.setSelectedItem(prefs.getDirImpl());
 
@@ -254,16 +257,11 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
 
   private String[] supportedDirImpls() {
     // supports FS-based built-in implementations
-    Reflections reflections = new Reflections(new ConfigurationBuilder()
-        .setUrls(ClasspathHelper.forPackage("org.apache.lucene.store"))
-        .setScanners(new SubTypesScanner())
-        .filterInputsBy(new FilterBuilder().include("org\\.apache\\.lucene\\.store.*"))
-    );
-    Set<Class<? extends FSDirectory>> clazzSet = reflections.getSubTypesOf(FSDirectory.class);
+    ClassScanner scanner = new ClassScanner("org.apache.lucene.store", getClass().getClassLoader());
+    Set<Class<? extends FSDirectory>> clazzSet = scanner.scanSubTypes(FSDirectory.class);
 
     List<String> clazzNames = new ArrayList<>();
     clazzNames.add(FSDirectory.class.getName());
-    clazzNames.add(MMapDirectory.class.getName());
     clazzNames.addAll(clazzSet.stream().map(Class::getName).collect(Collectors.toList()));
 
     String[] result = new String[clazzNames.size()];

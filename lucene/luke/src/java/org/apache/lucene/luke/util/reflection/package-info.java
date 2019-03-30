@@ -15,16 +15,5 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luke.app.desktop.components.fragments.search;
-
-import java.util.Collection;
-import java.util.Set;
-
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-
-/** Operator of the FieldValues tab */
-public interface FieldValuesTabOperator extends ComponentOperatorRegistry.ComponentOperator {
-  void setFields(Collection<String> fields);
-
-  Set<String> getFieldsToLoad();
-}
+/** Utilities for reflections */
+package org.apache.lucene.luke.util.reflection;

@@ -17,13 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.lang.Callable;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -38,6 +31,13 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Window;
 import java.io.IOException;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.lang.Callable;
 
 /** Factory of confirm dialog */
 public final class ConfirmDialogFactory implements DialogOpener.DialogFactory {

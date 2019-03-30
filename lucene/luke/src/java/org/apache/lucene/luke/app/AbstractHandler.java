@@ -18,11 +18,11 @@
 package org.apache.lucene.luke.app;
 
 import java.lang.invoke.MethodHandles;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Abstract handler class */
 public abstract class AbstractHandler<T extends Observer> {

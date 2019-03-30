@@ -17,9 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-
-import java.nio.file.FileSystems;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -27,6 +24,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.nio.file.FileSystems;
+
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
 /** Provider of the Logs panel */
 public final class LogsPanelProvider {

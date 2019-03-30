@@ -17,8 +17,41 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import com.google.common.base.Strings;
+import java.lang.reflect.Constructor;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -55,6 +88,7 @@ import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.HelpHeaderRenderer;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.NumericUtils;
+import org.apache.lucene.luke.app.desktop.util.StringUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.tools.IndexTools;
@@ -62,40 +96,6 @@ import org.apache.lucene.luke.models.tools.IndexToolsFactory;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultCellEditor;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.ListSelectionModel;
-import javax.swing.UIManager;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableCellRenderer;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
-import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /** Factory of add document dialog */
 public final class AddDocumentDialogFactory implements DialogOpener.DialogFactory, AddDocumentDialogOperator {
@@ -342,8 +342,8 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     void addDocument(ActionEvent e) {
       List<NewField> validFields = newFieldList.stream()
           .filter(nf -> !nf.isDeleted())
-          .filter(nf -> !Strings.isNullOrEmpty(nf.getName()))
-          .filter(nf -> !Strings.isNullOrEmpty(nf.getValue()))
+          .filter(nf -> !StringUtils.isNullOrEmpty(nf.getName()))
+          .filter(nf -> !StringUtils.isNullOrEmpty(nf.getValue()))
           .collect(Collectors.toList());
       if (validFields.isEmpty()) {
         infoTA.setText("Please add one or more fields. Name and Value are both required.");

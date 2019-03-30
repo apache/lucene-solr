@@ -17,11 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.models.search.SimilarityConfig;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -34,6 +29,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.models.search.SimilarityConfig;
 
 /** Provider of the Similarity pane */
 public final class SimilarityPaneProvider implements SimilarityTabOperator {

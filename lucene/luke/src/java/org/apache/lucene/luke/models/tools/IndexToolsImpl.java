@@ -17,6 +17,15 @@
 
 package org.apache.lucene.luke.models.tools;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
@@ -42,15 +51,6 @@ import org.apache.lucene.luke.models.util.twentynewsgroups.Message;
 import org.apache.lucene.luke.models.util.twentynewsgroups.MessageFilesParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
 
 /** Default implementation of {@link IndexTools} */
 public final class IndexToolsImpl extends LukeModel implements IndexTools {

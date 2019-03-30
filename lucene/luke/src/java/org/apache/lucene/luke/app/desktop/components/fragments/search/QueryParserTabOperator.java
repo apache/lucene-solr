@@ -17,10 +17,10 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
+import java.util.Collection;
+
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.models.search.QueryParserConfig;
-
-import java.util.Collection;
 
 /** Operator for the QueryParser tab */
 public interface QueryParserTabOperator extends ComponentOperatorRegistry.ComponentOperator {

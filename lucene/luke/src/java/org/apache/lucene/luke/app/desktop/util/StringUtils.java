@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luke.app.desktop.components.fragments.search;
+package org.apache.lucene.luke.app.desktop.util;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.Objects;
 
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+/** Utilities for handling strings */
+public class StringUtils {
 
-/** Operator of the FieldValues tab */
-public interface FieldValuesTabOperator extends ComponentOperatorRegistry.ComponentOperator {
-  void setFields(Collection<String> fields);
+  public static boolean isNullOrEmpty(String s) {
+    return Objects.isNull(s) || s.equals("");
+  }
 
-  Set<String> getFieldsToLoad();
+  private StringUtils() {
+  }
 }

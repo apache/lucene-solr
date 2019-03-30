@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import com.google.common.base.Strings;
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.components.SearchTabOperator;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.models.search.Search;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortedNumericSortField;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -40,6 +31,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.components.SearchTabOperator;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StringUtils;
+import org.apache.lucene.luke.models.search.Search;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
 
 /** Provider of the Sort pane */
 public final class SortPaneProvider implements SortTabOperator {
@@ -162,15 +162,16 @@ public final class SortPaneProvider implements SortTabOperator {
 
   @Override
   public Sort getSort() {
-    if (Strings.isNullOrEmpty((String) fieldCombo1.getSelectedItem()) && Strings.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
+    if (StringUtils.isNullOrEmpty((String) fieldCombo1.getSelectedItem())
+        && StringUtils.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
       return null;
     }
 
     List<SortField> li = new ArrayList<>();
-    if (!Strings.isNullOrEmpty((String) fieldCombo1.getSelectedItem())) {
+    if (!StringUtils.isNullOrEmpty((String) fieldCombo1.getSelectedItem())) {
       searchModel.getSortType((String) fieldCombo1.getSelectedItem(), (String) typeCombo1.getSelectedItem(), isReverse(orderCombo1)).ifPresent(li::add);
     }
-    if (!Strings.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
+    if (!StringUtils.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
       searchModel.getSortType((String) fieldCombo2.getSelectedItem(), (String) typeCombo2.getSelectedItem(), isReverse(orderCombo2)).ifPresent(li::add);
     }
     return new Sort(li.toArray(new SortField[0]));
@@ -193,7 +194,7 @@ public final class SortPaneProvider implements SortTabOperator {
 
     private void resetField(JComboBox<String> fieldCombo, JComboBox<String> typeCombo, JComboBox<String> orderCombo) {
       typeCombo.removeAllItems();
-      if (Strings.isNullOrEmpty((String) fieldCombo.getSelectedItem())) {
+      if (StringUtils.isNullOrEmpty((String) fieldCombo.getSelectedItem())) {
         typeCombo.addItem("");
         typeCombo.setEnabled(false);
         orderCombo.setEnabled(false);
@@ -232,8 +233,8 @@ public final class SortPaneProvider implements SortTabOperator {
 
     private void resetExactHitsCnt() {
       operatorRegistry.get(SearchTabOperator.class).ifPresent(operator -> {
-        if (Strings.isNullOrEmpty((String) fieldCombo1.getSelectedItem()) &&
-            Strings.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
+        if (StringUtils.isNullOrEmpty((String) fieldCombo1.getSelectedItem()) &&
+            StringUtils.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
           operator.enableExactHitsCB(true);
           operator.setExactHits(false);
         } else {

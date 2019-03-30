@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.models.documents.DocValues;
-import org.apache.lucene.luke.util.BytesRefUtils;
-import org.apache.lucene.util.NumericUtils;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
@@ -53,6 +44,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.models.documents.DocValues;
+import org.apache.lucene.luke.util.BytesRefUtils;
+import org.apache.lucene.util.NumericUtils;
 
 /** Factory of doc values dialog */
 public final class DocValuesDialogFactory implements DialogOpener.DialogFactory {

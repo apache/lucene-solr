@@ -17,6 +17,8 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import java.util.List;
+
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
@@ -25,8 +27,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.junit.Test;
-
-import java.util.List;
 
 
 // See: https://github.com/DmitryKey/luke/issues/133

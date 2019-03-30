@@ -17,16 +17,16 @@
 
 package org.apache.lucene.luke.models.documents;
 
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.luke.util.BytesRefUtils;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.luke.util.BytesRefUtils;
 
 /**
  * Holder for term vector entry representing the term and their number of occurrences, and optionally, positions in the document field.

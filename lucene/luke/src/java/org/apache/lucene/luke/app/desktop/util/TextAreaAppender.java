@@ -17,6 +17,13 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
+import javax.swing.JTextArea;
+import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -27,13 +34,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
-
-import javax.swing.JTextArea;
-import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /** Log appender for text areas */
 @Plugin(name = "TextAreaAppender", category = "Core", elementType = "appender", printObject = true)

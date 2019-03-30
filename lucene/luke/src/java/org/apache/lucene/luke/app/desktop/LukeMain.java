@@ -17,7 +17,12 @@
 
 package org.apache.lucene.luke.app.desktop;
 
+import javax.swing.JFrame;
+import javax.swing.UIManager;
+import java.awt.GraphicsEnvironment;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.luke.app.desktop.components.LukeWindowProvider;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.OpenIndexDialogFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -25,11 +30,6 @@ import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.swing.JFrame;
-import javax.swing.UIManager;
-import java.awt.GraphicsEnvironment;
-import java.io.IOException;
 
 import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
 

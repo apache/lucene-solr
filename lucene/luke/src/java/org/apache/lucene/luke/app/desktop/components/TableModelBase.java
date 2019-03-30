@@ -17,10 +17,10 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-
 import javax.swing.table.AbstractTableModel;
 import java.util.Map;
+
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
 
 /** Base table model that stores table's meta data and content. This also provides some default implementation of the {@link javax.swing.table.TableModel} interface. */
 public abstract class TableModelBase<T extends TableColumnInfo> extends AbstractTableModel {

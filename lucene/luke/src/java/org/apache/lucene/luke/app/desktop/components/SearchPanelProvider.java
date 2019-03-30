@@ -17,48 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import com.google.common.base.Strings;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.luke.app.IndexHandler;
-import org.apache.lucene.luke.app.IndexObserver;
-import org.apache.lucene.luke.app.LukeState;
-import org.apache.lucene.luke.app.desktop.MessageBroker;
-import org.apache.lucene.luke.app.desktop.components.dialog.ConfirmDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.search.ExplainDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.AnalyzerPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.FieldValuesPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.FieldValuesTabOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTTabOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.QueryParserPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.QueryParserTabOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.SimilarityPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.SimilarityTabOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.SortPaneProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.SortTabOperator;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.app.desktop.util.TabUtils;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.luke.models.search.MLTConfig;
-import org.apache.lucene.luke.models.search.QueryParserConfig;
-import org.apache.lucene.luke.models.search.Search;
-import org.apache.lucene.luke.models.search.SearchFactory;
-import org.apache.lucene.luke.models.search.SearchResults;
-import org.apache.lucene.luke.models.search.SimilarityConfig;
-import org.apache.lucene.luke.models.tools.IndexTools;
-import org.apache.lucene.luke.models.tools.IndexToolsFactory;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TotalHits;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -94,6 +52,48 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.luke.app.IndexHandler;
+import org.apache.lucene.luke.app.IndexObserver;
+import org.apache.lucene.luke.app.LukeState;
+import org.apache.lucene.luke.app.desktop.MessageBroker;
+import org.apache.lucene.luke.app.desktop.components.dialog.ConfirmDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.search.ExplainDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.AnalyzerPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.FieldValuesPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.FieldValuesTabOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTTabOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.QueryParserPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.QueryParserTabOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.SimilarityPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.SimilarityTabOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.SortPaneProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.SortTabOperator;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StringUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.TabUtils;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.luke.models.search.MLTConfig;
+import org.apache.lucene.luke.models.search.QueryParserConfig;
+import org.apache.lucene.luke.models.search.Search;
+import org.apache.lucene.luke.models.search.SearchFactory;
+import org.apache.lucene.luke.models.search.SearchResults;
+import org.apache.lucene.luke.models.search.SimilarityConfig;
+import org.apache.lucene.luke.models.tools.IndexTools;
+import org.apache.lucene.luke.models.tools.IndexToolsFactory;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TotalHits;
 
 /** Provider of the Search panel */
 public final class SearchPanelProvider implements SearchTabOperator {
@@ -335,11 +335,11 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.insets = new Insets(10, 0, 2, 0);
     panel.add(mltBtn, c);
 
-    JPanel docNo = new JPanel(new FlowLayout());
+    JPanel docNo = new JPanel(new FlowLayout(FlowLayout.LEADING));
     docNo.setOpaque(false);
     JLabel docNoLabel = new JLabel("with doc #");
     docNo.add(docNoLabel);
-    mltDocFTF.setColumns(3);
+    mltDocFTF.setColumns(8);
     mltDocFTF.setValue(0);
     docNo.add(mltDocFTF);
     c.gridx = 1;
@@ -491,7 +491,7 @@ public final class SearchPanelProvider implements SearchTabOperator {
     Query query;
     if (termQueryCB.isSelected()) {
       // term query
-      if (Strings.isNullOrEmpty(queryStringTA.getText())) {
+      if (StringUtils.isNullOrEmpty(queryStringTA.getText())) {
         throw new LukeException("Query is not set.");
       }
       String[] tmp = queryStringTA.getText().split(":");
@@ -557,7 +557,7 @@ public final class SearchPanelProvider implements SearchTabOperator {
   }
 
   private Query parse(boolean rewrite) {
-    String expr = Strings.isNullOrEmpty(queryStringTA.getText()) ? "*:*" : queryStringTA.getText();
+    String expr = StringUtils.isNullOrEmpty(queryStringTA.getText()) ? "*:*" : queryStringTA.getText();
     String df = operatorRegistry.get(QueryParserTabOperator.class)
         .map(QueryParserTabOperator::getDefaultField)
         .orElse("");

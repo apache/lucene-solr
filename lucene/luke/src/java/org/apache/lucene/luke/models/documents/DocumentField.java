@@ -17,6 +17,9 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -25,9 +28,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Holder for a document field's information and data.

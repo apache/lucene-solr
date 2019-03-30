@@ -17,20 +17,21 @@
 
 package org.apache.lucene.luke.models.analysis;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 public class AnalysisImplTest extends LuceneTestCase {
 
@@ -66,7 +67,7 @@ public class AnalysisImplTest extends LuceneTestCase {
   }
 
   @Test
-  public void testAnalyze_preset() throws Exception {
+  public void testAnalyze_preset() {
     AnalysisImpl analysis = new AnalysisImpl();
     String analyzerType = "org.apache.lucene.analysis.standard.StandardAnalyzer";
     Analyzer analyzer = analysis.createAnalyzerFromClassName(analyzerType);
@@ -78,11 +79,12 @@ public class AnalysisImplTest extends LuceneTestCase {
   }
 
   @Test
-  public void testAnalyze_custom() throws Exception {
+  public void testAnalyze_custom() {
     AnalysisImpl analysis = new AnalysisImpl();
+    Map<String, String> tkParams = new HashMap<>();
+    tkParams.put("maxTokenLen", "128");
     CustomAnalyzerConfig.Builder builder = new CustomAnalyzerConfig.Builder(
-        "keyword",
-        ImmutableMap.of("maxTokenLen", "128"))
+        "keyword", tkParams)
         .addTokenFilterConfig("lowercase", Collections.emptyMap());
     CustomAnalyzer analyzer = (CustomAnalyzer) analysis.buildCustomAnalyzer(builder.build());
     assertEquals("org.apache.lucene.analysis.custom.CustomAnalyzer", analyzer.getClass().getName());
@@ -101,13 +103,17 @@ public class AnalysisImplTest extends LuceneTestCase {
     Files.write(stopFile, "of\nthe\nby\nfor\n".getBytes(StandardCharsets.UTF_8));
 
     AnalysisImpl analysis = new AnalysisImpl();
+    Map<String, String> tkParams = new HashMap<>();
+    tkParams.put("maxTokenLen", "128");
+    Map<String, String> tfParams = new HashMap<>();
+    tfParams.put("ignoreCase", "true");
+    tfParams.put("words", "stop.txt");
+    tfParams.put("format", "wordset");
     CustomAnalyzerConfig.Builder builder = new CustomAnalyzerConfig.Builder(
-        "whitespace",
-        ImmutableMap.of("maxTokenLen", "128"))
+        "whitespace", tkParams)
         .configDir(confDir.toString())
         .addTokenFilterConfig("lowercase", Collections.emptyMap())
-        .addTokenFilterConfig("stop",
-            ImmutableMap.of("ignoreCase", "true", "words", "stop.txt", "format", "wordset"));
+        .addTokenFilterConfig("stop", tfParams);
     CustomAnalyzer analyzer = (CustomAnalyzer) analysis.buildCustomAnalyzer(builder.build());
     assertEquals("org.apache.lucene.analysis.custom.CustomAnalyzer", analyzer.getClass().getName());
     assertEquals("org.apache.lucene.analysis.core.WhitespaceTokenizerFactory", analyzer.getTokenizerFactory().getClass().getName());

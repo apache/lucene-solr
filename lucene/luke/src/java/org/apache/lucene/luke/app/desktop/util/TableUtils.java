@@ -17,8 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
-
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
@@ -28,6 +26,8 @@ import java.util.Arrays;
 import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
 
 /** Table utilities */
 public class TableUtils {

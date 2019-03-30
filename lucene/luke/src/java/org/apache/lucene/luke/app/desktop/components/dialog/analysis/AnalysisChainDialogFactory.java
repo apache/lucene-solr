@@ -17,12 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -41,6 +35,12 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
 import java.io.IOException;
+
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
 /** Factory of analysis chain dialog */
 public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {

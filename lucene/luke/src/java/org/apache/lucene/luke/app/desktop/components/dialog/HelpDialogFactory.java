@@ -17,11 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -35,6 +30,11 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Window;
 import java.io.IOException;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
 /** Factory of help dialog */
 public final class HelpDialogFactory implements DialogOpener.DialogFactory {

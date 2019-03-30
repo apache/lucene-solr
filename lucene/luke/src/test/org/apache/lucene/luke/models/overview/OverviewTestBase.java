@@ -17,7 +17,11 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,10 +33,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Map;
 
 public abstract class OverviewTestBase extends LuceneTestCase {
 
@@ -72,7 +72,8 @@ public abstract class OverviewTestBase extends LuceneTestCase {
     doc3.add(newTextField("f2", "a f", Field.Store.NO));
     writer.addDocument(doc3);
 
-    Map<String, String> userData = ImmutableMap.of("data", "val");
+    Map<String, String> userData = new HashMap<>();
+    userData.put("data", "val");
     writer.w.setLiveCommitData(userData.entrySet());
 
     writer.commit();

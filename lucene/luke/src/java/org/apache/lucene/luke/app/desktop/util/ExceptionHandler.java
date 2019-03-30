@@ -18,6 +18,7 @@
 package org.apache.lucene.luke.app.desktop.util;
 
 import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.models.LukeException;
 import org.slf4j.Logger;

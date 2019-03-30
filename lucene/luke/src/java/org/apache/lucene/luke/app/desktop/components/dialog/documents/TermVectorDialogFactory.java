@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
-import org.apache.lucene.luke.app.desktop.components.TableModelBase;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.documents.TermVectorEntry;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -44,6 +35,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
+import org.apache.lucene.luke.app.desktop.components.TableModelBase;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.documents.TermVectorEntry;
 
 /** Factory of term vector dialog */
 public final class TermVectorDialogFactory implements DialogOpener.DialogFactory {

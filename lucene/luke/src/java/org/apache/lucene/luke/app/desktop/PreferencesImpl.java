@@ -17,16 +17,16 @@
 
 package org.apache.lucene.luke.app.desktop;
 
-import org.apache.lucene.luke.app.desktop.util.inifile.IniFile;
-import org.apache.lucene.luke.app.desktop.util.inifile.SimpleIniFile;
-import org.apache.lucene.store.FSDirectory;
-
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.luke.app.desktop.util.inifile.IniFile;
+import org.apache.lucene.luke.app.desktop.util.inifile.SimpleIniFile;
+import org.apache.lucene.store.FSDirectory;
 
 /** Default implementation of {@link Preferences} */
 public final class PreferencesImpl implements Preferences {

@@ -17,9 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.util.inifile;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +25,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 public class SimpleIniFileTest extends LuceneTestCase {
 

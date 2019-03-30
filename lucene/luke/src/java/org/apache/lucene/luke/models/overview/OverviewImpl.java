@@ -17,18 +17,18 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.luke.models.LukeModel;
-import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.luke.models.util.IndexUtils;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.luke.models.LukeModel;
+import org.apache.lucene.luke.models.util.IndexUtils;
 
 /** Default implementation of {@link Overview} */
 public final class OverviewImpl extends LukeModel implements Overview {

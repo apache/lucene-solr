@@ -17,7 +17,15 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
@@ -26,21 +34,13 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.luke.util.BytesRefUtils;
+import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.util.IndexUtils;
+import org.apache.lucene.luke.util.BytesRefUtils;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
 
 /** Default implementation of {@link Documents} */
 public final class DocumentsImpl extends LukeModel implements Documents {

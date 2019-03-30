@@ -17,12 +17,12 @@
 
 package org.apache.lucene.luke.models.documents;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.luke.models.LukeException;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.luke.models.LukeException;
 
 /**
  * A dedicated interface for Luke's Documents tab.

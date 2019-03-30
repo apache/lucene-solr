@@ -17,14 +17,14 @@
 
 package org.apache.lucene.luke.models.search;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.lucene.document.DateTools;
-
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.document.DateTools;
 
 /**
  * Configurations for query parser.
@@ -173,7 +173,7 @@ public final class QueryParserConfig {
     this.autoGenerateMultiTermSynonymsPhraseQuery = builder.autoGenerateMultiTermSynonymsPhraseQuery;
     this.autoGeneratePhraseQueries = builder.autoGeneratePhraseQueries;
     this.splitOnWhitespace = builder.splitOnWhitespace;
-    this.typeMap = ImmutableMap.copyOf(builder.typeMap);
+    this.typeMap = Collections.unmodifiableMap(builder.typeMap);
   }
 
   public boolean isUseClassicParser() {

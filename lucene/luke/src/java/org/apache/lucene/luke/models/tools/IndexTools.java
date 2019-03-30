@@ -17,15 +17,15 @@
 
 package org.apache.lucene.luke.models.tools;
 
+import java.io.PrintStream;
+import java.util.Collection;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.search.Query;
-
-import java.io.PrintStream;
-import java.util.Collection;
 
 /**
  * A dedicated interface for Luke's various index manipulations.

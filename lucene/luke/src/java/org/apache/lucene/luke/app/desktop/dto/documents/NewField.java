@@ -17,6 +17,8 @@
 
 package org.apache.lucene.luke.app.desktop.dto.documents;
 
+import java.util.Objects;
+
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -32,8 +34,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.luke.app.desktop.util.NumericUtils;
-
-import java.util.Objects;
 
 /** Data holder for a new field. This is used in the add document dialog. */
 public final class NewField {

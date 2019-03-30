@@ -17,8 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import org.apache.lucene.luke.app.desktop.components.dialog.HelpDialogFactory;
-
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -32,6 +30,8 @@ import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Objects;
+
+import org.apache.lucene.luke.app.desktop.components.dialog.HelpDialogFactory;
 
 /**
  * Cell render class for table header with help dialog.

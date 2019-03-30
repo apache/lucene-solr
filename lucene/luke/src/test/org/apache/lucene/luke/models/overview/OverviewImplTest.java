@@ -17,14 +17,14 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import org.apache.lucene.store.AlreadyClosedException;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.store.AlreadyClosedException;
+import org.junit.Test;
 
 public class OverviewImplTest extends OverviewTestBase {
 

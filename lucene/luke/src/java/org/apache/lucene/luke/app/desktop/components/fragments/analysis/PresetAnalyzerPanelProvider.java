@@ -17,11 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -33,6 +28,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.util.Collection;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
 /** Provider of the preset analyzer panel */
 public final class PresetAnalyzerPanelProvider implements PresetAnalyzerPanelOperator {
@@ -61,6 +61,7 @@ public final class PresetAnalyzerPanelProvider implements PresetAnalyzerPanelOpe
     center.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     center.setPreferredSize(new Dimension(400, 40));
     analyzersCB.addActionListener(listeners::setAnalyzer);
+    analyzersCB.setEnabled(false);
     center.add(analyzersCB);
     panel.add(center, BorderLayout.CENTER);
 
@@ -74,6 +75,7 @@ public final class PresetAnalyzerPanelProvider implements PresetAnalyzerPanelOpe
     String[] analyzerNames = presetAnalyzers.stream().map(Class::getName).toArray(String[]::new);
     ComboBoxModel<String> model = new DefaultComboBoxModel<>(analyzerNames);
     analyzersCB.setModel(model);
+    analyzersCB.setEnabled(true);
   }
 
   @Override

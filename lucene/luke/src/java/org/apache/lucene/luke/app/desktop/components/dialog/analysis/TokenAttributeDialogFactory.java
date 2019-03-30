@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
-import org.apache.lucene.luke.app.desktop.components.TableModelBase;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.analysis.Analysis;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -42,6 +33,15 @@ import java.awt.Window;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
+import org.apache.lucene.luke.app.desktop.components.TableModelBase;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.analysis.Analysis;
 
 /** Factory of token attribute dialog */
 public final class TokenAttributeDialogFactory implements DialogOpener.DialogFactory {

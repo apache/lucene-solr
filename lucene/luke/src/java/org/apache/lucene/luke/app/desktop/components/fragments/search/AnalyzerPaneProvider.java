@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.components.TabSwitcherProxy;
-import org.apache.lucene.luke.app.desktop.components.TabbedPaneProvider;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -44,6 +35,15 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.components.TabSwitcherProxy;
+import org.apache.lucene.luke.app.desktop.components.TabbedPaneProvider;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
 /** Provider of the Analyzer pane */
 public final class AnalyzerPaneProvider implements AnalyzerTabOperator {

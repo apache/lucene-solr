@@ -18,14 +18,14 @@
 package org.apache.lucene.luke.app;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Objects;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.util.IndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /** Index open/close handler */
 public final class IndexHandler extends AbstractHandler<IndexObserver> {

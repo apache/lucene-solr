@@ -17,10 +17,10 @@
 
 package org.apache.lucene.luke.models.documents;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
 
 /**
  * Holder for a term's position information, and optionally, offsets and payloads.

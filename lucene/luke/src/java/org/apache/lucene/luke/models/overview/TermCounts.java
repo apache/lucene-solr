@@ -17,15 +17,15 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.luke.models.util.IndexUtils;
-
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.luke.models.util.IndexUtils;
 
 /**
  * An utility class that collects term counts terms for all fields in a index.

@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
-import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
-import org.apache.lucene.luke.app.desktop.components.TableModelBase;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.search.QueryParserConfig;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -50,6 +42,14 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
+import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
+import org.apache.lucene.luke.app.desktop.components.TableModelBase;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.search.QueryParserConfig;
 
 import static org.apache.lucene.luke.app.desktop.components.fragments.search.PointTypesTableModel.NumType.INT;
 

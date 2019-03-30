@@ -17,28 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luke.app.desktop.MessageBroker;
-import org.apache.lucene.luke.app.desktop.components.dialog.analysis.AnalysisChainDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.analysis.TokenAttributeDialogFactory;
-import org.apache.lucene.luke.app.desktop.components.dialog.documents.AddDocumentDialogOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.analysis.CustomAnalyzerPanelOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.analysis.CustomAnalyzerPanelProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.analysis.PresetAnalyzerPanelOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.analysis.PresetAnalyzerPanelProvider;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.AnalyzerTabOperator;
-import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTTabOperator;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
-import org.apache.lucene.luke.models.analysis.Analysis;
-import org.apache.lucene.luke.models.analysis.AnalysisFactory;
-import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
-
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -61,7 +39,32 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.luke.app.desktop.MessageBroker;
+import org.apache.lucene.luke.app.desktop.components.dialog.analysis.AnalysisChainDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.analysis.TokenAttributeDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.documents.AddDocumentDialogOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.CustomAnalyzerPanelOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.CustomAnalyzerPanelProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.PresetAnalyzerPanelOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.PresetAnalyzerPanelProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.AnalyzerTabOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTTabOperator;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.TableUtils;
+import org.apache.lucene.luke.models.analysis.Analysis;
+import org.apache.lucene.luke.models.analysis.AnalysisFactory;
+import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
+import org.apache.lucene.util.NamedThreadFactory;
 
 /** Provider of the Analysis panel */
 public final class AnalysisPanelProvider implements AnalysisTabOperator {
@@ -117,8 +120,13 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     operatorRegistry.register(AnalysisTabOperator.class, this);
 
     operatorRegistry.get(PresetAnalyzerPanelOperator.class).ifPresent(operator -> {
-      operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
-      operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
+      // Scanning all Analyzer types will take time...
+      ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("load-preset-analyzer-types"));
+      executorService.execute(() -> {
+        operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
+        operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
+      });
+      executorService.shutdown();
     });
   }
 

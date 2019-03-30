@@ -17,19 +17,8 @@
 
 package org.apache.lucene.luke.models.commits;
 
-import java.lang.invoke.MethodHandles;
-import com.google.common.collect.ImmutableMap;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.luke.models.LukeModel;
-import org.apache.lucene.luke.models.LukeException;
-import org.apache.lucene.store.Directory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -38,6 +27,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.luke.models.LukeModel;
+import org.apache.lucene.store.Directory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Default implementation of {@link Commits} */
 public final class CommitsImpl extends LukeModel implements Commits {
@@ -201,7 +200,7 @@ public final class CommitsImpl extends LukeModel implements Commits {
     if (dir == null) {
       return Collections.emptyMap();
     }
-    return ImmutableMap.copyOf(commitMap);
+    return Collections.unmodifiableMap(commitMap);
   }
 
   private SegmentInfos findSegmentInfos(long commitGen) throws LukeException, IOException {

@@ -17,11 +17,11 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import org.apache.lucene.luke.app.desktop.LukeMain;
-
 import javax.swing.JDialog;
 import java.awt.Window;
 import java.util.function.Consumer;
+
+import org.apache.lucene.luke.app.desktop.LukeMain;
 
 /** An utility class for opening a dialog */
 public class DialogOpener<T extends DialogOpener.DialogFactory> {

@@ -17,6 +17,10 @@
 
 package org.apache.lucene.luke.models.util.twentynewsgroups;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -28,10 +32,6 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 /** Data holder class for a newsgroups message */
 public class Message {

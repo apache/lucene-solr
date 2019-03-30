@@ -17,11 +17,11 @@
 
 package org.apache.lucene.luke.models.overview;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+
+import org.junit.Test;
 
 public class TermCountsTest extends OverviewTestBase {
 

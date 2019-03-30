@@ -17,13 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.search;
 
-import org.apache.lucene.luke.app.desktop.Preferences;
-import org.apache.lucene.luke.app.desktop.PreferencesFactory;
-import org.apache.lucene.luke.app.desktop.util.DialogOpener;
-import org.apache.lucene.luke.app.desktop.util.FontUtils;
-import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.apache.lucene.search.Explanation;
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -46,6 +39,13 @@ import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.stream.IntStream;
+
+import org.apache.lucene.luke.app.desktop.Preferences;
+import org.apache.lucene.luke.app.desktop.PreferencesFactory;
+import org.apache.lucene.luke.app.desktop.util.DialogOpener;
+import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.MessageUtils;
+import org.apache.lucene.search.Explanation;
 
 /** Factory of explain dialog */
 public final class ExplainDialogFactory implements DialogOpener.DialogFactory {
