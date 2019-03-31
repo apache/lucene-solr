@@ -41,7 +41,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig-block-atomic-update.xml", "schema-nest.xml"); // use "nest" schema
+    initCore("solrconfig-tlog.xml", "schema-nest.xml"); // use "nest" schema
   }
 
   @Before
@@ -75,7 +75,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   @Test
   public void testBlockAtomicInplaceUpdates() throws Exception {
     SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     assertU(commit());
 
@@ -87,7 +87,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     List<SolrInputDocument> docs = IntStream.range(10, 20).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s",
         "child", "inplace_updatable_int", "0")).collect(Collectors.toList());
     doc = sdoc("id", "1", "children", Collections.singletonMap("add", docs));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
     assertU(commit());
 
@@ -103,13 +103,13 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     for(int i = 10; i < 20; ++i) {
       doc = sdoc("id", String.valueOf(i), "inplace_updatable_int", Collections.singletonMap("inc", "1"));
-      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+      addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
       assertU(commit());
     }
 
     for(int i = 10; i < 20; ++i) {
       doc = sdoc("id", String.valueOf(i), "inplace_updatable_int", Collections.singletonMap("inc", "1"));
-      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+      addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
       assertU(commit());
     }
 
@@ -117,13 +117,13 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     for(int i = 10; i < 20; ++i) {
       docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
       doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
-      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+      addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
       assertU(commit());
     }
 
     for(int i =10; i < 20; ++i) {
       doc = sdoc("id", String.valueOf(i), "inplace_updatable_int", Collections.singletonMap("inc", "1"));
-      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+      addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
       assertU(commit());
     }
 
@@ -153,7 +153,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   @Test
   public void testBlockAtomicQuantities() throws Exception {
     SolrInputDocument doc = sdoc("id", "1", "string_s", "root");
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     assertU(commit());
 
@@ -164,7 +164,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     List<SolrInputDocument> docs = IntStream.range(10, 20).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "child")).collect(Collectors.toList());
     doc = sdoc("id", "1", "children", Collections.singletonMap("add", docs));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -183,7 +183,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     for(int i = 10; i < 20; ++i) {
       docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
       doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
-      addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+      addAndGetVersion(doc, params("wt", "json"));
       assertU(commit());
     }
 
@@ -199,7 +199,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   @Test
   public void testBlockAtomicStack() throws Exception {
     SolrInputDocument doc = sdoc("id", "1", "child1", sdocs(sdoc("id", "2", "child_s", "child")));
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     assertU(commit());
 
@@ -210,7 +210,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     );
 
     doc = sdoc("id", "1", "child1", Collections.singletonMap("add", sdocs(sdoc("id", "3", "child_s", "child"))));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -224,7 +224,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "2",
         "grandChild", Collections.singletonMap("add", sdocs(sdoc("id", "4", "child_s", "grandChild"), sdoc("id", "5", "child_s", "grandChild"))));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -241,7 +241,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "1",
         "child2", Collections.singletonMap("add", sdocs(sdoc("id", "8", "child_s", "child"))));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -260,7 +260,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "1",
         "new_s", Collections.singletonMap("add", "new string"));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -290,7 +290,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "cat_ss", new String[] {"aaa", "ccc"},
         "child1", sdoc("id", "2", "cat_ss", "child")
     );
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
@@ -317,7 +317,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     doc = sdoc("id", "1",
         "cat_ss", Collections.singletonMap("add", "bbb"),
         "child2", Collections.singletonMap("add", sdoc("id", "3", "cat_ss", "child")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
 
      assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, [child]")
@@ -340,7 +340,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "2",
         "child3", Collections.singletonMap("add", sdoc("id", "4", "cat_ss", "grandChild")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, child3, [child]")
         ,"=={'doc':{'id':'1'" +
@@ -359,7 +359,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     //add greatGrandChild
     doc = sdoc("id", "4",
         "child4", Collections.singletonMap("add", sdoc("id", "5", "cat_ss", "greatGrandChild")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, child3, child4, [child]")
         ,"=={'doc':{'id':'1'" +
@@ -378,7 +378,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     //add another greatGrandChild
     doc = sdoc("id", "4",
         "child4", Collections.singletonMap("add", sdoc("id", "6", "cat_ss", "greatGrandChild")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -394,13 +394,13 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
             sdoc("id", "8", "cat_ss", "child")
         ))
     );
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
     doc = sdoc("id", "1",
         "new_s", Collections.singletonMap("add", "new string"));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     assertU(commit());
 
@@ -436,8 +436,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "cat_ss", new String[] {"aaa", "ccc"},
         "child1", Collections.singleton(sdoc("id", "2", "cat_ss", "child"))
     );
-    json(doc);
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
@@ -478,7 +477,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     doc = sdoc("id", "1",
         "cat_ss", Collections.singletonMap("set", Arrays.asList("aaa", "bbb")),
         "child1", Collections.singletonMap("set", sdoc("id", "3", "cat_ss", "child")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")
@@ -499,7 +498,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "3",
         "child2", Collections.singletonMap("set", sdoc("id", "4", "cat_ss", "child")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json", "_route_", "1"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, [child]")
         ,"=={'doc':{'id':'1'" +
@@ -531,7 +530,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   public void testAtomicUpdateDeleteNoRootField() throws Exception {
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[]{"aaa", "bbb"});
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     assertJQ(req("q", "id:1")
         , "/response/numFound==0"
@@ -549,7 +548,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "1",
         "child1", Collections.singletonMap("add", sdoc("id", "2", "cat_ss", "child")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
     // commit the changes
     assertU(commit());
@@ -573,8 +572,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "cat_ss", new String[] {"aaa", "ccc"},
         "child1", sdocs(sdoc("id", "2", "cat_ss", "child"), sdoc("id", "3", "cat_ss", "child"))
     );
-    json(doc);
-    addDoc(adoc(doc), "nested-rtg");
+    assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
@@ -614,7 +612,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "1",
         "child1", Collections.singletonMap("remove", sdoc("id", "3", "cat_ss", "child")));
-    addAndGetVersion(doc, params("update.chain", "nested-rtg", "wt", "json"));
+    addAndGetVersion(doc, params("wt", "json"));
 
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, [child]")

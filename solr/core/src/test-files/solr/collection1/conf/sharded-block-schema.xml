@@ -28,7 +28,7 @@
 
   <!-- required for NestedUpdateProcessor -->
   <field name="_nest_parent_" type="string" indexed="true" stored="true"/>
-  <field name="_nest_path_" type="descendants_path" indexed="true" multiValued="false" docValues="true" stored="false" useDocValuesAsStored="false"/>
+  <field name="_nest_path_" type="_nest_path_"/>
 
   <!-- required to test updates nested inplaceUpdates -->
   <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true" default="0"/>
@@ -39,6 +39,8 @@
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
+  <fieldType name="_nest_path_" class="solr.NestPathField" />
+
   <!-- Point Fields -->
   <fieldType name="int" class="solr.IntPointField" docValues="true"/>
   <fieldType name="long" class="solr.LongPointField" docValues="true"/>
@@ -46,19 +48,9 @@
   <fieldType name="float" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="date" class="solr.DatePointField" docValues="true"/>
 
-  <fieldType name="descendants_path" class="solr.SortableTextField">
-    <analyzer type="index">
-      <!--char filter to append / to path in the indexed form e.g. toppings/ingredients turns to toppings/ingredients/ -->
-      <charFilter class="solr.PatternReplaceCharFilterFactory" pattern="(^.*.*$)" replacement="$0/"/>
-      <!--tokenize the path so path queries are optimized -->
-      <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
-      <!--remove the # and digit index of array from path toppings#1/ingredients#/ turns to toppings/ingredients/ -->
-      <filter class="solr.PatternReplaceFilterFactory" pattern="[#*\d]*" replace="all"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.KeywordTokenizerFactory"/>
-    </analyzer>
-  </fieldType>
+  <!-- Fields required for SignatureUpdateProcessor -->
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sS" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 

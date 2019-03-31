@@ -39,7 +39,7 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
   @Override
   protected String getCloudSolrConfig() {
-    return "solrconfig-block-atomic-update.xml";
+    return "solrconfig-tlog.xml";
   }
 
   @Override
@@ -72,7 +72,9 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
     SolrInputDocument doc = sdoc("id", "a", "level_s", "root");
 
-    final SolrParams params = new ModifiableSolrParams().set("update.chain", "nested-rtg").set("wt", "json").set("_route_", "a");
+    final SolrParams params = new ModifiableSolrParams()
+        .set("wt", "json")
+        .set("_route_", "a");
 
     int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
@@ -133,7 +135,9 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
     SolrInputDocument doc = sdoc("id", "a", "level_s", "root");
 
-    final SolrParams params = new ModifiableSolrParams().set("update.chain", "nested-rtg").set("wt", "json").set("_route_", "a");
+    final SolrParams params = new ModifiableSolrParams()
+        .set("wt", "json")
+        .set("_route_", "a");
 
     int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);

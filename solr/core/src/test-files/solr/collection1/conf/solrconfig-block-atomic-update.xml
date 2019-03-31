@@ -53,12 +53,4 @@
 
   </updateHandler>
 
-  <updateProcessor class="solr.NestedUpdateProcessorFactory" name="nested-processor"/>
-
-  <updateRequestProcessorChain name="nested-rtg" post-processor="nested-processor">
-    <processor class="solr.DistributedUpdateProcessorFactory" />
-    <processor class="solr.LogUpdateProcessorFactory" />
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-
 </config>
