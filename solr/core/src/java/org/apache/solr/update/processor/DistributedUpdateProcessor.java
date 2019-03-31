@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -47,7 +46,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -663,116 +661,34 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     final boolean isDeeplyNestedSchema = req.getSchema().isUsableForChildDocs() && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME);
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
-    SolrInputDocument completeHierarchy = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
+    SolrInputDocument oldRootDocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
 
-    if (completeHierarchy == null) {
+    if (oldRootDocWithChildren == null) {
       if (versionOnUpdate > 0) {
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
       }
     } else {
-      completeHierarchy.remove(CommonParams.VERSION_FIELD);
+      oldRootDocWithChildren.remove(CommonParams.VERSION_FIELD);
     }
 
 
     SolrInputDocument mergedDoc;
-    if(idField == null || completeHierarchy == null) {
+    if(idField == null || oldRootDocWithChildren == null) {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
-      if(isDeeplyNestedSchema && !isRootDoc(sdoc, completeHierarchy)) {
-        // this is an update and the updated doc is not the root document
+      if(isDeeplyNestedSchema && !docMerger.isRootDoc(sdoc, oldRootDocWithChildren)) {
+        // this is an update where the updated doc is not the root document
         SolrInputDocument sdocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(),
             id, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
-        // get path of document to be updated
-        String updatedDocPath = (String) sdocWithChildren.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
-        // get the SolrInputField containing the document which the AddUpdateCommand updates
-        SolrInputField sifToReplace = getFieldFromHierarchy(completeHierarchy, updatedDocPath);
-        // update SolrInputField, either appending or replacing the updated document
-        updateDocInSif(sifToReplace, sdocWithChildren, sdoc);
-        mergedDoc = completeHierarchy;
+        mergedDoc = docMerger.mergeNonRoot(sdoc, oldRootDocWithChildren, sdocWithChildren);
       } else {
-        mergedDoc = docMerger.merge(sdoc, completeHierarchy);
+        mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
       }
     }
     cmd.solrDoc = mergedDoc;
     return true;
-  }
-
-  /**
-   *
-   * @param updateSif the SolrInputField to update its values
-   * @param cmdDocWChildren the doc to insert/set inside updateSif
-   * @param updateDoc the document that was sent as part of the Add Update Command
-   */
-  private void updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
-    List sifToReplaceValues = (List) updateSif.getValues();
-    final boolean wasList = updateSif.getRawValue() instanceof Collection;
-    int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
-    SolrInputDocument updatedDoc = docMerger.merge(updateDoc, cmdDocWChildren);
-    if(index == -1) {
-      sifToReplaceValues.add(updatedDoc);
-    } else {
-      sifToReplaceValues.set(index, updatedDoc);
-    }
-    // in the case where value was a List prior to the update and post update there is no more then one value
-    // it should be kept as a List.
-    final boolean singleVal = !wasList && sifToReplaceValues.size() <= 1;
-    updateSif.setValue(singleVal? sifToReplaceValues.get(0): sifToReplaceValues);
-  }
-
-  /**
-   *
-   * @param completeHierarchy SolrInputDocument that represents the nested document hierarchy from its root
-   * @param fieldPath the path to fetch, seperated by a '/' e.g. /children/grandChildren
-   * @return the SolrInputField of fieldPath
-   */
-  private SolrInputField getFieldFromHierarchy(SolrInputDocument completeHierarchy, String fieldPath) {
-    // substr to remove first '/'
-    final List<String> docPaths = StrUtils.splitSmart(fieldPath.substring(1), '/');
-    Pair<String, Integer> subPath;
-    SolrInputField sifToReplace = null;
-    SolrInputDocument currDoc = completeHierarchy;
-    for (String subPathString: docPaths) {
-      subPath = getPathAndIndexFromNestPath(subPathString);
-      sifToReplace = currDoc.getField(subPath.getLeft());
-      currDoc = (SolrInputDocument) ((List)sifToReplace.getValues()).get(subPath.getRight());
-    }
-    return sifToReplace;
-  }
-
-  /**
-   *
-   * @param sdoc doc to be updated
-   * @param rootDoc the root document
-   * @return whether sdoc's id equals to rootDoc's id
-   */
-  private boolean isRootDoc(SolrInputDocument sdoc, SolrInputDocument rootDoc) {
-    return sdoc.getField(idField.getName()).getFirstValue().toString()
-            .equals((String) rootDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME));
-  }
-
-  /**
-   *
-   * @param doc document to search for
-   * @param col collection of solrInputDocument
-   * @return index of doc in col, returns -1 if not found.
-   */
-  private static int getDocIndexFromCollection(SolrInputDocument doc, List<SolrInputDocument> col) {
-    for(int i = 0; i < col.size(); ++i) {
-      if(AtomicUpdateDocumentMerger.isDerivedFromDoc(col.get(i), doc)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  private static Pair<String, Integer> getPathAndIndexFromNestPath(String nestPath) {
-    List<String> splitPath = StrUtils.splitSmart(nestPath, '#');
-    if(splitPath.size() == 1) {
-      return Pair.of(splitPath.get(0), 0);
-    }
-    return Pair.of(splitPath.get(0), Integer.parseInt(splitPath.get(1)));
   }
 
   @Override
