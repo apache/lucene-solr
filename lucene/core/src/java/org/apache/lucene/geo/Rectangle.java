@@ -94,6 +94,21 @@ public class Rectangle {
     return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
   }
 
+  /** returns true if the first rectangle is disjoint with the second rectangle (defined by minLat, maxLat, minLon, maxLon) */
+  public static boolean disjoint(Rectangle rectangle,
+                                      final double minLat, final double maxLat,
+                                      final double minLon, final double maxLon) {
+    return (maxLon < rectangle.minLon || minLon > rectangle.maxLon || maxLat <rectangle.minLat || minLat > rectangle.maxLat);
+  }
+
+  /** returns true if the first rectangle is within the second rectangle (defined by minLat, maxLat, minLon, maxLon) */
+  public static boolean within(Rectangle rectangle,
+                                 final double minLat, final double maxLat,
+                                 final double minLon, final double maxLon) {
+    return minLat <= rectangle.minLat && maxLat >= rectangle.maxLat &&
+        minLon <= rectangle.minLon && maxLon >= rectangle.maxLon;
+  }
+
   /** Compute Bounding Box for a circle using WGS-84 parameters */
   public static Rectangle fromPointDistance(final double centerLat, final double centerLon, final double radiusMeters) {
     checkLatitude(centerLat);
