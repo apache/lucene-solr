@@ -90,7 +90,7 @@ public final class Line2D implements Component {
   }
 
   /** Builds a Component from polygon */
-  public static Component createComponent(Line line) {
+  private static Component createComponent(Line line) {
     return new Line2D(line);
   }
 

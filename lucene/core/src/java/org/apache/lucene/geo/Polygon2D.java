@@ -182,7 +182,7 @@ public final class Polygon2D implements Component {
   }
 
   /** Builds a Component from polygon */
-  public static Component createComponent(Polygon polygon) {
+  private static Component createComponent(Polygon polygon) {
     Polygon gonHoles[] = polygon.getHoles();
     Component holes = null;
     if (gonHoles.length > 0) {

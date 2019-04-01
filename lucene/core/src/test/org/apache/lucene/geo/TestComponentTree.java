@@ -31,7 +31,7 @@ public class TestComponentTree extends LuceneTestCase {
     Component component = Polygon2D.create(polygon);
     Component[] components = new Component[numComponents];
     for (int i =0; i < numComponents; i++) {
-      components[i] = Polygon2D.createComponent(polygon[i]);
+      components[i] = Polygon2D.create(polygon[i]);
     }
     for (int i =0; i < 100; i++) {
       double lat = GeoTestUtil.nextLatitude();
