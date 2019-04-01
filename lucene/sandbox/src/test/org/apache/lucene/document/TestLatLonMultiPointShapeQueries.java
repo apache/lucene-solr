@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.Component;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoTestUtil;
 
 /** random bounding box and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
@@ -82,10 +82,10 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testComponentQuery(Component component, Object shape) {
+    public boolean testComponentTreeQuery(ComponentTree component, Object shape) {
       Point[] points = (Point[]) shape;
       for (Point p : points) {
-        boolean b = POINTVALIDATOR.testComponentQuery(component, p);
+        boolean b = POINTVALIDATOR.testComponentTreeQuery(component, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

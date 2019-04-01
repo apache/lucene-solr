@@ -34,9 +34,9 @@ public final class Polygon2D implements Component {
   private final EdgeTree edge;
   private final Rectangle box;
   /** Holes component or null */
-  private final Component holes;
+  private final ComponentTree holes;
 
-  private Polygon2D(Polygon polygon, Component holes) {
+  private Polygon2D(Polygon polygon, ComponentTree holes) {
     this.polygon = polygon;
     this.holes = holes;
     this.edge = EdgeTree.createTree(polygon.getPolyLats(), polygon.getPolyLons());
@@ -184,7 +184,7 @@ public final class Polygon2D implements Component {
   /** Builds a Component from polygon */
   private static Component createComponent(Polygon polygon) {
     Polygon gonHoles[] = polygon.getHoles();
-    Component holes = null;
+    ComponentTree holes = null;
     if (gonHoles.length > 0) {
       holes = create(gonHoles);
     }
@@ -192,7 +192,7 @@ public final class Polygon2D implements Component {
   }
 
   /** Builds a Component tree from multipolygon */
-  public static Component create(Polygon... polygons) {
+  public static ComponentTree create(Polygon... polygons) {
     Component components[] = new Component[polygons.length];
     for (int i = 0; i < components.length; i++) {
       components[i] = createComponent(polygons[i]);

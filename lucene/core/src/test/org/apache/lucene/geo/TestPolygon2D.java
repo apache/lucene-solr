@@ -35,7 +35,7 @@ public class TestPolygon2D extends LuceneTestCase {
     Polygon hole = new Polygon(new double[] { -10, -10, 10, 10, -10 }, new double[] { -10, 10, 10, -10, -10 });
     Polygon outer = new Polygon(new double[] { -50, -50, 50, 50, -50 }, new double[] { -50, 50, 50, -50, -50 }, hole);
     Polygon island = new Polygon(new double[] { -5, -5, 5, 5, -5 }, new double[] { -5, 5, 5, -5, -5 } );
-    Component polygon = Polygon2D.create(outer, island);
+    ComponentTree polygon = Polygon2D.create(outer, island);
     
     // contains(point)
     assertTrue(polygon.contains(-2, 2)); // on the island
@@ -66,21 +66,21 @@ public class TestPolygon2D extends LuceneTestCase {
     double yMax = 1;//5;
 
     // test cell crossing poly
-    Component polygon = Polygon2D.create(new Polygon(py, px));
+    ComponentTree polygon = Polygon2D.create(new Polygon(py, px));
     assertEquals(Relation.CELL_CROSSES_QUERY, polygon.relate(yMin, yMax, xMin, xMax));
   }
   
   public void testBoundingBox() throws Exception {
     for (int i = 0; i < 100; i++) {
-      Component polygon = Polygon2D.create(nextPolygon());
+      ComponentTree polygon = Polygon2D.create(nextPolygon());
       
       for (int j = 0; j < 100; j++) {
         double latitude = nextLatitude();
         double longitude = nextLongitude();
         // if the point is within poly, then it should be in our bounding box
         if (polygon.contains(latitude, longitude)) {
-          assertTrue(latitude >= polygon.getBoundingBox().minLat && latitude <= polygon.getBoundingBox().maxLat);
-          assertTrue(longitude >= polygon.getBoundingBox().minLon && longitude <= polygon.getBoundingBox().maxLon);
+          assertTrue(latitude >= polygon.component.getBoundingBox().minLat && latitude <= polygon.component.getBoundingBox().maxLat);
+          assertTrue(longitude >= polygon.component.getBoundingBox().minLon && longitude <= polygon.component.getBoundingBox().maxLon);
         }
       }
     }
@@ -90,7 +90,7 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testBoundingBoxEdgeCases() throws Exception {
     for (int i = 0; i < 100; i++) {
       Polygon polygon = nextPolygon();
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
       
       for (int j = 0; j < 100; j++) {
         double point[] = GeoTestUtil.nextPointNear(polygon);
@@ -110,7 +110,7 @@ public class TestPolygon2D extends LuceneTestCase {
     int iters = atLeast(50);
     for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
       
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
@@ -147,7 +147,7 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testContainsEdgeCases() throws Exception {
     for (int i = 0; i < 1000; i++) {
       Polygon polygon = nextPolygon();
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
 
       for (int j = 0; j < 10; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
@@ -183,7 +183,7 @@ public class TestPolygon2D extends LuceneTestCase {
     int iters = atLeast(10);
     for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
       
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
@@ -220,7 +220,7 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testIntersectEdgeCases() {
     for (int i = 0; i < 100; i++) {
       Polygon polygon = nextPolygon();
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
 
       for (int j = 0; j < 10; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
@@ -253,7 +253,7 @@ public class TestPolygon2D extends LuceneTestCase {
   
   /** Tests edge case behavior with respect to insideness */
   public void testEdgeInsideness() {
-    Component poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
+    ComponentTree poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
     assertTrue(poly.contains(-2, -2)); // bottom left corner: true
     assertFalse(poly.contains(-2, 2));  // bottom right corner: false
     assertFalse(poly.contains(2, -2));  // top left corner: false
@@ -281,7 +281,7 @@ public class TestPolygon2D extends LuceneTestCase {
       while (polygon.getHoles().length > 0) {
         polygon = nextPolygon();
       }
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
       
       // random lat/lons against polygon
       for (int j = 0; j < 1000; j++) {
@@ -298,7 +298,7 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testRelateTriangle() {
     for (int i = 0; i < 100; ++i) {
       Polygon polygon = nextPolygon();
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
 
       for (int j = 0; j < 100; j++) {
         double[] a = nextPointNear(polygon);
@@ -315,7 +315,7 @@ public class TestPolygon2D extends LuceneTestCase {
 
   public void testRelateTriangleContainsPolygon() {
     Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
-    Component impl = Polygon2D.create(polygon);
+    ComponentTree impl = Polygon2D.create(polygon);
     assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-10 , -1, 2, -1, 10, 10));
   }
 
@@ -327,7 +327,7 @@ public class TestPolygon2D extends LuceneTestCase {
       // random number of vertices
       int numVertices = RandomNumbers.randomIntBetween(random(), 100, 1000);
       Polygon polygon = createRegularPolygon(0, 0, randomRadius, numVertices);
-      Component impl = Polygon2D.create(polygon);
+      ComponentTree impl = Polygon2D.create(polygon);
 
       // create and test a simple tessellation
       for (int j = 1; j < numVertices; ++j) {
@@ -342,7 +342,7 @@ public class TestPolygon2D extends LuceneTestCase {
 
   public void testLineCrossingPolygonPoints() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Component polygon2D = Polygon2D.create(p);
+    ComponentTree polygon2D = Polygon2D.create(p);
     Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
@@ -354,7 +354,7 @@ public class TestPolygon2D extends LuceneTestCase {
 
   public void testRandomLineCrossingPolygon() {
     Polygon p = GeoTestUtil.createRegularPolygon(0, 0, 1000, TestUtil.nextInt(random(), 100, 10000));
-    Component polygon2D = Polygon2D.create(p);
+    ComponentTree polygon2D = Polygon2D.create(p);
     for (int i=0; i < 1000; i ++) {
       double longitude = GeoTestUtil.nextLongitude();
       double latitude = GeoTestUtil.nextLatitude();

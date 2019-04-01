@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.Component;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.index.PointValues.Relation;
@@ -88,7 +88,7 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testComponentQuery(Component component, Object shape) {
+    public boolean testComponentTreeQuery(ComponentTree component, Object shape) {
       Point p = (Point) shape;
       double lat = quantizeLat(p.lat);
       double lon = quantizeLon(p.lon);

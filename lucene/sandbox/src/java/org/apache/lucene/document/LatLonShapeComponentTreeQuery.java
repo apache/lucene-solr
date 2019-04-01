@@ -19,7 +19,7 @@ package org.apache.lucene.document;
 import java.util.Objects;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.Component;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
@@ -32,13 +32,13 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeComponentQuery extends LatLonShapeQuery {
-  final private Component componentTree;
+final class LatLonShapeComponentTreeQuery extends LatLonShapeQuery {
+  final private ComponentTree componentTree;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
    */
-  public LatLonShapeComponentQuery(String field, QueryRelation queryRelation, Component componentTree) {
+  public LatLonShapeComponentTreeQuery(String field, QueryRelation queryRelation, ComponentTree componentTree) {
     super(field, queryRelation);
     if (componentTree == null) {
       throw new IllegalArgumentException("componentTree must not be null");
@@ -93,7 +93,7 @@ final class LatLonShapeComponentQuery extends LatLonShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) &&  Objects.equals(componentTree, ((LatLonShapeComponentQuery)o).componentTree);
+    return super.equalsTo(o) &&  Objects.equals(componentTree, ((LatLonShapeComponentTreeQuery)o).componentTree);
   }
 
   @Override

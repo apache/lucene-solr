@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
@@ -121,8 +120,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
       }
     }
-    Component tree = Line2D.create(lines.clone());
-    return new LatLonShapeComponentQuery(field, queryRelation, tree);
+    ComponentTree tree = Line2D.create(lines.clone());
+    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
   }
 
   /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
@@ -142,26 +141,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
-    Component tree = Polygon2D.create(polygons.clone());
-    return new LatLonShapeComponentQuery(field, queryRelation, tree);
-  }
-
-  public static Query newCollectionQuery(String field, QueryRelation queryRelation, Component... components) {
-    if (components == null) {
-      throw new IllegalArgumentException("Component must not be null");
-    }
-    if (components.length == 0) {
-      throw new IllegalArgumentException("Component must not be empty");
-    }
-    for (int i = 0; i < components.length; i++) {
-      if (components[i] == null) {
-        throw new IllegalArgumentException("Component[" + i + "] must not be null");
-      } else if (components[i].getBoundingBox().minLon > components[i].getBoundingBox().maxLon) {
-        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
-      }
-    }
-    Component tree = ComponentTree.create(components);
-    return new LatLonShapeComponentQuery(field, queryRelation, tree);
+    ComponentTree tree = Polygon2D.create(polygons.clone());
+    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}
