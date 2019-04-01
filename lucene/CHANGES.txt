@@ -75,6 +75,11 @@ Changes in Runtime Behavior
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
   from an IndexWriter. (Simon Willnauer)
 
+* LUCENE-8730: WordDelimiterGraphFilter always emits its original token first.  This
+  brings its behaviour into line with the deprecated WordDelimiterFilter, so that
+  the only difference in output between the two is in the position length
+  attribute.  (Alan Woodward, Jim Ferenczi)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
