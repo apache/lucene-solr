@@ -678,11 +678,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
-      if(isDeeplyNestedSchema && !docMerger.isRootDoc(sdoc, oldRootDocWithChildren)) {
+      if(isDeeplyNestedSchema && !
+          sdoc.getField(idField.getName()).getFirstValue().toString()
+              .equals((String) oldRootDocWithChildren.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         // this is an update where the updated doc is not the root document
         SolrInputDocument sdocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(),
             id, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
-        mergedDoc = docMerger.mergeNonRoot(sdoc, oldRootDocWithChildren, sdocWithChildren);
+        mergedDoc = docMerger.mergeChildDoc(sdoc, oldRootDocWithChildren, sdocWithChildren);
       } else {
         mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
       }

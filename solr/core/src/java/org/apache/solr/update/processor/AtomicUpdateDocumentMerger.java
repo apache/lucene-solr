@@ -86,17 +86,6 @@ public class AtomicUpdateDocumentMerger {
     
     return false;
   }
-
-  /**
-   *
-   * @param sdoc doc to be updated
-   * @param rootDoc the root document
-   * @return whether sdoc's id equals to rootDoc's id
-   */
-  public boolean isRootDoc(SolrInputDocument sdoc, SolrInputDocument rootDoc) {
-    return sdoc.getField(idField.getName()).getFirstValue().toString()
-        .equals((String) rootDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME));
-  }
   
   /**
    * Merges the fromDoc into the toDoc using the atomic update syntax.
@@ -386,7 +375,8 @@ public class AtomicUpdateDocumentMerger {
    * @param sdocWithChildren the updated doc prior to the update (children included)
    * @return root doc (children included) after update
    */
-  public SolrInputDocument mergeNonRoot(SolrInputDocument sdoc, SolrInputDocument oldDocWithChildren, SolrInputDocument sdocWithChildren) {
+  public SolrInputDocument mergeChildDoc(SolrInputDocument sdoc, SolrInputDocument oldDocWithChildren,
+                                         SolrInputDocument sdocWithChildren) {
     // get path of document to be updated
     String updatedDocPath = (String) sdocWithChildren.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
     // get the SolrInputField containing the document which the AddUpdateCommand updates
