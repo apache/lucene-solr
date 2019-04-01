@@ -120,6 +120,8 @@ Bug Fixes
 
 * SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
 
+* SOLR-13362: Add 'includeIndexFieldFlags' support to SolrJ LukeRequest (Jason Gerlowski)
+
 Improvements
 ----------------------
 
