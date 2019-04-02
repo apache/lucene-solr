@@ -429,6 +429,16 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
     }
 
     @Override
+    public void setMissingValue(Object missingValue) {
+      if (missingValue instanceof Number) {
+        this.missingValue = missingValue;
+        ((DoubleValuesComparatorSource) getComparatorSource()).setMissingValue(((Number) missingValue).doubleValue());
+      } else {
+        super.setMissingValue(missingValue);
+      }
+    }
+
+    @Override
     public boolean needsScores() {
       return producer.needsScores();
     }
@@ -444,8 +454,13 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public SortField rewrite(IndexSearcher searcher) throws IOException {
-      return new DoubleValuesSortField(producer.rewrite(searcher), reverse);
+      DoubleValuesSortField rewritten = new DoubleValuesSortField(producer.rewrite(searcher), reverse);
+      if (missingValue != null) {
+        rewritten.setMissingValue(missingValue);
+      }
+      return rewritten;
     }
+
   }
 
   private static class DoubleValuesHolder {
@@ -454,15 +469,21 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
   private static class DoubleValuesComparatorSource extends FieldComparatorSource {
     private final DoubleValuesSource producer;
+    private double missingValue;
 
     DoubleValuesComparatorSource(DoubleValuesSource producer) {
       this.producer = producer;
+      this.missingValue = 0d;
+    }
+
+    void setMissingValue(double missingValue) {
+      this.missingValue = missingValue;
     }
 
     @Override
     public FieldComparator<Double> newComparator(String fieldname, int numHits,
                                                int sortPos, boolean reversed) {
-      return new FieldComparator.DoubleComparator(numHits, fieldname, 0.0){
+      return new FieldComparator.DoubleComparator(numHits, fieldname, missingValue){
 
         LeafReaderContext ctx;
         DoubleValuesHolder holder = new DoubleValuesHolder();
