@@ -699,12 +699,12 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
     java.run_java11(validateCmd, '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
+      print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
       java.run_java11('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
       java.run_java11('ant jar', '%s/compile.log' % unpackPath)
       testDemo(java.run_java11, isSrc, version, '11')
 
-      print('    generate javadocs w/ Java 8...')
+      print('    generate javadocs w/ Java 11...')
       java.run_java11('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
