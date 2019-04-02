@@ -1658,7 +1658,7 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       // try empty ctor
-      return clazz.newInstance();
+      return clazz.getDeclaredConstructor().newInstance();
     } catch (Exception e) {
       Rethrow.rethrow(e);
       throw null; // dummy to prevent compiler failure

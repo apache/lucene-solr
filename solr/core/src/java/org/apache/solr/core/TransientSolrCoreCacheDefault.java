@@ -17,13 +17,14 @@
 
 package org.apache.solr.core;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observer;
 import java.util.Set;
 
 import org.apache.solr.common.util.NamedList;
@@ -36,7 +37,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   private int cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
 
-  protected Observer observer;
+  protected PropertyChangeListener coreChangeListener;
   protected CoreContainer coreContainer;
 
   protected final Map<String, CoreDescriptor> transientDescriptors = new LinkedHashMap<>();
@@ -44,12 +45,14 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   //WARNING! The _only_ place you put anything into the list of transient cores is with the putTransientCore method!
   protected Map<String, SolrCore> transientCores = new LinkedHashMap<>(); // For "lazily loaded" cores
 
+  private final PropertyChangeSupport pcs = new  PropertyChangeSupport(this);
+
   /**
    * @param container The enclosing CoreContainer. It allows us to access everything we need.
    */
   public TransientSolrCoreCacheDefault(final CoreContainer container) {
     this.coreContainer = container;
-    this.observer= coreContainer.solrCores;
+    this.coreChangeListener= coreContainer.solrCores;
     
     NodeConfig cfg = container.getNodeConfig();
     if (cfg.getTransientCachePluginInfo() == null) {
@@ -80,7 +83,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
 
     log.info("Allocating transient cache for {} transient cores", cacheSize);
-    addObserver(this.observer);
+    pcs.addPropertyChangeListener(this.coreChangeListener);
     // it's possible for cache
     if (cacheSize < 0) { // Trap old flag
       cacheSize = Integer.MAX_VALUE;
@@ -92,8 +95,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
         if (size() > cacheSize) {
           SolrCore coreToClose = eldest.getValue();
-          setChanged();
-          notifyObservers(coreToClose);
+          pcs.firePropertyChange("core", coreToClose, null);
           log.info("Closing transient core [{}]", coreToClose.getName());
           return true;
         }
@@ -184,7 +186,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   @Override
   public void close() {
-    deleteObserver(this.observer);
+    pcs.removePropertyChangeListener(this.coreChangeListener);
   }
 
 

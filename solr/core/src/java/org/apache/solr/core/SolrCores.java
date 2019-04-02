@@ -25,6 +25,8 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,8 +35,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
-class SolrCores implements Observer {
+class SolrCores implements PropertyChangeListener {
 
   private static Object modifyLock = new Object(); // for locking around manipulating any of the core maps.
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
@@ -536,7 +536,7 @@ class SolrCores implements Observer {
 
   // Let transient cache implementation tell us when it ages out a core
   @Override
-  public void update(Observable o, Object arg) {
+  public void propertyChange(PropertyChangeEvent evt) {
     synchronized (modifyLock) {
       // Erick Erickson debugging TestLazyCores. With this un-commented, we get no testLazyCores failures.
 //      SolrCore core = (SolrCore) arg;
@@ -549,7 +549,7 @@ class SolrCores implements Observer {
 //      } catch (IOException e) {
 //        log.warn("Caught exception trying to close a transient core, ignoring as it should be benign");
 //      }
-      pendingCloses.add((SolrCore) arg); // Essentially just queue this core up for closing.
+      pendingCloses.add((SolrCore) evt.getOldValue()); // Essentially just queue this core up for closing.
       modifyLock.notifyAll(); // Wakes up closer thread too
     }
   }
@@ -563,6 +563,5 @@ class SolrCores implements Observer {
     }
     return transientCoreCache.getTransientSolrCoreCache();
   }
-
 
 }
