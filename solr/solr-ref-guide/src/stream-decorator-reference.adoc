@@ -995,7 +995,7 @@ outerHashJoin(
 
 The `parallel` function wraps a streaming expression and sends it to N worker nodes to be processed in parallel.
 
-The `parallel` function requires that the `partitionKeys` parameter be provided to the underlying searches. The `partitionKeys` parameter will partition the search results (tuples) across the worker nodes. Tuples with the same values in for `partitionKeys` will be shuffled to the same worker nodes.
+The `parallel` function requires that the `partitionKeys` parameter be provided to the underlying searches. The `partitionKeys` parameter will partition the search results (tuples) across the worker nodes. Tuples with the same values as `partitionKeys` will be shuffled to the same worker nodes.
 
 The `parallel` function maintains the sort order of the tuples returned by the worker nodes, so the sort criteria must incorporate the sort order of the tuples returned by the workers.
 
