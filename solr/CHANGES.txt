@@ -102,8 +102,6 @@ New Features
   a back-compat check of the .system collection to notify users of potential compatibility issues after
   upgrades or schema changes. (ab)
 
-* SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
-
 Bug Fixes
 ----------------------
 
@@ -152,6 +150,10 @@ Bug Fixes
 
 * SOLR-13344: Admin UI inaccessible with RuleBasedAuthorizationPlugin (janhoy, Jason Gerlowski)
 
+* SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
+
+* SOLR-13362: Add 'includeIndexFieldFlags' support to SolrJ LukeRequest (Jason Gerlowski)
+
 Improvements
 ----------------------
 
@@ -161,6 +163,10 @@ Improvements
 * SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
 
 * SOLR-9079: Remove commons-lang as a dependency (Kevin Risden)
+
+* SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
+
+* SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
 
 Other Changes
 ----------------------

@@ -268,6 +268,12 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     lastConcatCount = 0;
     wordPos = 0;
 
+    if (has(PRESERVE_ORIGINAL)) {
+      // add the original token now so that it is always emitted first
+      // we will edit the term length after all other parts have been buffered
+      buffer(0, 1, 0, savedTermLength);
+    }
+
     if (iterator.isSingleWord()) {
       buffer(wordPos, wordPos+1, iterator.current, iterator.end);
       wordPos++;
@@ -320,15 +326,16 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     }
 
     if (has(PRESERVE_ORIGINAL)) {
+      // we now know how many tokens need to be injected, so we can set the original
+      // token's position length
       if (wordPos == 0) {
         // can happen w/ strange flag combos and inputs :)
         wordPos++;
       }
-      // add the original token now so that we can set the correct end position
-      buffer(0, wordPos, 0, savedTermLength);
+      bufferedParts[1] = wordPos;
     }
             
-    sorter.sort(0, bufferedLen);
+    sorter.sort(has(PRESERVE_ORIGINAL) ? 1 : 0, bufferedLen);
     wordPos = 0;
 
     // set back to 0 for iterating from the buffer

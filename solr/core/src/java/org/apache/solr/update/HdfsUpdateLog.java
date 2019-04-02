@@ -58,7 +58,7 @@ public class HdfsUpdateLog extends UpdateLog {
   public static AtomicLong INIT_FAILED_LOGS_COUNT = new AtomicLong();
 
   public HdfsUpdateLog() {
-    this.confDir = null;
+    this(null);
   }
   
   public HdfsUpdateLog(String confDir) {
