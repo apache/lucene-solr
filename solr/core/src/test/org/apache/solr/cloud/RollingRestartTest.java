@@ -61,7 +61,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     assertNotNull(leader);
     log.info("Current overseer leader = {}", leader);
 
-    cloudClient.getZkStateReader().getZkClient().printLayoutToStdOut();
+    cloudClient.getZkStateReader().getZkClient().printLayoutToStream(System.out);
 
     int numDesignateOverseers = TEST_NIGHTLY ? 16 : 2;
     numDesignateOverseers = Math.max(getShardCount(), numDesignateOverseers);
@@ -78,7 +78,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
 
     waitUntilOverseerDesignateIsLeader(cloudClient.getZkStateReader().getZkClient(), designates, MAX_WAIT_TIME);
 
-    cloudClient.getZkStateReader().getZkClient().printLayoutToStdOut();
+    cloudClient.getZkStateReader().getZkClient().printLayoutToStream(System.out);
 
     boolean sawLiveDesignate = false;
     int numRestarts = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
@@ -111,20 +111,20 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
                     "/overseer_elect/election"));
           fail("No overseer leader found after restart #" + (i + 1) + ": " + leader);
         }
-        
+
         cloudClient.getZkStateReader().updateLiveNodes();
         sawLiveDesignate = CollectionUtils.intersection(cloudClient.getZkStateReader().getClusterState().getLiveNodes(), designates).size() > 0;
-        
+
       }
     }
-    
+
     assertTrue("Test may not be working if we never saw a live designate", sawLiveDesignate);
 
     leader = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
     assertNotNull(leader);
     log.info("Current overseer leader (after restart) = {}", leader);
 
-    cloudClient.getZkStateReader().getZkClient().printLayoutToStdOut();
+    cloudClient.getZkStateReader().getZkClient().printLayoutToStream(System.out);
   }
 
   static boolean waitUntilOverseerDesignateIsLeader(SolrZkClient testZkClient, List<String> overseerDesignates, long timeoutInNanos) throws KeeperException, InterruptedException {
