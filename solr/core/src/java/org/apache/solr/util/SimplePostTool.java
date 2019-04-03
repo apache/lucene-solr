@@ -70,9 +70,9 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * A simple utility class for posting raw updates to a Solr server, 
+ * A simple utility class for posting raw updates to a Solr server,
  * has a main method so it can be run on the command line.
- * View this not as a best-practice code example, but as a standalone 
+ * View this not as a best-practice code example, but as a standalone
  * example built with an explicit purpose of not having external
  * jar dependencies.
  */
@@ -119,7 +119,7 @@ public class SimplePostTool {
   // Backlog for crawling
   List<LinkedHashSet<URL>> backlog = new ArrayList<>();
   Set<URL> visited = new HashSet<>();
-  
+
   static final Set<String> DATA_MODES = new HashSet<>();
   static final String USAGE_STRING_SHORT =
       "Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]";
@@ -133,7 +133,7 @@ public class SimplePostTool {
     DATA_MODES.add(DATA_MODE_ARGS);
     DATA_MODES.add(DATA_MODE_STDIN);
     DATA_MODES.add(DATA_MODE_WEB);
-    
+
     mimeMap = new HashMap<>();
     mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
@@ -158,7 +158,7 @@ public class SimplePostTool {
     mimeMap.put("txt", "text/plain");
     mimeMap.put("log", "text/plain");
   }
-  
+
   /**
    * See usage() for valid command line usage
    * @param args the params on the command line
@@ -191,12 +191,12 @@ public class SimplePostTool {
       usageShort();
       return;
     }
-    
+
     if (commit)   commit();
     if (optimize) optimize();
     displayTiming((long) timer.getTime());
   }
-  
+
   /**
    * Pretty prints the number of milliseconds taken to post the content to Solr
    * @param millis the time in milliseconds
@@ -204,7 +204,7 @@ public class SimplePostTool {
   private void displayTiming(long millis) {
     SimpleDateFormat df = new SimpleDateFormat("H:mm:ss.SSS", Locale.getDefault());
     df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    System.out.println("Time spent: "+df.format(new Date(millis)));
+    CLIO.out("Time spent: "+df.format(new Date(millis)));
   }
 
   /**
@@ -220,19 +220,19 @@ public class SimplePostTool {
       if (! DATA_MODES.contains(mode)) {
         fatal("System Property 'data' is not valid for this tool: " + mode);
       }
-      
+
       String params = System.getProperty("params", "");
 
       String host = System.getProperty("host", DEFAULT_POST_HOST);
       String port = System.getProperty("port", DEFAULT_POST_PORT);
       String core = System.getProperty("c");
-      
+
       urlStr = System.getProperty("url");
-      
+
       if (urlStr == null && core == null) {
         fatal("Specifying either url or core/collection is mandatory.\n" + USAGE_STRING_SHORT);
       }
-      
+
       if(urlStr == null) {
         urlStr = String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core);
       }
@@ -246,7 +246,7 @@ public class SimplePostTool {
       }
       if (user != null)
         info("Basic Authentication enabled, user=" + user);
-      
+
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
       String type = System.getProperty("type");
       String format = System.getProperty("format");
@@ -264,11 +264,11 @@ public class SimplePostTool {
       try {
         delay = Integer.parseInt(System.getProperty("delay", ""+delay));
       } catch(Exception e) { }
-      OutputStream out = isOn(System.getProperty("out", DEFAULT_OUT)) ? System.out : null;
+      OutputStream out = isOn(System.getProperty("out", DEFAULT_OUT)) ? CLIO.getOutStream() : null;
       String fileTypes = System.getProperty("filetypes", DEFAULT_FILE_TYPES);
       boolean commit = isOn(System.getProperty("commit",DEFAULT_COMMIT));
       boolean optimize = isOn(System.getProperty("optimize",DEFAULT_OPTIMIZE));
-      
+
       return new SimplePostTool(mode, url, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
     } catch (MalformedURLException e) {
       fatal("System Property 'url' is not a valid URL: " + urlStr);
@@ -292,7 +292,7 @@ public class SimplePostTool {
    * @param args a String[] of arguments, varies between modes
    */
   public SimplePostTool(String mode, URL url, boolean auto, String type, String format,
-      int recursive, int delay, String fileTypes, OutputStream out, 
+      int recursive, int delay, String fileTypes, OutputStream out,
       boolean commit, boolean optimize, String[] args) {
     this.mode = mode;
     this.solrUrl = url;
@@ -311,19 +311,19 @@ public class SimplePostTool {
   }
 
   public SimplePostTool() {}
-  
+
   //
   // Do some action depending on which mode we have
   //
   private void doFilesMode() {
     currentDepth = 0;
-    // Skip posting files if special param "-" given  
+    // Skip posting files if special param "-" given
     if (!args[0].equals("-")) {
       info("Posting files to [base] url " + solrUrl + (!auto?" using content-type "+(type==null?DEFAULT_CONTENT_TYPE:type):"")+"...");
       if(auto)
         info("Entering auto mode. File endings considered are "+fileTypes);
       if(recursive > 0)
-        info("Entering recursive mode, max depth="+recursive+", delay="+delay+"s"); 
+        info("Entering recursive mode, max depth="+recursive+", delay="+delay+"s");
       int numFilesPosted = postFiles(args, 0, out, type);
       info(numFilesPosted + " files indexed.");
     }
@@ -344,12 +344,12 @@ public class SimplePostTool {
         fatal("Specifying content-type with \"-Ddata=web\" is not supported");
       }
       if (args[0].equals("-")) {
-        // Skip posting url if special param "-" given  
+        // Skip posting url if special param "-" given
         return 0;
       }
       // Set Extracting handler as default
       solrUrl = appendUrlPath(solrUrl, "/extract");
-      
+
       info("Posting web pages to Solr url "+solrUrl);
       auto=true;
       info("Entering auto mode. Indexing pages with content-types corresponding to file endings "+fileTypes);
@@ -372,7 +372,7 @@ public class SimplePostTool {
 
   private void doStdinMode() {
     info("POSTing stdin to " + solrUrl + "...");
-    postData(System.in, null, out, type, solrUrl);    
+    postData(System.in, null, out, type, solrUrl);
   }
 
   private void reset() {
@@ -385,12 +385,12 @@ public class SimplePostTool {
   // USAGE
   //
   private static void usageShort() {
-    System.out.println(USAGE_STRING_SHORT+"\n"+
+    CLIO.out(USAGE_STRING_SHORT+"\n"+
         "       Please invoke with -h option for extended usage help.");
   }
 
   private static void usage() {
-    System.out.println
+    CLIO.out
     (USAGE_STRING_SHORT+"\n\n" +
      "Supported System Properties and their defaults:\n"+
      "  -Dc=<core/collection>\n"+
@@ -458,14 +458,14 @@ public class SimplePostTool {
         File[] files = parent.listFiles(ff);
         if(files == null || files.length == 0) {
           warn("No files or directories matching "+srcFile);
-          continue;          
+          continue;
         }
         filesPosted += postFiles(parent.listFiles(ff), out, type);
       }
     }
     return filesPosted;
   }
-  
+
   /** Post all filenames provided in args
    * @param files array of Files
    * @param startIndexInArgs offset to start
@@ -489,14 +489,14 @@ public class SimplePostTool {
         File[] fileList = parent.listFiles(ff);
         if(fileList == null || fileList.length == 0) {
           warn("No files or directories matching "+srcFile);
-          continue;          
+          continue;
         }
         filesPosted += postFiles(fileList, out, type);
       }
     }
     return filesPosted;
   }
-  
+
   /**
    * Posts a whole directory
    * @return number of files posted total
@@ -603,7 +603,7 @@ public class SimplePostTool {
         PageFetcherResult result = pageFetcher.readPageFromUrl(u);
         if(result.httpStatus == 200) {
           u = (result.redirectUrl != null) ? result.redirectUrl : u;
-          URL postUrl = new URL(appendParam(solrUrl.toString(), 
+          URL postUrl = new URL(appendParam(solrUrl.toString(),
               "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
               "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
           boolean success = postData(new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(),result.content.limit() ), null, out, result.contentType, postUrl);
@@ -632,7 +632,7 @@ public class SimplePostTool {
       backlog.add(subStack);
       numPages += webCrawl(level+1, out);
     }
-    return numPages;    
+    return numPages;
   }
   public static class BAOS extends ByteArrayOutputStream {
     public ByteBuffer getByteBuffer() {
@@ -726,22 +726,22 @@ public class SimplePostTool {
   protected static boolean isOn(String property) {
     return("true,on,yes,1".indexOf(property) > -1);
   }
-  
+
   static void warn(String msg) {
-    System.err.println("SimplePostTool: WARNING: " + msg);
+    CLIO.err("SimplePostTool: WARNING: " + msg);
   }
 
   static void info(String msg) {
-    System.out.println(msg);
+    CLIO.out(msg);
   }
 
   static void fatal(String msg) {
-    System.err.println("SimplePostTool: FATAL: " + msg);
+    CLIO.err("SimplePostTool: FATAL: " + msg);
     System.exit(2);
   }
 
   /**
-   * Does a simple commit operation 
+   * Does a simple commit operation
    */
   public void commit() {
     info("COMMITting Solr index changes to " + solrUrl + "...");
@@ -749,7 +749,7 @@ public class SimplePostTool {
   }
 
   /**
-   * Does a simple optimize operation 
+   * Does a simple optimize operation
    */
   public void optimize() {
     info("Performing an OPTIMIZE to " + solrUrl + "...");
@@ -757,7 +757,7 @@ public class SimplePostTool {
   }
 
   /**
-   * Appends a URL query parameter to a URL 
+   * Appends a URL query parameter to a URL
    * @param url the original URL
    * @param param the parameter(s) to append, separated by "&amp;"
    * @return the string version of the resulting URL
@@ -778,7 +778,7 @@ public class SimplePostTool {
 
   /**
    * Opens the file and posts its contents to the solrUrl,
-   * writes to response to output. 
+   * writes to response to output.
    */
   public void postFile(File file, OutputStream output, String type) {
     InputStream is = null;
@@ -814,7 +814,6 @@ public class SimplePostTool {
       is = new FileInputStream(file);
       postData(is, file.length(), output, type, url);
     } catch (IOException e) {
-      e.printStackTrace();
       warn("Can't open/read file: " + file);
     } finally {
       try {
@@ -829,7 +828,7 @@ public class SimplePostTool {
    * Appends to the path of the URL
    * @param url the URL
    * @param append the path to append
-   * @return the final URL version 
+   * @return the final URL version
    */
   protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
     return new URL(url.getProtocol() + "://" + url.getAuthority() + url.getPath() + append + (url.getQuery() != null ? "?"+url.getQuery() : ""));
@@ -858,7 +857,7 @@ public class SimplePostTool {
       warn("The specified URL "+url+" is not a valid URL. Please check");
     }
   }
-  
+
   /**
    * Performs a simple get on the given URL
    */
@@ -919,7 +918,7 @@ public class SimplePostTool {
       } catch (IOException e) {
         fatal("IOException while posting data: " + e);
       }
-      
+
       try {
         success &= checkResponseCode(urlc);
         try (final InputStream in = urlc.getInputStream()) {
@@ -952,7 +951,7 @@ public class SimplePostTool {
 
   private static boolean checkResponseCode(HttpURLConnection urlc) throws IOException, GeneralSecurityException {
     if (urlc.getResponseCode() >= 400) {
-      warn("Solr returned an error #" + urlc.getResponseCode() + 
+      warn("Solr returned an error #" + urlc.getResponseCode() +
             " (" + urlc.getResponseMessage() + ") for url: " + urlc.getURL());
       Charset charset = StandardCharsets.ISO_8859_1;
       final String contentType = urlc.getContentType();
@@ -987,7 +986,7 @@ public class SimplePostTool {
   }
 
   /**
-   * Converts a string to an input stream 
+   * Converts a string to an input stream
    * @param s the string
    * @return the input stream
    */
@@ -996,7 +995,7 @@ public class SimplePostTool {
   }
 
   /**
-   * Pipes everything from the source to the dest.  If dest is null, 
+   * Pipes everything from the source to the dest.  If dest is null,
    * then everything is read from source and thrown away.
    */
   private static void pipe(InputStream source, OutputStream dest) throws IOException {
@@ -1020,7 +1019,7 @@ public class SimplePostTool {
   //
   // Utility methods for XPath handing
   //
-  
+
   /**
    * Gets all nodes matching an XPath
    */
@@ -1030,7 +1029,7 @@ public class SimplePostTool {
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
   }
-  
+
   /**
    * Gets the string content of the matching an XPath
    * @param n the node (or doc)
@@ -1050,9 +1049,9 @@ public class SimplePostTool {
     } else
       return "";
   }
-  
+
   /**
-   * Takes a string as input and returns a DOM 
+   * Takes a string as input and returns a DOM
    */
   public static Document makeDom(byte[] in) throws SAXException, IOException,
   ParserConfigurationException {
@@ -1069,7 +1068,7 @@ public class SimplePostTool {
   {
     private String _pattern;
     private Pattern p;
-    
+
     public GlobFileFilter(String pattern, boolean isRegex)
     {
       _pattern = pattern;
@@ -1085,32 +1084,32 @@ public class SimplePostTool {
             .replace("?", ".");
         _pattern = "^" + _pattern + "$";
       }
-      
+
       try {
         p = Pattern.compile(_pattern,Pattern.CASE_INSENSITIVE);
       } catch(PatternSyntaxException e) {
         fatal("Invalid type list "+pattern+". "+e.getDescription());
       }
     }
-    
+
     @Override
     public boolean accept(File file)
     {
       return p.matcher(file.getName()).find();
     }
   }
-  
+
   //
   // Simple crawler class which can fetch a page and check for robots.txt
   //
   class PageFetcher {
     Map<String, List<String>> robotsCache;
     static final String DISALLOW = "Disallow:";
-    
+
     public PageFetcher() {
       robotsCache = new HashMap<>();
     }
-    
+
     public PageFetcherResult readPageFromUrl(URL u) {
       PageFetcherResult res = new PageFetcherResult();
       try {
@@ -1146,8 +1145,8 @@ public class SimplePostTool {
             } else {
               is = conn.getInputStream();
             }
-            
-            // Read into memory, so that we later can pull links from the page without re-fetching 
+
+            // Read into memory, so that we later can pull links from the page without re-fetching
             res.content = inputStreamToByteArray(is);
             is.close();
           } else {
@@ -1160,7 +1159,7 @@ public class SimplePostTool {
       }
       return res;
     }
-    
+
     public boolean isDisallowedByRobots(URL url) {
       String host = url.getHost();
       String strRobot = url.getProtocol() + "://" + host + "/robots.txt";
@@ -1168,7 +1167,7 @@ public class SimplePostTool {
       if(disallows == null) {
         disallows = new ArrayList<>();
         URL urlRobot;
-        try { 
+        try {
           urlRobot = new URL(strRobot);
           disallows = parseRobotsTxt(urlRobot.openStream());
         } catch (MalformedURLException e) {
@@ -1177,7 +1176,7 @@ public class SimplePostTool {
           // There is no robots.txt, will cache an empty disallow list
         }
       }
-      
+
       robotsCache.put(host, disallows);
 
       String strURL = url.getFile();
@@ -1254,7 +1253,7 @@ public class SimplePostTool {
       return l;
     }
   }
-    
+
   /**
    * Utility class to hold the result form a page fetch
    */
