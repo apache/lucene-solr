@@ -138,6 +138,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
           return new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, Lucene50PostingsFormat.FSTLoadMode.ON_HEAP);
         }
       }))) {
+        assumeTrue("only works with mmap directory", d instanceof MMapDirectory);
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
         for (int i = 0; i < 50; i++) {
           Document doc = new Document();
@@ -181,11 +182,18 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
   }
 
   public void testAlwaysFSTOffHeap() throws IOException {
+    boolean alsoLoadIdOffHeap = random().nextBoolean();
+    Lucene50PostingsFormat.FSTLoadMode loadMode;
+    if (alsoLoadIdOffHeap) {
+      loadMode = Lucene50PostingsFormat.FSTLoadMode.OFF_HEAP;
+    } else {
+      loadMode = Lucene50PostingsFormat.FSTLoadMode.OPTIMIZE_UPDATES_OFF_HEAP;
+    }
     try (Directory d = newDirectory()) { // any directory should work now
       try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())).setCodec(new AssertingCodec() {
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
-          return new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, Lucene50PostingsFormat.FSTLoadMode.OFF_HEAP);
+          return new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, loadMode);
         }
       }))) {
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
@@ -211,7 +219,11 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
             for (LeafReaderContext leaf : readerFromWriter.leaves()) {
               FieldReader field = (FieldReader) leaf.reader().terms("field");
               FieldReader id = (FieldReader) leaf.reader().terms("id");
-              assertFalse(id.isFstOffHeap());
+              if (alsoLoadIdOffHeap) {
+                assertTrue(id.isFstOffHeap());
+              } else {
+                assertFalse(id.isFstOffHeap());
+              }
               assertTrue(field.isFstOffHeap());
             }
           }

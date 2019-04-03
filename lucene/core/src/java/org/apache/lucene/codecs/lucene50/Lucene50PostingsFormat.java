@@ -398,7 +398,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   public enum FSTLoadMode {
     /**
      * Always read FSTs from disk.
-     * An exception is made for ID fields in an IndexWriter context which are always laoded into memory
      */
     OFF_HEAP,
     /**
@@ -406,7 +405,15 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
      */
     ON_HEAP,
     /**
+     * Always read FSTs from disk.
+     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
+     * This is useful to guarantee best update performance even if a non MMapDirectory is used which required for
+     * the {@link FSTLoadMode#AUTO} mode is used.
+     */
+    OPTIMIZE_UPDATES_OFF_HEAP,
+    /**
      * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
+     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
      */
     AUTO
   }

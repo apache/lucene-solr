@@ -35,7 +35,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.store.ByteBufferIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -161,20 +160,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
       }
-      final boolean loadFSTOffHeap;
-      switch (fstLoadMode) {
-        case ON_HEAP:
-          loadFSTOffHeap = false;
-          break;
-        case OFF_HEAP:
-          loadFSTOffHeap = true;
-          break;
-        case AUTO:
-          loadFSTOffHeap = indexIn instanceof ByteBufferIndexInput;
-          break;
-        default:
-          throw new IllegalStateException("unknown enum constant: " + fstLoadMode);
-      }
       for (int i = 0; i < numFields; ++i) {
         final int field = termsIn.readVInt();
         final long numTerms = termsIn.readVLong();
@@ -208,7 +193,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name,       
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, loadFSTOffHeap));
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, fstLoadMode));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }

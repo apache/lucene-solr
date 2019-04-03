@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.blocktree;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -68,14 +67,14 @@ public final class FieldReader extends Terms implements Accountable {
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, boolean loadFSTOffHeap) throws IOException {
+              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, Lucene50PostingsFormat.FSTLoadMode fstLoadMode) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
     this.parent = parent;
     this.numTerms = numTerms;
-    this.sumTotalTermFreq = sumTotalTermFreq; 
-    this.sumDocFreq = sumDocFreq; 
+    this.sumTotalTermFreq = sumTotalTermFreq;
+    this.sumDocFreq = sumDocFreq;
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
@@ -88,8 +87,23 @@ public final class FieldReader extends Terms implements Accountable {
     rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     // Initialize FST offheap if index is MMapDirectory and
     // docCount != sumDocFreq implying field is not primary key
-    isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && loadFSTOffHeap;
     if (indexIn != null) {
+      switch (fstLoadMode) {
+        case ON_HEAP:
+          isFSTOffHeap = false;
+          break;
+        case OFF_HEAP:
+          isFSTOffHeap = true;
+          break;
+        case OPTIMIZE_UPDATES_OFF_HEAP:
+          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false);
+          break;
+        case AUTO:
+          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && indexIn instanceof ByteBufferIndexInput;
+          break;
+        default:
+          throw new IllegalStateException("unknown enum constant: " + fstLoadMode);
+      }
       final IndexInput clone = indexIn.clone();
       clone.seek(indexStartFP);
       if (isFSTOffHeap) {
@@ -107,6 +121,7 @@ public final class FieldReader extends Terms implements Accountable {
         }
       */
     } else {
+      isFSTOffHeap = false;
       index = null;
     }
   }
