@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -187,7 +186,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       } else if (random().nextBoolean()) {
         shards.remove(shard2);
       }
-      q.set("shards", StringUtils.join(shards, ","));
+      q.set("shards", String.join(",", shards));
 
 
       List<String> debug = new ArrayList<String>(10);

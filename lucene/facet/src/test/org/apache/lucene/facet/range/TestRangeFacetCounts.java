@@ -496,7 +496,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
-        assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits.value);
+        assertEquals(expectedCounts[rangeID], s.count(ddq));
       }
     }
 
@@ -640,7 +640,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
           ddq.add("field", range.getQuery(fastMatchFilter, vs));
         }
 
-        assertEquals(expectedCounts[rangeID], s.search(ddq, 10).totalHits.value);
+        assertEquals(expectedCounts[rangeID], s.count(ddq));
       }
     }
 

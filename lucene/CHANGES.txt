@@ -30,6 +30,10 @@ API Changes
   been deprecated. (Alan Woodward, Simon Willnauer, David Smiley, Luca
   Cavanna)
 
+* LUCENE-8735: Directory.getPendingDeletions is now abstract to ensure
+  subclasses override it. FilterDirectory now delegates the call, ensuring
+  correct default behaviour for subclasses. (Henning Andersen)
+
 Bug fixes
 
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
@@ -47,6 +51,16 @@ Bug fixes
 * LUCENE-8688: TieredMergePolicy#findForcedMerges now tries to create the
   cheapest merges that allow the index to go down to `maxSegmentCount` segments
   or less. (Armin Braun via Adrien Grand)
+
+* LUCENE-8477: Interval disjunctions could miss valid hits if some of the
+  clauses of the disjunction are minimized away.  We now rewrite intervals
+  if a source contains a disjunction and the internal gaps matter for
+  matching.  This behaviour can be disabled if users are more interested
+  in speed rather than accuracy of matching. (Alan Woodward, Jim Ferenczi)
+
+* LUCENE-8741: ValueSource.fromDoubleValuesSource() was casting to
+  Scorer instead of Scorable, leading to ClassCastExceptions (Markus Jelsma,
+  Alan Woodward)
 
 Improvements
 
@@ -68,10 +82,21 @@ Improvements
 * LUCENE-8631: The Korean's user dictionary now picks the longest-matching word and discards
   the other matches. (Yeongsu Kim via Jim Ferenczi)
 
+* LUCENE-8732: ConstantScoreQuery can now early terminate the query if the minimum score is
+  greater than the constant score and total hits are not requested. (Jim Ferenczi)
+
+* LUCENE-8750: Implements setMissingValue() on sort fields produced from 
+  DoubleValuesSource and LongValuesSource (Mike Sokolov via Alan Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
   from an IndexWriter. (Simon Willnauer)
+
+* LUCENE-8730: WordDelimiterGraphFilter always emits its original token first.  This
+  brings its behaviour into line with the deprecated WordDelimiterFilter, so that
+  the only difference in output between the two is in the position length
+  attribute.  (Alan Woodward, Jim Ferenczi)
 
 Other
 
