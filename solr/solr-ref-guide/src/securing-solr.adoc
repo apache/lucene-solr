@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl
+:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
