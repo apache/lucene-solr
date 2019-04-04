@@ -214,6 +214,8 @@ Other Changes
 
 * SOLR-13353: Add SolrCli AuthTool test (Kevin Risden)
 
+* SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
+
 * SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
 
 ==================  8.0.0 ==================
