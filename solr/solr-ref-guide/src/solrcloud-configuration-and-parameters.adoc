@@ -1,5 +1,5 @@
 = SolrCloud Configuration and Parameters
-:page-children: setting-up-an-external-zookeeper-ensemble, using-zookeeper-to-manage-configuration-files, zookeeper-access-control, collections-api, parameter-reference, command-line-utilities, solrcloud-with-legacy-configuration-files, configsets-api
+:page-children: setting-up-an-external-zookeeper-ensemble, using-zookeeper-to-manage-configuration-files, collections-api, parameter-reference, command-line-utilities, solrcloud-with-legacy-configuration-files, configsets-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
