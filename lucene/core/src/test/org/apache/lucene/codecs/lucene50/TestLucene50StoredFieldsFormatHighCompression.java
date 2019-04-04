@@ -33,7 +33,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFieldsFormatTestCase {
   @Override
   protected Codec getCodec() {
-    return new Lucene80Codec(Mode.BEST_COMPRESSION);
+    return new Lucene80Codec(Mode.BEST_COMPRESSION, Lucene50PostingsFormat.FSTLoadMode.AUTO);
   }
   
   /**
@@ -44,7 +44,7 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
     Directory dir = newDirectory();
     for (int i = 0; i < 10; i++) {
       IndexWriterConfig iwc = newIndexWriterConfig();
-      iwc.setCodec(new Lucene80Codec(RandomPicks.randomFrom(random(), Mode.values())));
+      iwc.setCodec(new Lucene80Codec(RandomPicks.randomFrom(random(), Mode.values()), Lucene50PostingsFormat.FSTLoadMode.AUTO));
       IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig());
       Document doc = new Document();
       doc.add(new StoredField("field1", "value1"));
@@ -69,9 +69,13 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
     dir.close();
   }
   
-  public void testInvalidOptions() throws Exception {
+  public void testInvalidOptions() {
     expectThrows(NullPointerException.class, () -> {
-      new Lucene80Codec(null);
+      new Lucene80Codec(null, Lucene50PostingsFormat.FSTLoadMode.AUTO);
+    });
+
+    expectThrows(NullPointerException.class, () -> {
+      new Lucene80Codec(Mode.BEST_COMPRESSION, null);
     });
     
     expectThrows(NullPointerException.class, () -> {
