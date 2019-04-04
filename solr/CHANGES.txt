@@ -58,6 +58,8 @@ New Features
 
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
+* SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
+
 * SOLR-10436: Add hashRollup Streaming Expression (Joel Bernstein)
 
 * SOLR-13276: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider (Cao Manh Dat)
