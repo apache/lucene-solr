@@ -88,7 +88,7 @@ The below example will mute logging for all `SEARCH` requests as well as all req
 }
 ----
 
-An mute rule may also be a list, in which case all must be true for muting to happen. The following muteRules will mute all events from IP `192.168.0.10`. It will also mute collection admin requests with action=LIST as well as all collection admin requests for the collection named `test`. Note how you can mix single string rules with lists of rules that must all match:
+An mute rule may also be a list, in which case all must be true for muting to happen. The configuration below has three mute rules:
 
 [source,json]
 ----
@@ -96,15 +96,21 @@ An mute rule may also be a list, in which case all must be true for muting to ha
   "auditlogging":{
     "class": "solr.SolrLogAuditLoggerPlugin"
     "muteRules": [ 
-      "ip:192.168.0.10",
-      [ "path:/admin/collections", "param:action=LIST" ],
-      [ "path:/admin/collections", "param:collection=test" ]
+      "ip:192.168.0.10", <1>
+      [ "path:/admin/collections", "param:action=LIST" ], <2>
+      [ "path:/admin/collections", "param:collection=test" ] <3>
     ]
   }
 }
 ----
 
-Valid rules are:
+<1> The first will mute all events from client IP `192.168.0.10`
+<2> The second rule will mute collection admin requests with action=LIST
+<3> The third rule will mute collection admin requests for the collection named `test`
+
+Note how you can mix single string rules with lists of rules that must all match:
+
+*Valid mute rules are:*
 
 * `type:<request-type>` (request-type by name: `ADMIN`, `SEARCH`, `UPDATE`, `STREAMING`, `UNKNOWN`)
 * `collection:<collection-name>` (collection by name)
