@@ -39,5 +39,6 @@ public class TokenizerChainTest extends SolrTestCaseJ4 {
         tff);
     assertEquals(new BytesRef("fooba"),
         tokenizerChain.normalize(fieldName, "FOOB\u00c4"));
+    tokenizerChain.close();
   }
 }
