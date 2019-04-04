@@ -65,7 +65,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   static final String PARAM_NUM_THREADS = "numThreads";
   static final String PARAM_MUTE_RULES = "muteRules";
   private static final int DEFAULT_QUEUE_SIZE = 4096;
-  private static final int DEFAULT_NUM_THREADS = 2;
+  private static final int DEFAULT_NUM_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
 
   BlockingQueue<AuditEvent> queue;
   boolean async;
@@ -82,6 +82,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   protected String registryName;
   protected SolrMetricManager metricManager;
   protected Meter numErrors = new Meter();
+  protected Meter numLost = new Meter();
   protected Meter numLogged = new Meter();
   protected Timer requestTimes = new Timer();
   protected Timer queuedTime = new Timer();
@@ -182,6 +183,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     } else {
       if (!queue.offer(event)) {
         log.warn("Audit log async queue is full (size={}), not blocking since {}", blockingQueueSize, PARAM_BLOCKASYNC + "==false");
+        numLost.mark();
       }
     }
   }
@@ -240,6 +242,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     // Metrics
     registry = manager.registry(registryName);
     numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope, className);
+    numLost = manager.meter(this, registryName, "lost", getCategory().toString(), scope, className);
     numLogged = manager.meter(this, registryName, "count", getCategory().toString(), scope, className);
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope, className);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope, className);

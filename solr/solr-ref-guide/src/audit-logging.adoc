@@ -52,7 +52,7 @@ By default any AuditLogger plugin configured will log asynchronously in the back
 }
 ----
 
-The defaults are `async: true`, `blockAsync: false`, `queueSize: 4096` and `numThreads: 2`.
+The defaults are `async: true`, `blockAsync: false`, `queueSize: 4096`. The default for `numThreads` is 2, or if the server has more than 4 CPU-cores then we use CPU-cores/2.
 
 [#audit-event-types]
 === Event types
@@ -137,9 +137,12 @@ AuditLoggerPlugins record metrics about count and timing of log requests, as wel
 
 * `count` (type: meter. Records number and rate of audit logs done) 
 * `errors` (type: meter. Records number and rate of errors)
+* `lost` (type: meter. Records number and rate of events lost due to queue full and `blockAsync=false`)
 * `requestTimes` (type: timer. Records latency and perceniles for logging performance)
 * `totalTime` (type: counter. Records total time spent)
 * `queueCapacity` (type: gauge. Records the max size of the async logging queue)
 * `queueSize` (type: gauge. Records the number of events currently waiting in the queue)
 * `queuedTime` (type: timer. Records the amount of time events waited in queue. Adding this with requestTimes you get total time from event to logging complete)
 * `async` (type: gauge. Tells whether this logger is in async mode)
+
+TIP: If you expect a very high request rate and have a slow audit logger plugin, you may see that the `queueSize` and `queuedTime` metrics increase, and in worst case start dropping events and see an increase in `lost` count. In this case you may want to increas the `numThreads` setting.
