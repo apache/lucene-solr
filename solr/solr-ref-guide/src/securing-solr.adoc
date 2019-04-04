@@ -19,7 +19,7 @@
 
 When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
 
-== Encryption with TLS certificates
+== Encryption with TLS (SSL) certificates
 Ecrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on
 the network. TLS is also a requirement to secure the password when using Basic Authentication.
 
@@ -29,12 +29,13 @@ See the page <<enabling-ssl.adoc#enabling-ssl,Enabling TLS (SSL)>> for details.
 Plugins for authentication, authorization and audit logging are configured in the `security.json` configuration file,
 and enabling any of these will immediately take effect across the whole cluster.
 
-Read the chapter <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Configuring security plugins in security.json>>
-to learn how to work with the `security.json` file.
+Read the chapter <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Configuring security plugins in security.json>> to learn how to work with the `security.json` file.
 
 [#securing-solr-auth-plugins]
 === Authentication plugins
-Authentication makes sure you know the identity of your users. Supported authentication plugins are:
+Authentication makes sure you know the identity of your users. 
+
+Supported authentication plugins are:
 
 * <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
