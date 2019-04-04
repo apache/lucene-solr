@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl, zookeeper-access-control.adoc
+:page-children: authentication-and-authorization-plugins, enabling-ssl
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
