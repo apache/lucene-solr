@@ -64,6 +64,9 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public boolean isLastDocInBatch = false;
 
+  /** Is this a nested update, null means not yet calculated. */
+  public Boolean isNested = null;
+
   // optional id in "internal" indexed form... if it is needed and not supplied,
   // it will be obtained from the doc.
   private BytesRef indexedId;

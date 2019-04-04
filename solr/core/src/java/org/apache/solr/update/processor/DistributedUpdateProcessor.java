@@ -18,12 +18,9 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.BytesRef;
@@ -319,7 +316,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
-    final boolean isNestedSchema = req.getSchema().isUsableForChildDocs();
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
@@ -478,7 +474,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // if the update updates a doc that is part of a nested structure,
         // force open a realTimeSearcher to trigger a ulog cache refresh.
         // This refresh makes RTG handler aware of this update.q
-        if(isNestedSchema && shouldRefreshUlogCaches(cmd)) {
+        if(req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
           ulog.openRealtimeSearcher();
         }
 
@@ -486,9 +482,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           cmd.solrDoc = clonedDoc;
         }
       } finally {
-
         bucket.unlock();
-
         vinfo.unlockForUpdate();
       }
       return false;
@@ -658,7 +652,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     // full (non-inplace) atomic update
-    final boolean isDeeplyNestedSchema = req.getSchema().isUsableForChildDocs() && req.getSchema().hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME);
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument oldRootDocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
@@ -678,8 +671,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
-      if(isDeeplyNestedSchema && !
-          sdoc.getField(idField.getName()).getFirstValue().toString()
+      if(req.getSchema().savesChildDocRelations() &&
+          !sdoc.getField(idField.getName()).getFirstValue().toString()
               .equals((String) oldRootDocWithChildren.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
         // this is an update where the updated doc is not the root document
         SolrInputDocument sdocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(),
@@ -1071,20 +1064,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    *
-   * @return whether this update changes a value of a block
+   * {@link AddUpdateCommand#isNested} is set in {@link org.apache.solr.update.processor.NestedUpdateProcessorFactory},
+   * which runs on leader and replicas just before run time processor
+   * @return whether this update changes a value of a nested document
    */
-  public static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
-    SolrInputDocument sdoc = cmd.getSolrInputDocument();
-    // update adds children
-    if (sdoc.hasChildDocuments()) return true;
-    if (sdoc.values().stream().anyMatch(x -> (x.getFirstValue() instanceof SolrInputDocument))) return true;
-
-    // get all atomic updates
-    Stream<Collection<Object>> atomicUpdatesStream = sdoc.values().stream()
-        .filter(x -> (x.getFirstValue() instanceof Map) && !(x.getFirstValue() instanceof SolrInputDocument))
-        .map(SolrInputField::getValues);
-    // update updates the document's children
-    return atomicUpdatesStream.anyMatch(x -> x.stream().anyMatch(d -> d instanceof SolrInputDocument));
+  private static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
+    // should be set since this method should only be called after DistributedUpdateProcessor#doLocalAdd,
+    // which runs post-processor in the URP chain, having NestedURP set cmd#isNested.
+    assert !cmd.getReq().getSchema().savesChildDocRelations() || cmd.isNested != null;
+    // true if update adds children
+    return Boolean.TRUE.equals(cmd.isNested);
   }
 
   /**
