@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
@@ -74,7 +75,7 @@ final class SubtypeCollector<T> implements Runnable {
             for (ClassLoader cl : classLoaders) {
               try {
                 Class<?> clazz = Class.forName(fqcn, false, cl);
-                if (superType.isAssignableFrom(clazz) && !superType.getName().equals(clazz.getName())) {
+                if (superType.isAssignableFrom(clazz) && !Objects.equals(superType, clazz)) {
                   types.add(clazz.asSubclass(superType));
                 }
                 break;
