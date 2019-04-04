@@ -22,9 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
@@ -34,8 +32,6 @@ import org.slf4j.LoggerFactory;
 final class SubtypeCollector<T> implements Runnable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final Map<String, Set<String>> cache = new ConcurrentHashMap<>();
 
   private final Set<URL> urls = new HashSet<>();
 
@@ -78,7 +74,7 @@ final class SubtypeCollector<T> implements Runnable {
             for (ClassLoader cl : classLoaders) {
               try {
                 Class<?> clazz = Class.forName(fqcn, false, cl);
-                if (isSubclassOf(clazz, superType)) {
+                if (superType.isAssignableFrom(clazz) && !superType.getName().equals(clazz.getName())) {
                   types.add(clazz.asSubclass(superType));
                 }
                 break;
@@ -101,27 +97,4 @@ final class SubtypeCollector<T> implements Runnable {
     return name.replace('/', '.').substring(0, index);
   }
 
-  private static boolean isSubclassOf(Class<?> clazz, Class<?> superType) {
-    String superTypeName = superType.getName();
-    cache.putIfAbsent(superTypeName, new HashSet<>());
-    if (cache.get(superTypeName).contains(clazz.getName())) {
-      return true;
-    }
-
-    // remember class hierarchy during traversing
-    Set<String> set = new HashSet<>();
-    set.add(clazz.getName());
-    Class<?> c = clazz.getSuperclass();
-    while (c != null) {
-      synchronized (cache.get(superTypeName)) {
-        if (c.getName().equals(superTypeName)) {
-          cache.get(superTypeName).addAll(set);
-          return true;
-        }
-        set.add(c.getName());
-      }
-      c = c.getSuperclass();
-    }
-    return false;
-  }
 }
