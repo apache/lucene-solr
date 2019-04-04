@@ -347,7 +347,288 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertJsonEquals(s, expectedResult);
 
   }
+  
+  @Test
+  public void testRowLimitWithManyDocs() throws Exception {
+    //rows < total matches - this is the primary usecase.
+    testRowLimitWithGivenDocs(51, 100) ;
+    testRowLimitWithGivenDocs(151, 100) ;
+    testRowLimitWithGivenDocs(100, 100) ;
+    testRowLimitWithGivenDocs(9, 10) ;
+    testRowLimitWithGivenDocs(11, 10) ;
 
+  }
+  
+  private void testRowLimitWithGivenDocs(int rows, int maxDocs) throws Exception {   
+    clearIndex();
+    for (int i = 0 ; i < maxDocs ; i++) {
+      assertU(adoc("id", Integer.toString(i), "stringdv","a", "intdv", Integer.toString(maxDocs-i)));
+    }
+    assertU(commit());
+
+    int expRows= Math.min(rows, maxDocs);
+    
+    //in indexing order
+    String resultPrefix = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":" + maxDocs+ ",\n" +
+        "    \"docs\":[";
+    
+    String ascExpectedResult = resultPrefix;    
+    for(int i=0; i<expRows-1; i++) {
+      ascExpectedResult+= "{\n\"id\":\"" + i + "\"}\n" ;
+    }
+    ascExpectedResult+= "{\n\"id\":\"" + (expRows-1) + "\"}]}}" ;
+    
+    //in indexing order
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc", "rows", Integer.toString(rows)));
+    assertJsonEquals(s, ascExpectedResult);
+
+    
+    //in reverse indexing order
+    String descExpectedResult = resultPrefix;   
+    int id = maxDocs;
+    for(int i=expRows-1; i>0; i--) {
+      descExpectedResult+= "{\n\"id\":\"" + --id + "\"}\n" ;
+    }
+    descExpectedResult+= "{\n\"id\":\"" + --id + "\"}]}}" ;
+    
+    //in reverse indexing order
+    String s2 =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "intdv asc", "rows", Integer.toString(rows)));
+    assertJsonEquals(s2, descExpectedResult);
+    
+  }
+  
+  @Test
+  public void testRowLimitWithIndexOrder() throws Exception {
+    clearIndex();
+
+    assertU(adoc("id","1", "stringdv","a"));
+    assertU(adoc("id","2", "stringdv","a"));
+    assertU(commit());
+
+    assertU(adoc("id","3", "stringdv","a"));
+    assertU(adoc("id","4", "stringdv","a"));
+    assertU(commit());
+
+    String expectedResult = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":4,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}]}}";
+
+    //rows < total matches - this is the primary usecase.
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc", "rows", "3"));
+    assertJsonEquals(s, expectedResult);
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc", "rows", "3"));
+    assertJsonEquals(s, expectedResult);
+
+    expectedResult = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":4,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"4\"}]}}";
+    
+    //edge cases:
+    //rows == total matches
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc", "rows", "4"));
+    assertJsonEquals(s, expectedResult);
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc", "rows", "4"));
+    assertJsonEquals(s, expectedResult);
+    
+    //rows > total matches
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc", "rows", "100"));
+    assertJsonEquals(s, expectedResult);
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc", "rows", "100"));
+    assertJsonEquals(s, expectedResult);
+
+    // No rows param - expect all docs
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc"));
+    assertJsonEquals(s, expectedResult);
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc"));
+    assertJsonEquals(s, expectedResult);
+    
+    String emptyResult = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":0,\n" +
+        "    \"docs\":[]}}";
+    
+    //rows=0 has an existing side effect of returning numFound=0 and no docs in /export component.
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc", "rows", "0"));
+    assertJsonEquals(s, emptyResult);
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc", "rows", "0"));
+    assertJsonEquals(s, emptyResult);
+    
+    assertU(adoc("id","5", "stringdv","a"));
+    assertU(adoc("id","6", "stringdv","a"));
+    assertU(adoc("id","7", "stringdv","a"));
+    assertU(adoc("id","8", "stringdv","a"));
+    assertU(adoc("id","9", "stringdv","a"));
+    assertU(adoc("id","10", "stringdv","a"));
+    assertU(commit());
+
+    expectedResult = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":10,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"4\"}]}}";
+
+    //rows < total matches - this is the primary usecase.
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv asc", "rows", "4"));
+    assertJsonEquals(s, expectedResult);
+
+    expectedResult = "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":10,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"1\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}]}}";
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "stringdv desc", "rows", "3"));
+    assertJsonEquals(s, expectedResult);
+    
+  }
+
+  @Test
+  public void testRowLimitWithSorting() throws Exception {
+    clearIndex();
+    
+    assertU(adoc("id","-1",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MAX_VALUE)));
+    assertU(commit());
+
+    assertU(adoc("id","0",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p","2"));
+    assertU(commit());
+    
+    assertU(adoc("id","1",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p","1"));
+    assertU(commit());
+
+    assertU(adoc("id","2",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE + 1)));
+    assertU(commit());
+
+    assertU(adoc("id","3",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE)));
+    assertU(commit());
+
+    //Test single value DocValue output
+    //Expected for asc sort doc3 -> doc2 -> doc1
+    String s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "field1_i_p asc,field2_i_p asc", "rows", "3"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":5,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\"}]}}");
+
+    clearIndex();
+    //Adding 4 docs of integers with the following values
+    //  doc1: Integer.MIN_VALUE,2,2,Integer.MAX_VALUE,3,4,5,6
+    //  doc1: Integer.MIN_VALUE,1,2,Integer.MAX_VALUE,3,4,5,6
+    //  doc2: Integer.MIN_VALUE,Integer.MIN_VALUE,2,Integer.MAX_VALUE,4,4,5,6
+    //  doc3: Integer.MIN_VALUE,Integer.MIN_VALUE,2,Integer.MAX_VALUE,3,4,5,6
+
+    assertU(adoc("id","0",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p","2",
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","3",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+    
+    assertU(adoc("id","1",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p","1",
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","3",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+
+    assertU(adoc("id","2",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","4",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+
+    assertU(adoc("id","3",
+        "field1_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field2_i_p",Integer.toString(Integer.MIN_VALUE),
+        "field3_i_p","2",
+        "field4_i_p",Integer.toString(Integer.MAX_VALUE),
+        "field5_i_p","3",
+        "field6_i_p","4",
+        "field7_i_p","5",
+        "field8_i_p","6"));
+    assertU(commit());
+
+    s =  h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "field1_i_p asc,field2_i_p asc,field3_i_p asc,field4_i_p asc,field5_i_p desc,field6_i_p desc,field7_i_p desc,field8_i_p asc", "rows", "3"));
+    assertJsonEquals(s, "{\n" +
+        "  \"responseHeader\":{\"status\":0},\n" +
+        "  \"response\":{\n" +
+        "    \"numFound\":4,\n" +
+        "    \"docs\":[{\n" +
+        "        \"id\":\"2\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"3\"}\n" +
+        "      ,{\n" +
+        "        \"id\":\"1\"}]}}");
+
+  }
+  
+  
+  
   @Test
   public void testStringWithCase() throws Exception {
     clearIndex();

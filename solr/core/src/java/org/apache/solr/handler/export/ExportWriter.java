@@ -91,6 +91,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final SolrQueryResponse res;
   FieldWriter[] fieldWriters;
   int totalHits = 0;
+  int maxDocs=0;
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
@@ -188,8 +189,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
     }
     SolrParams params = req.getParams();
+    
+    maxDocs = totalHits;
+    
+    if ( params.get("rows") != null) {
+      int rows = Integer.parseInt(params.get("rows"));
+      //rows=0 has an existing side effect of returning numFound=0 and no docs in /export component. So following logic effectively kicks in when rows>0
+      maxDocs = ( rows >= 0 && rows < totalHits ) ? rows:totalHits;
+    }
+    
     String fl = params.get("fl");
-
     String[] fields = null;
 
     if (fl == null) {
@@ -251,13 +260,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         destinationArr[++outDocsIndex] = s;
       }
     }
-
     return outDocsIndex;
   }
 
-  protected void addDocsToItemWriter(List<LeafReaderContext> leaves, IteratorWriter.ItemWriter writer, SortDoc[] docsToExport, int outDocsIndex) throws IOException {
+  protected void addDocsToItemWriter(List<LeafReaderContext> leaves, IteratorWriter.ItemWriter writer, SortDoc[] docsToExport, int outDocsIndex, int numDocsToExclude) throws IOException {
+    int indexLimit = numDocsToExclude>=0 ? 0:Math.abs(numDocsToExclude);
     try {
-      for (int i = outDocsIndex; i >= 0; --i) {
+      for (int i = outDocsIndex; i >= indexLimit; --i) {
         SortDoc s = docsToExport[i];
         writer.add((MapWriter) ew -> {
           writeDoc(s, leaves, ew);
@@ -285,18 +294,17 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   protected void writeDocs(SolrQueryRequest req, IteratorWriter.ItemWriter writer, Sort sort) throws IOException {
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
     SortDoc sortDoc = getSortDoc(req.getSearcher(), sort.getSort());
-    int count = 0;
-    final int queueSize = Math.min(DOCUMENT_BATCH_SIZE, totalHits);
+    final int queueSize = Math.min(DOCUMENT_BATCH_SIZE, maxDocs);
 
     SortQueue queue = new SortQueue(queueSize, sortDoc);
     SortDoc[] outDocs = new SortDoc[queueSize];
+    int maxRemaining =  maxDocs;
 
-    while (count < totalHits) {
+    while (maxRemaining > 0) {
       identifyLowestSortingUnexportedDocs(leaves, sortDoc, queue);
       int outDocsIndex = transferBatchToArrayForOutput(queue, outDocs);
-
-      count += (outDocsIndex + 1);
-      addDocsToItemWriter(leaves, writer, outDocs, outDocsIndex);
+      maxRemaining -= (outDocsIndex + 1);
+      addDocsToItemWriter(leaves, writer, outDocs, outDocsIndex, maxRemaining);
     }
   }
 
