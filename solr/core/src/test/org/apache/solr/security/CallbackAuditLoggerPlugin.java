@@ -70,7 +70,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
 
   @Override
   public void close() throws IOException { 
+    if (socket != null) socket.close();
     super.close();
-    socket.close();
   }
 }

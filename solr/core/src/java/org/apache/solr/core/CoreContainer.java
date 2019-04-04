@@ -369,7 +369,7 @@ public class CoreContainer {
     auditConf = Utils.getDeepCopy(auditConf, 4);
     //Initialize the Auditlog module
     SecurityPluginHolder<AuditLoggerPlugin> old = auditloggerPlugin;
-    SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin = null;
+    SecurityPluginHolder<AuditLoggerPlugin> newAuditloggerPlugin = null;
     if (auditConf != null) {
       String klas = (String) auditConf.get("class");
       if (klas == null) {
@@ -379,14 +379,14 @@ public class CoreContainer {
         return;
       }
       log.info("Initializing auditlogger plugin: " + klas);
-      auditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
+      newAuditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
           getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
-      auditloggerPlugin.plugin.init(auditConf);
+      newAuditloggerPlugin.plugin.init(auditConf);
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
-    this.auditloggerPlugin = auditloggerPlugin;
+    this.auditloggerPlugin = newAuditloggerPlugin;
     if (old != null) {
       try {
         old.plugin.close();
