@@ -36,11 +36,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="org.reflections" level="error">
-      <AppenderRef ref="FILE"/>
-      <AppenderRef ref="TEXTAREA"/>
-    </Logger>
-    <Root level="debug">
+    <Root level="info">
       <AppenderRef ref="FILE"/>
       <AppenderRef ref="TEXTAREA"/>
     </Root>
