@@ -352,8 +352,6 @@ import org.apache.lucene.util.packed.PackedInts;
 
 public final class Lucene50PostingsFormat extends PostingsFormat {
 
-  public static final String MODE_KEY = Lucene50PostingsFormat.class.getSimpleName() + ".fstMode";
-
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -371,7 +369,10 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    * See chapter: <a href="#Payloads">Payloads and Offsets</a>
    */
   public static final String PAY_EXTENSION = "pay";
-  
+
+  /** Attribute key for fst mode. */
+  static final String MODE_KEY = Lucene50PostingsFormat.class.getSimpleName() + ".fstMode";
+
   /** 
    * Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.
