@@ -74,6 +74,8 @@ New Features
   a back-compat check of the .system collection to notify users of potential compatibility issues after
   upgrades or schema changes. (ab)
 
+* SOLR-13374: Add fetchSize parameter to the jdbc Streaming Expression (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
