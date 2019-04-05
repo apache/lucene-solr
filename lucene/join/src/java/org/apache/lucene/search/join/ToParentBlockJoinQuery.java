@@ -40,7 +40,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSet;
 
 import static org.apache.lucene.search.ScoreMode.COMPLETE;
-import static org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
 
 /**
  * This query requires that you index
