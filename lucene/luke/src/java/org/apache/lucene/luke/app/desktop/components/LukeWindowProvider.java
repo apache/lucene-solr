@@ -76,6 +76,7 @@ public final class LukeWindowProvider implements LukeWindowOperator {
   public LukeWindowProvider() throws IOException {
     // prepare log4j appender for Logs tab.
     JTextArea logTextArea = new JTextArea();
+    logTextArea.setEditable(false);
     TextAreaAppender.setTextArea(logTextArea);
 
     this.prefs = PreferencesFactory.getInstance();

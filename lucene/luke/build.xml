@@ -71,7 +71,7 @@
     </java>
   </target>
   
-  <target name="run" depends="launch" description="Launch Luke GUI"/>
+  <target name="run" depends="launch"/><!-- alias -->
 
   <target name="compile-core"
           depends="jar-codecs,jar-backward-codecs,jar-analyzers-common,jar-misc,jar-queryparser,jar-queries,jar-misc,common.compile-core"/>
