@@ -39,6 +39,9 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSet;
 
+import static org.apache.lucene.search.ScoreMode.COMPLETE;
+import static org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
+
 /**
  * This query requires that you index
  * children and parent docs as a single block, using the
@@ -103,7 +106,7 @@ public class ToParentBlockJoinQuery extends Query {
       // query is not requested.
       childWeight = searcher.rewrite(new ConstantScoreQuery(childQuery)).createWeight(searcher, weightScoreMode, 0f);
     } else {
-      childWeight = childQuery.createWeight(searcher, weightScoreMode, boost);
+      childWeight = childQuery.createWeight(searcher, weightScoreMode.needsScores() ? COMPLETE : COMPLETE_NO_SCORES, boost);
     }
     return new BlockJoinWeight(this, childWeight, parentsFilter, childScoreMode);
   }
