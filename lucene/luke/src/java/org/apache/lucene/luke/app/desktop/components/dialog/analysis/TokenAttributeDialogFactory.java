@@ -114,83 +114,83 @@ public final class TokenAttributeDialogFactory implements DialogOpener.DialogFac
     return panel;
   }
 
-}
+  static final class AttributeTableModel extends TableModelBase<AttributeTableModel.Column> {
 
-final class AttributeTableModel extends TableModelBase<AttributeTableModel.Column> {
+    enum Column implements TableColumnInfo {
 
-  enum Column implements TableColumnInfo {
+      ATTR("Attribute", 0, String.class),
+      NAME("Name", 1, String.class),
+      VALUE("Value", 2, String.class);
 
-    ATTR("Attribute", 0, String.class),
-    NAME("Name", 1, String.class),
-    VALUE("Value", 2, String.class);
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
 
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
+      Column(String colName, int index, Class<?> type) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+      }
 
-    Column(String colName, int index, Class<?> type) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+    }
+
+    AttributeTableModel(List<TokenAttValue> attrValues) {
+      super(attrValues.size());
+      for (int i = 0; i < attrValues.size(); i++) {
+        TokenAttValue attrValue = attrValues.get(i);
+        data[i][Column.ATTR.getIndex()] = attrValue.getAttClass();
+        data[i][Column.NAME.getIndex()] = attrValue.getName();
+        data[i][Column.VALUE.getIndex()] = attrValue.getValue();
+      }
     }
 
     @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
+    protected Column[] columnInfos() {
+      return Column.values();
     }
   }
 
-  AttributeTableModel(List<TokenAttValue> attrValues) {
-    super(attrValues.size());
-    for (int i = 0; i < attrValues.size(); i++) {
-      TokenAttValue attrValue = attrValues.get(i);
-      data[i][Column.ATTR.getIndex()] = attrValue.getAttClass();
-      data[i][Column.NAME.getIndex()] = attrValue.getName();
-      data[i][Column.VALUE.getIndex()] = attrValue.getValue();
+  static final class TokenAttValue {
+    private String attClass;
+    private String name;
+    private String value;
+
+    public static TokenAttValue of(String attClass, String name, String value) {
+      TokenAttValue attValue = new TokenAttValue();
+      attValue.attClass = attClass;
+      attValue.name = name;
+      attValue.value = value;
+      return attValue;
+    }
+
+    private TokenAttValue() {
+    }
+
+    String getAttClass() {
+      return attClass;
+    }
+
+    String getName() {
+      return name;
+    }
+
+    String getValue() {
+      return value;
     }
   }
 
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
-
-final class TokenAttValue {
-  private String attClass;
-  private String name;
-  private String value;
-
-  public static TokenAttValue of(String attClass, String name, String value) {
-    TokenAttValue attValue = new TokenAttValue();
-    attValue.attClass = attClass;
-    attValue.name = name;
-    attValue.value = value;
-    return attValue;
-  }
-
-  private TokenAttValue() {
-  }
-
-  String getAttClass() {
-    return attClass;
-  }
-
-  String getName() {
-    return name;
-  }
-
-  String getValue() {
-    return value;
-  }
 }

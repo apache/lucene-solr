@@ -51,8 +51,6 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.search.QueryParserConfig;
 
-import static org.apache.lucene.luke.app.desktop.components.fragments.search.PointTypesTableModel.NumType.INT;
-
 /** Provider of the QueryParser pane (tab) */
 public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
@@ -346,7 +344,7 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
     // set default type to Integer
     for (int i = 0; i < rangeSearchableFields.size(); i++) {
-      pointRangeQueryTable.setValueAt(INT.name(), i, PointTypesTableModel.Column.TYPE.getIndex());
+      pointRangeQueryTable.setValueAt(PointTypesTableModel.NumType.INT.name(), i, PointTypesTableModel.Column.TYPE.getIndex());
     }
 
   }
@@ -436,80 +434,79 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
   }
 
+  static final class PointTypesTableModel extends TableModelBase<PointTypesTableModel.Column> {
+
+    enum Column implements TableColumnInfo {
+
+      FIELD("Field", 0, String.class, 300),
+      TYPE("Numeric Type", 1, NumType.class, 150);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    enum NumType {
+
+      INT, LONG, FLOAT, DOUBLE
+
+    }
+
+    PointTypesTableModel() {
+      super();
+    }
+
+    PointTypesTableModel(Collection<String> rangeSearchableFields) {
+      super(rangeSearchableFields.size());
+      int i = 0;
+      for (String field : rangeSearchableFields) {
+        data[i++][Column.FIELD.getIndex()] = field;
+      }
+    }
+
+    @Override
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+      return columnIndex == Column.TYPE.getIndex();
+    }
+
+    @Override
+    public void setValueAt(Object value, int rowIndex, int columnIndex) {
+      data[rowIndex][columnIndex] = value;
+      fireTableCellUpdated(rowIndex, columnIndex);
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
+  }
+
 }
-
-final class PointTypesTableModel extends TableModelBase<PointTypesTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-
-    FIELD("Field", 0, String.class, 300),
-    TYPE("Numeric Type", 1, NumType.class, 150);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  enum NumType {
-
-    INT, LONG, FLOAT, DOUBLE
-
-  }
-
-  PointTypesTableModel() {
-    super();
-  }
-
-  PointTypesTableModel(Collection<String> rangeSearchableFields) {
-    super(rangeSearchableFields.size());
-    int i = 0;
-    for (String field : rangeSearchableFields) {
-      data[i++][Column.FIELD.getIndex()] = field;
-    }
-  }
-
-  @Override
-  public boolean isCellEditable(int rowIndex, int columnIndex) {
-    return columnIndex == Column.TYPE.getIndex();
-  }
-
-  @Override
-  public void setValueAt(Object value, int rowIndex, int columnIndex) {
-    data[rowIndex][columnIndex] = value;
-    fireTableCellUpdated(rowIndex, columnIndex);
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
-

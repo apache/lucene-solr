@@ -95,8 +95,9 @@ public class MessageFilesParser  extends SimpleFileVisitor<Path> {
             try {
               message.setLines(Integer.parseInt(ary[1].trim()));
             } catch (NumberFormatException e) {}
+            break;
           default:
-              break;
+            break;
         }
 
         line = br.readLine();

@@ -219,86 +219,85 @@ public final class EditFiltersDialogFactory implements DialogOpener.DialogFactor
       listeners.showEditParamsDialog(e);
     }
   }
+
+  static final class FiltersTableModel extends TableModelBase<FiltersTableModel.Column> {
+
+    enum Column implements TableColumnInfo {
+      DELETE("Delete", 0, Boolean.class, 50),
+      ORDER("Order", 1, Integer.class, 50),
+      TYPE("Factory class", 2, String.class, Integer.MAX_VALUE);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    FiltersTableModel() {
+      super();
+    }
+
+    FiltersTableModel(List<String> selectedFilters) {
+      super(selectedFilters.size());
+      for (int i = 0; i < selectedFilters.size(); i++) {
+        data[i][Column.DELETE.getIndex()] = false;
+        data[i][Column.ORDER.getIndex()] = i + 1;
+        data[i][Column.TYPE.getIndex()] = selectedFilters.get(i);
+      }
+    }
+
+    @Override
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+      return columnIndex == Column.DELETE.getIndex();
+    }
+
+    @Override
+    public void setValueAt(Object value, int rowIndex, int columnIndex) {
+      data[rowIndex][columnIndex] = value;
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
+  }
+
+  static final class TypeCellRenderer implements TableCellRenderer {
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+      String[] tmp = ((String) value).split("\\.");
+      String type = tmp[tmp.length - 1];
+      return new JLabel(type);
+    }
+
+  }
+
 }
-
-final class FiltersTableModel extends TableModelBase<FiltersTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-    DELETE("Delete", 0, Boolean.class, 50),
-    ORDER("Order", 1, Integer.class, 50),
-    TYPE("Factory class", 2, String.class, Integer.MAX_VALUE);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  FiltersTableModel() {
-    super();
-  }
-
-  FiltersTableModel(List<String> selectedFilters) {
-    super(selectedFilters.size());
-    for (int i = 0; i < selectedFilters.size(); i++) {
-      data[i][Column.DELETE.getIndex()] = false;
-      data[i][Column.ORDER.getIndex()] = i + 1;
-      data[i][Column.TYPE.getIndex()] = selectedFilters.get(i);
-    }
-  }
-
-  @Override
-  public boolean isCellEditable(int rowIndex, int columnIndex) {
-    return columnIndex == Column.DELETE.getIndex();
-  }
-
-  @Override
-  public void setValueAt(Object value, int rowIndex, int columnIndex) {
-    data[rowIndex][columnIndex] = value;
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
-
-final class TypeCellRenderer implements TableCellRenderer {
-
-  @Override
-  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-    String[] tmp = ((String) value).split("\\.");
-    String type = tmp[tmp.length - 1];
-    return new JLabel(type);
-  }
-
-}
-
-

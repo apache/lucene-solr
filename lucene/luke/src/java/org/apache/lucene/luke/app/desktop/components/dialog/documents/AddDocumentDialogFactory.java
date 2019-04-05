@@ -247,7 +247,7 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     JTable fieldsTable = new JTable();
     TableUtils.setupTable(fieldsTable, ListSelectionModel.SINGLE_SELECTION, new FieldsTableModel(newFieldList), null, 30, 150, 120, 80);
     fieldsTable.setShowGrid(true);
-    JComboBox<Class> typesCombo = new JComboBox<>(presetFieldClasses);
+    JComboBox<Class<? extends IndexableField>> typesCombo = new JComboBox<>(presetFieldClasses);
     typesCombo.setRenderer((list, value, index, isSelected, cellHasFocus) -> new JLabel(value.getSimpleName()));
     fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.TYPE.getIndex()).setCellEditor(new DefaultCellEditor(typesCombo));
     for (int i = 0; i < fieldsTable.getModel().getRowCount(); i++) {
@@ -324,7 +324,8 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     return panel;
   }
 
-  private final Class[] presetFieldClasses = new Class[]{
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private final Class<? extends IndexableField>[] presetFieldClasses = new Class[]{
       TextField.class, StringField.class,
       IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class,
       SortedDocValuesField.class, SortedSetDocValuesField.class,
@@ -369,40 +370,41 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
     @SuppressWarnings("unchecked")
     private IndexableField toIndexableField(NewField nf) throws Exception {
+      final Constructor<? extends IndexableField> constr;
       if (nf.getType().equals(TextField.class) || nf.getType().equals(StringField.class)) {
         Field.Store store = nf.isStored() ? Field.Store.YES : Field.Store.NO;
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, String.class, Field.Store.class);
+        constr = nf.getType().getConstructor(String.class, String.class, Field.Store.class);
         return constr.newInstance(nf.getName(), nf.getValue(), store);
       } else if (nf.getType().equals(IntPoint.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, int[].class);
+        constr = nf.getType().getConstructor(String.class, int[].class);
         int[] values = NumericUtils.convertToIntArray(nf.getValue(), false);
         return constr.newInstance(nf.getName(), values);
       } else if (nf.getType().equals(LongPoint.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, long[].class);
+        constr = nf.getType().getConstructor(String.class, long[].class);
         long[] values = NumericUtils.convertToLongArray(nf.getValue(), false);
         return constr.newInstance(nf.getName(), values);
       } else if (nf.getType().equals(FloatPoint.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, float[].class);
+        constr = nf.getType().getConstructor(String.class, float[].class);
         float[] values = NumericUtils.convertToFloatArray(nf.getValue(), false);
         return constr.newInstance(nf.getName(), values);
       } else if (nf.getType().equals(DoublePoint.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, double[].class);
+        constr = nf.getType().getConstructor(String.class, double[].class);
         double[] values = NumericUtils.convertToDoubleArray(nf.getValue(), false);
         return constr.newInstance(nf.getName(), values);
       } else if (nf.getType().equals(SortedDocValuesField.class) ||
           nf.getType().equals(SortedSetDocValuesField.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, BytesRef.class);
+        constr = nf.getType().getConstructor(String.class, BytesRef.class);
         return constr.newInstance(nf.getName(), new BytesRef(nf.getValue()));
       } else if (nf.getType().equals(NumericDocValuesField.class) ||
           nf.getType().equals(SortedNumericDocValuesField.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, long.class);
+        constr = nf.getType().getConstructor(String.class, long.class);
         long value = NumericUtils.tryConvertToLongValue(nf.getValue());
         return constr.newInstance(nf.getName(), value);
       } else if (nf.getType().equals(StoredField.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, String.class);
+        constr = nf.getType().getConstructor(String.class, String.class);
         return constr.newInstance(nf.getName(), nf.getValue());
       } else if (nf.getType().equals(Field.class)) {
-        Constructor<IndexableField> constr = nf.getType().getConstructor(String.class, String.class, IndexableFieldType.class);
+        constr = nf.getType().getConstructor(String.class, String.class, IndexableFieldType.class);
         return constr.newInstance(nf.getName(), nf.getValue(), nf.getFieldType());
       } else {
         // TODO: unknown field
@@ -446,145 +448,146 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     }
   }
 
-}
+  static final class FieldsTableModel extends TableModelBase<FieldsTableModel.Column> {
 
-final class FieldsTableModel extends TableModelBase<FieldsTableModel.Column> {
+    enum Column implements TableColumnInfo {
+      DEL("Del", 0, Boolean.class),
+      NAME("Name", 1, String.class),
+      TYPE("Type", 2, Class.class),
+      OPTIONS("Options", 3, String.class),
+      VALUE("Value", 4, String.class);
 
-  enum Column implements TableColumnInfo {
-    DEL("Del", 0, Boolean.class),
-    NAME("Name", 1, String.class),
-    TYPE("Type", 2, Class.class),
-    OPTIONS("Options", 3, String.class),
-    VALUE("Value", 4, String.class);
+      private String colName;
+      private int index;
+      private Class<?> type;
 
-    private String colName;
-    private int index;
-    private Class<?> type;
+      Column(String colName, int index, Class<?> type) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+      }
 
-    Column(String colName, int index, Class<?> type) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+    }
+
+    private final List<NewField> newFieldList;
+
+    FieldsTableModel(List<NewField> newFieldList) {
+      super(newFieldList.size());
+      this.newFieldList = newFieldList;
     }
 
     @Override
-    public String getColName() {
-      return colName;
+    public Object getValueAt(int rowIndex, int columnIndex) {
+      if (columnIndex == Column.OPTIONS.getIndex()) {
+        return "";
+      }
+      return data[rowIndex][columnIndex];
     }
 
     @Override
-    public int getIndex() {
-      return index;
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+      return columnIndex != Column.OPTIONS.getIndex();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-  }
-
-  private final List<NewField> newFieldList;
-
-  FieldsTableModel(List<NewField> newFieldList) {
-    super(newFieldList.size());
-    this.newFieldList = newFieldList;
-  }
-
-  @Override
-  public Object getValueAt(int rowIndex, int columnIndex) {
-    if (columnIndex == Column.OPTIONS.getIndex()) {
-      return "";
-    }
-    return data[rowIndex][columnIndex];
-  }
-
-  @Override
-  public boolean isCellEditable(int rowIndex, int columnIndex) {
-    return columnIndex != Column.OPTIONS.getIndex();
-  }
-
-  @Override
-  public void setValueAt(Object value, int rowIndex, int columnIndex) {
-    data[rowIndex][columnIndex] = value;
-    fireTableCellUpdated(rowIndex, columnIndex);
-    NewField selectedField = newFieldList.get(rowIndex);
-    if (columnIndex == Column.DEL.getIndex()) {
-      selectedField.setDeleted((Boolean) value);
-    } else if (columnIndex == Column.NAME.getIndex()) {
-      selectedField.setName((String) value);
-    } else if (columnIndex == Column.TYPE.getIndex()) {
-      selectedField.setType((Class) value);
-      selectedField.resetFieldType((Class) value);
-      selectedField.setStored(selectedField.getFieldType().stored());
-    } else if (columnIndex == Column.VALUE.getIndex()) {
-      selectedField.setValue((String) value);
-    }
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
-
-final class TypeCellRenderer implements TableCellRenderer {
-
-  @Override
-  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-    String simpleName = ((Class) value).getSimpleName();
-    return new JLabel(simpleName);
-  }
-}
-
-final class OptionsCellRenderer implements TableCellRenderer {
-
-  private JDialog dialog;
-
-  private final IndexOptionsDialogFactory indexOptionsDialogFactory;
-
-  private final List<NewField> newFieldList;
-
-  private final JPanel panel = new JPanel();
-
-  private JTable table;
-
-  public OptionsCellRenderer(JDialog dialog, IndexOptionsDialogFactory indexOptionsDialogFactory, List<NewField> newFieldList) {
-    this.dialog = dialog;
-    this.indexOptionsDialogFactory = indexOptionsDialogFactory;
-    this.newFieldList = newFieldList;
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-    if (table != null && this.table != table) {
-      this.table = table;
-      final JTableHeader header = table.getTableHeader();
-      if (header != null) {
-        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        panel.setBorder(UIManager.getBorder("TableHeader.cellBorder"));
-        panel.add(new JLabel(value.toString()));
-
-        JLabel optionsLbl = new JLabel("options");
-        table.addMouseListener(new MouseAdapter() {
-          @Override
-          public void mouseClicked(MouseEvent e) {
-            int row = table.rowAtPoint(e.getPoint());
-            int col = table.columnAtPoint(e.getPoint());
-            if (row >= 0 && col == FieldsTableModel.Column.OPTIONS.getIndex()) {
-              String title = "Index options for:";
-              new DialogOpener<>(indexOptionsDialogFactory).open(dialog, title, 500, 500,
-                  (factory) -> {
-                    factory.setNewField(newFieldList.get(row));
-                  });
-            }
-          }
-        });
-        panel.add(FontUtils.toLinkText(optionsLbl));
+    public void setValueAt(Object value, int rowIndex, int columnIndex) {
+      data[rowIndex][columnIndex] = value;
+      fireTableCellUpdated(rowIndex, columnIndex);
+      NewField selectedField = newFieldList.get(rowIndex);
+      if (columnIndex == Column.DEL.getIndex()) {
+        selectedField.setDeleted((Boolean) value);
+      } else if (columnIndex == Column.NAME.getIndex()) {
+        selectedField.setName((String) value);
+      } else if (columnIndex == Column.TYPE.getIndex()) {
+        selectedField.setType((Class<? extends IndexableField>) value);
+        selectedField.resetFieldType((Class<? extends IndexableField>) value);
+        selectedField.setStored(selectedField.getFieldType().stored());
+      } else if (columnIndex == Column.VALUE.getIndex()) {
+        selectedField.setValue((String) value);
       }
     }
-    return panel;
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
   }
 
+  static final class TypeCellRenderer implements TableCellRenderer {
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+      String simpleName = ((Class<? extends IndexableField>) value).getSimpleName();
+      return new JLabel(simpleName);
+    }
+  }
+
+  static final class OptionsCellRenderer implements TableCellRenderer {
+
+    private JDialog dialog;
+
+    private final IndexOptionsDialogFactory indexOptionsDialogFactory;
+
+    private final List<NewField> newFieldList;
+
+    private final JPanel panel = new JPanel();
+
+    private JTable table;
+
+    public OptionsCellRenderer(JDialog dialog, IndexOptionsDialogFactory indexOptionsDialogFactory, List<NewField> newFieldList) {
+      this.dialog = dialog;
+      this.indexOptionsDialogFactory = indexOptionsDialogFactory;
+      this.newFieldList = newFieldList;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+      if (table != null && this.table != table) {
+        this.table = table;
+        final JTableHeader header = table.getTableHeader();
+        if (header != null) {
+          panel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
+          panel.setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+          panel.add(new JLabel(value.toString()));
+
+          JLabel optionsLbl = new JLabel("options");
+          table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+              int row = table.rowAtPoint(e.getPoint());
+              int col = table.columnAtPoint(e.getPoint());
+              if (row >= 0 && col == FieldsTableModel.Column.OPTIONS.getIndex()) {
+                String title = "Index options for:";
+                new DialogOpener<>(indexOptionsDialogFactory).open(dialog, title, 500, 500,
+                    (factory) -> {
+                      factory.setNewField(newFieldList.get(row));
+                    });
+              }
+            }
+          });
+          panel.add(FontUtils.toLinkText(optionsLbl));
+        }
+      }
+      return panel;
+    }
+
+  }
 }

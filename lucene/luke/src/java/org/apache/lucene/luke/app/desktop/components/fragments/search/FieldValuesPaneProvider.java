@@ -134,74 +134,73 @@ public final class FieldValuesPaneProvider implements FieldValuesTabOperator {
     }
   }
 
-}
+  static final class FieldsTableModel extends TableModelBase<FieldsTableModel.Column> {
 
-final class FieldsTableModel extends TableModelBase<FieldsTableModel.Column> {
+    enum Column implements TableColumnInfo {
+      LOAD("Load", 0, Boolean.class, 50),
+      FIELD("Field", 1, String.class, Integer.MAX_VALUE);
 
-  enum Column implements TableColumnInfo {
-    LOAD("Load", 0, Boolean.class, 50),
-    FIELD("Field", 1, String.class, Integer.MAX_VALUE);
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
 
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
 
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    FieldsTableModel() {
+      super();
+    }
+
+    FieldsTableModel(Collection<String> fields) {
+      super(fields.size());
+      int i = 0;
+      for (String field : fields) {
+        data[i][Column.LOAD.getIndex()] = true;
+        data[i][Column.FIELD.getIndex()] = field;
+        i++;
+      }
     }
 
     @Override
-    public String getColName() {
-      return colName;
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+      return columnIndex == Column.LOAD.getIndex();
     }
 
     @Override
-    public int getIndex() {
-      return index;
+    public void setValueAt(Object value, int rowIndex, int columnIndex) {
+      data[rowIndex][columnIndex] = value;
+      fireTableCellUpdated(rowIndex, columnIndex);
     }
 
     @Override
-    public Class<?> getType() {
-      return type;
+    protected Column[] columnInfos() {
+      return Column.values();
     }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  FieldsTableModel() {
-    super();
-  }
-
-  FieldsTableModel(Collection<String> fields) {
-    super(fields.size());
-    int i = 0;
-    for (String field : fields) {
-      data[i][Column.LOAD.getIndex()] = true;
-      data[i][Column.FIELD.getIndex()] = field;
-      i++;
-    }
-  }
-
-  @Override
-  public boolean isCellEditable(int rowIndex, int columnIndex) {
-    return columnIndex == Column.LOAD.getIndex();
-  }
-
-  @Override
-  public void setValueAt(Object value, int rowIndex, int columnIndex) {
-    data[rowIndex][columnIndex] = value;
-    fireTableCellUpdated(rowIndex, columnIndex);
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
   }
 }

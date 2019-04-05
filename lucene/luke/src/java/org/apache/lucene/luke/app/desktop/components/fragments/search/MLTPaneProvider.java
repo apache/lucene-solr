@@ -46,6 +46,7 @@ import org.apache.lucene.luke.app.desktop.components.TabSwitcherProxy;
 import org.apache.lucene.luke.app.desktop.components.TabbedPaneProvider;
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
 import org.apache.lucene.luke.app.desktop.components.TableModelBase;
+import org.apache.lucene.luke.app.desktop.components.fragments.search.FieldValuesPaneProvider.FieldsTableModel;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
@@ -230,74 +231,73 @@ public final class MLTPaneProvider implements MLTTabOperator {
     }
   }
 
-}
+  static final class MLTFieldsTableModel extends TableModelBase<MLTFieldsTableModel.Column> {
 
-final class MLTFieldsTableModel extends TableModelBase<MLTFieldsTableModel.Column> {
+    enum Column implements TableColumnInfo {
+      SELECT("Select", 0, Boolean.class, 50),
+      FIELD("Field", 1, String.class, Integer.MAX_VALUE);
 
-  enum Column implements TableColumnInfo {
-    SELECT("Select", 0, Boolean.class, 50),
-    FIELD("Field", 1, String.class, Integer.MAX_VALUE);
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
 
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
 
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    MLTFieldsTableModel() {
+      super();
+    }
+
+    MLTFieldsTableModel(Collection<String> fields) {
+      super(fields.size());
+      int i = 0;
+      for (String field : fields) {
+        data[i][Column.SELECT.getIndex()] = true;
+        data[i][Column.FIELD.getIndex()] = field;
+        i++;
+      }
     }
 
     @Override
-    public String getColName() {
-      return colName;
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+      return columnIndex == Column.SELECT.getIndex();
     }
 
     @Override
-    public int getIndex() {
-      return index;
+    public void setValueAt(Object value, int rowIndex, int columnIndex) {
+      data[rowIndex][columnIndex] = value;
+      fireTableCellUpdated(rowIndex, columnIndex);
     }
 
     @Override
-    public Class<?> getType() {
-      return type;
+    protected Column[] columnInfos() {
+      return Column.values();
     }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  MLTFieldsTableModel() {
-    super();
-  }
-
-  MLTFieldsTableModel(Collection<String> fields) {
-    super(fields.size());
-    int i = 0;
-    for (String field : fields) {
-      data[i][Column.SELECT.getIndex()] = true;
-      data[i][Column.FIELD.getIndex()] = field;
-      i++;
-    }
-  }
-
-  @Override
-  public boolean isCellEditable(int rowIndex, int columnIndex) {
-    return columnIndex == Column.SELECT.getIndex();
-  }
-
-  @Override
-  public void setValueAt(Object value, int rowIndex, int columnIndex) {
-    data[rowIndex][columnIndex] = value;
-    fireTableCellUpdated(rowIndex, columnIndex);
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
   }
 }

@@ -32,6 +32,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.luke.app.desktop.util.NumericUtils;
 
@@ -42,7 +43,7 @@ public final class NewField {
 
   private String name;
 
-  private Class<?> type;
+  private Class<? extends IndexableField> type;
 
   private String value;
 
@@ -84,19 +85,19 @@ public final class NewField {
     this.name = Objects.requireNonNull(name);
   }
 
-  public Class<?> getTypeProperty() {
+  public Class<? extends IndexableField> getTypeProperty() {
     return type;
   }
 
-  public Class getType() {
+  public Class<? extends IndexableField> getType() {
     return type;
   }
 
-  public void setType(Class type) {
+  public void setType(Class<? extends IndexableField> type) {
     this.type = Objects.requireNonNull(type);
   }
 
-  public void resetFieldType(Class type) {
+  public void resetFieldType(Class<?> type) {
     if (type.equals(TextField.class)) {
       fieldType = new TextField("", "", Field.Store.NO).fieldType();
     } else if (type.equals(StringField.class)) {

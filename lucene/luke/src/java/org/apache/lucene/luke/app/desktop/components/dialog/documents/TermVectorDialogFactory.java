@@ -118,73 +118,72 @@ public final class TermVectorDialogFactory implements DialogOpener.DialogFactory
     return panel;
   }
 
-}
+  static final class TermVectorTableModel extends TableModelBase<TermVectorTableModel.Column> {
 
-final class TermVectorTableModel extends TableModelBase<TermVectorTableModel.Column> {
+    enum Column implements TableColumnInfo {
 
-  enum Column implements TableColumnInfo {
+      TERM("Term", 0, String.class),
+      FREQ("Freq", 1, Long.class),
+      POSITIONS("Positions", 2, String.class),
+      OFFSETS("Offsets", 3, String.class);
 
-    TERM("Term", 0, String.class),
-    FREQ("Freq", 1, Long.class),
-    POSITIONS("Positions", 2, String.class),
-    OFFSETS("Offsets", 3, String.class);
+      private String colName;
+      private int index;
+      private Class<?> type;
 
-    private String colName;
-    private int index;
-    private Class<?> type;
+      Column(String colName, int index, Class<?> type) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+      }
 
-    Column(String colName, int index, Class<?> type) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+    }
+
+    TermVectorTableModel() {
+      super();
+    }
+
+    TermVectorTableModel(List<TermVectorEntry> tvEntries) {
+      super(tvEntries.size());
+
+      for (int i = 0; i < tvEntries.size(); i++) {
+        TermVectorEntry entry = tvEntries.get(i);
+
+        String termText = entry.getTermText();
+        long freq = tvEntries.get(i).getFreq();
+        String positions = String.join(",",
+            entry.getPositions().stream()
+                .map(pos -> Integer.toString(pos.getPosition()))
+                .collect(Collectors.toList()));
+        String offsets = String.join(",",
+            entry.getPositions().stream()
+                .filter(pos -> pos.getStartOffset().isPresent() && pos.getEndOffset().isPresent())
+                .map(pos -> Integer.toString(pos.getStartOffset().orElse(-1)) + "-" + Integer.toString(pos.getEndOffset().orElse(-1)))
+                .collect(Collectors.toList())
+        );
+
+        data[i] = new Object[]{termText, freq, positions, offsets};
+      }
+
     }
 
     @Override
-    public String getColName() {
-      return colName;
+    protected Column[] columnInfos() {
+      return Column.values();
     }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-  }
-
-  TermVectorTableModel() {
-    super();
-  }
-
-  TermVectorTableModel(List<TermVectorEntry> tvEntries) {
-    super(tvEntries.size());
-
-    for (int i = 0; i < tvEntries.size(); i++) {
-      TermVectorEntry entry = tvEntries.get(i);
-
-      String termText = entry.getTermText();
-      long freq = tvEntries.get(i).getFreq();
-      String positions = String.join(",",
-          entry.getPositions().stream()
-              .map(pos -> Integer.toString(pos.getPosition()))
-              .collect(Collectors.toList()));
-      String offsets = String.join(",",
-          entry.getPositions().stream()
-              .filter(pos -> pos.getStartOffset().isPresent() && pos.getEndOffset().isPresent())
-              .map(pos -> Integer.toString(pos.getStartOffset().orElse(-1)) + "-" + Integer.toString(pos.getEndOffset().orElse(-1)))
-              .collect(Collectors.toList())
-      );
-
-      data[i] = new Object[]{termText, freq, positions, offsets};
-    }
-
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
   }
 }

@@ -59,13 +59,14 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
 
   private final boolean keepAllCommits;
 
-  private static final Class[] presetFieldClasses = new Class[]{
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private final List<Class<? extends Field>> presetFieldClasses = Arrays.asList(
       TextField.class, StringField.class,
       IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class,
       SortedDocValuesField.class, SortedSetDocValuesField.class,
       NumericDocValuesField.class, SortedNumericDocValuesField.class,
       StoredField.class
-  };
+  );
 
   /**
    * Constructs an IndexToolsImpl that holds given {@link Directory}.
@@ -210,6 +211,6 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
   @Override
   @SuppressWarnings("unchecked")
   public Collection<Class<? extends Field>> getPresetFields() {
-    return Arrays.asList(presetFieldClasses);
+    return presetFieldClasses;
   }
 }

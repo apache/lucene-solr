@@ -43,7 +43,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -428,12 +427,6 @@ public final class SearchPanelProvider implements SearchTabOperator {
     note.add(new JLabel(MessageUtils.getLocalizedMessage("search.label.results.note")));
     panel.add(note, BorderLayout.PAGE_START);
 
-    MouseListener mouseListener = new MouseAdapter() {
-      @Override
-      public void mousePressed(MouseEvent e) {
-        listeners.showContextMenuInResultsTable(e);
-      }
-    };
     TableUtils.setupTable(resultsTable, ListSelectionModel.SINGLE_SELECTION, new SearchResultsTableModel(),
         new MouseAdapter() {
           @Override
