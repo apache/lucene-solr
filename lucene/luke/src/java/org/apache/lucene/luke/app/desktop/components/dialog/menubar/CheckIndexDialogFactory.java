@@ -124,7 +124,7 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
     repairBtn.setEnabled(false);
     repairBtn.addActionListener(listeners::repairIndex);
 
-    indicatorLbl.setIcon(ImageUtils.createImageIcon("/img/indicator.gif", 20, 20));
+    indicatorLbl.setIcon(ImageUtils.createImageIcon("indicator.gif", 20, 20));
 
     logArea.setEditable(false);
   }

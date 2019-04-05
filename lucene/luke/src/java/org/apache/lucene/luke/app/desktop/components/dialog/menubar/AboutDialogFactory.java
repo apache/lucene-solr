@@ -98,7 +98,7 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
 
     JPanel logo = new JPanel(new FlowLayout(FlowLayout.CENTER));
     logo.setOpaque(false);
-    logo.add(new JLabel(ImageUtils.createImageIcon("/img/luke-logo.gif", 200, 40)));
+    logo.add(new JLabel(ImageUtils.createImageIcon("luke-logo.gif", 200, 40)));
     panel.add(logo);
 
     JPanel project = new JPanel(new FlowLayout(FlowLayout.CENTER));

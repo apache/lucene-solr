@@ -114,7 +114,7 @@ public final class OptimizeIndexDialogFactory implements DialogOpener.DialogFact
     maxSegSpnr.setModel(new SpinnerNumberModel(1, 1, 100, 1));
     maxSegSpnr.setPreferredSize(new Dimension(100, 30));
 
-    indicatorLbl.setIcon(ImageUtils.createImageIcon("/img/indicator.gif", 20, 20));
+    indicatorLbl.setIcon(ImageUtils.createImageIcon("indicator.gif", 20, 20));
 
     logArea.setEditable(false);
   }
