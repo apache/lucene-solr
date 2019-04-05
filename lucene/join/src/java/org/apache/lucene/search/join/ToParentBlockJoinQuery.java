@@ -106,7 +106,9 @@ public class ToParentBlockJoinQuery extends Query {
       // query is not requested.
       childWeight = searcher.rewrite(new ConstantScoreQuery(childQuery)).createWeight(searcher, weightScoreMode, 0f);
     } else {
-      childWeight = childQuery.createWeight(searcher, weightScoreMode.needsScores() ? COMPLETE : COMPLETE_NO_SCORES, boost);
+      // if the score is needed we force the collection mode to COMPLETE because the child query cannot skip
+      // non-competitive documents.
+      childWeight = childQuery.createWeight(searcher, weightScoreMode.needsScores() ? COMPLETE : weightScoreMode, boost);
     }
     return new BlockJoinWeight(this, childWeight, parentsFilter, childScoreMode);
   }
