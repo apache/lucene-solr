@@ -21,25 +21,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -58,15 +44,6 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
   private final boolean useCompound;
 
   private final boolean keepAllCommits;
-
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private final List<Class<? extends Field>> presetFieldClasses = Arrays.asList(
-      TextField.class, StringField.class,
-      IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class,
-      SortedDocValuesField.class, SortedSetDocValuesField.class,
-      NumericDocValuesField.class, SortedNumericDocValuesField.class,
-      StoredField.class
-  );
 
   /**
    * Constructs an IndexToolsImpl that holds given {@link Directory}.
@@ -206,11 +183,5 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
         } catch (IOException e) {}
       }
     }
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Collection<Class<? extends Field>> getPresetFields() {
-    return presetFieldClasses;
   }
 }

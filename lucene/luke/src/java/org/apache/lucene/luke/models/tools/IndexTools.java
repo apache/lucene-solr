@@ -18,11 +18,9 @@
 package org.apache.lucene.luke.models.tools;
 
 import java.io.PrintStream;
-import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.search.Query;
@@ -96,9 +94,4 @@ public interface IndexTools {
    * @param dataDir - the directory path which contains sample documents (20 Newsgroups).
    */
   void createNewIndex(String dataDir);
-
-  /**
-   * Returns preset {@link Field} classes.
-   */
-  Collection<Class<? extends Field>> getPresetFields();
 }
