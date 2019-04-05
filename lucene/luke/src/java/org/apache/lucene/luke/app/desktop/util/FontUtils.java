@@ -28,6 +28,8 @@ import java.util.Map;
 /** Font utilities */
 public class FontUtils {
 
+  public static final String TTF_RESOURCE_NAME = "org/apache/lucene/luke/app/desktop/font/ElegantIcons.ttf";
+
   @SuppressWarnings("unchecked")
   public static JLabel toLinkText(JLabel label) {
     label.setForeground(StyleConstants.LINK_COLOR);
@@ -39,7 +41,7 @@ public class FontUtils {
   }
 
   public static Font createElegantIconFont() throws IOException, FontFormatException {
-    InputStream is = FontUtils.class.getClassLoader().getResourceAsStream("font/ElegantIcons.ttf");
+    InputStream is = FontUtils.class.getClassLoader().getResourceAsStream(TTF_RESOURCE_NAME);
     return Font.createFont(Font.TRUETYPE_FONT, is);
   }
 

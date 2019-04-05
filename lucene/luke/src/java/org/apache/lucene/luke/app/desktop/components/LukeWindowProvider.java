@@ -159,7 +159,7 @@ public final class LukeWindowProvider implements LukeWindowOperator {
     noReaderIcon.setVisible(false);
     iconPanel.add(noReaderIcon);
 
-    JLabel luceneIcon = new JLabel(ImageUtils.createImageIcon("/img/lucene.gif", "lucene", 16, 16));
+    JLabel luceneIcon = new JLabel(ImageUtils.createImageIcon("lucene.gif", "lucene", 16, 16));
     iconPanel.add(luceneIcon);
 
     c.gridx = 1;

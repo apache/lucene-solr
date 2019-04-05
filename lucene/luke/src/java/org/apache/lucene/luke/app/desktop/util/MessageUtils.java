@@ -31,6 +31,8 @@ import java.util.ResourceBundle;
  */
 public class MessageUtils {
 
+  public static final String MESSAGE_BUNDLE_BASENAME = "org/apache/lucene/luke/app/desktop/messages/messages";
+
   public static String getLocalizedMessage(String key) {
     return bundle.getString(key);
   }
@@ -52,7 +54,7 @@ public class MessageUtils {
     }
   };
 
-  private static ResourceBundle bundle = ResourceBundle.getBundle("messages", Locale.ENGLISH, UTF8_RESOURCEBUNDLE_CONTROL);
+  private static ResourceBundle bundle = ResourceBundle.getBundle(MESSAGE_BUNDLE_BASENAME, Locale.ENGLISH, UTF8_RESOURCEBUNDLE_CONTROL);
 
   private MessageUtils() {
   }

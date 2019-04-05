@@ -23,16 +23,14 @@ import java.awt.Image;
 /** Image utilities */
 public class ImageUtils {
 
-  private static final int DEFAULT_ICON_WIDTH = 20;
+  private static final String IMAGE_BASE_DIR = "org/apache/lucene/luke/app/desktop/img/";
 
-  private static final int DEFAULT_ICON_HEIGHT = 20;
-
-  public static ImageIcon createImageIcon(String path, int width, int height) {
-    return createImageIcon(path, "", width, height);
+  public static ImageIcon createImageIcon(String name, int width, int height) {
+    return createImageIcon(name, "", width, height);
   }
 
-  public static ImageIcon createImageIcon(String path, String description, int width, int height) {
-    java.net.URL imgURL = ImageUtils.class.getResource(path);
+  public static ImageIcon createImageIcon(String name, String description, int width, int height) {
+    java.net.URL imgURL = ImageUtils.class.getClassLoader().getResource(IMAGE_BASE_DIR + name);
     if (imgURL != null) {
       ImageIcon originalIcon = new ImageIcon(imgURL, description);
       ImageIcon icon = new ImageIcon(originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT));
