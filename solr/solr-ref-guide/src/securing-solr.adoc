@@ -27,7 +27,7 @@ No Solr API, including the Admin UI, is designed to be exposed to non-trusted pa
 === Encryption with TLS (SSL) certificates
 
 Ecrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on
-the network. TLS is also a requirement to secure the password when using Basic Authentication.
+the network. TLS is also normally a requirement to prevent credential sniffing when using Authentication.
 
 See the page <<enabling-ssl.adoc#enabling-ssl,Enabling TLS (SSL)>> for details.
 
