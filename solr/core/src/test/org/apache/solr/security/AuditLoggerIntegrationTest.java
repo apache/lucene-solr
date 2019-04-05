@@ -95,8 +95,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   public void testSynchronous() throws Exception {
     setupCluster(false, 0, false, null);
     runAdminCommands();
+    waitForAuditEventCallbacks(3);
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
-    testHarness.get().shutdownCluster();
     assertThreeAdminEvents();
   }
   
@@ -104,24 +104,34 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   public void testAsync() throws Exception {
     setupCluster(true, 0, false, null);
     runAdminCommands();
+    waitForAuditEventCallbacks(3);
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
-    testHarness.get().shutdownCluster();
     assertThreeAdminEvents();
   }
 
   @Test
-  public void testAsyncWithQueue() throws Exception {
+  public void testQueuedTimeMetric() throws Exception {
     setupCluster(true, 100, false, null);
     runAdminCommands();
+    waitForAuditEventCallbacks(3);
     assertAuditMetricsMinimums(testHarness.get().cluster, CallbackAuditLoggerPlugin.class.getSimpleName(), 3, 0);
     ArrayList<MetricRegistry> registries = getMetricsReigstries(testHarness.get().cluster);
     Timer timer = ((Timer) registries.get(0).getMetrics().get("SECURITY./auditlogging.CallbackAuditLoggerPlugin.queuedTime"));
     double meanTimeOnQueue = timer.getSnapshot().getMean() / 1000000; // Convert to ms
-    assertTrue(meanTimeOnQueue > 50);
+    assertTrue("Expecting mean time on queue >10ms, got " + meanTimeOnQueue, meanTimeOnQueue > 10);
+  }
+
+  @Test
+  public void testAsyncQueueDrain() throws Exception {
+    setupCluster(true, 100, false, null);
+    runAdminCommands();
+    assertTrue("Expecting <2 callbacks in buffer, was " + testHarness.get().receiver.getBuffer().size(),
+        testHarness.get().receiver.getBuffer().size() < 2); // Events still on queue
+    // We shutdown cluster while events are still in queue
     testHarness.get().shutdownCluster();
     assertThreeAdminEvents();
   }
-
+  
   @Test
   public void testMuteAdminListCollections() throws Exception {
     setupCluster(false, 0, false, "[ \"type:UNKNOWN\", [ \"path:/admin\", \"param:action=LIST\" ] ]");
@@ -208,11 +218,15 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private void waitForAuditEventCallbacks(int number) throws InterruptedException {
+    waitForAuditEventCallbacks(number, 5);
+  }
+
+  private void waitForAuditEventCallbacks(int number, int timeoutSeconds) throws InterruptedException {
     CallbackReceiver receiver = testHarness.get().receiver;
     int count = 0;
     while(receiver.buffer.size() < number) { 
       Thread.sleep(100);
-      if (++count >= 30) fail("Failed waiting for " + number + " callbacks");
+      if (++count >= timeoutSeconds*10) fail("Failed waiting for " + number + " callbacks after " + timeoutSeconds + " seconds");
     }
   }
 
