@@ -34,38 +34,41 @@ import org.apache.lucene.luke.app.desktop.util.TextAreaAppender;
  */
 public class LoggerFactory {
 
-  private static LoggerContext context = LoggerContext.getContext();
+  private static final LoggerContext context;
+  static {
+    if (System.getProperty("tests.LUCENE_VERSION") != null) {
+      context= LoggerContext.getContext();
+    } else {
+      ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+      builder.add(builder.newRootLogger(Level.INFO));
+      context = Configurator.initialize(builder.build());
+
+      PatternLayout layout = PatternLayout.newBuilder()
+          .withPattern("[%d{ISO8601}] %5p (%F:%L) - %m%n")
+          .build();
+
+      Appender fileAppender = FileAppender.newBuilder()
+          .setName("File")
+          .setLayout(layout)
+          .withFileName(System.getProperty("user.home") + "/.luke.d/luke.log")
+          .withAppend(false)
+            .build();
+      fileAppender.start();
+
+      Appender textAreaAppender = TextAreaAppender.newBuilder()
+          .setName("TextArea")
+          .setLayout(layout)
+          .build();
+      textAreaAppender.start();
+
+      context.getRootLogger().addAppender(fileAppender);
+      context.getRootLogger().addAppender(textAreaAppender);
+      context.updateLoggers();
+    }
+  }
 
   public static Logger getLogger(Class<?> clazz) {
     return context.getLogger(clazz.getName());
-  }
-
-  public synchronized static void initializeContext() {
-    ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
-    builder.add(builder.newRootLogger(Level.INFO));
-    context = Configurator.initialize(builder.build());
-
-    PatternLayout layout = PatternLayout.newBuilder()
-        .withPattern("[%d{ISO8601}] %5p (%F:%L) - %m%n")
-        .build();
-
-    Appender fileAppender = FileAppender.newBuilder()
-        .setName("File")
-        .setLayout(layout)
-        .withFileName(System.getProperty("user.home") + "/.luke.d/luke.log")
-        .withAppend(false)
-          .build();
-    fileAppender.start();
-
-    Appender textAreaAppender = TextAreaAppender.newBuilder()
-        .setName("TextArea")
-        .setLayout(layout)
-        .build();
-    textAreaAppender.start();
-
-    context.getRootLogger().addAppender(fileAppender);
-    context.getRootLogger().addAppender(textAreaAppender);
-    context.updateLoggers();
   }
 
 }

@@ -71,8 +71,6 @@ public class LukeMain {
   }
 
   public static void main(String[] args) throws Exception {
-    LoggerFactory.initializeContext();
-
     String lookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
     if (!lookAndFeelClassName.contains("AquaLookAndFeel") && !lookAndFeelClassName.contains("PlasticXPLookAndFeel")) {
       // may be running on linux platform
