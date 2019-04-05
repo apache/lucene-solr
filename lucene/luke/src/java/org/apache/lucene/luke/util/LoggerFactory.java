@@ -29,6 +29,9 @@ import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.lucene.luke.app.desktop.util.TextAreaAppender;
 
+/**
+ * Logger factory. This programmatically configurates logger context (Appenders etc.)
+ */
 public class LoggerFactory {
 
   private static LoggerContext context = LoggerContext.getContext();

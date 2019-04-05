@@ -70,6 +70,11 @@ public final class TextAreaAppender extends AbstractAppender {
     }
   }
 
+  /**
+   * Builds TextAreaAppender instances.
+   *
+   * @param <B> The type to build
+   */
   public static class Builder<B extends Builder<B>> extends AbstractOutputStreamAppender.Builder<B>
       implements org.apache.logging.log4j.core.util.Builder<TextAreaAppender> {
 
