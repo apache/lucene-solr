@@ -20,7 +20,7 @@
   <info organisation="org.apache.lucene" module="luke"/>
 
   <configurations defaultconfmapping="compile->default;logging->default">
-    <conf name="compile" transitive="true"/>
+    <conf name="compile" transitive="false"/>
     <conf name="logging" transitive="false"/>
   </configurations>
 

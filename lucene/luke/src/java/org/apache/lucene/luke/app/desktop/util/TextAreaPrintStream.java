@@ -19,10 +19,8 @@ package org.apache.lucene.luke.app.desktop.util;
 
 import javax.swing.JTextArea;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.logging.log4j.Logger;
@@ -30,36 +28,23 @@ import org.apache.logging.log4j.Logger;
 /** PrintStream for text areas */
 public final class TextAreaPrintStream extends PrintStream {
 
-  private Logger log;
+  private final ByteArrayOutputStream baos;
 
-  private ByteArrayOutputStream baos;
+  private final JTextArea textArea;
 
-  private JTextArea textArea;
-
-  public TextAreaPrintStream(JTextArea textArea, ByteArrayOutputStream baos, Charset charset, Logger log) throws UnsupportedEncodingException {
-    super(baos, false, charset.name());
-    this.baos = baos;
+  public TextAreaPrintStream(JTextArea textArea) throws UnsupportedEncodingException {
+    super(new ByteArrayOutputStream(), false, StandardCharsets.UTF_8.name()); // TODO: replace by Charset in Java 11
+    this.baos = (ByteArrayOutputStream) out;
     this.textArea = textArea;
-    this.log = log;
     baos.reset();
-  }
-
-  @Override
-  public void println(String s) {
-    try {
-      baos.write(s.getBytes(StandardCharsets.UTF_8));
-      baos.write('\n');
-    } catch (IOException e) {
-      log.error(e.getMessage(), e);
-    }
   }
 
   @Override
   public void flush() {
     try {
-      textArea.append(baos.toString(StandardCharsets.UTF_8.name()));
-    } catch (IOException e) {
-      log.error(e.getMessage(), e);
+      textArea.append(baos.toString(StandardCharsets.UTF_8.name())); // TODO: replace by Charset in Java 11
+    } catch (UnsupportedEncodingException e) {
+      setError();
     } finally {
       baos.reset();
     }
