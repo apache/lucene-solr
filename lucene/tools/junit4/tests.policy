@@ -70,7 +70,6 @@ grant {
   permission java.lang.RuntimePermission "getenv.*";
   permission java.lang.RuntimePermission "getClassLoader";
   permission java.lang.RuntimePermission "setContextClassLoader";
-  permission javax.management.MBeanServerPermission "createMBeanServer";
 
   // read access to all system properties:
   permission java.util.PropertyPermission "*", "read";

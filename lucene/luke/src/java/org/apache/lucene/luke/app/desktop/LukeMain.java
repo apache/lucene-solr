@@ -36,6 +36,9 @@ import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
 /** Entry class for desktop Luke */
 public class LukeMain {
 
+  static {
+    LoggerFactory.initGuiLogging();
+  }
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static JFrame frame;
