@@ -220,7 +220,7 @@ public final class OptimizeIndexDialogFactory implements DialogOpener.DialogFact
           indicatorLbl.setVisible(true);
           TextAreaPrintStream ps;
           try {
-            ps = new TextAreaPrintStream(logArea, new ByteArrayOutputStream(), StandardCharsets.UTF_8, log);
+            ps = new TextAreaPrintStream(logArea);
             toolsModel.optimize(expungeCB.isSelected(), (int) maxSegSpnr.getValue(), ps);
             ps.flush();
           } catch (UnsupportedEncodingException e) {

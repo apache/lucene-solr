@@ -275,7 +275,7 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
           indicatorLbl.setVisible(true);
           TextAreaPrintStream ps;
           try {
-            ps = new TextAreaPrintStream(logArea, new ByteArrayOutputStream(), StandardCharsets.UTF_8, log);
+            ps = new TextAreaPrintStream(logArea);
             CheckIndex.Status status = toolsModel.checkIndex(ps);
             ps.flush();
             return status;
@@ -355,7 +355,7 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
           logArea.setText("");
           TextAreaPrintStream ps;
           try {
-            ps = new TextAreaPrintStream(logArea, new ByteArrayOutputStream(), StandardCharsets.UTF_8, log);
+            ps = new TextAreaPrintStream(logArea);
             toolsModel.repairIndex(status, ps);
             statusLbl.setText("Done");
             ps.flush();
