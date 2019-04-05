@@ -17,6 +17,8 @@
 
 package org.apache.lucene.luke.util;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -35,19 +37,20 @@ import org.apache.lucene.luke.app.desktop.util.TextAreaAppender;
  */
 public class LoggerFactory {
 
-  public static void initGuiLogging() {
+  public static void initGuiLogging(String logFile) {
     ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
     builder.add(builder.newRootLogger(Level.INFO));
     LoggerContext context = Configurator.initialize(builder.build());
 
     PatternLayout layout = PatternLayout.newBuilder()
         .withPattern("[%d{ISO8601}] %5p (%F:%L) - %m%n")
+        .withCharset(StandardCharsets.UTF_8)
         .build();
 
     Appender fileAppender = FileAppender.newBuilder()
         .setName("File")
         .setLayout(layout)
-        .withFileName(System.getProperty("user.home") + "/.luke.d/luke.log")
+        .withFileName(logFile)
         .withAppend(false)
           .build();
     fileAppender.start();

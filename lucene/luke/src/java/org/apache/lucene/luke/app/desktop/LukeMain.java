@@ -22,6 +22,7 @@ import javax.swing.UIManager;
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.desktop.components.LukeWindowProvider;
@@ -36,11 +37,15 @@ import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
 /** Entry class for desktop Luke */
 public class LukeMain {
 
+  public static final String LOG_FILE = System.getProperty("user.home") +
+      FileSystems.getDefault().getSeparator() + ".luke.d" +
+      FileSystems.getDefault().getSeparator() + "luke.log";
+
   static {
-    LoggerFactory.initGuiLogging();
+    LoggerFactory.initGuiLogging(LOG_FILE);
   }
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  
   private static JFrame frame;
 
   public static JFrame getOwnerFrame() {
@@ -48,7 +53,6 @@ public class LukeMain {
   }
 
   private static void createAndShowGUI() {
-
     // uncaught error handler
     MessageBroker messageBroker = MessageBroker.getInstance();
     Thread.setDefaultUncaughtExceptionHandler((thread, cause) ->

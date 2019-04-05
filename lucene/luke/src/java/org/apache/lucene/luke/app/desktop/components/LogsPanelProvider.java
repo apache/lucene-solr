@@ -24,16 +24,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.nio.file.FileSystems;
 
+import org.apache.lucene.luke.app.desktop.LukeMain;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
 /** Provider of the Logs panel */
 public final class LogsPanelProvider {
-
-  private static final String LOG_FILE = System.getProperty("user.home") +
-      FileSystems.getDefault().getSeparator() + ".luke.d" +
-      FileSystems.getDefault().getSeparator() + "luke.log";
 
   private final JTextArea logTextArea;
 
@@ -50,7 +46,7 @@ public final class LogsPanelProvider {
     header.setOpaque(false);
     header.add(new JLabel(MessageUtils.getLocalizedMessage("logs.label.see_also")));
 
-    JLabel logPathLabel = new JLabel(LOG_FILE);
+    JLabel logPathLabel = new JLabel(LukeMain.LOG_FILE);
     header.add(logPathLabel);
 
     panel.add(header, BorderLayout.PAGE_START);
