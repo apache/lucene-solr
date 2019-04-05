@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has the ability to log an audit trail of all events in the system.
+Solr has the ability to log an audit trail of all HTTP requests entering the system.
 Audit loggers are pluggable to suit any possible format or log destination.
 
 [quote]
