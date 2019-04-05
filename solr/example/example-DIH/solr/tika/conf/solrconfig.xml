@@ -36,7 +36,7 @@
    that you fully re-index after changing this setting as it can
    affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>6.6.6</luceneMatchVersion>
+  <luceneMatchVersion>6.6.7</luceneMatchVersion>
 
   <!-- Load Data Import Handler and Apache Tika (extraction) libraries -->
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-dataimporthandler-.*\.jar"/>

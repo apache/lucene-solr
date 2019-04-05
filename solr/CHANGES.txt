@@ -16,6 +16,23 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
+==================  6.6.7 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.16
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+
+(No Changes)
+
+
 ==================  6.6.6 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
