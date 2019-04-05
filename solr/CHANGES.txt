@@ -150,6 +150,8 @@ Bug Fixes
 
 * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
 
+* SOLR-13344: Admin UI inaccessible with RuleBasedAuthorizationPlugin (janhoy, Jason Gerlowski)
+
 * SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
 
 * SOLR-13362: Add 'includeIndexFieldFlags' support to SolrJ LukeRequest (Jason Gerlowski)
