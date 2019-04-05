@@ -24,11 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.lucene.luke.util.LoggerFactory;
 
 /**
  * An utility class to access to the term vectors.

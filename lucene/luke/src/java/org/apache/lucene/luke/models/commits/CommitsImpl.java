@@ -28,15 +28,15 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
+import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.store.Directory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Default implementation of {@link Commits} */
 public final class CommitsImpl extends LukeModel implements Commits {

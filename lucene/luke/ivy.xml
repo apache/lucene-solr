@@ -29,11 +29,6 @@
                 conf="logging"/>
     <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}"
                 conf="logging"/>
-    <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="logging"/>
-    <dependency org="org.apache.logging.log4j" name="log4j-1.2-api" rev="${/org.apache.logging.log4j/log4j-1.2-api}"
-                conf="logging"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="logging"/>
-
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

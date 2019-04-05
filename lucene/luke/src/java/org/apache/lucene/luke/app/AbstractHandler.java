@@ -21,8 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.lucene.luke.util.LoggerFactory;
 
 /** Abstract handler class */
 public abstract class AbstractHandler<T extends Observer> {

@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.lucene.luke.util.LoggerFactory;
 
 final class SubtypeCollector<T> implements Runnable {
 

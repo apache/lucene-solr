@@ -19,10 +19,10 @@ package org.apache.lucene.luke.app.desktop.util;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.models.LukeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.lucene.luke.util.LoggerFactory;
 
 /** An utility class for handling exception */
 public final class ExceptionHandler {

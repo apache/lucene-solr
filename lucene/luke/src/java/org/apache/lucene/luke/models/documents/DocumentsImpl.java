@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
@@ -38,9 +39,8 @@ import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.luke.util.BytesRefUtils;
+import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.util.BytesRef;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Default implementation of {@link Documents} */
 public final class DocumentsImpl extends LukeModel implements Documents {

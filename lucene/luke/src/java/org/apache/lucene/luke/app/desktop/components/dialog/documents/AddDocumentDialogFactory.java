@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -93,9 +94,8 @@ import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.tools.IndexTools;
 import org.apache.lucene.luke.models.tools.IndexToolsFactory;
+import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.util.BytesRef;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Factory of add document dialog */
 public final class AddDocumentDialogFactory implements DialogOpener.DialogFactory, AddDocumentDialogOperator {

@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.IndexHandler;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
@@ -54,11 +55,10 @@ import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
 import org.apache.lucene.luke.models.tools.IndexTools;
 import org.apache.lucene.luke.models.tools.IndexToolsFactory;
+import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.SuppressForbidden;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Factory of create index dialog */
 public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {

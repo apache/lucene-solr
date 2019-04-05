@@ -25,7 +25,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.slf4j.Logger;
+import org.apache.logging.log4j.Logger;
 
 /** PrintStream for text areas */
 public final class TextAreaPrintStream extends PrintStream {

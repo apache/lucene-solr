@@ -49,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.IndexHandler;
 import org.apache.lucene.luke.app.desktop.Preferences;
@@ -58,12 +59,11 @@ import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
 import org.apache.lucene.luke.models.LukeException;
+import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.luke.util.reflection.ClassScanner;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Factory of open index dialog */
 public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory {

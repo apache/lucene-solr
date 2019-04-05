@@ -23,13 +23,13 @@ import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.desktop.components.LukeWindowProvider;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.OpenIndexDialogFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.lucene.luke.util.LoggerFactory;
 
 import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
 
@@ -71,6 +71,7 @@ public class LukeMain {
   }
 
   public static void main(String[] args) throws Exception {
+    LoggerFactory.initializeContext();
 
     String lookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
     if (!lookAndFeelClassName.contains("AquaLookAndFeel") && !lookAndFeelClassName.contains("PlasticXPLookAndFeel")) {

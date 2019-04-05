@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -40,6 +41,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.util.IndexUtils;
+import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -62,8 +64,6 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Default implementation of {@link Search} */
 public final class SearchImpl extends LukeModel implements Search {
