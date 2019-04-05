@@ -19,6 +19,11 @@
 
 When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
 
+[WARNING]
+====
+No Solr API, including the Admin UI, is designed to be exposed to non-trusted parties. Tune your firewall so that only trusted computers and people are allowed access. Because of this, the project will not regard e.g., Admin UI XSS issues as security vulnerabilities. However, we still ask you to report such issues in JIRA.
+====
+
 === Encryption with TLS (SSL) certificates
 
 Ecrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on
@@ -63,8 +68,3 @@ or access being denied to admin APIs. Learn more about audit logging and how to 
 
 Zookeeper is a central and important part of a SolrCloud cluster and understanding how to secure
 its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.
-
-[WARNING]
-====
-No Solr API, including the Admin UI, is designed to be exposed to non-trusted parties. Tune your firewall so that only trusted computers and people are allowed access. Because of this, the project will not regard e.g., Admin UI XSS issues as security vulnerabilities. However, we still ask you to report such issues in JIRA.
-====
