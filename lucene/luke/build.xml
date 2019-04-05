@@ -42,7 +42,7 @@
     <path refid="base.classpath"/>
   </path>
 
-  <target name="javadocs" depends="compile-core,check-javadocs-uptodate"
+  <target name="javadocs" depends="compile-core,javadocs-lucene-core,javadocs-analyzers-common,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
