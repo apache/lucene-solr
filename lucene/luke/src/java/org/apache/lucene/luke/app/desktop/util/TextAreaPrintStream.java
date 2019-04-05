@@ -23,8 +23,6 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.logging.log4j.Logger;
-
 /** PrintStream for text areas */
 public final class TextAreaPrintStream extends PrintStream {
 
