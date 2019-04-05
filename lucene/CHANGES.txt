@@ -73,6 +73,11 @@ Improvements
 * LUCENE-8750: Implements setMissingValue() on sort fields produced from 
   DoubleValuesSource and LongValuesSource (Mike Sokolov via Alan Woodward)
 
+* LUCENE-8701: ToParentBlockJoinQuery now creates a child scorer that disallows skipping over
+  non-competitive documents if the score of a parent depends on the score of multiple
+  children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
+  each parent can early terminate top scores's collection. (Jim Ferenczi)
+
 Changes in Runtime Behavior
 
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
