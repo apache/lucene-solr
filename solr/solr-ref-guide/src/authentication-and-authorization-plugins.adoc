@@ -97,7 +97,7 @@ If you are using <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distr
 
 You can use the authentication and authorization APIs, but if you are using the legacy scaling model, you will need to make the same API requests on each node separately. You can also edit `security.json` by hand if you prefer.
 
-== Authentication Plugins
+== Authentication
 
 Authentication plugins help in securing the endpoints of Solr by authenticating incoming requests. A custom plugin can be implemented by extending the AuthenticationPlugin class.
 
