@@ -199,6 +199,8 @@ Other Changes
 
 * SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
 
+* SOLR-12809: Document recommended Java/Solr combinations (Erick Erickson, Jan Høydahl et.al.)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
