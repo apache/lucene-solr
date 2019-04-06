@@ -62,7 +62,7 @@
   </target>
 
   <!-- launch Luke -->
-  <target name="launch" depends="compile-core" description="Launch Luke GUI">
+  <target name="run" depends="compile-core" description="Launch Luke GUI">
     <java classname="org.apache.lucene.luke.app.desktop.LukeMain"
           classpath="${build.dir}/classes/java"
           fork="true"
@@ -71,8 +71,6 @@
     </java>
   </target>
   
-  <target name="run" depends="launch"/><!-- alias -->
-
   <target name="compile-core"
           depends="jar-codecs,jar-backward-codecs,jar-analyzers-common,jar-misc,jar-queryparser,jar-queries,jar-misc,common.compile-core"/>
 
