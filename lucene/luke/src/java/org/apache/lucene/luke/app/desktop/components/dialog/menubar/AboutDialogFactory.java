@@ -41,6 +41,7 @@ import java.awt.Window;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
+import org.apache.lucene.LucenePackage;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -135,14 +136,13 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
   private JScrollPane center() {
     JEditorPane editorPane = new JEditorPane();
     editorPane.setOpaque(false);
-    editorPane.setMargin(new Insets(5, 5, 5, 5));
+    editorPane.setMargin(new Insets(0, 5, 2, 5));
     editorPane.setContentType("text/html");
     editorPane.setText(LICENSE_NOTICE);
     editorPane.setEditable(false);
     editorPane.addHyperlinkListener(hyperlinkListener);
     JScrollPane scrollPane = new JScrollPane(editorPane, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     scrollPane.setBorder(BorderFactory.createLineBorder(Color.gray));
-    //scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
     return scrollPane;
   }
 
@@ -159,7 +159,9 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
   }
 
   private static final String LICENSE_NOTICE =
-      "<p>[License]</p>" +
+      "<p>[Implementation Version]</p>" +
+          "<p>" + LucenePackage.get().getImplementationVersion() + "</p>" +
+          "<p>[License]</p>" +
           "<p>Luke is distributed under <a href=\"http://www.apache.org/licenses/LICENSE-2.0\">Apache License Version 2.0</a> (http://www.apache.org/licenses/LICENSE-2.0) " +
           "and includes <a href=\"https://www.elegantthemes.com/blog/resources/elegant-icon-font\">The Elegant Icon Font</a> (https://www.elegantthemes.com/blog/resources/elegant-icon-font) " +
           "licensed under <a href=\"https://opensource.org/licenses/MIT\">MIT</a> (https://opensource.org/licenses/MIT)</p>" +
