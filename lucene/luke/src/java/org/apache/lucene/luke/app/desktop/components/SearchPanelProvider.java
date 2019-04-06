@@ -764,72 +764,71 @@ public final class SearchPanelProvider implements SearchTabOperator {
     }
   }
 
-}
+  static final class SearchResultsTableModel extends TableModelBase<SearchResultsTableModel.Column> {
 
-final class SearchResultsTableModel extends TableModelBase<SearchResultsTableModel.Column> {
+    enum Column implements TableColumnInfo {
+      DOCID("Doc ID", 0, Integer.class, 50),
+      SCORE("Score", 1, Float.class, 100),
+      VALUE("Field Values", 2, String.class, 800);
 
-  enum Column implements TableColumnInfo {
-    DOCID("Doc ID", 0, Integer.class, 50),
-    SCORE("Score", 1, Float.class, 100),
-    VALUE("Field Values", 2, String.class, 800);
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
 
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  SearchResultsTableModel() {
-    super();
-  }
-
-  SearchResultsTableModel(SearchResults results) {
-    super(results.size());
-    for (int i = 0; i < results.size(); i++) {
-      SearchResults.Doc doc = results.getHits().get(i);
-      data[i][Column.DOCID.getIndex()] = doc.getDocId();
-      if (!Float.isNaN(doc.getScore())) {
-        data[i][Column.SCORE.getIndex()] = doc.getScore();
-      } else {
-        data[i][Column.SCORE.getIndex()] = 1.0f;
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
       }
-      List<String> concatValues = doc.getFieldValues().entrySet().stream().map(e -> {
-        String v = String.join(",", Arrays.asList(e.getValue()));
-        return e.getKey() + "=" + v + ";";
-      }).collect(Collectors.toList());
-      data[i][Column.VALUE.getIndex()] = String.join(" ", concatValues);
-    }
-  }
 
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    SearchResultsTableModel() {
+      super();
+    }
+
+    SearchResultsTableModel(SearchResults results) {
+      super(results.size());
+      for (int i = 0; i < results.size(); i++) {
+        SearchResults.Doc doc = results.getHits().get(i);
+        data[i][Column.DOCID.getIndex()] = doc.getDocId();
+        if (!Float.isNaN(doc.getScore())) {
+          data[i][Column.SCORE.getIndex()] = doc.getScore();
+        } else {
+          data[i][Column.SCORE.getIndex()] = 1.0f;
+        }
+        List<String> concatValues = doc.getFieldValues().entrySet().stream().map(e -> {
+          String v = String.join(",", Arrays.asList(e.getValue()));
+          return e.getKey() + "=" + v + ";";
+        }).collect(Collectors.toList());
+        data[i][Column.VALUE.getIndex()] = String.join(" ", concatValues);
+      }
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
   }
 }

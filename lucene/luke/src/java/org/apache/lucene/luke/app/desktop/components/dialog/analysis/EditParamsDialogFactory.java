@@ -179,75 +179,76 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
     });
   }
 
+  static final class ParamsTableModel extends TableModelBase<ParamsTableModel.Column> {
+
+    enum Column implements TableColumnInfo {
+      DELETE("Delete", 0, Boolean.class, 50),
+      NAME("Name", 1, String.class, 150),
+      VALUE("Value", 2, String.class, Integer.MAX_VALUE);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+
+    }
+
+    private static final int PARAM_SIZE = 20;
+
+    ParamsTableModel(Map<String, String> params) {
+      super(PARAM_SIZE);
+      List<String> keys = new ArrayList<>(params.keySet());
+      for (int i = 0; i < keys.size(); i++) {
+        data[i][Column.NAME.getIndex()] = keys.get(i);
+        data[i][Column.VALUE.getIndex()] = params.get(keys.get(i));
+      }
+      for (int i = 0; i < data.length; i++) {
+        data[i][Column.DELETE.getIndex()] = false;
+      }
+    }
+
+    @Override
+    public boolean isCellEditable(int rowIndex, int columnIndex) {
+      return true;
+    }
+
+    @Override
+    public void setValueAt(Object value, int rowIndex, int columnIndex) {
+      data[rowIndex][columnIndex] = value;
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
+  }
+
 }
 
-final class ParamsTableModel extends TableModelBase<ParamsTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-    DELETE("Delete", 0, Boolean.class, 50),
-    NAME("Name", 1, String.class, 150),
-    VALUE("Value", 2, String.class, Integer.MAX_VALUE);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-
-  }
-
-  private static final int PARAM_SIZE = 20;
-
-  ParamsTableModel(Map<String, String> params) {
-    super(PARAM_SIZE);
-    List<String> keys = new ArrayList<>(params.keySet());
-    for (int i = 0; i < keys.size(); i++) {
-      data[i][Column.NAME.getIndex()] = keys.get(i);
-      data[i][Column.VALUE.getIndex()] = params.get(keys.get(i));
-    }
-    for (int i = 0; i < data.length; i++) {
-      data[i][Column.DELETE.getIndex()] = false;
-    }
-  }
-
-  @Override
-  public boolean isCellEditable(int rowIndex, int columnIndex) {
-    return true;
-  }
-
-  @Override
-  public void setValueAt(Object value, int rowIndex, int columnIndex) {
-    data[rowIndex][columnIndex] = value;
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}

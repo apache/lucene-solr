@@ -375,66 +375,67 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
 
   }
 
+  static final class TokensTableModel extends TableModelBase<TokensTableModel.Column> {
+
+    enum Column implements TableColumnInfo {
+      TERM("Term", 0, String.class, 150),
+      ATTR("Attributes", 1, String.class, 1000);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    TokensTableModel() {
+      super();
+    }
+
+    TokensTableModel(List<Analysis.Token> tokens) {
+      super(tokens.size());
+      for (int i = 0; i < tokens.size(); i++) {
+        Analysis.Token token = tokens.get(i);
+        data[i][Column.TERM.getIndex()] = token.getTerm();
+        List<String> attValues = token.getAttributes().stream()
+            .flatMap(att -> att.getAttValues().entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue()))
+            .collect(Collectors.toList());
+        data[i][Column.ATTR.getIndex()] = String.join(",", attValues);
+      }
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
+  }
+
 }
 
-final class TokensTableModel extends TableModelBase<TokensTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-    TERM("Term", 0, String.class, 150),
-    ATTR("Attributes", 1, String.class, 1000);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  TokensTableModel() {
-    super();
-  }
-
-  TokensTableModel(List<Analysis.Token> tokens) {
-    super(tokens.size());
-    for (int i = 0; i < tokens.size(); i++) {
-      Analysis.Token token = tokens.get(i);
-      data[i][Column.TERM.getIndex()] = token.getTerm();
-      List<String> attValues = token.getAttributes().stream()
-          .flatMap(att -> att.getAttValues().entrySet().stream()
-              .map(e -> e.getKey() + "=" + e.getValue()))
-          .collect(Collectors.toList());
-      data[i][Column.ATTR.getIndex()] = String.join(",", attValues);
-    }
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}

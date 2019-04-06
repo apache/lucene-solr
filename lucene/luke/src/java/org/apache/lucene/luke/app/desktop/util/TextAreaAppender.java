@@ -19,7 +19,6 @@ package org.apache.lucene.luke.app.desktop.util;
 
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-
 import java.io.Serializable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;

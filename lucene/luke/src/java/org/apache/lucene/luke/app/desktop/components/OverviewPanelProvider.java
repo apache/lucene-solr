@@ -521,125 +521,124 @@ public final class OverviewPanelProvider {
 
   }
 
-}
+  static final class TermCountsTableModel extends TableModelBase<TermCountsTableModel.Column> {
 
-final class TermCountsTableModel extends TableModelBase<TermCountsTableModel.Column> {
+    enum Column implements TableColumnInfo {
 
-  enum Column implements TableColumnInfo {
+      NAME("Name", 0, String.class, 150),
+      TERM_COUNT("Term count", 1, Long.class, 100),
+      RATIO("%", 2, String.class, Integer.MAX_VALUE);
 
-    NAME("Name", 0, String.class, 150),
-    TERM_COUNT("Term count", 1, Long.class, 100),
-    RATIO("%", 2, String.class, Integer.MAX_VALUE);
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
 
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
 
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    TermCountsTableModel() {
+      super();
+    }
+
+    TermCountsTableModel(double numTerms, Map<String, Long> termCounts) {
+      super(termCounts.size());
+      int i = 0;
+      for (Map.Entry<String, Long> e : termCounts.entrySet()) {
+        String term = e.getKey();
+        Long count = e.getValue();
+        data[i++] = new Object[]{term, count, String.format(Locale.ENGLISH, "%.2f %%", count / numTerms * 100)};
+      }
     }
 
     @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
+    protected Column[] columnInfos() {
+      return Column.values();
     }
   }
 
-  TermCountsTableModel() {
-    super();
-  }
+  static final class TopTermsTableModel extends TableModelBase<TopTermsTableModel.Column> {
 
-  TermCountsTableModel(double numTerms, Map<String, Long> termCounts) {
-    super(termCounts.size());
-    int i = 0;
-    for (Map.Entry<String, Long> e : termCounts.entrySet()) {
-      String term = e.getKey();
-      Long count = e.getValue();
-      data[i++] = new Object[]{term, count, String.format(Locale.ENGLISH, "%.2f %%", count / numTerms * 100)};
+    enum Column implements TableColumnInfo {
+      RANK("Rank", 0, Integer.class, 50),
+      FREQ("Freq", 1, Integer.class, 80),
+      TEXT("Text", 2, String.class, Integer.MAX_VALUE);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
     }
-  }
 
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
+    TopTermsTableModel() {
+      super();
+    }
 
-final class TopTermsTableModel extends TableModelBase<TopTermsTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-    RANK("Rank", 0, Integer.class, 50),
-    FREQ("Freq", 1, Integer.class, 80),
-    TEXT("Text", 2, String.class, Integer.MAX_VALUE);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
+    TopTermsTableModel(List<TermStats> termStats, int numTerms) {
+      super(Math.min(numTerms, termStats.size()));
+      for (int i = 0; i < data.length; i++) {
+        int rank = i + 1;
+        int freq = termStats.get(i).getDocFreq();
+        String termText = termStats.get(i).getDecodedTermText();
+        data[i] = new Object[]{rank, freq, termText};
+      }
     }
 
     @Override
-    public String getColName() {
-      return colName;
+    protected Column[] columnInfos() {
+      return Column.values();
     }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  TopTermsTableModel() {
-    super();
-  }
-
-  TopTermsTableModel(List<TermStats> termStats, int numTerms) {
-    super(Math.min(numTerms, termStats.size()));
-    for (int i = 0; i < data.length; i++) {
-      int rank = i + 1;
-      int freq = termStats.get(i).getDocFreq();
-      String termText = termStats.get(i).getDecodedTermText();
-      data[i] = new Object[]{rank, freq, termText};
-    }
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
   }
 }

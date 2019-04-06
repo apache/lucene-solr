@@ -444,132 +444,132 @@ public final class CommitsPanelProvider {
     DIAGNOSTICS, ATTRIBUTES, CODEC;
   }
 
+  static final class FilesTableModel extends TableModelBase<FilesTableModel.Column> {
+
+    enum Column implements TableColumnInfo {
+
+      FILENAME("Filename", 0, String.class, 200),
+      SIZE("Size", 1, String.class, Integer.MAX_VALUE);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    FilesTableModel() {
+      super();
+    }
+
+    FilesTableModel(List<File> files) {
+      super(files.size());
+      for (int i = 0; i < files.size(); i++) {
+        File file = files.get(i);
+        data[i][Column.FILENAME.getIndex()] = file.getFileName();
+        data[i][Column.SIZE.getIndex()] = file.getDisplaySize();
+      }
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
+  }
+
+  static final class SegmentsTableModel extends TableModelBase<SegmentsTableModel.Column> {
+
+    enum Column implements TableColumnInfo {
+
+      NAME("Name", 0, String.class, 60),
+      MAXDOCS("Max docs", 1, Integer.class, 60),
+      DELS("Dels", 2, Integer.class, 60),
+      DELGEN("Del gen", 3, Long.class, 60),
+      VERSION("Lucene ver.", 4, String.class, 60),
+      CODEC("Codec", 5, String.class, 100),
+      SIZE("Size", 6, String.class, 150);
+
+      private final String colName;
+      private final int index;
+      private final Class<?> type;
+      private final int width;
+
+      Column(String colName, int index, Class<?> type, int width) {
+        this.colName = colName;
+        this.index = index;
+        this.type = type;
+        this.width = width;
+      }
+
+      @Override
+      public String getColName() {
+        return colName;
+      }
+
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public Class<?> getType() {
+        return type;
+      }
+
+      @Override
+      public int getColumnWidth() {
+        return width;
+      }
+    }
+
+    SegmentsTableModel() {
+      super();
+    }
+
+    SegmentsTableModel(List<Segment> segments) {
+      super(segments.size());
+      for (int i = 0; i < segments.size(); i++) {
+        Segment segment = segments.get(i);
+        data[i][Column.NAME.getIndex()] = segment.getName();
+        data[i][Column.MAXDOCS.getIndex()] = segment.getMaxDoc();
+        data[i][Column.DELS.getIndex()] = segment.getDelCount();
+        data[i][Column.DELGEN.getIndex()] = segment.getDelGen();
+        data[i][Column.VERSION.getIndex()] = segment.getLuceneVer();
+        data[i][Column.CODEC.getIndex()] = segment.getCodecName();
+        data[i][Column.SIZE.getIndex()] = segment.getDisplaySize();
+      }
+    }
+
+    @Override
+    protected Column[] columnInfos() {
+      return Column.values();
+    }
+  }
 }
 
-final class FilesTableModel extends TableModelBase<FilesTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-
-    FILENAME("Filename", 0, String.class, 200),
-    SIZE("Size", 1, String.class, Integer.MAX_VALUE);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  FilesTableModel() {
-    super();
-  }
-
-  FilesTableModel(List<File> files) {
-    super(files.size());
-    for (int i = 0; i < files.size(); i++) {
-      File file = files.get(i);
-      data[i][Column.FILENAME.getIndex()] = file.getFileName();
-      data[i][Column.SIZE.getIndex()] = file.getDisplaySize();
-    }
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
-
-final class SegmentsTableModel extends TableModelBase<SegmentsTableModel.Column> {
-
-  enum Column implements TableColumnInfo {
-
-    NAME("Name", 0, String.class, 60),
-    MAXDOCS("Max docs", 1, Integer.class, 60),
-    DELS("Dels", 2, Integer.class, 60),
-    DELGEN("Del gen", 3, Long.class, 60),
-    VERSION("Lucene ver.", 4, String.class, 60),
-    CODEC("Codec", 5, String.class, 100),
-    SIZE("Size", 6, String.class, 150);
-
-    private final String colName;
-    private final int index;
-    private final Class<?> type;
-    private final int width;
-
-    Column(String colName, int index, Class<?> type, int width) {
-      this.colName = colName;
-      this.index = index;
-      this.type = type;
-      this.width = width;
-    }
-
-    @Override
-    public String getColName() {
-      return colName;
-    }
-
-    @Override
-    public int getIndex() {
-      return index;
-    }
-
-    @Override
-    public Class<?> getType() {
-      return type;
-    }
-
-    @Override
-    public int getColumnWidth() {
-      return width;
-    }
-  }
-
-  SegmentsTableModel() {
-    super();
-  }
-
-  SegmentsTableModel(List<Segment> segments) {
-    super(segments.size());
-    for (int i = 0; i < segments.size(); i++) {
-      Segment segment = segments.get(i);
-      data[i][Column.NAME.getIndex()] = segment.getName();
-      data[i][Column.MAXDOCS.getIndex()] = segment.getMaxDoc();
-      data[i][Column.DELS.getIndex()] = segment.getDelCount();
-      data[i][Column.DELGEN.getIndex()] = segment.getDelGen();
-      data[i][Column.VERSION.getIndex()] = segment.getLuceneVer();
-      data[i][Column.CODEC.getIndex()] = segment.getCodecName();
-      data[i][Column.SIZE.getIndex()] = segment.getDisplaySize();
-    }
-  }
-
-  @Override
-  protected Column[] columnInfos() {
-    return Column.values();
-  }
-}
