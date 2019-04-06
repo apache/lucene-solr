@@ -26,6 +26,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import java.awt.BorderLayout;
@@ -144,6 +145,10 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
     editorPane.addHyperlinkListener(hyperlinkListener);
     JScrollPane scrollPane = new JScrollPane(editorPane, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     scrollPane.setBorder(BorderFactory.createLineBorder(Color.gray));
+    SwingUtilities.invokeLater(() -> {
+      // Set the scroll bar position to top
+      scrollPane.getVerticalScrollBar().setValue(0);
+    });
     return scrollPane;
   }
 
