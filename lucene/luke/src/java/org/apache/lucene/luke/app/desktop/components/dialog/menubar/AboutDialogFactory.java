@@ -120,7 +120,7 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
     JLabel subTitleLbl = new JLabel("GUI client of the best Java search library Apache Lucene");
     subTitleLbl.setFont(new Font(subTitleLbl.getFont().getFontName(), Font.PLAIN, 20));
     subTitle.add(subTitleLbl);
-    subTitle.add(new JLabel(ImageUtils.createImageIcon("/img/lucene-logo.gif", 100, 15)));
+    subTitle.add(new JLabel(ImageUtils.createImageIcon("lucene-logo.gif", 100, 15)));
     desc.add(subTitle);
 
     JPanel link = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
