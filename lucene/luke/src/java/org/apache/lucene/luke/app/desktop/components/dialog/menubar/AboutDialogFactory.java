@@ -40,6 +40,7 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Objects;
 
 import org.apache.lucene.LucenePackage;
 import org.apache.lucene.luke.app.desktop.Preferences;
@@ -158,9 +159,11 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
     return panel;
   }
 
+  private static final String LUCENE_IMPLEMENTATION_VERSION = LucenePackage.get().getImplementationVersion();
+
   private static final String LICENSE_NOTICE =
       "<p>[Implementation Version]</p>" +
-          "<p>" + LucenePackage.get().getImplementationVersion() + "</p>" +
+          "<p>" + (Objects.nonNull(LUCENE_IMPLEMENTATION_VERSION) ? LUCENE_IMPLEMENTATION_VERSION : "") + "</p>" +
           "<p>[License]</p>" +
           "<p>Luke is distributed under <a href=\"http://www.apache.org/licenses/LICENSE-2.0\">Apache License Version 2.0</a> (http://www.apache.org/licenses/LICENSE-2.0) " +
           "and includes <a href=\"https://www.elegantthemes.com/blog/resources/elegant-icon-font\">The Elegant Icon Font</a> (https://www.elegantthemes.com/blog/resources/elegant-icon-font) " +
