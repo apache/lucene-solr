@@ -53,6 +53,7 @@ import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
+import org.apache.lucene.luke.app.desktop.util.URLLabel;
 import org.apache.lucene.luke.models.tools.IndexTools;
 import org.apache.lucene.luke.models.tools.IndexToolsFactory;
 import org.apache.lucene.luke.util.LoggerFactory;
@@ -169,15 +170,38 @@ public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {
     JPanel panel = new JPanel(new BorderLayout());
     panel.setOpaque(false);
 
-    JPanel description = new JPanel(new FlowLayout(FlowLayout.LEADING));
+    JPanel description = new JPanel();
+    description.setLayout(new BoxLayout(description, BoxLayout.Y_AXIS));
     description.setOpaque(false);
-    JTextArea descTA = new JTextArea(MessageUtils.getLocalizedMessage("createindex.label.data_help"));
-    descTA.setPreferredSize(new Dimension(550, 100));
-    descTA.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-    descTA.setOpaque(false);
-    descTA.setLineWrap(true);
-    descTA.setEditable(false);
-    description.add(descTA);
+
+    JPanel name = new JPanel(new FlowLayout(FlowLayout.LEADING));
+    name.setOpaque(false);
+    JLabel nameLbl = new JLabel(MessageUtils.getLocalizedMessage("createindex.label.option"));
+    name.add(nameLbl);
+    description.add(name);
+
+    JTextArea descTA1 = new JTextArea(MessageUtils.getLocalizedMessage("createindex.textarea.data_help1"));
+    descTA1.setPreferredSize(new Dimension(550, 20));
+    descTA1.setBorder(BorderFactory.createEmptyBorder(2, 10, 10, 5));
+    descTA1.setOpaque(false);
+    descTA1.setLineWrap(true);
+    descTA1.setEditable(false);
+    description.add(descTA1);
+
+    JPanel link = new JPanel(new FlowLayout(FlowLayout.LEADING, 10, 1));
+    link.setOpaque(false);
+    JLabel linkLbl = FontUtils.toLinkText(new URLLabel(MessageUtils.getLocalizedMessage("createindex.label.data_link")));
+    link.add(linkLbl);
+    description.add(link);
+
+    JTextArea descTA2 = new JTextArea(MessageUtils.getLocalizedMessage("createindex.textarea.data_help2"));
+    descTA2.setPreferredSize(new Dimension(550, 50));
+    descTA2.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 5));
+    descTA2.setOpaque(false);
+    descTA2.setLineWrap(true);
+    descTA2.setEditable(false);
+    description.add(descTA2);
+
     panel.add(description, BorderLayout.PAGE_START);
 
     JPanel dataDirPath = new JPanel(new FlowLayout(FlowLayout.LEADING));
