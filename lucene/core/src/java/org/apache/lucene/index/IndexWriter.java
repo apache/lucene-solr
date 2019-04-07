@@ -1971,7 +1971,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.maxNumSegments = maxNumSegments;
         if (merge.info != null) {
-          // TODO: explain why this is sometimes still null
+          // this can be null since we register the merge under lock before we then do the actual merge and
+          // set the merge.info in _mergeInit
           segmentsToMerge.put(merge.info, Boolean.TRUE);
         }
       }
@@ -1979,7 +1980,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       for (final MergePolicy.OneMerge merge: runningMerges) {
         merge.maxNumSegments = maxNumSegments;
         if (merge.info != null) {
-          // TODO: explain why this is sometimes still null
+          // this can be null since we put the merge on runningMerges before we do the actual merge and
+          // set the merge.info in _mergeInit
           segmentsToMerge.put(merge.info, Boolean.TRUE);
         }
       }
