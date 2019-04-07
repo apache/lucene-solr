@@ -321,6 +321,7 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
   @Override
   public void setSearchableFields(Collection<String> searchableFields) {
+    dfCB.removeAllItems();
     for (String field : searchableFields) {
       dfCB.addItem(field);
     }
