@@ -28,6 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -44,6 +45,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -51,6 +54,7 @@ import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
+import org.apache.lucene.luke.app.desktop.util.ImageUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
 import org.apache.lucene.luke.app.desktop.util.URLLabel;
@@ -59,6 +63,7 @@ import org.apache.lucene.luke.models.tools.IndexToolsFactory;
 import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
 
 /** Factory of create index dialog */
@@ -81,6 +86,14 @@ public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {
   private final JTextField dataDirTF = new JTextField();
 
   private final JButton dataBrowseBtn = new JButton();
+
+  private final JButton clearBtn = new JButton();
+
+  private final JLabel indicatorLbl = new JLabel();
+
+  private final JButton createBtn = new JButton();
+
+  private final JButton cancelBtn = new JButton();
 
   private final ListenerFunctions listeners = new ListenerFunctions();
 
@@ -114,11 +127,23 @@ public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {
     dataDirTF.setPreferredSize(new Dimension(250, 30));
     dataDirTF.setEditable(false);
 
+    clearBtn.setText(MessageUtils.getLocalizedMessage("button.clear"));
+    clearBtn.setPreferredSize(new Dimension(70, 30));
+    clearBtn.addActionListener(listeners::clearDataDir);
+
     dataBrowseBtn.setText(FontUtils.elegantIconHtml("&#x6e;", MessageUtils.getLocalizedMessage("button.browse")));
     dataBrowseBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     dataBrowseBtn.setPreferredSize(new Dimension(100, 30));
     dataBrowseBtn.addActionListener(listeners::browseDataDirectory);
 
+    indicatorLbl.setIcon(ImageUtils.createImageIcon("indicator.gif", 20, 20));
+    indicatorLbl.setVisible(false);
+
+    createBtn.setText(MessageUtils.getLocalizedMessage("button.create"));
+    createBtn.addActionListener(listeners::createIndex);
+
+    cancelBtn.setText(MessageUtils.getLocalizedMessage("button.cancel"));
+    cancelBtn.addActionListener(e -> dialog.dispose());
   }
 
   @Override
@@ -209,9 +234,7 @@ public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {
     dataDirPath.add(new JLabel(MessageUtils.getLocalizedMessage("createindex.label.datadir")));
     dataDirPath.add(dataDirTF);
     dataDirPath.add(dataBrowseBtn);
-    JButton clearBtn = new JButton(MessageUtils.getLocalizedMessage("button.clear"));
-    clearBtn.setPreferredSize(new Dimension(70, 30));
-    clearBtn.addActionListener(listeners::clearDataDir);
+
     dataDirPath.add(clearBtn);
     panel.add(dataDirPath, BorderLayout.CENTER);
 
@@ -223,12 +246,8 @@ public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {
     panel.setOpaque(false);
     panel.setBorder(BorderFactory.createEmptyBorder(3, 3, 10, 20));
 
-    JButton okBtn = new JButton(MessageUtils.getLocalizedMessage("button.create"));
-    okBtn.addActionListener(listeners::createIndex);
-    panel.add(okBtn);
-
-    JButton cancelBtn = new JButton(MessageUtils.getLocalizedMessage("button.cancel"));
-    cancelBtn.addActionListener(e -> dialog.dispose());
+    panel.add(indicatorLbl);
+    panel.add(createBtn);
     panel.add(cancelBtn);
 
     return panel;
@@ -258,44 +277,72 @@ public class CreateIndexDialogFactory implements DialogOpener.DialogFactory {
 
     void createIndex(ActionEvent e) {
       Path path = Paths.get(locationTF.getText(), dirnameTF.getText());
+      if (Files.exists(path)) {
+        String message = "The directory " + path.toAbsolutePath().toString() + " already exists.";
+        JOptionPane.showMessageDialog(dialog, message, "Empty index path", JOptionPane.ERROR_MESSAGE);
+      } else {
+        // create new index asynchronously
+        ExecutorService executor = Executors.newFixedThreadPool(1, new NamedThreadFactory("create-index-dialog"));
 
-      try {
-        if (Files.exists(path)) {
-          String message = "The directory " + path.toAbsolutePath().toString() + " already exists.";
-          JOptionPane.showMessageDialog(dialog, message, "Empty index path", JOptionPane.ERROR_MESSAGE);
-        } else {
-          Directory dir = FSDirectory.open(path);
-          IndexTools toolsModel = new IndexToolsFactory().newInstance(dir);
+        SwingWorker<Void, Void> task = new SwingWorker<Void, Void>() {
 
-          if (dataDirTF.getText().isEmpty()) {
-            toolsModel.createNewIndex();
-          } else {
-            Path dataPath = Paths.get(dataDirTF.getText());
-            toolsModel.createNewIndex(dataPath.toAbsolutePath().toString());
+          @Override
+          protected Void doInBackground() throws Exception {
+            setProgress(0);
+            indicatorLbl.setVisible(true);
+            createBtn.setEnabled(false);
+
+            try {
+              Directory dir = FSDirectory.open(path);
+              IndexTools toolsModel = new IndexToolsFactory().newInstance(dir);
+
+              if (dataDirTF.getText().isEmpty()) {
+                // without sample documents
+                toolsModel.createNewIndex();
+              } else {
+                // with sample documents
+                Path dataPath = Paths.get(dataDirTF.getText());
+                toolsModel.createNewIndex(dataPath.toAbsolutePath().toString());
+              }
+
+              indexHandler.open(path.toAbsolutePath().toString(), null, false, false, false);
+              prefs.addHistory(path.toAbsolutePath().toString());
+
+              dirnameTF.setText("");
+              closeDialog();
+            } catch (Exception ex) {
+              // cleanup
+              try {
+                Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                  @Override
+                  public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                  }
+                });
+                Files.deleteIfExists(path);
+              } catch (IOException ex2) {
+              }
+
+              log.error("Cannot create index", ex);
+              String message = "See Logs tab or log file for more details.";
+              JOptionPane.showMessageDialog(dialog, message, "Cannot create index", JOptionPane.ERROR_MESSAGE);
+            } finally {
+              setProgress(100);
+            }
+            return null;
           }
 
-          indexHandler.open(path.toAbsolutePath().toString(), null, false, false, false);
-          prefs.addHistory(path.toAbsolutePath().toString());
-          closeDialog();
-        }
-      } catch (Exception ex) {
-        // cleanup
-        try {
-          Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-              Files.delete(file);
-              return FileVisitResult.CONTINUE;
-            }
-          });
-          Files.deleteIfExists(path);
-        } catch (IOException ex2) {}
+          @Override
+          protected void done() {
+            indicatorLbl.setVisible(false);
+            createBtn.setEnabled(true);
+          }
+        };
 
-        log.error("Cannot create index", ex);
-        String message = "See Logs tab or log file for more details.";
-        JOptionPane.showMessageDialog(dialog, message, "Cannot create index", JOptionPane.ERROR_MESSAGE);
+        executor.submit(task);
+        executor.shutdown();
       }
-
     }
 
     private void clearDataDir(ActionEvent e) {
