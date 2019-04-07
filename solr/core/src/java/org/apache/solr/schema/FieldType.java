@@ -1184,6 +1184,9 @@ public abstract class FieldType extends FieldProperties {
   /**Converts any Object to a java Object native to this field type
    */
   public Object toNativeType(Object val) {
+    if (val instanceof CharSequence) {
+      return ((CharSequence) val).toString();
+    }
     return val;
   }
   

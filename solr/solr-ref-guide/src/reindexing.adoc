@@ -66,7 +66,7 @@ In fact, Lucene may keep a reference to a deleted field _forever_ (see also http
 This may only be an issue for your environment if you try to add a field that has the same name as a deleted field,
 but it can also be an issue for dynamic field rules that are later removed.
 
-==== Changing Field and Field Type Field Properties
+==== Changing Field and Field Type Properties
 
 Solr has two ways of defining field properties.
 
@@ -77,19 +77,39 @@ The second is an override to a property inherited from the field type defined on
 If a property has been defined for a field type but the property is not overridden by defining a different value for the
 property for a field, then changing the property on the field type is equivalent to changing it on the field itself.
 
-Changes to *any* field/field type property described in <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> require reindexing in order for the change to be reflected in all documents.
-The list of changes that require reindexing includes:
+Changes to *any* field/field type property described in <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> must be reindexed in order for the change to be reflected in all documents.
+The list of changes that require reindexing includes (but is not limited to):
 
 * Changing a field from stored to not stored, and vice versa.
 * Changing a field from indexed to not indexed, and vice versa.
 * Changing a field from multi-valued to single-valued, and vice versa.
-* <<Changing Field Analysis>>
+* <<Changing Field Analysis>>.
+* Changing the `type` of field, or the `class` for a field type.
+* Enabling or disabling <<docvalues.adoc#docvalues,docValues>>.
 
 Be sure to reference the Field Type Properties section linked above for the complete list of properties that would require a reindex.
 
+[CAUTION]
+====
 In some cases, it can be possible to change a field/field type property value and it will only apply to documents
-indexed _after_ the change. This is not recommended to ensure consistent behavior, but may be acceptable for your
-use case as a temporary condition before a full reindexing can be scheduled.
+indexed _after_ the change.
+
+For example, you could change a field from being indexed (`indexed="true"`) to no longer indexed (`indexed="false"`)
+and over time, as documents are updated, the index will be purged of the fields that shouldn't be indexed anymore.
+
+You could also change a field from not being stored (`stored="false"`) to being stored (`stored="true"`).
+In this case, if you want to use the field immediately, only documents indexed after the change will contain data in the field.
+However, you would need to ensure that your client is able to handle fields missing from documents that have
+not yet been reindexed.
+
+It's important to note this is not possible for all field/field type properties.
+If you change whether or not docValues are enabled, for example, you absolutely must reindex.
+This is due to the way docValues have been implemented in Lucene, and how Lucene handles dovValue segments.
+
+Changing any field properties without reindexing is _never_ recommended to ensure consistent behavior, and should only
+be attempted when you have tested thoroughly and feel confident that you understand the ramifications on your
+documents and front-end clients.
+====
 
 ==== Changing Field Analysis
 
@@ -159,6 +179,8 @@ Since the data directory can be customized, see the section <<datadir-and-direct
 for where to look to find the index files.
 
 Note you will need to verify the indexes have been removed in every shard and every replica on every node of a cluster.
+It is not sufficient to only query for the number of documents because you may have no documents but still have index
+segments.
 
 Once the indexes have been cleared, you can start reindexing by re-running the original index process.
 

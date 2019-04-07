@@ -48,30 +48,30 @@ import org.slf4j.LoggerFactory;
 public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   static final int TIMEOUT = 30000;
   private ZkTestServer server;
   private SolrZkClient zkClient;
   private ZkStateReader zkStateReader;
   private Map<Integer,Thread> seqToThread;
-  
+
   private volatile boolean stopStress = false;
-  
+
   @BeforeClass
   public static void beforeClass() {
 
   }
-  
+
   @AfterClass
   public static void afterClass() {
 
   }
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     String zkDir = createTempDir("zkData").toFile().getAbsolutePath();;
-    
+
     server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);
     server.run();
@@ -179,7 +179,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         es.close();
         return;
       }
-        
+
       while (!stop) {
         try {
           Thread.sleep(100);
@@ -187,9 +187,9 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
           return;
         }
       }
-      
+
     }
-    
+
     public void close() {
       es.close();
       this.stop = true;
@@ -258,7 +258,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         Thread.sleep(500);
       }
     }
-    zkClient.printLayoutToStdOut();
+    zkClient.printLayoutToStream(System.out);
     throw new RuntimeException("Could not get leader props for " + collection + " " + slice);
   }
 
@@ -283,69 +283,69 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   @Test
   public void testElection() throws Exception {
-    
+
     List<ClientThread> threads = new ArrayList<>();
-    
+
     for (int i = 0; i < 15; i++) {
       ClientThread thread = new ClientThread("shard1", i);
       threads.add(thread);
     }
     try {
       startAndJoinElection(threads);
-      
+
       int leaderThread = getLeaderThread();
-      
+
       // whoever the leader is, should be the n_0 seq
       assertEquals(0, threads.get(leaderThread).seq);
 
       // kill n_0, 1, 3 and 4
       ((ClientThread) seqToThread.get(0)).close();
-      
+
       waitForLeader(threads, 1);
-      
+
       leaderThread = getLeaderThread();
-      
+
       // whoever the leader is, should be the n_1 seq
-      
+
       assertEquals(1, threads.get(leaderThread).seq);
-      
+
       ((ClientThread) seqToThread.get(4)).close();
       ((ClientThread) seqToThread.get(1)).close();
       ((ClientThread) seqToThread.get(3)).close();
-      
+
       // whoever the leader is, should be the n_2 seq
-      
+
       waitForLeader(threads, 2);
-      
+
       leaderThread = getLeaderThread();
       assertEquals(2, threads.get(leaderThread).seq);
-      
+
       // kill n_5, 2, 6, 7, and 8
       ((ClientThread) seqToThread.get(5)).close();
       ((ClientThread) seqToThread.get(2)).close();
       ((ClientThread) seqToThread.get(6)).close();
       ((ClientThread) seqToThread.get(7)).close();
       ((ClientThread) seqToThread.get(8)).close();
-      
+
       waitForLeader(threads, 9);
       leaderThread = getLeaderThread();
-      
+
       // whoever the leader is, should be the n_9 seq
       assertEquals(9, threads.get(leaderThread).seq);
-      
+
     } finally {
       // cleanup any threads still running
       for (ClientThread thread : threads) {
         thread.close();
         thread.interrupt();
-        
+
       }
-      
+
       for (Thread thread : threads) {
         thread.join();
       }
     }
-    
+
   }
 
   @Test
@@ -415,21 +415,21 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     String leaderUrl = getLeaderUrl("collection1", "shard1");
     return Integer.parseInt(leaderUrl.replaceAll("/", ""));
   }
-  
+
   @Test
   public void testStressElection() throws Exception {
     final ScheduledExecutorService scheduler = Executors
         .newScheduledThreadPool(15, new DefaultSolrThreadFactory("stressElection"));
     final List<ClientThread> threads = Collections
         .synchronizedList(new ArrayList<ClientThread>());
-    
+
     // start with a leader
     ClientThread thread1 = null;
     thread1 = new ClientThread("shard1", 0);
     threads.add(thread1);
     scheduler.schedule(thread1, 0, TimeUnit.MILLISECONDS);
-    
-    
+
+
 
     Thread scheduleThread = new Thread() {
       @Override
@@ -450,11 +450,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         }
       }
     };
-    
+
     Thread killThread = new Thread() {
       @Override
       public void run() {
-        
+
         while (!stopStress) {
           try {
             int j;
@@ -475,11 +475,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         }
       }
     };
-    
+
     Thread connLossThread = new Thread() {
       @Override
       public void run() {
-        
+
         while (!stopStress) {
           try {
             Thread.sleep(50);
@@ -495,49 +495,49 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
               e.printStackTrace();
             }
             Thread.sleep(500);
-            
+
           } catch (Exception e) {
-            
+
           }
         }
       }
     };
-    
+
     scheduleThread.start();
     connLossThread.start();
     killThread.start();
-    
+
     Thread.sleep(4000);
-    
+
     stopStress = true;
-    
+
     scheduleThread.interrupt();
     connLossThread.interrupt();
     killThread.interrupt();
-    
+
     scheduleThread.join();
     scheduler.shutdownNow();
-    
+
     connLossThread.join();
     killThread.join();
-    
+
     int seq = threads.get(getLeaderThread()).getSeq();
-    
+
     // we have a leader we know, TODO: lets check some other things
-    
+
     // cleanup any threads still running
     for (ClientThread thread : threads) {
       thread.es.zkClient.getSolrZooKeeper().close();
       thread.close();
     }
-    
+
     for (Thread thread : threads) {
       thread.join();
     }
 
-    
+
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     zkClient.close();
@@ -545,8 +545,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.shutdown();
     super.tearDown();
   }
-  
+
   private void printLayout() throws Exception {
-    zkClient.printLayoutToStdOut();
+    zkClient.printLayoutToStream(System.out);
   }
 }

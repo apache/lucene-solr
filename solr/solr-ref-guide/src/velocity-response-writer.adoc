@@ -109,7 +109,6 @@ Resource bundles can be added by providing a JAR file visible by the SolrResourc
 |`response` |{solr-javadocs}solr-core/org/apache/solr/response/SolrQueryResponse.html[QueryResponse] most of the time, but in some cases where QueryResponse doesn't like the request handler's output (https://wiki.apache.org/solr/AnalysisRequestHandler[AnalysisRequestHandler], for example, causes a ClassCastException parsing "response"), the response will be a SolrResponseBase object.
 |`esc` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#EscapeTool[EscapeTool] instance
 |`date` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#ComparisonDateTool[ComparisonDateTool] instance
-|`list` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/apidocs/org/apache/velocity/tools/generic/ListTool.html[ListTool] instance
 |`math` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#MathTool[MathTool] instance
 |`number` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#NumberTool[NumberTool] instance
 |`sort` |A Velocity http://velocity.apache.org/tools/{ivy-velocity-tools-version}/tools-summary.html#SortTool[SortTool] instance

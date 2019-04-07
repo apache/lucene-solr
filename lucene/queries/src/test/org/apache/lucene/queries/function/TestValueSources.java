@@ -38,6 +38,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -579,6 +580,11 @@ public class TestValueSources extends LuceneTestCase {
     ValueSource.WrappedDoubleValuesSource source2 = (ValueSource.WrappedDoubleValuesSource) source1.boost;
     assertNull(source2.searcher);
 
+  }
+
+  public void testBuildingFromDoubleValues() throws Exception {
+    DoubleValuesSource dvs = ValueSource.fromDoubleValuesSource(DoubleValuesSource.fromDoubleField("double")).asDoubleValuesSource();
+    assertHits(new FunctionQuery(ValueSource.fromDoubleValuesSource(dvs)), new float[] { 3.63f, 5.65f });
   }
     
   /** 

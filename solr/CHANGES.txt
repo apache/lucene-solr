@@ -24,7 +24,7 @@ Versions of Major Components
 ---------------------
 Apache Tika 1.19.1
 Carrot2 3.16.0
-Velocity 1.7 and Velocity Tools 2.0
+Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.4.13
 Jetty 9.4.14.v20181114
 
@@ -41,6 +41,13 @@ Upgrade Notes
   expanding the 'expr' parameter can be reinstated with -DStreamingExpressionMacros=true passed to the JVM at startup
   (Gus Heck).
 
+* SOLR-13324: URLClassifyProcessor#getCanonicalUrl now throws MalformedURLException rather than hiding it. Although the
+  present code is unlikely to produce such an exception it may be possible in future changes or in subclasses.
+  Currently this change should only effect compatibility of custom code overriding this method (Gus Heck).
+
+* SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
+  confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
+
 New Features
 ----------------------
 * SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
@@ -55,16 +62,21 @@ Versions of Major Components
 ---------------------
 Apache Tika 1.19.1
 Carrot2 3.16.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache ZooKeeper 3.4.13
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.4.14
 Jetty 9.4.14.v20181114
 
 Upgrade Notes
 ----------------------
-When requesting the status of an async request via REQUESTSTATUS collections API, the response will
-include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
-to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
-details
+* When requesting the status of an async request via REQUESTSTATUS collections API, the response will
+  include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
+  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
+  details
+
+* SOLR-13335: Velocity and Velocity Tools were both upgraded as part of this release. Velocity upgraded from 1.7 to 2.0.
+  Please see https://velocity.apache.org/engine/2.0/upgrading.html about upgrading. Velocity Tools upgraded from 2.0 to
+  3.0. For more details, please see https://velocity.apache.org/tools/3.0/upgrading.html for details about the upgrade.
+
 
 New Features
 ----------------------
@@ -75,6 +87,8 @@ New Features
   useDocValuesAsStored=true (either explicit or as the default).
 
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
+
+* SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
 
 * SOLR-10436: Add hashRollup Streaming Expression (Joel Bernstein)
 
@@ -89,6 +103,8 @@ New Features
 * SOLR-11127: REINDEXCOLLECTION command for re-indexing of existing collections. This issue also adds
   a back-compat check of the .system collection to notify users of potential compatibility issues after
   upgrades or schema changes. (ab)
+
+* SOLR-13374: Add fetchSize parameter to the jdbc Streaming Expression (Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -129,6 +145,23 @@ Bug Fixes
 * SOLR-13253: IndexSchema.getResourceLoader was being used to load non-schema things, which can be a memory leak if
   "shareSchema" and other circumstances occur.  Furthermore it's reference to SolrConfig was removed. (David Smiley)
 
+* SOLR-7414: CSVResponseWriter & XLSXResponseWriter return empty field when fl alias is combined with '*' selector
+  (Michael Lawrence, Munendra S N, Ishan Chattopadhyaya)
+
+* SOLR-13351: Workaround for VELOCITY-908 (Kevin Risden)
+
+* SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+
+* SOLR-13344: Admin UI inaccessible with RuleBasedAuthorizationPlugin (janhoy, Jason Gerlowski)
+
+* SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
+
+* SOLR-13362: Add 'includeIndexFieldFlags' support to SolrJ LukeRequest (Jason Gerlowski)
+
+* SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
+
+* SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
+
 Improvements
 ----------------------
 
@@ -138,6 +171,10 @@ Improvements
 * SOLR-13227: Optimizing facet.range.other by avoiding expensive exceptions (Nikolay Khitrin via Mikhail Khludnev)
 
 * SOLR-9079: Remove commons-lang as a dependency (Kevin Risden)
+
+* SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
+
+* SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
 
 Other Changes
 ----------------------
@@ -174,6 +211,18 @@ Other Changes
 
 * SOLR-12955: Refactored DistributedUpdateProcessor to put SolrCloud functionality into a subclass.
   (Bar Rotstein, David Smiley)
+
+* SOLR-13342: Remove dom4j from Solr (Kevin Risden)
+
+* SOLR-13335: Upgrade to velocity 2.0 and velocity-tools 3.0 (Kevin Risden)
+
+* SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
+
+* SOLR-13353: Add SolrCli AuthTool test (Kevin Risden)
+
+* SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
+
+* SOLR-12809: Document recommended Java/Solr combinations (Erick Erickson, Jan Høydahl et.al.)
 
 ==================  8.0.0 ==================
 

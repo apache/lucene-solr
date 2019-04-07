@@ -280,6 +280,16 @@ public abstract class LongValuesSource implements SegmentCacheable {
     }
 
     @Override
+    public void setMissingValue(Object missingValue) {
+      if (missingValue instanceof Number) {
+        this.missingValue = missingValue;
+        ((LongValuesComparatorSource) getComparatorSource()).setMissingValue(((Number) missingValue).longValue());
+      } else {
+          super.setMissingValue(missingValue);
+      }
+    }
+
+    @Override
     public boolean needsScores() {
       return producer.needsScores();
     }
@@ -295,7 +305,11 @@ public abstract class LongValuesSource implements SegmentCacheable {
 
     @Override
     public SortField rewrite(IndexSearcher searcher) throws IOException {
-      return new LongValuesSortField(producer.rewrite(searcher), reverse);
+      LongValuesSortField rewritten = new LongValuesSortField(producer.rewrite(searcher), reverse);
+      if (missingValue != null) {
+        rewritten.setMissingValue(missingValue);
+      }
+      return rewritten;
     }
   }
 
@@ -305,15 +319,21 @@ public abstract class LongValuesSource implements SegmentCacheable {
 
   private static class LongValuesComparatorSource extends FieldComparatorSource {
     private final LongValuesSource producer;
+    private long missingValue;
 
     public LongValuesComparatorSource(LongValuesSource producer) {
       this.producer = producer;
+      this.missingValue = 0L;
+    }
+
+    void setMissingValue(long missingValue) {
+      this.missingValue = missingValue;
     }
 
     @Override
     public FieldComparator<Long> newComparator(String fieldname, int numHits,
-                                                 int sortPos, boolean reversed) {
-      return new FieldComparator.LongComparator(numHits, fieldname, 0L){
+                                               int sortPos, boolean reversed) {
+      return new FieldComparator.LongComparator(numHits, fieldname, missingValue) {
 
         LeafReaderContext ctx;
         LongValuesHolder holder = new LongValuesHolder();
