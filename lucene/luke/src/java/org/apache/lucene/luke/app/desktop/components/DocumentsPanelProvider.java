@@ -618,7 +618,7 @@ public final class DocumentsPanelProvider implements DocumentsTabOperator {
     }
 
     new DialogOpener<>(tvDialogFactory).open(
-        "Term Vector", 400, 300,
+        "Term Vector", 600, 400,
         (factory) -> {
           factory.setField(field);
           factory.setTvEntries(tvEntries);
