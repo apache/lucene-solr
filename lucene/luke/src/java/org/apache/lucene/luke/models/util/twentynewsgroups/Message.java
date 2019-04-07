@@ -27,11 +27,15 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.util.BytesRef;
 
 /** Data holder class for a newsgroups message */
 public class Message {
@@ -119,11 +123,12 @@ public class Message {
     if (Objects.nonNull(getNewsgroups())) {
       for (String newsgroup : getNewsgroups()) {
         doc.add(new StringField("newsgroup", newsgroup, Field.Store.YES));
+        doc.add(new SortedSetDocValuesField("newsgroup_sort", new BytesRef(newsgroup)));
       }
     }
 
     if (Objects.nonNull(getSubject())) {
-      doc.add(new TextField("subject", getSubject(), Field.Store.YES));
+      doc.add(new Field("subject", getSubject(), SUBJECT_FIELD_TYPE));
     }
 
     if (Objects.nonNull(getMessageId())) {
@@ -144,7 +149,7 @@ public class Message {
     doc.add(new StoredField("lines_raw", String.valueOf(getLines())));
 
     if (Objects.nonNull(getBody())) {
-      doc.add(new TextField("body", getBody(), Field.Store.YES));
+      doc.add(new Field("body", getBody(), BODY_FIELD_TYPE));
     }
 
     return doc;
@@ -154,5 +159,24 @@ public class Message {
     Map<String, Analyzer> map = new HashMap<>();
     map.put("from", new UAX29URLEmailAnalyzer());
     return new PerFieldAnalyzerWrapper(new StandardAnalyzer(), map);
+  }
+
+  private final static FieldType SUBJECT_FIELD_TYPE;
+
+  private final static FieldType BODY_FIELD_TYPE;
+
+  static {
+    SUBJECT_FIELD_TYPE = new FieldType();
+    SUBJECT_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    SUBJECT_FIELD_TYPE.setTokenized(true);
+    SUBJECT_FIELD_TYPE.setStored(true);
+
+    BODY_FIELD_TYPE = new FieldType();
+    BODY_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    BODY_FIELD_TYPE.setTokenized(true);
+    BODY_FIELD_TYPE.setStored(true);
+    BODY_FIELD_TYPE.setStoreTermVectors(true);
+    BODY_FIELD_TYPE.setStoreTermVectorPositions(true);
+    BODY_FIELD_TYPE.setStoreTermVectorOffsets(true);
   }
 }
