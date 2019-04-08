@@ -83,7 +83,7 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
    * @param name  the name of the filter
    * @param in    the source to filter
    */
-  private FilteredIntervalsSource(String name, IntervalsSource in) {
+  public FilteredIntervalsSource(String name, IntervalsSource in) {
     this.name = name;
     this.in = in;
   }
