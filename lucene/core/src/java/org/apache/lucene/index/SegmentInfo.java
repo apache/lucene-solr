@@ -325,6 +325,7 @@ public final class SegmentInfo {
    * <p>
    * If a value already exists for the field, it will be replaced with the new
    * value.
+   * This method make a copy on write for every attribute change.
    */
   public String putAttribute(String key, String value) {
     HashMap<String, String> newMap = new HashMap<>(attributes);
