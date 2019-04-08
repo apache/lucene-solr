@@ -660,6 +660,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (versionOnUpdate > 0) {
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
+      } else if (req.getParams().get(ShardParams._ROUTE_) != null) {
+        // the specified document could not be found in this shard
+        // and was explicitly routed using _route_
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Could not find document " + idField.getName() + ":" + id +
+                ", perhaps the wrong \"_route_\" param was supplied");
       }
     } else {
       oldRootDocWithChildren.remove(CommonParams.VERSION_FIELD);

@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Test;
@@ -51,6 +52,7 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
   public void test() throws Exception {
     boolean testFinished = false;
     try {
+      sendWrongRouteParam();
       doNestedInplaceUpdateTest();
       doRootShardRoutingTest();
       testFinished = true;
@@ -174,8 +176,51 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
     }
   }
 
+  public void sendWrongRouteParam() throws Exception {
+    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    final String rootId = "1";
+
+    SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");
+
+    final SolrParams wrongRootParams = params("wt", "json", "_route_", "c");
+    final SolrParams rightParams = params("wt", "json", "_route_", rootId);
+
+    int which = (rootId.hashCode() & 0x7fffffff) % clients.size();
+    SolrClient aClient = clients.get(which);
+
+    indexDocAndRandomlyCommit(aClient, params("wt", "json", "_route_", rootId), doc, false);
+
+    final SolrInputDocument childDoc = sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+
+    indexDocAndRandomlyCommit(aClient, rightParams, childDoc, false);
+
+    final SolrInputDocument grandChildDoc = sdoc("id", "2", "grandChildren",
+        map("add", sdocs(
+            sdoc("id", "3", "level_s", "grandChild")
+            )
+        )
+    );
+
+    SolrException e = expectThrows(SolrException.class,
+        "wrong \"_route_\" param should throw an exception",
+        () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc)
+    );
+
+    assertTrue("message should suggest the wrong \"_route_\" param was supplied",
+        e.getMessage().contains("perhaps the wrong \"_route_\" param was supplied"));
+  }
+
   private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
-    indexDoc(client, params, sdoc);
+    indexDocAndRandomlyCommit(client, params, sdoc, true);
+  }
+
+  private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc, boolean compareToControlCollection) throws IOException, SolrServerException {
+    if (compareToControlCollection) {
+      indexDoc(client, params, sdoc);
+    } else {
+      add(client, params, sdoc);
+    }
+    // randomly commit docs
     if (random().nextBoolean()) {
       client.commit();
     }
