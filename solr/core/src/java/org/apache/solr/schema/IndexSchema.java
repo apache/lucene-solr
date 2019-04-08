@@ -1971,7 +1971,7 @@ public class IndexSchema {
       return false;
     }
     FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
-    return null != nestPathType && nestPathType.getClass().equals(NestPathField.class);
+    return nestPathType instanceof NestPathField;
   }
 
   public PayloadDecoder getPayloadDecoder(String field) {
