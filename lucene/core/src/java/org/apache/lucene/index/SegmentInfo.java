@@ -335,7 +335,7 @@ public final class SegmentInfo {
     // the same instance. Technically that's an unsafe publication but IW design would require
     // significant changes to prevent this. On the other hand, since we expose the map in getAttributes()
     // it's a good design to make it unmodifiable anyway.
-    attributes = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(newMap)));
+    attributes = Collections.unmodifiableMap(newMap);
     return oldValue;
   }
   
