@@ -21,7 +21,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -195,7 +197,12 @@ public class HdfsDirectory extends BaseDirectory {
   public Configuration getConfiguration() {
     return configuration;
   }
-  
+
+  @Override
+  public Set<String> getPendingDeletions() {
+    return Collections.emptySet();
+  }
+
   public static class HdfsIndexInput extends CustomBufferedIndexInput {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     

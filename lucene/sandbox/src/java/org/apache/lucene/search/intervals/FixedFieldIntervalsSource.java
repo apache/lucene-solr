@@ -18,7 +18,10 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.MatchesIterator;
@@ -52,6 +55,15 @@ class FixedFieldIntervalsSource extends IntervalsSource {
   @Override
   public int minExtent() {
     return source.minExtent();
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    Collection<IntervalsSource> inner = source.pullUpDisjunctions();
+    if (inner.size() == 1) {
+      return Collections.singleton(this);
+    }
+    return inner.stream().map(s -> new FixedFieldIntervalsSource(field, s)).collect(Collectors.toSet());
   }
 
   @Override

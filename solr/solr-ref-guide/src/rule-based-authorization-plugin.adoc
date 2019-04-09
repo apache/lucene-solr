@@ -24,6 +24,11 @@ The roles can be used with any of the authentication plugins or with a custom au
 
 Once defined through the API, roles are stored in `security.json`.
 
+[CAUTION]
+====
+Solr's Admin UI interacts with Solr using its regular APIs. When rule-based authorization is in use, logged-in users not authorized to access the full range of these APIs may see some sections of the UI that appear blank or "broken". For best results, the Admin UI should only be accessed by users with full API access.
+====
+
 == Enable the Authorization Plugin
 
 The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.

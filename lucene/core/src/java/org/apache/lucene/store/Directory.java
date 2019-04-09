@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection; // for javadocs
-import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.util.IOUtils;
@@ -207,7 +206,5 @@ public abstract class Directory implements Closeable {
    *
    * @lucene.internal
    */
-  public Set<String> getPendingDeletions() throws IOException {
-    return Collections.emptySet();
-  }
+  public abstract Set<String> getPendingDeletions() throws IOException;
 }

@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
@@ -329,7 +330,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
               + "    rating_f as rating"
               + "  ),"
               + "  select("
-              + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
+              + "    jdbc(fetchSize=300, connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
               + "    ID as personId,"
               + "    NAME as personName,"
               + "    COUNTRY_NAME as country"
@@ -339,6 +340,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
 
       stream = factory.constructStream(expression);
+      String expr = ((Expressible)stream).toExpression(factory).toString();
+      assertTrue(expr.contains("fetchSize=300"));
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 

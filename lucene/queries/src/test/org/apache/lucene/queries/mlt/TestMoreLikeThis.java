@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -42,15 +43,22 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+import static org.hamcrest.core.Is.is;
+
 public class TestMoreLikeThis extends LuceneTestCase {
 
   private static final String SHOP_TYPE = "type";
   private static final String FOR_SALE = "weSell";
   private static final String NOT_FOR_SALE = "weDontSell";
+  private static final int MIN_DOC_FREQ = 0;
+  private static final int MIN_WORD_LEN = 1;
+  private static final int MIN_TERM_FREQ = 1;
 
   private Directory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
+  private MoreLikeThis mlt;
+  private Analyzer analyzer;
   
   @Override
   public void setUp() throws Exception {
@@ -59,46 +67,64 @@ public class TestMoreLikeThis extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     
     // Add series of docs with specific information for MoreLikeThis
-    addDoc(writer, "lucene");
-    addDoc(writer, "lucene release");
-    addDoc(writer, "apache");
-    addDoc(writer, "apache lucene");
+    addDoc(writer, "text", "lucene");
+    addDoc(writer, "text", "lucene release");
+    addDoc(writer, "text", "apache");
+    addDoc(writer, "text", "apache lucene");
+
+    // one more time to increase the doc frequencies
+    addDoc(writer, "text","lucene2");
+    addDoc(writer, "text", "lucene2 release2");
+    addDoc(writer, "text", "apache2");
+    addDoc(writer, "text", "apache2 lucene2");
+
+    addDoc(writer, "text2","lucene2");
+    addDoc(writer, "text2", "lucene2 release2");
+    addDoc(writer, "text2", "apache2");
+    addDoc(writer, "text2", "apache2 lucene2");
 
     reader = writer.getReader();
     writer.close();
     searcher = newSearcher(reader);
+    analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt = this.getDefaultMoreLikeThis(reader);
   }
+
+  private MoreLikeThis getDefaultMoreLikeThis(IndexReader reader) {
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMinDocFreq(MIN_DOC_FREQ);
+    mlt.setMinTermFreq(MIN_TERM_FREQ);
+    mlt.setMinWordLen(MIN_WORD_LEN);
+    return mlt;
+  }
+  
   
   @Override
   public void tearDown() throws Exception {
+    analyzer.close();
     reader.close();
     directory.close();
     super.tearDown();
   }
   
-  private void addDoc(RandomIndexWriter writer, String text) throws IOException {
+  private void addDoc(RandomIndexWriter writer, String fieldName, String text) throws IOException {
     Document doc = new Document();
-    doc.add(newTextField("text", text, Field.Store.YES));
+    doc.add(newTextField(fieldName, text, Field.Store.YES));
     writer.addDocument(doc);
   }
 
-  private void addDoc(RandomIndexWriter writer, String[] texts) throws IOException {
+  private void addDoc(RandomIndexWriter writer, String fieldName, String[] texts) throws IOException {
     Document doc = new Document();
     for (String text : texts) {
-      doc.add(newTextField("text", text, Field.Store.YES));
+      doc.add(newTextField(fieldName, text, Field.Store.YES));
     }
     writer.addDocument(doc);
   }
 
   public void testBoostFactor() throws Throwable {
     Map<String,Float> originalValues = getOriginalValues();
-    
-    MoreLikeThis mlt = new MoreLikeThis(reader);
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mlt.setAnalyzer(analyzer);
-    mlt.setMinDocFreq(1);
-    mlt.setMinTermFreq(1);
-    mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text"});
     mlt.setBoost(true);
     
@@ -125,17 +151,10 @@ public class TestMoreLikeThis extends LuceneTestCase {
           + tq.getTerm().text() + "' got " + bq.getBoost(), totalBoost, bq
           .getBoost(), 0.0001);
     }
-    analyzer.close();
   }
   
   private Map<String,Float> getOriginalValues() throws IOException {
     Map<String,Float> originalValues = new HashMap<>();
-    MoreLikeThis mlt = new MoreLikeThis(reader);
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mlt.setAnalyzer(analyzer);
-    mlt.setMinDocFreq(1);
-    mlt.setMinTermFreq(1);
-    mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text"});
     mlt.setBoost(true);
     BooleanQuery query = (BooleanQuery) mlt.like("text", new StringReader(
@@ -147,33 +166,21 @@ public class TestMoreLikeThis extends LuceneTestCase {
       TermQuery tq = (TermQuery) bq.getQuery();
       originalValues.put(tq.getTerm().text(), bq.getBoost());
     }
-    analyzer.close();
     return originalValues;
   }
   
   // LUCENE-3326
   public void testMultiFields() throws Exception {
-    MoreLikeThis mlt = new MoreLikeThis(reader);
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mlt.setAnalyzer(analyzer);
-    mlt.setMinDocFreq(1);
-    mlt.setMinTermFreq(1);
-    mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text", "foobar"});
     mlt.like("foobar", new StringReader("this is a test"));
-    analyzer.close();
   }
 
   // LUCENE-5725
   public void testMultiValues() throws Exception {
-    MoreLikeThis mlt = new MoreLikeThis(reader);
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     mlt.setAnalyzer(analyzer);
-    mlt.setMinDocFreq(1);
-    mlt.setMinTermFreq(1);
-    mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[] {"text"});
-
+    
     BooleanQuery query = (BooleanQuery) mlt.like("text",
         new StringReader("lucene"), new StringReader("lucene release"),
         new StringReader("apache"), new StringReader("apache lucene"));
@@ -183,7 +190,108 @@ public class TestMoreLikeThis extends LuceneTestCase {
       Term term = ((TermQuery) clause.getQuery()).getTerm();
       assertTrue(Arrays.asList(new Term("text", "lucene"), new Term("text", "apache")).contains(term));
     }
+  }
+
+  public void testSeedDocumentMap_minTermFrequencySet_shouldBuildQueryAccordingToCorrectTermFrequencies() throws Exception {
+    mlt.setMinTermFreq(3);
+
+    String mltField1 = "text";
+    String mltField2 = "text2";
+    mlt.setFieldNames(new String[]{mltField1, mltField2});
+
+    Map<String, Collection<Object>> seedDocument = new HashMap<>();
+    String textValue = "apache apache lucene lucene lucene";
+    seedDocument.put(mltField1, Arrays.asList(textValue));
+    seedDocument.put(mltField2, Arrays.asList(textValue));
+
+    BooleanQuery query = (BooleanQuery) mlt.like(seedDocument);
+    Collection<BooleanClause> clauses = query.clauses();
+    assertEquals("Expected 1 clauses only!", 1, clauses.size());
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertThat(term, is(new Term(mltField1, "lucene")));
+    }
     analyzer.close();
+  }
+
+  public void testSeedDocumentMap_minTermFrequencySetMltFieldSet_shouldBuildQueryAccordingToCorrectTermFrequenciesAndField() throws Exception {
+    mlt.setMinTermFreq(3);
+
+    String mltField = "text";
+    mlt.setFieldNames(new String[]{mltField});
+
+    Map<String, Collection<Object>> seedDocument = new HashMap<>();
+    String sampleField2 = "text2";
+    String textValue1 = "apache apache lucene lucene";
+    String textValue2 = "apache2 apache2 lucene2 lucene2 lucene2";
+    seedDocument.put(mltField, Arrays.asList(textValue1));
+    seedDocument.put(sampleField2, Arrays.asList(textValue2));
+
+    BooleanQuery query = (BooleanQuery) mlt.like(seedDocument);
+    Collection<BooleanClause> clauses = query.clauses();
+
+    HashSet<Term> unexpectedTerms = new HashSet<>();
+    unexpectedTerms.add(new Term(mltField, "apache"));//Term Frequency < Minimum Accepted Term Frequency
+    unexpectedTerms.add(new Term(mltField, "lucene"));//Term Frequency < Minimum Accepted Term Frequency
+    unexpectedTerms.add(new Term(mltField, "apache2"));//Term Frequency < Minimum Accepted Term Frequency
+    unexpectedTerms.add(new Term(mltField, "lucene2"));//Wrong Field
+
+    //None of the Not Expected terms is in the query
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertFalse("Unexpected term '" + term + "' found in query terms", unexpectedTerms.contains(term));
+    }
+
+    assertEquals("Expected 0 clauses only!", 0, clauses.size());
+
+    analyzer.close();
+  }
+
+  public void testSeedDocumentMap_queryFieldsSet_shouldBuildQueryFromSpecifiedFieldnamesOnly() throws Exception {
+    mlt.setMinTermFreq(2);
+
+    String mltField = "text";
+
+    mlt.setFieldNames(new String[]{mltField});
+
+    Map<String, Collection<Object>> seedDocument = new HashMap<>();
+    String notMltField = "text2";
+    String textValue1 = "apache apache lucene lucene";
+    String textValue2 = "apache2 apache2 lucene2 lucene2 lucene2";
+    seedDocument.put(mltField, Arrays.asList(textValue1));
+    seedDocument.put(notMltField, Arrays.asList(textValue2));
+
+    HashSet<Term> expectedTerms = new HashSet<>();
+    expectedTerms.add(new Term(mltField, "apache"));
+    expectedTerms.add(new Term(mltField, "lucene"));
+
+    HashSet<Term> unexpectedTerms = new HashSet<>();
+    unexpectedTerms.add(new Term(mltField, "apache2"));
+    unexpectedTerms.add(new Term(mltField, "lucene2"));
+    unexpectedTerms.add(new Term(notMltField, "apache2"));
+    unexpectedTerms.add(new Term(notMltField, "lucene2"));
+
+    BooleanQuery query = (BooleanQuery) mlt.like(seedDocument);
+    Collection<BooleanClause> clauses = query.clauses();
+    HashSet<Term> clausesTerms = new HashSet<>();
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      clausesTerms.add(term);
+    }
+
+    assertEquals("Expected 2 clauses only!", 2, clauses.size());
+
+    //None of the Not Expected terms is in the query
+    for (BooleanClause clause : clauses) {
+      Term term = ((TermQuery) clause.getQuery()).getTerm();
+      assertFalse("Unexpected term '" + term + "' found in query terms", unexpectedTerms.contains(term));
+    }
+
+    //All of the Expected terms are in the query
+    for (Term expectedTerm : expectedTerms) {
+      assertTrue("Expected term '" + expectedTerm + "' is not found in query terms", clausesTerms.contains(expectedTerm));
+    }
+
   }
 
   // just basic equals/hashcode etc
@@ -202,19 +310,14 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; i++) {
-      addDoc(writer, generateStrSeq(0, i + 1));
+      addDoc(writer, "text", generateStrSeq(0, i + 1));
     }
     IndexReader reader = writer.getReader();
     writer.close();
 
     // setup MLT query
-    MoreLikeThis mlt = new MoreLikeThis(reader);
-    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    mlt.setAnalyzer(analyzer);
+    mlt = this.getDefaultMoreLikeThis(reader);
     mlt.setMaxQueryTerms(topN);
-    mlt.setMinDocFreq(1);
-    mlt.setMinTermFreq(1);
-    mlt.setMinWordLen(1);
     mlt.setFieldNames(new String[]{"text"});
 
     // perform MLT query
@@ -293,13 +396,9 @@ public class TestMoreLikeThis extends LuceneTestCase {
       writer.close();
 
       // setup MLT query
-      MoreLikeThis mlt = new MoreLikeThis(reader);
+      MoreLikeThis mlt = this.getDefaultMoreLikeThis(reader);
 
-      mlt.setAnalyzer(analyzer);
       mlt.setMaxQueryTerms(maxQueryTerms);
-      mlt.setMinDocFreq(1);
-      mlt.setMinTermFreq(1);
-      mlt.setMinWordLen(1);
       mlt.setFieldNames(new String[]{FOR_SALE, NOT_FOR_SALE});
 
       // perform MLT query

@@ -18,7 +18,10 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.MatchesIterator;
@@ -29,8 +32,51 @@ import org.apache.lucene.search.QueryVisitor;
  */
 public abstract class FilteredIntervalsSource extends IntervalsSource {
 
+  public static IntervalsSource maxGaps(IntervalsSource in, int maxGaps) {
+    return Intervals.or(in.pullUpDisjunctions().stream().map(s -> new MaxGaps(s, maxGaps)).collect(Collectors.toList()));
+  }
+
+  private static class MaxGaps extends FilteredIntervalsSource {
+
+    private final int maxGaps;
+
+    MaxGaps(IntervalsSource in, int maxGaps) {
+      super("MAXGAPS/" + maxGaps, in);
+      this.maxGaps = maxGaps;
+    }
+
+    @Override
+    protected boolean accept(IntervalIterator it) {
+      return it.gaps() <= maxGaps;
+    }
+  }
+
+  public static IntervalsSource maxWidth(IntervalsSource in, int maxWidth) {
+    return new MaxWidth(in, maxWidth);
+  }
+
+  private static class MaxWidth extends FilteredIntervalsSource {
+
+    private final int maxWidth;
+
+    MaxWidth(IntervalsSource in, int maxWidth) {
+      super("MAXWIDTH/" + maxWidth, in);
+      this.maxWidth = maxWidth;
+    }
+
+    @Override
+    protected boolean accept(IntervalIterator it) {
+      return (it.end() - it.start()) + 1 <= maxWidth;
+    }
+
+    @Override
+    public Collection<IntervalsSource> pullUpDisjunctions() {
+      return Disjunctions.pullUp(in, s -> new MaxWidth(s, maxWidth));
+    }
+  }
+
   private final String name;
-  private final IntervalsSource in;
+  protected final IntervalsSource in;
 
   /**
    * Create a new FilteredIntervalsSource
@@ -82,6 +128,11 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singletonList(this);
+  }
+
+  @Override
   public void visit(String field, QueryVisitor visitor) {
     in.visit(field, visitor);
   }
@@ -89,7 +140,7 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (o == null || o instanceof FilteredIntervalsSource == false) return false;
     FilteredIntervalsSource that = (FilteredIntervalsSource) o;
     return Objects.equals(name, that.name) &&
         Objects.equals(in, that.in);

@@ -14,26 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.util;
 
-package org.apache.lucene.search.intervals;
+import java.io.PrintStream;
 
-import java.util.Arrays;
+import org.apache.solr.common.util.SuppressForbidden;
 
-/**
- * An intervals source that combines two other sources, requiring both of them to
- * be present in order to match, but using the minExtent of one of them
- */
-class FilteringConjunctionIntervalsSource extends ConjunctionIntervalsSource {
-
-  private final IntervalsSource source;
-
-  FilteringConjunctionIntervalsSource(IntervalsSource source, IntervalsSource filter, IntervalFunction function) {
-    super(Arrays.asList(source, filter), function);
-    this.source = source;
+@SuppressForbidden( reason = "For use in command line tools only")
+public interface CLIO {
+  static void out(String s) {
+    System.out.println(s);
   }
 
-  @Override
-  public int minExtent() {
-    return source.minExtent();
+  static void err(String s) {
+    System.err.println(s);
+  }
+
+  static PrintStream getOutStream() {
+    return System.out;
+  }
+
+  static PrintStream getErrStream() {
+    return System.err;
   }
 }

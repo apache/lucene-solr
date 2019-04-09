@@ -57,11 +57,13 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
+    System.setProperty("hostName", "localhost");
   }
   
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
+    System.clearProperty("hostName");
   }
 
   @Override
@@ -78,11 +80,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    try {
+    try (SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       zkClient.makePath("/solr", false, true);
-    } finally {
-      zkClient.close();
     }
     setupZNodes();
 
@@ -110,6 +109,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
+    System.clearProperty("zkHost");
     zkServer.shutdown();
     super.tearDown();
   }

@@ -100,6 +100,7 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientBuilderPlugin;
@@ -203,6 +204,8 @@ public class CoreContainer {
 
   private volatile SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
+  private SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
+  
   private volatile BackupRepositoryFactory backupRepoFactory;
 
   protected volatile SolrMetricManager metricManager;
@@ -357,10 +360,43 @@ public class CoreContainer {
       try {
         old.plugin.close();
       } catch (Exception e) {
+        log.error("Exception while attempting to close old authorization plugin", e);
       }
     }
   }
 
+  private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
+    auditConf = Utils.getDeepCopy(auditConf, 4);
+    //Initialize the Auditlog module
+    SecurityPluginHolder<AuditLoggerPlugin> old = auditloggerPlugin;
+    SecurityPluginHolder<AuditLoggerPlugin> newAuditloggerPlugin = null;
+    if (auditConf != null) {
+      String klas = (String) auditConf.get("class");
+      if (klas == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for auditlogger plugin");
+      }
+      if (old != null && old.getZnodeVersion() == readVersion(auditConf)) {
+        return;
+      }
+      log.info("Initializing auditlogger plugin: " + klas);
+      newAuditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
+          getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
+
+      newAuditloggerPlugin.plugin.init(auditConf);
+    } else {
+      log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
+    }
+    this.auditloggerPlugin = newAuditloggerPlugin;
+    if (old != null) {
+      try {
+        old.plugin.close();
+      } catch (Exception e) {
+        log.error("Exception while attempting to close old auditlogger plugin", e);
+      }
+    }    
+  }
+
+  
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     String pluginClassName = null;
@@ -401,7 +437,9 @@ public class CoreContainer {
     this.authenticationPlugin = authenticationPlugin;
     try {
       if (old != null) old.plugin.close();
-    } catch (Exception e) {/*do nothing*/ }
+    } catch (Exception e) {
+      log.error("Exception while attempting to close old authentication plugin", e);
+    }
 
   }
 
@@ -815,6 +853,10 @@ public class CoreContainer {
     if (pkiAuthenticationPlugin != null && pkiAuthenticationPlugin.getMetricRegistry() == null) {
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
     }
+    initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
+    if (auditloggerPlugin != null) {
+      auditloggerPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/auditlogging");
+    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
@@ -981,6 +1023,16 @@ public class CoreContainer {
       }
     } catch (Exception e) {
       log.warn("Exception while closing authentication plugin.", e);
+    }
+
+    // It should be safe to close the auditlogger plugin at this point.
+    try {
+      if (auditloggerPlugin != null) {
+        auditloggerPlugin.plugin.close();
+        auditloggerPlugin = null;
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing auditlogger plugin.", e);
     }
 
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
@@ -1832,6 +1884,10 @@ public class CoreContainer {
 
   public AuthenticationPlugin getAuthenticationPlugin() {
     return authenticationPlugin == null ? null : authenticationPlugin.plugin;
+  }
+
+  public AuditLoggerPlugin getAuditLoggerPlugin() {
+    return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
   }
 
   public NodeConfig getNodeConfig() {

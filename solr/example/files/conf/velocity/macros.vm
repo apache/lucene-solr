@@ -1,4 +1,4 @@
-#macro(lensFilterSortOnly)?#if($list.size($response.responseHeader.params.getAll("fq")) > 0)&#fqs($response.responseHeader.params.getAll("fq"))#end#sort($request.params.getParams('sort'))#end
+#macro(lensFilterSortOnly)?#if($response.responseHeader.params.getAll("fq").size() > 0)&#fqs($response.responseHeader.params.getAll("fq"))#end#sort($request.params.getParams('sort'))#end
 #macro(lensNoQ)#lensFilterSortOnly&type=#current_type#if("#current_locale"!="")&locale=#current_locale#end#end
 #macro(lensNoType)#lensFilterSortOnly#q#if("#current_locale"!="")&locale=#current_locale#end#end
 #macro(lensNoLocale)#lensFilterSortOnly#q&type=#current_type#end
