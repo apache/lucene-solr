@@ -172,7 +172,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
                                     managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
-      upgradeToManagedSchema();
+      synchronized (schema.getSchemaUpdateLock()) {
+        upgradeToManagedSchema();
+      }
     }
 
     return schema;
