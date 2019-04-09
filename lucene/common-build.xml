@@ -174,7 +174,7 @@
   <property name="javadoc.link" value="https://docs.oracle.com/en/java/javase/11/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
-  <available file="${javadoc.packagelist.dir}/java11/element-list" property="javadoc.java11.packagelist.exists"/>
+  <available file="${javadoc.packagelist.dir}/java11/package-list" property="javadoc.java11.packagelist.exists"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" location="${common.dir}/build/docs"/>
@@ -2189,7 +2189,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="download-java11-javadoc-packagelist" unless="javadoc.java11.packagelist.exists">
     <mkdir dir="${javadoc.packagelist.dir}/java11"/>
     <get src="${javadoc.link}/element-list"
-         dest="${javadoc.packagelist.dir}/java11/element-list" ignoreerrors="true"/>
+         dest="${javadoc.packagelist.dir}/java11/package-list" ignoreerrors="true"/>
   </target>
 
   <!-- VALIDATION work -->
