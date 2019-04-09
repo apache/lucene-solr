@@ -126,6 +126,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
 
   @Override
   public void close() throws IOException {
+    super.close(); // Waiting for queue to drain before shutting down the loggers
     plugins.forEach(p -> {
       try {
         p.close();
@@ -133,6 +134,5 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
         log.error("Exception trying to close {}", p.getName());
       }
     });
-    super.close();
   }
 }
