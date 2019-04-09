@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cheapbastard;
 
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.util.TestUtil;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */

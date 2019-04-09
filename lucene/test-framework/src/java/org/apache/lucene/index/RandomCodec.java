@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -41,7 +40,6 @@ import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
