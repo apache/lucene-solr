@@ -189,8 +189,7 @@ public class RandomCodec extends AssertingCodec {
     bkdSplitRandomSeed = random.nextInt();
 
     add(avoidCodecs,
-        TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock,
-            RandomPicks.randomFrom(random, Lucene50PostingsFormat.FSTLoadMode.values())),
+        TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
         new FSTPostingsFormat(),
         new FSTOrdPostingsFormat(),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
