@@ -22,6 +22,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -60,13 +61,17 @@ class SolrSchema extends AbstractSchema {
 
       final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
 
-      for (String collection : clusterState.getCollectionsMap().keySet()) {
+      Set<String> collections = clusterState.getCollectionsMap().keySet();
+      for (String collection : collections) {
         builder.put(collection, new SolrTable(this, collection));
       }
 
       Aliases aliases = zkStateReader.getAliases();
       for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-        builder.put(alias, new SolrTable(this, alias));
+        // don't create duplicate entries
+        if (!collections.contains(alias)) {
+          builder.put(alias, new SolrTable(this, alias));
+        }
       }
 
       return builder.build();

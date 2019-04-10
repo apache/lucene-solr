@@ -112,6 +112,8 @@ New Features
   hierarchy and indexing the new one with the atomic update merged into it.  Also, [child] Doc Transformer now works
   with RealTimeGet.  (Moshe Bla, David Smiley)
 
+* SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
+
 Bug Fixes
 ----------------------
 

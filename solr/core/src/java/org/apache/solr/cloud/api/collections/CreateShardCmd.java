@@ -51,14 +51,15 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName = message.getStr(COLLECTION_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
 
     log.info("Create shard invoked: {}", message);
-    if (collectionName == null || sliceName == null)
+    if (extCollectionName == null || sliceName == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'collection' and 'shard' are required parameters");
 
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     DocCollection collection = clusterState.getCollection(collectionName);
 
     int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));

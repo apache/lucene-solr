@@ -120,6 +120,11 @@ If `true`, the request will complete only when all affected replicas become acti
 The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
 See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
+`alias`::
+Starting with version 8.1 when a collection is created additionally an alias (by default with the same name) is created
+that points to this collection. This parameter allows changing the name of this alias, effectively combining
+this operation with <<createalias, CREATEALIAS>>
+
 Collections are first created in read-write mode but can be put in `readOnly`
 mode using the <<modifycollection, MODIFYCOLLECTION>> action.
 
@@ -391,6 +396,65 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt
   </lst>
 </response>
 ----
+
+[[rename]]
+== RENAME: Rename a Collection
+
+`/admin/collections?action=RENAME&name=_existingName_&target=_targetName_`
+
+Renaming a collection sets up a standard alias that points to the underlying collection, so
+that the same (unmodified) collection can now be referred to in query, index and admin operations
+using the new name.
+
+This command does NOT actually rename the underlying Solr collection - it sets up a new one-to-one alias
+using the new name, or renames the existing alias so that it uses the new name, while still referring to
+the same underlying Solr collection. However, from the user's point of view the collection can now be
+accessed using the new name, and the new name can be also referred to in other aliases.
+
+The following limitations apply:
+
+* the existing name must be either a SolrCloud collection or a standard alias referring to a single collection.
+Aliases that refer to more than 1 collection are not supported.
+* the existing name must not be a Routed Alias.
+* the target name must not be an existing alias.
+
+=== RENAME Command Parameters
+
+`name`::
+Name of the existing SolrCloud collection or an alias that refers to exactly one collection and is not
+a Routed Alias.
+
+`target`::
+Target name of the collection. This will be the new alias that refers to the underlying SolrCloud collection.
+The original name (or alias) of the collection will be replaced also in the existing aliases so that they
+also refer to the new name. Target name must not be an existing alias.
+
+=== Examples using RENAME
+Assuming there are two actual SolrCloud collections named `collection1` and `collection2`,
+and the following aliases already exist:
+
+* `col1 -&gt; collection1`: this resolves to `collection1`.
+* `col2 -&gt; collection2`: this resolves to `collection2`.
+* `simpleAlias -&gt; col1`: this resolves to `collection1`.
+* `compoundAlias -&gt; col1,col2`: this resolves to `collection1,collection2`
+
+The RENAME of `col1` to `foo` will change the aliases to the following:
+
+* `foo -&gt; collection1`: this resolves to `collection1`.
+* `col2 -&gt; collection2`: this resolves to `collection2`.
+* `simpleAlias -&gt; foo`: this resolves to `collection1`.
+* `compoundAlias -&gt; foo,col2`: this resolves to `collection1,collection2`.
+
+If we then rename `collection1` (which is an actual collection name) to `collection2` (which is also
+an actual collection name) the following aliases will exist now:
+
+* `foo -&gt; collection2`: this resolves to `collection2`.
+* `col2 -&gt; collection2`: this resolves to `collection2`.
+* `simpleAlias -&gt; foo`: this resolves to `collection2`.
+* `compoundAlias -&gt; foo,col2`: this would resolve now to `collection2,collection2` so it's reduced to simply `collection2`.
+* `collection1` -&gt; `collection2`: this newly created alias effectively hides `collection1` from regular query and
+update commands, which are directed now to `collection2`.
+
 
 [[splitshard]]
 == SPLITSHARD: Split a Shard
