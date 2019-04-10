@@ -73,10 +73,13 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
-    String sourceCollectionName = message.getStr("collection");
+    String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
-    String targetCollectionName = message.getStr("target.collection");
+    String extTargetCollectionName = message.getStr("target.collection");
     int timeout = message.getInt("forward.timeout", 10 * 60) * 1000;
+
+    String sourceCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extSourceCollectionName);
+    String targetCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extTargetCollectionName);
 
     DocCollection sourceCollection = clusterState.getCollection(sourceCollectionName);
     if (sourceCollection == null) {

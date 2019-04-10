@@ -54,6 +54,7 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -791,6 +792,62 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals("num docs after turning off read-only", NUM_DOCS * 3, rsp.getResults().getNumFound());
   }
 
+  @Test
+  public void testRenameCollection() throws Exception {
+    String collectionName1 = "testRename_collection1";
+    String collectionName2 = "testRename_collection2";
+    CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).setAlias("col1").process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).setAlias("col2").process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName1, 1, 1);
+    cluster.waitForActiveCollection(collectionName2, 1, 1);
+
+    waitForState("Expected collection1 to be created with 1 shard and 1 replica", collectionName1, clusterShape(1, 1));
+    waitForState("Expected collection2 to be created with 1 shard and 1 replica", collectionName2, clusterShape(1, 1));
+
+    CollectionAdminRequest.createAlias("compoundAlias", "col1,col2").process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias("simpleAlias", "col1").process(cluster.getSolrClient());
+    CollectionAdminRequest.createCategoryRoutedAlias("catAlias", "field1", 100,
+        CollectionAdminRequest.createCollection("_unused_", "conf", 1, 1)).process(cluster.getSolrClient());
+
+    CollectionAdminRequest.renameCollection("col1", "foo").process(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    zkStateReader.aliasesManager.update();
+
+    Aliases aliases = zkStateReader.getAliases();
+    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName1, aliases.resolveSimpleAlias("foo"));
+    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName1, aliases.resolveSimpleAlias("simpleAlias"));
+    List<String> compoundAliases = aliases.resolveAliases("compoundAlias");
+    assertEquals(compoundAliases.toString(), 2, compoundAliases.size());
+    assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName1));
+    assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
+
+    CollectionAdminRequest.renameCollection(collectionName1, collectionName2).process(cluster.getSolrClient());
+    zkStateReader.aliasesManager.update();
+
+    aliases = zkStateReader.getAliases();
+    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("foo"));
+    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("simpleAlias"));
+    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias(collectionName1));
+    // we renamed col1 -> col2 so the compound alias contains only "col2,col2" which is reduced to col2
+    compoundAliases = aliases.resolveAliases("compoundAlias");
+    assertEquals(compoundAliases.toString(), 1, compoundAliases.size());
+    assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
+
+    try {
+      CollectionAdminRequest.renameCollection("catAlias", "bar").process(cluster.getSolrClient());
+      fail("category-based alias renaming should fail");
+    } catch (Exception e) {
+      assertTrue(e.toString().contains("is a routed alias"));
+    }
+
+    try {
+      CollectionAdminRequest.renameCollection("col2", "foo").process(cluster.getSolrClient());
+      fail("shuold fail because 'foo' already exists");
+    } catch (Exception e) {
+      assertTrue(e.toString().contains("exists"));
+    }
+  }
 
   @Test
   public void testOverseerStatus() throws IOException, SolrServerException {

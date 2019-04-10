@@ -243,6 +243,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(MOVEREPLICA, new MoveReplicaCmd(this))
         .put(REINDEXCOLLECTION, new ReindexCollectionCmd(this))
         .put(UTILIZENODE, new UtilizeNodeCmd(this))
+        .put(RENAME, new RenameCmd(this))
         .build()
     ;
   }
@@ -454,6 +455,22 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
 
   }
+
+  void checkResults(String label, NamedList<Object> results, boolean failureIsFatal) throws SolrException {
+    Object failure = results.get("failure");
+    if (failure == null) {
+      failure = results.get("error");
+    }
+    if (failure != null) {
+      String msg = "Error: " + label + ": " + Utils.toJSONString(results);
+      if (failureIsFatal) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+      } else {
+        log.error(msg);
+      }
+    }
+  }
+
 
   //TODO should we not remove in the next release ?
   private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
