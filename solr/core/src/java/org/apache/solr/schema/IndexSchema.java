@@ -1959,6 +1959,21 @@ public class IndexSchema {
             rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
   }
 
+  /**
+   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
+   * same 'type' as the {@link #getUniqueKeyField()} and has {@link #NEST_PATH_FIELD_NAME}
+   * defined as a {@link NestPathField}
+   * @lucene.internal
+   */
+  public boolean savesChildDocRelations() {
+    //TODO make this boolean a field so it needn't be looked up each time?
+    if (!isUsableForChildDocs()) {
+      return false;
+    }
+    FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
+    return nestPathType instanceof NestPathField;
+  }
+
   public PayloadDecoder getPayloadDecoder(String field) {
     FieldType ft = getFieldType(field);
     if (ft == null)

@@ -150,7 +150,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         audit(event);
       } catch(Exception e) {
         numErrors.mark();
-        throw e;
+        log.error("Exception when attempting to audit log", e);
       } finally {
         totalTime.inc(timer.stop());
       }
@@ -209,7 +209,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         log.warn("Interrupted while waiting for next audit log event");
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
-        log.warn("Exception when attempting to audit log asynchronously", ex);
+        log.error("Exception when attempting to audit log asynchronously", ex);
         numErrors.mark();
       }
     }
@@ -309,20 +309,35 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     }
   }
 
+  /**
+   * Waits 30s for async queue to drain, then closes executor threads.
+   * Subclasses should either call <code>super.close()</code> or {@link #waitForQueueToDrain(int)}
+   * <b>before</b> shutting itself down to make sure they can complete logging events in the queue. 
+   */
   @Override
   public void close() throws IOException {
     if (async && executorService != null) {
+      waitForQueueToDrain(30);
+      closed = true;
+      log.info("Shutting down async Auditlogger background thread(s)");
+      executorService.shutdownNow();
+    }
+  }
+
+  /**
+   * Blocks until the async event queue is drained
+   * @param timeoutSeconds number of seconds to wait for queue to drain
+   */
+  protected void waitForQueueToDrain(int timeoutSeconds) {
+    if (async && executorService != null) {
       int timeSlept = 0;
-      while (!queue.isEmpty() && timeSlept < 30) {
+      while (!queue.isEmpty() && timeSlept < timeoutSeconds) {
         try {
           log.info("Async auditlogger queue still has {} elements, sleeping to let it drain...", queue.size());
           Thread.sleep(1000);
           timeSlept ++;
         } catch (InterruptedException ignored) {}
       }
-      closed = true;
-      log.info("Shutting down async Auditlogger background thread(s)");
-      executorService.shutdownNow();
     }
   }
 

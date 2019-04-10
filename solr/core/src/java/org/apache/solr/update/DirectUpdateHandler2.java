@@ -959,7 +959,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
       boolean isNested = nestedDocs != null; // AKA nested child docs
-      Term idTerm = getIdTerm(cmd.getIndexedId(), isNested);
+      Term idTerm = getIdTerm(isNested? new BytesRef(cmd.getRootIdUsingRouteParam()): cmd.getIndexedId(), isNested);
       Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
       if (isNested) {
         log.debug("updateDocuments({})", cmd);
@@ -981,9 +981,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
-  private Term getIdTerm(BytesRef indexedId, boolean isNested) {
+  private Term getIdTerm(BytesRef termVal, boolean isNested) {
     boolean useRootId = isNested || core.getLatestSchema().isUsableForChildDocs();
-    return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), indexedId);
+    return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), termVal);
   }
 
   /////////////////////////////////////////////////////////////////////

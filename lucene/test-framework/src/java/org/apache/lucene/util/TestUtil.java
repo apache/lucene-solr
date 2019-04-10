@@ -911,8 +911,8 @@ public final class TestUtil {
    * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
    * @lucene.internal this may disappear at any time
    */
-  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock, Lucene50PostingsFormat.FSTLoadMode offHeapFST) {
-    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock, offHeapFST);
+  public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock) {
+    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock, Lucene50PostingsFormat.FSTLoadMode.AUTO);
   }
   
   /** Returns a random postings format that supports term ordinals */

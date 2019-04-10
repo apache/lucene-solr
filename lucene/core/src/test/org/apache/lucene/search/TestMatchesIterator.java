@@ -28,11 +28,13 @@ import java.util.stream.Collectors;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
@@ -54,6 +56,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   private static final String FIELD_NO_OFFSETS = "field_no_offsets";
   private static final String FIELD_DOCS_ONLY = "field_docs_only";
   private static final String FIELD_FREQS = "field_freqs";
+  private static final String FIELD_POINT = "field_point";
 
   private static final FieldType OFFSETS = new FieldType(TextField.TYPE_STORED);
   static {
@@ -89,6 +92,8 @@ public class TestMatchesIterator extends LuceneTestCase {
       doc.add(newField(FIELD_NO_OFFSETS, docFields[i], TextField.TYPE_STORED));
       doc.add(newField(FIELD_DOCS_ONLY, docFields[i], DOCS));
       doc.add(newField(FIELD_FREQS, docFields[i], DOCS_AND_FREQS));
+      doc.add(new IntPoint(FIELD_POINT, 10));
+      doc.add(new NumericDocValuesField(FIELD_POINT, 10));
       doc.add(new NumericDocValuesField("id", i));
       doc.add(newField("id", Integer.toString(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
@@ -649,6 +654,51 @@ public class TestMatchesIterator extends LuceneTestCase {
               new TermMatch(6, 35, 43), new TermMatch(7, 44, 54)
         }
         }
+    });
+  }
+
+  public void testPointQuery() throws IOException {
+    IndexOrDocValuesQuery pointQuery = new IndexOrDocValuesQuery(
+        IntPoint.newExactQuery(FIELD_POINT, 10),
+        NumericDocValuesField.newSlowExactQuery(FIELD_POINT, 10)
+    );
+    Term t = new Term(FIELD_WITH_OFFSETS, "w1");
+    Query query = new BooleanQuery.Builder()
+        .add(new TermQuery(t), BooleanClause.Occur.MUST)
+        .add(pointQuery, BooleanClause.Occur.MUST)
+        .build();
+
+    checkMatches(pointQuery, FIELD_WITH_OFFSETS, new int[][]{});
+
+    checkMatches(query, FIELD_WITH_OFFSETS, new int[][]{
+        { 0, 0, 0, 0, 2 },
+        { 1, 0, 0, 0, 2 },
+        { 2, 0, 0, 0, 2 },
+        { 3, 0, 0, 0, 2, 2, 2, 6, 8 },
+        { 4 }
+    });
+
+    pointQuery = new IndexOrDocValuesQuery(
+        IntPoint.newExactQuery(FIELD_POINT, 11),
+        NumericDocValuesField.newSlowExactQuery(FIELD_POINT, 11)
+    );
+
+    query = new BooleanQuery.Builder()
+        .add(new TermQuery(t), BooleanClause.Occur.MUST)
+        .add(pointQuery, BooleanClause.Occur.MUST)
+        .build();
+    checkMatches(query, FIELD_WITH_OFFSETS, new int[][]{});
+
+    query = new BooleanQuery.Builder()
+        .add(new TermQuery(t), BooleanClause.Occur.MUST)
+        .add(pointQuery, BooleanClause.Occur.SHOULD)
+        .build();
+    checkMatches(query, FIELD_WITH_OFFSETS, new int[][]{
+        {0, 0, 0, 0, 2},
+        {1, 0, 0, 0, 2},
+        {2, 0, 0, 0, 2},
+        {3, 0, 0, 0, 2, 2, 2, 6, 8},
+        {4}
     });
   }
 

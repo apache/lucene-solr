@@ -34,6 +34,21 @@ API Changes
   subclasses override it. FilterDirectory now delegates the call, ensuring
   correct default behaviour for subclasses. (Henning Andersen)
 
+New Features
+
+* LUCENE-2562: The well-known graphical user interface for inspecting Lucene
+  indexes "Luke" was added as a Lucene module. It can be started from the
+  binary distribution by calling the shell scripts in the module folder
+  or from the source checkout by using `ant -f lucene/luke/build.xml run`.
+  Luke provides a Swing-based user interface and can be used to open
+  Lucene or Solr (or Elasticsearch) indexes, inspect documents, check index
+  commits and segments, or test (custom) analyzers. It also has maintenance
+  functions to check index structures and force merge indexes for archival.
+  Luke was originally developed by Andrzej Bialecki, later maintained by
+  Dmitry Kan and finally rewritten by Tomoko Uchida to use the ASF licensing
+  compatible Swing framework (as shipped with JDKs).
+  (Tomoko Uchida, Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
@@ -61,6 +76,9 @@ Bug fixes
 * LUCENE-8741: ValueSource.fromDoubleValuesSource() was casting to
   Scorer instead of Scorable, leading to ClassCastExceptions (Markus Jelsma,
   Alan Woodward)
+
+* LUCENE-8754: Fix ConcurrentModificationException in SegmentInfo if
+  attributes are accessed in MergePolicy while the merge is running (Simon Willnauer)
 
 Improvements
 
@@ -92,6 +110,9 @@ Improvements
   non-competitive documents if the score of a parent depends on the score of multiple
   children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
   each parent can early terminate top scores's collection. (Jim Ferenczi)
+
+* LUCENE-8751: Weight#matches now use the ScorerSupplier to build scorers with a lead cost of 1
+  (single document). (Jim Ferenczi)
 
 Changes in Runtime Behavior
 
