@@ -72,7 +72,12 @@ final class IntArrayDocIdSet extends DocIdSet {
 
     @Override
     public int advance(int target) throws IOException {
-      i = Arrays.binarySearch(docs, i + 1, length, target);
+      int bound = 1;
+      int offset = Math.max(0, i);
+      while(offset + bound < length && docs[offset + bound] < target) {
+        bound *= 2;
+      }
+      i = Arrays.binarySearch(docs, offset + bound / 2, Math.min(offset + bound, length), target);
       if (i < 0) {
         i = -1 - i;
       }
