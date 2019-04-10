@@ -23,6 +23,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
@@ -60,7 +61,11 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final Directory directory) throws IOException {
-    return StandardDirectoryReader.open(directory, null);
+    return open(directory, Collections.emptyMap());
+  }
+
+  public static DirectoryReader open(final Directory directory, final Map<String, String> readerAttributes) throws IOException {
+    return StandardDirectoryReader.open(directory, null, readerAttributes);
   }
   
   /**
@@ -109,7 +114,11 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit);
+    return open(commit, Collections.emptyMap());
+  }
+
+  public static DirectoryReader open(final IndexCommit commit, Map<String, String> readerAttributes) throws IOException {
+    return StandardDirectoryReader.open(commit.getDirectory(), commit, readerAttributes);
   }
 
   /**

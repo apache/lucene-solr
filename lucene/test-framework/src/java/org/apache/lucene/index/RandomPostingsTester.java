@@ -748,7 +748,7 @@ public class RandomPostingsTester {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, false, IOContext.READ);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, false, IOContext.READ, Collections.emptyMap());
 
     return codec.postingsFormat().fieldsProducer(readState);
   }

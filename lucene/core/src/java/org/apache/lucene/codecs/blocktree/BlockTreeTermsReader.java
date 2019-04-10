@@ -28,7 +28,6 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -75,6 +74,41 @@ import org.apache.lucene.util.fst.Outputs;
 
 public final class BlockTreeTermsReader extends FieldsProducer {
 
+  /**
+   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
+   */
+  public enum FSTLoadMode {
+    /**
+     * Always read FSTs from disk.
+     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
+     * are used.
+     */
+    OFF_HEAP,
+    /**
+     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
+     */
+    ON_HEAP,
+    /**
+     * Always read FSTs from disk.
+     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
+     * This is useful to guarantee best update performance even if a non MMapDirectory is used.
+     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
+     * are used.
+     * See {@link FSTLoadMode#AUTO}
+     */
+    OPTIMIZE_UPDATES_OFF_HEAP,
+    /**
+     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
+     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
+     */
+    AUTO
+  }
+
+  /** Attribute key for fst mode. */
+  public static final String FST_MODE_KEY = "blocktree.terms.fst.mode";
+  /** Attribute key for the ID field. ID fields are forced on-heap if set **/
+  public static final String ID_FIELD = "blocktree.terms.fst.id_field"; // TODO should this only happen in a writer context?
+
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
   
   static final BytesRef NO_OUTPUT = FST_OUTPUTS.getNoOutput();
@@ -119,7 +153,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, Lucene50PostingsFormat.FSTLoadMode fstLoadMode) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     boolean success = false;
     
     this.postingsReader = postingsReader;
@@ -156,6 +190,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       seekDir(termsIn);
       seekDir(indexIn);
 
+      FSTLoadMode fstLoadMode = FSTLoadMode.valueOf(state.readerAttributes.getOrDefault(FST_MODE_KEY, FSTLoadMode.AUTO.toString()));
+      String idField = state.readerAttributes.get(ID_FIELD);
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
@@ -168,6 +204,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         }
         final BytesRef rootCode = readBytesRef(termsIn);
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
+        final boolean forceOnHeap = fieldInfo.name.equals(idField);
         if (fieldInfo == null) {
           throw new CorruptIndexException("invalid field number: " + field, termsIn);
         }
@@ -191,9 +228,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
         }
         final long indexStartFP = indexIn.readVLong();
-        FieldReader previous = fields.put(fieldInfo.name,       
+        FieldReader previous = fields.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, fstLoadMode));
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter,
+                                              forceOnHeap ? FSTLoadMode.ON_HEAP : fstLoadMode));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }

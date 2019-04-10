@@ -38,7 +38,6 @@ import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
 import org.apache.lucene.codecs.memory.FSTOrdTermsReader;
@@ -316,7 +315,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new BlockTreeTermsReader(postingsReader, state, Lucene50PostingsFormat.FSTLoadMode.AUTO);
+        fields = new BlockTreeTermsReader(postingsReader, state);
         success = true;
       } finally {
         if (!success) {

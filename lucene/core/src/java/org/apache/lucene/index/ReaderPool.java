@@ -54,6 +54,7 @@ final class ReaderPool implements Closeable {
   private final InfoStream infoStream;
   private final SegmentInfos segmentInfos;
   private final String softDeletesField;
+  private final Map<String, String> readerAttributes;
   // This is a "write once" variable (like the organic dye
   // on a DVD-R that may or may not be heated by a laser and
   // then cooled to permanently record the event): it's
@@ -71,7 +72,7 @@ final class ReaderPool implements Closeable {
 
   ReaderPool(Directory directory, Directory originalDirectory, SegmentInfos segmentInfos,
              FieldInfos.FieldNumbers fieldNumbers, LongSupplier completedDelGenSupplier, InfoStream infoStream,
-             String softDeletesField, StandardDirectoryReader reader) throws IOException {
+             String softDeletesField, StandardDirectoryReader reader, Map<String, String> readerAttributes) throws IOException {
     this.directory = directory;
     this.originalDirectory = originalDirectory;
     this.segmentInfos = segmentInfos;
@@ -79,6 +80,7 @@ final class ReaderPool implements Closeable {
     this.completedDelGenSupplier = completedDelGenSupplier;
     this.infoStream = infoStream;
     this.softDeletesField = softDeletesField;
+    this.readerAttributes = readerAttributes;
     if (reader != null) {
       // Pre-enroll all segment readers into the reader pool; this is necessary so
       // any in-memory NRT live docs are correctly carried over, and so NRT readers
@@ -91,7 +93,7 @@ final class ReaderPool implements Closeable {
         SegmentReader newReader = new SegmentReader(segmentInfos.info(i), segReader, segReader.getLiveDocs(),
             segReader.getHardLiveDocs(), segReader.numDocs(), true);
         readerMap.put(newReader.getOriginalSegmentInfo(), new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(),
-            newReader, newPendingDeletes(newReader, newReader.getOriginalSegmentInfo())));
+            newReader, newPendingDeletes(newReader, newReader.getOriginalSegmentInfo()), readerAttributes));
       }
     }
   }
@@ -372,7 +374,7 @@ final class ReaderPool implements Closeable {
       if (create == false) {
         return null;
       }
-      rld = new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(), info, newPendingDeletes(info));
+      rld = new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(), info, newPendingDeletes(info), readerAttributes);
       // Steal initial reference:
       readerMap.put(info, rld);
     } else {
