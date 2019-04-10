@@ -36,6 +36,8 @@
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
 
+  <!-- required to test updates nested inplaceUpdates -->
+  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true"/>
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
@@ -47,6 +49,10 @@
   <fieldType name="double" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="float" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="date" class="solr.DatePointField" docValues="true"/>
+
+  <!-- Fields required for SignatureUpdateProcessor -->
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sS" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 

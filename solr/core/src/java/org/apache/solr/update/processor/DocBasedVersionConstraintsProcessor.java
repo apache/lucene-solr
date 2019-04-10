@@ -218,7 +218,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
   private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromStored(BytesRef indexedDocId) throws IOException {
     // stored fields only...
-    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(core, indexedDocId);
+    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(core, indexedDocId, RealTimeGetComponent.Resolution.DOC);
     if (null == oldDoc) {
       return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
     } else {

@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
@@ -46,6 +47,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -183,7 +185,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
-          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS);
+          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS, ShardParams._ROUTE_);
 
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
@@ -469,13 +471,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
 
+        // if the update updates a doc that is part of a nested structure,
+        // force open a realTimeSearcher to trigger a ulog cache refresh.
+        // This refresh makes RTG handler aware of this update.q
+        if(req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+          ulog.openRealtimeSearcher();
+        }
+
         if (clonedDoc != null) {
           cmd.solrDoc = clonedDoc;
         }
       } finally {
-
         bucket.unlock();
-
         vinfo.unlockForUpdate();
       }
       return false;
@@ -647,22 +654,41 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // full (non-inplace) atomic update
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
-    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id);
+    SolrInputDocument oldRootDocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
 
-    if (oldDoc == null) {
-      // create a new doc by default if an old one wasn't found
-      if (versionOnUpdate <= 0) {
-        oldDoc = new SolrInputDocument();
-      } else {
+    if (oldRootDocWithChildren == null) {
+      if (versionOnUpdate > 0) {
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
+      } else if (req.getParams().get(ShardParams._ROUTE_) != null) {
+        // the specified document could not be found in this shard
+        // and was explicitly routed using _route_
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Could not find document " + idField.getName() + ":" + id +
+                ", perhaps the wrong \"_route_\" param was supplied");
       }
     } else {
-      oldDoc.remove(CommonParams.VERSION_FIELD);
+      oldRootDocWithChildren.remove(CommonParams.VERSION_FIELD);
     }
 
 
-    cmd.solrDoc = docMerger.merge(sdoc, oldDoc);
+    SolrInputDocument mergedDoc;
+    if(idField == null || oldRootDocWithChildren == null) {
+      // create a new doc by default if an old one wasn't found
+      mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
+    } else {
+      if(req.getSchema().savesChildDocRelations() &&
+          !sdoc.getField(idField.getName()).getFirstValue().toString()
+              .equals((String) oldRootDocWithChildren.getFieldValue(IndexSchema.ROOT_FIELD_NAME))) {
+        // this is an update where the updated doc is not the root document
+        SolrInputDocument sdocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(),
+            id, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
+        mergedDoc = docMerger.mergeChildDoc(sdoc, oldRootDocWithChildren, sdocWithChildren);
+      } else {
+        mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
+      }
+    }
+    cmd.solrDoc = mergedDoc;
     return true;
   }
 
@@ -670,7 +696,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     
     assert TestInjection.injectFailUpdateRequests();
-    
+
     updateCommand = cmd;
 
     if (!cmd.isDeleteById()) {
@@ -798,12 +824,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   protected void versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // Find the version
-    long versionOnUpdate = cmd.getVersion();
-    if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
-      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
-    }
-    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+    long versionOnUpdate = findVersionOnUpdate(cmd);
 
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
@@ -815,31 +836,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.blockUpdates();
     try {
 
-      if (versionsStored) {
-        if (leaderLogic) {
-          long version = vinfo.getNewClock();
-          cmd.setVersion(-version);
-          // TODO update versions in all buckets
-
-          doLocalDelete(cmd);
-
-        } else {
-          cmd.setVersion(-versionOnUpdate);
-
-          if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
-            // we're not in an active state, and this update isn't from a replay, so buffer it.
-            cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
-            ulog.deleteByQuery(cmd);
-            return;
-          }
-
-          if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-            // TLOG replica not leader, don't write the DBQ to IW
-            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
-          }
-          doLocalDelete(cmd);
-        }
-      }
+      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
@@ -847,6 +844,45 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     } finally {
       vinfo.unblockUpdates();
+    }
+  }
+
+  private long findVersionOnUpdate(UpdateCommand cmd) {
+    long versionOnUpdate = cmd.getVersion();
+    if (versionOnUpdate == 0) {
+      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
+      versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+    }
+    versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
+    return versionOnUpdate;
+  }
+
+  private void doLocalDeleteByQuery(DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync) throws IOException {
+    if (versionsStored) {
+      final boolean leaderLogic = isLeader & !isReplayOrPeersync;
+      if (leaderLogic) {
+        long version = vinfo.getNewClock();
+        cmd.setVersion(-version);
+        // TODO update versions in all buckets
+
+        doLocalDelete(cmd);
+
+      } else {
+        cmd.setVersion(-versionOnUpdate);
+
+        if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+          // we're not in an active state, and this update isn't from a replay, so buffer it.
+          cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
+          ulog.deleteByQuery(cmd);
+          return;
+        }
+
+        if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+          // TLOG replica not leader, don't write the DBQ to IW
+          cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+        }
+        doLocalDelete(cmd);
+      }
     }
   }
 
@@ -990,7 +1026,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     
     assert TestInjection.injectFailUpdateRequests();
-    
+
     updateCommand = cmd;
 
     // replica type can only be NRT in standalone mode
@@ -1030,6 +1066,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected void assertNotFinished() {
     assert ! finished : "lifecycle sanity check";
     finished = true;
+  }
+
+  /**
+   *
+   * {@link AddUpdateCommand#isNested} is set in {@link org.apache.solr.update.processor.NestedUpdateProcessorFactory},
+   * which runs on leader and replicas just before run time processor
+   * @return whether this update changes a value of a nested document
+   */
+  private static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
+    // should be set since this method should only be called after DistributedUpdateProcessor#doLocalAdd,
+    // which runs post-processor in the URP chain, having NestedURP set cmd#isNested.
+    assert !cmd.getReq().getSchema().savesChildDocRelations() || cmd.isNested != null;
+    // true if update adds children
+    return Boolean.TRUE.equals(cmd.isNested);
   }
 
   /**

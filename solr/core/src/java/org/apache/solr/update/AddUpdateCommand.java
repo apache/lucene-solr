@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -62,6 +63,9 @@ public class AddUpdateCommand extends UpdateCommand {
   public int commitWithin = -1;
 
   public boolean isLastDocInBatch = false;
+
+  /** Is this a nested update, null means not yet calculated. */
+  public Boolean isNested = null;
 
   // optional id in "internal" indexed form... if it is needed and not supplied,
   // it will be obtained from the doc.
@@ -100,7 +104,7 @@ public class AddUpdateCommand extends UpdateCommand {
      final boolean ignoreNestedDocs = false; // throw an exception if found
      SolrInputDocument solrInputDocument = getSolrInputDocument();
      if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
-       addRootField(solrInputDocument, getHashableId());
+       addRootField(solrInputDocument, getRootIdUsingRouteParam());
      }
      return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
@@ -151,6 +155,14 @@ public class AddUpdateCommand extends UpdateCommand {
    }
 
   /**
+   *
+   * @return value of _route_ param({@link ShardParams#_ROUTE_}), otherwise doc id.
+   */
+  public String getRootIdUsingRouteParam() {
+     return req.getParams().get(ShardParams._ROUTE_, getHashableId());
+   }
+
+  /**
    * @return String id to hash
    */
   public String getHashableId() {
@@ -197,7 +209,7 @@ public class AddUpdateCommand extends UpdateCommand {
       return null; // caller should call getLuceneDocument() instead
     }
 
-    final String rootId = getHashableId();
+    final String rootId = getRootIdUsingRouteParam();
     final SolrInputField versionSif = solrDoc.get(CommonParams.VERSION_FIELD);
 
     for (SolrInputDocument sdoc : all) {

@@ -106,6 +106,12 @@ New Features
 
 * SOLR-13374: Add fetchSize parameter to the jdbc Streaming Expression (Joel Bernstein)
 
+* SOLR-12638: Partial/Atomic Updates for nested documents.  This enables atomic updates for nested documents, without
+  the need to supply the whole nested hierarchy (which would be overwritten if absent).  This is done by fetching the
+  whole document hierarchy, updating the specific doc in the path that is to be updated, removing the old document
+  hierarchy and indexing the new one with the atomic update merged into it.  Also, [child] Doc Transformer now works
+  with RealTimeGet.  (Moshe Bla, David Smiley)
+
 Bug Fixes
 ----------------------
 
