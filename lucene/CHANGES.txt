@@ -111,6 +111,9 @@ Improvements
   children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
   each parent can early terminate top scores's collection. (Jim Ferenczi)
 
+* LUCENE-8751: Weight#matches now use the ScorerSupplier to build scorers with a lead cost of 1
+  (single document). (Jim Ferenczi)
+
 Changes in Runtime Behavior
 
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened

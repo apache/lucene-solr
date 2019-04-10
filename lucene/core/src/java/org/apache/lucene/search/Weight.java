@@ -71,10 +71,11 @@ public abstract class Weight implements SegmentCacheable {
    * @lucene.experimental
    */
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    Scorer scorer = scorer(context);
-    if (scorer == null) {
+    ScorerSupplier scorerSupplier = scorerSupplier(context);
+    if (scorerSupplier == null) {
       return null;
     }
+    Scorer scorer = scorerSupplier.get(1);
     final TwoPhaseIterator twoPhase = scorer.twoPhaseIterator();
     if (twoPhase == null) {
       if (scorer.iterator().advance(doc) != doc) {
