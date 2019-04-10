@@ -456,6 +456,10 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
+    if (state.segmentInfo.getAttribute(MODE_KEY) != null && fstLoadMode.name().equals(state.segmentInfo.getAttribute(MODE_KEY)) == false) {
+      throw new IllegalStateException("found existing value for " + MODE_KEY + " for segment: " + state.segmentInfo.name +
+          " old=" + state.segmentInfo.getAttribute(MODE_KEY) + ", new=" + fstLoadMode.name());
+    }
     state.segmentInfo.putAttribute(MODE_KEY, fstLoadMode.name());
     boolean success = false;
     try {

@@ -47,6 +47,9 @@ Bug fixes
   Scorer instead of Scorable, leading to ClassCastExceptions (Markus Jelsma,
   Alan Woodward)
 
+* LUCENE-8754: Fix ConcurrentModificationException in SegmentInfo if
+  attributes are accessed in MergePolicy while the merge is running (Simon Willnauer)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
