@@ -93,6 +93,11 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
+  public String resolveSimpleAlias(String alias) throws IllegalArgumentException {
+    return zkStateReader.getAliases().resolveSimpleAlias(alias);
+  }
+
+  @Override
   public Object getClusterProperty(String propertyName) {
     Map<String, Object> props = zkStateReader.getClusterProperties();
     return props.get(propertyName);

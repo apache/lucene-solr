@@ -112,6 +112,8 @@ New Features
   hierarchy and indexing the new one with the atomic update merged into it.  Also, [child] Doc Transformer now works
   with RealTimeGet.  (Moshe Bla, David Smiley)
 
+* SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -167,6 +169,8 @@ Bug Fixes
 * SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
 
 * SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
 
 Improvements
 ----------------------
