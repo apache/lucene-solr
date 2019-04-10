@@ -39,7 +39,6 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -221,8 +220,6 @@ public final class OptimizeIndexDialogFactory implements DialogOpener.DialogFact
             ps = new TextAreaPrintStream(logArea);
             toolsModel.optimize(expungeCB.isSelected(), (int) maxSegSpnr.getValue(), ps);
             ps.flush();
-          } catch (UnsupportedEncodingException e) {
-            // will not reach
           } catch (Exception e) {
             statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
             throw e;
