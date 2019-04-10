@@ -2687,7 +2687,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {
       m.put("xlsx",
-          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getDeclaredConstructor().newInstance());
+          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getConstructor().newInstance());
     } catch (Exception e) {
       //don't worry; solrcell contrib not in class path
     }

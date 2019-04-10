@@ -163,7 +163,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   private Lookup buildLookup(Class<? extends Lookup> cls, Input[] input) throws Exception {
     Lookup lookup = null;
     try {
-      lookup = cls.getDeclaredConstructor().newInstance();
+      lookup = cls.getConstructor().newInstance();
     } catch (InstantiationException e) {
       Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
       if (cls == AnalyzingInfixSuggester.class || cls == BlendedInfixSuggester.class) {

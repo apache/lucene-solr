@@ -63,7 +63,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     for( Class clazz : classes ) {
       if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
         try {
-          SolrInfoBean info = (SolrInfoBean)clazz.getDeclaredConstructor().newInstance();
+          SolrInfoBean info = (SolrInfoBean)clazz.getConstructor().newInstance();
           if (info instanceof SolrMetricProducer) {
             ((SolrMetricProducer)info).initializeMetrics(metricManager, registry, "foo", scope);
           }

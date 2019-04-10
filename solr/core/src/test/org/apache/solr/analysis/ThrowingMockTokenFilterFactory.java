@@ -58,7 +58,7 @@ public class ThrowingMockTokenFilterFactory extends TokenFilterFactory {
       public boolean incrementToken() throws IOException {
         if (input.incrementToken()) {
           try {
-            throw exceptionClass.getDeclaredConstructor().newInstance();
+            throw exceptionClass.getConstructor().newInstance();
           } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException iae) {
             throw new RuntimeException(iae);
           }

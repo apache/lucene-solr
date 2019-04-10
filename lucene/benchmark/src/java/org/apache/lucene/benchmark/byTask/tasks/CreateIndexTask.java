@@ -80,7 +80,7 @@ public class CreateIndexTask extends PerfTask {
       return NoDeletionPolicy.INSTANCE;
     } else {
       try {
-        return Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).getDeclaredConstructor().newInstance();
+        return Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).getConstructor().newInstance();
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy", e);
       }
@@ -111,7 +111,7 @@ public class CreateIndexTask extends PerfTask {
       iwConf.setMergeScheduler(NoMergeScheduler.INSTANCE);
     } else {
       try {
-        iwConf.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).getDeclaredConstructor().newInstance());
+        iwConf.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).getConstructor().newInstance());
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
       }
@@ -128,7 +128,7 @@ public class CreateIndexTask extends PerfTask {
     if (defaultCodec != null) {
       try {
         Class<? extends Codec> clazz = Class.forName(defaultCodec).asSubclass(Codec.class);
-        iwConf.setCodec(clazz.getDeclaredConstructor().newInstance());
+        iwConf.setCodec(clazz.getConstructor().newInstance());
       } catch (Exception e) {
         throw new RuntimeException("Couldn't instantiate Codec: " + defaultCodec, e);
       }
@@ -157,7 +157,7 @@ public class CreateIndexTask extends PerfTask {
       iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
     } else {
       try {
-        iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).getDeclaredConstructor().newInstance());
+        iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).getConstructor().newInstance());
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
       }

@@ -152,7 +152,7 @@ public class HttpClientUtil {
     if (factoryClassName != null) {
       log.debug ("Using " + factoryClassName);
       try {
-        HttpClientBuilderFactory factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).getDeclaredConstructor().newInstance();
+        HttpClientBuilderFactory factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).getConstructor().newInstance();
         httpClientBuilder = factory.getHttpClientBuilder(Optional.of(SolrHttpClientBuilder.create()));
       } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
         throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
