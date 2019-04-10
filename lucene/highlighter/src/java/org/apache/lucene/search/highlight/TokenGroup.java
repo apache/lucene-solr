@@ -29,6 +29,8 @@ public class TokenGroup {
   private static final int MAX_NUM_TOKENS_PER_GROUP = 50;
 
   private float[] scores = new float[MAX_NUM_TOKENS_PER_GROUP];
+  private int[] startOffsets = new int[MAX_NUM_TOKENS_PER_GROUP];
+  private int[] endOffsets = new int[MAX_NUM_TOKENS_PER_GROUP];
   private int numTokens = 0;
   private int startOffset = 0;
   private int endOffset = 0;
@@ -68,12 +70,24 @@ public class TokenGroup {
       }
 
       scores[numTokens] = score;
+      startOffsets[numTokens] = termStartOffset;
+      endOffsets[numTokens] = termEndOffset;
       numTokens++;
     }
   }
 
   boolean isDistinct() {
-    return offsetAtt.startOffset() >= endOffset;
+    if (offsetAtt.startOffset() >= endOffset) {
+      return true;
+    }
+    if (offsetAtt.startOffset() > matchEndOffset) {
+      for (int i = 0; i < numTokens; i++) {
+        if (startOffsets[i] >= matchEndOffset && endOffsets[i] <= offsetAtt.endOffset() && scores[i] <= 0) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   void clear() {

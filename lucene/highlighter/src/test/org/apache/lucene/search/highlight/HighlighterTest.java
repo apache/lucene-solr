@@ -1934,7 +1934,83 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     helper.start();
   }
-  
+
+  protected TokenStream getTSCJK() {
+    // String s = "abcdefg";
+    return new TokenStream() {
+      Iterator<Token> iter;
+      List<Token> lst;
+      private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+      private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+      {
+        lst = new ArrayList<>();
+        Token t;
+        t = createToken("ab", 0, 2);
+        t.setPositionIncrement(1);
+        lst.add(t);
+        t = createToken("bc", 1, 3);
+        t.setPositionIncrement(1);
+        lst.add(t);
+        t = createToken("cdef", 2, 6);
+        t.setPositionIncrement(0);
+        lst.add(t);
+        t = createToken("cd", 2, 4);
+        t.setPositionIncrement(1);
+        lst.add(t);
+        t = createToken("efg", 4, 7);
+        t.setPositionIncrement(1);
+        lst.add(t);
+        iter = lst.iterator();
+      }
+
+      @Override
+      public boolean incrementToken() {
+        if(iter.hasNext()) {
+          Token token = iter.next();
+          clearAttributes();
+          termAtt.setEmpty().append(token);
+          posIncrAtt.setPositionIncrement(token.getPositionIncrement());
+          offsetAtt.setOffset(token.startOffset(), token.endOffset());
+          return true;
+        }
+        return false;
+      }
+
+      @Override
+      public void reset() throws IOException {
+        super.reset();
+        iter = lst.iterator();
+      }
+    };
+  }
+
+  public void testCJKPhrasesHighlight() throws Exception {
+    TestHighlightRunner helper = new TestHighlightRunner() {
+
+      @Override
+      public void run() throws Exception {
+        String s = "abcdefg";
+
+        Query query;
+        Highlighter highlighter;
+        String result;
+
+        BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
+        booleanQuery.add(new TermQuery(new Term("text", "ab")), Occur.SHOULD);
+        booleanQuery.add(new TermQuery(new Term("text", "efg")), Occur.SHOULD);
+
+        query = booleanQuery.build();
+        highlighter = getHighlighter(query, "text", HighlighterTest.this);
+        result = highlighter.getBestFragments(getTSCJK(), s, 50, "...");
+        assertEquals("<B>ab</B>cd<B>efg</B>", result);
+
+      }
+    };
+
+    helper.start();
+  }
+
   private Directory dir2;
   private Analyzer a;
   
