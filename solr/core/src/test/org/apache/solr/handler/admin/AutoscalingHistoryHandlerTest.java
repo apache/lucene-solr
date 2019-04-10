@@ -49,6 +49,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.LogLevel;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,6 +96,11 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(3)
         .process(solrClient);
     cluster.waitForActiveCollection(COLL_NAME, 1, 3);
+  }
+
+  @AfterClass
+  public static void releaseClient() throws Exception {
+    solrClient = null;
   }
 
   public static class TesterListener extends TriggerListenerBase {
