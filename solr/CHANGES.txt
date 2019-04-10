@@ -168,6 +168,8 @@ Bug Fixes
 
 * SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
 
+* SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
+
 Improvements
 ----------------------
 
