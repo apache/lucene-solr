@@ -30,7 +30,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
@@ -94,8 +93,7 @@ public class Lucene80Codec extends Codec {
   public Lucene80Codec(Mode mode) {
     super("Lucene80");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
-    this.defaultFormat = new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE,
-        BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+    this.defaultFormat = new Lucene50PostingsFormat();
   }
   
   @Override

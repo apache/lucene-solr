@@ -274,7 +274,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
 
   private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
     expectThrows(IllegalArgumentException.class, () -> {
-      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock);
+      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock, BlockTreeTermsReader.FSTLoadMode.AUTO);
     });
   }
 

@@ -153,7 +153,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, FSTLoadMode defaultLoadMode) throws IOException {
     boolean success = false;
     
     this.postingsReader = postingsReader;
@@ -190,7 +190,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       seekDir(termsIn);
       seekDir(indexIn);
 
-      FSTLoadMode fstLoadMode = FSTLoadMode.valueOf(state.readerAttributes.getOrDefault(FST_MODE_KEY, FSTLoadMode.AUTO.toString()));
+      FSTLoadMode fstLoadMode = FSTLoadMode.valueOf(state.readerAttributes.getOrDefault(FST_MODE_KEY, defaultLoadMode.toString()));
       String idField = state.readerAttributes.get(ID_FIELD);
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
