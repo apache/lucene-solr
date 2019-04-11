@@ -66,6 +66,7 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
@@ -114,7 +115,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private boolean requireSubject;
   private boolean requireExpirationTime;
   private List<String> algWhitelist;
-  private VerificationKeyResolver verificationKeyResolver;
+  VerificationKeyResolver verificationKeyResolver;
   private String principalClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
@@ -128,6 +129,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private String authorizationEndpoint;
   private String adminUiScope;
   private List<String> redirectUris;
+  private HttpsJwks httpsJkws;
 
 
   /**
@@ -247,6 +249,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       try {
         JsonWebKeySet jwks = parseJwkSet(confJwk);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
+        httpsJkws = null;
       } catch (JoseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
       }
@@ -255,7 +258,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     log.debug("JWK configured");
   }
 
-  private void setupJwkUrl(String url) {
+  void setupJwkUrl(String url) {
     // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
     try {
       URL jwkUrl = new URL(url);
@@ -265,7 +268,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     } catch (MalformedURLException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
     }
-    HttpsJwks httpsJkws = new HttpsJwks(url);
+    httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
     verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
@@ -312,60 +315,82 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
     }
 
-    JWTAuthenticationResponse authResponse = authenticate(header);
-    switch(authResponse.getAuthCode()) {
-      case AUTHENTICATED:
-        HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-          @Override
-          public Principal getUserPrincipal() {
-            return authResponse.getPrincipal();
+    boolean retry = false;
+    do {
+      JWTAuthenticationResponse authResponse = authenticate(header);
+      switch (authResponse.getAuthCode()) {
+        case AUTHENTICATED:
+          HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
+            @Override
+            public Principal getUserPrincipal() {
+              return authResponse.getPrincipal();
+            }
+          };
+          if (!(authResponse.getPrincipal() instanceof JWTPrincipal)) {
+            numErrors.mark();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
           }
-        };
-        if (!(authResponse.getPrincipal() instanceof JWTPrincipal)) {
+          if (log.isDebugEnabled())
+            log.debug("Authentication SUCCESS");
+          filterChain.doFilter(wrapper, response);
+          numAuthenticated.inc();
+          return true;
+
+        case PASS_THROUGH:
+          if (log.isDebugEnabled())
+            log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
+          filterChain.doFilter(request, response);
+          numPassThrough.inc();
+          return true;
+
+        case AUTZ_HEADER_PROBLEM:
+        case JWT_PARSE_ERROR:
+          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
           numErrors.mark();
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
-        }
-        if (log.isDebugEnabled())
-          log.debug("Authentication SUCCESS");
-        filterChain.doFilter(wrapper, response);
-        numAuthenticated.inc();
-        return true;
+          return false;
 
-      case PASS_THROUGH:
-        if (log.isDebugEnabled())
-          log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
-        filterChain.doFilter(request, response);
-        numPassThrough.inc();
-        return true;
+        case CLAIM_MISMATCH:
+        case JWT_EXPIRED:
+        case JWT_VALIDATION_EXCEPTION:
+        case PRINCIPAL_MISSING:
+          if (authResponse.getJwtException() != null) {
+            log.warn("Exception: {}", authResponse.getJwtException().getMessage());
+          }
+          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+          numWrongCredentials.inc();
+          return false;
 
-      case AUTZ_HEADER_PROBLEM:
-      case JWT_PARSE_ERROR:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
-        numErrors.mark();
-        return false;
+        case SIGNATURE_INVALID:
+          if (!retry) {
+            if (httpsJkws != null) {
+              if (authResponse.getJwtException() != null) {
+                log.warn("Signature validation failed. Key rotation? Refreshing JWK from IdP before trying again: {}", authResponse.getJwtException().getMessage());
+              }
+              retry = true;
+              httpsJkws.refresh();
+              break;
+            } else {
+              log.warn("Signature validation failed: {}", authResponse.getJwtException().getMessage());
+            }
+          } else {
+            log.warn("Signature validation failed even after refreshing keys from IdP. Failing request: {}", authResponse.getJwtException().getMessage());
+          }
+          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+          numWrongCredentials.inc();
+          return false;
 
-      case CLAIM_MISMATCH:
-      case JWT_EXPIRED:
-      case JWT_VALIDATION_EXCEPTION:
-      case PRINCIPAL_MISSING:
-        if (authResponse.getJwtException() != null) {
-          log.warn("Exception: {}", authResponse.getJwtException().getMessage());
-        }
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
-        numWrongCredentials.inc();
-        return false;
+        case SCOPE_MISSING:
+          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
+          numWrongCredentials.inc();
+          return false;
 
-      case SCOPE_MISSING:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
-        numWrongCredentials.inc();
-        return false;
-        
-      case NO_AUTZ_HEADER:
-      default:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
-        numMissingCredentials.inc();
-        return false;
-    }
+        case NO_AUTZ_HEADER:
+        default:
+          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
+          numMissingCredentials.inc();
+          return false;
+      }
+    } while (true);
   }
 
   /**
@@ -427,6 +452,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
               } else {
                 return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
               }
+            } catch (InvalidJwtSignatureException ise) {
+              return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
             } catch (InvalidJwtException e) {
               // Whether or not the JWT has expired being one common reason for invalidity
               if (e.hasExpired()) {
@@ -561,8 +588,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       JWT_EXPIRED("JWT token expired"),                  // JWT token has expired 
       CLAIM_MISMATCH("Required JWT claim missing"),      // Some required claims are missing or wrong 
       JWT_VALIDATION_EXCEPTION("JWT validation failed"), // The JWT parser failed validation. More details in exception
-      SCOPE_MISSING("Required scope missing in JWT");    // None of the required scopes were present in JWT
-  
+      SCOPE_MISSING("Required scope missing in JWT"),    // None of the required scopes were present in JWT
+      SIGNATURE_INVALID("Signature invalid");            // Validation of JWT signature failed
+
       public String getMsg() {
         return msg;
       }
