@@ -183,9 +183,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(authConf);
   }
 
+  /**
+   * Simulate a rotate of JWK key in IdP.
+   * Validating of JWK signature will fail since we still use old cached JWK set.
+   * Using a mock {@link HttpsJwks} we validate that plugin calls refresh() and then passes validation
+   */
   @Test
-  public void initWithJwkUrlRefreshKey() throws JoseException {
-    // Create a JWK based on jwk2, which is different from testjwk
+  public void invalidSigRefreshJwk() throws JoseException {
     RsaJsonWebKey rsaJsonWebKey2 = RsaJwkGenerator.generateJwk(2048);
     rsaJsonWebKey2.setKeyId("k2");
     HashMap<String, Object> testJwkWrong = new HashMap<>();
