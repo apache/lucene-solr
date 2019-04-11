@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +46,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -74,7 +74,7 @@ import static java.util.Collections.emptySortedSet;
 import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
-public class ZkStateReader implements Closeable {
+public class ZkStateReader implements SolrCloseable {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -850,6 +850,11 @@ public class ZkStateReader implements Closeable {
       zkClient.close();
     }
     assert ObjectReleaseTracker.release(this);
+  }
+
+  @Override
+  public boolean isClosed() {
+    return closed;
   }
   
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
