@@ -51,6 +51,11 @@ New Features
 
 Bug fixes
 
+* LUCENE-8736: LatLonShapePolygonQuery returns incorrect WITHIN results
+  with shared boundaries. Point in Polygon now correctly includes boundary
+  points. Box and Polygon relations with triangles have also been improved to
+  correctly include boundary points. (Nick Knize)
+
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
   (Ignacio Vera)
 
