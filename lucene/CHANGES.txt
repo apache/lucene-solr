@@ -125,6 +125,8 @@ Other
 * LUCENE-8729: Workaround: Disable accessibility doclints (Java 13+),
   so compilation with recent JDK succeeds.  (Uwe Schindler)
 
+* LUCENE-8725: Make TermsQuery.SeekingTermSetTermsEnum a top level class and public (noble)
+
 ======================= Lucene 8.0.0 =======================
 
 API Changes
