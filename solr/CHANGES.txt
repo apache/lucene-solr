@@ -172,6 +172,8 @@ Bug Fixes
 
 * SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
 
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
 * SOLR-13339: Prevent recovery, fetching index being kicked off after SolrCores already closed (Cao Manh Dat)
 
 Improvements
