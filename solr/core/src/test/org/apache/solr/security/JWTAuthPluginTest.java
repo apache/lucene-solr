@@ -54,6 +54,7 @@ import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.A
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
+@SuppressWarnings("unchecked")
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;
@@ -381,7 +382,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void wellKnownConfig() throws IOException {
+  public void wellKnownConfig() {
     String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
@@ -391,13 +392,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test(expected = SolrException.class)
-  public void onlyOneJwkConfig() throws IOException {
+  public void onlyOneJwkConfig() {
     testConfig.put("jwkUrl", "http://127.0.0.1:45678/myJwk");
     plugin.init(testConfig);
   }
 
   @Test(expected = SolrException.class)
-  public void wellKnownConfigNotHttps() throws IOException {
+  public void wellKnownConfigNotHttps() {
     testConfig.put("wellKnownUrl", "http://127.0.0.1:45678/.well-known/config");
     plugin.init(testConfig);
   }
@@ -441,17 +442,21 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("solr-cluster", parsed.get("client_id"));
   }
 
+  /**
+   * Mock plugin that simulates a {@link HttpsJwks} with cached JWK that returns
+   * a different JWK after a call to refresh()
+   */
   private class MockJwksUrlPlugin extends JWTAuthPlugin {
     private final JsonWebKey wrongJwk;
     private final JsonWebKey correctJwk;
 
-    public boolean isRefreshCalled() {
+    boolean isRefreshCalled() {
       return refreshCalled;
     }
 
     private boolean refreshCalled;
 
-    public MockJwksUrlPlugin(JsonWebKey wrongJwk, JsonWebKey correctJwk) {
+    MockJwksUrlPlugin(JsonWebKey wrongJwk, JsonWebKey correctJwk) {
       this.wrongJwk = wrongJwk;
       this.correctJwk = correctJwk;
     }
@@ -463,7 +468,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     }
 
     private class MockHttpsJwks extends HttpsJwks {
-      public MockHttpsJwks(String url) {
+      MockHttpsJwks(String url) {
         super(url);
       }
 

@@ -137,6 +137,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
    */
   public JWTAuthPlugin() {}
 
+  @SuppressWarnings("unchecked")
   @Override
   public void init(Map<String, Object> pluginConfig) {
     List<String> unknownKeys = pluginConfig.keySet().stream().filter(k -> !PROPS.contains(k)).collect(Collectors.toList());
@@ -223,6 +224,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     lastInitTime = Instant.now();
   }
 
+  @SuppressWarnings("unchecked")
   private void initJwk(Map<String, Object> pluginConfig) {
     this.pluginConfig = pluginConfig;
     String confJwkUrl = (String) pluginConfig.get(PARAM_JWK_URL);
@@ -273,6 +275,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
 
+  @SuppressWarnings("unchecked")
   JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
     JsonWebKeySet webKeySet = new JsonWebKeySet();
     if (jwkObj.containsKey("keys")) {
@@ -300,7 +303,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since {}==false", PARAM_BLOCK_UNKNOWN);
         filterChain.doFilter(request, response);
-        numPassThrough.inc();;
+        numPassThrough.inc();
         return true;
       }
       // Retry config
@@ -315,82 +318,73 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
     }
 
-    boolean retry = false;
-    do {
-      JWTAuthenticationResponse authResponse = authenticate(header);
-      switch (authResponse.getAuthCode()) {
-        case AUTHENTICATED:
-          HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
-            @Override
-            public Principal getUserPrincipal() {
-              return authResponse.getPrincipal();
-            }
-          };
-          if (!(authResponse.getPrincipal() instanceof JWTPrincipal)) {
-            numErrors.mark();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
+    JWTAuthenticationResponse authResponse = authenticate(header);
+    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && httpsJkws != null) {
+      log.warn("Signature validation failed. Refreshing JWKs from IdP before trying again: {}",
+          authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
+      httpsJkws.refresh();
+      authResponse = authenticate(header);
+    }
+    String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
+
+    switch (authResponse.getAuthCode()) {
+      case AUTHENTICATED:
+        final Principal principal = authResponse.getPrincipal();
+        HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
+          @Override
+          public Principal getUserPrincipal() {
+            return principal;
           }
-          if (log.isDebugEnabled())
-            log.debug("Authentication SUCCESS");
-          filterChain.doFilter(wrapper, response);
-          numAuthenticated.inc();
-          return true;
-
-        case PASS_THROUGH:
-          if (log.isDebugEnabled())
-            log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
-          filterChain.doFilter(request, response);
-          numPassThrough.inc();
-          return true;
-
-        case AUTZ_HEADER_PROBLEM:
-        case JWT_PARSE_ERROR:
-          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
+        };
+        if (!(principal instanceof JWTPrincipal)) {
           numErrors.mark();
-          return false;
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
+        }
+        if (log.isDebugEnabled())
+          log.debug("Authentication SUCCESS");
+        filterChain.doFilter(wrapper, response);
+        numAuthenticated.inc();
+        return true;
 
-        case CLAIM_MISMATCH:
-        case JWT_EXPIRED:
-        case JWT_VALIDATION_EXCEPTION:
-        case PRINCIPAL_MISSING:
-          if (authResponse.getJwtException() != null) {
-            log.warn("Exception: {}", authResponse.getJwtException().getMessage());
-          }
-          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
-          numWrongCredentials.inc();
-          return false;
+      case PASS_THROUGH:
+        if (log.isDebugEnabled())
+          log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
+        filterChain.doFilter(request, response);
+        numPassThrough.inc();
+        return true;
 
-        case SIGNATURE_INVALID:
-          if (!retry) {
-            if (httpsJkws != null) {
-              if (authResponse.getJwtException() != null) {
-                log.warn("Signature validation failed. Key rotation? Refreshing JWK from IdP before trying again: {}", authResponse.getJwtException().getMessage());
-              }
-              retry = true;
-              httpsJkws.refresh();
-              break;
-            } else {
-              log.warn("Signature validation failed: {}", authResponse.getJwtException().getMessage());
-            }
-          } else {
-            log.warn("Signature validation failed even after refreshing keys from IdP. Failing request: {}", authResponse.getJwtException().getMessage());
-          }
-          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
-          numWrongCredentials.inc();
-          return false;
+      case AUTZ_HEADER_PROBLEM:
+      case JWT_PARSE_ERROR:
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
+        numErrors.mark();
+        return false;
 
-        case SCOPE_MISSING:
-          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
-          numWrongCredentials.inc();
-          return false;
+      case CLAIM_MISMATCH:
+      case JWT_EXPIRED:
+      case JWT_VALIDATION_EXCEPTION:
+      case PRINCIPAL_MISSING:
+        log.warn("Exception: {}", exceptionMessage, authResponse.getJwtException());
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+        numWrongCredentials.inc();
+        return false;
 
-        case NO_AUTZ_HEADER:
-        default:
-          authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
-          numMissingCredentials.inc();
-          return false;
-      }
-    } while (true);
+      case SIGNATURE_INVALID:
+        log.warn("Signature validation failed: {}", exceptionMessage);
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+        numWrongCredentials.inc();
+        return false;
+
+      case SCOPE_MISSING:
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
+        numWrongCredentials.inc();
+        return false;
+
+      case NO_AUTZ_HEADER:
+      default:
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
+        numMissingCredentials.inc();
+        return false;
+    }
   }
 
   /**
@@ -543,7 +537,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     return latestConf;
   }
 
-  private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope};
+  private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope}
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
     List<String> wwwAuthParams = new ArrayList<>();
@@ -675,6 +669,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       return parse(new ByteArrayInputStream(json.getBytes(charset)));
     }
   
+    @SuppressWarnings("unchecked")
     public static WellKnownDiscoveryConfig parse(InputStream configStream) {
       securityConf = (Map<String, Object>) Utils.fromJSON(configStream);
       return new WellKnownDiscoveryConfig(securityConf);
@@ -701,10 +696,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       return (String) securityConf.get("token_endpoint");
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> getScopesSupported() {
       return (List<String>) securityConf.get("scopes_supported");
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> getResponseTypesSupported() {
       return (List<String>) securityConf.get("response_types_supported");
     }
