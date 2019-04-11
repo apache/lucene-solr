@@ -508,6 +508,9 @@ public class LiveIndexWriterConfig {
     return sb.toString();
   }
 
+  /**
+   * Returns the reader attributes passed to all published readers opened on or within the IndexWriter
+   */
   public Map<String, String> getReaderAttributes() {
     return this.readerAttributes;
   }
