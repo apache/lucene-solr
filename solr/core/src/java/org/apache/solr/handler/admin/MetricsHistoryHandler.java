@@ -111,7 +111,8 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
- *
+ * Collects metrics from all nodes in the system on a regular basis in a background thread.
+ * @since 7.4
  */
 public class MetricsHistoryHandler extends RequestHandlerBase implements PermissionNameProvider, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
