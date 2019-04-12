@@ -87,7 +87,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
@@ -100,7 +100,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
         topHits.scoreDocs);
 
     q = LongPoint.newDistanceFeatureQuery("foo", 3, 7, 5);
-    collector = TopScoreDocCollector.create(2, null, 1);
+    collector = TopScoreDocCollector.create(2, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
@@ -152,7 +152,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, Long.MAX_VALUE - 1, 100);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
@@ -165,7 +165,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
         topHits.scoreDocs);
 
     q = LongPoint.newDistanceFeatureQuery("foo", 3, Long.MIN_VALUE + 1, 100);
-    collector = TopScoreDocCollector.create(2, null, 1);
+    collector = TopScoreDocCollector.create(2, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
@@ -216,7 +216,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(3, null, 1);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(3, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
@@ -279,7 +279,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
@@ -292,7 +292,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
         topHits.scoreDocs);
 
     q = LongPoint.newDistanceFeatureQuery("foo", 3, 7, 5);
-    collector = TopScoreDocCollector.create(2, null, 1);
+    collector = TopScoreDocCollector.create(2, null, IndexSearcher.TerminationStrategy.HIT_COUNT);
     searcher.search(q, collector);
     topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);

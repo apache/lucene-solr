@@ -35,6 +35,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -258,7 +259,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
         .add(shouldTerm, Occur.SHOULD)
         .build();
 
-    TopScoreDocCollector coll = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE);
+    TopScoreDocCollector coll = TopScoreDocCollector.create(10, null, TerminationStrategy.NONE);
     searcher.search(query, coll);
     ScoreDoc[] expected = coll.topDocs().scoreDocs;
 
@@ -269,7 +270,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
         .add(new TermQuery(new Term("f", "C")), Occur.FILTER)
         .build();
 
-    coll = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE);
+    coll = TopScoreDocCollector.create(10, null, TerminationStrategy.NONE);
     searcher.search(query, coll);
     ScoreDoc[] expectedFiltered = coll.topDocs().scoreDocs;
 
@@ -281,7 +282,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
           .add(shouldTerm, Occur.SHOULD)
           .build();
 
-      coll = TopScoreDocCollector.create(10, null, 1);
+      coll = TopScoreDocCollector.create(10, null, TerminationStrategy.HIT_COUNT);
       searcher.search(q, coll);
       ScoreDoc[] actual = coll.topDocs().scoreDocs;
       CheckHits.checkEqual(query, expected, actual);
@@ -290,7 +291,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
           .add(mustTerm, Occur.MUST)
           .add(new RandomApproximationQuery(shouldTerm, random()), Occur.SHOULD)
           .build();
-      coll = TopScoreDocCollector.create(10, null, 1);
+      coll = TopScoreDocCollector.create(10, null, TerminationStrategy.HIT_COUNT);
       searcher.search(q, coll);
       actual = coll.topDocs().scoreDocs;
       CheckHits.checkEqual(q, expected, actual);
@@ -299,7 +300,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
           .add(new RandomApproximationQuery(mustTerm, random()), Occur.MUST)
           .add(new RandomApproximationQuery(shouldTerm, random()), Occur.SHOULD)
           .build();
-      coll = TopScoreDocCollector.create(10, null, 1);
+      coll = TopScoreDocCollector.create(10, null, TerminationStrategy.HIT_COUNT);
       searcher.search(q, coll);
       actual = coll.topDocs().scoreDocs;
       CheckHits.checkEqual(q, expected, actual);
@@ -317,7 +318,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
           .add(new RandomApproximationQuery(new TermQuery(new Term("f", "C")), random()), Occur.FILTER)
           .build();
 
-      coll = TopScoreDocCollector.create(10, null, 1);
+      coll = TopScoreDocCollector.create(10, null, TerminationStrategy.HIT_COUNT);
       searcher.search(nestedQ, coll);
       ScoreDoc[] actualFiltered = coll.topDocs().scoreDocs;
       CheckHits.checkEqual(nestedQ, expectedFiltered, actualFiltered);

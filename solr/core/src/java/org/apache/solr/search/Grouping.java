@@ -36,6 +36,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -861,9 +862,9 @@ public class Grouping {
       int groupDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       Collector subCollector;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
-        subCollector = topCollector = TopScoreDocCollector.create(groupDocsToCollect, Integer.MAX_VALUE);
+        subCollector = topCollector = TopScoreDocCollector.create(groupDocsToCollect, TerminationStrategy.NONE);
       } else {
-        topCollector = TopFieldCollector.create(searcher.weightSort(withinGroupSort), groupDocsToCollect, Integer.MAX_VALUE);
+        topCollector = TopFieldCollector.create(searcher.weightSort(withinGroupSort), groupDocsToCollect, TerminationStrategy.NONE);
         if (needScores) {
           maxScoreCollector = new MaxScoreCollector();
           subCollector = MultiCollector.wrap(topCollector, maxScoreCollector);

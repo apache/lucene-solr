@@ -423,7 +423,7 @@ public class TestJoinUtil extends LuceneTestCase {
       }
 
       final BitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
-      final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, Integer.MAX_VALUE);
+      final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, IndexSearcher.TerminationStrategy.NONE);
       indexSearcher.search(joinQuery, MultiCollector.wrap(new BitSetCollector(actualResult), topScoreDocCollector));
       assertBitSet(expectedResult, actualResult, indexSearcher);
       TopDocs expectedTopDocs = createExpectedTopDocs(randomValue, from, scoreMode, context);
@@ -1245,7 +1245,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
         // Need to know all documents that have matches. TopDocs doesn't give me that and then I'd be also testing TopDocsCollector...
         final BitSet actualResult = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
-        final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, Integer.MAX_VALUE);
+        final TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(10, IndexSearcher.TerminationStrategy.NONE);
         indexSearcher.search(joinQuery, MultiCollector.wrap(new BitSetCollector(actualResult), topScoreDocCollector));
         // Asserting bit set...
         assertBitSet(expectedResult, actualResult, indexSearcher);

@@ -94,11 +94,6 @@ public class IndexSearcher {
     final long maxRamBytesUsed = Math.min(1L << 25, Runtime.getRuntime().maxMemory() / 20);
     DEFAULT_QUERY_CACHE = new LRUQueryCache(maxCachedQueries, maxRamBytesUsed);
   }
-  /**
-   * By default we count hits accurately up to 1000. This makes sure that we
-   * don't spend most time on computing hit counts
-   */
-  private static final int TOTAL_HITS_THRESHOLD = 1000;
 
   final IndexReader reader; // package private for testing!
   
@@ -401,7 +396,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, TOTAL_HITS_THRESHOLD);
+        return TopScoreDocCollector.create(cappedNumHits, after, TerminationStrategy.HIT_COUNT);
       }
 
       @Override
@@ -518,7 +513,7 @@ public class IndexSearcher {
     final Sort rewrittenSort = sort.rewrite(this);
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager =
-        TopFieldCollector.createManager(rewrittenSort, cappedNumHits, after, TOTAL_HITS_THRESHOLD, Integer.MAX_VALUE);
+        TopFieldCollector.createManager(rewrittenSort, cappedNumHits, after, TerminationStrategy.HIT_COUNT);
 
     TopFieldDocs topDocs = search(query, manager);
     if (doDocScores) {
@@ -771,4 +766,46 @@ public class IndexSearcher {
     }
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
+
+
+  /**
+   * Denotes the strategy used when terminating searches early. Early termination can provide
+   * performance gains with some (often acceptable) loss of functionality. This enum lists
+   * strategies in increasing order of expected performance gain.
+   */
+  public enum TerminationStrategy {
+
+    /**
+     * Score all competitive matching documents and count all hits without applying early termination.
+     */
+    NONE,
+
+    /**
+     * Limit the number of hits counted to 1000 (or the number of results, if that is greater than
+     * 1000). If the limit is hit, the result count returned will be a lower bound. On the other
+     * hand if the query matches no more than 1000 hits, the resulting hit count will be
+     * accurate. This is the default used when no strategy is specified explicitly.
+     */
+    HIT_COUNT,
+
+    /**
+     * Do not collect additional hits beyond those returned as results. If the query matches more hits 
+     * then are returned, the hit count will be a lower bound.
+     */
+    RESULT_COUNT,
+
+    /**
+     * In addition to early terminating after a total number of results (as with RESULT_COUNT), also
+     * enable prorated early termination <i>per segment</i>, terminating after fewer hits are
+     * collected in smaller segments, saving time in exchange for a small amount of noise in the
+     * ranking. This typically reduces query times for large result sets when executing searches
+     * concurrently (passing an ExecutorService to IndexSearcher). It has no effect (beyond what
+     * RESULT_COUNT does) when searches are executed using a single thread.  Should only be used
+     * with rank fields whose values are expected to be randomly distributed in the index:
+     * specifically, this is not recommended for use with time-based fields.
+     */
+    RESULT_COUNT_PRORATED
+  }  
 }
+
+

@@ -43,6 +43,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -391,7 +392,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     SpanQuery sq2 = new SpanTermQuery(new Term(FIELD, "clckwork"));
     query.add(sq1, BooleanClause.Occur.SHOULD);
     query.add(sq2, BooleanClause.Occur.SHOULD);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, Integer.MAX_VALUE);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, TerminationStrategy.NONE);
     searcher.search(query.build(), collector);
     hits = collector.topDocs().scoreDocs.length;
     for (ScoreDoc scoreDoc : collector.topDocs().scoreDocs){

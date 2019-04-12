@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 
 /**
  * A {@link Collector} implementation that collects the top-scoring hits,
@@ -35,6 +36,12 @@ import org.apache.lucene.index.LeafReaderContext;
  * scores.
  */
 public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
+
+  /**
+   * By default we count hits accurately up to 1000. This makes sure that we
+   * don't spend most time on computing hit counts
+   */
+  private static final int TOTAL_HITS_THRESHOLD = 1000;
 
   abstract static class ScorerLeafCollector implements LeafCollector {
 
@@ -171,8 +178,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits, int totalHitsThreshold) {
-    return create(numHits, null, totalHitsThreshold);
+  public static TopScoreDocCollector create(int numHits, TerminationStrategy terminationStrategy) {
+    return create(numHits, null, terminationStrategy);
   }
 
   /**
@@ -190,21 +197,33 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * <code>numHits</code>, and fill the array with sentinel
    * objects.
    */
-  public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
-
+  static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
-
-    if (totalHitsThreshold < 0) {
-      throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
-    }
-
     if (after == null) {
       return new SimpleTopScoreDocCollector(numHits, totalHitsThreshold);
     } else {
       return new PagingTopScoreDocCollector(numHits, after, totalHitsThreshold);
     }
+  }
+
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after, TerminationStrategy terminationStrategy) {
+    int totalHitsThreshold;
+    switch (terminationStrategy) {
+      case NONE:
+        totalHitsThreshold = Integer.MAX_VALUE;
+        break;
+      case RESULT_COUNT:
+      case RESULT_COUNT_PRORATED:
+        totalHitsThreshold = numHits;
+        break;
+      case HIT_COUNT:
+      default:
+        totalHitsThreshold = TOTAL_HITS_THRESHOLD;
+        break;
+    }
+    return create(numHits, after, totalHitsThreshold);
   }
 
   final int totalHitsThreshold;

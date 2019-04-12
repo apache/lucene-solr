@@ -38,6 +38,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -283,7 +284,7 @@ public class TestSort extends SolrTestCaseJ4 {
         final String nullRep2 = luceneSort2 || sortMissingFirst2 && !reverse2 || sortMissingLast2 && reverse2 ? "" : "zzz";
 
         boolean scoreInOrder = r.nextBoolean();
-        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
+        final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, TerminationStrategy.NONE);
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves

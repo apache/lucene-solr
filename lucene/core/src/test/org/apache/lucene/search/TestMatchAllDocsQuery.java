@@ -26,6 +26,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -115,10 +116,10 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     TopScoreDocCollector c = TopScoreDocCollector.create(10, null, totalHitsThreshold);
 
     is.search(new MatchAllDocsQuery(), c);
-    assertEquals(totalHitsThreshold+1, c.totalHits);
+    assertEquals(totalHitsThreshold + 1, c.totalHits);
     assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
 
-    TopScoreDocCollector c1 = TopScoreDocCollector.create(10, null, numDocs);
+    TopScoreDocCollector c1 = TopScoreDocCollector.create(10, null, TerminationStrategy.NONE);
 
     is.search(new MatchAllDocsQuery(), c1);
     assertEquals(numDocs, c1.totalHits);

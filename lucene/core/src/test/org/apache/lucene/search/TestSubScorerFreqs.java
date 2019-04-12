@@ -33,6 +33,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -135,7 +136,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   @Test
   public void testTermQuery() throws Exception {
     TermQuery q = new TermQuery(new Term("f", "d"));
-    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10, Integer.MAX_VALUE));
+    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10, TerminationStrategy.NONE));
     s.search(q, c);
     final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());
@@ -175,7 +176,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     
     for (final Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
-          10, Integer.MAX_VALUE), occur);
+          10, TerminationStrategy.NONE), occur);
       s.search(query.build(), c);
       final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
@@ -205,7 +206,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   @Test
   public void testPhraseQuery() throws Exception {
     PhraseQuery q = new PhraseQuery("f", "b", "c");
-    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10, Integer.MAX_VALUE));
+    CountingCollector c = new CountingCollector(TopScoreDocCollector.create(10, TerminationStrategy.NONE));
     s.search(q, c);
     final int maxDocs = s.getIndexReader().maxDoc();
     assertEquals(maxDocs, c.docCounts.size());

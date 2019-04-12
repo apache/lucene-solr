@@ -41,6 +41,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -143,8 +144,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         } else {
           after = null;
         }
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
-        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
+        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, TerminationStrategy.NONE);
+        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1, Integer.MAX_VALUE);
 
         final Query query;
         if (random().nextBoolean()) {
@@ -324,8 +325,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         final IndexSearcher searcher = new IndexSearcher(reader, exec);
         for (int j = 0; j < 10 * iters; ++j) {
           final int numHits = TestUtil.nextInt(random(), 1, 50);
-          final int margin = TestUtil.nextInt(random(), 1, 5);
-          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager = TopFieldCollector.createManager(sort, numHits, null, numHits, margin);
+          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager =
+              TopFieldCollector.createManager(sort, numHits, null, TerminationStrategy.RESULT_COUNT_PRORATED);
 
           final Query query = new MatchAllDocsQuery();
           TopDocs expected = searcher.search(query, numHits, sort);
@@ -348,19 +349,11 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         final IndexSearcher searcher = new IndexSearcher(reader, exec);
         for (int j = 0; j < 10 * iters; ++j) {
           final int numHits = TestUtil.nextInt(random(), 5, 50);
-          // We expect to see some ranking errors when the index is skewed and the margin is zero
-          final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager =
-              TopFieldCollector.createManager(sort, numHits, null, numHits, 0);
-
+          // We do not see any ranking errors when prorating is disabled even when the index is skewed
           final Query query = new MatchAllDocsQuery();
           TopDocs expected = searcher.search(query, numHits, sort);
-          TopDocs td1 = searcher.search(query, collectorManager);
-          expectThrows(AssertionError.class, () ->
-                       assertTopDocsEquals(expected.scoreDocs, td1.scoreDocs));
-
-          // Setting the margin to Integer.MAX_VALUE effectively disables prorating
           final CollectorManager<TopFieldCollector, TopFieldDocs> noProratingManager =
-              TopFieldCollector.createManager(sort, numHits, null, numHits, Integer.MAX_VALUE);
+              TopFieldCollector.createManager(sort, numHits, null, TerminationStrategy.HIT_COUNT);
           TopDocs td2 = searcher.search(query, noProratingManager);
           assertTopDocsEquals(expected.scoreDocs, td2.scoreDocs);
         }

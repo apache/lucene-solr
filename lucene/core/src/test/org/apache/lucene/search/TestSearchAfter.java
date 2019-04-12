@@ -34,6 +34,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
@@ -219,13 +220,13 @@ public class TestSearchAfter extends LuceneTestCase {
     final boolean doScores;
     final TopDocsCollector allCollector;
     if (sort == null) {
-      allCollector = TopScoreDocCollector.create(maxDoc, null, Integer.MAX_VALUE);
+      allCollector = TopScoreDocCollector.create(maxDoc, null, TerminationStrategy.NONE);
       doScores = false;
     } else if (sort == Sort.RELEVANCE) {
-      allCollector = TopFieldCollector.create(sort, maxDoc, Integer.MAX_VALUE);
+      allCollector = TopFieldCollector.create(sort, maxDoc, TerminationStrategy.NONE);
       doScores = true;
     } else {
-      allCollector = TopFieldCollector.create(sort, maxDoc, Integer.MAX_VALUE);
+      allCollector = TopFieldCollector.create(sort, maxDoc, TerminationStrategy.NONE);
       doScores = random().nextBoolean();
     }
     searcher.search(query, allCollector);
@@ -250,15 +251,15 @@ public class TestSearchAfter extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
-        pagedCollector = TopScoreDocCollector.create(pageSize, lastBottom, Integer.MAX_VALUE);
+        pagedCollector = TopScoreDocCollector.create(pageSize, lastBottom, TerminationStrategy.NONE);
       } else {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
         if (sort == Sort.RELEVANCE) {
-          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
+          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, TerminationStrategy.NONE);
         } else {
-          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
+          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, TerminationStrategy.NONE);
         }
       }
       searcher.search(query, pagedCollector);

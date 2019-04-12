@@ -26,6 +26,7 @@ import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
@@ -68,11 +69,11 @@ public class ReRankCollector extends TopDocsCollector {
     Sort sort = cmd.getSort();
     if(sort == null) {
       this.sort = null;
-      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), TerminationStrategy.NONE);
     } else {
       this.sort = sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), TerminationStrategy.NONE);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;

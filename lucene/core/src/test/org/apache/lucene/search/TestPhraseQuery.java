@@ -42,6 +42,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
@@ -748,10 +749,10 @@ public class TestPhraseQuery extends LuceneTestCase {
         new PhraseQuery("f", "d", "d")  // repeated term
         )) {
       for (int topN = 1; topN <= 2; ++topN) {
-        TopScoreDocCollector collector1 = TopScoreDocCollector.create(topN, null, Integer.MAX_VALUE);
+        TopScoreDocCollector collector1 = TopScoreDocCollector.create(topN, null, TerminationStrategy.NONE);
         searcher.search(query, collector1);
         ScoreDoc[] hits1 = collector1.topDocs().scoreDocs;
-        TopScoreDocCollector collector2 = TopScoreDocCollector.create(topN, null, 1);
+        TopScoreDocCollector collector2 = TopScoreDocCollector.create(topN, null, TerminationStrategy.HIT_COUNT);
         searcher.search(query, collector2);
         ScoreDoc[] hits2 = collector2.topDocs().scoreDocs;
         assertTrue("" + query, hits1.length > 0);

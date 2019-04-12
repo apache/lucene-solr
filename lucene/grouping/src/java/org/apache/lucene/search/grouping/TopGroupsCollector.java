@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
@@ -116,10 +117,10 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
                    int maxDocsPerGroup, boolean getMaxScores) {
       this.needsScores = getMaxScores || withinGroupSort.needsScores();
       if (withinGroupSort == Sort.RELEVANCE) {
-        supplier = () -> new TopDocsAndMaxScoreCollector(true, TopScoreDocCollector.create(maxDocsPerGroup, Integer.MAX_VALUE), null);
+        supplier = () -> new TopDocsAndMaxScoreCollector(true, TopScoreDocCollector.create(maxDocsPerGroup, TerminationStrategy.NONE), null);
       } else {
         supplier = () -> {
-          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, Integer.MAX_VALUE); // TODO: disable exact counts?
+          TopFieldCollector topDocsCollector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, TerminationStrategy.NONE); // TODO: disable exact counts?
           MaxScoreCollector maxScoreCollector = getMaxScores ? new MaxScoreCollector() : null;
           return new TopDocsAndMaxScoreCollector(false, topDocsCollector, maxScoreCollector);
         };

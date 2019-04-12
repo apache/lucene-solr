@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -158,7 +159,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     long lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
     LegacyNumericRangeQuery<Long> q = LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
     for (byte i=0; i<2; i++) {
-      TopFieldCollector collector = TopFieldCollector.create(Sort.INDEXORDER, noDocs, Integer.MAX_VALUE);
+      TopFieldCollector collector = TopFieldCollector.create(Sort.INDEXORDER, noDocs, TerminationStrategy.NONE);
       String type;
       switch (i) {
         case 0:
@@ -387,25 +388,25 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
       }
       // test inclusive range
       Query tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TopScoreDocCollector collector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      TopScoreDocCollector collector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
       searcher.search(tq, collector);
       TopDocs tTopDocs = collector.topDocs();
       assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits.value );
       // test exclusive range
       tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, false);
-      collector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      collector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals("Returned count of range query must be equal to exclusive range length", Math.max(upper-lower-1, 0), tTopDocs.totalHits.value );
       // test left exclusive range
       tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, true);
-      collector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      collector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits.value );
       // test right exclusive range
       tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, false);
-      collector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      collector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
       searcher.search(tq, collector);
       tTopDocs = collector.topDocs();
       assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits.value );
@@ -439,7 +440,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     
     Query tq= LegacyNumericRangeQuery.newDoubleRange(field, precisionStep,
         NumericUtils.sortableLongToDouble(lower), NumericUtils.sortableLongToDouble(upper), true, true);
-    TopScoreDocCollector collector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
     searcher.search(tq, collector);
     TopDocs tTopDocs = collector.topDocs();
     assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits.value );

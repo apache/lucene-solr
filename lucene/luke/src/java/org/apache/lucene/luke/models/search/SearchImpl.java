@@ -51,6 +51,7 @@ import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -295,8 +296,8 @@ public final class SearchImpl extends LukeModel implements Search {
     if (sort != null) {
       topDocs = searcher.searchAfter(after, query, pageSize, sort);
     } else {
-      int hitsThreshold = exactHitsCount ? Integer.MAX_VALUE : DEFAULT_TOTAL_HITS_THRESHOLD;
-      TopScoreDocCollector collector = TopScoreDocCollector.create(pageSize, after, hitsThreshold);
+      TerminationStrategy terminationStrategy = exactHitsCount ? TerminationStrategy.NONE : TerminationStrategy.HIT_COUNT;
+      TopScoreDocCollector collector = TopScoreDocCollector.create(pageSize, after, terminationStrategy);
       searcher.search(query, collector);
       topDocs = collector.topDocs();
     }

@@ -17,6 +17,7 @@
 package org.apache.solr.search.grouping.distributed.command;
 
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.MaxScoreCollector;
@@ -129,9 +130,9 @@ public class QueryCommand implements Command<QueryCommandResult> {
   public List<Collector> create() throws IOException {
     Collector subCollector;
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
-      subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect, Integer.MAX_VALUE);
+      subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect, TerminationStrategy.NONE);
     } else {
-      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, Integer.MAX_VALUE);
+      topDocsCollector = TopFieldCollector.create(sort, docsToCollect, TerminationStrategy.NONE);
       if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         subCollector = MultiCollector.wrap(topDocsCollector, maxScoreCollector);

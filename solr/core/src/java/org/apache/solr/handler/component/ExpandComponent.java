@@ -42,6 +42,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
@@ -526,7 +527,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, Integer.MAX_VALUE) : TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, TerminationStrategy.NONE) : TopFieldCollector.create(sort, limit, TerminationStrategy.NONE);
         groups.put(group, collector);
       }
 
@@ -610,7 +611,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, Integer.MAX_VALUE) : TopFieldCollector.create(sort, limit, Integer.MAX_VALUE);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, TerminationStrategy.NONE) : TopFieldCollector.create(sort, limit, TerminationStrategy.NONE);
         groups.put(cursor.value, collector);
       }
 

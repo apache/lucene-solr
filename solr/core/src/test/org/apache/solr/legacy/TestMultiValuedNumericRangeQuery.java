@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
@@ -72,8 +73,8 @@ public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
       }
       TermRangeQuery cq=TermRangeQuery.newStringRange("asc", format.format(lower), format.format(upper), true, true);
       LegacyNumericRangeQuery<Integer> tq= LegacyNumericRangeQuery.newIntRange("trie", lower, upper, true, true);
-      TopScoreDocCollector trCollector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
-      TopScoreDocCollector nrCollector = TopScoreDocCollector.create(1, Integer.MAX_VALUE);
+      TopScoreDocCollector trCollector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
+      TopScoreDocCollector nrCollector = TopScoreDocCollector.create(1, TerminationStrategy.NONE);
       searcher.search(cq, trCollector);
       searcher.search(tq, nrCollector);
       TopDocs trTopDocs = trCollector.topDocs();

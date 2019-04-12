@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.util.FutureObjects;
 
@@ -33,12 +34,18 @@ import org.apache.lucene.util.FutureObjects;
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
  * <p>
- * See the {@link #create(org.apache.lucene.search.Sort, int, int)} method
+ * See the {@link #create(Sort, int, TerminationStrategy)} method
  * for instantiating a TopFieldCollector.
  *
  * @lucene.experimental
  */
 public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
+
+  /**
+   * By default we count hits accurately up to 1000. This makes sure that we
+   * don't spend most time on computing hit counts
+   */
+  private static final int TOTAL_HITS_THRESHOLD = 1000;
 
   // TODO: one optimization we could do is to pre-fill
   // the queue with sentinel value that guaranteed to
@@ -381,18 +388,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the sort criteria (SortFields).
    * @param numHits
    *          the number of results to collect.
-   * @param totalHitsThreshold
-   *          the number of docs to count accurately. If the query matches more than
-   *          {@code totalHitsThreshold} hits then its hit count will be a
-   *          lower bound. On the other hand if the query matches less than or exactly
-   *          {@code totalHitsThreshold} hits then the hit count of the result will
-   *          be accurate. {@link Integer#MAX_VALUE} may be used to make the hit
-   *          count accurate, but this will also make query processing slower.
+   * @param terminationStrategy
+   *          the early termination strategy to apply
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    */
-  public static TopFieldCollector create(Sort sort, int numHits, int totalHitsThreshold) {
-    return create(sort, numHits, null, totalHitsThreshold, Integer.MAX_VALUE);
+  public static TopFieldCollector create(Sort sort, int numHits, TerminationStrategy terminationStrategy) {
+    return create(sort, numHits, null, terminationStrategy);
   }
 
   /**
@@ -409,53 +411,24 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the number of results to collect.
    * @param after
    *          only hits after this FieldDoc will be collected
-   * @param totalHitsThreshold
-   *          the number of docs to count accurately. If the query matches more than
-   *          {@code totalHitsThreshold} hits then its hit count will be a
-   *          lower bound. On the other hand if the query matches less than or exactly
-   *          {@code totalHitsThreshold} hits then the hit count of the result will
-   *          be accurate. {@link Integer#MAX_VALUE} may be used to make the hit
-   *          count accurate, but this will also make query processing slower.
+   * @param terminationStrategy
+   *          the early termination strategy to apply
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    */
-  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-      int totalHitsThreshold) {
-    return create(sort, numHits, after, totalHitsThreshold, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Creates a new {@link TopFieldCollector} from the given
-   * arguments.
-   *
-   * <p><b>NOTE</b>: The instances returned by this method
-   * pre-allocate a full array of length
-   * <code>numHits</code>.
-   *
-   * @param sort
-   *          the sort criteria (SortFields).
-   * @param numHits
-   *          the number of results to collect.
-   * @param totalHitsThreshold
-   *          the number of docs to count accurately. If the query matches
-   *          {@code totalHitsThreshold} hits or more then its hit count will be a
-   *          lower bound. On the other hand if the query matches less than
-   *          {@code totalHitsThreshold} hits then the hit count of the result will
-   *          be accurate. {@link Integer#MAX_VALUE} may be used to make the hit
-   *          count accurate, but this will also make query processing slower.
-   * @param perSegmentMargin
-   *          the size of the margin (in standard deviations) to add to the totalHitsThreshold when
-   *          pro-rated per segment. Pro-rating per segment will collect fewer hits in small
-   *          segments, saving time in exchange for a small amount of noise in the ranking. A
-   *          typical value is 3. Only use this option for fields whose distribution is expected to
-   *          be uniformly random with respect to document update order (e.g.: <i>not</i>
-   *          timestamp). To disable prorated early termination, use MAX_INT. This parameter is only
-   *          effective when used with totalHitsThreshold &lt;&lt; MAX_INT.
-   * @return a {@link TopFieldCollector} instance which will sort the results by
-   *         the sort criteria.
-   */
-  public static TopFieldCollector create(Sort sort, int numHits, int totalHitsThreshold, int perSegmentMargin) {
-    return create(sort, numHits, null, totalHitsThreshold, perSegmentMargin);
+  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after, TerminationStrategy terminationStrategy) {
+    switch(terminationStrategy) {
+      case HIT_COUNT:
+        return create(sort, numHits, after, TOTAL_HITS_THRESHOLD, Integer.MAX_VALUE);
+      case RESULT_COUNT:
+        return create(sort, numHits, after, numHits, Integer.MAX_VALUE);
+      case RESULT_COUNT_PRORATED:
+        // by default use 3 "standard deviations" from the expected value as a cutoff for prorated early termination
+        return create(sort, numHits, after, numHits, 3);
+      case NONE:
+      default:
+        return create(sort, numHits, after, Integer.MAX_VALUE, Integer.MAX_VALUE);
+    }
   }
 
   /**
@@ -490,8 +463,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    */
-  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-      int totalHitsThreshold, int perSegmentMargin) {
+  static TopFieldCollector create(Sort sort, int numHits, FieldDoc after, int totalHitsThreshold, int perSegmentMargin) {
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
@@ -530,26 +502,18 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the number of results to collect.
    * @param after
    *          only hits after this FieldDoc will be collected
-   * @param totalHitsThreshold
-   *          the number of docs to count accurately.
-   * @param perSegmentMargin
-   *          the size of the margin (in standard deviations) to add to the totalHitsThreshold when
-   *          pro-rated per segment. Pro-rating per segment will collect fewer hits in small
-   *          segments, saving time in exchange for a small amount of noise in the ranking. A
-   *          typical value is 3. Only use this option for fields whose distribution is expected to
-   *          be uniformly random with respect to document update order (e.g.: <i>not</i>
-   *          timestamp). To disable prorated early termination, use MAX_INT. This parameter is only
-   *          effective when used with totalHitsThreshold &lt;&lt; MAX_INT.
+   * @param terminationStrategy
+   *          the early termination strategy to apply
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    */
   public static CollectorManager<TopFieldCollector, TopFieldDocs> createManager(Sort sort, int numHits,
-      FieldDoc after, int totalHitsThreshold, int perSegmentMargin) {
+      FieldDoc after, TerminationStrategy terminationStrategy) {
     return new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-        return TopFieldCollector.create(sort, numHits, after, totalHitsThreshold, perSegmentMargin);
+        return TopFieldCollector.create(sort, numHits, after, terminationStrategy);
       }
 
       @Override

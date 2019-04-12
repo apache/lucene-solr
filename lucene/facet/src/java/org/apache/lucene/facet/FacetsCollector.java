@@ -231,9 +231,9 @@ public class FacetsCollector extends SimpleCollector implements Collector {
         }
         hitsCollector = TopFieldCollector.create(sort, n,
                                                  (FieldDoc) after,
-                                                 Integer.MAX_VALUE); // TODO: can we disable exact hit counts
+                                                 IndexSearcher.TerminationStrategy.NONE); // TODO: can we disable exact hit counts?
       } else {
-        hitsCollector = TopScoreDocCollector.create(n, after, Integer.MAX_VALUE);
+        hitsCollector = TopScoreDocCollector.create(n, after, IndexSearcher.TerminationStrategy.NONE);
       }
       searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
     

@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -237,10 +238,10 @@ public class TestBoolean2 extends LuceneTestCase {
     // The asserting searcher will sometimes return the bulk scorer and
     // sometimes return a default impl around the scorer so that we can
     // compare BS1 and BS2
-    TopScoreDocCollector collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(topDocsToCheck, TerminationStrategy.NONE);
     searcher.search(query, collector);
     ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
-    collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
+    collector = TopScoreDocCollector.create(topDocsToCheck, TerminationStrategy.NONE);
     searcher.search(query, collector);
     ScoreDoc[] hits2 = collector.topDocs().scoreDocs; 
 
@@ -248,7 +249,7 @@ public class TestBoolean2 extends LuceneTestCase {
 
     // Since we have no deleted docs, we should also be able to verify identical matches &
     // scores against an single segment copy of our index
-    collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
+    collector = TopScoreDocCollector.create(topDocsToCheck, TerminationStrategy.NONE);
     singleSegmentSearcher.search(query, collector);
     hits2 = collector.topDocs().scoreDocs; 
     CheckHits.checkHitsQuery(query, hits1, hits2, expDocNrs);
@@ -258,10 +259,10 @@ public class TestBoolean2 extends LuceneTestCase {
                  bigSearcher.count(query));
 
     // now check 2 diff scorers from the bigSearcher as well
-    collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
+    collector = TopScoreDocCollector.create(topDocsToCheck, TerminationStrategy.NONE);
     bigSearcher.search(query, collector);
     hits1 = collector.topDocs().scoreDocs;
-    collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
+    collector = TopScoreDocCollector.create(topDocsToCheck, TerminationStrategy.NONE);
     bigSearcher.search(query, collector);
     hits2 = collector.topDocs().scoreDocs; 
 
@@ -386,10 +387,10 @@ public class TestBoolean2 extends LuceneTestCase {
         }
 
         // check diff (randomized) scorers (from AssertingSearcher) produce the same results
-        TopFieldCollector collector = TopFieldCollector.create(sort, 1000, 1);
+        TopFieldCollector collector = TopFieldCollector.create(sort, 1000, IndexSearcher.TerminationStrategy.HIT_COUNT);
         searcher.search(q1, collector);
         ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
-        collector = TopFieldCollector.create(sort, 1000, 1);
+        collector = TopFieldCollector.create(sort, 1000, IndexSearcher.TerminationStrategy.HIT_COUNT);
         searcher.search(q1, collector);
         ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
         tot+=hits2.length;
@@ -401,10 +402,10 @@ public class TestBoolean2 extends LuceneTestCase {
         assertEquals(mulFactor*collector.totalHits + NUM_EXTRA_DOCS/2, bigSearcher.count(q3.build()));
 
         // test diff (randomized) scorers produce the same results on bigSearcher as well
-        collector = TopFieldCollector.create(sort, 1000 * mulFactor, 1);
+        collector = TopFieldCollector.create(sort, 1000 * mulFactor, IndexSearcher.TerminationStrategy.HIT_COUNT);
         bigSearcher.search(q1, collector);
         hits1 = collector.topDocs().scoreDocs;
-        collector = TopFieldCollector.create(sort, 1000 * mulFactor, 1);
+        collector = TopFieldCollector.create(sort, 1000 * mulFactor, IndexSearcher.TerminationStrategy.HIT_COUNT);
         bigSearcher.search(q1, collector);
         hits2 = collector.topDocs().scoreDocs;
         CheckHits.checkEqual(q1, hits1, hits2);

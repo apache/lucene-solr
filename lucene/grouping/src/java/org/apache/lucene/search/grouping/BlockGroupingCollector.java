@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorable;
@@ -303,10 +304,10 @@ public class BlockGroupingCollector extends SimpleCollector {
         if (!needsScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: needsScores=false");
         }
-        collector = TopScoreDocCollector.create(maxDocsPerGroup, Integer.MAX_VALUE);
+        collector = TopScoreDocCollector.create(maxDocsPerGroup, TerminationStrategy.NONE);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, Integer.MAX_VALUE); // TODO: disable exact counts?
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, TerminationStrategy.NONE); // TODO: disable exact counts?
       }
 
       float groupMaxScore = needsScores ? Float.NEGATIVE_INFINITY : Float.NaN;

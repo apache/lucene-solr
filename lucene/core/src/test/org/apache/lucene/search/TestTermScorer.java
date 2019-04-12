@@ -36,6 +36,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -233,8 +234,8 @@ public class TestTermScorer extends LuceneTestCase {
     for (int iter = 0; iter < 15; ++iter) {
       Query query = new TermQuery(new Term("foo", Integer.toString(iter)));
 
-      TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE); // COMPLETE
-      TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, 1); // TOP_SCORES
+      TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, TerminationStrategy.NONE); // COMPLETE
+      TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, TerminationStrategy.HIT_COUNT); // TOP_SCORES
       
       searcher.search(query, collector1);
       searcher.search(query, collector2);
@@ -246,8 +247,8 @@ public class TestTermScorer extends LuceneTestCase {
           .add(new TermQuery(new Term("foo", Integer.toString(filterTerm))), Occur.FILTER)
           .build();
 
-      collector1 = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE); // COMPLETE
-      collector2 = TopScoreDocCollector.create(10, null, 1); // TOP_SCORES
+      collector1 = TopScoreDocCollector.create(10, null, TerminationStrategy.NONE); // COMPLETE
+      collector2 = TopScoreDocCollector.create(10, null, TerminationStrategy.HIT_COUNT); // TOP_SCORES
       searcher.search(filteredQuery, collector1);
       searcher.search(filteredQuery, collector2);
       CheckHits.checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
