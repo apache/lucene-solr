@@ -100,6 +100,8 @@ Bug fixes
   check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
   (Mark Miller, Fernandez-Lobbe, Mike Drob)
 
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
