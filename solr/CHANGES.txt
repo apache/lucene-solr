@@ -171,6 +171,8 @@ Improvements
 
 * SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
 
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
+
 Other Changes
 ----------------------
 
