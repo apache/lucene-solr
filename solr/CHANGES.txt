@@ -223,6 +223,8 @@ Other Changes
 
 * SOLR-12809: Document recommended Java/Solr combinations (Erick Erickson, Jan Høydahl et.al.)
 
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
