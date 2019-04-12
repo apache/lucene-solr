@@ -75,6 +75,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -110,7 +111,8 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
- *
+ * Collects metrics from all nodes in the system on a regular basis in a background thread.
+ * @since 7.4
  */
 public class MetricsHistoryHandler extends RequestHandlerBase implements PermissionNameProvider, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -360,6 +362,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   private void collectMetrics() {
     log.debug("-- collectMetrics");
+    // Make sure we are a solr server thread, so we can use PKI auth, SOLR-12860
+    // This is a workaround since we could not instrument the ScheduledThreadPoolExecutor in ExecutorUtils
+    ExecutorUtil.setServerThreadFlag(true);
     try {
       checkSystemCollection();
     } catch (Exception e) {
@@ -369,6 +374,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     // get metrics
     collectLocalReplicaMetrics();
     collectGlobalMetrics();
+    ExecutorUtil.setServerThreadFlag(false);
   }
 
   private void collectLocalReplicaMetrics() {
