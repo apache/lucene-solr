@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.CLIO;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
@@ -50,8 +51,8 @@ import org.xml.sax.SAXException;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 
-public class ZkCLI {
-  
+public class ZkCLI implements CLIO {
+
   private static final String MAKEPATH = "makepath";
   private static final String PUT = "put";
   private static final String PUT_FILE = "putfile";
@@ -84,19 +85,19 @@ public class ZkCLI {
     ZkCLI.stdout = stdout;
   }
 
-  private static PrintStream stdout = System.out;
-  
+  private static PrintStream stdout = CLIO.getOutStream();
+
   /**
    * Allows you to perform a variety of zookeeper related tasks, such as:
-   * 
+   *
    * Bootstrap the current configs for all collections in solr.xml.
-   * 
+   *
    * Upload a named config set from a given directory.
-   * 
+   *
    * Link a named config set explicity to a collection.
-   * 
+   *
    * Clear ZooKeeper info.
-   * 
+   *
    * If you also pass a solrPort, it will be used to start an embedded zk useful
    * for single machine, multi node tests.
    */
@@ -106,7 +107,7 @@ public class ZkCLI {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
-    
+
     options.addOption(OptionBuilder
         .hasArg(true)
         .withDescription(
@@ -121,16 +122,16 @@ public class ZkCLI {
     Option solrHomeOption = new Option("s", SOLRHOME, true,
         "for " + BOOTSTRAP + ", " + RUNZK + ": solrhome location");
     options.addOption(solrHomeOption);
-    
+
     options.addOption("d", CONFDIR, true,
         "for " + UPCONFIG + ": a directory of configuration files");
     options.addOption("n", CONFNAME, true,
         "for " + UPCONFIG + ", " + LINKCONFIG + ": name of the config set");
 
-    
+
     options.addOption("c", COLLECTION, true,
         "for " + LINKCONFIG + ": name of the collection");
-    
+
     options.addOption(EXCLUDE_REGEX_SHORT, EXCLUDE_REGEX, true,
         "for " + UPCONFIG + ": files matching this regular expression won't be uploaded");
 
@@ -140,7 +141,7 @@ public class ZkCLI {
             RUNZK,
             true,
             "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)");
-    
+
     options.addOption("h", HELP, false, "bring up this help page");
     options.addOption(NAME, true, "name of the cluster property to set");
     options.addOption(VALUE_LONG, true, "value of the cluster to set");
@@ -148,7 +149,7 @@ public class ZkCLI {
     try {
       // parse the command line arguments
       CommandLine line = parser.parse(options, args);
-      
+
       if (line.hasOption(HELP) || !line.hasOption(ZKHOST)
           || !line.hasOption(CMD)) {
         // automatically generate the help statement
@@ -171,11 +172,11 @@ public class ZkCLI {
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPDATEACLS + " /solr");
         return;
       }
-      
+
       // start up a tmp zk server first
       String zkServerAddress = line.getOptionValue(ZKHOST);
       String solrHome = line.getOptionValue(SOLRHOME);
-      
+
       String solrPort = null;
       if (line.hasOption(RUNZK)) {
         if (!line.hasOption(SOLRHOME)) {
@@ -184,7 +185,7 @@ public class ZkCLI {
         }
         solrPort = line.getOptionValue(RUNZK);
       }
-      
+
       SolrZkServer zkServer = null;
       if (solrPort != null) {
         zkServer = new SolrZkServer("true", null, solrHome + "/zoo_data",
@@ -197,7 +198,7 @@ public class ZkCLI {
         zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
             () -> {
             });
-        
+
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
             stdout.println("-" + SOLRHOME
@@ -216,7 +217,7 @@ public class ZkCLI {
 
           // No need to close the CoreContainer, as it wasn't started
           // up in the first place...
-          
+
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(UPCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             stdout.println("-" + CONFDIR + " and -" + CONFNAME
@@ -226,7 +227,7 @@ public class ZkCLI {
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
           final String excludeExpr = line.getOptionValue(EXCLUDE_REGEX, EXCLUDE_REGEX_DEFAULT);
-          
+
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
@@ -252,7 +253,7 @@ public class ZkCLI {
           }
           String collection = line.getOptionValue(COLLECTION);
           String confName = line.getOptionValue(CONFNAME);
-          
+
           ZkController.linkConfSet(zkClient, collection, confName);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LIST)) {
           zkClient.printLayoutToStream(stdout);
@@ -368,6 +369,6 @@ public class ZkCLI {
     } catch (ParseException exp) {
       stdout.println("Unexpected exception:" + exp.getMessage());
     }
-    
+
   }
 }

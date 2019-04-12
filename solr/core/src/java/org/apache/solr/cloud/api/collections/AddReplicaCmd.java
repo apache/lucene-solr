@@ -95,8 +95,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throws IOException, InterruptedException {
     log.debug("addReplica() : {}", Utils.toJSONString(message));
 
-    String collectionName = message.getStr(COLLECTION_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
+
+    final String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
 
     DocCollection coll = clusterState.getCollection(collectionName);
     if (coll == null) {

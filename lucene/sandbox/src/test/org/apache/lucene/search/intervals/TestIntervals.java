@@ -118,12 +118,12 @@ public class TestIntervals extends LuceneTestCase {
             if (i >= expected[id].length) {
               fail("Unexpected match in doc " + id + ": " + intervals);
             }
-            assertEquals("Wrong start value in doc " + id, expected[id][i], pos);
+            assertEquals(source + ": wrong start value in doc " + id, expected[id][i], pos);
             assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
             assertEquals("Wrong end value in doc " + id, expected[id][i + 1], intervals.end());
             i += 2;
           }
-          assertEquals("Wrong number of endpoints in doc " + id, expected[id].length, i);
+          assertEquals(source + ": wrong number of endpoints in doc " + id, expected[id].length, i);
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.start());
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.end());
           if (i > 0)
@@ -760,6 +760,24 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 2, 2, 15, 18);
     assertMatch(mi, 10, 10, 63, 66);
     assertMatch(mi, 17, 17, 97, 100);
+  }
+
+  public void testWrappedFilters() throws IOException {
+
+    IntervalsSource source = Intervals.or(
+        Intervals.term("nine"),
+        Intervals.maxgaps(1, Intervals.or(
+            Intervals.ordered(Intervals.term("pease"), Intervals.term("hot")),
+            Intervals.ordered(Intervals.term("pease"), Intervals.term("cold")))));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 0, 2, 3, 5, 11, 11, 28, 28 },
+        { 0, 2, 3, 5 },
+        {},
+        { 0, 2, 3, 5, 11, 11 },
+        {}
+    });
+
   }
 
 }

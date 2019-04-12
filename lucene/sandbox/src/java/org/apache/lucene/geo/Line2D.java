@@ -21,9 +21,10 @@ import java.util.Objects;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * 2D line implementation. It represents the line as a balanced interval tree of edges
- * using an {@link EdgeTree}.
- *
+ * 2D line implementation represented as a balanced interval tree of edges.
+ * <p>
+ * Line {@code Line2D} Construction takes {@code O(n log n)} time for sorting and tree construction.
+ * {@link #relate relate()} are {@code O(n)}, but for most practical lines are much faster than brute force.
  * @lucene.internal
  */
 public final class Line2D implements Component {
@@ -39,9 +40,16 @@ public final class Line2D implements Component {
   }
 
   @Override
+  public boolean contains(double lat, double lon) {
+    if (tree.pointInLine(lat, lon) {
+      return true;
+    }
+    return false;
+  }
+
+  @Override
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
-    if (Rectangle.containsPoint(tree.lat1, tree.lon1, minLat, maxLat, minLon, maxLon) ||
-        tree.crosses(minLat, maxLat, minLon, maxLon)) {
+    if (tree.crossesBox(minLat, maxLat, minLon, maxLon, true)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
@@ -49,19 +57,23 @@ public final class Line2D implements Component {
 
   @Override
   public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) ||
+    if (ax == bx && bx == cx && ay == by && by == cy) {
+      // indexed "triangle" is a point: check if point lies on any line segment
+      if (isPointOnLine(tree, ax, ay)) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+    } else if (ax == cx && ay == cy) {
+      // indexed "triangle" is a line:
+      if (tree.crossesLine(ax, ay, bx, by)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    } else if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true ||
         tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      // indexed "triangle" is a triangle:
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
-  }
-
-  @Override
-  public boolean contains(double lat, double lon) {
-    if (relateTriangle(lon, lat, lon, lat, lon, lat) != Relation.CELL_OUTSIDE_QUERY) {
-      return true;
-    }
-    return false;
   }
 
   @Override
@@ -102,5 +114,4 @@ public final class Line2D implements Component {
     }
     return ComponentTree.create(components);
   }
-
 }

@@ -63,6 +63,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
@@ -1374,9 +1375,35 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           for (Object val : sfield) {
             if (firstVal) firstVal=false;
             else out.append(',');
+            if(val instanceof SolrInputDocument) {
+              json((SolrInputDocument) val, out);
+            }
             out.append(JSONUtil.toJSON(val));
           }
           out.append(']');
+        } else if(sfield.getValue() instanceof SolrInputDocument) {
+          json((SolrInputDocument) sfield.getValue(), out);
+        } else if (sfield.getValue() instanceof Map) {
+          Map<String, Object> valMap = (Map<String, Object>) sfield.getValue();
+          Set<String> childDocsKeys = valMap.entrySet().stream().filter(record -> isChildDoc(record.getValue()))
+              .map(Entry::getKey).collect(Collectors.toSet());
+          if(childDocsKeys.size() > 0) {
+            Map<String, Object> newMap = new HashMap<>();
+            for(Entry<String, Object> entry: valMap.entrySet()) {
+              String keyName = entry.getKey();
+              Object val = entry.getValue();
+              if(childDocsKeys.contains(keyName)) {
+                if(val instanceof Collection) {
+                  val = ((Collection) val).stream().map(e -> toSolrDoc((SolrInputDocument) e)).collect(Collectors.toList());
+                } else {
+                  val = toSolrDoc((SolrInputDocument) val);
+                }
+              }
+              newMap.put(keyName, val);
+            }
+            valMap = newMap;
+          }
+          out.append(JSONUtil.toJSON(valMap));
         } else {
           out.append(JSONUtil.toJSON(sfield.getValue()));
         }
@@ -2918,6 +2945,25 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
+  }
+
+  private static SolrDocument toSolrDoc(SolrInputDocument sid) {
+    SolrDocument doc = new SolrDocument();
+    for(SolrInputField field: sid) {
+      doc.setField(field.getName(), field.getValue());
+    }
+    return doc;
+  }
+
+  private static boolean isChildDoc(Object o) {
+    if(o instanceof Collection) {
+      Collection col = (Collection) o;
+      if(col.size() == 0) {
+        return false;
+      }
+      return col.iterator().next() instanceof SolrInputDocument;
+    }
+    return o instanceof SolrInputDocument;
   }
 
   private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();

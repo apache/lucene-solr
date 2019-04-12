@@ -30,8 +30,11 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.FSTLoadMode;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
@@ -58,6 +61,7 @@ public class Lucene80Codec extends Codec {
   private final SegmentInfoFormat segmentInfosFormat = new Lucene70SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final PostingsFormat defaultFormat;
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -79,7 +83,7 @@ public class Lucene80Codec extends Codec {
    * Instantiates a new codec.
    */
   public Lucene80Codec() {
-    this(Mode.BEST_SPEED);
+    this(Mode.BEST_SPEED, FSTLoadMode.AUTO);
   }
   
   /** 
@@ -88,9 +92,11 @@ public class Lucene80Codec extends Codec {
    * @param mode stored fields compression mode to use for newly 
    *             flushed/merged segments.
    */
-  public Lucene80Codec(Mode mode) {
+  public Lucene80Codec(Mode mode, FSTLoadMode fstLoadMode) {
     super("Lucene80");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
+    this.defaultFormat = new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE,
+        BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, Objects.requireNonNull(fstLoadMode));
   }
   
   @Override
@@ -164,7 +170,6 @@ public class Lucene80Codec extends Codec {
     return docValuesFormat;
   }
 
-  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene80");
 
   private final NormsFormat normsFormat = new Lucene80NormsFormat();

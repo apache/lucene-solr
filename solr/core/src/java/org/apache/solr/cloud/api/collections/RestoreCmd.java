@@ -107,6 +107,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
+    String backupCollectionAlias = properties.getProperty(BackupManager.COLLECTION_ALIAS_PROP);
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 
     // Get the Solr nodes to restore a collection.
@@ -414,6 +415,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results, null);
           }
         }
+      }
+
+      if (backupCollectionAlias != null && !backupCollectionAlias.equals(backupCollection)) {
+        log.debug("Restoring alias {} -> {}", backupCollectionAlias, backupCollection);
+        ocmh.zkStateReader.aliasesManager
+            .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(backupCollectionAlias, backupCollection));
       }
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);

@@ -192,6 +192,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     return Aliases.resolveAliasesGivenAliasMap(getAliases(false), aliasName);
   }
 
+  @Override
+  public String resolveSimpleAlias(String aliasName) throws IllegalArgumentException {
+    return Aliases.resolveSimpleAliasGivenAliasMap(getAliases(false), aliasName);
+  }
+
   private Map<String, List<String>> getAliases(boolean forceFetch) {
     if (this.liveNodes == null) {
       throw new RuntimeException("We don't know of any live_nodes to fetch the"

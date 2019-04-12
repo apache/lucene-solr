@@ -277,6 +277,10 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public Set<String> getPendingDeletions() throws IOException {
+      throw new UnsupportedOperationException();
+    }
   };
 
   /**

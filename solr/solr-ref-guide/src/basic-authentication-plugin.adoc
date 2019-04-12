@@ -197,7 +197,10 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 
 == Using Basic Auth with SolrJ
 
-In SolrJ, the basic authentication credentials need to be set for each request as in this example:
+There are two main ways to use SolrJ with Solr servers protected by basic authentication: either the permissions can be set on each individual request, or the underlying http client can be configured to add credentials to all requests that it sends.
+
+=== Per-Request Basic Auth Credentials
+The simplest way to setup basic authentication in SolrJ is use the `setBasicAuthCredentials` method on each request as in this example:
 
 [source,java]
 ----
@@ -213,6 +216,22 @@ Query example:
 QueryRequest req = new QueryRequest(new SolrQuery("*:*"));
 req.setBasicAuthCredentials(userName, password);
 QueryResponse rsp = req.process(solrClient);
+----
+
+While this is method is simple, it can often be inconvenient to ensure the credentials are provided everywhere they're needed.  It also doesn't work with the many `SolrClient` methods which don't consume `SolrRequest` objects.
+
+=== Global (JVM) Basic Auth Credentials
+Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` to add basic authentication credentials to _all_ requests automatically.
+To enable this feature, users should set the following system property `-Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory`.
+`PreemptiveBasicAuthClientBuilderFactory` allows applications to provide credentials in two different ways:
+
+. The `basicauth` system property can be passed, containing the credentials directly (e.g. `-Dbasicauth=username:password`).  This option is straightforward, but may expose the credentials in the command line, depending on how they're set.
+. The `solr.httpclient.config` system property can be passed, containing a path to a properties file holding the credentials.  Inside this file the username and password can be specified as `httpBasicAuthUser` and `httpBasicAuthPassword`, respectively.
++
+[source,bash]
+----
+httpBasicAuthUser=my_username
+httpBasicAuthPassword=secretPassword
 ----
 
 == Using the Solr Control Script with Basic Auth
