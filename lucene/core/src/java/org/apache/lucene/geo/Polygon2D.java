@@ -102,10 +102,6 @@ public final class Polygon2D implements Component {
       }
     }
     if (ax == bx && bx == cx && ay == by && by == cy) {
-      // indexed "triangle" is a point:
-      if (Rectangle.containsPoint(ay, ax, box.minLat, box.maxLat, box.minLon, box.maxLon) == false) {
-        return Relation.CELL_OUTSIDE_QUERY;
-      }
       // shortcut by checking contains
       return contains(ay, ax) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
     } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
@@ -151,10 +147,8 @@ public final class Polygon2D implements Component {
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) ||
+          tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
