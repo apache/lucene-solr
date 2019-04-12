@@ -233,19 +233,14 @@ public class Rectangle2D {
     }
 
     // shortcut: check if either of the end points fall inside the box
-    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY)
-        || bboxContainsPoint(bx, by, minX, maxX, minY, maxY)) {
+    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(bx, by, minX, maxX, minY, maxY)) {
       return true;
     }
 
     // shortcut: check bboxes of edges are disjoint
     if (boxesAreDisjoint(Math.min(ax, bx), Math.max(ax, bx), Math.min(ay, by), Math.max(ay, by),
         minX, maxX, minY, maxY)) {
-      return false;
-    }
-
-    // shortcut: edge is a point
-    if (ax == bx && ay == by) {
       return false;
     }
 

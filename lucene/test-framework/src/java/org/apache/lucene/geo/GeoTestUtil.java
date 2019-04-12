@@ -695,10 +695,17 @@ public class GeoTestUtil {
     double vertx[] = polyLons;
     double testy = latitude;
     double testx = longitude;
-    for (i = 0, j = nvert-1; i < nvert; j = i++) {
-      if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-         c = !c;
+    for (i = 0, j = 1; j < nvert; ++i, ++j) {
+      if (testy == verty[j] && testy == verty[i] ||
+          ((testy <= verty[j] && testy >= verty[i]) != (testy >= verty[j] && testy <= verty[i]))) {
+        if (GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0) {
+          // return true if point is on boundary
+          return true;
+        } else if ( ((verty[i] > testy) != (verty[j] > testy)) &&
+            (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) ) {
+          c = !c;
+        }
+      }
     }
     return c;
   }
