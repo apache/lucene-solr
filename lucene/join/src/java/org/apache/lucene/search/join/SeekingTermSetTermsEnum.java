@@ -24,8 +24,8 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
-/**A filtered TermsEnum that uses a BytesRefHash as a filter
- *
+/**
+ * A filtered TermsEnum that uses a BytesRefHash as a filter
  * @lucene.internal
  */
 public class SeekingTermSetTermsEnum extends FilteredTermsEnum {
@@ -40,6 +40,9 @@ public class SeekingTermSetTermsEnum extends FilteredTermsEnum {
   private BytesRef seekTerm;
   private int upto = 0;
 
+  /**
+   * Constructor
+   */
   public SeekingTermSetTermsEnum(TermsEnum tenum, BytesRefHash terms, int[] ords) {
     super(tenum);
     this.terms = terms;
