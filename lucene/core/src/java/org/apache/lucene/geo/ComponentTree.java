@@ -66,6 +66,34 @@ public class ComponentTree {
     return false;
   }
 
+  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
+    if (minLat <= maxY && minLon <= maxX) {
+      // if the rectangle fully encloses us, we cross.
+      if (Rectangle.within(component.getBoundingBox(), minLat, maxLat, minLon, maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (Rectangle.disjoint(component.getBoundingBox(), minLat, maxLat, minLon, maxLon) == false) {
+        Relation relation = component.relate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+      if (left != null) {
+        Relation relation = left.relate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+      if (right != null && ((splitX == false && maxLat >= this.component.getBoundingBox().minLat) || (splitX && maxLon >= this.component.getBoundingBox().minLon))) {
+        Relation relation = right.relate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+    }
+    return Relation.CELL_OUTSIDE_QUERY;
+  }
+
   /** Returns relation to the provided triangle */
   public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     // compute bounding box of triangle
@@ -92,34 +120,6 @@ public class ComponentTree {
       }
       if (right != null && ((splitX == false && maxLat >= this.component.getBoundingBox().minLat) || (splitX && maxLon >= this.component.getBoundingBox().minLon))) {
         Relation relation = right.relateTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
-        }
-      }
-    }
-    return Relation.CELL_OUTSIDE_QUERY;
-  }
-
-  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
-    if (minLat <= maxY && minLon <= maxX) {
-      // if the rectangle fully encloses us, we cross.
-      if (Rectangle.within(component.getBoundingBox(), minLat, maxLat, minLon, maxLon)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (Rectangle.disjoint(component.getBoundingBox(), minLat, maxLat, minLon, maxLon) == false) {
-        Relation relation = component.relate(minLat, maxLat, minLon, maxLon);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
-        }
-      }
-      if (left != null) {
-        Relation relation = left.relate(minLat, maxLat, minLon, maxLon);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
-        }
-      }
-      if (right != null && ((splitX == false && maxLat >= this.component.getBoundingBox().minLat) || (splitX && maxLon >= this.component.getBoundingBox().minLon))) {
-        Relation relation = right.relate(minLat, maxLat, minLon, maxLon);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
         }
