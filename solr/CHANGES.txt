@@ -94,6 +94,8 @@ Bug fixes
 
 * SOLR-13252: Fix an NPE when setting a "policy" property for an existing collection (ab)
 
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
