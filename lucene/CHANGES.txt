@@ -96,6 +96,10 @@ Improvements
   children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
   each parent can early terminate top scores's collection. (Jim Ferenczi)
 
+* LUCENE-8671: Introduced reader attributes allows a per IndexReader configuration
+  of codec internals. This enables a per reader configuration if FSTs are on- or off-heap on a
+  per field basis (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
