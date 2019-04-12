@@ -272,6 +272,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
     httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
+    httpsJkws.setRefreshReprieveThreshold(5000);
     verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
 
@@ -363,7 +364,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_EXPIRED:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        log.warn("Exception: {}", exceptionMessage, authResponse.getJwtException());
+        log.warn("Exception: {}", exceptionMessage);
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         numWrongCredentials.inc();
         return false;
