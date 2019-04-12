@@ -72,13 +72,15 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private void moveReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     log.debug("moveReplica() : {}", Utils.toJSONString(message));
     ocmh.checkRequired(message, COLLECTION_PROP, CollectionParams.TARGET_NODE);
-    String collection = message.getStr(COLLECTION_PROP);
+    String extCollection = message.getStr(COLLECTION_PROP);
     String targetNode = message.getStr(CollectionParams.TARGET_NODE);
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean inPlaceMove = message.getBool(IN_PLACE_MOVE, true);
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
 
     String async = message.getStr(ASYNC);
+
+    String collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
 
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {

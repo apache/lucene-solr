@@ -112,6 +112,8 @@ New Features
   hierarchy and indexing the new one with the atomic update merged into it.  Also, [child] Doc Transformer now works
   with RealTimeGet.  (Moshe Bla, David Smiley)
 
+* SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -168,6 +170,16 @@ Bug Fixes
 
 * SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
 
+* SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
+
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
+* SOLR-13339: Prevent recovery, fetching index being kicked off after SolrCores already closed (Cao Manh Dat)
+
+* SOLR-13393: Fixed ZkClientClusterStateProvider to prevent risk of leaking ZkStateReader/threads when
+  processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
+  odd errors/delays when restart/shutting down solr nodes.  (hossman)
+
 Improvements
 ----------------------
 
@@ -181,6 +193,8 @@ Improvements
 * SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
 
 * SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
+
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
 
 Other Changes
 ----------------------

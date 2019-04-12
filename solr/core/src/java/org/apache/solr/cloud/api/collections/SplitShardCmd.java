@@ -107,7 +107,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     boolean withTiming = message.getBool(CommonParams.TIMING, false);
 
-    String collectionName = message.getStr(CoreAdminParams.COLLECTION);
+    String extCollectionName = message.getStr(CoreAdminParams.COLLECTION);
+
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
 
     log.debug("Split shard invoked: {}", message);
     ZkStateReader zkStateReader = ocmh.zkStateReader;

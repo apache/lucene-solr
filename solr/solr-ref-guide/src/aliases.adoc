@@ -48,6 +48,17 @@ With multiple collections in an alias this is always a problem, so if you have a
 However, for analytical use cases where results are sorted on numeric, date or alphanumeric field values rather
   than relevancy calculations this is not a problem.
 
+== Collection admin commands and aliases
+Starting with version 8.1 SolrCloud supports using alias names in collection admin commands where normally a
+collection name is expected. This works only when the following criteria are satisfied:
+
+* an alias must not refer to more than one collection
+* an alias must not refer to a Routed Alias (see below)
+
+If all criteria are satisfied then the command will resolve alias names and operate on the collections the aliases
+refer to, as if it was invoked with the collection names instead. Otherwise the command will not be executed and
+an exception will be thrown.
+
 == Routed Aliases
 
 To address the update limitations associated with standard aliases and provide additional useful features, the concept of

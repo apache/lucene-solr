@@ -1062,11 +1062,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     for (String collectionName : inputCollections) {
       if (getClusterStateProvider().getState(collectionName) == null) {
         // perhaps it's an alias
-        List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collectionName);
-        // one more level of alias indirection...  (dubious that we should support this)
-        for (String aliasedCollection : aliasedCollections) {
-          collectionNames.addAll(getClusterStateProvider().resolveAlias(aliasedCollection));
-        }
+        collectionNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
         collectionNames.add(collectionName); // it's a collection
       }

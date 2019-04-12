@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -43,7 +44,7 @@ public class CreateAliasCmd extends AliasCmd {
   private final OverseerCollectionMessageHandler ocmh;
 
   private static boolean anyRoutingParams(ZkNodeProps message) {
-    return message.keySet().stream().anyMatch(k -> k.startsWith(RoutedAlias.ROUTER_PREFIX));
+    return message.keySet().stream().anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX));
   }
 
   @SuppressWarnings("WeakerAccess")
@@ -56,6 +57,10 @@ public class CreateAliasCmd extends AliasCmd {
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
+    // make sure we have the latest version of existing aliases
+    if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
+      zkStateReader.aliasesManager.update();
+    }
 
     if (!anyRoutingParams(message)) {
       callCreatePlainAlias(message, aliasName, zkStateReader);
