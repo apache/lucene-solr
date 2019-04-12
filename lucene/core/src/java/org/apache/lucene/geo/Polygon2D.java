@@ -28,18 +28,19 @@ import org.apache.lucene.index.PointValues.Relation;
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
  * @lucene.internal
  */
-public final class Polygon2D implements ComponentTree {
+public final class Polygon2D implements Component {
   private final Polygon polygon;
-  private final EdgeTree edge;
+  private final EdgeTree tree;
   private final Rectangle box;
   /** Holes component or null */
   private final ComponentTree holes;
+  /** keeps track if points lies on polygon boundary */
   private final AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
   private Polygon2D(Polygon polygon, ComponentTree holes) {
     this.polygon = polygon;
     this.holes = holes;
-    this.edge = EdgeTree.createTree(polygon.getPolyLats(), polygon.getPolyLons());
+    this.tree = EdgeTree.createTree(polygon.getPolyLats(), polygon.getPolyLons());
     this.box = new Rectangle(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon);
   }
 
@@ -50,16 +51,17 @@ public final class Polygon2D implements ComponentTree {
    */
   @Override
   public boolean contains(double latitude, double longitude) {
-    containsBoundary.set(false);
-    if (edge.contains(latitude, longitude, containsBoundary)) {
-      if (holes != null && holes.contains(latitude, longitude)) {
-        return false;
+    if (Rectangle.containsPoint(latitude, longitude, box.minLat, box.maxLat, box.minLon, box.maxLon)) {
+      containsBoundary.set(false);
+      if (tree.contains(latitude, longitude, containsBoundary)) {
+        if (holes != null && holes.contains(latitude, longitude)) {
+          return false;
+        }
+        return true;
       }
-      return true;
     }
     return false;
   }
-
 
   @Override
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
@@ -75,13 +77,13 @@ public final class Polygon2D implements ComponentTree {
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minLat, maxLat, minLon, maxLon);
     if (numCorners == 4) {
-      if (edge.crossesBox(minLat, maxLat, minLon, maxLon)) {
+      if (tree.crossesBox(minLat, maxLat, minLon, maxLon, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (Rectangle.containsPoint(edge.lat1, edge.lon1, minLat, maxLat, minLon, maxLon) ||
-          edge.crossesBox(minLat, maxLat, minLon, maxLon)) {
+      if (Rectangle.containsPoint(tree.lat1, tree.lon1, minLat, maxLat, minLon, maxLon) ||
+          tree.crossesBox(minLat, maxLat, minLon, maxLon, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -101,12 +103,12 @@ public final class Polygon2D implements ComponentTree {
     }
     if (ax == bx && bx == cx && ay == by && by == cy) {
       // indexed "triangle" is a point:
-      if (Rectangle.containsPoint(ay, ax, minLat, maxLat, minLon, maxLon) == false) {
+      if (Rectangle.containsPoint(ay, ax, box.minLat, box.maxLat, box.minLon, box.maxLon) == false) {
         return Relation.CELL_OUTSIDE_QUERY;
       }
       // shortcut by checking contains
       return contains(ay, ax) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
-    } else if (ax == cx && ay == cy) {
+    } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
       // indexed "triangle" is a line segment: shortcut by calling appropriate method
       return relateIndexedLineSegment(ax, ay, bx, by);
     }
@@ -118,10 +120,10 @@ public final class Polygon2D implements ComponentTree {
   private Relation relateIndexedLineSegment(double a2x, double a2y, double b2x, double b2y) {
     // check endpoints of the line segment
     int numCorners = 0;
-    if (componentContains(a2y, a2x)) {
+    if (contains(a2y, a2x)) {
       ++numCorners;
     }
-    if (componentContains(b2y, b2x)) {
+    if (contains(b2y, b2x)) {
       ++numCorners;
     }
 
@@ -149,7 +151,7 @@ public final class Polygon2D implements ComponentTree {
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
       if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
@@ -160,22 +162,18 @@ public final class Polygon2D implements ComponentTree {
     return Relation.CELL_CROSSES_QUERY;
   }
 
-  @Override
-  public Rectangle getBoundingBox() {
-    return box;
-  }
   private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
     int containsCount = 0;
-    if (componentContains(ay, ax)) {
+    if (contains(ay, ax)) {
       containsCount++;
     }
-    if (componentContains(by, bx)) {
+    if (contains(by, bx)) {
       containsCount++;
     }
     if (containsCount == 1) {
       return containsCount;
     }
-    if (componentContains(cy, cx)) {
+    if (contains(cy, cx)) {
       containsCount++;
     }
     return containsCount;
@@ -184,40 +182,30 @@ public final class Polygon2D implements ComponentTree {
   // returns 0, 4, or something in between
   private int numberOfCorners(double minLat, double maxLat, double minLon, double maxLon) {
     int containsCount = 0;
-    if (componentContains(minLat, minLon)) {
+    if (contains(minLat, minLon)) {
       containsCount++;
     }
-    if (componentContains(minLat, maxLon)) {
+    if (contains(minLat, maxLon)) {
       containsCount++;
     }
     if (containsCount == 1) {
       return containsCount;
     }
-    if (componentContains(maxLat, maxLon)) {
+    if (contains(maxLat, maxLon)) {
       containsCount++;
     }
     if (containsCount == 2) {
       return containsCount;
     }
-    if (componentContains(maxLat, minLon)) {
+    if (contains(maxLat, minLon)) {
       containsCount++;
     }
     return containsCount;
   }
 
-  /** Builds a Polygon2D from multipolygon */
-  public static Polygon2D create(Polygon... polygons) {
-    Polygon2D components[] = new Polygon2D[polygons.length];
-    for (int i = 0; i < components.length; i++) {
-      Polygon gon = polygons[i];
-      Polygon gonHoles[] = gon.getHoles();
-      Polygon2D holes = null;
-      if (gonHoles.length > 0) {
-        holes = create(gonHoles);
-      }
-      components[i] = new Polygon2D(gon, holes);
-    }
-    return (Polygon2D)createTree(components, 0, components.length - 1, false);
+  @Override
+  public Rectangle getBoundingBox() {
+    return box;
   }
 
   @Override

@@ -40,9 +40,11 @@ public final class Line2D implements Component {
   }
 
   @Override
-  public boolean contains(double lat, double lon) {
-    if (tree.pointInLine(lat, lon) {
-      return true;
+  public boolean contains(double latitude, double longitude) {
+    if (Rectangle.containsPoint(latitude, longitude, box.minLat, box.maxLat, box.minLon, box.maxLon)) {
+      if (tree.pointInEdge(latitude, longitude)) {
+        return true;
+      }
     }
     return false;
   }
@@ -59,16 +61,16 @@ public final class Line2D implements Component {
   public Relation relateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     if (ax == bx && bx == cx && ay == by && by == cy) {
       // indexed "triangle" is a point: check if point lies on any line segment
-      if (isPointOnLine(tree, ax, ay)) {
+      if (tree.pointInEdge(ay, ax)) {
         return Relation.CELL_INSIDE_QUERY;
       }
-    } else if (ax == cx && ay == cy) {
+    } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
       // indexed "triangle" is a line:
       if (tree.crossesLine(ax, ay, bx, by)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
-    } else if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true ||
+    } else if (Component.pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true ||
         tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
       // indexed "triangle" is a triangle:
       return Relation.CELL_CROSSES_QUERY;

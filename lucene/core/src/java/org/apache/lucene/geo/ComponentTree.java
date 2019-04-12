@@ -49,20 +49,18 @@ public class ComponentTree {
 
   public boolean contains(double latitude, double longitude) {
     if (latitude <= maxY && longitude <= maxX) {
-      if (Rectangle.disjoint(component.getBoundingBox(), latitude, latitude, longitude, longitude) == false) {
-        if (component.contains(latitude, longitude)) {
-          return true;
-        }
+      if (component.contains(latitude, longitude)) {
+        return true;
       }
-      if (left != null) {
-        if (left.contains(latitude, longitude)) {
-          return true;
-        }
+    }
+    if (left != null) {
+      if (left.contains(latitude, longitude)) {
+        return true;
       }
-      if (right != null && ((splitX == false && latitude >= this.component.getBoundingBox().minLat) || (splitX && longitude >= this.component.getBoundingBox().minLon))) {
-        if (right.contains(latitude, longitude)) {
-          return true;
-        }
+    }
+    if (right != null && ((splitX == false && latitude >= this.component.getBoundingBox().minLat) || (splitX && longitude >= this.component.getBoundingBox().minLon))) {
+      if (right.contains(latitude, longitude)) {
+        return true;
       }
     }
     return false;
