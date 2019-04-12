@@ -3358,6 +3358,24 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testVarianceAndStandardDeviation() throws Exception {
+    String cexpr = "let(echo=true,a=var(array(1,2,3,4,5)),b=stddev(array(2,2,2,2)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number variance = (Number)tuples.get(0).get("a");
+    assertTrue(variance.doubleValue() == 2.5);
+    Number stddev = (Number)tuples.get(0).get("b");
+    assertTrue(stddev.doubleValue() == 0);
+  }
+
+  @Test
   public void testCache() throws Exception {
     String cexpr = "putCache(space1, key1, dotProduct(array(2,4,6,8,10,12),array(1,2,3,4,5,6)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
