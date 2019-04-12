@@ -114,6 +114,8 @@ New Features
 
 * SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
 
+* SOLR-13391: Add variance and standard deviation stream evaluators (Nazerke Seidan, Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
