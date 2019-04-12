@@ -129,18 +129,28 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     }
 
     try (Directory d = new SimpleFSDirectory(tempDir)) {
-      // test ID field
+      // test per field
       Map<String, String> readerAttributes = new HashMap<>();
       readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name());
-      readerAttributes.put(BlockTreeTermsReader.ID_FIELD, "id");
+      readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY + ".field", BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name());
       try (DirectoryReader r = DirectoryReader.open(d, readerAttributes)) {
         assertEquals(1, r.leaves().size());
         FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
         FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
-        assertFalse(id.isFstOffHeap());
-        assertTrue(field.isFstOffHeap());
+        assertTrue(id.isFstOffHeap());
+        assertFalse(field.isFstOffHeap());
       }
     }
+
+    IllegalArgumentException invalid = expectThrows(IllegalArgumentException.class, () -> {
+      try (Directory d = new SimpleFSDirectory(tempDir)) {
+        Map<String, String> readerAttributes = new HashMap<>();
+        readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, "invalid");
+        DirectoryReader.open(d, readerAttributes);
+      }
+    });
+
+    assertEquals("Invalid value for blocktree.terms.fst expected one of: [OFF_HEAP, ON_HEAP, OPTIMIZE_UPDATES_OFF_HEAP, AUTO] but was: invalid", invalid.getMessage());
   }
 
   public void testDisableFSTOffHeap() throws IOException {

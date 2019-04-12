@@ -19,10 +19,12 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -105,9 +107,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Attribute key for fst mode. */
-  public static final String FST_MODE_KEY = "blocktree.terms.fst.mode";
-  /** Attribute key for the ID field. ID fields are forced on-heap if set **/
-  public static final String ID_FIELD = "blocktree.terms.fst.id_field"; // TODO should this only happen in a writer context?
+  public static final String FST_MODE_KEY = "blocktree.terms.fst";
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
   
@@ -190,8 +190,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       seekDir(termsIn);
       seekDir(indexIn);
 
-      FSTLoadMode fstLoadMode = FSTLoadMode.valueOf(state.readerAttributes.getOrDefault(FST_MODE_KEY, defaultLoadMode.toString()));
-      String idField = state.readerAttributes.get(ID_FIELD);
+      final FSTLoadMode fstLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY, defaultLoadMode);
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
@@ -204,7 +203,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         }
         final BytesRef rootCode = readBytesRef(termsIn);
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        final boolean forceOnHeap = fieldInfo.name.equals(idField);
         if (fieldInfo == null) {
           throw new CorruptIndexException("invalid field number: " + field, termsIn);
         }
@@ -227,11 +225,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
         }
+        final FSTLoadMode perFieldLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY + "." + fieldInfo.name, fstLoadMode);
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter,
-                                              forceOnHeap ? FSTLoadMode.ON_HEAP : fstLoadMode));
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, perFieldLoadMode));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
@@ -243,6 +241,20 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         IOUtils.closeWhileHandlingException(this);
       }
     }
+  }
+
+  private static FSTLoadMode getLoadMode(Map<String, String> attributes, String key, FSTLoadMode defaultValue) {
+    String value = attributes.get(key);
+    if (value == null) {
+      return defaultValue;
+    }
+    try {
+      return FSTLoadMode.valueOf(value);
+    } catch (IllegalArgumentException ex) {
+      throw new IllegalArgumentException("Invalid value for " + key + " expected one of: " + Arrays.toString(FSTLoadMode.values()) + " but was: " + value,ex);
+    }
+
+
   }
 
   private static BytesRef readBytesRef(IndexInput in) throws IOException {
