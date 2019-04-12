@@ -251,10 +251,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
     try {
       return FSTLoadMode.valueOf(value);
     } catch (IllegalArgumentException ex) {
-      throw new IllegalArgumentException("Invalid value for " + key + " expected one of: " + Arrays.toString(FSTLoadMode.values()) + " but was: " + value,ex);
+      throw new IllegalArgumentException("Invalid value for " + key + " expected one of: "
+          + Arrays.toString(FSTLoadMode.values()) + " but was: " + value, ex);
     }
-
-
   }
 
   private static BytesRef readBytesRef(IndexInput in) throws IOException {
