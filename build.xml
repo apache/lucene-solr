@@ -25,7 +25,7 @@
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <property name="maven-build-dir" value="maven-build"/>
-  <property name="maven-version" value="2.2.1"/>
+  <property name="maven-version" value="3.5.0"/>
   <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
 
   <property name="smokeTestRelease.dir" location="lucene/build/smokeTestRelease/dist"/>
