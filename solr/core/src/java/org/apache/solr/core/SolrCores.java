@@ -25,8 +25,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
-class SolrCores implements PropertyChangeListener {
+class SolrCores implements SolrCoreCloseListener {
 
   private static Object modifyLock = new Object(); // for locking around manipulating any of the core maps.
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
@@ -536,10 +534,9 @@ class SolrCores implements PropertyChangeListener {
 
   // Let transient cache implementation tell us when it ages out a core
   @Override
-  public void propertyChange(PropertyChangeEvent evt) {
+  public void queueCoreClose(SolrCore core) {
     synchronized (modifyLock) {
       // Erick Erickson debugging TestLazyCores. With this un-commented, we get no testLazyCores failures.
-//      SolrCore core = (SolrCore) arg;
 //      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 //      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
 //      cmd.openSearcher = false;
@@ -549,7 +546,7 @@ class SolrCores implements PropertyChangeListener {
 //      } catch (IOException e) {
 //        log.warn("Caught exception trying to close a transient core, ignoring as it should be benign");
 //      }
-      pendingCloses.add((SolrCore) evt.getOldValue()); // Essentially just queue this core up for closing.
+      pendingCloses.add(core); // Essentially just queue this core up for closing.
       modifyLock.notifyAll(); // Wakes up closer thread too
     }
   }
