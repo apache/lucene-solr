@@ -110,7 +110,7 @@ Improvements
 
 * LUCENE-8750: Implements setMissingValue() on sort fields produced from 
   DoubleValuesSource and LongValuesSource (Mike Sokolov via Alan Woodward)
-
+  
 * LUCENE-8701: ToParentBlockJoinQuery now creates a child scorer that disallows skipping over
   non-competitive documents if the score of a parent depends on the score of multiple
   children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
@@ -118,6 +118,10 @@ Improvements
 
 * LUCENE-8751: Weight#matches now use the ScorerSupplier to build scorers with a lead cost of 1
   (single document). (Jim Ferenczi)
+
+* LUCENE-8752: Japanese new era name '令和' (Reiwa) is added to the dictionary used in
+  JapaneseTokenizer so that the analyzer handles the era name correctly.
+  Reiwa is set to replace the Heisei Era on May 1, 2019. (Tomoko Uchida)
 
 Changes in Runtime Behavior
 
