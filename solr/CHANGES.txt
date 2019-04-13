@@ -88,6 +88,8 @@ New Features
 
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
+* SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
+
 * SOLR-10436: Add hashRollup Streaming Expression (Joel Bernstein)
 
 * SOLR-13276: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider (Cao Manh Dat)
@@ -101,6 +103,18 @@ New Features
 * SOLR-11127: REINDEXCOLLECTION command for re-indexing of existing collections. This issue also adds
   a back-compat check of the .system collection to notify users of potential compatibility issues after
   upgrades or schema changes. (ab)
+
+* SOLR-13374: Add fetchSize parameter to the jdbc Streaming Expression (Joel Bernstein)
+
+* SOLR-12638: Partial/Atomic Updates for nested documents.  This enables atomic updates for nested documents, without
+  the need to supply the whole nested hierarchy (which would be overwritten if absent).  This is done by fetching the
+  whole document hierarchy, updating the specific doc in the path that is to be updated, removing the old document
+  hierarchy and indexing the new one with the atomic update merged into it.  Also, [child] Doc Transformer now works
+  with RealTimeGet.  (Moshe Bla, David Smiley)
+
+* SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
+
+* SOLR-13391: Add variance and standard deviation stream evaluators (Nazerke Seidan, Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -148,9 +162,25 @@ Bug Fixes
 
 * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
 
+* SOLR-13344: Admin UI inaccessible with RuleBasedAuthorizationPlugin (janhoy, Jason Gerlowski)
+
 * SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
 
 * SOLR-13362: Add 'includeIndexFieldFlags' support to SolrJ LukeRequest (Jason Gerlowski)
+
+* SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
+
+* SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
+
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
+* SOLR-13339: Prevent recovery, fetching index being kicked off after SolrCores already closed (Cao Manh Dat)
+
+* SOLR-13393: Fixed ZkClientClusterStateProvider to prevent risk of leaking ZkStateReader/threads when
+  processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
+  odd errors/delays when restart/shutting down solr nodes.  (hossman)
 
 Improvements
 ----------------------
@@ -165,6 +195,8 @@ Improvements
 * SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
 
 * SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
+
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
 
 Other Changes
 ----------------------
@@ -211,6 +243,10 @@ Other Changes
 * SOLR-13353: Add SolrCli AuthTool test (Kevin Risden)
 
 * SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
+
+* SOLR-12809: Document recommended Java/Solr combinations (Erick Erickson, Jan Høydahl et.al.)
+
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
 
 ==================  8.0.0 ==================
 

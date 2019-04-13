@@ -912,7 +912,7 @@ public final class TestUtil {
    * @lucene.internal this may disappear at any time
    */
   public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock) {
-    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock);
+    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock, Lucene50PostingsFormat.FSTLoadMode.AUTO);
   }
   
   /** Returns a random postings format that supports term ordinals */

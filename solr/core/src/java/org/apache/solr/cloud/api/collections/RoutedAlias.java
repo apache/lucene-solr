@@ -29,6 +29,7 @@ import org.apache.solr.update.AddUpdateCommand;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 
 public interface RoutedAlias {
 
@@ -40,7 +41,6 @@ public interface RoutedAlias {
     CATEGORY
   }
 
-  String ROUTER_PREFIX = "router.";
   String ROUTER_TYPE_NAME = ROUTER_PREFIX + "name";
   String ROUTER_FIELD = ROUTER_PREFIX + "field";
   String CREATE_COLLECTION_PREFIX = "create-collection.";

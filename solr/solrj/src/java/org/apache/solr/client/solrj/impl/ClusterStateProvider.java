@@ -45,6 +45,19 @@ public interface ClusterStateProvider extends SolrCloseable {
   List<String> resolveAlias(String alias);
 
   /**
+   * Given a collection alias, return a single collection it points to, or the original name if it's not an
+   * alias.
+   * @throws IllegalArgumentException if an alias points to more than 1 collection, either directly or indirectly.
+   */
+  default String resolveSimpleAlias(String alias) throws IllegalArgumentException {
+    List<String> aliases = resolveAlias(alias);
+    if (aliases.size() > 1) {
+      throw new IllegalArgumentException("Simple alias '" + alias + "' points to more than 1 collection: " + aliases);
+    }
+    return aliases.get(0);
+  }
+
+  /**
    * Obtain the current cluster state.
    */
   ClusterState getClusterState() throws IOException;

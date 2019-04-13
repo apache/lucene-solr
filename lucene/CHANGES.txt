@@ -34,7 +34,27 @@ API Changes
   subclasses override it. FilterDirectory now delegates the call, ensuring
   correct default behaviour for subclasses. (Henning Andersen)
 
+New Features
+
+* LUCENE-2562: The well-known graphical user interface for inspecting Lucene
+  indexes "Luke" was added as a Lucene module. It can be started from the
+  binary distribution by calling the shell scripts in the module folder
+  or from the source checkout by using `ant -f lucene/luke/build.xml run`.
+  Luke provides a Swing-based user interface and can be used to open
+  Lucene or Solr (or Elasticsearch) indexes, inspect documents, check index
+  commits and segments, or test (custom) analyzers. It also has maintenance
+  functions to check index structures and force merge indexes for archival.
+  Luke was originally developed by Andrzej Bialecki, later maintained by
+  Dmitry Kan and finally rewritten by Tomoko Uchida to use the ASF licensing
+  compatible Swing framework (as shipped with JDKs).
+  (Tomoko Uchida, Uwe Schindler)
+
 Bug fixes
+
+* LUCENE-8736: LatLonShapePolygonQuery returns incorrect WITHIN results
+  with shared boundaries. Point in Polygon now correctly includes boundary
+  points. Box and Polygon relations with triangles have also been improved to
+  correctly include boundary points. (Nick Knize)
 
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
   (Ignacio Vera)
@@ -62,6 +82,9 @@ Bug fixes
   Scorer instead of Scorable, leading to ClassCastExceptions (Markus Jelsma,
   Alan Woodward)
 
+* LUCENE-8754: Fix ConcurrentModificationException in SegmentInfo if
+  attributes are accessed in MergePolicy while the merge is running (Simon Willnauer)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
@@ -84,6 +107,17 @@ Improvements
 
 * LUCENE-8732: ConstantScoreQuery can now early terminate the query if the minimum score is
   greater than the constant score and total hits are not requested. (Jim Ferenczi)
+
+* LUCENE-8750: Implements setMissingValue() on sort fields produced from 
+  DoubleValuesSource and LongValuesSource (Mike Sokolov via Alan Woodward)
+  
+* LUCENE-8701: ToParentBlockJoinQuery now creates a child scorer that disallows skipping over
+  non-competitive documents if the score of a parent depends on the score of multiple
+  children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
+  each parent can early terminate top scores's collection. (Jim Ferenczi)
+
+* LUCENE-8751: Weight#matches now use the ScorerSupplier to build scorers with a lead cost of 1
+  (single document). (Jim Ferenczi)
 
 * LUCENE-8752: Japanese new era name '令和' (Reiwa) is added to the dictionary used in
   JapaneseTokenizer so that the analyzer handles the era name correctly.
@@ -109,6 +143,8 @@ Other
 
 * LUCENE-8729: Workaround: Disable accessibility doclints (Java 13+),
   so compilation with recent JDK succeeds.  (Uwe Schindler)
+
+* LUCENE-8725: Make TermsQuery.SeekingTermSetTermsEnum a top level class and public (noble)
 
 ======================= Lucene 8.0.0 =======================
 

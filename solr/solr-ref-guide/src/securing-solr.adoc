@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl
+:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,6 +26,7 @@ When planning how to secure Solr, you should consider which of the available fea
 ** <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Custom authentication or authorization plugin>>
 * <<enabling-ssl.adoc#enabling-ssl,Enabling SSL>>
 * If using SolrCloud, <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>
+* <<audit-logging.adoc#audit-logging,Audit logging>> for recording an audit trail
 
 [WARNING]
 ====

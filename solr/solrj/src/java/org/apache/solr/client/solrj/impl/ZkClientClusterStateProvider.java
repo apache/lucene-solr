@@ -64,21 +64,17 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public ClusterState.CollectionRef getState(String collection) {
-    ClusterState clusterState = zkStateReader.getClusterState();
+    ClusterState clusterState = getZkStateReader().getClusterState();
     if (clusterState != null) {
       return clusterState.getCollectionRef(collection);
     } else {
       return null;
     }
   }
-  public ZkStateReader getZkStateReader(){
-    return zkStateReader;
-  }
-
+  
   @Override
   public Set<String> getLiveNodes() {
-    if (isClosed) throw new AlreadyClosedException();
-    ClusterState clusterState = zkStateReader.getClusterState();
+    ClusterState clusterState = getZkStateReader().getClusterState();
     if (clusterState != null) {
       return clusterState.getLiveNodes();
     } else {
@@ -89,18 +85,23 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public List<String> resolveAlias(String alias) {
-    return zkStateReader.getAliases().resolveAliases(alias); // if not an alias, returns itself
+    return getZkStateReader().getAliases().resolveAliases(alias); // if not an alias, returns itself
+  }
+
+  @Override
+  public String resolveSimpleAlias(String alias) throws IllegalArgumentException {
+    return getZkStateReader().getAliases().resolveSimpleAlias(alias);
   }
 
   @Override
   public Object getClusterProperty(String propertyName) {
-    Map<String, Object> props = zkStateReader.getClusterProperties();
+    Map<String, Object> props = getZkStateReader().getClusterProperties();
     return props.get(propertyName);
   }
 
   @Override
   public <T> T getClusterProperty(String propertyName, T def) {
-    Map<String, Object> props = zkStateReader.getClusterProperties();
+    Map<String, Object> props = getZkStateReader().getClusterProperties();
     if (props.containsKey(propertyName)) {
       return (T)props.get(propertyName);
     }
@@ -109,12 +110,12 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public ClusterState getClusterState() throws IOException {
-    return zkStateReader.getClusterState();
+    return getZkStateReader().getClusterState();
   }
 
   @Override
   public Map<String, Object> getClusterProperties() {
-    return zkStateReader.getClusterProperties();
+    return getZkStateReader().getClusterProperties();
   }
 
   @Override
@@ -130,8 +131,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
    * @throws IOException  if an I/O exception occurs
    */
   public void downloadConfig(String configName, Path downloadPath) throws IOException {
-    connect();
-    zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
+    getZkStateReader().getConfigManager().downloadConfigDir(configName, downloadPath);
   }
 
   /**
@@ -146,21 +146,31 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
    * @throws IOException if an IO error occurs
    */
   public void uploadConfig(Path configPath, String configName) throws IOException {
-    connect();
-    zkStateReader.getConfigManager().uploadConfigDir(configPath, configName);
+    getZkStateReader().getConfigManager().uploadConfigDir(configPath, configName);
   }
 
   @Override
   public void connect() {
+    // Esentially a No-Op, but force a check that we're not closed and the ZkStateReader is available...
+    final ZkStateReader ignored = getZkStateReader();
+  }
+  
+  public ZkStateReader getZkStateReader() {
+    if (isClosed) { // quick check...
+      throw new AlreadyClosedException();
+    }
     if (zkStateReader == null) {
       synchronized (this) {
+        if (isClosed) { // while we were waiting for sync lock another thread may have closed
+          throw new AlreadyClosedException();
+        }
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
             zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
             zk.createClusterStateWatchersAndUpdate();
-            zkStateReader = zk;
             log.info("Cluster at {} ready", zkHost);
+            zkStateReader = zk;
           } catch (InterruptedException e) {
             zk.close();
             Thread.currentThread().interrupt();
@@ -176,16 +186,22 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
         }
       }
     }
+    return zkStateReader;
   }
-
+  
   @Override
   public void close() throws IOException {
-    isClosed  = true;
-    if (zkStateReader != null && closeZkStateReader) {
-      synchronized (this) {
-        if (zkStateReader != null)
-          zkStateReader.close();
+    synchronized (this) {
+      if (false == isClosed && zkStateReader != null) {
+        isClosed = true;
+        
+        // force zkStateReader to null first so that any parallel calls drop into the synch block 
+        // getZkStateReader() as soon as possible.
+        final ZkStateReader zkToClose = zkStateReader;
         zkStateReader = null;
+        if (closeZkStateReader) {
+          zkToClose.close();
+        }
       }
     }
   }
@@ -224,5 +240,10 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   @Override
   public String toString() {
     return zkHost;
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 }
