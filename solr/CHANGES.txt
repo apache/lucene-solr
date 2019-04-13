@@ -120,6 +120,8 @@ New Features
 
 * SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
 
+* SOLR-13391: Add variance and standard deviation stream evaluators (Nazerke Seidan, Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
@@ -178,6 +180,14 @@ Bug Fixes
 
 * SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
 
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
+* SOLR-13339: Prevent recovery, fetching index being kicked off after SolrCores already closed (Cao Manh Dat)
+
+* SOLR-13393: Fixed ZkClientClusterStateProvider to prevent risk of leaking ZkStateReader/threads when
+  processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
+  odd errors/delays when restart/shutting down solr nodes.  (hossman)
+
 Improvements
 ----------------------
 
@@ -191,6 +201,8 @@ Improvements
 * SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
 
 * SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
+
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
 
 Other Changes
 ----------------------
@@ -239,6 +251,8 @@ Other Changes
 * SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
 
 * SOLR-12809: Document recommended Java/Solr combinations (Erick Erickson, Jan Høydahl et.al.)
+
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
 
 ==================  8.0.0 ==================
 

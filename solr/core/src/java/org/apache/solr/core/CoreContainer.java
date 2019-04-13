@@ -114,8 +114,6 @@ import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.ConnectionLossException;
-import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -887,26 +885,7 @@ public class CoreContainer {
     try {
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
-
-        if (isZooKeeperAware()) {
-          cancelCoreRecoveries();
-          try {
-            zkSys.zkController.removeEphemeralLiveNode();
-          } catch (AlreadyClosedException | SessionExpiredException | ConnectionLossException e) {
-
-          } catch (Exception e) {
-            log.warn("Error removing live node. Continuing to close CoreContainer", e);
-          }
-        }
-
-        try {
-          if (zkSys.zkController.getZkClient().getConnectionManager().isConnected()) {
-            log.info("Publish this node as DOWN...");
-            zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
-          }
-        } catch (Exception e) {
-          log.warn("Error publishing nodes as down. Continuing to close CoreContainer", e);
-        }
+        zkSys.zkController.preClose();
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
