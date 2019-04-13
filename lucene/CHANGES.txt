@@ -85,6 +85,10 @@ Improvements
 * LUCENE-8732: ConstantScoreQuery can now early terminate the query if the minimum score is
   greater than the constant score and total hits are not requested. (Jim Ferenczi)
 
+* LUCENE-8752: Japanese new era name '令和' (Reiwa) is added to the dictionary used in
+  JapaneseTokenizer so that the analyzer handles the era name correctly.
+  Reiwa is set to replace the Heisei Era on May 1, 2019. (Tomoko Uchida)
+
 Changes in Runtime Behavior
 
 * LUCENE-8671: Load FST off-heap also for ID-like fields if reader is not opened
