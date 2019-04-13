@@ -74,4 +74,9 @@
   <target name="compile-core"
           depends="jar-codecs,jar-backward-codecs,jar-analyzers-common,jar-misc,jar-queryparser,jar-queries,jar-misc,common.compile-core"/>
 
+  <!-- Luke has no Maven artifacts -->
+  <target name="-dist-maven"/>
+  <target name="-install-to-maven-local-repo"/>
+  <target name="-validate-maven-dependencies"/>
+  <target name="-append-module-dependencies-properties"/>
 </project>
