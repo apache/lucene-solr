@@ -1544,6 +1544,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup"/>
   
   <target name="-clover.load" depends="ivy-availability-check,ivy-configure" if="run.clover" unless="clover.loaded">
+    <fail>TODO: Code coverage with OpenClover does not yet work with Java 11 - see https://issues.apache.org/jira/browse/LUCENE-8763</fail>
     <echo>Code coverage with OpenClover enabled.</echo>
     <ivy:cachepath organisation="org.openclover" module="clover" revision="4.2.1"
       inline="true" conf="master" pathid="clover.classpath"/>
