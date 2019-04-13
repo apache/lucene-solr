@@ -65,7 +65,7 @@
   </target>
 
   <target name="patch-dict" depends="download-dict">
-    <patch patchfile="src/tools/java/org/apache/lucene/analysis/ja/util/Noun.proper.csv.patch"
+    <patch patchfile="src/tools/patches/Noun.proper.csv.patch"
            originalfile="${dict.src.dir}/Noun.proper.csv"/>
   </target>
 
