@@ -182,6 +182,8 @@ Bug Fixes
   processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
   odd errors/delays when restart/shutting down solr nodes.  (hossman)
 
+* SOLR-12371: Fix unintended security edit API caching in standalone mode (janhoy)
+
 Improvements
 ----------------------
 

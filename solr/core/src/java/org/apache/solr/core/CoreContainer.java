@@ -342,7 +342,9 @@ public class CoreContainer {
         throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for authorization plugin");
       }
       if (old != null && old.getZnodeVersion() == readVersion(authorizationConf)) {
-        return;
+        if (readVersion(authorizationConf) > 0) { // No caching if version==0
+          return;
+        }
       }
       log.info("Initializing authorization plugin: " + klas);
       authorizationPlugin = new SecurityPluginHolder<>(readVersion(authorizationConf),
@@ -374,7 +376,9 @@ public class CoreContainer {
         throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for auditlogger plugin");
       }
       if (old != null && old.getZnodeVersion() == readVersion(auditConf)) {
-        return;
+        if (readVersion(auditConf) > 0) {
+          return;
+        }
       }
       log.info("Initializing auditlogger plugin: " + klas);
       newAuditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
