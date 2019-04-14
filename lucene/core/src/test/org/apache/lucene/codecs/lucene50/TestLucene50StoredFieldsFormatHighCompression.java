@@ -75,10 +75,6 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
     });
 
     expectThrows(NullPointerException.class, () -> {
-      new Lucene80Codec(Mode.BEST_COMPRESSION);
-    });
-    
-    expectThrows(NullPointerException.class, () -> {
       new Lucene50StoredFieldsFormat(null);
     });
   }

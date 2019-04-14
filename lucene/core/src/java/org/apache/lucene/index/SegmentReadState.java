@@ -58,6 +58,10 @@ public class SegmentReadState {
    */
   public final boolean openedFromWriter;
 
+  /**
+   * The reader attributes for this reader. This is used to configure low level options on the codec layer.
+   * This attribute map is user supplied at reader creation time.
+   */
   public final Map<String, String> readerAttributes;
 
   /** Create a {@code SegmentReadState}. */
