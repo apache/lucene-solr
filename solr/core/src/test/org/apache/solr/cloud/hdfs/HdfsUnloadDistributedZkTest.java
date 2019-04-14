@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.UnloadDistributedZkTest;
@@ -33,7 +31,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-//Commented  4-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
 public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
   private static MiniDFSCluster dfsCluster;
   
@@ -44,14 +41,15 @@ public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
-
   
   @Override
-  protected String getDataDir(String dataDir) throws IOException {
+  protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
 }

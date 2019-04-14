@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -255,6 +253,9 @@ public class PhraseQuery extends Query {
    */
   public int getSlop() { return slop; }
 
+  /** Returns the field this query applies to */
+  public String getField() { return field; }
+
   /** Returns the list of terms in this phrase. */
   public Term[] getTerms() {
     return terms;
@@ -282,6 +283,15 @@ public class PhraseQuery extends Query {
     } else {
       return super.rewrite(reader);
     }
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    v.consumeTerms(this, terms);
   }
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
@@ -459,11 +469,6 @@ public class PhraseQuery extends Query {
         else {
           return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
         }
-      }
-
-      @Override
-      public void extractTerms(Set<Term> queryTerms) {
-        Collections.addAll(queryTerms, terms);
       }
     };
   }

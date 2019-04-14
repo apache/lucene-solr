@@ -53,7 +53,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Strings;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -298,8 +298,8 @@ public class ZkController implements Closeable {
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     // be forgiving and strip this off leading/trailing slashes
-    // this allows us to support users specifying hostContext="/" in 
-    // solr.xml to indicate the root context, instead of hostContext="" 
+    // this allows us to support users specifying hostContext="/" in
+    // solr.xml to indicate the root context, instead of hostContext=""
     // which means the default of "solr"
     String localHostContext = trimLeadingAndTrailingSlashes(cloudConfig.getSolrHostContext());
 
@@ -350,7 +350,7 @@ public class ZkController implements Closeable {
 
               // seems we dont need to do this again...
               // Overseer.createClientNodes(zkClient, getNodeName());
-              
+
               // start the overseer first as following code may need it's processing
               if (!zkRunOnly) {
                 ElectionContext context = new OverseerElectionContext(zkClient,
@@ -458,7 +458,7 @@ public class ZkController implements Closeable {
     });
 
     init(registerOnReconnect);
-    
+
     this.overseerJobQueue = overseer.getStateUpdateQueue();
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
@@ -482,7 +482,7 @@ public class ZkController implements Closeable {
     if (descriptors != null) {
       // before registering as live, make sure everyone is in a
       // down state
-      publishNodeAsDown(getNodeName()); 
+      publishNodeAsDown(getNodeName());
       for (CoreDescriptor descriptor : descriptors) {
         // if it looks like we are going to be the leader, we don't
         // want to wait for the following stuff
@@ -524,9 +524,9 @@ public class ZkController implements Closeable {
       }
     }
   }
-  
+
   private void closeOutstandingElections(final CurrentCoreDescriptorProvider registerOnReconnect) {
-    
+
     List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
@@ -534,20 +534,20 @@ public class ZkController implements Closeable {
       }
     }
   }
-  
+
   private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
-    
+
     ContextKey contextKey = new ContextKey(collection, coreNodeName);
     ElectionContext prevContext = electionContexts.get(contextKey);
-    
+
     if (prevContext != null) {
       prevContext.close();
       electionContexts.remove(contextKey);
     }
-    
+
     return contextKey;
   }
 
@@ -563,45 +563,59 @@ public class ZkController implements Closeable {
     }
   }
 
+  public void preClose() {
+    this.isClosed = true;
+
+    try {
+      this.removeEphemeralLiveNode();
+    } catch (AlreadyClosedException | SessionExpiredException | KeeperException.ConnectionLossException e) {
+
+    } catch (Exception e) {
+      log.warn("Error removing live node. Continuing to close CoreContainer", e);
+    }
+
+    try {
+      if (getZkClient().getConnectionManager().isConnected()) {
+        log.info("Publish this node as DOWN...");
+        publishNodeAsDown(getNodeName());
+      }
+    } catch (Exception e) {
+      log.warn("Error publishing nodes as down. Continuing to close CoreContainer", e);
+    }
+
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("preCloseThreadPool"));
+
+    try {
+      synchronized (collectionToTerms) {
+        customThreadPool.submit(() -> collectionToTerms.values().parallelStream().forEach(ZkCollectionTerms::close));
+      }
+
+      customThreadPool.submit(() -> replicateFromLeaders.values().parallelStream().forEach(ReplicateFromLeader::stopReplication));
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+    }
+  }
+
   /**
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
-    this.isClosed = true;
+    if (!this.isClosed)
+      preClose();
 
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> Collections.singleton(overseerElector.getContext()).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> Collections.singleton(overseerElector.getContext()).parallelStream().forEach(IOUtils::closeQuietly));
 
-    customThreadPool.submit(() -> Collections.singleton(overseer).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> Collections.singleton(overseer).parallelStream().forEach(IOUtils::closeQuietly));
 
-    synchronized (collectionToTerms) {
-      customThreadPool.submit(() -> collectionToTerms.values().parallelStream().forEach(c -> {
-        c.close();
-      }));
-    }
     try {
-
-      customThreadPool.submit(() -> replicateFromLeaders.values().parallelStream().forEach(c -> {
-        c.stopReplication();
-      }));
-
-      customThreadPool.submit(() -> electionContexts.values().parallelStream().forEach(c -> {
-        IOUtils.closeQuietly(c);
-      }));
+      customThreadPool.submit(() -> electionContexts.values().parallelStream().forEach(IOUtils::closeQuietly));
 
     } finally {
 
-      customThreadPool.submit(() -> Collections.singleton(cloudSolrClient).parallelStream().forEach(c -> {
-        IOUtils.closeQuietly(c);
-      }));
-      customThreadPool.submit(() -> Collections.singleton(cloudManager).parallelStream().forEach(c -> {
-        IOUtils.closeQuietly(c);
-      }));
+      customThreadPool.submit(() -> Collections.singleton(cloudSolrClient).parallelStream().forEach(IOUtils::closeQuietly));
+      customThreadPool.submit(() -> Collections.singleton(cloudManager).parallelStream().forEach(IOUtils::closeQuietly));
 
       try {
         try {
@@ -1002,7 +1016,7 @@ public class ZkController implements Closeable {
   InterruptedException {
     publishAndWaitForDownStates(WAIT_DOWN_STATES_TIMEOUT_SECONDS);
   }
-  
+
   public void publishAndWaitForDownStates(int timeoutSeconds) throws KeeperException,
       InterruptedException {
 
@@ -1104,7 +1118,7 @@ public class ZkController implements Closeable {
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.delete(nodePath, -1));
     ops.add(Op.delete(nodeAddedPath, -1));
- 
+
     try {
       zkClient.multi(ops, true);
     } catch (NoNodeException e) {
@@ -1194,25 +1208,25 @@ public class ZkController implements Closeable {
       } catch (KeeperException | IOException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
-      
+
       // in this case, we want to wait for the leader as long as the leader might
       // wait for a vote, at least - but also long enough that a large cluster has
       // time to get its act together
       String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
-      
+
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       log.debug("We are " + ourUrl + " and leader is " + leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
 
       try (SolrCore core = cc.getCore(desc.getName())) {
-        
+
         // recover from local transaction log and wait for it to complete before
         // going active
         // TODO: should this be moved to another thread? To recoveryStrat?
         // TODO: should this actually be done earlier, before (or as part of)
         // leader election perhaps?
-        
+
         if (core == null) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is no longer available to register");
         }
@@ -1260,7 +1274,7 @@ public class ZkController implements Closeable {
         unregister(coreName, desc, false);
         throw e;
       }
-      
+
       // make sure we have an update cluster state right away
       zkStateReader.forceUpdateCollection(collection);
       // the watcher is added to a set so multiple calls of this method will left only one watcher
@@ -1350,7 +1364,7 @@ public class ZkController implements Closeable {
             .getCoreUrl();
       }
 
-    } catch (AlreadyClosedException e) { 
+    } catch (AlreadyClosedException e) {
       throw e;
     } catch (Exception e) {
       log.error("Error getting leader from zk", e);
@@ -1502,7 +1516,7 @@ public class ZkController implements Closeable {
     }
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
-      
+
       log.debug("publishing state={}", state.toString());
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
       Integer numShards = cd.getCloudDescriptor().getNumShards();
@@ -1510,11 +1524,11 @@ public class ZkController implements Closeable {
         log.debug("numShards not found on descriptor - reading it from system property");
         numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
       }
-      
+
       assert collection != null && collection.length() > 0;
-      
+
       String shardId = cd.getCloudDescriptor().getShardId();
-      
+
       String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
 
       Map<String,Object> props = new HashMap<>();
@@ -1566,7 +1580,7 @@ public class ZkController implements Closeable {
       }
 
       ZkNodeProps m = new ZkNodeProps(props);
-      
+
       if (updateLastState) {
         cd.getCloudDescriptor().setLastPublished(state);
       }
@@ -1636,11 +1650,6 @@ public class ZkController implements Closeable {
         CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, collection);
     overseerJobQueue.offer(Utils.toJSON(m));
-  }
-
-  // convenience for testing
-  void printLayoutToStdOut() throws KeeperException, InterruptedException {
-    zkClient.printLayoutToStdOut();
   }
 
   public ZkStateReader getZkStateReader() {
@@ -1842,7 +1851,7 @@ public class ZkController implements Closeable {
       CoreDescriptor descriptor, final String coreZkNodeName) {
     // try not to wait too long here - if we are waiting too long, we should probably
     // move along and join the election
-    
+
     CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
     String collection = cloudDesc.getCollectionName();
     String shard = cloudDesc.getShardId();
@@ -2044,7 +2053,7 @@ public class ZkController implements Closeable {
    * has been reserved for the operation, meaning that no other thread/operation can claim
    * it. If for whatever reason, the operation is not scheduled, the asuncId needs to be
    * cleared using {@link #clearAsyncId(String)}.
-   * If this method returns false, no reservation has been made, and this asyncId can't 
+   * If this method returns false, no reservation has been made, and this asyncId can't
    * be used, since it's being used by another operation (currently or in the past)
    * @param asyncId A string representing the asyncId of an operation. Can't be null.
    * @return True if the reservation succeeds.
@@ -2059,7 +2068,7 @@ public class ZkController implements Closeable {
       throw new RuntimeException(e);
     }
   }
-  
+
   /**
    * Clears an asyncId previously claimed by calling {@link #claimAsyncId(String)}
    * @param asyncId A string representing the asyncId of an operation. Can't be null.
@@ -2161,7 +2170,7 @@ public class ZkController implements Closeable {
 
   public void rejoinShardLeaderElection(SolrParams params) {
     try {
-      
+
       String collectionName = params.get(COLLECTION_PROP);
       String shardId = params.get(SHARD_ID_PROP);
       String coreNodeName = params.get(CORE_NODE_NAME_PROP);
@@ -2171,24 +2180,24 @@ public class ZkController implements Closeable {
 
       try (SolrCore core = cc.getCore(coreName)) {
         MDCLoggingContext.setCore(core);
-        
+
         log.info("Rejoin the shard leader election.");
-        
+
         ContextKey contextKey = new ContextKey(collectionName, coreNodeName);
-        
+
         ElectionContext prevContext = electionContexts.get(contextKey);
         if (prevContext != null) prevContext.cancelElection();
-        
+
         ZkNodeProps zkProps = new ZkNodeProps(BASE_URL_PROP, baseUrl, CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
-            
+
         LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
         ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
             coreNodeName, zkProps, this, getCoreContainer());
-            
+
         context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
         elect.setup(context);
         electionContexts.put(contextKey, context);
-        
+
         elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
       }
     } catch (Exception e) {
@@ -2393,7 +2402,7 @@ public class ZkController implements Closeable {
         public void preClose(SolrCore core) {
           unregisterConfListener(confDir, listener);
         }
-        
+
         @Override
         public void postClose(SolrCore core) {
         }
@@ -2584,11 +2593,11 @@ public class ZkController implements Closeable {
     }
     return false;
   }
-  
-  
+
+
   /**
    * Best effort to set DOWN state for all replicas on node.
-   * 
+   *
    * @param nodeName to operate on
    */
   public void publishNodeAsDown(String nodeName) {
@@ -2604,7 +2613,7 @@ public class ZkController implements Closeable {
       log.debug("Publish node as down was interrupted.");
     } catch (KeeperException e) {
       log.warn("Could not publish node as down: " + e.getMessage());
-    } 
+    }
   }
 
   /**

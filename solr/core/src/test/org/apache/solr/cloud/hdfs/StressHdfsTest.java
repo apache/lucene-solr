@@ -24,11 +24,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
@@ -42,14 +40,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -58,16 +54,13 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 @Slow
+@Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
-@Nightly
 public class StressHdfsTest extends BasicDistributedZkTest {
-
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;
-  
 
   private boolean testRestartIntoSafeMode;
   
@@ -78,8 +71,11 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
   
   @Override
@@ -93,13 +89,12 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
     testRestartIntoSafeMode = random().nextBoolean();
   }
-  
+
   protected String getSolrXml() {
     return "solr.xml";
   }
 
   @Test
-  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws Exception {
     randomlyEnableAutoSoftCommit();
     
@@ -121,7 +116,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         // enter safe mode and restart a node
         NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
         
-        int rnd = LuceneTestCase.random().nextInt(10000);
+        int rnd = random().nextInt(10000);
         
         timer.schedule(new TimerTask() {
           
@@ -140,10 +135,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     }
   }
 
-  private void createAndDeleteCollection() throws SolrServerException,
-      IOException, Exception, KeeperException, InterruptedException,
-      URISyntaxException {
-    
+  private void createAndDeleteCollection() throws Exception {
     boolean overshard = random().nextBoolean();
     int rep;
     int nShards;
@@ -237,12 +229,11 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     // check that all dirs are gone
     for (String dataDir : dataDirs) {
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-      FileSystem fs = FileSystem.get(new URI(HdfsTestUtil.getURI(dfsCluster)), conf);
-      assertFalse(
-          "Data directory exists after collection removal : " + dataDir,
-          fs.exists(new Path(dataDir)));
-      fs.close();
+      try(FileSystem fs = FileSystem.get(new URI(HdfsTestUtil.getURI(dfsCluster)), conf)) {
+        assertFalse(
+            "Data directory exists after collection removal : " + dataDir,
+            fs.exists(new Path(dataDir)));
+      }
     }
   }
 }

@@ -45,12 +45,12 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
 
     if (suiteFailureMarker.wasSuccessful()) {
-      zkClient().printLayoutToStdOut();
+      zkClient().printLayoutToStream(System.out);
     }
 
   }
@@ -117,6 +117,6 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     assertTrue(!oldIndexDir1.isDirectory());
     assertTrue(!oldIndexDir2.isDirectory());
   }
-  
+
 
 }

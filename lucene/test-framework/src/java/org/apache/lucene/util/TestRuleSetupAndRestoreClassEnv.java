@@ -42,6 +42,7 @@ import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
@@ -189,7 +190,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     } else if ("Compressing".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 6 && !shouldAvoidCodec("Compressing"))) {
       codec = CompressingCodec.randomInstance(random);
     } else if ("Lucene80".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 5 && !shouldAvoidCodec("Lucene80"))) {
-      codec = new Lucene80Codec(RandomPicks.randomFrom(random, Lucene50StoredFieldsFormat.Mode.values()));
+      codec = new Lucene80Codec(RandomPicks.randomFrom(random, Lucene50StoredFieldsFormat.Mode.values()),
+          RandomPicks.randomFrom(random, Lucene50PostingsFormat.FSTLoadMode.values()));
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {

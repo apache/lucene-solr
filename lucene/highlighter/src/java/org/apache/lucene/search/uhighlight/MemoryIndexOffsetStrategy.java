@@ -19,10 +19,8 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.FilteringTokenFilter;
@@ -30,7 +28,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.memory.MemoryIndex;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -47,21 +44,19 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   private final LeafReader memIndexLeafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
-  public MemoryIndexOffsetStrategy(UHComponents components, Analyzer analyzer,
-                                   Function<Query, Collection<Query>> multiTermQueryRewrite) {
+  public MemoryIndexOffsetStrategy(UHComponents components, Analyzer analyzer) {
     super(components, analyzer);
     boolean storePayloads = components.getPhraseHelper().hasPositionSensitivity(); // might be needed
     memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
     memIndexLeafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
     // preFilter for MemoryIndex
-    preMemIndexFilterAutomaton = buildCombinedAutomaton(components, multiTermQueryRewrite);
+    preMemIndexFilterAutomaton = buildCombinedAutomaton(components);
   }
 
   /**
    * Build one {@link CharacterRunAutomaton} matching any term the query might match.
    */
-  private static CharacterRunAutomaton buildCombinedAutomaton(UHComponents components,
-                                                              Function<Query, Collection<Query>> multiTermQueryRewrite) {
+  private static CharacterRunAutomaton buildCombinedAutomaton(UHComponents components) {
     List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
     if (components.getTerms().length > 0) {
       allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(components.getTerms()))));
@@ -69,7 +64,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     Collections.addAll(allAutomata, components.getAutomata());
     for (SpanQuery spanQuery : components.getPhraseHelper().getSpanQueries()) {
       Collections.addAll(allAutomata,
-          MultiTermHighlighting.extractAutomata(spanQuery, components.getFieldMatcher(), true, multiTermQueryRewrite));//true==lookInSpan
+          MultiTermHighlighting.extractAutomata(spanQuery, components.getFieldMatcher(), true));//true==lookInSpan
     }
 
     if (allAutomata.size() == 1) {

@@ -93,10 +93,18 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 // TODO: error handling, small Http2SolrClient features, security, ssl
 /**
+ * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
+ * <ul>
+ *  <li>{@link Http2SolrClient} sends requests in HTTP/2</li>
+ *  <li>{@link Http2SolrClient} can point to multiple urls</li>
+ *  <li>{@link Http2SolrClient} does not expose its internal httpClient like {@link HttpSolrClient#getHttpClient()},
+ * sharing connection pools should be done by {@link Http2SolrClient.Builder#withHttpClient(Http2SolrClient)} </li>
+ * </ul>
  * @lucene.experimental
  */
 public class Http2SolrClient extends SolrClient {
@@ -139,20 +147,12 @@ public class Http2SolrClient extends SolrClient {
     if (builder.idleTimeout != null) idleTimeout = builder.idleTimeout;
     else idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
 
-    if (builder.httpClient == null) {
+    if (builder.http2SolrClient == null) {
       httpClient = createHttpClient(builder);
       closeClient = true;
     } else {
-      httpClient = builder.httpClient;
+      httpClient = builder.http2SolrClient.httpClient;
     }
-    if (!httpClient.isStarted()) {
-      try {
-        httpClient.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
-
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -160,10 +160,12 @@ public class Http2SolrClient extends SolrClient {
     this.listenerFactory.add(factory);
   }
 
+  // internal usage only
   HttpClient getHttpClient() {
     return httpClient;
   }
 
+  // internal usage only
   ProtocolHandlers getProtocolHandlers() {
     return httpClient.getProtocolHandlers();
   }
@@ -213,6 +215,11 @@ public class Http2SolrClient extends SolrClient {
 
     if (builder.idleTimeout != null) httpClient.setIdleTimeout(builder.idleTimeout);
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
+    try {
+      httpClient.start();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     return httpClient;
   }
 
@@ -231,7 +238,6 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.release(this);
-    System.out.println("Done close " + httpClient.getExecutor().toString());
   }
 
   public boolean isV2ApiRequest(final SolrRequest request) {
@@ -446,6 +452,7 @@ public class Http2SolrClient extends SolrClient {
   private Request makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
+    req.header(HttpHeader.ACCEPT_ENCODING, null);
     setListeners(solrRequest, req);
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
@@ -791,7 +798,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    private HttpClient httpClient;
+    private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout;
     private Integer connectionTimeout;
@@ -811,8 +818,11 @@ public class Http2SolrClient extends SolrClient {
       return new Http2SolrClient(baseSolrUrl, this);
     }
 
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
+    /**
+     * Reuse {@code httpClient} connections pool
+     */
+    public Builder withHttpClient(Http2SolrClient httpClient) {
+      this.http2SolrClient = httpClient;
       return this;
     }
 
@@ -844,52 +854,6 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-  }
-
-  /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have been returned by
-   * the remote server or a proxy along the way.
-   */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code       Arbitrary HTTP status code
-     * @param msg        Exception Message
-     * @param th         Throwable to wrap with this Exception
-     */
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
-    }
-  }
-
-  /**
-   * This should be thrown when a server has an error in executing the request and it sends a proper payload back to the
-   * client
-   */
-  public static class RemoteExecutionException extends RemoteSolrException {
-    private NamedList meta;
-
-    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, null);
-      this.meta = meta;
-    }
-
-    public static RemoteExecutionException create(String host, NamedList errResponse) {
-      Object errObj = errResponse.get("error");
-      if (errObj != null) {
-        Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
-        String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
-        return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg, errResponse);
-
-      } else {
-        throw new RuntimeException("No error");
-      }
-    }
-
-    public NamedList getMetaData() {
-      return meta;
-    }
   }
 
   public Set<String> getQueryParams() {

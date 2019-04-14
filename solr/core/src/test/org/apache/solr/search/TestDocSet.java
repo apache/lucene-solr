@@ -42,13 +42,13 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.apache.solr.SolrTestCase;
 
 /**
  *
  */
-public class TestDocSet extends LuceneTestCase {
+public class TestDocSet extends SolrTestCase {
   Random rand;
   float loadfactor;
 

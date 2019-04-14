@@ -80,7 +80,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testBasic() throws Exception {
     long startTime = 1000000000;
     RrdDb db = new RrdDb(createDef(startTime), factory);

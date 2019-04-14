@@ -168,22 +168,13 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-    try {
-      schema = new ManagedIndexSchema(config, loadedResource, inputSource, isMutable, 
-                                      managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
-    } catch (KeeperException e) {
-      final String msg = "Error instantiating ManagedIndexSchema";
-      log.error(msg, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.warn("", e);
-    }
-
+    schema = new ManagedIndexSchema(config, loadedResource, inputSource, isMutable,
+                                    managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
-      upgradeToManagedSchema();
+      synchronized (schema.getSchemaUpdateLock()) {
+        upgradeToManagedSchema();
+      }
     }
 
     return schema;
@@ -346,7 +337,13 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           zkCmdExecutor.ensureExists(upgradedSchemaPath, zkController.getZkClient());
           zkController.getZkClient().setData(upgradedSchemaPath, bytes, true);
           // Then delete the non-managed schema znode
-          zkController.getZkClient().delete(nonManagedSchemaPath, -1, true);
+          if (zkController.getZkClient().exists(nonManagedSchemaPath, true)) {
+            try {
+              zkController.getZkClient().delete(nonManagedSchemaPath, -1, true);
+            } catch (KeeperException.NoNodeException ex) {
+              // ignore - someone beat us to it
+            }
+          }
 
           // Set the resource name to the managed schema so that the CoreAdminHandler returns a findable filename 
           schema.setResourceName(managedSchemaResourceName);

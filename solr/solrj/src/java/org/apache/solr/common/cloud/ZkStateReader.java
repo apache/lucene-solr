@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,9 +46,11 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -73,7 +74,7 @@ import static java.util.Collections.emptySortedSet;
 import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
-public class ZkStateReader implements Closeable {
+public class ZkStateReader implements SolrCloseable {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -123,6 +124,7 @@ public class ZkStateReader implements Closeable {
   public static final String PULL_REPLICAS = "pullReplicas";
   public static final String NRT_REPLICAS = "nrtReplicas";
   public static final String TLOG_REPLICAS = "tlogReplicas";
+  public static final String READ_ONLY = "readOnly";
 
   public static final String ROLES = "/roles.json";
 
@@ -239,7 +241,8 @@ public class ZkStateReader implements Closeable {
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
       CoreAdminParams.BACKUP_LOCATION,
-      MAX_CORES_PER_NODE)));
+      MAX_CORES_PER_NODE,
+      CollectionAdminParams.DEFAULTS)));
 
   /**
    * Returns config set name for collection.
@@ -847,6 +850,11 @@ public class ZkStateReader implements Closeable {
       zkClient.close();
     }
     assert ObjectReleaseTracker.release(this);
+  }
+
+  @Override
+  public boolean isClosed() {
+    return closed;
   }
   
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {

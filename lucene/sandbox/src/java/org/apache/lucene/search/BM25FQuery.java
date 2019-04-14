@@ -214,9 +214,22 @@ public final class BM25FQuery extends Query {
     }
     // single field and multiple terms
     if (fieldAndWeights.size() == 1) {
-      return new SynonymQuery(fieldTerms);
+      SynonymQuery.Builder builder = new SynonymQuery.Builder(fieldTerms[0].field());
+      for (Term term : fieldTerms) {
+        builder.addTerm(term);
+      }
+      return builder.build();
     }
     return this;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    Term[] selectedTerms = Arrays.stream(fieldTerms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    if (selectedTerms.length > 0) {
+      QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      v.consumeTerms(this, selectedTerms);
+    }
   }
 
   private BooleanQuery rewriteToBoolean() {
@@ -284,11 +297,6 @@ public final class BM25FQuery extends Query {
       }
 
       return new CollectionStatistics("pseudo_field", maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> termSet) {
-      termSet.addAll(Arrays.asList(fieldTerms));
     }
 
     @Override

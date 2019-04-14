@@ -35,7 +35,7 @@
     <dependency org="org.apache.commons" name="commons-exec" rev="${/org.apache.commons/commons-exec}" conf="compile"/>
     <dependency org="commons-fileupload" name="commons-fileupload" rev="${/commons-fileupload/commons-fileupload}" conf="compile"/>
     <dependency org="commons-cli" name="commons-cli" rev="${/commons-cli/commons-cli}" conf="compile"/>
-    <dependency org="commons-lang" name="commons-lang" rev="${/commons-lang/commons-lang}" conf="compile"/>
+    <dependency org="org.apache.commons" name="commons-text" rev="${/org.apache.commons/commons-text}" conf="compile"/>
     <dependency org="com.google.guava" name="guava" rev="${/com.google.guava/guava}" conf="compile"/>
     <dependency org="org.locationtech.spatial4j" name="spatial4j" rev="${/org.locationtech.spatial4j/spatial4j}" conf="compile"/>
     <dependency org="org.antlr" name="antlr4-runtime" rev="${/org.antlr/antlr4-runtime}"/>
@@ -44,7 +44,6 @@
     <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile"/>
     <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile"/>
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
-    <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" conf="compile"/>
     <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="compile"/>
@@ -132,6 +131,7 @@
     <dependency org="org.codehaus.janino" name="janino" rev="${/org.codehaus.janino/janino}" conf="compile"/>
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
+    <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
 

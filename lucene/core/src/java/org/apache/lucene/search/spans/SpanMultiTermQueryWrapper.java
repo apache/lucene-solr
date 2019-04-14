@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.TopTermsRewrite;
@@ -121,7 +122,14 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   public Query rewrite(IndexReader reader) throws IOException {
     return rewriteMethod.rewrite(reader, query);
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(query.getField())) {
+      query.visit(visitor.getSubVisitor(Occur.MUST, this));
+    }
+  }
+
   @Override
   public int hashCode() {
     return classHash() * 31 + query.hashCode();

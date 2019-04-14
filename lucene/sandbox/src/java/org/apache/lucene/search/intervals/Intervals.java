@@ -18,6 +18,8 @@
 package org.apache.lucene.search.intervals;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
@@ -31,6 +33,15 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * These sources implement minimum-interval algorithms taken from the paper
  * <a href="http://vigna.di.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics.pdf">
  * Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics</a>
+ *
+ * By default, sources that are sensitive to internal gaps (e.g. PHRASE and MAXGAPS) will
+ * rewrite their sub-sources so that disjunctions of different lengths are pulled up
+ * to the top of the interval tree.  For example, PHRASE(or(PHRASE("a", "b", "c"), "b"), "c")
+ * will automatically rewrite itself to OR(PHRASE("a", "b", "c", "c"), PHRASE("b", "c"))
+ * to ensure that documents containing "b c" are matched.  This can lead to less efficient
+ * queries, as more terms need to be loaded (for example, the "c" iterator above is loaded
+ * twice), so if you care more about speed than about accuracy you can use the
+ * {@link #or(boolean, IntervalsSource...)} factory method to prevent rewriting.
  */
 public final class Intervals {
 
@@ -51,9 +62,28 @@ public final class Intervals {
   }
 
   /**
+   * Return an {@link IntervalsSource} exposing intervals for a term, filtered by the value
+   * of the term's payload at each position
+   */
+  public static IntervalsSource term(String term, Predicate<BytesRef> payloadFilter) {
+    return term(new BytesRef(term), payloadFilter);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a term, filtered by the value
+   * of the term's payload at each position
+   */
+  public static IntervalsSource term(BytesRef term, Predicate<BytesRef> payloadFilter) {
+    return new PayloadFilteredTermIntervalsSource(term, payloadFilter);
+  }
+
+  /**
    * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of terms
    */
   public static IntervalsSource phrase(String... terms) {
+    if (terms.length == 1) {
+      return Intervals.term(terms[0]);
+    }
     IntervalsSource[] sources = new IntervalsSource[terms.length];
     int i = 0;
     for (String term : terms) {
@@ -67,16 +97,54 @@ public final class Intervals {
    * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of IntervalsSources
    */
   public static IntervalsSource phrase(IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.BLOCK);
+    return BlockIntervalsSource.build(Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * Automatically rewrites if wrapped by an interval source that is sensitive to
+   * internal gaps
+   */
+  public static IntervalsSource or(IntervalsSource... subSources) {
+    return or(true, Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * @param rewrite      if {@code false}, do not rewrite intervals that are sensitive to
+   *                     internal gaps; this may run more efficiently, but can miss valid
+   *                     hits due to minimization
+   * @param subSources   the sources to combine
+   */
+  public static IntervalsSource or(boolean rewrite, IntervalsSource... subSources) {
+    return or(rewrite, Arrays.asList(subSources));
   }
 
   /**
    * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
    */
-  public static IntervalsSource or(IntervalsSource... subSources) {
-    if (subSources.length == 1)
-      return subSources[0];
-    return new DisjunctionIntervalsSource(Arrays.asList(subSources));
+  public static IntervalsSource or(List<IntervalsSource> subSources) {
+    return or(true, subSources);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * @param rewrite      if {@code false}, do not rewrite intervals that are sensitive to
+   *                     internal gaps; this may run more efficiently, but can miss valid
+   *                     hits due to minimization
+   * @param subSources   the sources to combine
+   */
+  public static IntervalsSource or(boolean rewrite, List<IntervalsSource> subSources) {
+    if (subSources.size() == 1) {
+      return subSources.get(0);
+    }
+    if (rewrite) {
+      return new DisjunctionIntervalsSource(subSources);
+    }
+    return new NoRewriteDisjunctionIntervalsSource(subSources);
   }
 
   /**
@@ -107,12 +175,7 @@ public final class Intervals {
    * @param subSource   the sub-source to filter
    */
   public static IntervalsSource maxwidth(int width, IntervalsSource subSource) {
-    return new FilteredIntervalsSource("MAXWIDTH/" + width, subSource) {
-      @Override
-      protected boolean accept(IntervalIterator it) {
-        return (it.end() - it.start()) + 1 <= width;
-      }
-    };
+    return FilteredIntervalsSource.maxWidth(subSource, width);
   }
 
   /**
@@ -121,12 +184,7 @@ public final class Intervals {
    * @param subSource   the sub-source to filter
    */
   public static IntervalsSource maxgaps(int gaps, IntervalsSource subSource) {
-    return new FilteredIntervalsSource("MAXGAPS/" + gaps, subSource) {
-      @Override
-      protected boolean accept(IntervalIterator it) {
-        return it.gaps() <= gaps;
-      }
-    };
+    return FilteredIntervalsSource.maxGaps(subSource, gaps);
   }
 
   /**
@@ -158,7 +216,7 @@ public final class Intervals {
    * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
   public static IntervalsSource ordered(IntervalsSource... subSources) {
-    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
+    return OrderedIntervalsSource.build(Arrays.asList(subSources));
   }
 
   /**
@@ -181,8 +239,7 @@ public final class Intervals {
    * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
    */
   public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
-    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources),
-        allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
+    return UnorderedIntervalsSource.build(Arrays.asList(subSources), allowOverlaps);
   }
 
   /**
@@ -205,7 +262,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource nonOverlapping(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NON_OVERLAPPING);
+    return new NonOverlappingIntervalsSource(minuend, subtrahend);
   }
 
   /**
@@ -214,7 +271,7 @@ public final class Intervals {
    * @param reference   the source to filter by
    */
   public static IntervalsSource overlapping(IntervalsSource source, IntervalsSource reference) {
-    return new FilteringConjunctionIntervalsSource(source, reference, IntervalFunction.OVERLAPPING);
+    return new OverlappingIntervalsSource(source, reference);
   }
 
   /**
@@ -229,8 +286,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notWithin(IntervalsSource minuend, int positions, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions),
-        DifferenceIntervalFunction.NON_OVERLAPPING);
+    return new NonOverlappingIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions));
   }
 
   /**
@@ -254,7 +310,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notContaining(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NOT_CONTAINING);
+    return NotContainingIntervalsSource.build(minuend, subtrahend);
   }
 
   /**
@@ -267,7 +323,7 @@ public final class Intervals {
    * @param small   the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containing(IntervalsSource big, IntervalsSource small) {
-    return new FilteringConjunctionIntervalsSource(big, small, IntervalFunction.CONTAINING);
+    return ContainingIntervalsSource.build(big, small);
   }
 
   /**
@@ -280,7 +336,7 @@ public final class Intervals {
    * @param big     the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notContainedBy(IntervalsSource small, IntervalsSource big) {
-    return new DifferenceIntervalsSource(small, big, DifferenceIntervalFunction.NOT_CONTAINED_BY);
+    return NotContainedByIntervalsSource.build(small, big);
   }
 
   /**
@@ -292,7 +348,7 @@ public final class Intervals {
    * @param big       the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containedBy(IntervalsSource small, IntervalsSource big) {
-    return new FilteringConjunctionIntervalsSource(small, big, IntervalFunction.CONTAINED_BY);
+    return ContainedByIntervalsSource.build(small, big);
   }
 
   /**
@@ -306,18 +362,16 @@ public final class Intervals {
    * Returns intervals from the source that appear before intervals from the reference
    */
   public static IntervalsSource before(IntervalsSource source, IntervalsSource reference) {
-    return new FilteringConjunctionIntervalsSource(source,
-        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0),
-        IntervalFunction.CONTAINED_BY);
+    return ContainedByIntervalsSource.build(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0));
   }
 
   /**
    * Returns intervals from the source that appear after intervals from the reference
    */
   public static IntervalsSource after(IntervalsSource source, IntervalsSource reference) {
-    return new FilteringConjunctionIntervalsSource(source,
-        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE),
-        IntervalFunction.CONTAINED_BY);
+    return ContainedByIntervalsSource.build(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE));
   }
 
 }

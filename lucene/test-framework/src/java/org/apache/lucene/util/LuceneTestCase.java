@@ -1669,7 +1669,7 @@ public abstract class LuceneTestCase extends Assert {
     Random random = random();
       
     for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-      switch(random.nextInt(4)) {
+      switch(random.nextInt(5)) {
       case 0:
         // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
         if (VERBOSE) {
@@ -1720,6 +1720,25 @@ public abstract class LuceneTestCase extends Assert {
           r = new MismatchedLeafReader((LeafReader)r, random);
         } else if (r instanceof DirectoryReader) {
           r = new MismatchedDirectoryReader((DirectoryReader)r, random);
+        }
+        break;
+      case 4:
+        if (VERBOSE) {
+          System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with MergingCodecReader");
+        }
+        if (r instanceof CodecReader) {
+          r = new MergingCodecReader((CodecReader) r);
+        } else if (r instanceof DirectoryReader) {
+          boolean allLeavesAreCodecReaders = true;
+          for (LeafReaderContext ctx : r.leaves()) {
+            if (ctx.reader() instanceof CodecReader == false) {
+              allLeavesAreCodecReaders = false;
+              break;
+            }
+          }
+          if (allLeavesAreCodecReaders) {
+            r = new MergingDirectoryReaderWrapper((DirectoryReader) r);
+          }
         }
         break;
       default:

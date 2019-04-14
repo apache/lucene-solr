@@ -30,6 +30,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 
 /**
@@ -147,6 +148,11 @@ public final class DrillDownQuery extends Query {
   @Override
   public String toString(String field) {
     return getBooleanQuery().toString(field);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   private BooleanQuery getBooleanQuery() {

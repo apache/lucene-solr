@@ -39,7 +39,7 @@ import org.apache.solr.legacy.LegacyLongField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.junit.AfterClass;
@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** random assortment of tests against legacy numerics */
-public class TestLegacyFieldCache extends LuceneTestCase {
+public class TestLegacyFieldCache extends SolrTestCase {
   private static LeafReader reader;
   private static int NUM_DOCS;
   private static Directory directory;

@@ -184,48 +184,43 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     while (true) {
       Map<String, AutoScaling.Trigger> copy = null;
       try {
-        // this can throw InterruptedException and we don't want to unlock if it did, so we keep this outside
-        // of the try/finally block
+        
         updateLock.lockInterruptibly();
-
-        // must check for close here before we await on the condition otherwise we can only be woken up on interruption
-        if (isClosed) {
-          log.info("OverseerTriggerThread has been closed, exiting.");
-          break;
-        }
-
-        log.debug("Current znodeVersion {}, lastZnodeVersion {}", znodeVersion, lastZnodeVersion);
-
         try {
+          // must check for close here before we await on the condition otherwise we can
+          // only be woken up on interruption
+          if (isClosed) {
+            log.info("OverseerTriggerThread has been closed, exiting.");
+            break;
+          }
+          
+          log.debug("Current znodeVersion {}, lastZnodeVersion {}", znodeVersion, lastZnodeVersion);
+          
           if (znodeVersion == lastZnodeVersion) {
             updated.await();
-
+            
             // are we closed?
             if (isClosed) {
               log.info("OverseerTriggerThread woken up but we are closed, exiting.");
               break;
             }
-
+            
             // spurious wakeup?
             if (znodeVersion == lastZnodeVersion) continue;
           }
           copy = new HashMap<>(activeTriggers);
           lastZnodeVersion = znodeVersion;
           log.debug("Processed trigger updates upto znodeVersion {}", znodeVersion);
-        } catch (InterruptedException e) {
-          // Restore the interrupted status
-          Thread.currentThread().interrupt();
-          log.warn("Interrupted", e);
-          break;
         } finally {
           updateLock.unlock();
         }
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
+        log.warn("Interrupted", e);
         break;
       }
-
+     
       // update the current config
       scheduledTriggers.setAutoScalingConfig(autoScalingConfig);
 

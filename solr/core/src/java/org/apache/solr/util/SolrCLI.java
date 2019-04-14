@@ -78,8 +78,8 @@ import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.BooleanUtils;
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
@@ -152,15 +152,15 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 /**
  * Command-line utility for working with Solr.
  */
-public class SolrCLI {
+public class SolrCLI implements CLIO {
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   /**
    * Defines the interface to a Solr tool that can be run from this command-line app.
    */
   public interface Tool {
-    String getName();    
-    Option[] getOptions();    
+    String getName();
+    Option[] getOptions();
     int runTool(CommandLine cli) throws Exception;
   }
 
@@ -169,13 +169,13 @@ public class SolrCLI {
     protected boolean verbose = false;
 
     protected ToolBase() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     protected ToolBase(PrintStream stdout) {
       this.stdout = stdout;
     }
-    
+
     protected void echoIfVerbose(final String msg, CommandLine cli) {
       if (cli.hasOption("verbose")) {
         echo(msg);
@@ -196,7 +196,7 @@ public class SolrCLI {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
-          System.err.println("\nERROR: " + excMsg + "\n");
+          CLIO.err("\nERROR: " + excMsg + "\n");
           toolExitStatus = 1;
         } else {
           throw exc;
@@ -218,34 +218,34 @@ public class SolrCLI {
     public Option[] getOptions() {
       return cloudOptions;
     }
-    
+
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
-      
+
       log.debug("Connecting to Solr cluster: " + zkHost);
       try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
 
         String collection = cli.getOptionValue("collection");
         if (collection != null)
           cloudSolrClient.setDefaultCollection(collection);
-        
+
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
       }
     }
-    
+
     /**
      * Runs a SolrCloud tool with CloudSolrClient initialized
      */
     protected abstract void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception;
   }
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";  
+  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
   public static final String ZK_HOST = "localhost:9983";
-  
+
   @SuppressWarnings("static-access")
   public static Option[] cloudOptions =  new Option[] {
     OptionBuilder
@@ -275,13 +275,13 @@ public class SolrCLI {
         throw new RuntimeException("SolrCLI failed to exit with status "+exitStatus);
     }
   }
-        
+
   /**
    * Runs a tool.
    */
   public static void main(String[] args) throws Exception {
     if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
-      System.err.println("Invalid command-line args! Must pass the name of a tool to run.\n"
+      CLIO.err("Invalid command-line args! Must pass the name of a tool to run.\n"
           + "Supported tools:\n");
       displayToolOptions();
       exit(1);
@@ -289,7 +289,7 @@ public class SolrCLI {
 
     if (args.length == 1 && Arrays.asList("-v","-version","version").contains(args[0])) {
       // Simple version tool, no need for its own class
-      System.out.println(Version.LATEST);
+      CLIO.out(Version.LATEST.toString());
       exit(0);
     }
 
@@ -320,7 +320,7 @@ public class SolrCLI {
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
     // process command-line args to configure this application
-    CommandLine cli = 
+    CommandLine cli =
         processCommandLineArgs(joinCommonAndToolOptions(toolOptions), toolArgs);
 
     List argList = cli.getArgList();
@@ -350,25 +350,25 @@ public class SolrCLI {
     if (keyStoreFile.isFile()) {
       System.setProperty(sysProp, keyStoreFile.getAbsolutePath());
     } else {
-      System.err.println("WARNING: "+sysProp+" file "+keyStore+
+      CLIO.err("WARNING: "+sysProp+" file "+keyStore+
           " not found! https requests to Solr will likely fail; please update your "+
           sysProp+" setting to use an absolute path.");
     }
   }
-  
+
   private static void raiseLogLevelUnlessVerbose(CommandLine cli) {
     if (! cli.hasOption("verbose")) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }
-  
+
   /**
    * Support options common to all tools.
    */
   public static Option[] getCommonToolOptions() {
     return new Option[0];
   }
-   
+
   // Creates an instance of the requested tool, using classpath scanning if necessary
   private static Tool newTool(String toolType) throws Exception {
     if ("healthcheck".equals(toolType))
@@ -418,12 +418,12 @@ public class SolrCLI {
     for (Class<Tool> next : findToolClassesInPackage("org.apache.solr.util")) {
       Tool tool = next.newInstance();
       if (toolType.equals(tool.getName()))
-        return tool;  
+        return tool;
     }
-    
+
     throw new IllegalArgumentException(toolType + " not supported!");
   }
-  
+
   private static void displayToolOptions() throws Exception {
     HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
@@ -446,10 +446,10 @@ public class SolrCLI {
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
       Tool tool = next.newInstance();
-      formatter.printHelp(tool.getName(), getToolOptions(tool));      
-    }    
+      formatter.printHelp(tool.getName(), getToolOptions(tool));
+    }
   }
-  
+
   private static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption("help", false, "Print this message");
@@ -459,41 +459,41 @@ public class SolrCLI {
       options.addOption(toolOpts[i]);
     return options;
   }
-  
+
   public static Option[] joinCommonAndToolOptions(Option[] toolOpts) {
     return joinOptions(getCommonToolOptions(), toolOpts);
   }
-  
+
   public static Option[] joinOptions(Option[] lhs, Option[] rhs) {
     List<Option> options = new ArrayList<Option>();
     if (lhs != null && lhs.length > 0) {
       for (Option opt : lhs)
-        options.add(opt);      
+        options.add(opt);
     }
-    
+
     if (rhs != null) {
       for (Option opt : rhs)
         options.add(opt);
     }
-    
+
     return options.toArray(new Option[0]);
   }
-  
-  
+
+
   /**
    * Parses the command-line arguments passed by the user.
    */
   public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
     Options options = new Options();
-    
+
     options.addOption("help", false, "Print this message");
     options.addOption("verbose", false, "Generate verbose log messages");
-    
+
     if (customOptions != null) {
       for (int i = 0; i < customOptions.length; i++)
         options.addOption(customOptions[i]);
     }
-    
+
     CommandLine cli = null;
     try {
       cli = (new GnuParser()).parse(options, args);
@@ -508,23 +508,23 @@ public class SolrCLI {
         }
       }
       if (!hasHelpArg) {
-        System.err.println("Failed to parse command-line arguments due to: "
+        CLIO.err("Failed to parse command-line arguments due to: "
             + exp.getMessage());
       }
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp(SolrCLI.class.getName(), options);
       exit(1);
     }
-    
+
     if (cli.hasOption("help")) {
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp(SolrCLI.class.getName(), options);
       exit(0);
     }
-    
+
     return cli;
   }
-  
+
   /**
    * Scans Jar files on the classpath for Tool implementations to activate.
    */
@@ -540,7 +540,7 @@ public class SolrCLI {
         URL resource = (URL) resources.nextElement();
         classes.addAll(findClasses(resource.getFile(), packageName));
       }
-      
+
       for (String classInPackage : classes) {
         Class<?> theClass = Class.forName(classInPackage);
         if (Tool.class.isAssignableFrom(theClass))
@@ -552,7 +552,7 @@ public class SolrCLI {
     }
     return toolClasses;
   }
-  
+
   private static Set<String> findClasses(String path, String packageName)
       throws Exception {
     Set<String> classes = new TreeSet<String>();
@@ -575,7 +575,7 @@ public class SolrCLI {
 
   /**
    * Determine if a request to Solr failed due to a communication error,
-   * which is generally retry-able. 
+   * which is generally retry-able.
    */
   public static boolean checkCommunicationError(Exception exc) {
     Throwable rootCause = SolrException.getRootCause(exc);
@@ -599,25 +599,25 @@ public class SolrCLI {
     HttpResponse response = httpClient.execute(new HttpHead(url), HttpClientUtil.createNewHttpClientRequestContext());
     int code = response.getStatusLine().getStatusCode();
     if (code == UNAUTHORIZED.code || code == FORBIDDEN.code) {
-      throw new SolrException(SolrException.ErrorCode.getErrorCode(code), 
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(code),
           "Solr requires authentication for " + url + ". Please supply valid credentials. HTTP code=" + code);
     }
     return code;
   }
 
   private static boolean exceptionIsAuthRelated(Exception exc) {
-    return (exc instanceof SolrException 
+    return (exc instanceof SolrException
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
-  
+
   public static CloseableHttpClient getHttpClient() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
     params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
-    return HttpClientUtil.createClient(params);    
+    return HttpClientUtil.createClient(params);
   }
-  
+
   @SuppressWarnings("deprecation")
   public static void closeHttpClient(CloseableHttpClient httpClient) {
     if (httpClient != null) {
@@ -626,7 +626,7 @@ public class SolrCLI {
       } catch (Exception exc) {
         // safe to ignore, we're just shutting things down
       }
-    }    
+    }
   }
 
   public static final String JSON_CONTENT_TYPE = "application/json";
@@ -640,7 +640,7 @@ public class SolrCLI {
   }
 
   /**
-   * Useful when a tool just needs to send one request to Solr. 
+   * Useful when a tool just needs to send one request to Solr.
    */
   public static Map<String,Object> getJson(String getUrl) throws Exception {
     Map<String,Object> json = null;
@@ -652,7 +652,7 @@ public class SolrCLI {
     }
     return json;
   }
-  
+
   /**
    * Utility function for sending HTTP GET request to Solr with built-in retry support.
    */
@@ -672,7 +672,7 @@ public class SolrCLI {
           try {
             Thread.sleep(5000);
           } catch (InterruptedException ie) { Thread.interrupted(); }
-          
+
           // retry using recursion with one-less attempt available
           json = getJson(httpClient, getUrl, attempts, false);
         } else {
@@ -681,7 +681,7 @@ public class SolrCLI {
         }
       }
     }
-    
+
     return json;
   }
 
@@ -710,7 +710,7 @@ public class SolrCLI {
       }
     }
   }
-  
+
   /**
    * Utility function for sending HTTP GET request to Solr and then doing some
    * validation of the response.
@@ -750,45 +750,45 @@ public class SolrCLI {
       // Currently detecting authentication by string-matching the HTTP response
       // Perhaps SolrClient should have thrown an exception itself??
       if (cpe.getMessage().contains("HTTP ERROR 401") || cpe.getMessage().contentEquals("HTTP ERROR 403")) {
-        int code = cpe.getMessage().contains("HTTP ERROR 401") ? 401 : 403; 
-        throw new SolrException(SolrException.ErrorCode.getErrorCode(code), 
+        int code = cpe.getMessage().contains("HTTP ERROR 401") ? 401 : 403;
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(code),
             "Solr requires authentication for " + getUrl + ". Please supply valid credentials. HTTP code=" + code);
       } else {
         throw cpe;
       }
     }
-  }  
+  }
 
   /**
-   * Helper function for reading a String value from a JSON Object tree. 
+   * Helper function for reading a String value from a JSON Object tree.
    */
   public static String asString(String jsonPath, Map<String,Object> json) {
     return pathAs(String.class, jsonPath, json);
   }
 
   /**
-   * Helper function for reading a Long value from a JSON Object tree. 
+   * Helper function for reading a Long value from a JSON Object tree.
    */
   public static Long asLong(String jsonPath, Map<String,Object> json) {
     return pathAs(Long.class, jsonPath, json);
   }
-  
+
   /**
-   * Helper function for reading a List of Strings from a JSON Object tree. 
+   * Helper function for reading a List of Strings from a JSON Object tree.
    */
   @SuppressWarnings("unchecked")
   public static List<String> asList(String jsonPath, Map<String,Object> json) {
     return pathAs(List.class, jsonPath, json);
   }
-  
+
   /**
-   * Helper function for reading a Map from a JSON Object tree. 
+   * Helper function for reading a Map from a JSON Object tree.
    */
   @SuppressWarnings("unchecked")
   public static Map<String,Object> asMap(String jsonPath, Map<String,Object> json) {
     return pathAs(Map.class, jsonPath, json);
   }
-  
+
   @SuppressWarnings("unchecked")
   public static <T> T pathAs(Class<T> clazz, String jsonPath, Map<String,Object> json) {
     T val = null;
@@ -804,10 +804,10 @@ public class SolrCLI {
     } // it's ok if it is null
     return val;
   }
-  
+
   /**
    * Helper function for reading an Object of unknown type from a JSON Object tree.
-   * 
+   *
    * To find a path to a child that starts with a slash (e.g. queryHandler named /query)
    * you must escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams
    * would get the echoParams value for the "/query" request handler.
@@ -816,25 +816,25 @@ public class SolrCLI {
   public static Object atPath(String jsonPath, Map<String,Object> json) {
     if ("/".equals(jsonPath))
       return json;
-    
+
     if (!jsonPath.startsWith("/"))
       throw new IllegalArgumentException("Invalid JSON path: "+
         jsonPath+"! Must start with a /");
-    
-    Map<String,Object> parent = json;      
+
+    Map<String,Object> parent = json;
     Object result = null;
     String[] path = jsonPath.split("(?<![\\\\])/"); // Break on all slashes _not_ preceeded by a backslash
     for (int p=1; p < path.length; p++) {
       String part = path[p];
-      
+
       if (part.startsWith("\\")) {
         part = part.substring(1);
       }
 
-      Object child = parent.get(part);      
+      Object child = parent.get(part);
       if (child == null)
         break;
-      
+
       if (p == path.length-1) {
         // success - found the node at the desired path
         result = child;
@@ -850,14 +850,14 @@ public class SolrCLI {
     }
     return result;
   }
-  
+
 
   public static class AutoscalingTool extends SolrCloudTool {
     static final String NODE_REDACTION_PREFIX = "N_";
     static final String COLL_REDACTION_PREFIX = "COLL_";
 
     public AutoscalingTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public AutoscalingTool(PrintStream stdout) {
@@ -1138,13 +1138,13 @@ public class SolrCLI {
    */
   public static class StatusTool extends ToolBase {
 
-    public StatusTool() { this(System.out); }
+    public StatusTool() { this(CLIO.getOutStream()); }
     public StatusTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
       return "status";
     }
-    
+
     @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
@@ -1160,8 +1160,8 @@ public class SolrCLI {
             .isRequired(false)
             .withDescription("Wait up to the specified number of seconds to see Solr running.")
             .create("maxWaitSecs")
-      };      
-    }    
+      };
+    }
 
     protected void runImpl(CommandLine cli) throws Exception {
       int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
@@ -1186,7 +1186,7 @@ public class SolrCLI {
           }
           if (checkCommunicationError(exc)) {
             // this is not actually an error from the tool as it's ok if Solr is not online.
-            System.err.println("Solr at "+solrUrl+" not online.");
+            CLIO.err("Solr at "+solrUrl+" not online.");
           } else {
             throw new Exception("Failed to get system information from " + solrUrl + " due to: "+exc);
           }
@@ -1234,7 +1234,7 @@ public class SolrCLI {
 
       return status;
     }
-    
+
     public Map<String,Object> reportStatus(String solrUrl, Map<String,Object> info, HttpClient httpClient)
         throws Exception
     {
@@ -1242,59 +1242,59 @@ public class SolrCLI {
 
       String solrHome = (String)info.get("solr_home");
       status.put("solr_home", solrHome != null ? solrHome : "?");
-      status.put("version", asString("/lucene/solr-impl-version", info));      
+      status.put("version", asString("/lucene/solr-impl-version", info));
       status.put("startTime", asString("/jvm/jmx/startTime", info));
       status.put("uptime", uptime(asLong("/jvm/jmx/upTimeMS", info)));
-      
+
       String usedMemory = asString("/jvm/memory/used", info);
       String totalMemory = asString("/jvm/memory/total", info);
       status.put("memory", usedMemory+" of "+totalMemory);
-      
+
       // if this is a Solr in solrcloud mode, gather some basic cluster info
       if ("solrcloud".equals(info.get("mode"))) {
         String zkHost = (String)info.get("zkHost");
         status.put("cloud", getCloudStatus(httpClient, solrUrl, zkHost));
       }
-      
+
       return status;
     }
-    
+
     /**
      * Calls the CLUSTERSTATUS endpoint in Solr to get basic status information about
-     * the SolrCloud cluster. 
+     * the SolrCloud cluster.
      */
-    protected Map<String,String> getCloudStatus(HttpClient httpClient, String solrUrl, String zkHost) 
+    protected Map<String,String> getCloudStatus(HttpClient httpClient, String solrUrl, String zkHost)
         throws Exception
     {
-      Map<String,String> cloudStatus = new LinkedHashMap<String,String>();      
-      cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");      
-      
+      Map<String,String> cloudStatus = new LinkedHashMap<String,String>();
+      cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
+
       String clusterStatusUrl = solrUrl+"admin/collections?action=CLUSTERSTATUS";
       Map<String,Object> json = getJson(httpClient, clusterStatusUrl, 2, true);
-      
-      List<String> liveNodes = asList("/cluster/live_nodes", json); 
+
+      List<String> liveNodes = asList("/cluster/live_nodes", json);
       cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
-      
+
       Map<String,Object> collections = asMap("/cluster/collections", json);
       cloudStatus.put("collections", String.valueOf(collections.size()));
-      
-      return cloudStatus;      
+
+      return cloudStatus;
     }
-        
+
   } // end StatusTool class
-  
+
   /**
    * Used to send an arbitrary HTTP request to a Solr API endpoint.
    */
   public static class ApiTool extends ToolBase {
 
-    public ApiTool() { this(System.out); }
+    public ApiTool() { this(CLIO.getOutStream()); }
     public ApiTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
       return "api";
     }
-    
+
     @SuppressWarnings("static-access")
     public Option[] getOptions() {
       return new Option[] {
@@ -1304,18 +1304,18 @@ public class SolrCLI {
             .isRequired(false)
             .withDescription("Send a GET request to a Solr API endpoint")
             .create("get")
-      };      
-    }    
+      };
+    }
 
     protected void runImpl(CommandLine cli) throws Exception {
       String getUrl = cli.getOptionValue("get");
       if (getUrl != null) {
         Map<String,Object> json = getJson(getUrl);
-        
+
         // pretty-print the response to stdout
         CharArr arr = new CharArr();
         new JSONWriter(arr, 2).write(json);
-        echo(arr.toString());        
+        echo(arr.toString());
       }
     }
   } // end ApiTool class
@@ -1325,24 +1325,24 @@ public class SolrCLI {
   private static final long MS_IN_MIN = 60 * 1000L;
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
   private static final long MS_IN_DAY = MS_IN_HOUR * 24L;
-  
+
   private static final String uptime(long uptimeMs) {
     if (uptimeMs <= 0L) return "?";
-    
-    long numDays = (uptimeMs >= MS_IN_DAY) 
+
+    long numDays = (uptimeMs >= MS_IN_DAY)
         ? (long) Math.floor(uptimeMs / MS_IN_DAY) : 0L;
     long rem = uptimeMs - (numDays * MS_IN_DAY);
-    long numHours = (rem >= MS_IN_HOUR) 
+    long numHours = (rem >= MS_IN_HOUR)
         ? (long) Math.floor(rem / MS_IN_HOUR) : 0L;
     rem = rem - (numHours * MS_IN_HOUR);
-    long numMinutes = (rem >= MS_IN_MIN) 
+    long numMinutes = (rem >= MS_IN_MIN)
         ? (long) Math.floor(rem / MS_IN_MIN) : 0L;
     rem = rem - (numMinutes * MS_IN_MIN);
     long numSeconds = Math.round(rem / 1000);
     return String.format(Locale.ROOT, "%d days, %d hours, %d minutes, %d seconds", numDays,
         numHours, numMinutes, numSeconds);
   }
-    
+
   static class ReplicaHealth implements Comparable<ReplicaHealth> {
     String shard;
     String name;
@@ -1352,7 +1352,7 @@ public class SolrCLI {
     boolean isLeader;
     String uptime;
     String memory;
-        
+
     ReplicaHealth(String shard, String name, String url, String status,
         long numDocs, boolean isLeader, String uptime, String memory) {
       this.shard = shard;
@@ -1364,7 +1364,7 @@ public class SolrCLI {
       this.uptime = uptime;
       this.memory = memory;
     }
-    
+
     public Map<String,Object> asMap() {
       Map<String,Object> map = new LinkedHashMap<String,Object>();
       map.put(NAME, name);
@@ -1378,18 +1378,18 @@ public class SolrCLI {
       if (isLeader)
         map.put("leader", true);
       return map;
-    }    
-    
-    public String toString() {      
+    }
+
+    public String toString() {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(asMap());
-      return arr.toString();             
+      return arr.toString();
     }
-    
+
     public int hashCode() {
       return this.shard.hashCode() + (isLeader ? 1 : 0);
     }
-    
+
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
@@ -1397,60 +1397,60 @@ public class SolrCLI {
       ReplicaHealth that = (ReplicaHealth) obj;
       return this.shard.equals(that.shard) && this.isLeader == that.isLeader;
     }
-    
+
     public int compareTo(ReplicaHealth other) {
       if (this == other) return 0;
       if (other == null) return 1;
-      
-      int myShardIndex = 
+
+      int myShardIndex =
           Integer.parseInt(this.shard.substring("shard".length()));
-      
-      int otherShardIndex = 
+
+      int otherShardIndex =
           Integer.parseInt(other.shard.substring("shard".length()));
-      
+
       if (myShardIndex == otherShardIndex) {
         // same shard index, list leaders first
         return this.isLeader ? -1 : 1;
       }
-      
+
       return myShardIndex - otherShardIndex;
     }
   }
-  
+
   static enum ShardState {
     healthy, degraded, down, no_leader
   }
-  
+
   static class ShardHealth {
     String shard;
     List<ReplicaHealth> replicas;
-    
+
     ShardHealth(String shard, List<ReplicaHealth> replicas) {
       this.shard = shard;
-      this.replicas = replicas;      
+      this.replicas = replicas;
     }
-    
+
     public ShardState getShardState() {
       boolean healthy = true;
       boolean hasLeader = false;
       boolean atLeastOneActive = false;
       for (ReplicaHealth replicaHealth : replicas) {
-        if (replicaHealth.isLeader) 
+        if (replicaHealth.isLeader)
           hasLeader = true;
-        
+
         if (!Replica.State.ACTIVE.toString().equals(replicaHealth.status)) {
           healthy = false;
         } else {
           atLeastOneActive = true;
         }
       }
-      
+
       if (!hasLeader)
         return ShardState.no_leader;
-      
+
       return healthy ? ShardState.healthy : (atLeastOneActive ? ShardState.degraded : ShardState.down);
     }
-    
+
     public Map<String,Object> asMap() {
       Map<String,Object> map = new LinkedHashMap<>();
       map.put("shard", shard);
@@ -1461,36 +1461,36 @@ public class SolrCLI {
       map.put("replicas", replicaList);
       return map;
     }
-        
+
     public String toString() {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(asMap());
-      return arr.toString();             
-    }    
+      return arr.toString();
+    }
   }
-  
+
   /**
    * Requests health information about a specific collection in SolrCloud.
    */
   public static class HealthcheckTool extends SolrCloudTool {
 
-    public HealthcheckTool() { this(System.out); }
+    public HealthcheckTool() { this(CLIO.getOutStream()); }
     public HealthcheckTool(PrintStream stdout) { super(stdout); }
 
     @Override
     public String getName() {
       return "healthcheck";
     }
-        
+
     @Override
     protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String collection = cli.getOptionValue("collection");
       if (collection == null)
         throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
-      
+
       log.debug("Running healthcheck for "+collection);
-      
+
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
       ClusterState clusterState = zkStateReader.getClusterState();
@@ -1498,14 +1498,14 @@ public class SolrCLI {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (docCollection == null || docCollection.getSlices() == null)
         throw new IllegalArgumentException("Collection "+collection+" not found!");
-      
+
       Collection<Slice> slices = docCollection.getSlices();
       // Test http code using a HEAD request first, fail fast if authentication failure
-      String urlForColl = zkStateReader.getLeaderUrl(collection, slices.stream().findFirst().get().getName(), 1000); 
+      String urlForColl = zkStateReader.getLeaderUrl(collection, slices.stream().findFirst().get().getName(), 1000);
       attemptHttpHead(urlForColl, cloudSolrClient.getHttpClient());
 
       SolrQuery q = new SolrQuery("*:*");
-      q.setRows(0);      
+      q.setRows(0);
       QueryResponse qr = cloudSolrClient.query(q);
       String collErr = null;
       long docCount = -1;
@@ -1514,10 +1514,10 @@ public class SolrCLI {
       } catch (Exception exc) {
         collErr = String.valueOf(exc);
       }
-      
+
       List<Object> shardList = new ArrayList<>();
       boolean collectionIsHealthy = (docCount != -1);
-      
+
       for (Slice slice : slices) {
         String shardName = slice.getName();
         // since we're reporting health of this shard, there's no guarantee of a leader
@@ -1527,15 +1527,15 @@ public class SolrCLI {
         } catch (Exception exc) {
           log.warn("Failed to get leader for shard "+shardName+" due to: "+exc);
         }
-        
-        List<ReplicaHealth> replicaList = new ArrayList<ReplicaHealth>();        
+
+        List<ReplicaHealth> replicaList = new ArrayList<ReplicaHealth>();
         for (Replica r : slice.getReplicas()) {
-          
+
           String uptime = null;
           String memory = null;
           String replicaStatus = null;
           long numDocs = -1L;
-          
+
           ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
           String coreUrl = replicaCoreProps.getCoreUrl();
           boolean isLeader = coreUrl.equals(leaderUrl);
@@ -1577,18 +1577,18 @@ public class SolrCLI {
             }
           }
 
-          replicaList.add(new ReplicaHealth(shardName, r.getName(), coreUrl, 
-              replicaStatus, numDocs, isLeader, uptime, memory));          
+          replicaList.add(new ReplicaHealth(shardName, r.getName(), coreUrl,
+              replicaStatus, numDocs, isLeader, uptime, memory));
         }
-        
-        ShardHealth shardHealth = new ShardHealth(shardName, replicaList);        
+
+        ShardHealth shardHealth = new ShardHealth(shardName, replicaList);
         if (ShardState.healthy != shardHealth.getShardState())
           collectionIsHealthy = false; // at least one shard is un-healthy
-        
-        shardList.add(shardHealth.asMap());        
+
+        shardList.add(shardHealth.asMap());
       }
-      
-      
+
+
       Map<String,Object> report = new LinkedHashMap<String,Object>();
       report.put("collection", collection);
       report.put("status", collectionIsHealthy ? "healthy" : "degraded");
@@ -1596,9 +1596,9 @@ public class SolrCLI {
         report.put("error", collErr);
       }
       report.put("numDocs", docCount);
-      report.put("numShards", slices.size());      
+      report.put("numShards", slices.size());
       report.put("shards", shardList);
-                        
+
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(report);
       echo(arr.toString());
@@ -1664,7 +1664,7 @@ public class SolrCLI {
             .isRequired(false)
             .withDescription("Enable more verbose command output.")
             .create("verbose")
-            
+
   };
 
   /**
@@ -1769,16 +1769,16 @@ public class SolrCLI {
     }
     return exists;
   }
-  
+
   /**
    * Supports create_collection command in the bin/solr script.
    */
   public static class CreateCollectionTool extends ToolBase {
-    
+
     public CreateCollectionTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
-    
+
     public CreateCollectionTool(PrintStream stdout) {
       super(stdout);
     }
@@ -1791,7 +1791,7 @@ public class SolrCLI {
     public Option[] getOptions() {
       return CREATE_COLLECTION_OPTIONS;
     }
-    
+
 
 
     protected void runImpl(CommandLine cli) throws Exception {
@@ -1816,7 +1816,7 @@ public class SolrCLI {
       if (liveNodes.isEmpty())
         throw new IllegalStateException("No live nodes found! Cannot create a collection until " +
             "there is at least 1 live node in the cluster.");
-      
+
       String baseUrl = cli.getOptionValue("solrUrl");
       if (baseUrl == null) {
         String firstLiveNode = liveNodes.iterator().next();
@@ -1897,7 +1897,7 @@ public class SolrCLI {
         if (confname != null && !"".equals(confname.trim())) {
           endMessage += String.format(Locale.ROOT, " with config-set '%s'", confname);
         }
-      
+
         echo(endMessage);
       }
     }
@@ -1909,7 +1909,7 @@ public class SolrCLI {
 
   public static class CreateCoreTool extends ToolBase {
 
-    public CreateCoreTool() { this(System.out); }
+    public CreateCoreTool() { this(CLIO.getOutStream()); }
     public CreateCoreTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
@@ -2049,7 +2049,7 @@ public class SolrCLI {
 
   public static class CreateTool extends ToolBase {
 
-    public CreateTool() { this(System.out); }
+    public CreateTool() { this(CLIO.getOutStream()); }
     public CreateTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
@@ -2089,7 +2089,7 @@ public class SolrCLI {
   public static class ConfigSetUploadTool extends ToolBase {
 
     public ConfigSetUploadTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public ConfigSetUploadTool(PrintStream stdout) {
@@ -2162,7 +2162,7 @@ public class SolrCLI {
   public static class ConfigSetDownloadTool extends ToolBase {
 
     public ConfigSetDownloadTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public ConfigSetDownloadTool(PrintStream stdout) {
@@ -2238,7 +2238,7 @@ public class SolrCLI {
   public static class ZkRmTool extends ToolBase {
 
     public ZkRmTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
       }
 
     public ZkRmTool(PrintStream stdout) {
@@ -2315,7 +2315,7 @@ public class SolrCLI {
   public static class ZkLsTool extends ToolBase {
 
     public ZkLsTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public ZkLsTool(PrintStream stdout) {
@@ -2383,7 +2383,7 @@ public class SolrCLI {
   public static class ZkMkrootTool extends ToolBase {
 
     public ZkMkrootTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public ZkMkrootTool(PrintStream stdout) {
@@ -2445,7 +2445,7 @@ public class SolrCLI {
   public static class ZkCpTool extends ToolBase {
 
     public ZkCpTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public ZkCpTool(PrintStream stdout) {
@@ -2529,13 +2529,13 @@ public class SolrCLI {
         throw (e);
       }
     }
-  } // End CpTool class 
+  } // End CpTool class
 
 
   public static class ZkMvTool extends ToolBase {
 
     public ZkMvTool() {
-      this(System.out);
+      this(CLIO.getOutStream());
     }
 
     public ZkMvTool(PrintStream stdout) {
@@ -2582,12 +2582,12 @@ public class SolrCLI {
             " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
       }
 
-      
+
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String src = cli.getOptionValue("src");
         String dst = cli.getOptionValue("dst");
-        
+
         if (src.toLowerCase(Locale.ROOT).startsWith("file:") || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {
           throw new SolrServerException("mv command operates on znodes and 'file:' has been specified.");
         }
@@ -2615,7 +2615,7 @@ public class SolrCLI {
 
   public static class DeleteTool extends ToolBase {
 
-    public DeleteTool() { this(System.out); }
+    public DeleteTool() { this(CLIO.getOutStream()); }
     public DeleteTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
@@ -2659,7 +2659,7 @@ public class SolrCLI {
               .create("verbose")
       };
     }
-    
+
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
@@ -2762,7 +2762,7 @@ public class SolrCLI {
         echo(arr.toString());
         echo("\n");
       }
-      
+
       echo("Deleted collection '" + collectionName + "' using command:\n" + deleteCollectionUrl);
     }
 
@@ -2797,7 +2797,7 @@ public class SolrCLI {
    */
   public static class ConfigTool extends ToolBase {
 
-    public ConfigTool() { this(System.out); }
+    public ConfigTool() { this(CLIO.getOutStream()); }
     public ConfigTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
@@ -2932,7 +2932,7 @@ public class SolrCLI {
      * Default constructor used by the framework when running as a command-line application.
      */
     public RunExampleTool() {
-      this(null, System.in, System.out);
+      this(null, System.in, CLIO.getOutStream());
     }
 
     public RunExampleTool(Executor executor, InputStream userInput, PrintStream stdout) {
@@ -3190,7 +3190,7 @@ public class SolrCLI {
       File cloudDir = new File(exampleDir, "cloud");
       if (!cloudDir.isDirectory())
         cloudDir.mkdir();
-      
+
       echo("\nWelcome to the SolrCloud example!\n");
 
       Scanner readInput = prompt ? new Scanner(userInput, UTF_8.name()) : null;
@@ -3206,7 +3206,7 @@ public class SolrCLI {
 
         // get the ports for each port
         for (int n=0; n < numNodes; n++) {
-          String promptMsg = 
+          String promptMsg =
               String.format(Locale.ROOT, "Please enter the port for node%d [%d]: ", (n+1), cloudPorts[n]);
           int port = promptForPort(readInput, n+1, promptMsg, cloudPorts[n]);
           while (!isPortAvailable(port)) {
@@ -3286,7 +3286,7 @@ public class SolrCLI {
       try {
         configTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(configTool.getOptions()), configArgs));
       } catch (Exception exc) {
-        System.err.println("Failed to update '"+propName+"' property due to: "+exc);
+        CLIO.err("Failed to update '"+propName+"' property due to: "+exc);
       }
     }
 
@@ -3316,7 +3316,7 @@ public class SolrCLI {
               " seconds! Please check the solr.log for each node to look for errors.\n");
         }
       } catch (Exception exc) {
-        System.err.println("Failed to see if "+numNodes+" joined the SolrCloud cluster due to: "+exc);
+        CLIO.err("Failed to see if "+numNodes+" joined the SolrCloud cluster due to: "+exc);
       } finally {
         if (cloudClient != null) {
           try {
@@ -3702,7 +3702,7 @@ public class SolrCLI {
     private static boolean useExitCode = false;
     private static Optional<Long> timeoutMs = Optional.empty();
 
-    public AssertTool() { this(System.out); }
+    public AssertTool() { this(CLIO.getOutStream()); }
     public AssertTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
@@ -3792,7 +3792,7 @@ public class SolrCLI {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
-          System.err.println("\nERROR: " + excMsg + "\n");
+          CLIO.err("\nERROR: " + excMsg + "\n");
           toolExitStatus = 100; // Exit >= 100 means error, else means number of tests that failed
         } else {
           throw exc;
@@ -4019,14 +4019,14 @@ public class SolrCLI {
 
   // Authentication tool
   public static class AuthTool extends ToolBase {
-    public AuthTool() { this(System.out); }
+    public AuthTool() { this(CLIO.getOutStream()); }
     public AuthTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
       return "auth";
     }
 
-    List<String> authenticationVariables = Arrays.asList("SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS"); 
+    List<String> authenticationVariables = Arrays.asList("SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS");
 
     @SuppressWarnings("static-access")
     public Option[] getOptions() {
@@ -4119,7 +4119,7 @@ public class SolrCLI {
         case "kerberos":
           return handleKerberos(cli);
         default:
-          System.out.println("Only type=basicAuth or kerberos supported at the moment.");
+          CLIO.out("Only type=basicAuth or kerberos supported at the moment.");
           exit(1);
       }
       return 1;
@@ -4144,13 +4144,13 @@ public class SolrCLI {
             try {
               zkHost = getZkHost(cli);
             } catch (Exception ex) {
-              System.out.println("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
+              CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                     + securityJson + "\n");
               zkInaccessible = true;
             }
             if (zkHost == null) {
               if (zkInaccessible == false) {
-                System.out.println("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
+                CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                     + securityJson + "\n");
                 zkInaccessible = true;
               }
@@ -4162,14 +4162,14 @@ public class SolrCLI {
                 if (zkClient.exists("/security.json", true)) {
                   byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
                   if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
-                    System.out.println("Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
+                    CLIO.out("Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
                         + new String(oldSecurityBytes, StandardCharsets.UTF_8));
                     exit(1);
                   }
                 }
               } catch (Exception ex) {
                 if (zkInaccessible == false) {
-                  System.out.println("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
+                  CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                       + securityJson + "\n");
                   zkInaccessible = true;
                 }
@@ -4184,7 +4184,7 @@ public class SolrCLI {
                 zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
               } catch (Exception ex) {
                 if (zkInaccessible == false) {
-                  System.out.println("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
+                  CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                       + securityJson);
                   zkInaccessible = true;
                 }
@@ -4201,7 +4201,7 @@ public class SolrCLI {
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
           File includeFile = new File(solrIncludeFilename);
           if (includeFile.exists() == false || includeFile.canWrite() == false) {
-            System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
+            CLIO.out("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
             printAuthEnablingInstructions(config);
             System.exit(0);
           }
@@ -4229,8 +4229,8 @@ public class SolrCLI {
           solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
           includeFile = new File(solrIncludeFilename);
           if (!includeFile.exists() || !includeFile.canWrite()) {
-            System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
-            System.out.println("Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
+            CLIO.out("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
+            CLIO.out("Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
             System.exit(0);
           }
 
@@ -4239,11 +4239,11 @@ public class SolrCLI {
           return 0;
 
         default:
-          System.out.println("Valid auth commands are: enable, disable");
+          CLIO.out("Valid auth commands are: enable, disable");
           exit(1);
       }
 
-      System.out.println("Options not understood.");
+      CLIO.out("Options not understood.");
       new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
       return 1;
     }
@@ -4254,11 +4254,11 @@ public class SolrCLI {
       switch (cmd) {
         case "enable":
           if (!prompt && !cli.hasOption("credentials")) {
-            System.out.println("Option -credentials or -prompt is required with enable.");
+            CLIO.out("Option -credentials or -prompt is required with enable.");
             new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
             exit(1);
           } else if (!prompt && (cli.getOptionValue("credentials") == null || !cli.getOptionValue("credentials").contains(":"))) {
-            System.out.println("Option -credentials is not in correct format.");
+            CLIO.out("Option -credentials is not in correct format.");
             new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
             exit(1);
           }
@@ -4270,17 +4270,17 @@ public class SolrCLI {
               zkHost = getZkHost(cli);
             } catch (Exception ex) {
               if (cli.hasOption("zkHost")) {
-                System.out.println("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
+                CLIO.out("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
               } else {
-                System.out.println("Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
+                CLIO.out("Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
               }
               exit(1);
             }
             if (zkHost == null) {
               if (cli.hasOption("zkHost")) {
-                System.out.println("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
+                CLIO.out("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
               } else {
-                System.out.println("Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
+                CLIO.out("Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
               }
               exit(1);
             }
@@ -4290,7 +4290,7 @@ public class SolrCLI {
               if (zkClient.exists("/security.json", true)) {
                 byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
                 if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
-                  System.out.println("Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
+                  CLIO.out("Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
                       + new String(oldSecurityBytes, StandardCharsets.UTF_8));
                   exit(1);
                 }
@@ -4338,7 +4338,7 @@ public class SolrCLI {
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
           File includeFile = new File(solrIncludeFilename);
           if (includeFile.exists() == false || includeFile.canWrite() == false) {
-            System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
+            CLIO.out("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
             printAuthEnablingInstructions(username, password);
             System.exit(0);
           }
@@ -4346,7 +4346,7 @@ public class SolrCLI {
           File basicAuthConfFile = new File(authConfDir + File.separator + "basicAuth.conf");
 
           if (basicAuthConfFile.getParentFile().canWrite() == false) {
-            System.out.println("Cannot write to file: " + basicAuthConfFile.getAbsolutePath());
+            CLIO.out("Cannot write to file: " + basicAuthConfFile.getAbsolutePath());
             printAuthEnablingInstructions(username, password);
             System.exit(0);
           }
@@ -4379,8 +4379,8 @@ public class SolrCLI {
           solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
           includeFile = new File(solrIncludeFilename);
           if (!includeFile.exists() || !includeFile.canWrite()) {
-            System.out.println("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
-            System.out.println("Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
+            CLIO.out("Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
+            CLIO.out("Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
             System.exit(0);
           }
 
@@ -4389,33 +4389,33 @@ public class SolrCLI {
           return 0;
 
         default:
-          System.out.println("Valid auth commands are: enable, disable");
+          CLIO.out("Valid auth commands are: enable, disable");
           exit(1);
       }
 
-      System.out.println("Options not understood.");
+      CLIO.out("Options not understood.");
       new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getToolOptions(this));
       return 1;
     }
     private void printAuthEnablingInstructions(String username, String password) {
       if (SystemUtils.IS_OS_WINDOWS) {
-        System.out.println("\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
-        System.out.println("set SOLR_AUTH_TYPE=basic\n"
+        CLIO.out("\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
+        CLIO.out("set SOLR_AUTH_TYPE=basic\n"
             + "set SOLR_AUTHENTICATION_OPTS=\"-Dbasicauth=" + username + ":" + password + "\"\n");
       } else {
-        System.out.println("\nAdd the following lines to the solr.in.sh file so that the ./solr script can use subsequently.\n");
-        System.out.println("SOLR_AUTH_TYPE=\"basic\"\n"
+        CLIO.out("\nAdd the following lines to the solr.in.sh file so that the ./solr script can use subsequently.\n");
+        CLIO.out("SOLR_AUTH_TYPE=\"basic\"\n"
             + "SOLR_AUTHENTICATION_OPTS=\"-Dbasicauth=" + username + ":" + password + "\"\n");
       }
     }
     private void printAuthEnablingInstructions(String kerberosConfig) {
       if (SystemUtils.IS_OS_WINDOWS) {
-        System.out.println("\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
-        System.out.println("set SOLR_AUTH_TYPE=kerberos\n"
+        CLIO.out("\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
+        CLIO.out("set SOLR_AUTH_TYPE=kerberos\n"
             + "set SOLR_AUTHENTICATION_OPTS=\"" + kerberosConfig + "\"\n");
       } else {
-        System.out.println("\nAdd the following lines to the solr.in.sh file so that the ./solr script can use subsequently.\n");
-        System.out.println("SOLR_AUTH_TYPE=\"kerberos\"\n"
+        CLIO.out("\nAdd the following lines to the solr.in.sh file so that the ./solr script can use subsequently.\n");
+        CLIO.out("SOLR_AUTH_TYPE=\"kerberos\"\n"
             + "SOLR_AUTHENTICATION_OPTS=\"" + kerberosConfig + "\"\n");
       }
     }
@@ -4440,7 +4440,7 @@ public class SolrCLI {
         }
       }
       includeFileLines.add(""); // blank line
-      
+
       if (basicAuthConfFile != null) { // for basicAuth
         if (SystemUtils.IS_OS_WINDOWS) {
           includeFileLines.add("REM The following lines added by solr.cmd for enabling BasicAuth");
@@ -4460,7 +4460,7 @@ public class SolrCLI {
           includeFileLines.add("# The following lines added by ./solr for enabling BasicAuth");
           includeFileLines.add("SOLR_AUTH_TYPE=\"kerberos\"");
           includeFileLines.add("SOLR_AUTHENTICATION_OPTS=\"" + kerberosConfig + "\"");
-        }        
+        }
       }
       FileUtils.writeLines(includeFile, StandardCharsets.UTF_8.name(), includeFileLines);
 
@@ -4499,7 +4499,7 @@ public class SolrCLI {
     private Path logsPath;
     private boolean beQuiet;
 
-    public UtilsTool() { this(System.out); }
+    public UtilsTool() { this(CLIO.getOutStream()); }
     public UtilsTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
@@ -4584,13 +4584,13 @@ public class SolrCLI {
       if (!archivePath.toFile().exists()) {
         Files.createDirectories(archivePath);
       }
-      List<Path> archived = Files.find(archivePath, 1, (f, a) 
+      List<Path> archived = Files.find(archivePath, 1, (f, a)
           -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
           .collect(Collectors.toList());
       for (Path p : archived) {
         Files.delete(p);
       }
-      List<Path> files = Files.find(logsPath, 1, (f, a) 
+      List<Path> files = Files.find(logsPath, 1, (f, a)
           -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
           .collect(Collectors.toList());
       if (files.size() > 0) {
@@ -4613,13 +4613,13 @@ public class SolrCLI {
       if (!archivePath.toFile().exists()) {
         Files.createDirectories(archivePath);
       }
-      List<Path> archived = Files.find(archivePath, 1, (f, a) 
+      List<Path> archived = Files.find(archivePath, 1, (f, a)
           -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
           .collect(Collectors.toList());
-      for (Path p : archived) {        
+      for (Path p : archived) {
         Files.delete(p);
       }
-      List<Path> files = Files.find(logsPath, 1, (f, a) 
+      List<Path> files = Files.find(logsPath, 1, (f, a)
           -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
           .collect(Collectors.toList());
       if (files.size() > 0) {
@@ -4648,7 +4648,7 @@ public class SolrCLI {
       prepareLogsPath();
       if (logsPath.toFile().exists() && logsPath.resolve("solr.log").toFile().exists()) {
         out("Rotating solr logs, keeping a max of "+generations+" generations");
-        try (Stream<Path> files = Files.find(logsPath, 1, 
+        try (Stream<Path> files = Files.find(logsPath, 1,
             (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
             .sorted((b,a) -> Integer.valueOf(a.getFileName().toString().substring(9))
                   .compareTo(Integer.valueOf(b.getFileName().toString().substring(9))))) {
@@ -4670,12 +4670,12 @@ public class SolrCLI {
         }
         Files.move(logsPath.resolve("solr.log"), logsPath.resolve("solr.log.1"));
       }
-      
+
       return 0;
     }
 
     /**
-     * Deletes time-stamped old solr logs, if older than n days 
+     * Deletes time-stamped old solr logs, if older than n days
      * @param daysToKeep number of days logs to keep before deleting
      * @return 0 on success
      * @throws Exception on failure
@@ -4683,7 +4683,7 @@ public class SolrCLI {
     public int removeOldSolrLogs(int daysToKeep) throws Exception {
       prepareLogsPath();
       if (logsPath.toFile().exists()) {
-        try (Stream<Path> stream = Files.find(logsPath, 2, (f, a) -> a.isRegularFile() 
+        try (Stream<Path> stream = Files.find(logsPath, 2, (f, a) -> a.isRegularFile()
             && Instant.now().minus(Period.ofDays(daysToKeep)).isAfter(a.lastModifiedTime().toInstant())
             && String.valueOf(f.getFileName()).startsWith("solr_log_"))) {
           List<Path> files = stream.collect(Collectors.toList());
@@ -4699,7 +4699,7 @@ public class SolrCLI {
     }
 
     // Private methods to follow
-    
+
     private void out(String message) {
       if (!beQuiet) {
         stdout.print(message + "\n");
@@ -4718,21 +4718,21 @@ public class SolrCLI {
         }
       }
     }
-    
+
     @Override
     protected void runImpl(CommandLine cli) throws Exception {
     }
-    
+
     public void setLogPath(Path logsPath) {
-      this.logsPath = logsPath; 
+      this.logsPath = logsPath;
     }
 
     public void setServerPath(Path serverPath) {
-      this.serverPath = serverPath; 
+      this.serverPath = serverPath;
     }
-    
+
     public void setQuiet(boolean shouldPrintStdout) {
-      this.beQuiet = shouldPrintStdout; 
+      this.beQuiet = shouldPrintStdout;
     }
-  } // end UtilsTool class  
+  } // end UtilsTool class
 }

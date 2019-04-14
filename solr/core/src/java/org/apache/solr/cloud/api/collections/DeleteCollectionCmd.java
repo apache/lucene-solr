@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.NonExistentCoreException;
@@ -68,10 +69,18 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    final String collection = message.getStr(NAME);
+    final String extCollection = message.getStr(NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
-    checkNotReferencedByAlias(zkStateReader, collection);
+    if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
+      zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
+    }
+
+    String aliasReference = checkAliasReference(zkStateReader, extCollection);
+
+    Aliases aliases = zkStateReader.getAliases();
+    String collection = aliases.resolveSimpleAlias(extCollection);
+
     checkNotColocatedWith(zkStateReader, collection);
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
@@ -115,8 +124,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       okayExceptions.add(NonExistentCoreException.class.getName());
 
       List<Replica> failedReplicas = ocmh.collectionCmd(message, params, results, null, asyncId, requestMap, okayExceptions);
-      for (Replica failedRepilca : failedReplicas) {
-        boolean isSharedFS = failedRepilca.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedRepilca.get("dataDir") != null;
+      for (Replica failedReplica : failedReplicas) {
+        boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;
         if (isSharedFS) {
           // if the replica use a shared FS and it did not receive the unload message, then counter node should not be removed
           // because when a new collection with same name is created, new replicas may reuse the old dataDir
@@ -130,7 +139,12 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       // wait for a while until we don't see the collection
       zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null);
-      
+
+      // we can delete any remaining unique alias
+      if (aliasReference != null) {
+        ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasReference, null));
+      }
+
 //      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);
 //      boolean removed = false;
 //      while (! timeout.hasTimedOut()) {
@@ -169,24 +183,33 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  private void checkNotReferencedByAlias(ZkStateReader zkStateReader, String collection) throws Exception {
-    String alias = referencedByAlias(collection, zkStateReader.getAliases());
-    if (alias != null) {
+  // it's ok if a collection is referenced either by none or exactly by a single alias.
+  // This method returns the single alias to delete, if present, or null
+  private String checkAliasReference(ZkStateReader zkStateReader, String extCollection) throws Exception {
+    List<String> aliases = referencedByAlias(extCollection, zkStateReader.getAliases());
+    if (aliases.size() > 1) {
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
-      alias = referencedByAlias(collection, zkStateReader.getAliases());
-      if (alias != null) {
+      aliases = referencedByAlias(extCollection, zkStateReader.getAliases());
+      if (aliases.size() > 1) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Collection : " + collection + " is part of alias " + alias + " remove or modify the alias before removing this collection.");
+            "Collection : " + extCollection + " is part of aliases: " + aliases + ", remove or modify the aliases before removing this collection.");
       }
+    }
+    if (!aliases.isEmpty()) {
+      return aliases.get(0);
+    } else {
+      return null;
     }
   }
 
-  private String referencedByAlias(String collection, Aliases aliases) {
+  public static List<String> referencedByAlias(String extCollection, Aliases aliases) throws IllegalArgumentException {
     Objects.requireNonNull(aliases);
+    // this quickly produces error if the name is a complex alias
+    String collection = aliases.resolveSimpleAlias(extCollection);
     return aliases.getCollectionAliasListMap().entrySet().stream()
-        .filter(e -> e.getValue().contains(collection))
+        .filter(e -> e.getValue().contains(collection) || e.getValue().contains(extCollection))
         .map(Map.Entry::getKey) // alias name
-        .findFirst().orElse(null);
+        .collect(Collectors.toList());
   }
 
   private void checkNotColocatedWith(ZkStateReader zkStateReader, String collection) throws Exception {

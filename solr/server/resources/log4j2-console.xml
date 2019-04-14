@@ -18,22 +18,50 @@
 
 <!-- Use this file for logging exlusively to the console, useful for 
      some development tasks. Should not be used for production -->
+<!-- Configuration for asynchronous logging -->
 <Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
         <Pattern>
-          %-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %c; %m%n
+          %maxLen{%-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %c; %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.apache.zookeeper" level="WARN"/>
-    <Logger name="org.apache.hadoop" level="WARN"/>
+    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
 
-    <Root level="INFO">
+    <AsyncRoot level="INFO">
       <AppenderRef ref="STDERR"/>
-    </Root>
+    </AsyncRoot>
   </Loggers>
 </Configuration>
+
+
+<!-- Configuration for synchronous logging
+     there _may_ be a very small window where log messages will not be flushed
+     to the log file on abnormal shutdown. If even this risk is unacceptable, use
+     the configuration below
+-->
+<!--Configuration>
+<Appenders>
+  <Console name="STDERR" target="SYSTEM_ERR">
+    <PatternLayout>
+      <Pattern>
+        %-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %c; %m%n
+      </Pattern>
+    </PatternLayout>
+  </Console>
+</Appenders>
+<Loggers>
+  <Logger name="org.apache.zookeeper" level="WARN"/>
+  <Logger name="org.apache.hadoop" level="WARN"/>
+
+  <Root level="INFO">
+    <AppenderRef ref="STDERR"/>
+  </Root>
+</Loggers>
+</Configuration-->
+

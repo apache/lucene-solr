@@ -131,7 +131,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write norms");
     }
-    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, IOContext.READ, state.segmentSuffix);
+    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, true, IOContext.READ, state.segmentSuffix);
     
     t0 = System.nanoTime();
     writeDocValues(state, sortMap);

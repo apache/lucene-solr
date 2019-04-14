@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -102,6 +103,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput termsIn;
+  // Open input to the terms index file (_X.tip)
+  final IndexInput indexIn;
 
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
@@ -116,9 +119,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, Lucene50PostingsFormat.FSTLoadMode fstLoadMode) throws IOException {
     boolean success = false;
-    IndexInput indexIn = null;
     
     this.postingsReader = postingsReader;
     this.segment = state.segmentInfo.name;
@@ -158,7 +160,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
       }
-
       for (int i = 0; i < numFields; ++i) {
         final int field = termsIn.readVInt();
         final long numTerms = termsIn.readVLong();
@@ -192,18 +193,16 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name,       
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm));
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, fstLoadMode));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
       }
-      
-      indexIn.close();
       success = true;
     } finally {
       if (!success) {
         // this.close() will close in:
-        IOUtils.closeWhileHandlingException(indexIn, this);
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }
@@ -237,7 +236,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(termsIn, postingsReader);
+      IOUtils.close(indexIn, termsIn, postingsReader);
     } finally { 
       // Clear so refs to terms index is GCable even if
       // app hangs onto us:

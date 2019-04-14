@@ -20,7 +20,6 @@ import static org.apache.solr.security.RequestContinuesRecorderAuthenticationHan
 import static org.apache.solr.security.HadoopAuthFilter.DELEGATION_TOKEN_ZK_CLIENT;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,15 +36,15 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
+import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,6 +188,10 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
     // Configure proxy user settings.
     params.putAll(proxyUserConfigs);
 
+    // Needed to work around HADOOP-13346
+    params.put(DelegationTokenAuthenticationHandler.JSON_MAPPER_PREFIX + JsonGenerator.Feature.AUTO_CLOSE_TARGET,
+        "false");
+
     final ServletContext servletContext = new AttributeOnlyServletContext();
     log.info("Params: "+params);
 
@@ -244,20 +247,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       log.info("-------------------------------");
     }
 
-    // Workaround until HADOOP-13346 is fixed.
-    HttpServletResponse rspCloseShield = new HttpServletResponseWrapper(frsp) {
-      @SuppressForbidden(reason = "Hadoop DelegationTokenAuthenticationFilter uses response writer, this" +
-          "is providing a CloseShield on top of that")
-      @Override
-      public PrintWriter getWriter() throws IOException {
-        final PrintWriter pw = new PrintWriterWrapper(frsp.getWriter()) {
-          @Override
-          public void close() {};
-        };
-        return pw;
-      }
-    };
-    authFilter.doFilter(request, rspCloseShield, filterChain);
+    authFilter.doFilter(request, frsp, filterChain);
 
     switch (frsp.getStatus()) {
       case HttpServletResponse.SC_UNAUTHORIZED:

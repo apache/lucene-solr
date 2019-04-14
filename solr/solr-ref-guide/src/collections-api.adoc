@@ -120,6 +120,13 @@ If `true`, the request will complete only when all affected replicas become acti
 The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
 See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
+`alias`::
+Starting with version 8.1 when a collection is created additionally an alias (by default with the same name) is created
+that points to this collection. This parameter allows changing the name of this alias, effectively combining
+this operation with <<createalias, CREATEALIAS>>
+
+Collections are first created in read-write mode but can be put in `readOnly`
+mode using the <<modifycollection, MODIFYCOLLECTION>> action.
 
 === CREATE Response
 
@@ -191,8 +198,150 @@ The attributes that can be modified are:
 * snitch
 * policy
 * withCollection
+* readOnly
+* other custom properties that use a `property.` prefix
 
 See the <<create,CREATE action>> section above for details on these attributes.
+
+[[readonlymode]]
+==== Read-only mode
+Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
+in which any index update requests are rejected. Other collection-level actions (eg. adding /
+removing / moving replicas) are still available in this mode.
+
+The transition from the (default) read-write to read-only mode consists of the following steps:
+
+* the `readOnly` flag is changed in collection state,
+* any new update requests are rejected with 403 FORBIDDEN error code (ongoing
+  long-running requests are aborted, too),
+* a forced commit is performed to flush and commit any in-flight updates.
+
+NOTE: This may potentially take a long time if there are still major segment merges running
+ in the background.
+
+* a collection <<reload, RELOAD action>> is executed.
+
+Removing the `readOnly` property or setting it to false enables the
+processing of updates and reloads the collection.
+
+[[reindexcollection]]
+== REINDEXCOLLECTION: Re-index a Collection
+
+`/admin/collections?action=REINDEXCOLLECTION&name=_name_`
+
+The REINDEXCOLLECTION command re-indexes a collection using existing data from the
+source collection.
+
+NOTE: Re-indexing is potentially a lossy operation - some of the existing indexed data that is not
+available as stored fields may be lost, so users should use this command
+with caution, evaluating the potential impact by using different source and target
+collection names first, and preserving the source collection until the evaluation is
+complete.
+
+The target collection must not exist (and may not be an alias). If the target
+collection name is the same as the source collection then first a unique sequential name
+will be generated for the target collection, and then after re-indexing is done an alias
+will be created that points from the source name to the actual sequentially-named target collection.
+
+When re-indexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that
+all source documents are properly processed.
+
+Using optional parameters a different index schema, collection shape (number of shards and replicas)
+or routing parameters can be requested for the target collection.
+
+Re-indexing is executed as a streaming expression daemon, which runs on one of the
+source collection's replicas. It is usually a time-consuming operation so it's recommended to execute
+it as an asynchronous request in order to avoid request time outs. Only one re-indexing operation may
+execute concurrently for a given source collection. Long-running, erroneous or crashed re-indexing
+operations may be terminated by using the `abort` option, which also removes partial results.
+
+=== REINDEXCOLLECTION Parameters
+
+`name`::
+Source collection name, may be an alias. This parameter is required.
+
+`cmd`::
+Optional command. Default command is `start`. Currently supported commands are:
+* `start` - default, starts processing if not already running,
+* `abort` - aborts an already running re-indexing (or clears a left-over status after a crash),
+and deletes partial results,
+* `status` - returns detailed status of a running re-indexing command.
+
+`target`::
+Target collection name, optional. If not specified a unique name will be generated and
+after all documents have been copied an alias will be created that points from the source
+collection name to the unique sequentially-named collection, effectively "hiding"
+the original source collection from regular update and search operations.
+
+`q`::
+Optional query to select documents for re-indexing. Default value is `\*:*`.
+
+`fl`::
+Optional list of fields to re-index. Default value is `*`.
+
+`rows`::
+Documents are transferred in batches. Depending on the average size of the document large
+batch sizes may cause memory issues. Default value is 100.
+
+`configName`::
+`collection.configName`::
+Optional name of the configset for the target collection. Default is the same as the
+source collection.
+
+There's a number of optional parameters that determine the target collection layout. If they
+are not specified in the request then their values are copied from the source collection.
+The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
+`numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `maxShardsPerNode`,
+`autoAddReplicas`, `shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+
+`removeSource`::
+Optional boolean. If true then after the processing is successfully finished the source collection will
+be deleted.
+
+`async`::
+Optional request ID to track this action which will be <<Asynchronous Calls,processed asynchronously>>.
+
+When the re-indexing process has completed the target collection is marked using
+`property.rx: "finished"`, and the source collection state is updated to become read-write.
+On any errors the command will delete any temporary and target collections and also reset the
+state of the source collection's read-only flag.
+
+=== Examples using REINDEXCOLLECTION
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCollection&numShards=3&configName=conf2&q=id:aa*&fl=id,string_s
+----
+This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
+matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
+hasn't been specified in the parameters a collection with a unique name eg. `.rx_newCollection_2` will be created and on success
+an alias pointing from `newCollection` to `.rx_newCollection_2` will be created, effectively replacing the source collection
+for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":10757},
+  "reindexStatus":{
+    "phase":"done",
+    "inputDocs":13416,
+    "processedDocs":376,
+    "actualSourceCollection":".rx_newCollection_1",
+    "state":"finished",
+    "actualTargetCollection":".rx_newCollection_2",
+    "checkpointCollection":".rx_ck_newCollection"
+  }
+}
+----
+As a result a new collection `.rx_newCollection_2` has been created, with selected documents re-indexed to 3 shards, and
+with an alias pointing from `newCollection` to this one. The status also shows that the source collection
+was already an alias to `.rx_newCollection_1`, which was likely a result of a previous re-indexing.
 
 [[reload]]
 == RELOAD: Reload a Collection
@@ -247,6 +396,65 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt
   </lst>
 </response>
 ----
+
+[[rename]]
+== RENAME: Rename a Collection
+
+`/admin/collections?action=RENAME&name=_existingName_&target=_targetName_`
+
+Renaming a collection sets up a standard alias that points to the underlying collection, so
+that the same (unmodified) collection can now be referred to in query, index and admin operations
+using the new name.
+
+This command does NOT actually rename the underlying Solr collection - it sets up a new one-to-one alias
+using the new name, or renames the existing alias so that it uses the new name, while still referring to
+the same underlying Solr collection. However, from the user's point of view the collection can now be
+accessed using the new name, and the new name can be also referred to in other aliases.
+
+The following limitations apply:
+
+* the existing name must be either a SolrCloud collection or a standard alias referring to a single collection.
+Aliases that refer to more than 1 collection are not supported.
+* the existing name must not be a Routed Alias.
+* the target name must not be an existing alias.
+
+=== RENAME Command Parameters
+
+`name`::
+Name of the existing SolrCloud collection or an alias that refers to exactly one collection and is not
+a Routed Alias.
+
+`target`::
+Target name of the collection. This will be the new alias that refers to the underlying SolrCloud collection.
+The original name (or alias) of the collection will be replaced also in the existing aliases so that they
+also refer to the new name. Target name must not be an existing alias.
+
+=== Examples using RENAME
+Assuming there are two actual SolrCloud collections named `collection1` and `collection2`,
+and the following aliases already exist:
+
+* `col1 -&gt; collection1`: this resolves to `collection1`.
+* `col2 -&gt; collection2`: this resolves to `collection2`.
+* `simpleAlias -&gt; col1`: this resolves to `collection1`.
+* `compoundAlias -&gt; col1,col2`: this resolves to `collection1,collection2`
+
+The RENAME of `col1` to `foo` will change the aliases to the following:
+
+* `foo -&gt; collection1`: this resolves to `collection1`.
+* `col2 -&gt; collection2`: this resolves to `collection2`.
+* `simpleAlias -&gt; foo`: this resolves to `collection1`.
+* `compoundAlias -&gt; foo,col2`: this resolves to `collection1,collection2`.
+
+If we then rename `collection1` (which is an actual collection name) to `collection2` (which is also
+an actual collection name) the following aliases will exist now:
+
+* `foo -&gt; collection2`: this resolves to `collection2`.
+* `col2 -&gt; collection2`: this resolves to `collection2`.
+* `simpleAlias -&gt; foo`: this resolves to `collection2`.
+* `compoundAlias -&gt; foo,col2`: this would resolve now to `collection2,collection2` so it's reduced to simply `collection2`.
+* `collection1` -&gt; `collection2`: this newly created alias effectively hides `collection1` from regular query and
+update commands, which are directed now to `collection2`.
+
 
 [[splitshard]]
 == SPLITSHARD: Split a Shard
@@ -538,7 +746,7 @@ Aliases come in 2 flavors: standard and routed.
 *Standard aliases* are simple:  CREATEALIAS registers the alias name with the names of one or more collections provided
   by the command.
 If an existing alias exists, it is replaced/updated.
-A standard alias can serve to have the appearance of renaming a collection, and can be used to atomically swap
+A standard alias can serve as a means to rename a collection, and can be used to atomically swap
 which backing/underlying collection is "live" for various purposes.
 When Solr searches an alias pointing to multiple collections, Solr will search all shards of all the collections as an
   aggregated whole.
@@ -547,23 +755,18 @@ While it is possible to send updates to an alias spanning multiple collections, 
 
 `/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
 
-*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection -- routing
-  updates to the correct collection.
-Since the only routing strategy at present is time oriented, these are also called *Time Routed Aliases* (TRAs).
-A TRA manages an alias and a time sequential series of collections that it will both create and optionally delete on-demand.
-See <<time-routed-aliases.adoc#time-routed-aliases,Time Routed Aliases>> for some important high-level information
+*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route
+  updates to the correct collection. Routing is data driven and may be based on a temporal field or on categories
+  specified in a field (normally string based).
+See <<aliases.adoc#routed-aliases,Routed Aliases>> for some important high-level information
   before getting started.
-
-NOTE: Presently this is only supported for temporal fields stored as a
-<<field-types-included-with-solr.adoc#field-types-included-with-solr,DatePointField or TrieDateField>> type. Other
-well ordered field types may be added in future versions.
 
 [source,text]
 ----
 localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
-If run on Jan 15, 2018, the above will create an alias named timedata, that contains collections with names prefixed
+If run on Jan 15, 2018, the above will create an time routed alias named timedata, that contains collections with names prefixed
 with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
 alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60
 minutes of 2018-01-15. After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
@@ -605,6 +808,21 @@ prohibited. If routing parameters are present this parameter is prohibited.
 
 Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
 
+`router.name`::
+The type of routing to use. Presently only `time` and `category` are valid.  This parameter is required.
+
+`router.field`::
+The field to inspect to determine which underlying collection an incoming document should be routed to.
+This field is required on all incoming documents.
+
+`create-collection.*`::
+The * wildcard can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
+are identical in requirements and naming except that we insist that the configset be explicitly specified.
+The configset must be created beforehand, either uploaded or copied and modified.
+It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+
+==== Time Routed Alias Parameters
+
 `router.start`::
 The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW"
 optionally with <<working-with-dates.adoc#date-math,date math>>).
@@ -624,13 +842,6 @@ If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01
 myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
 +
 The default timezone is UTC.
-
-`router.field`::
-The date field to inspect to determine which underlying collection an incoming document should be routed to.
-This field is required on all incoming documents.
-
-`router.name`::
-The type of routing to use. Presently only `time` is valid.  This parameter is required.
 
 `router.interval`::
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
@@ -677,11 +888,18 @@ Example: `/DAY-90DAYS`.
 +
 The default is not to delete.
 
-`create-collection.*`::
-The * wildcard can be replaced with any parameter from the <<create,CREATE>> command except `name`. All other fields
-are identical in requirements and naming except that we insist that the configset be explicitly specified.
-The configset must be created beforehand, either uploaded or copied and modified.
-It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+==== Category Routed Alias Parameters
+
+`router.maxCardinality`::
+The maximum number of categories allowed for this alias.
+This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
+
+`router.mustMatch`::
+A regular expression that the value of the field specified by `router.field` must match before a corresponding
+collection will be created. Note that changing this setting after data has been added will not alter the data already
+indexed. Any valid Java regular expression pattern may be specified. This expression is pre-compiled at the start of
+each request so batching of updates is strongly recommended. Overly complex patterns will produce cpu
+or garbage collecting overhead during indexing as determined by the JVM's implementation of regular expressions.
 
 === CREATEALIAS Response
 
@@ -695,10 +913,14 @@ To confirm the creation of the alias, you can look in the Solr Admin UI, under t
 
 Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
 
+// tag::createalias-simple-example[]
+
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
 ----
+
+//end::createalias-simple-example[]
 
 *Output*
 
@@ -835,6 +1057,10 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
 
 `/admin/collections?action=ALIASPROP&name=_name_&property.someKey=somevalue`
+
+WARNING: This command allows you to revise any property. No alias specific validation is performed.
+         Routed aliases may cease to function, function incorrectly or cause errors if property values
+         are set carelessly.
 
 === ALIASPROP Parameters
 
@@ -1305,6 +1531,192 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&pro
   </lst>
 </response>
 ----
+
+[[colstatus]]
+== COLSTATUS: Detailed low-level status of collection's indexes
+The COLSTATUS command provides a detailed description of the collection status, including low-level index
+information about segments and field data.
+
+This command also checks the compliance of Lucene index field types with the current Solr collection
+schema and indicates the names of non-compliant fields, ie. Lucene fields with field types incompatible
+(or different) from the corresponding Solr field types declared in the current schema. Such incompatibilities may
+result from incompatible schema changes or after migration of
+data to a different major Solr release.
+
+`/admin/collections?action=COLSTATUS&collection=coll&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true`
+
+=== COLSTATUS Parameters
+
+`collection`::
+Collection name (optional). If missing then it means all collections.
+
+`coreInfo`::
+Optional boolean. If true then additional information will be provided about
+SolrCore of shard leaders.
+
+`segments`::
+Optional boolean. If true then segment information will be provided.
+
+`fieldInfo`::
+Optional boolean. If true then detailed Lucene field information will be provided
+and their corresponding Solr schema types.
+
+`sizeInfo`::
+Optional boolean. If true then additional information about the index files
+size and their RAM usage will be provided.
+
+=== COLSTATUS Response
+The response will include an overview of the collection status, the number of
+active / inactive shards and replicas, and additional index information
+of shard leaders.
+
+=== Examples using COLSTATUS
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=gettingstarted&fieldInfo=true&sizeInfo=true
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 50
+    },
+    "gettingstarted": {
+        "stateFormat": 2,
+        "znodeVersion": 16,
+        "properties": {
+            "autoAddReplicas": "false",
+            "maxShardsPerNode": "-1",
+            "nrtReplicas": "2",
+            "pullReplicas": "0",
+            "replicationFactor": "2",
+            "router": {
+                "name": "compositeId"
+            },
+            "tlogReplicas": "0"
+        },
+        "activeShards": 2,
+        "inactiveShards": 0,
+        "schemaNonCompliant": [
+            "(NONE)"
+        ],
+        "shards": {
+            "shard1": {
+                "state": "active",
+                "range": "80000000-ffffffff",
+                "replicas": {
+                    "total": 2,
+                    "active": 2,
+                    "down": 0,
+                    "recovering": 0,
+                    "recovery_failed": 0
+                },
+                "leader": {
+                    "coreNode": "core_node4",
+                    "core": "gettingstarted_shard1_replica_n1",
+                    "base_url": "http://192.168.0.80:8983/solr",
+                    "node_name": "192.168.0.80:8983_solr",
+                    "state": "active",
+                    "type": "NRT",
+                    "force_set_state": "false",
+                    "leader": "true",
+                    "segInfos": {
+                        "info": {
+                            "minSegmentLuceneVersion": "9.0.0",
+                            "commitLuceneVersion": "9.0.0",
+                            "numSegments": 40,
+                            "segmentsFileName": "segments_w",
+                            "totalMaxDoc": 686953,
+                            "userData": {
+                                "commitCommandVer": "1627350608019193856",
+                                "commitTimeMSec": "1551962478819"
+                            }
+                        },
+                        "fieldInfoLegend": [
+                            "I - Indexed",
+                            "D - DocValues",
+                            "xxx - DocValues type",
+                            "V - TermVector Stored",
+                            "O - Omit Norms",
+                            "F - Omit Term Frequencies & Positions",
+                            "P - Omit Positions",
+                            "H - Store Offsets with Positions",
+                            "p - field has payloads",
+                            "s - field uses soft deletes",
+                            ":x:x:x - point data dim : index dim : num bytes"
+                        ],
+                        "segments": {
+                            "_i": {
+                                "name": "_i",
+                                "delCount": 738,
+                                "softDelCount": 0,
+                                "hasFieldUpdates": false,
+                                "sizeInBytes": 109398213,
+                                "size": 70958,
+                                "age": "2019-03-07T12:34:24.761Z",
+                                "source": "merge",
+                                "version": "9.0.0",
+                                "createdVersionMajor": 9,
+                                "minVersion": "9.0.0",
+                                "diagnostics": {
+                                    "os": "Mac OS X",
+                                    "java.vendor": "Oracle Corporation",
+                                    "java.version": "1.8.0_191",
+                                    "java.vm.version": "25.191-b12",
+                                    "lucene.version": "9.0.0",
+                                    "mergeMaxNumSegments": "-1",
+                                    "os.arch": "x86_64",
+                                    "java.runtime.version": "1.8.0_191-b12",
+                                    "source": "merge",
+                                    "mergeFactor": "10",
+                                    "os.version": "10.14.3",
+                                    "timestamp": "1551962064761"
+                                },
+                                "attributes": {
+                                    "Lucene50StoredFieldsFormat.mode": "BEST_SPEED"
+                                },
+                                "largestFiles": {
+                                    "_i.fdt": "42.5 MB",
+                                    "_i_Lucene80_0.dvd": "35.3 MB",
+                                    "_i_Lucene50_0.pos": "11.1 MB",
+                                    "_i_Lucene50_0.doc": "10 MB",
+                                    "_i_Lucene50_0.tim": "4.3 MB"
+                                },
+                                "ramBytesUsed": {
+                                    "total": 49153,
+                                    "postings [PerFieldPostings(segment=_i formats=1)]": {
+                                        "total": 31023,
+...
+                                "fields": {
+                                    "dc": {
+                                        "flags": "I-----------",
+                                        "schemaType": "text_general"
+                                    },
+                                    "dc_str": {
+                                        "flags": "-Dsrs-------",
+                                        "schemaType": "strings"
+                                    },
+                                    "dc.title": {
+                                        "flags": "I-----------",
+                                        "docCount": 70958,
+                                        "sumDocFreq": 646756,
+                                        "sumTotalTermFreq": 671817,
+                                        "schemaType": "text_general"
+                                    },
+                                    "dc.date": {
+                                        "flags": "-Dsrn-------:1:1:8",
+                                        "schemaType": "pdates"
+                                    },
+...
+----
+
 
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection

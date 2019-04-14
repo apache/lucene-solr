@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
@@ -68,7 +69,7 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
   
-  private final Map<String,String> attributes;
+  private Map<String,String> attributes;
 
   private final Sort indexSort;
 
@@ -86,7 +87,7 @@ public final class SegmentInfo {
   Version minVersion;
 
   void setDiagnostics(Map<String, String> diagnostics) {
-    this.diagnostics = Objects.requireNonNull(diagnostics);
+    this.diagnostics = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(diagnostics)));
   }
 
   /** Returns diagnostics saved into the segment when it was
@@ -111,12 +112,12 @@ public final class SegmentInfo {
     this.maxDoc = maxDoc;
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
-    this.diagnostics = Objects.requireNonNull(diagnostics);
+    this.diagnostics = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(diagnostics)));
     this.id = id;
     if (id.length != StringHelper.ID_LENGTH) {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
-    this.attributes = Objects.requireNonNull(attributes);
+    this.attributes = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(attributes)));
     this.indexSort = indexSort;
   }
 
@@ -324,9 +325,19 @@ public final class SegmentInfo {
    * <p>
    * If a value already exists for the field, it will be replaced with the new
    * value.
+   * This method make a copy on write for every attribute change.
    */
   public String putAttribute(String key, String value) {
-    return attributes.put(key, value);
+    HashMap<String, String> newMap = new HashMap<>(attributes);
+    String oldValue = newMap.put(key, value);
+    // we make a full copy of this to prevent concurrent modifications to this in the toString method
+    // this method is only called when a segment is written but the SegmentInfo might be exposed
+    // in running merges which can cause ConcurrentModificationExceptions if we modify / share
+    // the same instance. Technically that's an unsafe publication but IW design would require
+    // significant changes to prevent this. On the other hand, since we expose the map in getAttributes()
+    // it's a good design to make it unmodifiable anyway.
+    attributes = Collections.unmodifiableMap(newMap);
+    return oldValue;
   }
   
   /**

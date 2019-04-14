@@ -78,6 +78,13 @@ public class DocValuesNumbersQuery extends Query {
     return 31 * classHash() + Objects.hash(field, numbers);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
   public String getField() {
     return field;
   }
@@ -129,4 +136,5 @@ public class DocValuesNumbersQuery extends Query {
 
     };
   }
+
 }

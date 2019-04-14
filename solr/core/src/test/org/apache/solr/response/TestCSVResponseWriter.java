@@ -42,7 +42,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
   public static void createIndex() {
     assertU(adoc("id","1", "foo_i","-1", "foo_s","hi", "foo_l","12345678987654321", "foo_b","false", "foo_f","1.414","foo_d","-1.0E300","foo_dt","2000-01-02T03:04:05Z"));
     assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output", "shouldbeunstored","foo"));
-    assertU(adoc("id","3", "shouldbeunstored","foo"));
+    assertU(adoc("id","3", "shouldbeunstored","foo", "foo_l", "1"));
     assertU(adoc("id","4", "amount_c", "1.50,EUR"));
     assertU(adoc("id","5", "store", "12.434,-134.1"));
     assertU(adoc("id","6", "pubyear_ii", "123", "store_iis", "12", "price_ff", "1.3"));
@@ -246,12 +246,19 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertEquals("exists(shouldbeunstored),XXX", singleFuncLines[0] );
     assertEquals("false,1", singleFuncLines[1] );
     assertEquals("true,3", singleFuncLines[3] );
+
+    // pseudo-fields with * in fl
+    txt = h.query(req("q","id:4", "wt","csv", "csv.header","true", "fl","*,YYY:[docid],FOO:amount_c"));
+    lines = txt.split("\n");
+    assertEquals(2, lines.length);
+    assertEquals(sortHeader("foo_i,foo_l,FOO,foo_s,store,store_iis," +
+        "v2_ss,pubyear_ii,foo_dt,foo_b,YYY,foo_d,id,amount_c,foo_f,v_ss"), sortHeader(lines[0]));
   }
 
   @Test
   public void testForDVEnabledFields() throws Exception {
     // for dv enabled and useDocValueAsStored=true
-    // returns pubyear_i, store_iis but not price_ff
+    // returns pubyear_ii, store_iis but not price_ff
     String singleFuncText = h.query(req("q","id:6", "wt","csv", "csv.header","true"));
     String sortedHeader = sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l," +
         "pubyear_ii,store_iis");
@@ -283,6 +290,19 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertEquals(2, singleFuncLines.length);
     assertEquals("price_ff", singleFuncLines[0]);
     assertEquals("1.3", singleFuncLines[1]);
+
+    // explicit price_ff with fl=*
+    singleFuncText = h.query(req("q","id:6", "wt","csv", "csv.header","true", "fl", "*,price_ff"));
+    sortedHeader = sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l," +
+        "pubyear_ii,store_iis,price_ff");
+    singleFuncLines = singleFuncText.split("\n");
+    assertEquals(2, singleFuncLines.length);
+    assertEquals(sortedHeader, sortHeader(singleFuncLines[0]));
+    actualVal = Arrays.stream(singleFuncLines[1].trim().split(","))
+        .filter(val -> !val.trim().isEmpty() && !val.trim().equals("\"\""))
+        .collect(Collectors.toList());
+    assertEquals(4, actualVal.size());
+    assertTrue(actualVal.containsAll(Arrays.asList("6", "123", "12", "1.3")));
   }
     
 

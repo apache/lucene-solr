@@ -63,6 +63,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
@@ -78,7 +79,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -86,6 +86,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
@@ -131,6 +132,9 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -161,7 +165,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /**
- * A junit4 Solr test harness that extends LuceneTestCaseJ4.
+ * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
  * To change which core is used when loading the schema and solrconfig.xml, simply
  * invoke the {@link #initCore(String, String, String, String)} method.
  */
@@ -173,7 +177,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 @RandomizeSSL()
 @ThreadLeakLingering(linger = 10000)
-public abstract class SolrTestCaseJ4 extends LuceneTestCase {
+public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -278,8 +282,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     System.setProperty("solr.httpclient.retries", "1");
     System.setProperty("solr.retries.on.forward", "1");
-    System.setProperty("solr.retries.to.followers", "1"); 
-    
+    System.setProperty("solr.retries.to.followers", "1");
+
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
@@ -1371,9 +1375,35 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
           for (Object val : sfield) {
             if (firstVal) firstVal=false;
             else out.append(',');
+            if(val instanceof SolrInputDocument) {
+              json((SolrInputDocument) val, out);
+            }
             out.append(JSONUtil.toJSON(val));
           }
           out.append(']');
+        } else if(sfield.getValue() instanceof SolrInputDocument) {
+          json((SolrInputDocument) sfield.getValue(), out);
+        } else if (sfield.getValue() instanceof Map) {
+          Map<String, Object> valMap = (Map<String, Object>) sfield.getValue();
+          Set<String> childDocsKeys = valMap.entrySet().stream().filter(record -> isChildDoc(record.getValue()))
+              .map(Entry::getKey).collect(Collectors.toSet());
+          if(childDocsKeys.size() > 0) {
+            Map<String, Object> newMap = new HashMap<>();
+            for(Entry<String, Object> entry: valMap.entrySet()) {
+              String keyName = entry.getKey();
+              Object val = entry.getValue();
+              if(childDocsKeys.contains(keyName)) {
+                if(val instanceof Collection) {
+                  val = ((Collection) val).stream().map(e -> toSolrDoc((SolrInputDocument) e)).collect(Collectors.toList());
+                } else {
+                  val = toSolrDoc((SolrInputDocument) val);
+                }
+              }
+              newMap.put(keyName, val);
+            }
+            valMap = newMap;
+          }
+          out.append(JSONUtil.toJSON(valMap));
         } else {
           out.append(JSONUtil.toJSON(sfield.getValue()));
         }
@@ -2278,6 +2308,61 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} that will randomize
+   * some internal settings.
+   */
+  public static class CloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder {
+
+    public CloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
+      super(zkHosts, zkChroot);
+      randomizeCloudSolrClient();
+    }
+
+    public CloudHttp2SolrClientBuilder(ClusterStateProvider stateProvider) {
+      super(new ArrayList<>());
+      this.stateProvider = stateProvider;
+      randomizeCloudSolrClient();
+    }
+
+    public CloudHttp2SolrClientBuilder(MiniSolrCloudCluster cluster) {
+      super(new ArrayList<>());
+      if (random().nextBoolean()) {
+        this.zkHosts.add(cluster.getZkServer().getZkAddress());
+      } else {
+        populateSolrUrls(cluster);
+      }
+
+      randomizeCloudSolrClient();
+    }
+
+    private void populateSolrUrls(MiniSolrCloudCluster cluster) {
+      if (random().nextBoolean()) {
+        final List<JettySolrRunner> solrNodes = cluster.getJettySolrRunners();
+        for (JettySolrRunner node : solrNodes) {
+          this.solrUrls.add(node.getBaseUrl().toString());
+        }
+      } else {
+        this.solrUrls.add(cluster.getRandomJetty(random()).getBaseUrl().toString());
+      }
+    }
+
+    private void randomizeCloudSolrClient() {
+      this.directUpdatesToLeadersOnly = random().nextBoolean();
+      this.shardLeadersOnly = random().nextBoolean();
+      this.parallelUpdates = random().nextBoolean();
+    }
+  }
+
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the
+   * {@link org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
+   */
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(MiniSolrCloudCluster cluster) {
+    return new CloudHttp2SolrClientBuilder(cluster).build();
+  }
+
+  /**
    * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize
    * some internal settings.
    */
@@ -2836,6 +2921,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     }
   }
+
+  public static DistributedUpdateProcessor createDistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
+                                                                            UpdateRequestProcessor next) {
+    if(h.getCoreContainer().isZooKeeperAware()) {
+      return new DistributedZkUpdateProcessor(req, rsp, next);
+    }
+    return new DistributedUpdateProcessor(req, rsp, next);
+  }
   
   /**
    * Cleans up the randomized sysproperties and variables set by {@link #randomizeNumericTypesProperties}
@@ -2852,6 +2945,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
+  }
+
+  private static SolrDocument toSolrDoc(SolrInputDocument sid) {
+    SolrDocument doc = new SolrDocument();
+    for(SolrInputField field: sid) {
+      doc.setField(field.getName(), field.getValue());
+    }
+    return doc;
+  }
+
+  private static boolean isChildDoc(Object o) {
+    if(o instanceof Collection) {
+      Collection col = (Collection) o;
+      if(col.size() == 0) {
+        return false;
+      }
+      return col.iterator().next() instanceof SolrInputDocument;
+    }
+    return o instanceof SolrInputDocument;
   }
 
   private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();

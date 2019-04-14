@@ -1,0 +1,278 @@
+= Aliases
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+== Standard Aliases
+
+Since version 6, SolrCloud has had the ability to query one or more collections via an alternative name. These
+alternative names for collections are known as aliases, and are useful when you want to:
+
+. Atomically switch to using a newly (re)indexed collection with zero down time (by re-defining the alias)
+. Insulate the client programming versus changes in collection names
+. Issue a single query against several collections with identical schemas
+
+It's also possible to send update commands to aliases, but this is rarely useful if the
+  alias refers to more than one collection (as in case 3 above).
+Since there is no logic by which to distribute documents among the collections, all updates will simply be
+  directed to the first collection in the list.
+
+Standard aliases are created and updated using the <<collections-api.adoc#createalias,CREATEALIAS>> command.
+The current list of collections that are members of an alias can be verified via the
+  <<collections-api.adoc#clusterstatus,CLUSTERSTATUS>> command.
+The full definition of all aliases including metadata about that alias (in the case of routed aliases, see below)
+  can be verified via the <<collections-api.adoc#listaliases,LISTALIASES>> command.
+Alternatively this information is available by checking `/aliases.json` in zookeeper via a zookeeper
+  client or in the <<cloud-screens.adoc#tree-view,tree page>> of the cloud menu in the admin UI.
+Aliases may be deleted via the <<collections-api.adoc#deletealias,DELETEALIAS>> command.
+The underlying collections are *unaffected* by this command.
+
+TIP: Any alias (standard or routed) that references multiple collections may complicate relevancy.
+By default, SolrCloud scores documents on a per shard basis.
+With multiple collections in an alias this is always a problem, so if you have a use case for which BM25 or
+  TF/IDF relevancy is important you will want to turn on one of the
+  <<distributed-requests.adoc#distributedidf,ExactStatsCache>> implementations.
+However, for analytical use cases where results are sorted on numeric, date or alphanumeric field values rather
+  than relevancy calculations this is not a problem.
+
+== Collection admin commands and aliases
+Starting with version 8.1 SolrCloud supports using alias names in collection admin commands where normally a
+collection name is expected. This works only when the following criteria are satisfied:
+
+* an alias must not refer to more than one collection
+* an alias must not refer to a Routed Alias (see below)
+
+If all criteria are satisfied then the command will resolve alias names and operate on the collections the aliases
+refer to, as if it was invoked with the collection names instead. Otherwise the command will not be executed and
+an exception will be thrown.
+
+== Routed Aliases
+
+To address the update limitations associated with standard aliases and provide additional useful features, the concept of
+  RoutedAliases has been developed.
+There are presently two types of Routed Alias time routed and category routed. These are described in detail below,
+  but share some common behavior.
+
+When processing an update for a routed alias, Solr initializes its
+  <<update-request-processors.adoc#update-request-processors,UpdateRequestProcessor>> chain as usual, but
+  when `DistributedUpdateProcessor` (DUP) initializes, it detects that the update targets a routed alias and injects
+  `RoutedAliasUpdateProcessor` (RAUP) in front of itself.
+RAUP, in coordination with the Overseer, is the main part of a routed alias, and must immediately precede DUP. It is not
+  possible to configure custom chains with other types of UpdateRequestProcessors between RAUP and DUP.
+
+Ideally, as a user of a routed alias, you needn't concern yourself with the particulars of the collection naming pattern
+  since both queries and updates may be done via the alias.
+When adding data, you should usually direct documents to the alias (e.g., reference the alias name instead of any collection).
+The Solr server and CloudSolrClient will direct an update request to the first collection that an alias points to.
+Once the server receives the data it will perform the necessary routing.
+
+WARNING: It is possible to update the collections
+  directly, but there is no safeguard against putting data in the incorrect collection if the alias is circumvented
+  in this manner.
+
+CAUTION: It's probably a bad idea to use "data driven" mode with routed aliases, as duplicate schema mutations might happen
+concurrently leading to errors.
+
+
+== Time Routed Aliases
+
+Starting in Solr 7.4, Time Routed Aliases (TRAs) are a SolrCloud feature that manages an alias and a time sequential
+ series of collections.
+
+It automatically creates new collections and (optionally) deletes old ones as it routes documents to the correct
+  collection based on its timestamp.
+This approach allows for indefinite indexing of data without degradation of performance otherwise experienced due to the
+  continuous growth of a single index.
+
+If you need to store a lot of timestamped data in Solr, such as logs or IoT sensor data, then this feature probably
+  makes more sense than creating one sharded hash-routed collection.
+
+=== How It Works
+
+First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with some
+  router settings.
+Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+
+The first collection will be created automatically, along with an alias pointing to it.
+Each underlying Solr "core" in a collection that is a member of a TRA has a special core property referencing the alias.
+The name of each collection is comprised of the TRA name and the start timestamp (UTC), with trailing zeros and symbols
+  truncated.
+
+The collections list for a TRA is always reverse sorted, and thus the connection path of the request will route to the
+  lead collection. Using CloudSolrClient is preferable as it can reduce the number of underlying physical HTTP requests by one.
+If you know that a particular set of documents to be delivered is going to a particular older collection then you could
+  direct it there from the client side as an optimization but it's not necessary. CloudSolrClient does not (yet) do this.
+
+
+TRUP first reads TRA configuration from the alias properties when it is initialized.  As it sees each document, it checks for
+  changes to TRA properties, updates its cached configuration if needed and then determines which collection the
+  document belongs to:
+
+* If TRUP needs to send it to a time segment represented by a collection other than the one that
+  the client chose to communicate with, then it will do so using mechanisms shared with DUP.
+  Once the document is forwarded to the correct collection (i.e., the correct TRA time segment), it skips directly to
+  DUP on the target collection and continues normally, potentially being routed again to the correct shard & replica
+  within the target collection.
+
+* If it belongs in the current collection (which is usually the case if processing events as they occur), the document
+  passes through to DUP. DUP does it's normal collection-level processing that may involve routing the document
+  to another shard & replica.
+
+* If the time stamp on the document is more recent than the most recent TRA segment, then a new collection needs to be
+  added at the front of the TRA.
+  TRUP will create this collection, add it to the alias and then forward the document to the collection it just created.
+  This can happen recursively if more than one collection needs to be created.
++
+Each time a new collection is added, the oldest collections in the TRA are examined for possible deletion, if that has
+    been configured.
+All this happens synchronously, potentially adding seconds to the update request and indexing latency.
+If `router.preemptiveCreateMath` is configured and if the document arrives within this window then it will occur
+asynchronously.
+
+Any other type of update like a commit or delete is routed by TRUP to all collections.
+Generally speaking, this is not a performance concern. When Solr receives a delete or commit wherein nothing is deleted
+or nothing needs to be committed, then it's pretty cheap.
+
+
+=== Limitations & Assumptions
+
+* Only *time* routed aliases are supported.  If you instead have some other sequential number, you could fake it
+  as a time (e.g., convert to a timestamp assuming some epoch and increment).
++
+The smallest possible interval is one second.
+No other routing scheme is supported, although this feature was developed with considerations that it could be
+  extended/improved to other schemes.
+
+* The underlying collections form a contiguous sequence without gaps.  This will not be suitable when there are
+  large gaps in the underlying data, as Solr will insist that there be a collection for each increment.  This
+  is due in part on Solr calculating the end time of each interval collection based on the timestamp of
+  the next collection, since it is otherwise not stored in any way.
+
+* Avoid sending updates to the oldest collection if you have also configured that old collections should be
+  automatically deleted.  It could lead to exceptions bubbling back to the indexing client.
+
+== Category Routed Aliases
+
+Starting in Solr 8.1, Category Routed Aliases (CRAs) are a feature to manage aliases and a set of dependent collections
+based on the value of a single field.
+
+CRAs automatically create new collections but because the partitioning is on categorical information rather than continuous
+numerically based values there's no logic for automatic deletion. This approach allows for simplified indexing of data
+that must be segregated into collections for cluster management or security reasons.
+
+=== How It Works
+
+First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with some
+  router settings.
+ Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+
+The alias will be created with a special place-holder collection which will always be named
+ `myAlias__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA__TEMP`. The first document indexed into the CRA
+ will create a second collection named `myAlias__CRA__foo` (for a routed field value of `foo`). The second document
+ indexed will cause the temporary place holder collection to be deleted. Thereafter collections will be created whenever
+ a new value for the field is encountered.
+
+CAUTION: To guard against runaway collection creation options for limiting the total number of categories, and for
+rejecting values that don't match a regular expression are provided (see <<collections-api.adoc#createalias,CREATEALIAS>> for
+details). Note that by providing very large or very permissive values for these options you are accepting the risk that
+garbled data could potentially create thousands of collections and bring your cluster to a grinding halt.
+
+Please note that the values (and thus the collection names) are case sensitive. As elsewhere in Solr manipulation and
+cleaning of the data is expected to be done by external processes before data is sent to Solr with one exception.
+Throughout Solr there are limitations on the allowable characters in collection names. Any characters other than ASCII
+alphanumeric characters (`A-Za-z0-9`), hyphen (`-`) or underscore (`_`) are replaced with an underscore when calculating
+the collection name for a category. For a CRA named `myAlias` the following table shows how collection names would be
+calculated:
+
+|===
+|Value |CRA Collection Name
+
+|foo
+|+myAlias__CRA__foo+
+
+|Foo
+|+myAlias__CRA__Foo+
+
+|foo bar
+|+myAlias__CRA__foo_bar+
+
+|+FOÓB&R+
+|+myAlias__CRA__FO_B_R+
+
+|+中文的东西+
+|+myAlias__CRA_______+
+
+|+foo__CRA__bar+
+|*Causes 400 Bad Request*
+
+|+<null>+
+|*Causes 400 Bad Request*
+
+|===
+
+Since collection creation can take upwards of 1-3 seconds, systems inserting data in a CRA should be
+ constructed to handle such pauses whenever a new collection is created.
+Unlike time routed aliases, there is no way to predict the next value so such pauses are unavoidable.
+
+There is no automated means of removing a category. If a category needs to be removed from a CRA
+the following procedure is recommended:
+
+. Ensure that no documents with the value corresponding to the category to be removed will be sent
+   either by stopping indexing or by fixing the incoming data stream
+. Modify the alias definition in zookeeper, removing the collection corresponding to the category.
+. Delete the collection corresponding to the category. Note that if the collection is not removed
+   from the alias first, this step will fail.
+
+=== Limitations & Assumptions
+
+* CRAs are presently unsuitable for non-english data values due to the limits on collection names.
+  This can be worked around by duplicating the route value to a *_url safe_* base 64 encoded field
+  and routing on that value instead.
+
+* The check for the __CRA__ infix is independent of the regular expression validation and occurs after
+  the name of the collection to be created has been calculated. It may not be avoided and is necessary
+  to support future features.
+
+== Improvement Possibilities
+
+Routed aliases are a relatively new feature of SolrCloud that can be expected to be improved.
+Some _potential_ areas for improvement that _are not implemented yet_ are:
+
+* *TRAs*: Searches with time filters should only go to applicable collections.
+
+* *TRAs*: Ways to automatically optimize (or reduce the resources of) older collections that aren't expected to receive more
+  updates, and might have less search demand.
+
+* *CRAs*: Intrinsic support for non-english text via base64 encoding
+
+* *CRAs*: Supply an initial list of values for cases where these are known before hand to reduce pauses during indexing
+
+* CloudSolrClient could route documents to the correct collection based on the route value instead always picking the
+  latest/first.
+
+* Presently only updates are routed and queries are distributed to all collections in the alias, but future
+  features might enable routing of the query to the single appropriate collection based on a special parameter or perhaps
+  a filter on the routed field.
+
+* Collections might be constrained by their size instead of or in addition to time or category value.
+  This might be implemented as another type of routed alias, or possibly as an option on the existing routed aliases
+
+* Compatibility with CDCR.
+
+* Option for deletion of aliases that also deletes the underlying collections in one step. Routed Aliases may quickly
+  create more collections than expected during initial testing. Removing them after such events is overly tedious.
+
+As always, patches and pull requests are welcome!

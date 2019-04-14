@@ -1,0 +1,202 @@
+= Searching Nested Child Documents
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section exposes potential techniques which can be used for searching deeply nested documents,
+show casing how more complex queries can be constructed using some of Solr's query parsers and Doc Transformers.
+These features require `\_root_` and `\_nest_path_` to be declared in the schema. +
+Please refer to the <<indexing-nested-documents.adoc#indexing-nested-documents, Indexing Nested Documents>>
+section for more details about schema and index configuration.
+
+
+[NOTE]
+This section does not show case faceting on nested documents. For nested document faceting, please refer to the
+<<blockjoin-faceting#blockjoin-faceting, Block Join Faceting>> section.
+
+== Query Examples
+
+For the upcoming examples, assume the following documents have been indexed:
+
+[source,json]
+----
+[
+  {
+    "ID": "1",
+    "title": "Cooking Recommendations",
+    "tags": ["cooking", "meetup"],
+    "posts": [{
+        "ID": "2",
+        "title": "Cookies",
+        "comments": [{
+            "ID": "3",
+            "content": "Lovely recipe"
+          },
+          {
+            "ID": "4",
+            "content": "A-"
+          }
+        ]
+      },
+      {
+        "ID": "5",
+        "title": "Cakes"
+      }
+    ]
+  },
+  {
+    "ID": "6",
+    "title": "For Hire",
+    "tags": ["professional", "jobs"],
+    "posts": [{
+        "ID": "7",
+        "title": "Search Engineer",
+        "comments": [{
+           "ID": "8",
+           "content": "I am interested"
+         },
+         {
+           "ID": "9",
+           "content": "How large is the team?"
+         }
+        ]
+      },
+      {
+        "ID": "10",
+        "title": "Low level Engineer"
+      }
+    ]
+  }
+]
+----
+
+=== Child Doc Transformer
+
+Can be used enrich query results with the documents' descendants. +
+For a detailed explanation of this transformer, see the section <<transforming-result-documents.adoc#child-childdoctransformerfactory, [child] - ChildDocTransformerFactory>>.
+
+For example, let us examine this query:
+`q=ID:1,
+fl=ID,[child childFilter=/comments/content:recipe]`. +
+The Child Doc Transformer can be used to enrich matching docs with comments that match a particular filter. +
+In this particular query, the child Filter will only match the first comment of doc(ID:1),
+therefore only that particular comment will be appended to the result.  This is a special syntax feature.
+
+[source,json]
+----
+ { "response":{"numFound":1,"start":0,"docs":[
+       {
+           "ID": "1",
+           "title": "Cooking Recommendations",
+           "tags": ["cooking", "meetup"],
+           "posts": [{
+               "ID": "2",
+               "title": "Cookies",
+               "comments": [{
+                   "ID": "3",
+                   "content": "Lovely recipe"
+               }]
+             }]
+        }]
+    }
+ }
+----
+
+=== Children Query Parser
+
+Can be used to retrieve children of a matching document. +
+For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-children-query-parser, Block Join Children Query Parser>>.
+
+For example, let us examine this query:
+`q={!child of='_nest_path_:/posts}content:"Search Engineer"`. +
+The `'of'` filter returns all posts. This is used to filter out all documents in a particular path of the hierarchy(all parents).
+The second part of the query is a filter for some parents, which we wish to return their children. +
+In this example, all comments of posts which had "Search Engineer in their `content` field will be returned.
+
+[source,json]
+----
+     { "response":{"numFound":2,"start":0,"docs":[
+           {
+              "ID": "8",
+              "content": "I am interested"
+           },
+           {
+              "ID": "9",
+              "content": "How large is the team?"
+           }
+        ]}
+     }
+----
+
+=== Parents Query Parser
+
+Can be used to retrieve parents of a child document. +
+For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
+
+For example, let us examine this query:
+`q={!parent which='-_nest_path_:* \*:*'}title:"Search Engineer"`. +
+The `'which'` filter returns all root documents.
+The second part of this query is a filter to match some child documents.
+This query returns the parent at the root(since all parents filter returns root documents) of each
+matching child document. In this case, all child documents which had `Search Engineer` in their `title` field.
+
+[source,json]
+----
+  { "response":{"numFound":1,"start":0,"docs":[{
+         "ID": "6",
+         "title": "For Hire",
+         "tags": ["professional", "jobs"]
+         }
+    ]}
+  }
+----
+
+=== Combining Block Join Query Parsers with Child Doc Transformer
+
+The combination of these two features enable seamless creation of powerful queries. +
+For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
+The comments for matching posts can also be fetched, all done in a single Solr Query.
+
+For example, let us examine this query:
+`q=+{!child of='-\_nest_path_:* \*:*'}+tags:"jobs" &fl=*,[child]
+&fq=\_nest_path_:/posts`. +
+This query returns all posts and their comments, which had "Search Engineer" in their title,
+and are indexed under a page tagged with "jobs".
+The comments are appended to the matching posts, since the ChildDocTransformer is specified under the `fl` parameter.
+
+[source,json]
+----
+  { "response":{"numFound":1,"start":0,"docs":[
+        {
+          "ID": "7",
+          "title": "Search Engineer",
+          "comments": [{
+             "ID": "8",
+             "content": "I am interested"
+           },
+           {
+             "ID": "9",
+             "content": "How large is the team?"
+           }
+          ]
+        },
+        {
+          "ID": "10",
+          "title": "Low level Engineer"
+        }]
+     }
+  }
+----

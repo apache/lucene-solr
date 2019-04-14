@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.geo;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
@@ -32,6 +34,7 @@ public final class Polygon2D extends EdgeTree {
   // and pull up max values for both dimensions to each parent node (regardless of split).
   /** tree of holes, or null */
   private final Polygon2D holes;
+  private final AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
   private Polygon2D(Polygon polygon, Polygon2D holes) {
     super(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon, polygon.getPolyLats(), polygon.getPolyLons());
@@ -69,7 +72,8 @@ public final class Polygon2D extends EdgeTree {
     if (latitude < minLat || latitude > maxLat || longitude < minLon || longitude > maxLon) {
       return false;
     }
-    if (contains(tree, latitude, longitude)) {
+    containsBoundary.set(false);
+    if (contains(tree, latitude, longitude, containsBoundary)) {
       if (holes != null && holes.contains(latitude, longitude)) {
         return false;
       }
@@ -92,7 +96,7 @@ public final class Polygon2D extends EdgeTree {
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minLat, maxLat, minLon, maxLon);
     if (numCorners == 4) {
-      if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+      if (tree.crossesBox(minLat, maxLat, minLon, maxLon, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
@@ -100,7 +104,7 @@ public final class Polygon2D extends EdgeTree {
       if (minLat >= tree.lat1 && maxLat <= tree.lat1 && minLon >= tree.lon2 && maxLon <= tree.lon2) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+      if (tree.crossesBox(minLat, maxLat, minLon, maxLon, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -119,10 +123,52 @@ public final class Polygon2D extends EdgeTree {
         return Relation.CELL_OUTSIDE_QUERY;
       }
     }
+    if (ax == bx && bx == cx && ay == by && by == cy) {
+      // indexed "triangle" is a point:
+      if (Rectangle.containsPoint(ay, ax, minLat, maxLat, minLon, maxLon) == false) {
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
+      // shortcut by checking contains
+      return contains(ay, ax) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
+    } else if (ax == cx && ay == cy) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(ax, ay, bx, by);
+    }
+    // indexed "triangle" is a triangle:
+    return relateIndexedTriangle(ax, ay, bx, by, cx, cy);
+  }
+
+  /** relates an indexed line segment (a "flat triangle") with the polygon */
+  private Relation relateIndexedLineSegment(double a2x, double a2y, double b2x, double b2y) {
+    // check endpoints of the line segment
+    int numCorners = 0;
+    if (componentContains(a2y, a2x)) {
+      ++numCorners;
+    }
+    if (componentContains(b2y, b2x)) {
+      ++numCorners;
+    }
+
+    if (numCorners == 2) {
+      if (tree.crossesLine(a2x, a2y, b2x, b2y)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners == 0) {
+      if (tree.crossesLine(a2x, a2y, b2x, b2y)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /** relates an indexed triangle with the polygon */
+  private Relation relateIndexedTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
@@ -130,7 +176,7 @@ public final class Polygon2D extends EdgeTree {
       if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_CROSSES_QUERY) {
+      if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -224,22 +270,27 @@ public final class Polygon2D extends EdgeTree {
   // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
   // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   // IN THE SOFTWARE.
-  private static boolean contains(Edge tree, double latitude, double longitude) {
-    // crossings algorithm is an odd-even algorithm, so we descend the tree xor'ing results along our path
+  private static boolean contains(Edge edge, double lat, double lon, AtomicBoolean isOnEdge) {
     boolean res = false;
-    if (latitude <= tree.max) {
-      if (tree.lat1 > latitude != tree.lat2 > latitude) {
-        if (longitude < (tree.lon1 - tree.lon2) * (latitude - tree.lat2) / (tree.lat1 - tree.lat2) + tree.lon2) {
-          res = true;
+    if (isOnEdge.get() == false && lat <= edge.max) {
+      if (lat == edge.lat1 && lat == edge.lat2 ||
+          (lat <= edge.lat1 && lat >= edge.lat2) != (lat >= edge.lat1 && lat <= edge.lat2)) {
+        if (GeoUtils.orient(edge.lon1, edge.lat1, edge.lon2, edge.lat2, lon, lat) == 0) {
+          // if its on the boundary return true
+          isOnEdge.set(true);
+          return true;
+        } else if (edge.lat1 > lat != edge.lat2 > lat) {
+          res = lon < (edge.lon2 - edge.lon1) * (lat - edge.lat1) / (edge.lat2 - edge.lat1) + edge.lon1;
         }
       }
-      if (tree.left != null) {
-        res ^= contains(tree.left, latitude, longitude);
+      if (edge.left != null) {
+        res ^= contains(edge.left, lat, lon, isOnEdge);
       }
-      if (tree.right != null && latitude >= tree.low) {
-        res ^= contains(tree.right, latitude, longitude);
+
+      if (edge.right != null && lat >= edge.low) {
+        res ^= contains(edge.right, lat, lon, isOnEdge);
       }
     }
-    return res;
+    return isOnEdge.get() || res;
   }
 }

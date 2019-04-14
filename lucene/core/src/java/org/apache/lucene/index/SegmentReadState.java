@@ -49,23 +49,29 @@ public class SegmentReadState {
    *  {@link IndexFileNames#segmentFileName(String,String,String)}). */
   public final String segmentSuffix;
 
+  /**
+   * True iff this SegmentReadState is opened from an IndexWriter.
+   */
+  public final boolean openedFromWriter;
+
   /** Create a {@code SegmentReadState}. */
   public SegmentReadState(Directory dir, SegmentInfo info,
-      FieldInfos fieldInfos, IOContext context) {
-    this(dir, info, fieldInfos,  context, "");
+                          FieldInfos fieldInfos, boolean openedFromWriter, IOContext context) {
+    this(dir, info, fieldInfos, openedFromWriter, context, "");
   }
   
   /** Create a {@code SegmentReadState}. */
   public SegmentReadState(Directory dir,
                           SegmentInfo info,
                           FieldInfos fieldInfos,
-                          IOContext context,
+                          boolean openedFromWriter, IOContext context,
                           String segmentSuffix) {
     this.directory = dir;
     this.segmentInfo = info;
     this.fieldInfos = fieldInfos;
     this.context = context;
     this.segmentSuffix = segmentSuffix;
+    this.openedFromWriter = openedFromWriter;
   }
 
   /** Create a {@code SegmentReadState}. */
@@ -75,6 +81,7 @@ public class SegmentReadState {
     this.segmentInfo = other.segmentInfo;
     this.fieldInfos = other.fieldInfos;
     this.context = other.context;
+    this.openedFromWriter = other.openedFromWriter;
     this.segmentSuffix = newSegmentSuffix;
   }
 }

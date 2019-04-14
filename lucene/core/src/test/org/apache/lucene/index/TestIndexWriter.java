@@ -2737,6 +2737,45 @@ public class TestIndexWriter extends LuceneTestCase {
 
   }
 
+  public void testPendingDeletionsRollbackWithReader() throws IOException {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    Path path = createTempDir();
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    try (FSDirectory _dir = new SimpleFSDirectory(root)) {
+      Directory dir = new FilterDirectory(_dir) {};
+
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      IndexWriter w = new IndexWriter(dir, iwc);
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new NumericDocValuesField("numval", 1));
+      w.addDocument(d);
+      w.commit();
+      w.addDocument(d);
+      w.flush();
+      DirectoryReader reader = DirectoryReader.open(w);
+      w.rollback();
+
+      // try-delete superfluous files (some will fail due to windows-fs)
+      IndexWriterConfig iwc2 = new IndexWriterConfig(new MockAnalyzer(random()));
+      new IndexWriter(dir, iwc2).close();
+
+      // test that we can index on top of pending deletions
+      IndexWriterConfig iwc3 = new IndexWriterConfig(new MockAnalyzer(random()));
+      w = new IndexWriter(dir, iwc3);
+      w.addDocument(d);
+      w.commit();
+
+      reader.close();
+      w.close();
+    }
+  }
+
   public void testWithPendingDeletions() throws Exception {
     // irony: currently we don't emulate windows well enough to work on windows!
     assumeFalse("windows is not supported", Constants.WINDOWS);

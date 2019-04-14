@@ -19,14 +19,14 @@ package org.apache.solr.store.blockcache;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BufferStoreTest extends LuceneTestCase {
+public class BufferStoreTest extends SolrTestCase {
   private final static int blockSize = 1024;
 
   private Metrics metrics;

@@ -262,8 +262,4 @@ public class ConfigOverlay implements MapSerializable {
   public static final String ZNODEVER = "znodeVersion";
   public static final String NAME = "overlay";
 
-  public static void main(String[] args) {
-    System.out.println(Utils.toJSONString(editable_prop_map));
-  }
-
 }

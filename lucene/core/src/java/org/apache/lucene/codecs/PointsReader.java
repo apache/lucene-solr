@@ -45,10 +45,11 @@ public abstract class PointsReader implements Closeable, Accountable {
   public abstract PointValues getValues(String field) throws IOException;
 
   /** 
-   * Returns an instance optimized for merging.
+   * Returns an instance optimized for merging. This instance may only be used
+   * in the thread that acquires it.
    * <p>
    * The default implementation returns {@code this} */
-  public PointsReader getMergeInstance() throws IOException {
+  public PointsReader getMergeInstance() {
     return this;
   }
 }

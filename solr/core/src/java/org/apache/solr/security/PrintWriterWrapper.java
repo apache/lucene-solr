@@ -20,8 +20,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Locale;
 
-import org.apache.commons.lang.NotImplementedException;
-
 /**
  * Wrapper for PrintWriter that delegates to constructor arg
  */
@@ -55,7 +53,7 @@ public class PrintWriterWrapper extends PrintWriter {
 
   @Override
   protected void clearError() {
-    throw new NotImplementedException();
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -75,7 +73,7 @@ public class PrintWriterWrapper extends PrintWriter {
 
   @Override
   public PrintWriter format(String format, Object... args) {
-    throw new NotImplementedException("Forbidden API");
+    throw new UnsupportedOperationException("Forbidden API");
   }
 
   @Override
@@ -130,7 +128,7 @@ public class PrintWriterWrapper extends PrintWriter {
 
   @Override
   public PrintWriter printf(String format, Object... args) {
-    throw new NotImplementedException("Forbidden API");
+    throw new UnsupportedOperationException("Forbidden API");
   }
 
   @Override
@@ -185,7 +183,7 @@ public class PrintWriterWrapper extends PrintWriter {
 
   @Override
   protected void setError() {
-    throw new NotImplementedException();
+    throw new UnsupportedOperationException();
   }
 
   @Override

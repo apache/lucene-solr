@@ -20,15 +20,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -63,8 +62,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-
 public class TestBlockJoin extends LuceneTestCase {
 
   // One resume...
@@ -91,34 +88,6 @@ public class TestBlockJoin extends LuceneTestCase {
     job.add(newStringField("qualification", qualification, Field.Store.YES));
     job.add(new IntPoint("year", year));
     return job;
-  }
-
-  public void testExtractTerms() throws Exception {
-    TermQuery termQuery = new TermQuery(new Term("field", "value"));
-    QueryBitSetProducer bitSetProducer = new QueryBitSetProducer(new MatchNoDocsQuery());
-    ToParentBlockJoinQuery toParentBlockJoinQuery = new ToParentBlockJoinQuery(termQuery, bitSetProducer, ScoreMode.None);
-    ToChildBlockJoinQuery toChildBlockJoinQuery = new ToChildBlockJoinQuery(toParentBlockJoinQuery, bitSetProducer);
-
-    Directory directory = newDirectory();
-    final IndexWriter w = new IndexWriter(directory, new IndexWriterConfig(new MockAnalyzer(random())));
-    w.close();
-    IndexReader indexReader = DirectoryReader.open(directory);
-    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
-
-    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
-    Set<Term> terms = new HashSet<>();
-    weight.extractTerms(terms);
-    Term[] termArr =terms.toArray(new Term[0]);
-    assertEquals(1, termArr.length);
-
-    weight = toChildBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
-    terms = new HashSet<>();
-    weight.extractTerms(terms);
-    termArr =terms.toArray(new Term[0]);
-    assertEquals(1, termArr.length);
-
-    indexReader.close();
-    directory.close();
   }
 
   public void testEmptyChildFilter() throws Exception {
@@ -844,7 +813,11 @@ public class TestBlockJoin extends LuceneTestCase {
           if ("sum of:".equals(childWeightExplanation.getDescription())) {
             childWeightExplanation = childWeightExplanation.getDetails()[0];
           }
-          assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
+          if (agg == ScoreMode.None) {
+            assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("ConstantScore("));
+          } else {
+            assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
+          }
         }
       }
 

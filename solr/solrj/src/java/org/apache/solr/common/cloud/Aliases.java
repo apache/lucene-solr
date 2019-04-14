@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
@@ -180,26 +182,74 @@ public class Aliases {
     return resolveAliasesGivenAliasMap(collectionAliases, aliasName);
   }
 
+  /**
+   * Returns true if an alias is defined, false otherwise.
+   */
+  public boolean hasAlias(String aliasName) {
+    return collectionAliases.containsKey(aliasName);
+  }
+
+  /**
+   * Resolve an alias that points to a single collection. One level of alias indirection is supported.
+   * @param aliasName alias name
+   * @return original name if there's no such alias, or a resolved name. If an alias points to more than 1
+   * collection (directly or indirectly) an exception is thrown
+   * @throws IllegalArgumentException if either direct or indirect alias points to more than 1 name.
+   */
+  public String resolveSimpleAlias(String aliasName) throws IllegalArgumentException {
+    return resolveSimpleAliasGivenAliasMap(collectionAliases, aliasName);
+  }
+
+  /** @lucene.internal */
+  @SuppressWarnings("JavaDoc")
+  public static String resolveSimpleAliasGivenAliasMap(Map<String, List<String>> collectionAliasListMap,
+                                                       String aliasName) throws IllegalArgumentException {
+    List<String> level1 = collectionAliasListMap.get(aliasName);
+    if (level1 == null || level1.isEmpty()) {
+      return aliasName; // simple collection name
+    }
+    if (level1.size() > 1) {
+      throw new IllegalArgumentException("Simple alias '" + aliasName + "' points to more than 1 collection: " + level1);
+    }
+    List<String> level2 = collectionAliasListMap.get(level1.get(0));
+    if (level2 == null || level2.isEmpty()) {
+      return level1.get(0); // simple alias
+    }
+    if (level2.size() > 1) {
+      throw new IllegalArgumentException("Simple alias '" + aliasName + "' resolves to '"
+          + level1.get(0) + "' which points to more than 1 collection: " + level2);
+    }
+    return level2.get(0);
+  }
+
   /** @lucene.internal */
   @SuppressWarnings("JavaDoc")
   public static List<String> resolveAliasesGivenAliasMap(Map<String, List<String>> collectionAliasListMap, String aliasName) {
-    //return collectionAliasListMap.getOrDefault(aliasName, Collections.singletonList(aliasName));
-    // TODO deprecate and remove this dubious feature?
     // Due to another level of indirection, this is more complicated...
     List<String> level1 = collectionAliasListMap.get(aliasName);
     if (level1 == null) {
       return Collections.singletonList(aliasName);// is a collection
     }
-    List<String> result = new ArrayList<>(level1.size());
-    for (String level1Alias : level1) {
+    // avoid allocating objects if possible
+    LinkedHashSet<String> uniqueResult = null;
+    for (int i = 0; i < level1.size(); i++) {
+      String level1Alias = level1.get(i);
       List<String> level2 = collectionAliasListMap.get(level1Alias);
-      if (level2 == null) {
-        result.add(level1Alias);
+      if (level2 == null && uniqueResult != null) {
+        uniqueResult.add(level1Alias);
       } else {
-        result.addAll(level2);
+        if (uniqueResult == null) { // lazy init
+          uniqueResult = new LinkedHashSet<>(level1.size());
+          uniqueResult.addAll(level1.subList(0, i));
+        }
+        uniqueResult.addAll(level2);
       }
     }
-    return Collections.unmodifiableList(result);
+    if (uniqueResult == null) {
+      return level1;
+    } else {
+      return Collections.unmodifiableList(new ArrayList<>(uniqueResult));
+    }
   }
 
   /**
@@ -222,10 +272,82 @@ public class Aliases {
       newColProperties = new LinkedHashMap<>(this.collectionAliasProperties);//clone to modify
       newColProperties.remove(alias);
       newColAliases.remove(alias);
+      // remove second-level alias from compound aliases
+      for (Map.Entry<String, List<String>> entry : newColAliases.entrySet()) {
+        List<String> list = entry.getValue();
+        if (list.contains(alias)) {
+          list = new ArrayList<>(list);
+          list.remove(alias);
+          entry.setValue(Collections.unmodifiableList(list));
+        }
+      }
     } else {
       newColProperties = this.collectionAliasProperties;// no changes
       // java representation is a list, so split before adding to maintain consistency
       newColAliases.put(alias, splitCollections(collections)); // note: unmodifiableList
+    }
+    return new Aliases(newColAliases, newColProperties, zNodeVersion);
+  }
+
+  /**
+   * Rename an alias. This performs a "deep rename", which changes also the second-level alias lists.
+   * Renaming routed aliases is not supported.
+   * <p>
+   * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
+   * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
+   *
+   * @param before previous alias name, must not be null
+   * @param after new alias name. If this is null then it's equivalent to calling {@link #cloneWithCollectionAlias(String, String)}
+   *              with the second argument set to null, ie. removing an alias.
+   * @return new instance with the renamed alias
+   * @throws IllegalArgumentException when either <code>before</code> or <code>after</code> is empty, or
+   * the <code>before</code> name is a routed alias
+   */
+  public Aliases cloneWithRename(String before, String after) {
+    if (before == null) {
+      throw new NullPointerException("'before' and 'after' cannot be null");
+    }
+    if (after == null) {
+      return cloneWithCollectionAlias(before, after);
+    }
+    if (before.isEmpty() || after.isEmpty()) {
+      throw new IllegalArgumentException("'before' and 'after' cannot be empty");
+    }
+    if (before.equals(after)) {
+      return this;
+    }
+    Map<String, String> props = collectionAliasProperties.get(before);
+    if (props != null) {
+      if (props.keySet().stream().anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX))) {
+        throw new IllegalArgumentException("source name '" + before + "' is a routed alias.");
+      }
+    }
+    Map<String, Map<String, String>> newColProperties = new LinkedHashMap<>(this.collectionAliasProperties);
+    Map<String, List<String>> newColAliases = new LinkedHashMap<>(this.collectionAliases);//clone to modify
+    List<String> level1 = newColAliases.remove(before);
+    props = newColProperties.remove(before);
+    if (level1 != null) {
+      newColAliases.put(after, level1);
+    }
+    if (props != null) {
+      newColProperties.put(after, props);
+    }
+    for (Map.Entry<String, List<String>> entry : newColAliases.entrySet()) {
+      List<String> collections = entry.getValue();
+      if (collections.contains(before)) {
+        LinkedHashSet<String> newCollections = new LinkedHashSet<>(collections.size());
+        for (String coll : collections) {
+          if (coll.equals(before)) {
+            newCollections.add(after);
+          } else {
+            newCollections.add(coll);
+          }
+        }
+        entry.setValue(Collections.unmodifiableList(new ArrayList<>(newCollections)));
+      }
+    }
+    if (level1 == null) { // create an alias that points to the collection
+      newColAliases.put(before, Collections.singletonList(after));
     }
     return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }

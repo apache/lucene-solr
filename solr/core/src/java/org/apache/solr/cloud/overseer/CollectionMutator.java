@@ -119,6 +119,17 @@ public class CollectionMutator {
         }
       }
     }
+    // other aux properties are also modifiable
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
+        hasAnyOps = true;
+        if (message.get(prop) == null) {
+          m.remove(prop);
+        } else {
+          m.put(prop, message.get(prop));
+        }
+      }
+    }
 
     if (!hasAnyOps) {
       return ZkStateWriter.NO_OP;

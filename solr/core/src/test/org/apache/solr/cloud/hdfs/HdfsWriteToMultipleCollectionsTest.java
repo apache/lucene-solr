@@ -57,10 +57,7 @@ import org.junit.Test;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-//Commented  4-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
-  private static final String SOLR_HDFS_HOME = "solr.hdfs.home";
-  private static final String SOLR_HDFS_BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";
   private static final String ACOLLECTION = "acollection";
   private static MiniDFSCluster dfsCluster;
   
@@ -72,8 +69,11 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
   
   @Override
@@ -141,10 +141,9 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
           Directory dir = factory.get(core.getDataDir(), null, null);
           try {
             long dataDirSize = factory.size(dir);
-            FileSystem fileSystem = null;
-            
-            fileSystem = FileSystem.newInstance(
-                new Path(core.getDataDir()).toUri(), new Configuration());
+            Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
+            FileSystem fileSystem = FileSystem.newInstance(
+                new Path(core.getDataDir()).toUri(), conf);
             long size = fileSystem.getContentSummary(
                 new Path(core.getDataDir())).getLength();
             assertEquals(size, dataDirSize);
@@ -168,7 +167,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
             BlockCache blockCache = ((BlockDirectoryCache) cache)
                 .getBlockCache();
             if (lastBlockCache != null) {
-              if (Boolean.getBoolean(SOLR_HDFS_BLOCKCACHE_GLOBAL)) {
+              if (Boolean.getBoolean("solr.hdfs.blockcache.global")) {
                 assertEquals(lastBlockCache, blockCache);
               } else {
                 assertNotSame(lastBlockCache, blockCache);

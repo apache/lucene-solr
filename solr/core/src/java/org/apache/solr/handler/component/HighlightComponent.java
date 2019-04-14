@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
@@ -113,7 +113,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     if(rb.doHighlights){
       rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
-      String hlparser = Objects.firstNonNull(params.get(HighlightParams.QPARSER),
+      String hlparser = MoreObjects.firstNonNull(params.get(HighlightParams.QPARSER),
                                               params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
       if(hlq != null){
         try {

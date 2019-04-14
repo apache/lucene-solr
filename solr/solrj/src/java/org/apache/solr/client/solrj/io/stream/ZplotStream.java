@@ -25,6 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.distribution.IntegerDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.EmpiricalDistribution;
+import org.apache.commons.math3.stat.Frequency;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.commons.math3.util.Precision;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -119,12 +125,15 @@ public class ZplotStream extends TupleStream implements Expressible {
     int numTuples = -1;
     int columns = 0;
     boolean table = false;
+    boolean distribution = false;
     for(Map.Entry<String, Object> entry : entries) {
       ++columns;
 
       String name = entry.getKey();
       if(name.equals("table")) {
         table = true;
+      } else if(name.equals("dist")) {
+        distribution = true;
       }
 
       Object o = entry.getValue();
@@ -145,6 +154,8 @@ public class ZplotStream extends TupleStream implements Expressible {
           evaluated.put(name, l);
         } else if (eo instanceof Tuple) {
           evaluated.put(name, eo);
+        } else {
+          evaluated.put(name, eo);
         }
       } else {
         Object eval = lets.get(o);
@@ -164,13 +175,13 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
     }
 
-    if(columns > 1 && table) {
-      throw new IOException("If the table parameter is set there can only be one parameter.");
+    if(columns > 1 && (table || distribution)) {
+      throw new IOException("If the table or dist parameter is set there can only be one parameter.");
     }
     //Load the values into tuples
 
     List<Tuple> outTuples = new ArrayList();
-    if(!table) {
+    if(!table && !distribution) {
       //Handle the vectors
       for (int i = 0; i < numTuples; i++) {
         Tuple tuple = new Tuple(new HashMap());
@@ -181,7 +192,89 @@ public class ZplotStream extends TupleStream implements Expressible {
 
         outTuples.add(tuple);
       }
-    } else {
+    } else if(distribution) {
+      Object o = evaluated.get("dist");
+      if(o instanceof RealDistribution) {
+        RealDistribution realDistribution = (RealDistribution) o;
+        List<SummaryStatistics> binStats = null;
+        if(realDistribution instanceof  EmpiricalDistribution) {
+          EmpiricalDistribution empiricalDistribution = (EmpiricalDistribution)realDistribution;
+          binStats = empiricalDistribution.getBinStats();
+        } else {
+          double[] samples = realDistribution.sample(500000);
+          EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution(32);
+          empiricalDistribution.load(samples);
+          binStats = empiricalDistribution.getBinStats();
+        }
+        double[] x = new double[binStats.size()];
+        double[] y = new double[binStats.size()];
+        for (int i = 0; i < binStats.size(); i++) {
+          x[i] = binStats.get(i).getMean();
+          y[i] = realDistribution.density(x[i]);
+        }
+
+        for (int i = 0; i < x.length; i++) {
+          Tuple tuple = new Tuple(new HashMap());
+          if(!Double.isNaN(x[i])) {
+            tuple.put("x", Precision.round(x[i], 2));
+            if(y[i] == Double.NEGATIVE_INFINITY || y[i] == Double.POSITIVE_INFINITY) {
+              tuple.put("y", 0);
+
+            } else {
+              tuple.put("y", y[i]);
+            }
+            outTuples.add(tuple);
+          }
+        }
+      } else if(o instanceof IntegerDistribution) {
+        IntegerDistribution integerDistribution = (IntegerDistribution)o;
+        int[] samples = integerDistribution.sample(50000);
+        Frequency frequency = new Frequency();
+        for(int i : samples) {
+          frequency.addValue(i);
+        }
+
+        Iterator it = frequency.valuesIterator();
+        List<Long> values = new ArrayList();
+        while(it.hasNext()) {
+          values.add((Long)it.next());
+        }
+        int[] x = new int[values.size()];
+        double[] y = new double[values.size()];
+        for(int i=0; i<values.size(); i++) {
+          x[i] = values.get(i).intValue();
+          y[i] = integerDistribution.probability(x[i]);
+        }
+
+        for (int i = 0; i < x.length; i++) {
+          Tuple tuple = new Tuple(new HashMap());
+          tuple.put("x", x[i]);
+          tuple.put("y", y[i]);
+          outTuples.add(tuple);
+        }
+      } else if(o instanceof List) {
+        List list = (List)o;
+        if(list.get(0) instanceof Tuple) {
+          List<Tuple> tlist = (List<Tuple>)o;
+          Tuple tuple = tlist.get(0);
+          if(tuple.fields.containsKey("N")) {
+            for(Tuple t : tlist) {
+              Tuple outtuple = new Tuple(new HashMap());
+              outtuple.put("x", Precision.round(((double)t.get("mean")), 2));
+              outtuple.put("y", t.get("prob"));
+              outTuples.add(outtuple);
+            }
+          } else if(tuple.fields.containsKey("count")) {
+            for(Tuple t : tlist) {
+              Tuple outtuple = new Tuple(new HashMap());
+              outtuple.put("x", t.get("value"));
+              outtuple.put("y", t.get("pct"));
+              outTuples.add(outtuple);
+            }
+          }
+        }
+      }
+    } else if(table){
       //Handle the Tuple and List of Tuples
       Object o = evaluated.get("table");
       if(o instanceof List) {

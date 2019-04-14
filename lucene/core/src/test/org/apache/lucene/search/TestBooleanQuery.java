@@ -22,14 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -51,8 +50,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestBooleanQuery extends LuceneTestCase {
 
@@ -754,7 +751,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals("a +b -c #d", bq.build().toString("field"));
   }
 
-  public void testExtractTerms() throws IOException {
+
+
+  public void testQueryVisitor() throws IOException {
     Term a = new Term("f", "a");
     Term b = new Term("f", "b");
     Term c = new Term("f", "c");
@@ -764,15 +763,37 @@ public class TestBooleanQuery extends LuceneTestCase {
     bqBuilder.add(new TermQuery(b), Occur.MUST);
     bqBuilder.add(new TermQuery(c), Occur.FILTER);
     bqBuilder.add(new TermQuery(d), Occur.MUST_NOT);
-    IndexSearcher searcher = new IndexSearcher(new MultiReader());
     BooleanQuery bq = bqBuilder.build();
 
-    Set<Term> scoringTerms = new HashSet<>();
-    searcher.createWeight(searcher.rewrite(bq), ScoreMode.COMPLETE, 1).extractTerms(scoringTerms);
-    assertEquals(new HashSet<>(Arrays.asList(a, b)), scoringTerms);
+    bq.visit(new QueryVisitor() {
 
-    Set<Term> matchingTerms = new HashSet<>();
-    searcher.createWeight(searcher.rewrite(bq), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(matchingTerms);
-    assertEquals(new HashSet<>(Arrays.asList(a, b, c)), matchingTerms);
+      Term expected;
+
+      @Override
+      public QueryVisitor getSubVisitor(Occur occur, Query parent) {
+        switch (occur) {
+          case SHOULD:
+            expected = a;
+            break;
+          case MUST:
+            expected = b;
+            break;
+          case FILTER:
+            expected = c;
+            break;
+          case MUST_NOT:
+            expected = d;
+            break;
+          default:
+            throw new IllegalStateException();
+        }
+        return this;
+      }
+
+      @Override
+      public void consumeTerms(Query query, Term... terms) {
+        assertEquals(expected, terms[0]);
+      }
+    });
   }
 }

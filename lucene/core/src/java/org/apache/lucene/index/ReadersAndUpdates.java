@@ -169,7 +169,7 @@ final class ReadersAndUpdates {
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, indexCreatedVersionMajor, context);
+      reader = new SegmentReader(info, indexCreatedVersionMajor, true, context);
       pendingDeletes.onNewReader(reader, info);
     }
 
@@ -536,7 +536,7 @@ final class ReadersAndUpdates {
       // IndexWriter.commitMergedDeletes).
       final SegmentReader reader;
       if (this.reader == null) {
-        reader = new SegmentReader(info, indexCreatedVersionMajor, IOContext.READONCE);
+        reader = new SegmentReader(info, indexCreatedVersionMajor, true, IOContext.READONCE);
         pendingDeletes.onNewReader(reader, info);
       } else {
         reader = this.reader;

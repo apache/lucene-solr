@@ -183,7 +183,7 @@ public class ConnectionManager implements Watcher {
           
         } catch (Exception e) {
           SolrException.log(log, "", e);
-          log.info("Could not connect due to error, sleeping for 5s and trying agian");
+          log.info("Could not connect due to error, sleeping for 1s and trying again");
           waitSleep(1000);
         }
         

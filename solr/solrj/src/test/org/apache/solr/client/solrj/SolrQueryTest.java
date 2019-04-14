@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -36,7 +36,7 @@ import org.apache.solr.common.params.FacetParams;
  *
  * @since solr 1.3
  */
-public class SolrQueryTest extends LuceneTestCase {
+public class SolrQueryTest extends SolrTestCase {
   
   public void testSolrQueryMethods() {
     SolrQuery q = new SolrQuery("dog");

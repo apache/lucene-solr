@@ -178,35 +178,29 @@ public class RangeFacetProcessor extends SimpleFacets {
     IntervalFacets.FacetInterval after = null;
 
     for (RangeFacetRequest.FacetRange range : rfr.getFacetRanges()) {
-      try {
-        FacetRangeOther other = FacetRangeOther.get(range.name);
-        if (other != null) {
-          switch (other) {
-            case BEFORE:
-              assert range.lower == null;
-              intervals.set(0, new IntervalFacets.FacetInterval(sf, "*", range.upper, range.includeLower,
-                  range.includeUpper, FacetRangeOther.BEFORE.toString()));
-              break;
-            case AFTER:
-              assert range.upper == null;
-              after = new IntervalFacets.FacetInterval(sf, range.lower, "*",
-                  range.includeLower, range.includeUpper, FacetRangeOther.AFTER.toString());
-              break;
-            case BETWEEN:
-              intervals.set(includeBefore ? 1 : 0, new IntervalFacets.FacetInterval(sf, range.lower, range.upper,
-                  range.includeLower, range.includeUpper, FacetRangeOther.BETWEEN.toString()));
-              break;
-            case ALL:
-            case NONE:
-              break;
-          }
+      if (range.other != null) {
+        switch (range.other) {
+          case BEFORE:
+            assert range.lower == null;
+            intervals.set(0, new IntervalFacets.FacetInterval(sf, "*", range.upper, range.includeLower,
+                range.includeUpper, FacetRangeOther.BEFORE.toString()));
+            break;
+          case AFTER:
+            assert range.upper == null;
+            after = new IntervalFacets.FacetInterval(sf, range.lower, "*",
+                range.includeLower, range.includeUpper, FacetRangeOther.AFTER.toString());
+            break;
+          case BETWEEN:
+            intervals.set(includeBefore ? 1 : 0, new IntervalFacets.FacetInterval(sf, range.lower, range.upper,
+                range.includeLower, range.includeUpper, FacetRangeOther.BETWEEN.toString()));
+            break;
+          case ALL:
+          case NONE:
+            break;
         }
-        continue;
-      } catch (SolrException e) {
-        // safe to ignore
+      } else {
+        intervals.add(new IntervalFacets.FacetInterval(sf, range.lower, range.upper, range.includeLower, range.includeUpper, range.lower));
       }
-
-      intervals.add(new IntervalFacets.FacetInterval(sf, range.lower, range.upper, range.includeLower, range.includeUpper, range.lower));
     }
 
     if (includeAfter) {

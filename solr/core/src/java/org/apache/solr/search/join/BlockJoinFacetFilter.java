@@ -20,6 +20,7 @@ import java.util.Objects;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.solr.search.DelegatingCollector;
 import org.apache.solr.search.PostFilter;
 
@@ -86,5 +87,10 @@ class BlockJoinFacetFilter extends Query implements PostFilter {
   @Override
   public int hashCode() {
     return classHash() * 31 + blockJoinFacetCollector.hashCode();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 }

@@ -93,7 +93,8 @@ public class Lang {
         .withFunctionName("sql", SqlStream.class)
         .withFunctionName("plist", ParallelListStream.class)
         .withFunctionName("zplot", ZplotStream.class)
-
+        .withFunctionName("hashRollup", HashRollupStream.class)
+        .withFunctionName("noop", NoOpStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)
@@ -171,6 +172,8 @@ public class Lang {
         .withFunctionName("constantDistribution", ConstantDistributionEvaluator.class)
         .withFunctionName("weibullDistribution", WeibullDistributionEvaluator.class)
         .withFunctionName("mean", MeanEvaluator.class)
+        .withFunctionName("var", VarianceEvaluator.class)
+        .withFunctionName("stddev", StandardDeviationEvaluator.class)
         .withFunctionName("mode", ModeEvaluator.class)
         .withFunctionName("logNormalDistribution", LogNormalDistributionEvaluator.class)
         .withFunctionName("zipFDistribution", ZipFDistributionEvaluator.class)

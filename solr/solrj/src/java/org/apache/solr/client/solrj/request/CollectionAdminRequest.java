@@ -59,6 +59,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
@@ -66,6 +67,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
@@ -87,11 +89,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       POLICY,
       COLL_CONF,
       WITH_COLLECTION,
-      COLOCATED_WITH);
+      COLOCATED_WITH,
+      READ_ONLY);
 
   protected final CollectionAction action;
 
-  private static String PROPERTY_PREFIX = "property.";
+  public static String PROPERTY_PREFIX = "property.";
 
   public CollectionAdminRequest(CollectionAction action) {
     this("/admin/collections", action);
@@ -431,6 +434,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     protected Properties properties;
     protected Boolean autoAddReplicas;
+    protected String alias;
     protected Integer stateFormat;
     protected String[] rule , snitch;
     protected String withCollection;
@@ -473,6 +477,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
+
+    public Create setAlias(String alias) {
+      this.alias = alias;
+      return this;
+    }
 
     public String getConfigName()  { return configName; }
     public String getCreateNodeSet() { return createNodeSet; }
@@ -571,6 +580,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
       params.setNonNull(POLICY, policy);
       params.setNonNull(WITH_COLLECTION, withCollection);
+      params.setNonNull(ALIAS, alias);
       return params;
     }
 
@@ -601,6 +611,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     private Reload(String collection) {
       super(CollectionAction.RELOAD, collection);
+    }
+  }
+
+  public static Rename renameCollection(String collection, String target) {
+    return new Rename(collection, target);
+  }
+
+  public static class Rename extends AsyncCollectionSpecificAdminRequest {
+    String target;
+
+    public Rename(String collection, String target) {
+      super(CollectionAction.RENAME, collection);
+      this.target = target;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CollectionAdminParams.TARGET, target);
+      return params;
     }
   }
 
@@ -779,6 +809,138 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+  }
+
+  /**
+   * Returns a SolrRequest to reindex a collection
+   */
+  public static ReindexCollection reindexCollection(String collection) {
+    return new ReindexCollection(collection);
+  }
+
+  public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
+    String target;
+    String query;
+    String fields;
+    String configName;
+    Boolean removeSource;
+    String cmd;
+    Integer batchSize;
+    Map<String, Object> collectionParams = new HashMap<>();
+
+    private ReindexCollection(String collection) {
+      super(CollectionAction.REINDEXCOLLECTION, collection);
+    }
+
+    /** Target collection name (null if the same). */
+    public ReindexCollection setTarget(String target) {
+      this.target = target;
+      return this;
+    }
+
+    /** Set optional command (eg. abort, status). */
+    public ReindexCollection setCommand(String command) {
+      this.cmd = command;
+      return this;
+    }
+
+    /** Query matching the documents to reindex (default is '*:*'). */
+    public ReindexCollection setQuery(String query) {
+      this.query = query;
+      return this;
+    }
+
+    /** Fields to reindex (the same syntax as {@link CommonParams#FL}), default is '*'. */
+    public ReindexCollection setFields(String fields) {
+      this.fields = fields;
+      return this;
+    }
+
+    /** Remove source collection after success. Default is false. */
+    public ReindexCollection setRemoveSource(boolean removeSource) {
+      this.removeSource = removeSource;
+      return this;
+    }
+
+    /** Copy documents in batches of this size. Default is 100. */
+    public ReindexCollection setBatchSize(int batchSize) {
+      this.batchSize = batchSize;
+      return this;
+    }
+
+    /** Config name for the target collection. Default is the same as source. */
+    public ReindexCollection setConfigName(String configName) {
+      this.configName = configName;
+      return this;
+    }
+
+    /** Set other supported collection CREATE parameters. */
+    public ReindexCollection setCollectionParam(String key, Object value) {
+      this.collectionParams.put(key, value);
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.setNonNull("target", target);
+      params.setNonNull("cmd", cmd);
+      params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
+      params.setNonNull(CommonParams.Q, query);
+      params.setNonNull(CommonParams.FL, fields);
+      params.setNonNull("removeSource", removeSource);
+      params.setNonNull(CommonParams.ROWS, batchSize);
+      collectionParams.forEach((k, v) -> params.setNonNull(k, v));
+      return params;
+    }
+  }
+
+  /**
+   * Return a SolrRequest for low-level detailed status of the collection.
+   */
+  public static ColStatus collectionStatus(String collection) {
+    return new ColStatus(collection);
+  }
+
+  public static class ColStatus extends AsyncCollectionSpecificAdminRequest {
+    protected Boolean withSegments = null;
+    protected Boolean withFieldInfo = null;
+    protected Boolean withCoreInfo = null;
+    protected Boolean withSizeInfo = null;
+
+    private ColStatus(String collection) {
+      super(CollectionAction.COLSTATUS, collection);
+    }
+
+    public ColStatus setWithSegments(boolean withSegments) {
+      this.withSegments = withSegments;
+      return this;
+    }
+
+    public ColStatus setWithFieldInfo(boolean withFieldInfo) {
+      this.withFieldInfo = withFieldInfo;
+      return this;
+    }
+
+    public ColStatus setWithCoreInfo(boolean withCoreInfo) {
+      this.withCoreInfo = withCoreInfo;
+      return this;
+    }
+
+    public ColStatus setWithSizeInfo(boolean withSizeInfo) {
+      this.withSizeInfo = withSizeInfo;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
+      params.setNonNull("segments", withSegments);
+      params.setNonNull("fieldInfo", withFieldInfo);
+      params.setNonNull("coreInfo", withCoreInfo);
+      params.setNonNull("sizeInfo", withSizeInfo);
+      return params;
+    }
   }
 
   /**
@@ -1515,8 +1677,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
-   * Returns a SolrRequest to create a routed alias. Only time based routing is supported presently,
-   * For time based routing, the start a standard Solr timestamp string (possibly with "date math").
+   * Returns a SolrRequest to create a time routed alias. For time based routing, the start
+   * should be a standard Solr timestamp string (possibly with "date math").
    *
    * @param aliasName the name of the alias to create.
    * @param start the start of the routing.  A standard Solr date: ISO-8601 or NOW with date math.
@@ -1597,6 +1759,76 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (preemptiveCreateMath != null) {
         params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
+      }
+
+      // merge the above with collectionParams.  Above takes precedence.
+      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target
+      final SolrParams collParams = createCollTemplate.getParams();
+      final Iterator<String> pIter = collParams.getParameterNamesIterator();
+      while (pIter.hasNext()) {
+        String key = pIter.next();
+        if (key.equals(CollectionParams.ACTION) || key.equals("name")) {
+          continue;
+        }
+        createCollParams.set("create-collection." + key, collParams.getParams(key));
+      }
+      return SolrParams.wrapDefaults(params, createCollParams);
+    }
+
+  }
+  /**
+   * Returns a SolrRequest to create a category routed alias.
+   *
+   * @param aliasName the name of the alias to create.
+   * @param routerField the document field to contain the timestamp to route on
+   * @param maxCardinality the maximum number of collections under this CRA
+   * @param createCollTemplate Holds options to create a collection.  The "name" is ignored.
+   */
+  public static CreateCategoryRoutedAlias createCategoryRoutedAlias(String aliasName,
+                                                            String routerField,
+                                                            int maxCardinality,
+                                                            Create createCollTemplate) {
+
+    return new CreateCategoryRoutedAlias(aliasName, routerField, maxCardinality, createCollTemplate);
+  }
+
+  public static class CreateCategoryRoutedAlias extends AsyncCollectionAdminRequest {
+
+    public static final String ROUTER_TYPE_NAME = "router.name";
+    public static final String ROUTER_FIELD = "router.field";
+    public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
+    public static final String ROUTER_MUST_MATCH = "router.mustMatch";
+
+    private final String aliasName;
+    private final String routerField;
+    private Integer maxCardinality;
+    private String mustMatch;
+
+    private final Create createCollTemplate;
+
+    public CreateCategoryRoutedAlias(String aliasName, String routerField, int maxCardinality, Create createCollTemplate) {
+      super(CollectionAction.CREATEALIAS);
+      this.aliasName = aliasName;
+      this.routerField = routerField;
+      this.maxCardinality = maxCardinality;
+      this.createCollTemplate = createCollTemplate;
+    }
+
+    public CreateCategoryRoutedAlias setMustMatch(String regex) {
+      this.mustMatch = regex;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.add(CommonParams.NAME, aliasName);
+      params.add(ROUTER_TYPE_NAME, "category");
+      params.add(ROUTER_FIELD, routerField);
+      params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+
+      if (mustMatch != null) {
+        params.add(ROUTER_MUST_MATCH, mustMatch);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
