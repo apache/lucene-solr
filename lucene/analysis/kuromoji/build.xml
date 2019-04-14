@@ -27,7 +27,6 @@
        is platform dependent?! -->
   <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
   <property name="rat.additional-includes" value="src/tools/**"/>
-  <property name="rat.additional-excludes" value="src/tools/patches/**"/>
 
   <!-- we don't want to pull in ipadic/naist etc -->
   <property name="ivy.default.configuration" value="default"/>
