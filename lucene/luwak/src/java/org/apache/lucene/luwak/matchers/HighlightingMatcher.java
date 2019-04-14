@@ -20,50 +20,43 @@ package org.apache.lucene.luwak.matchers;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.spans.SpanCollector;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.luwak.CandidateMatcher;
 import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.MatcherFactory;
-import org.apache.lucene.luwak.util.ForceNoBulkScoringQuery;
-import org.apache.lucene.luwak.util.RewriteException;
-import org.apache.lucene.luwak.util.SpanExtractor;
-import org.apache.lucene.luwak.util.SpanRewriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Weight;
 
 /**
  * CandidateMatcher class that will return exact hit positions for all matching queries
- * <p>
- * If a stored query cannot be rewritten so as to extract Spans, a {@link HighlightsMatch} object
- * with no Hit positions will be returned.
  */
 
 public class HighlightingMatcher extends CandidateMatcher<HighlightsMatch> {
-
-  private final SpanRewriter rewriter;
 
   /**
    * Create a new HighlightingMatcher for a provided DocumentBatch, using a SpanRewriter
    *
    * @param docs     the batch to match
-   * @param rewriter the SpanRewriter to use
    */
-  public HighlightingMatcher(DocumentBatch docs, SpanRewriter rewriter) {
+  public HighlightingMatcher(DocumentBatch docs) {
     super(docs);
-    this.rewriter = rewriter;
   }
 
   @Override
   protected void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-    HighlightsMatch match = doMatch(queryId, matchQuery);
-    if (match != null)
-      this.addMatch(match);
+    IndexSearcher searcher = docs.getSearcher();
+    Weight w = searcher.createWeight(searcher.rewrite(matchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (LeafReaderContext ctx : docs.getIndexReader().leaves()) {
+      for (int i = 0; i < ctx.reader().maxDoc(); i++) {
+        org.apache.lucene.search.Matches matches = w.matches(ctx, i);
+        if (matches != null) {
+          addMatch(buildMatch(matches, queryId, docs.resolveDocId(i + ctx.docBase)));
+        }
+      }
+    }
   }
 
   @Override
@@ -71,102 +64,25 @@ public class HighlightingMatcher extends CandidateMatcher<HighlightsMatch> {
     return HighlightsMatch.merge(match1.getQueryId(), match1.getDocId(), match1, match2);
   }
 
-  protected class HighlightCollector implements SpanCollector {
-
-    HighlightsMatch match;
-    final String queryId;
-
-    public HighlightCollector(String queryId) {
-      this.queryId = queryId;
-    }
-
-    void setMatch(int doc) {
-      if (this.match != null)
-        addMatch(this.match);
-      this.match = new HighlightsMatch(queryId, docs.resolveDocId(doc));
-    }
-
-    @Override
-    public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
-      match.addHit(term.field(), position, position, postings.startOffset(), postings.endOffset());
-    }
-
-    @Override
-    public void reset() {
-
-    }
-  }
-
-  /**
-   * Find the highlights for a specific query
-   */
-  protected HighlightsMatch findHighlights(String queryId, Query query) throws IOException {
-
-    final HighlightCollector collector = new HighlightCollector(queryId);
-
-    assert query instanceof ForceNoBulkScoringQuery;
-    docs.getSearcher().search(query, new SimpleCollector() {
-
-      Scorable scorer;
-
-      @Override
-      public void collect(int i) throws IOException {
-        try {
-          collector.setMatch(i);
-          SpanExtractor.collect(scorer, collector, true);
-        } catch (Exception e) {
-          collector.match.error = e;
+  private HighlightsMatch buildMatch(org.apache.lucene.search.Matches matches, String queryId, String docId) throws IOException {
+    HighlightsMatch m = new HighlightsMatch(queryId, docId);
+    for (String field : matches) {
+      MatchesIterator mi = matches.getMatches(field);
+      while (mi.next()) {
+        MatchesIterator sub = mi.getSubMatches();
+        if (sub != null) {
+          while (sub.next()) {
+            m.addHit(field, sub.startPosition(), sub.endPosition(), sub.startOffset(), sub.endOffset());
+          }
+        }
+        else {
+          m.addHit(field, mi.startPosition(), mi.endPosition(), mi.startOffset(), mi.endOffset());
         }
       }
-
-      @Override
-      public void setScorer(Scorable scorer) throws IOException {
-        this.scorer = scorer;
-      }
-
-      @Override
-      public ScoreMode scoreMode() {
-        return ScoreMode.COMPLETE;
-      }
-    });
-
-    return collector.match;
-  }
-
-  protected HighlightsMatch doMatch(String queryId, Query query) throws IOException {
-    IndexSearcher searcher = docs.getSearcher();
-    if (searcher.count(query) == 0)
-      return null;
-    try {
-      Query rewritten = rewriter.rewrite(query, searcher);
-      return findHighlights(queryId, rewritten);
-    } catch (RewriteException e) {
-      return fallback(queryId, query, e);
     }
+    return m;
   }
 
-  // if we can't extract highlights because of a rewrite exception, just report matches with no hits
-  protected HighlightsMatch fallback(String queryId, Query query, RewriteException e) throws IOException {
-    final HighlightCollector collector = new HighlightCollector(queryId);
-    docs.getSearcher().search(query, new SimpleCollector() {
-      @Override
-      public void collect(int i) throws IOException {
-        collector.setMatch(i);
-      }
-
-      @Override
-      public ScoreMode scoreMode() {
-        return ScoreMode.COMPLETE_NO_SCORES;
-      }
-    });
-    collector.match.error = e;
-    return collector.match;
-  }
-
-  public static final MatcherFactory<HighlightsMatch> FACTORY = docs1 -> new HighlightingMatcher(docs1, new SpanRewriter());
-
-  public static MatcherFactory<HighlightsMatch> factory(final SpanRewriter rewriter) {
-    return docs1 -> new HighlightingMatcher(docs1, rewriter);
-  }
+  public static final MatcherFactory<HighlightsMatch> FACTORY = HighlightingMatcher::new;
 
 }
