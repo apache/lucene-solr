@@ -230,6 +230,7 @@ class QueryIndex {
     public SortedDocValues id;
     BinaryDocValues mq;
     Scorable scorer;
+    LeafReaderContext ctx;
 
     void advanceTo(int doc) throws IOException {
       assert scorer.docID() == doc;
@@ -274,6 +275,7 @@ class QueryIndex {
       this.dataValues.hash = context.reader().getBinaryDocValues(Monitor.FIELDS.hash);
       this.dataValues.id = context.reader().getSortedDocValues(Monitor.FIELDS.id);
       this.dataValues.mq = context.reader().getBinaryDocValues(Monitor.FIELDS.mq);
+      this.dataValues.ctx = context;
     }
 
     @Override

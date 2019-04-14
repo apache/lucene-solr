@@ -601,11 +601,7 @@ public class Monitor implements Closeable {
     QueryIndex.QueryBuilder queryBuilder = new PresearcherQueryBuilder(docs.getIndexReader()) {
       @Override
       public Query buildQuery(QueryTermFilter termFilter) throws IOException {
-        try {
-          return new ForceNoBulkScoringQuery(SpanRewriter.INSTANCE.rewrite(super.buildQuery(termFilter), null));
-        } catch (RewriteException e) {
-          throw new IOException(e);
-        }
+        return new ForceNoBulkScoringQuery(super.buildQuery(termFilter));
       }
     };
     queryIndex.search(queryBuilder, collector);
@@ -645,25 +641,15 @@ public class Monitor implements Closeable {
 
     @Override
     public void matchQuery(final String id, QueryCacheEntry query, QueryIndex.DataValues dataValues) throws IOException {
-
-      SpanCollector collector = new SpanCollector() {
-        @Override
-        public void collectLeaf(PostingsEnum postingsEnum, int position, Term term) throws IOException {
+      Weight w = ((Scorer)dataValues.scorer).getWeight();
+      org.apache.lucene.search.Matches matches = w.matches(dataValues.ctx, dataValues.scorer.docID());
+      for (String field : matches) {
+        MatchesIterator mi = matches.getMatches(field);
+        while (mi.next()) {
           matchingTerms.computeIfAbsent(id, i -> new StringBuilder())
-              .append(" ")
-              .append(term.field())
-              .append(":")
-              .append(term.bytes().utf8ToString());
+              .append(" ").append(mi.getQuery());
         }
-
-        @Override
-        public void reset() {
-
-        }
-      };
-
-      SpanExtractor.collect(dataValues.scorer, collector, false);
-
+      }
       super.matchQuery(id, query, dataValues);
     }
 
