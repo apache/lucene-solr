@@ -20,23 +20,37 @@ package org.apache.lucene.luwak.termextractor;
 import java.util.Collections;
 import java.util.Set;
 
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
-import org.apache.lucene.luwak.testutils.ParserUtils;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBooleanClauseWeightings extends LuceneTestCase {
 
   private static QueryAnalyzer treeBuilder = new QueryAnalyzer();
 
-  public void testExactClausesPreferred() throws Exception {
-    Query bq = ParserUtils.parse("+field2:[1 TO 2] +(field1:term1 field1:term2)");
+  public void testExactClausesPreferred() {
+    Query bq = new BooleanQuery.Builder()
+        .add(LongPoint.newRangeQuery("field2", 1, 2), BooleanClause.Occur.MUST)
+        .add(new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("field1", "term1")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("field1", "term2")), BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.MUST)
+        .build();
     assertEquals(2, treeBuilder.collectTerms(bq, new TermWeightor()).size());
   }
 
-  public void testLongerTermsPreferred() throws Exception {
-    Query q = ParserUtils.parse("field1:(+a +supercalifragilisticexpialidocious +b)");
+  public void testLongerTermsPreferred() {
+    Query q = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("field1", "a")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term("field1", "supercalifragilisticexpialidocious")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term("field1", "b")), BooleanClause.Occur.MUST)
+        .build();
     Set<QueryTerm> expected
         = Collections.singleton(new QueryTerm("field1", "supercalifragilisticexpialidocious", QueryTerm.Type.EXACT));
     assertEquals(expected, treeBuilder.collectTerms(q, new TermWeightor(new TokenLengthNorm())));
