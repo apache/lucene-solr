@@ -97,8 +97,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
           HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
       HighlightsMatch m = matches.matches("query1", "doc1");
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(3, 10, 3, 14)));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(4, 15, 4, 23)));
+      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(3, 10, 4, 23)));
     }
 
   }
@@ -371,48 +370,6 @@ public class TestHighlightingMatcher extends LuceneTestCase {
     assertNotEquals(m1, m4);
   }
 
-  public void testUnrewritableQuery() throws IOException, UpdateException {
-
-    TermQuery inner = new TermQuery(new Term(textfield, "a"));
-    try (Monitor monitor = new Monitor((q, m) -> new Query() {
-      @Override
-      public String toString(String s) {
-        return "test";
-      }
-
-      @Override
-      public void visit(QueryVisitor visitor) {
-
-      }
-
-      @Override
-      public boolean equals(Object o) {
-        return false;
-      }
-
-      @Override
-      public int hashCode() {
-        return 0;
-      }
-
-      @Override
-      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        return inner.createWeight(searcher, scoreMode, boost);
-      }
-    }, new MatchAllPresearcher())) {
-
-      monitor.update(new MonitorQuery("1", ""));
-
-      InputDocument doc = buildDoc("doc", "a b c");
-      Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
-
-      HighlightsMatch m = matches.matches("1", "doc");
-      assertNotNull(m);
-      assertThat(m.error.getMessage(), containsString("Don't know how to rewrite"));
-    }
-
-  }
-
   public void testMutliValuedFieldWithNonDefaultGaps() throws IOException, UpdateException {
 
     Analyzer analyzer = new Analyzer() {
@@ -445,8 +402,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
       HighlightsMatch m1 = matcher1.matches("query", "doc1");
       assertNotNull(m1);
       assertTrue(m1.getFields().contains(textfield));
-      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 5)));
-      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(1, 6, 1, 11)));
+      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
 
       InputDocument doc2 = InputDocument.builder("doc2")
           .addField(textfield, "hello", analyzer)
@@ -465,10 +421,8 @@ public class TestHighlightingMatcher extends LuceneTestCase {
       HighlightsMatch m3 = matcher3.matches("query", "doc3");
       assertNotNull(m3);
       assertTrue(m3.getFields().contains(textfield));
-      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 5)));
-      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(1, 6, 1, 11)));
-      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(1002, 2011, 1002, 2016)));
-      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(1004, 2025, 1004, 2030)));
+      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
+      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(1002, 2011, 1004, 2030)));
     }
 
   }
@@ -623,8 +577,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
       assertEquals(0, matches.getMatchCount("doc2"));
       assertEquals(1, matches.getMatchCount("doc3"));
       HighlightsMatch m1 = matches.matches("query1", "doc1");
-      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(1, 4, 1, 8)));
-      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(2, 9, 2, 16)));
+      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(1, 4, 2, 16)));
       HighlightsMatch m2 = matches.matches("query2", "doc3");
       assertTrue(m2.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 7)));
     }

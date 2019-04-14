@@ -89,6 +89,11 @@ public class ForceNoBulkScoringQuery extends Query {
       public Scorer scorer(LeafReaderContext leafReaderContext) throws IOException {
         return innerWeight.scorer(leafReaderContext);
       }
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        return innerWeight.matches(context, doc);
+      }
     };
   }
 
