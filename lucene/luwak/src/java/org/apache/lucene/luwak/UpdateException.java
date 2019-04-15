@@ -32,5 +32,8 @@ public class UpdateException extends Exception {
 
   public UpdateException(List<QueryError> errors) {
     this.errors = errors;
+    for (QueryError e : errors) {
+      addSuppressed(e.error);
+    }
   }
 }
