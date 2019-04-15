@@ -30,6 +30,14 @@ Jetty 9.4.14.v20181114
 
 Upgrade Notes
 ----------------------
+
+* Solr's default behavior when dealing with 'maxBooleanClauses' has changed to reduce the risk of exponential
+  query expansion when dealing with pathological query strings.  A default upper limit of 1024 clauses
+  (The same default prior to Solr 7.0) is now enforced at the node level, and can be overridden in solr.xml.
+  The identically named solrconfig.xml setting is still available for limiting the size of 'explicit' boolean
+  query strings, but this per-collection limit is still ristricted by the upper-bound of the global limit
+  in solr.xml.  See SOLR-13336 for more details.
+
 * When requesting the status of an async request via REQUESTSTATUS collections API, the response will
   include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
   to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
@@ -151,6 +159,9 @@ Bug Fixes
 * SOLR-13393: Fixed ZkClientClusterStateProvider to prevent risk of leaking ZkStateReader/threads when
   processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
   odd errors/delays when restart/shutting down solr nodes.  (hossman)
+
+* SOLR-13336: add maxBooleanClauses (default to 1024) setting to solr.xml, reverting previous effective
+  value of Integer.MAX_VALUE-1, to restrict risk of pathalogical query expansion.  (hossman)
 
 Improvements
 ----------------------
