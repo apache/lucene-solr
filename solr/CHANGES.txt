@@ -96,6 +96,10 @@ Bug fixes
 
 * SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
 
+* SOLR-13386: OverseerTaskQueue#remove should not throw an exception when no node exists after an exists
+  check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
+  (Mark Miller, Fernandez-Lobbe, Mike Drob)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
