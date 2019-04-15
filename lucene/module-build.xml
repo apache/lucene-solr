@@ -83,6 +83,20 @@
            <packageset dir="${src.dir}"/>
         </sources>
       </invoke-javadoc>
+      
+      <!-- fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly (by removing all the packages which are part of lucene-core): -->
+      <!-- problem description: [https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106] -->
+      <local name="element-list-regex"/><!-- contains a regex for all package names which are in lucene-core's javadoc! -->
+      <loadfile property="element-list-regex" srcFile="${javadoc.dir}/core/element-list" encoding="utf-8">
+        <filterchain>
+          <tokenfilter delimoutput="|">
+            <replacestring from="." to="\."/>
+          </tokenfilter>
+        </filterchain>
+      </loadfile>
+      <!--<echo>Regex: ^(${element-list-regex})$</echo>-->
+      <replaceregexp encoding="utf-8" file="${javadoc.dir}/${name}/element-list" byline="true" match="^(${element-list-regex})$" replace=""/>
+      
       <jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </macrodef>
