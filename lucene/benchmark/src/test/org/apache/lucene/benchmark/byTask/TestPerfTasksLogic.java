@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Collator;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,15 +38,16 @@ import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Terms;
@@ -168,7 +170,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.log.step=1",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
         "# ----- alg ",
@@ -209,7 +211,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "doc.term.vector=false",
         "log.step.AddDoc=10000",
         "content.source.forever=true",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.reuse.fields=false",
         "doc.stored=true",
         "doc.tokenized=false",
@@ -373,13 +375,13 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     int totalTokenCount2 = 0;
 
-    Fields fields = MultiFields.getFields(reader);
+    Collection<String> fields = FieldInfos.getIndexedFields(reader);
 
     for (String fieldName : fields) {
       if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
-      Terms terms = fields.terms(fieldName);
+      Terms terms = MultiTerms.getTerms(reader, fieldName);
       if (terms == null) {
         continue;
       }
@@ -410,7 +412,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.log.step=3",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
         "task.max.depth.log=1",
@@ -445,7 +447,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.log.step=3",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
         "task.max.depth.log=1",
@@ -482,7 +484,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.log.step=3",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
         "debug.level=1",
@@ -525,7 +527,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.log.step=3",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "merge.scheduler=" + MyMergeScheduler.class.getName(),
         "doc.stored=false",
         "doc.tokenized=false",
@@ -573,7 +575,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "max.buffered=2",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "merge.policy=" + MyMergePolicy.class.getName(),
         "doc.stored=false",
         "doc.tokenized=false",
@@ -613,7 +615,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "compound=cmpnd:true:false",
         "doc.term.vector=vector:false:true",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "merge.factor=3",
         "doc.tokenized=false",
@@ -654,7 +656,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "docs.file=" + getReuters20LinesFile(),
         "content.source.log.step=100",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "merge.factor=3",
         "doc.tokenized=false",
@@ -693,7 +695,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "max.buffered=3",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "merge.policy=org.apache.lucene.index.LogDocMergePolicy",
         "doc.stored=false",
         "doc.tokenized=false",
@@ -765,7 +767,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.log.step=30",
         "doc.term.vector=false",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
         "task.max.depth.log=1",
@@ -813,7 +815,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "docs.file=" + getReuters20LinesFile(),
         "content.source.log.step=3",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "# ----- alg ",
         "{ \"Rounds\"",
         "  ResetSystemErase",
@@ -878,7 +880,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "docs.file=" + getReuters20LinesFile(),
         "content.source.log.step=3",
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "# ----- alg ",
         "{ \"Rounds\"",
         "  ResetSystemErase",
@@ -944,7 +946,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "docs.file=" + getReuters20LinesFile(),
         "work.dir=" + getWorkDir().toAbsolutePath().toString().replaceAll("\\\\", "/"), // Fix Windows path
         "content.source.forever=false",
-        "directory=RAMDirectory",
+        "directory=ByteBuffersDirectory",
         "AnalyzerFactory(name:'" + singleQuoteEscapedName + "', " + params + ")",
         "NewAnalyzer('" + singleQuoteEscapedName + "')",
         "CreateIndex",

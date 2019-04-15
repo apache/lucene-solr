@@ -292,6 +292,12 @@
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
+  <!-- Indexed, but NOT uninvertible -->
+  <field name="where_s_multi_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="true" />
+  <field name="where_s_single_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="false" />
+  <!-- docValues, but NOT uninvertible -->
+  <field name="where_s_multi_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" multiValued="true" />
+  <field name="where_s_single_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" multiValued="false" />
 
   <!-- Field to use to determine and enforce document uniqueness. 
        Unless this field is marked with required="false", it will be a required field
@@ -324,6 +330,12 @@
 
   <!-- Create a string version of author for faceting -->
   <copyField source="author" dest="author_s"/>
+  
+  <copyField source="where_s" dest="where_s_multi_not_uninvert"/>
+  <copyField source="where_s" dest="where_s_multi_not_uninvert_dv"/>
+  <copyField source="where_s" dest="where_s_single_not_uninvert"/>
+  <copyField source="where_s" dest="where_s_single_not_uninvert_dv"/>
+  <copyField source="where_s" dest="where_s_not_indexed_sS"/>
 
   <!-- Above, multiple source fields are copied to the [text] field. 
    Another way to map multiple source fields to the same 
@@ -382,6 +394,7 @@
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
 
   <!--
    Numeric field types that index each value at various levels of precision
@@ -420,7 +433,6 @@
 
        Note: For faster range queries, consider the tdate type
     -->
-  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" positionIncrementGap="0"/>
 
   <!-- A Trie based date field for faster date range queries and date faceting. -->
   <fieldType name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6" positionIncrementGap="0"/>

@@ -47,7 +47,7 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
-  private long flushBytes = 0;
+  private volatile long flushBytes = 0;
   private volatile int numPending = 0;
   private int numDocsSinceStalled = 0; // only with assert
   final AtomicBoolean flushDeletes = new AtomicBoolean(false);
@@ -70,10 +70,9 @@ final class DocumentsWriterFlushControl implements Accountable {
   private boolean closed = false;
   private final DocumentsWriter documentsWriter;
   private final LiveIndexWriterConfig config;
-  private final BufferedUpdatesStream bufferedUpdatesStream;
   private final InfoStream infoStream;
 
-  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream) {
+  DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config) {
     this.infoStream = config.getInfoStream();
     this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
@@ -81,14 +80,13 @@ final class DocumentsWriterFlushControl implements Accountable {
     this.config = config;
     this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.documentsWriter = documentsWriter;
-    this.bufferedUpdatesStream = bufferedUpdatesStream;
   }
 
   public synchronized long activeBytes() {
     return activeBytes;
   }
 
-  public synchronized long flushBytes() {
+  public long getFlushingBytes() {
     return flushBytes;
   }
 
@@ -259,11 +257,11 @@ final class DocumentsWriterFlushControl implements Accountable {
       if (stall != stallControl.anyStalledThreads()) {
         if (stall) {
           infoStream.message("DW", String.format(Locale.ROOT, "now stalling flushes: netBytes: %.1f MB flushBytes: %.1f MB fullFlush: %b",
-                                                 netBytes()/1024./1024., flushBytes()/1024./1024., fullFlush));
+                                                 netBytes()/1024./1024., getFlushingBytes()/1024./1024., fullFlush));
           stallStartNS = System.nanoTime();
         } else {
           infoStream.message("DW", String.format(Locale.ROOT, "done stalling flushes for %.1f msec: netBytes: %.1f MB flushBytes: %.1f MB fullFlush: %b",
-                                                 (System.nanoTime()-stallStartNS)/1000000., netBytes()/1024./1024., flushBytes()/1024./1024., fullFlush));
+                                                 (System.nanoTime()-stallStartNS)/1000000., netBytes()/1024./1024., getFlushingBytes()/1024./1024., fullFlush));
         }
       }
     }
@@ -461,8 +459,7 @@ final class DocumentsWriterFlushControl implements Accountable {
   }
   
   ThreadState obtainAndLock() {
-    final ThreadState perThread = perThreadPool.getAndLock(Thread
-        .currentThread(), documentsWriter);
+    final ThreadState perThread = perThreadPool.getAndLock();
     boolean success = false;
     try {
       if (perThread.isInitialized() && perThread.dwpt.deleteQueue != documentsWriter.deleteQueue) {
@@ -492,14 +489,18 @@ final class DocumentsWriterFlushControl implements Accountable {
       // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
 
-      // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
-      // if we have some sequence numbers that were never assigned:
-      seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
-      flushingQueue.maxSeqNo = seqNo+1;
+      perThreadPool.lockNewThreadStates(); // no new thread-states while we do a flush otherwise the seqNo accounting might be off
+      try {
+        // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
+        // if we have some sequence numbers that were never assigned:
+        seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
+        flushingQueue.maxSeqNo = seqNo + 1;
+        DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation + 1, seqNo + 1);
+        documentsWriter.deleteQueue = newQueue;
 
-      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation+1, seqNo+1);
-
-      documentsWriter.deleteQueue = newQueue;
+      } finally {
+        perThreadPool.unlockNewThreadStates();
+      }
     }
     final int limit = perThreadPool.getActiveThreadStateCount();
     for (int i = 0; i < limit; i++) {

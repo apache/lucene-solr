@@ -173,6 +173,18 @@ class GeoStandardCircle extends GeoBaseCircle {
   }
 
   @Override
+  public int getRelationship(GeoShape geoShape) {
+    if (circlePlane == null) {
+      //same as GeoWorld
+      if (geoShape.getEdgePoints().length > 0) {
+        return WITHIN;
+      }
+      return OVERLAPS;
+    }
+    return super.getRelationship(geoShape);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     if (circlePlane == null) {

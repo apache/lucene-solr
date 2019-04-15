@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -503,7 +502,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     scorer.score(new LeafCollector() {
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {}
+      public void setScorer(Scorable scorer) throws IOException {}
 
       @Override
       public void collect(int doc) throws IOException {
@@ -520,7 +519,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     scorer.score(new LeafCollector() {
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {}
+      public void setScorer(Scorable scorer) throws IOException {}
 
       @Override
       public void collect(int doc) throws IOException {
@@ -674,8 +673,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      in.extractTerms(terms);
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return in.matches(context, doc);
     }
 
     private boolean cacheEntryHasReasonableWorstCaseSize(int maxDoc) {
@@ -722,16 +721,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.scorerSupplier(context);
       }
 
-      // If the lock is already busy, prefer using the uncached version than waiting
-      if (lock.tryLock() == false) {
-        return in.scorerSupplier(context);
-      }
-
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cache helper
         return in.scorerSupplier(context);
       }
+
+      // If the lock is already busy, prefer using the uncached version than waiting
+      if (lock.tryLock() == false) {
+        return in.scorerSupplier(context);
+      }
+
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);
@@ -760,7 +760,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new ScorerSupplier() {
         @Override
         public Scorer get(long LeadCost) throws IOException {
-          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, disi);
+          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
         }
         
         @Override
@@ -802,16 +802,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.bulkScorer(context);
       }
 
-      // If the lock is already busy, prefer using the uncached version than waiting
-      if (lock.tryLock() == false) {
-        return in.bulkScorer(context);
-      }
-
       final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
       if (cacheHelper == null) {
         // this reader has no cacheHelper
         return in.bulkScorer(context);
       }
+
+      // If the lock is already busy, prefer using the uncached version than waiting
+      if (lock.tryLock() == false) {
+        return in.bulkScorer(context);
+      }
+
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);
@@ -837,7 +838,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return null;
       }
 
-      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, disi));
+      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
   }

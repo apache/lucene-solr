@@ -20,8 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.Exception;
-import java.lang.RuntimeException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -31,8 +29,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.mockfile.FilterPath;
-import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.Constants;
 
 /** Basic tests for WindowsFS */
@@ -153,6 +149,29 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     } finally {
       stopped.set(true);
       t.join();
+    }
+  }
+
+  public void testMove() throws IOException {
+    Path dir = wrap(createTempDir());
+    OutputStream file = Files.newOutputStream(dir.resolve("file"));
+    file.write(1);
+    file.close();
+    Files.move(dir.resolve("file"), dir.resolve("target"));
+    assertTrue(Files.exists(dir.resolve("target")));
+    assertFalse(Files.exists(dir.resolve("file")));
+    try (InputStream stream = Files.newInputStream(dir.resolve("target"))) {
+      assertEquals(1, stream.read());
+    }
+    file = Files.newOutputStream(dir.resolve("otherFile"));
+    file.write(2);
+    file.close();
+
+    Files.move(dir.resolve("otherFile"), dir.resolve("target"), StandardCopyOption.REPLACE_EXISTING);
+    assertTrue(Files.exists(dir.resolve("target")));
+    assertFalse(Files.exists(dir.resolve("otherFile")));
+    try (InputStream stream = Files.newInputStream(dir.resolve("target"))) {
+      assertEquals(2, stream.read());
     }
   }
 }

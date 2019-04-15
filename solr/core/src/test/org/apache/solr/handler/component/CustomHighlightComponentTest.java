@@ -23,14 +23,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.TestCloudSearcherWarming.ConfigRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrFragmentsBuilder;
@@ -127,6 +126,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
 
     // determine custom search handler name (the exact name should not matter)
@@ -145,8 +145,6 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
         highlightComponentName = "customhighlight"+random().nextInt();
         cluster.getSolrClient().request(
             new ConfigRequest(
-                SolrRequest.METHOD.POST,
-                "/config",
                 "{\n" +
                 "  'add-searchcomponent': {\n" +
                 "    'name': '"+highlightComponentName+"',\n" +
@@ -158,8 +156,6 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
       // handler
       cluster.getSolrClient().request(
           new ConfigRequest(
-              SolrRequest.METHOD.POST,
-              "/config",
               "{\n" +
               "  'add-requesthandler': {\n" +
               "    'name' : '"+customSearchHandlerName+"',\n" +

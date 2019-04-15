@@ -33,8 +33,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 
@@ -63,9 +61,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SchemaField schemaField = fields.get("string_disk_f");
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_memory_f");
-    assertEquals("Memory",
-        format.getDocValuesFormatForField(schemaField.getName()).getName());
+    schemaField = fields.get("string_direct_f");
+    assertEquals("Direct", format.getDocValuesFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(),
         format.getDocValuesFormatForField(schemaField.getName()).getName());
@@ -87,8 +84,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("foo_disk").getName());
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("bar_disk").getName());
-    assertEquals("Memory", format.getDocValuesFormatForField("foo_memory").getName());
-    assertEquals("Memory", format.getDocValuesFormatForField("bar_memory").getName());
+    assertEquals("Direct", format.getDocValuesFormatForField("foo_direct").getName());
+    assertEquals("Direct", format.getDocValuesFormatForField("bar_direct").getName());
   }
   
   private void reloadCoreAndRecreateIndex() {
@@ -112,22 +109,17 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
 
   protected void assertCompressionMode(String expectedModeString, SolrCore core) throws IOException {
-    RefCounted<SolrIndexSearcher> ref = null;
-    SolrIndexSearcher searcher = null;
-    try {
-      ref = core.getSearcher();
-      searcher = ref.get();
+    h.getCore().withSearcher(searcher -> {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
-      assertEquals("Expecting compression mode string to be " + expectedModeString + 
-          " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
-          "\n SegmentInfo: " + info +
-          "\n SegmentInfos: " + infos + 
-          "\n Codec: " + core.getCodec(),
+      assertEquals("Expecting compression mode string to be " + expectedModeString +
+              " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
+              "\n SegmentInfo: " + info +
+              "\n SegmentInfos: " + infos +
+              "\n Codec: " + core.getCodec(),
           expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
-    } finally {
-      if (ref != null) ref.decref();
-    }
+      return null;
+    });
   }
   
   public void testCompressionMode() throws Exception {
@@ -161,45 +153,38 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         "//*[@numFound='3']");
     assertQ(req("q", "text:foo"), 
         "//*[@numFound='3']");
-    assertU(optimize());
+    assertU(optimize("maxSegments", "1"));
     assertCompressionMode("BEST_SPEED", h.getCore());
     System.clearProperty("tests.COMPRESSION_MODE");
   }
   
   public void testBadCompressionMode() throws Exception {
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       doTestCompressionMode("something_that_doesnt_exist", "something_that_doesnt_exist");
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
-      assertTrue("Unexpected Exception message: " + e.getMessage(), 
-          e.getMessage().contains("Unable to reload core"));
-    }
+    });
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
+    assertTrue("Unexpected Exception message: " + thrown.getMessage(),
+        thrown.getMessage().contains("Unable to reload core"));
     
-    SchemaCodecFactory factory = new SchemaCodecFactory();
-    NamedList<String> nl = new NamedList<>();
+    final SchemaCodecFactory factory1 = new SchemaCodecFactory();
+    final NamedList<String> nl = new NamedList<>();
     nl.add(SchemaCodecFactory.COMPRESSION_MODE, "something_that_doesnt_exist");
-    try {
-      factory.init(nl);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
-      assertTrue("Unexpected Exception message: " + e.getMessage(), 
-          e.getMessage().contains("Invalid compressionMode: 'something_that_doesnt_exist'"));
-    }
+    thrown = expectThrows(SolrException.class, () -> {
+      factory1.init(nl);
+    });
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
+    assertTrue("Unexpected Exception message: " + thrown.getMessage(),
+        thrown.getMessage().contains("Invalid compressionMode: 'something_that_doesnt_exist'"));
     
-    factory = new SchemaCodecFactory();
-    nl = new NamedList<>();
-    nl.add(SchemaCodecFactory.COMPRESSION_MODE, "");
-    try {
-      factory.init(nl);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
-      assertTrue("Unexpected Exception message: " + e.getMessage(), 
-          e.getMessage().contains("Invalid compressionMode: ''"));
-    }
-    
+    final SchemaCodecFactory factory2 = new SchemaCodecFactory();
+    final NamedList<String> nl2 = new NamedList<>();
+    nl2.add(SchemaCodecFactory.COMPRESSION_MODE, "");
+    thrown = expectThrows(SolrException.class, () -> {
+      factory2.init(nl2);
+    });
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
+    assertTrue("Unexpected Exception message: " + thrown.getMessage(),
+        thrown.getMessage().contains("Invalid compressionMode: ''"));
   }
   
   public void testCompressionModeDefault() throws IOException {

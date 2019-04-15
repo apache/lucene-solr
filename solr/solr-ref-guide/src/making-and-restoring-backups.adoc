@@ -24,6 +24,8 @@ Solr provides two approaches to backing up and restoring Solr cores or collectio
 
 Support for backups when running SolrCloud is provided with the <<collections-api.adoc#collections-api,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
+NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
+
 Two commands are available:
 
 * `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#backup,Backup Collection>>.
@@ -200,13 +202,13 @@ http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&c
 The delete snapshot request parameters are:
 
 `commitName`::
-Specify the commit name to be deleted
+Specify the commit name to be deleted.
 
 `core`::
-The name of the core whose snapshot we want to delete
+The name of the core whose snapshot we want to delete.
 
 `async`::
-Request ID to track this action which will be processed asynchronously
+Request ID to track this action which will be processed asynchronously.
 
 == Backup/Restore Storage Repositories
 
@@ -228,3 +230,5 @@ Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs
   </repository>
 </backup>
 ----
+
+Better throughput might be achieved by increasing buffer size with `<int name="solr.hdfs.buffer.size">262144</int>`. Buffer size is specified in bytes, by default it's 4096 bytes (4KB).

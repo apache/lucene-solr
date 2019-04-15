@@ -19,11 +19,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -73,6 +71,11 @@ public final class BlockScoreQueryWrapper extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    query.visit(visitor);
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Weight inWeight = query.createWeight(searcher, scoreMode, boost);
     if (scoreMode.needsScores() == false) {
@@ -97,10 +100,8 @@ public final class BlockScoreQueryWrapper extends Query {
         DocIdSetIterator it = inScorer.iterator();
         int i = 1;
         for (int doc = it.nextDoc(); ; doc = it.nextDoc()) {
-          if (i == tmpDocs.length) {
-            tmpDocs = ArrayUtil.grow(tmpDocs);
-            tmpScores = Arrays.copyOf(tmpScores, tmpDocs.length);
-          }
+          tmpDocs = ArrayUtil.grow(tmpDocs, i + 1);
+          tmpScores = ArrayUtil.grow(tmpScores, i + 1);
           tmpDocs[i] = doc;
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             i++;
@@ -109,8 +110,8 @@ public final class BlockScoreQueryWrapper extends Query {
           tmpScores[i] = inScorer.score();
           i++;
         }
-        final int[] docs = Arrays.copyOf(tmpDocs, i);
-        final float[] scores = Arrays.copyOf(tmpScores, i);
+        final int[] docs = ArrayUtil.copyOfSubArray(tmpDocs, 0, i);
+        final float[] scores = ArrayUtil.copyOfSubArray(tmpScores, 0, i);
 
         return new Scorer(inWeight) {
 
@@ -197,11 +198,6 @@ public final class BlockScoreQueryWrapper extends Query {
           }
 
         };
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        inWeight.extractTerms(terms);
       }
 
       @Override

@@ -17,10 +17,14 @@
 
 package org.apache.solr.handler.component;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.spelling.suggest.RandomTestDictionaryFactory;
 import org.apache.solr.spelling.suggest.SuggesterParams;
@@ -94,7 +98,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReloadDuringBuild() throws Exception {
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("AnalyzingInfixSuggesterTest");
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("InfixSuggesterTest");
     try {
       // Build the suggester in the background with a long dictionary
       Future job = executor.submit(() ->
@@ -114,20 +118,35 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testShutdownDuringBuild() throws Exception {
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("AnalyzingInfixSuggesterTest");
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("InfixSuggesterTest");
     try {
+      LinkedHashMap<Class<? extends Throwable>, List<Class<? extends Throwable>>> expected = new LinkedHashMap<>();
+      expected.put(RuntimeException.class, Arrays.asList
+          (SolrCoreState.CoreIsClosedException.class, SolrException.class, IllegalStateException.class, NullPointerException.class));
+      final Throwable[] outerException = new Throwable[1];
       // Build the suggester in the background with a long dictionary
-      Future job = executor.submit(() -> 
-          expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
-              () -> assertQ(req("qt", rh_analyzing_long,
-                  SuggesterParams.SUGGEST_BUILD_ALL, "true"),
-                  "//str[@name='command'][.='buildAll']")));
+      Future job = executor.submit(() -> outerException[0] = expectThrowsAnyOf(expected,
+          () -> assertQ(req("qt", rh_analyzing_long, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+              "//str[@name='command'][.='buildAll']")));
       Thread.sleep(100); // TODO: is there a better way to ensure that the build has begun?
       h.close();
       // Stop the dictionary's input iterator
       System.clearProperty(RandomTestDictionaryFactory.RandomTestDictionary
           .getEnabledSysProp("longRandomAnalyzingInfixSuggester"));
       job.get();
+      Throwable wrappedException = outerException[0].getCause();
+      if (wrappedException instanceof SolrException) {
+        String expectedMessage = "SolrCoreState already closed.";
+        assertTrue("Expected wrapped SolrException message to contain '" + expectedMessage 
+            + "' but message is '" + wrappedException.getMessage() + "'", 
+            wrappedException.getMessage().contains(expectedMessage));
+      } else if (wrappedException instanceof IllegalStateException
+          && ! (wrappedException instanceof SolrCoreState.CoreIsClosedException)) { // CoreIsClosedException extends IllegalStateException
+        String expectedMessage = "Cannot commit on an closed writer. Add documents first";
+        assertTrue("Expected wrapped IllegalStateException message to contain '" + expectedMessage
+                + "' but message is '" + wrappedException.getMessage() + "'",
+            wrappedException.getMessage().contains(expectedMessage));
+      }
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
       initCore("solrconfig-infixsuggesters.xml","schema.xml"); // put the core back for other tests

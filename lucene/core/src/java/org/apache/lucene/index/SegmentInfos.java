@@ -122,8 +122,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int VERSION_70 = 7;
   /** The version that updated segment name counter to be long instead of int. */
   public static final int VERSION_72 = 8;
-
-  static final int VERSION_CURRENT = VERSION_72;
+  /** The version that recorded softDelCount */
+  public static final int VERSION_74 = 9;
+  static final int VERSION_CURRENT = VERSION_74;
 
   /** Used to name new segments. */
   public long counter;
@@ -359,7 +360,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       }
       long fieldInfosGen = input.readLong();
       long dvGen = input.readLong();
-      SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
+      int softDelCount = format > VERSION_72 ? input.readInt() : 0;
+      if (softDelCount < 0 || softDelCount > info.maxDoc()) {
+        throw new CorruptIndexException("invalid deletion count: " + softDelCount + " vs maxDoc=" + info.maxDoc(), input);
+      }
+      if (softDelCount + delCount > info.maxDoc()) {
+        throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
+      }
+      SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, dvGen);
       siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
       final Map<Integer,Set<String>> dvUpdateFiles;
       final int numDVFields = input.readInt();
@@ -517,6 +525,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       out.writeInt(delCount);
       out.writeLong(siPerCommit.getFieldInfosGen());
       out.writeLong(siPerCommit.getDocValuesGen());
+      int softDelCount = siPerCommit.getSoftDelCount();
+      if (softDelCount < 0 || softDelCount > si.maxDoc()) {
+        throw new IllegalStateException("cannot write segment: invalid maxDoc segment=" + si.name + " maxDoc=" + si.maxDoc() + " softDelCount=" + softDelCount);
+      }
+      out.writeInt(softDelCount);
       out.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
       final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
       out.writeInt(dvUpdatesFiles.size());

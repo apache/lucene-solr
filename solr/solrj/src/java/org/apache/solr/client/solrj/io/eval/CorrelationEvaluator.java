@@ -118,7 +118,7 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
           realMatrix.setAttribute("corr", kendallsCorrelation);
           return realMatrix;
         } else if (type.equals(CorrelationType.spearmans)) {
-          SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation(new Array2DRowRealMatrix(data));
+          SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation(new Array2DRowRealMatrix(data, false));
           RealMatrix corrMatrix = spearmansCorrelation.getCorrelationMatrix();
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix =  new Matrix(corrMatrixData);

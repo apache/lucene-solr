@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -36,9 +36,17 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
 
-  public TokenStreamOffsetStrategy(String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer indexAnalyzer) {
-    super(field, ZERO_LEN_BYTES_REF_ARRAY, phraseHelper, convertTermsToAutomata(terms, automata), indexAnalyzer);
-    assert phraseHelper.hasPositionSensitivity() == false;
+  public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
+    super(new UHComponents(
+            components.getField(),
+            components.getFieldMatcher(),
+            components.getQuery(),
+            ZERO_LEN_BYTES_REF_ARRAY,
+            components.getPhraseHelper(),
+            convertTermsToAutomata(components.getTerms(), components.getAutomata()),
+            components.getHighlightFlags()),
+        indexAnalyzer);
+    assert components.getPhraseHelper().hasPositionSensitivity() == false;
   }
 
   private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
@@ -58,8 +66,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
-    return new TokenStreamOffsetsEnum(tokenStream(content), automata);
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
+    return new TokenStreamOffsetsEnum(tokenStream(content), components.getAutomata());
   }
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {

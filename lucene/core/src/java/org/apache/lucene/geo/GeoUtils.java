@@ -174,4 +174,66 @@ public final class GeoUtils {
     return maxLon - lon < 90 && lon - minLon < 90;
   }
 
+  /**
+   * Returns a positive value if points a, b, and c are arranged in counter-clockwise order,
+   * negative value if clockwise, zero if collinear.
+   */
+  // see the "Orient2D" method described here:
+  // http://www.cs.berkeley.edu/~jrs/meshpapers/robnotes.pdf
+  // https://www.cs.cmu.edu/~quake/robust.html
+  // Note that this one does not yet have the floating point tricks to be exact!
+  public static int orient(double ax, double ay, double bx, double by, double cx, double cy) {
+    double v1 = (bx - ax) * (cy - ay);
+    double v2 = (cx - ax) * (by - ay);
+    if (v1 > v2) {
+      return 1;
+    } else if (v1 < v2) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
+
+  /** uses orient method to compute whether two line segments cross */
+  public static boolean lineCrossesLine(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) < 0 &&
+        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) < 0) {
+      return true;
+    }
+    return false;
+  }
+
+  /** uses orient method to compute whether two line segments cross; boundaries included - returning true for
+   * lines that terminate on each other.
+   *
+   * e.g., (plus sign) + == true, and (capital 't') T == true
+   *
+   * Use {@link #lineCrossesLine} to exclude lines that terminate on each other from the truth table
+   **/
+  public static boolean lineCrossesLineWithBoundary(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) <= 0 &&
+        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) <= 0) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * used to define the orientation of 3 points
+   * -1 = Clockwise
+   * 0 = Colinear
+   * 1 = Counter-clockwise
+   **/
+  public enum WindingOrder {
+    CW(-1), COLINEAR(0), CCW(1);
+    private final int sign;
+    WindingOrder(int sign) { this.sign = sign; }
+    public int sign() {return sign;}
+    public static WindingOrder fromSign(final int sign) {
+      if (sign == CW.sign) return CW;
+      if (sign == COLINEAR.sign) return COLINEAR;
+      if (sign == CCW.sign) return CCW;
+      throw new IllegalArgumentException("Invalid WindingOrder sign: " + sign);
+    }
+  }
 }

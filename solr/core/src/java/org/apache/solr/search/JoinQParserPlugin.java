@@ -36,10 +36,10 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -166,19 +166,25 @@ class JoinQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new JoinQueryWeight((SolrIndexSearcher)searcher, boost);
+    return new JoinQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
   }
 
   private class JoinQueryWeight extends ConstantScoreWeight {
     SolrIndexSearcher fromSearcher;
     RefCounted<SolrIndexSearcher> fromRef;
     SolrIndexSearcher toSearcher;
-    private Similarity similarity;
     ResponseBuilder rb;
+    ScoreMode scoreMode;
 
-    public JoinQueryWeight(SolrIndexSearcher searcher, float boost) {
+    public JoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float boost) {
       super(JoinQuery.this, boost);
+      this.scoreMode = scoreMode;
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {
@@ -280,7 +286,7 @@ class JoinQuery extends Query {
       if (readerSetIterator == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), readerSetIterator);
+      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
     }
 
     @Override
@@ -374,8 +380,8 @@ class JoinQuery extends Query {
         }
       }
 
-      Bits fromLiveDocs = fromSearcher.getSlowAtomicReader().getLiveDocs();
-      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getSlowAtomicReader().getLiveDocs();
+      Bits fromLiveDocs = fromSearcher.getLiveDocsBits();
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getLiveDocsBits();
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
       fromDeState.fieldName = fromField;

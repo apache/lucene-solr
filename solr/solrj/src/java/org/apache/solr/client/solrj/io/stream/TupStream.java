@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Iterator;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.SingleValueComparator;
@@ -45,14 +46,18 @@ public class TupStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private StreamContext streamContext;
-  
+
   private Map<String,String> stringParams = new HashMap<>();
   private Map<String,StreamEvaluator> evaluatorParams = new HashMap<>();
   private Map<String,TupleStream> streamParams = new HashMap<>();
   private List<String> fieldNames = new ArrayList();
   private Map<String, String> fieldLabels = new HashMap();
+  private Tuple tup = null;
+  private Tuple unnestedTuple = null;
+  private Iterator<Tuple>  unnestedTuples = null;
   
   private boolean finished;
+
 
   public TupStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
@@ -145,57 +150,27 @@ public class TupStream extends TupleStream implements Expressible {
 
   public Tuple read() throws IOException {
 
-    if(finished) {
-      Map<String,Object> m = new HashMap<>();
-      m.put("EOF", true);
-      return new Tuple(m);
+    if(unnestedTuples == null) {
+      if (finished) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("EOF", true);
+        return new Tuple(m);
+      } else {
+        finished = true;
+        if(unnestedTuple != null) {
+          return unnestedTuple;
+        } else {
+          return tup;
+        }
+      }
     } else {
-      finished = true;
-      Map<String, Object> values = new HashMap<>();
-      
-      // add all string based params
-      // these could come from the context, or they will just be treated as straight strings
-      for(Entry<String,String> param : stringParams.entrySet()){
-        if(streamContext.getLets().containsKey(param.getValue())){
-          values.put(param.getKey(), streamContext.getLets().get(param.getValue()));
-        }
-        else{
-          values.put(param.getKey(), param.getValue());
-        }
+      if(unnestedTuples.hasNext()) {
+        return unnestedTuples.next();
+      } else {
+        Map<String, Object> m = new HashMap<>();
+        m.put("EOF", true);
+        return new Tuple(m);
       }
-      
-      // add all evaluators
-      for(Entry<String,StreamEvaluator> param : evaluatorParams.entrySet()){
-        values.put(param.getKey(), param.getValue().evaluateOverContext());
-      }
-      
-      // Add all streams
-      for(Entry<String,TupleStream> param : streamParams.entrySet()){
-        
-        try{
-          List<Tuple> streamTuples = new ArrayList();
-          // open the stream, closed in finally block
-          param.getValue().open();
-          
-          // read all values from stream (memory expensive)
-          Tuple streamTuple = param.getValue().read();
-          while(!streamTuple.EOF){
-            streamTuples.add(streamTuple);
-            streamTuple = param.getValue().read();
-          }
-          
-          values.put(param.getKey(), streamTuples);
-        }
-        finally{
-          // safely close the stream
-          param.getValue().close();
-        }        
-      }
-
-      Tuple tup = new Tuple(values);
-      tup.fieldNames = fieldNames;
-      tup.fieldLabels = fieldLabels;
-      return tup;
     }
   }
 
@@ -204,6 +179,63 @@ public class TupStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
+    Map<String, Object> values = new HashMap<>();
+
+    // add all string based params
+    // these could come from the context, or they will just be treated as straight strings
+    for(Entry<String,String> param : stringParams.entrySet()){
+      if(streamContext.getLets().containsKey(param.getValue())){
+        values.put(param.getKey(), streamContext.getLets().get(param.getValue()));
+      }
+      else{
+        values.put(param.getKey(), param.getValue());
+      }
+    }
+
+    // add all evaluators
+    for(Entry<String,StreamEvaluator> param : evaluatorParams.entrySet()){
+      values.put(param.getKey(), param.getValue().evaluateOverContext());
+    }
+
+    // Add all streams
+    for(Entry<String,TupleStream> param : streamParams.entrySet()){
+
+      try{
+        List<Tuple> streamTuples = new ArrayList();
+        // open the stream, closed in finally block
+        param.getValue().open();
+
+        // read all values from stream (memory expensive)
+        Tuple streamTuple = param.getValue().read();
+        while(!streamTuple.EOF){
+          streamTuples.add(streamTuple);
+          streamTuple = param.getValue().read();
+        }
+
+        values.put(param.getKey(), streamTuples);
+      }
+      finally{
+        // safely close the stream
+        param.getValue().close();
+      }
+    }
+
+    if(values.size() == 1) {
+      for(Object o :values.values()) {
+        if(o instanceof Tuple) {
+          unnestedTuple = (Tuple)o;
+        } else if(o instanceof List) {
+          List l = (List)o;
+          if(l.size() > 0 && l.get(0) instanceof Tuple) {
+            List<Tuple> tl = (List<Tuple>)l;
+            unnestedTuples = tl.iterator();
+          }
+        }
+      }
+    }
+    this.tup = new Tuple(values);
+    tup.fieldNames = fieldNames;
+    tup.fieldLabels = fieldLabels;
     // nothing to do here
   }
 

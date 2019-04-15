@@ -25,8 +25,11 @@ public interface SolrMetricProducer {
    * Initializes metrics specific to this producer
    * @param manager an instance of {@link SolrMetricManager}
    * @param registry registry name where metrics are registered
+   * @param tag a symbolic tag that represents this instance of the producer,
+   * or a group of related instances that have the same life-cycle. This tag is
+   * used when managing life-cycle of some metrics and is set when
+   * {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
    * @param scope scope of the metrics (eg. handler name) to separate metrics of
-   *              instances of the same component executing in different contexts
    */
-  void initializeMetrics(SolrMetricManager manager, String registry, String scope);
+  void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope);
 }

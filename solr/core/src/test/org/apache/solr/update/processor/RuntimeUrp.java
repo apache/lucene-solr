@@ -30,6 +30,9 @@ public class RuntimeUrp extends SimpleUpdateProcessorFactory {
     UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(req.getParams());
     List<String>  names = new ArrayList<>();
     for (UpdateRequestProcessorFactory p : processorChain.getProcessors()) {
+      if (p instanceof UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) {
+        p = ((UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) p).delegate;
+      }
       names.add(p.getClass().getSimpleName());
     }
     cmd.solrDoc.addField("processors_s", StrUtils.join(names,'>'));

@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -44,6 +45,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -286,13 +288,16 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
         long numDocs = 0;
         long resultCount = 0;
         for (Future<NamedList> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
-          NamedList resp = getTopTermsCall.get();
+          NamedList fullResp = getTopTermsCall.get();
+          Map stResp = (Map)fullResp.get("significantTerms");
 
-          List<String> terms = (List<String>)resp.get("sterms");
-          List<Integer> docFreqs = (List<Integer>)resp.get("docFreq");
-          List<Integer> queryDocFreqs = (List<Integer>)resp.get("queryDocFreq");
-          numDocs += (Integer)resp.get("numDocs");
-          resultCount += (Integer)resp.get("resultCount");
+          List<String> terms = (List<String>)stResp.get("sterms");
+          List<Integer> docFreqs = (List<Integer>)stResp.get("docFreq");
+          List<Integer> queryDocFreqs = (List<Integer>)stResp.get("queryDocFreq");
+          numDocs += (Integer)stResp.get("numDocs");
+
+          SolrDocumentList searchResp = (SolrDocumentList) fullResp.get("response");
+          resultCount += searchResp.getNumFound();
 
           for (int i = 0; i < terms.size(); i++) {
             String term = terms.get(i);
@@ -382,7 +387,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
-      params.add("fq","{!sigificantTerms}");
+      params.add("fq","{!significantTerms}");
 
       for(String key : paramsMap.keySet()) {
         params.add(key, paramsMap.get(key));
@@ -394,7 +399,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add("field", field);
       params.add("numTerms", String.valueOf(numTerms*5));
 
-      QueryRequest request= new QueryRequest(params);
+      QueryRequest request= new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
       NamedList res = response.getResponse();
       return res;

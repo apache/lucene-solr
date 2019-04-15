@@ -21,10 +21,12 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 /**
  * test ICUTokenizer with dictionary-based CJ segmentation
  */
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8222")
 public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   Analyzer a;
   
@@ -75,6 +77,15 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   public void testSimpleJapanese() throws Exception {
     assertAnalyzesTo(a, "それはまだ実験段階にあります",
         new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます"  }
+    );
+  }
+  
+  /**
+   * dictionary segmentation with emoji
+   */
+  public void testSimpleJapaneseWithEmoji() throws Exception {
+    assertAnalyzesTo(a, "それはまだ実験段階にあります💩",
+        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます", "💩"  }
     );
   }
   

@@ -113,7 +113,7 @@ public class JaspellTernarySearchTrie implements Accountable {
   }
 
   /**
-   * Compares characters by alfabetical order.
+   * Compares characters by alphabetical order.
    * 
    *@param cCompare2
    *          The first char in the comparison.
@@ -204,7 +204,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    *@param file
    *          The <code>Path</code> with the data to load into the Trie.
    *@exception IOException
-   *              A problem occured while reading the data.
+   *              A problem occurred while reading the data.
    */
   public JaspellTernarySearchTrie(Path file) throws IOException {
     this(file, false);
@@ -221,7 +221,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    *          If true, the file is compressed with the GZIP algorithm, and if
    *          false, the file is a normal text document.
    *@exception IOException
-   *              A problem occured while reading the data.
+   *              A problem occurred while reading the data.
    */
   public JaspellTernarySearchTrie(Path file, boolean compression)
           throws IOException {
@@ -234,7 +234,7 @@ public class JaspellTernarySearchTrie implements Accountable {
     try {
       String word;
       int pos;
-      Float occur, one = new Float(1);
+      Float occur, one = 1f;
       while ((word = in.readLine()) != null) {
         pos = word.indexOf("\t");
         occur = one;
@@ -421,9 +421,9 @@ public class JaspellTernarySearchTrie implements Accountable {
     }
     Float aux = (Float) (node.data);
     if (aux == null) {
-      aux = new Float(1);
+      aux = 1f;
     } else {
-      aux = new Float(aux.intValue() + 1);
+      aux = (float) (aux.intValue() + 1);
     }
     put(key2, aux);
     return aux;

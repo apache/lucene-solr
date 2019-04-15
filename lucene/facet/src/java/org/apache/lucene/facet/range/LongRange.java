@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -84,6 +85,22 @@ public final class LongRange extends Range {
     return "LongRange(" + label + ": " + min + " to " + max + ")";
   }
 
+  @Override
+  public boolean equals(Object _that) {
+    if (_that instanceof LongRange == false) {
+      return false;
+    }
+    LongRange that = (LongRange) _that;
+    return that.label.equals(this.label) &&
+        that.min == this.min &&
+        that.max == this.max;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(label, min, max);
+  }
+
   private static class ValueSourceQuery extends Query {
     private final LongRange range;
     private final Query fastMatchQuery;
@@ -115,6 +132,11 @@ public final class LongRange extends Range {
     @Override
     public String toString(String field) {
       return "Filter(" + range.toString() + ")";
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     @Override
@@ -162,7 +184,7 @@ public final class LongRange extends Range {
               return 100; // TODO: use cost of range.accept()
             }
           };
-          return new ConstantScoreScorer(this, score(), twoPhase);
+          return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
         }
 
         @Override

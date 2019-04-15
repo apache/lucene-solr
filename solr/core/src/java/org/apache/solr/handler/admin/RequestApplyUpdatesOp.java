@@ -31,7 +31,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.NAME, "");
+    String cname = params.required().get(CoreAdminParams.NAME);
     CoreAdminOperation.log().info("Applying buffered updates on core: " + cname);
     CoreContainer coreContainer = it.handler.coreContainer;
     try (SolrCore core = coreContainer.getCore(cname)) {

@@ -21,104 +21,164 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /** A Scorer for queries with a required part and an optional part.
  * Delays skipTo() on the optional part until a score() is needed.
  */
 class ReqOptSumScorer extends Scorer {
-  /** The scorers passed from the constructor.
-   * These are set to null as soon as their next() or skipTo() returns false.
-   */
   private final Scorer reqScorer;
   private final Scorer optScorer;
-  private final float reqMaxScore;
+  private final DocIdSetIterator reqApproximation;
   private final DocIdSetIterator optApproximation;
   private final TwoPhaseIterator optTwoPhase;
-  private boolean optIsRequired;
   private final DocIdSetIterator approximation;
   private final TwoPhaseIterator twoPhase;
-  final MaxScoreSumPropagator maxScorePropagator;
 
-  /** Construct a <code>ReqOptScorer</code>.
+  private final MaxScoreSumPropagator maxScorePropagator;
+  private float minScore = 0;
+  private float reqMaxScore;
+  private boolean optIsRequired;
+
+  /**
+   * Construct a <code>ReqOptScorer</code>.
+   *
    * @param reqScorer The required scorer. This must match.
    * @param optScorer The optional scorer. This is used for scoring only.
+   * @param scoreMode  How the produced scorers will be consumed.
    */
-  public ReqOptSumScorer(
-      Scorer reqScorer,
-      Scorer optScorer) throws IOException
-  {
+  public ReqOptSumScorer(Scorer reqScorer, Scorer optScorer, ScoreMode scoreMode) throws IOException {
     super(reqScorer.weight);
     assert reqScorer != null;
     assert optScorer != null;
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
+    } else {
+      this.maxScorePropagator = null;
+    }
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
 
-    this.reqMaxScore = reqScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
-    this.maxScorePropagator = new MaxScoreSumPropagator(Arrays.asList(reqScorer, optScorer));
-
     final TwoPhaseIterator reqTwoPhase = reqScorer.twoPhaseIterator();
     this.optTwoPhase = optScorer.twoPhaseIterator();
-    final DocIdSetIterator reqApproximation;
     if (reqTwoPhase == null) {
       reqApproximation = reqScorer.iterator();
     } else {
-      reqApproximation= reqTwoPhase.approximation();
+      reqApproximation = reqTwoPhase.approximation();
     }
     if (optTwoPhase == null) {
       optApproximation = optScorer.iterator();
     } else {
-      optApproximation= optTwoPhase.approximation();
+      optApproximation = optTwoPhase.approximation();
     }
+    if (scoreMode != ScoreMode.TOP_SCORES) {
+      approximation = reqApproximation;
+      this.reqMaxScore = Float.POSITIVE_INFINITY;
+    } else {
+      reqScorer.advanceShallow(0);
+      optScorer.advanceShallow(0);
+      this.reqMaxScore = reqScorer.getMaxScore(NO_MORE_DOCS);
+      this.approximation = new DocIdSetIterator() {
+        int upTo = -1;
+        float maxScore;
 
-    approximation = new DocIdSetIterator() {
+        private void moveToNextBlock(int target) throws IOException {
+          upTo = advanceShallow(target);
+          float reqMaxScoreBlock = reqScorer.getMaxScore(upTo);
+          maxScore = getMaxScore(upTo);
 
-      private int nextCommonDoc(int reqDoc) throws IOException {
-        int optDoc = optApproximation.docID();
-        if (optDoc > reqDoc) {
-          reqDoc = reqApproximation.advance(optDoc);
+          // Potentially move to a conjunction
+          optIsRequired = reqMaxScoreBlock < minScore;
         }
 
-        while (true) { // invariant: reqDoc >= optDoc
-          if (reqDoc == optDoc) {
-            return reqDoc;
+        private int advanceImpacts(int target) throws IOException {
+          if (target > upTo) {
+            moveToNextBlock(target);
           }
 
-          optDoc = optApproximation.advance(reqDoc);
-          if (optDoc == reqDoc) {
-            return reqDoc;
+          while (true) {
+            if (maxScore >= minScore) {
+              return target;
+            }
+
+            if (upTo == NO_MORE_DOCS) {
+              return NO_MORE_DOCS;
+            }
+
+            target = upTo + 1;
+
+            moveToNextBlock(target);
           }
-          reqDoc = reqApproximation.advance(optDoc);
         }
-      }
 
-      @Override
-      public int nextDoc() throws IOException {
-        int doc = reqApproximation.nextDoc();
-        if (optIsRequired) {
-          doc = nextCommonDoc(doc);
+        @Override
+        public int nextDoc() throws IOException {
+          return advanceInternal(reqApproximation.docID()+1);
         }
-        return doc;
-      }
 
-      @Override
-      public int advance(int target) throws IOException {
-        int doc = reqApproximation.advance(target);
-        if (optIsRequired) {
-          doc = nextCommonDoc(doc);
+        @Override
+        public int advance(int target) throws IOException {
+          return advanceInternal(target);
         }
-        return doc;
-      }
 
-      @Override
-      public int docID() {
-        return reqApproximation.docID();
-      }
+        private int advanceInternal(int target) throws IOException {
+          if (target == NO_MORE_DOCS) {
+            reqApproximation.advance(target);
+            return NO_MORE_DOCS;
+          }
+          int reqDoc = target;
+          advanceHead: for (;;) {
+            if (minScore != 0) {
+              reqDoc = advanceImpacts(reqDoc);
+            }
+            if (reqApproximation.docID() < reqDoc) {
+              reqDoc = reqApproximation.advance(reqDoc);
+            }
+            if (reqDoc == NO_MORE_DOCS || optIsRequired == false) {
+              return reqDoc;
+            }
 
-      @Override
-      public long cost() {
-        return reqApproximation.cost();
-      }
+            int upperBound = reqMaxScore < minScore ? NO_MORE_DOCS : upTo;
+            if (reqDoc > upperBound) {
+              continue;
+            }
 
-    };
+            // Find the next common doc within the current block
+            for (;;) { // invariant: reqDoc >= optDoc
+              int optDoc = optApproximation.docID();
+              if (optDoc < reqDoc) {
+                optDoc = optApproximation.advance(reqDoc);
+              }
+              if (optDoc > upperBound) {
+                reqDoc = upperBound + 1;
+                continue advanceHead;
+              }
+
+              if (optDoc != reqDoc) {
+                reqDoc = reqApproximation.advance(optDoc);
+                if (reqDoc > upperBound) {
+                  continue advanceHead;
+                }
+              }
+
+              if (reqDoc == NO_MORE_DOCS || optDoc == reqDoc) {
+                return reqDoc;
+              }
+            }
+          }
+        }
+
+        @Override
+        public int docID() {
+          return reqApproximation.docID();
+        }
+
+        @Override
+        public long cost() {
+          return reqApproximation.cost();
+        }
+      };
+    }
 
     if (reqTwoPhase == null && optTwoPhase == null) {
       this.twoPhase = null;
@@ -210,6 +270,17 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
+  public int advanceShallow(int target) throws IOException {
+    int upTo = reqScorer.advanceShallow(target);
+    if (optScorer.docID() <= target) {
+      upTo = Math.min(upTo, optScorer.advanceShallow(target));
+    } else if (optScorer.docID() != NO_MORE_DOCS) {
+      upTo = Math.min(upTo, optScorer.docID() - 1);
+    }
+    return upTo;
+  }
+
+  @Override
   public float getMaxScore(int upTo) throws IOException {
     float maxScore = reqScorer.getMaxScore(upTo);
     if (optScorer.docID() <= upTo) {
@@ -219,19 +290,20 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
+    this.minScore = minScore;
     // Potentially move to a conjunction
-    if (optIsRequired == false && minScore > reqMaxScore) {
+    if (reqMaxScore < minScore) {
       optIsRequired = true;
     }
+    maxScorePropagator.setMinCompetitiveScore(minScore);
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<>(2);
-    children.add(new ChildScorer(reqScorer, "MUST"));
-    children.add(new ChildScorer(optScorer, "SHOULD"));
+  public Collection<ChildScorable> getChildren() {
+    ArrayList<ChildScorable> children = new ArrayList<>(2);
+    children.add(new ChildScorable(reqScorer, "MUST"));
+    children.add(new ChildScorable(optScorer, "SHOULD"));
     return children;
   }
-
 }

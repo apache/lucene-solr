@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,7 +93,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                     "long_l", ""+longValue, 
                     "long_l_prehashed_l", ""+HASHER.hashLong(longValue).asLong(),
                     "string_s", strValue,
-                    "string_s_prehashed_l", ""+HASHER.hashString(strValue).asLong()));
+                    "string_s_prehashed_l", ""+HASHER.hashString(strValue, StandardCharsets.UTF_8).asLong()));
 
       longValue -= BIG_PRIME;
     }
@@ -101,7 +102,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     
   }
 
-
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
     buildIndex();
     

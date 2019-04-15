@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
@@ -22,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 
 /** {@link UnInvertedField} implementation of field faceting.
@@ -32,6 +32,10 @@ class FacetFieldProcessorByArrayUIF extends FacetFieldProcessorByArray {
 
   FacetFieldProcessorByArrayUIF(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
+    if (! sf.isUninvertible()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              getClass()+" can not be used on fields where uninvertible='false'");
+    }
   }
 
   @Override

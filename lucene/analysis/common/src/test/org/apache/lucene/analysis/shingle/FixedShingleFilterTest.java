@@ -43,7 +43,7 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
         new int[]{13, 18, 27, 32, 41,},
         new String[]{"shingle", "shingle", "shingle", "shingle", "shingle",},
         new int[]{1, 1, 1, 1, 1,},
-        new int[]{2, 2, 2, 2, 2});
+        new int[]{1, 1, 1, 1, 1});
 
   }
 
@@ -163,6 +163,8 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
 
   public void testIncomingGraphs() throws IOException {
 
+    // b/a c b/a d
+
     TokenStream ts = new CannedTokenStream(
         new Token("b", 0, 1),
         new Token("a", 0, 0, 1),
@@ -195,6 +197,34 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
           new int[] {    0,        0,      0,       0,       2,        2,     },
           new int[] {    5,        5,      5,       5,       7,        7,     },
           new int[] {    1,        0,      0,       0,       1,        0,     });
+  }
+
+  public void testTrailingGraphsOfDifferingLengths() throws IOException {
+
+    // a b:3/c d e f
+    TokenStream ts = new CannedTokenStream(
+        new Token("a", 0, 1),
+        new Token("b", 1, 2, 3, 3),
+        new Token("c", 0, 2, 3),
+        new Token("d", 2, 3),
+        new Token("e", 2, 3),
+        new Token("f", 4, 5)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+        new String[]{ "a b f", "a c d", "c d e", "d e f"});
+
+  }
+
+  public void testParameterLimits() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      new FixedShingleFilter(new CannedTokenStream(), 1);
+    });
+    assertEquals("Shingle size must be between 2 and 4, got 1", e.getMessage());
+    IllegalArgumentException e2 = expectThrows(IllegalArgumentException.class, () -> {
+      new FixedShingleFilter(new CannedTokenStream(), 5);
+    });
+    assertEquals("Shingle size must be between 2 and 4, got 5", e2.getMessage());
   }
 
 }

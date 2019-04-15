@@ -60,7 +60,7 @@ Your CREATE call must be able to find a configuration, or it will not succeed.
 
 When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the config requirement. There is something to note, though – if you're running SolrCloud, you should *NOT* be using the CoreAdmin API at all. Use the <<collections-api.adoc#collections-api,Collections API>>.
 
-When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the configSet parameter as documented below. If there are no config sets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
+When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the configSet parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
 
 The config and schema filenames can be specified with the `config` and `schema` parameters, but these are expert options. One thing you could do to avoid creating the `conf` directory is use `config` and `schema` parameters that point at absolute paths, but this can lead to confusing configurations unless you fully understand what you are doing.
 ====
@@ -235,7 +235,7 @@ Multi-valued, directories that would be merged.
 Multi-valued, source cores that would be merged.
 
 `async`::
-Request ID to track this action which will be processed asynchronously
+Request ID to track this action which will be processed asynchronously.
 
 
 [[coreadmin-split]]
@@ -269,28 +269,28 @@ Request ID to track this action which will be processed asynchronously.
 
 The `core` index will be split into as many pieces as the number of `path` or `targetCore` parameters.
 
-==== Usage with two targetCore parameters:
+*Usage with two targetCore parameters*:
 
 [source,bash]
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2
 
 Here the `core` index will be split into two pieces and merged into the two `targetCore` indexes.
 
-==== Usage with two path parameters:
+*Usage with two path parameters*:
 
 [source,bash]
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&path=/path/to/index/1&path=/path/to/index/2
 
 The `core` index will be split into two pieces and written into the two directory paths specified.
 
-==== Usage with the split.key parameter:
+*Usage with the split.key parameter*:
 
 [source,bash]
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&split.key=A!
 
 Here all documents having the same route key as the `split.key` i.e., 'A!' will be split from the `core` index and written to the `targetCore`.
 
-==== Usage with ranges parameter:
+*Usage with ranges parameter*:
 
 [source,bash]
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2&targetCore=core3&ranges=0-1f4,1f5-3e8,3e9-5dc

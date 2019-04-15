@@ -122,7 +122,7 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
       return new ConstantScoreWeight(DummyQuery.this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(1));
+          return new ConstantScoreScorer(this, score(), scoreMode, DocIdSetIterator.all(1));
         }
 
         @Override
@@ -130,6 +130,11 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
           return true;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
   }

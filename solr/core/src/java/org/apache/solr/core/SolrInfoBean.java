@@ -34,7 +34,7 @@ public interface SolrInfoBean {
    * Category of Solr component.
    */
   enum Category { CONTAINER, ADMIN, CORE, QUERY, UPDATE, CACHE, HIGHLIGHTER, QUERYPARSER, SPELLCHECKER,
-    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, OTHER }
+    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, SECURITY, OTHER }
 
   /**
    * Top-level group of beans or metrics for a subsystem.
@@ -83,7 +83,7 @@ public interface SolrInfoBean {
   /** Register a metric name that this component reports. This method is called by various
    * metric registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order
    * to capture what metric names are reported from this component (which in turn is called
-   * from {@link org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricManager, String, String)}).
+   * from {@link org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricManager, String, String, String)}).
    * <p>Default implementation registers all metrics added by a component. Implementations may
    * override this to avoid reporting some or all metrics returned by {@link #getMetricsSnapshot()}</p>
    */

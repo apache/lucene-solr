@@ -16,12 +16,16 @@
  */
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.GeoTestUtil.createRegularPolygon;
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
 import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
+import static org.apache.lucene.geo.GeoTestUtil.nextPointNear;
 import static org.apache.lucene.geo.GeoTestUtil.nextPolygon;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** Test Polygon2D impl */
 public class TestPolygon2D extends LuceneTestCase {
@@ -251,18 +255,18 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testEdgeInsideness() {
     Polygon2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
     assertTrue(poly.contains(-2, -2)); // bottom left corner: true
-    assertFalse(poly.contains(-2, 2));  // bottom right corner: false
-    assertFalse(poly.contains(2, -2));  // top left corner: false
-    assertFalse(poly.contains(2,  2));  // top right corner: false
+    assertTrue(poly.contains(-2, 2));  // bottom right corner: true
+    assertTrue(poly.contains(2, -2));  // top left corner: true
+    assertTrue(poly.contains(2,  2));  // top right corner: true
     assertTrue(poly.contains(-2, -1)); // bottom side: true
     assertTrue(poly.contains(-2, 0));  // bottom side: true
     assertTrue(poly.contains(-2, 1));  // bottom side: true
-    assertFalse(poly.contains(2, -1));  // top side: false
-    assertFalse(poly.contains(2, 0));   // top side: false
-    assertFalse(poly.contains(2, 1));   // top side: false
-    assertFalse(poly.contains(-1, 2));  // right side: false
-    assertFalse(poly.contains(0, 2));   // right side: false
-    assertFalse(poly.contains(1, 2));   // right side: false
+    assertTrue(poly.contains(2, -1));  // top side: true
+    assertTrue(poly.contains(2, 0));   // top side: true
+    assertTrue(poly.contains(2, 1));   // top side: true
+    assertTrue(poly.contains(-1, 2));  // right side: true
+    assertTrue(poly.contains(0, 2));   // right side: true
+    assertTrue(poly.contains(1, 2));   // right side: true
     assertTrue(poly.contains(-1, -2)); // left side: true
     assertTrue(poly.contains(0, -2));  // left side: true
     assertTrue(poly.contains(1, -2));  // left side: true
@@ -287,6 +291,81 @@ public class TestPolygon2D extends LuceneTestCase {
         boolean expected = GeoTestUtil.containsSlowly(polygon, latitude, longitude);
         assertEquals(expected, impl.contains(latitude, longitude));
       }
+    }
+  }
+
+  // targets the polygon directly
+  public void testRelateTriangle() {
+    for (int i = 0; i < 100; ++i) {
+      Polygon polygon = nextPolygon();
+      Polygon2D impl = Polygon2D.create(polygon);
+
+      for (int j = 0; j < 100; j++) {
+        double[] a = nextPointNear(polygon);
+        double[] b = nextPointNear(polygon);
+        double[] c = nextPointNear(polygon);
+
+        // if the point is within poly, then triangle should not intersect
+        if (impl.contains(a[0], a[1]) || impl.contains(b[0], b[1]) || impl.contains(c[0], c[1])) {
+          assertTrue(impl.relateTriangle(a[1], a[0], b[1], b[0], c[1], c[0]) != Relation.CELL_OUTSIDE_QUERY);
+        }
+      }
+    }
+  }
+
+  public void testRelateTriangleContainsPolygon() {
+    Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
+    Polygon2D impl = Polygon2D.create(polygon);
+    assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-10 , -1, 2, -1, 10, 10));
+  }
+
+  // test
+  public void testRelateTriangleEdgeCases() {
+    for (int i = 0; i < 100; ++i) {
+      // random radius between 1Km and 100Km
+      int randomRadius = RandomNumbers.randomIntBetween(random(), 1000, 100000);
+      // random number of vertices
+      int numVertices = RandomNumbers.randomIntBetween(random(), 100, 1000);
+      Polygon polygon = createRegularPolygon(0, 0, randomRadius, numVertices);
+      Polygon2D impl = Polygon2D.create(polygon);
+
+      // create and test a simple tessellation
+      for (int j = 1; j < numVertices; ++j) {
+        double[] a = new double[] {0d, 0d};  // center of poly
+        double[] b = new double[] {polygon.getPolyLat(j - 1), polygon.getPolyLon(j - 1)};
+        // occassionally test pancake triangles
+        double[] c = random().nextBoolean() ? new double[] {polygon.getPolyLat(j), polygon.getPolyLon(j)} : new double[] {a[0], a[1]};
+        assertTrue(impl.relateTriangle(a[0], a[1], b[0], b[1], c[0], c[1]) != Relation.CELL_OUTSIDE_QUERY);
+      }
+    }
+  }
+
+  public void testLineCrossingPolygonPoints() {
+    Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
+    Polygon2D polygon2D = Polygon2D.create(p);
+    Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)));
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
+  }
+
+  public void testRandomLineCrossingPolygon() {
+    Polygon p = GeoTestUtil.createRegularPolygon(0, 0, 1000, TestUtil.nextInt(random(), 100, 10000));
+    Polygon2D polygon2D = Polygon2D.create(p);
+    for (int i=0; i < 1000; i ++) {
+      double longitude = GeoTestUtil.nextLongitude();
+      double latitude = GeoTestUtil.nextLatitude();
+      Relation rel = polygon2D.relateTriangle(
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)),
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(latitude)),
+          GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)));
+      assertNotEquals(Relation.CELL_OUTSIDE_QUERY, rel);
     }
   }
 }

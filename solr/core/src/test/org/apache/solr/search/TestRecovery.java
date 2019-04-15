@@ -24,12 +24,14 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.TimeOut;
 import org.noggit.ObjectBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,18 +39,21 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -71,8 +76,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   static String savedFactory;
 
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     randomizeUpdateLogImpl();
@@ -85,12 +90,20 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   }
   
-  @AfterClass
-  public static void afterClass() {
+  @After
+  public void afterTest() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
+    }
+    
+    deleteCore();
+    
+    try {
+      FileUtils.deleteDirectory(initCoreDataDir);
+    } catch (IOException e) {
+      log.error("Exception deleting core directory.", e);
     }
   }
 
@@ -98,6 +111,85 @@ public class TestRecovery extends SolrTestCaseJ4 {
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
     MetricRegistry registry = manager.registry(h.getCore().getCoreMetricManager().getRegistryName());
     return registry.getMetrics();
+  }
+
+  @Test
+  public void stressLogReplay() throws Exception {
+    final int NUM_UPDATES = 150;
+    try {
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
+      clearIndex();
+      assertU(commit());
+      Map<Integer, Integer> docIdToVal = new HashMap<>();
+      for (int i = 0; i < NUM_UPDATES; i++) {
+        int kindOfUpdate = random().nextInt(100);
+        if (docIdToVal.size() < 10) kindOfUpdate = 0;
+        if (kindOfUpdate <= 50) {
+          // add a new document update, may by duplicate with the current one
+          int val = random().nextInt(1000);
+          int docId = random().nextInt(10000);
+          addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", val), null);
+          docIdToVal.put(docId, val);
+        } else if (kindOfUpdate <= 80) {
+          // inc val of a document
+          ArrayList<Integer> ids = new ArrayList<>(docIdToVal.keySet());
+          int docId = ids.get(random().nextInt(ids.size()));
+          int delta = random().nextInt(10);
+          addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", map("inc", delta)), null);
+          docIdToVal.put(docId, docIdToVal.get(docId) + delta);
+        } else if (kindOfUpdate <= 85) {
+          // set val of a document
+          ArrayList<Integer> ids = new ArrayList<>(docIdToVal.keySet());
+          int docId = ids.get(random().nextInt(ids.size()));
+          int val = random().nextInt(1000);
+          addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", map("set", val)), null);
+          docIdToVal.put(docId, val);
+        } else if (kindOfUpdate <= 90) {
+          // delete by id
+          ArrayList<Integer> vals = new ArrayList<>(docIdToVal.values());
+          int val = vals.get(random().nextInt(vals.size()));
+          deleteByQueryAndGetVersion("val_i_dvo:"+val, null);
+          docIdToVal.entrySet().removeIf(integerIntegerEntry -> integerIntegerEntry.getValue() == val);
+        } else {
+          // delete by query
+          ArrayList<Integer> ids = new ArrayList<>(docIdToVal.keySet());
+          int docId = ids.get(random().nextInt(ids.size()));
+          deleteAndGetVersion(String.valueOf(docId), null);
+          docIdToVal.remove(docId);
+        }
+      }
+
+      h.close();
+      createCore();
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+      // unblock recovery
+      logReplay.release(Integer.MAX_VALUE);
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertU(commit());
+      assertJQ(req("q","*:*") ,"/response/numFound=="+docIdToVal.size());
+
+      for (Map.Entry<Integer, Integer> entry : docIdToVal.entrySet()) {
+        assertJQ(req("q","id:"+entry.getKey(), "fl", "val_i_dvo") ,
+            "/response/numFound==1",
+            "/response/docs==[{'val_i_dvo':"+entry.getValue()+"}]");
+      }
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
   }
 
   @Test
@@ -739,6 +831,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           +"]"
       );
 
+      // Note that the v101->v103 are dropped, therefore it does not present in RTG
       assertJQ(req("qt","/get", "getVersions","6")
           ,"=={'versions':["+String.join(",",v206,v205,v201,v200,v105,v104)+"]}"
       );
@@ -848,7 +941,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
           ,"=={'versions':["+v105+","+v104+"]}"
       );
 
-      // this time add some docs first before buffering starts (so tlog won't be at pos 0)
       updateJ(jsonAdd(sdoc("id","c100", "_version_",v200)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
       updateJ(jsonAdd(sdoc("id","c101", "_version_",v201)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
@@ -876,10 +968,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 +""              +"]"
       );
 
-      // The updates that were buffered (but never applied) still appear in recent versions!
-      // This is good for some uses, but may not be good for others.
-      assertJQ(req("qt","/get", "getVersions","11")
-          ,"=={'versions':["+String.join(",",v206,v205,v204,v203,v201,v200,v105,v104,v103,v102,v101)+"]}"
+      assertJQ(req("qt","/get", "getVersions","6")
+          ,"=={'versions':["+String.join(",",v206,v205,v201,v200,v105,v104)+"]}"
       );
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
@@ -926,14 +1016,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
 
-    @Test
-  public void testBufferingFlags() throws Exception {
+  @Test
+  public void testExistOldBufferLog() throws Exception {
 
     DirectUpdateHandler2.commitOnClose = false;
-    final Semaphore logReplayFinish = new Semaphore(0);
-
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
-
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -943,9 +1029,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       String v101 = getNextVersion();
       String v102 = getNextVersion();
       String v103 = getNextVersion();
-      String v114 = getNextVersion();
-      String v115 = getNextVersion();
-      String v116 = getNextVersion();
       String v117 = getNextVersion();
       
       clearIndex();
@@ -968,14 +1051,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       uhandler = req.getCore().getUpdateHandler();
       ulog = uhandler.getUpdateLog();
 
-      logReplayFinish.acquire();  // wait for replay to finish
+      // the core does not replay updates from buffer tlog on startup
+      assertTrue(ulog.existOldBufferLog());   // since we died while buffering, we should see this last
 
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0);   // since we died while buffering, we should see this last
-
-      //
-      // Try again to ensure that the previous log replay didn't wipe out our flags
-      //
-
+      // buffer tlog won't be removed on restart
       req.close();
       h.close();
       createCore();
@@ -984,27 +1063,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
       uhandler = req.getCore().getUpdateHandler();
       ulog = uhandler.getUpdateLog();
 
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0);
-
-      // now do some normal non-buffered adds
-      updateJ(jsonAdd(sdoc("id","Q4", "_version_",v114)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      updateJ(jsonAdd(sdoc("id","Q5", "_version_",v115)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      updateJ(jsonAdd(sdoc("id","Q6", "_version_",v116)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
-      assertU(commit());
-
-      req.close();
-      h.close();
-      createCore();
-
-      req = req();
-      uhandler = req.getCore().getUpdateHandler();
-      ulog = uhandler.getUpdateLog();
-
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0);
+      assertTrue(ulog.existOldBufferLog());
 
       ulog.bufferUpdates();
-      // simulate receiving no updates
       ulog.applyBufferedUpdates();
+      
+      TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      timeout.waitFor("Timeout waiting for finish replay updates",
+          () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      
       updateJ(jsonAdd(sdoc("id","Q7", "_version_",v117)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER)); // do another add to make sure flags are back to normal
 
       req.close();
@@ -1013,12 +1080,18 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       req = req();
       uhandler = req.getCore().getUpdateHandler();
-      ulog = uhandler.getUpdateLog();
+      
+      UpdateLog updateLog = uhandler.getUpdateLog();
 
-      assertTrue((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) == 0); // check flags on Q7
-
-      logReplayFinish.acquire();
-      assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
+      // TODO this can fail
+      // assertFalse(updateLog.existOldBufferLog());
+      
+      // Timeout for Q7 get replayed, because it was added on tlog, therefore it will be replayed on restart
+      timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      timeout.waitFor("Timeout waiting for finish replay updates",
+          () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      
+      assertJQ(req("qt","/get", "id", "Q7") ,"/doc/id==Q7");
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;

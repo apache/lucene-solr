@@ -30,6 +30,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -76,6 +77,13 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
     h = 31 * h + Boolean.hashCode(lowerInclusive);
     h = 31 * h + Boolean.hashCode(upperInclusive);
     return h;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override
@@ -180,7 +188,7 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
             }
           };
         }
-        return new ConstantScoreScorer(this, score(), iterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
 
       @Override

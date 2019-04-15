@@ -36,20 +36,8 @@ public class GeoPolygonFactory {
   private GeoPolygonFactory() {
   }
 
-  /** Create a GeoPolygon using the specified points and holes, using order to determine 
-   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
-   * on the same side of the shape as being inside, and counter-clockwise to indicate the
-   * space on the opposite side as being inside.
-   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
-   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
-   *  counter-clockwise, then that pole should be outside the polygon.
-   * @return a GeoPolygon corresponding to what was specified.
-   */
-  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
-    final List<GeoPoint> pointList) {
-    return makeGeoPolygon(planetModel, pointList, null);
-  }
-
+  private static final int SMALL_POLYGON_CUTOFF_EDGES = 100;
+  
   /** Create a GeoConcavePolygon using the specified points. The polygon must have
    * a maximum extent larger than PI. The siding of the polygon is chosen so that any
    * adjacent point to a segment provides an exterior measurement and therefore,
@@ -76,24 +64,6 @@ public class GeoPolygonFactory {
   public static GeoPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
                                                       final List<GeoPoint> pointList) {
     return new GeoConvexPolygon(planetModel, pointList);
-  }
-
-  /** Create a GeoPolygon using the specified points and holes, using order to determine 
-   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
-   * on the same side of the shape as being inside, and counter-clockwise to indicate the
-   * space on the opposite side as being inside.
-   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
-   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
-   *  counter-clockwise, then that pole should be outside the polygon.
-   * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
-   *  each hole as being "in set".  Null == none.
-   * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
-   *  from this input.
-   */
-  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
-    final List<GeoPoint> pointList,
-    final List<GeoPolygon> holes) {
-    return makeGeoPolygon(planetModel, pointList, holes, 0.0);
   }
 
 
@@ -130,7 +100,164 @@ public class GeoPolygonFactory {
                                                       final List<GeoPolygon> holes) {
     return new GeoConvexPolygon(planetModel,pointList, holes);
   }
-  
+
+  /** Use this class to specify a polygon with associated holes.
+   */
+  public static class PolygonDescription {
+    /** The list of points */
+    public final List<? extends GeoPoint> points;
+    /** The list of holes */
+    public final List<? extends PolygonDescription> holes;
+    
+    /** Instantiate the polygon description.
+     * @param points is the list of points.
+     */
+    public PolygonDescription(final List<? extends GeoPoint> points) {
+      this(points, new ArrayList<>());
+    }
+
+    /** Instantiate the polygon description.
+     * @param points is the list of points.
+     * @param holes is the list of holes.
+     */
+    public PolygonDescription(final List<? extends GeoPoint> points, final List<? extends PolygonDescription> holes) {
+      this.points = points;
+      this.holes = holes;
+    }
+    
+  }
+
+  /** Create a GeoPolygon using the specified points and holes, using order to determine 
+   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
+   * on the same side of the shape as being inside, and counter-clockwise to indicate the
+   * space on the opposite side as being inside.
+   * @param description describes the polygon and its associated holes.  If points go
+   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
+   *  counter-clockwise, then that pole should be outside the polygon.
+   * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
+   *  from this input.
+   */
+  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
+    final PolygonDescription description) {
+    return makeGeoPolygon(planetModel, description, 0.0);
+  }
+
+  /** Create a GeoPolygon using the specified points and holes, using order to determine 
+   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
+   * on the same side of the shape as being inside, and counter-clockwise to indicate the
+   * space on the opposite side as being inside.
+   * @param description describes the polygon and its associated holes.  If points go
+   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
+   *  counter-clockwise, then that pole should be outside the polygon.
+   * @param leniencyValue is the maximum distance (in units) that a point can be from the plane and still be considered as
+   *  belonging to the plane.  Any value greater than zero may cause some of the provided points that are in fact outside
+   *  the strict definition of co-planarity, but are within this distance, to be discarded for the purposes of creating a
+   *  "safe" polygon.
+   * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
+   *  from this input.
+   */
+  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
+    final PolygonDescription description,
+    final double leniencyValue) {
+      
+    // First, convert the holes to polygons in their own right.
+    final List<GeoPolygon> holes;
+    if (description.holes != null && description.holes.size() > 0) {
+      holes = new ArrayList<>(description.holes.size());
+      for (final PolygonDescription holeDescription : description.holes) {
+        final GeoPolygon gp = makeGeoPolygon(planetModel, holeDescription, leniencyValue);
+        if (gp == null) {
+          return null;
+        }
+        holes.add(gp);
+      }
+    } else {
+      holes = null;
+    }
+
+    if (description.points.size() <= SMALL_POLYGON_CUTOFF_EDGES) {
+      // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
+      //System.err.println(" filtering "+pointList.size()+" points...");
+      //final long startTime = System.currentTimeMillis();
+      final List<GeoPoint> firstFilteredPointList = filterPoints(description.points);
+      if (firstFilteredPointList == null) {
+        return null;
+      }
+      final List<GeoPoint> filteredPointList = filterEdges(firstFilteredPointList, leniencyValue);
+      //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
+      if (filteredPointList == null) {
+        return null;
+      }
+
+      try {
+        //First approximation to find a point
+        final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
+        final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
+        if (isCenterOfMassInside != null) {
+          return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
+        }
+        
+        //System.err.println("points="+pointList);
+        // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
+        // of points to use for poles.
+        final Random generator = new Random(1234);
+        for (int counter = 0; counter < 1000000; counter++) {
+          //counter++;
+          // Pick the next random pole
+          final GeoPoint pole = pickPole(generator, planetModel, filteredPointList);
+          // Is it inside or outside?
+          final Boolean isPoleInside = isInsidePolygon(pole, filteredPointList);
+          if (isPoleInside != null) {
+            // Legal pole
+            //System.out.println("Took "+counter+" iterations to find pole");
+            //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
+            return generateGeoPolygon(planetModel, filteredPointList, holes, pole, isPoleInside);
+          }
+          // If pole choice was illegal, try another one
+        }
+        throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
+      } catch (TileException e) {
+        // Couldn't tile the polygon; use GeoComplexPolygon instead, if we can.
+      }
+    }
+    // Fallback: create large geo polygon, using complex polygon logic.
+    final List<PolygonDescription> pd = new ArrayList<>(1);
+    pd.add(description);
+    return makeLargeGeoPolygon(planetModel, pd);
+  }
+
+  /** Create a GeoPolygon using the specified points and holes, using order to determine 
+   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
+   * on the same side of the shape as being inside, and counter-clockwise to indicate the
+   * space on the opposite side as being inside.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
+   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
+   *  counter-clockwise, then that pole should be outside the polygon.
+   * @return a GeoPolygon corresponding to what was specified.
+   */
+  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
+    final List<GeoPoint> pointList) {
+    return makeGeoPolygon(planetModel, pointList, null);
+  }
+
+  /** Create a GeoPolygon using the specified points and holes, using order to determine 
+   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
+   * on the same side of the shape as being inside, and counter-clockwise to indicate the
+   * space on the opposite side as being inside.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
+   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
+   *  counter-clockwise, then that pole should be outside the polygon.
+   * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
+   *  each hole as being "in set".  Null == none.
+   * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
+   *  from this input.
+   */
+  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
+    final List<GeoPoint> pointList,
+    final List<GeoPolygon> holes) {
+    return makeGeoPolygon(planetModel, pointList, holes, 0.0);
+  }
+
   /** Create a GeoPolygon using the specified points and holes, using order to determine 
    * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
    * on the same side of the shape as being inside, and counter-clockwise to indicate the
@@ -164,71 +291,60 @@ public class GeoPolygonFactory {
       return null;
     }
 
-    //First approximation to find a point
-    final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
-    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
-    if (isCenterOfMassInside != null) {
-      return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
-    }
-    
-    //System.err.println("points="+pointList);
-    // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
-    // of points to use for poles.
-    final Random generator = new Random(1234);
-    for (int counter = 0; counter < 1000000; counter++) {
-      //counter++;
-      // Pick the next random pole
-      final GeoPoint pole = pickPole(generator, planetModel, filteredPointList);
-      // Is it inside or outside?
-      final Boolean isPoleInside = isInsidePolygon(pole, filteredPointList);
-      if (isPoleInside != null) {
-        // Legal pole
-        //System.out.println("Took "+counter+" iterations to find pole");
-        //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
-        return generateGeoPolygon(planetModel, filteredPointList, holes, pole, isPoleInside);
+    try {
+      //First approximation to find a point
+      final GeoPoint centerOfMass = getCenterOfMass(planetModel, filteredPointList);
+      final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, filteredPointList);
+      if (isCenterOfMassInside != null) {
+        return generateGeoPolygon(planetModel, filteredPointList, holes, centerOfMass, isCenterOfMassInside);
       }
-      // If pole choice was illegal, try another one
+      
+      //System.err.println("points="+pointList);
+      // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
+      // of points to use for poles.
+      final Random generator = new Random(1234);
+      for (int counter = 0; counter < 1000000; counter++) {
+        //counter++;
+        // Pick the next random pole
+        final GeoPoint pole = pickPole(generator, planetModel, filteredPointList);
+        // Is it inside or outside?
+        final Boolean isPoleInside = isInsidePolygon(pole, filteredPointList);
+        if (isPoleInside != null) {
+          // Legal pole
+          //System.out.println("Took "+counter+" iterations to find pole");
+          //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
+          return generateGeoPolygon(planetModel, filteredPointList, holes, pole, isPoleInside);
+        }
+        // If pole choice was illegal, try another one
+      }
+      throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
+    } catch (TileException e) {
+      // Couldn't tile the polygon; use GeoComplexPolygon instead, if we can.
+      if (holes != null && holes.size() > 0) {
+        // We currently cannot get the list of points that went into making a hole back out, so don't allow this case.
+        // In order to support it, we really need to change the API contract, which is a bigger deal.
+        throw new IllegalArgumentException(e.getMessage());
+      }
+      final List<PolygonDescription> description = new ArrayList<>(1);
+      description.add(new PolygonDescription(pointList));
+      return makeLargeGeoPolygon(planetModel, description);
     }
-    throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
   }
 
-  private static GeoPoint getCenterOfMass(PlanetModel planetModel, List<GeoPoint> points) {
+  /** Generate a point at the center of mass of a list of points.
+   */
+  private static GeoPoint getCenterOfMass(final PlanetModel planetModel, final List<GeoPoint> points) {
     double x = 0;
     double y = 0;
     double z = 0;
     //get center of mass
-    for (GeoPoint point : points) {
+    for (final GeoPoint point : points) {
       x += point.x;
       y += point.y;
       z += point.z;
     }
-    return planetModel.createSurfacePoint(x / points.size(), y / points.size(), z / points.size());
-  }
-  
-  /** Use this class to specify a polygon with associated holes.
-   */
-  public static class PolygonDescription {
-    /** The list of points */
-    public final List<? extends GeoPoint> points;
-    /** The list of holes */
-    public final List<? extends PolygonDescription> holes;
-    
-    /** Instantiate the polygon description.
-     * @param points is the list of points.
-     */
-    public PolygonDescription(final List<? extends GeoPoint> points) {
-      this(points, new ArrayList<>());
-    }
-
-    /** Instantiate the polygon description.
-     * @param points is the list of points.
-     * @param holes is the list of holes.
-     */
-    public PolygonDescription(final List<? extends GeoPoint> points, final List<? extends PolygonDescription> holes) {
-      this.points = points;
-      this.holes = holes;
-    }
-    
+    // Normalization is not needed because createSurfacePoint does the scaling anyway.
+    return planetModel.createSurfacePoint(x, y, z);
   }
   
   /** Create a large GeoPolygon.  This is one which has more than 100 sides and/or may have resolution problems
@@ -270,30 +386,21 @@ public class GeoPolygonFactory {
     }
 
     final GeoPoint centerOfMass = getCenterOfMass(planetModel, testPointShape.points);
-    final Boolean isCenterOfMassInside = isInsidePolygon(centerOfMass, testPointShape.points);
-    if (isCenterOfMassInside != null) {
-      if (isCenterOfMassInside == testPointShape.poleMustBeInside) {
-        return new GeoComplexPolygon(planetModel, pointsList, centerOfMass, isCenterOfMassInside);
-      } else {
-        return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-centerOfMass.x, -centerOfMass.y, -centerOfMass.z), !isCenterOfMassInside);
-      }
+    final GeoComplexPolygon comRval = testPointShape.createGeoComplexPolygon(planetModel, pointsList, centerOfMass);
+    if (comRval != null) {
+      return comRval;
     }
-    
+
+    // Center of mass didn't work.
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
     final Random generator = new Random(1234);
     for (int counter = 0; counter < 1000000; counter++) {
       // Pick the next random pole
       final GeoPoint pole = pickPole(generator, planetModel, testPointShape.points);
-      // Is it inside or outside?
-      final Boolean isPoleInside = isInsidePolygon(pole, testPointShape.points);
-      if (isPoleInside != null) {
-        // Legal pole
-        if (isPoleInside == testPointShape.poleMustBeInside) {
-          return new GeoComplexPolygon(planetModel, pointsList, pole, isPoleInside);
-        } else {
-          return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-pole.x, -pole.y, -pole.z), !isPoleInside);
-        }
+      final GeoComplexPolygon rval = testPointShape.createGeoComplexPolygon(planetModel, pointsList, pole);
+      if (rval != null) {
+          return rval;
       }
       // If pole choice was illegal, try another one
     }
@@ -345,6 +452,28 @@ public class GeoPolygonFactory {
       this.points = points;
       this.poleMustBeInside = poleMustBeInside;
     }
+    
+    public GeoComplexPolygon createGeoComplexPolygon(final PlanetModel planetModel,
+      final List<List<GeoPoint>> pointsList, final GeoPoint testPoint) {
+      // Is it inside or outside?
+      final Boolean isTestPointInside = isInsidePolygon(testPoint, points);
+      if (isTestPointInside != null) {
+        try {
+          // Legal pole
+          if (isTestPointInside == poleMustBeInside) {
+            return new GeoComplexPolygon(planetModel, pointsList, testPoint, isTestPointInside);
+          } else {
+            return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z), !isTestPointInside);
+          }
+        } catch (IllegalArgumentException e) {
+          // Probably bad choice of test point.
+          return null;
+        }
+      }
+      // If pole choice was illegal, try another one
+      return null;
+    }
+
   }
   
   /**
@@ -361,7 +490,7 @@ public class GeoPolygonFactory {
     final List<GeoPoint> filteredPointList,
     final List<GeoPolygon> holes,
     final GeoPoint testPoint, 
-    final boolean testPointInside) {
+    final boolean testPointInside) throws TileException {
     // We will be trying twice to find the right GeoPolygon, using alternate siding choices for the first polygon
     // side.  While this looks like it might be 2x as expensive as it could be, there's really no other choice I can
     // find.
@@ -739,7 +868,7 @@ public class GeoPolygonFactory {
     final int endPointIndex,
     final SidedPlane startingEdge,
     final List<GeoPolygon> holes,
-    final GeoPoint testPoint) {
+    final GeoPoint testPoint) throws TileException {
 
     // It could be the case that we need a concave polygon.  So we need to try and look for that case
     // as part of the general code for constructing complex polygons.
@@ -867,11 +996,19 @@ public class GeoPolygonFactory {
     
     // If what is left has any plane/point pair that is on the wrong side, we have to split using one of the plane endpoints and the 
     // point in question.  This is best structured as a recursion, if detected.
+    
+    // Note: Any edge that fails means (I think!!) that there's another edge that will also fail.
+    // This is because each point is included in two edges.
+    // So, when we look for a non-conforming edge, and we can find one (but can't use it), we
+    // also can find another edge that we might be able to use instead.
+    // If this is true, it means we should continue when we find a bad edge we can't use --
+    // but we need to keep track of this, and fail hard if we don't find a place to split.
+    boolean foundBadEdge = false;
     final Iterator<Edge> checkIterator = edgeBuffer.iterator();
     while (checkIterator.hasNext()) {
       final Edge checkEdge = checkIterator.next();
       final SidedPlane flippedPlane = new SidedPlane(checkEdge.plane);
-      // Now walk around again looking for points that fail
+      // Now walk around again looking for points that fail.
       final Iterator<Edge> confirmIterator = edgeBuffer.iterator();
       while (confirmIterator.hasNext()) {
         final Edge confirmEdge = confirmIterator.next();
@@ -888,6 +1025,8 @@ public class GeoPolygonFactory {
           thePoint = null;
         }
         if (thePoint != null) {
+          // Note that we found a problem.
+          foundBadEdge = true;
           // thePoint is on the wrong side of the complementary plane.  That means we cannot build a concave polygon, because the complement would not
           // be a legal convex polygon.
           // But we can take advantage of the fact that the distance between the edge and thePoint is less than 180 degrees, and so we can split the
@@ -897,6 +1036,13 @@ public class GeoPolygonFactory {
           // This should be the only problematic part of the polygon.
           // We know that thePoint is on the "wrong" side of the edge -- that is, it's on the side that the
           // edge is pointing at.
+          
+          // The proposed tiling generates two new edges -- one from thePoint to the start point of the edge we found, and the other from thePoint
+          // to the end point of the edge.  We generate that as a triangle convex polygon, and tile the two remaining pieces.
+          if (Plane.arePointsCoplanar(checkEdge.startPoint, checkEdge.endPoint, thePoint)) {
+            // Can't build this particular tile because of colinearity, so advance to another that maybe we can build.
+            continue;
+          }
           final List<GeoPoint> thirdPartPoints = new ArrayList<>(3);
           final BitSet thirdPartInternal = new BitSet();
           thirdPartPoints.add(checkEdge.startPoint);
@@ -905,6 +1051,7 @@ public class GeoPolygonFactory {
           thirdPartInternal.set(1, true);
           thirdPartPoints.add(thePoint);
           assert checkEdge.plane.isWithin(thePoint) : "Point was on wrong side of complementary plane, so must be on the right side of the non-complementary plane!";
+          // Check for illegal argument using try/catch rather than pre-emptive check, since it cuts down on building objects for a rare case
           final GeoPolygon convexPart = new GeoConvexPolygon(planetModel, thirdPartPoints, holes, thirdPartInternal, true);
           //System.out.println("convex part = "+convexPart);
           rval.addShape(convexPart);
@@ -971,6 +1118,11 @@ public class GeoPolygonFactory {
         }
       }
     }
+
+    if (foundBadEdge) {
+      // Unaddressed bad edge
+      throw new TileException("Could not tile polygon; found a pathological coplanarity that couldn't be addressed");
+    }
     
     // No violations found: we know it's a legal concave polygon.
     
@@ -979,7 +1131,6 @@ public class GeoPolygonFactory {
     if (makeConcavePolygon(planetModel, rval, seenConcave, edgeBuffer, holes, testPoint) == false) {
       return false;
     }
-    
     return true;
   }
   
@@ -998,7 +1149,7 @@ public class GeoPolygonFactory {
     final MutableBoolean seenConcave,
     final EdgeBuffer edgeBuffer,
     final List<GeoPolygon> holes,
-    final GeoPoint testPoint) {
+    final GeoPoint testPoint) throws TileException {
       
     if (edgeBuffer.size() == 0) {
       return true;
@@ -1036,23 +1187,27 @@ public class GeoPolygonFactory {
       edge = edgeBuffer.getNext(edge);
     }
     
-    if (testPoint != null && holes != null && holes.size() > 0) {
-      // No holes, for test
-      final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
-      if (testPolygon.isWithin(testPoint)) {
-        return false;
+    try {
+      if (testPoint != null && holes != null && holes.size() > 0) {
+        // No holes, for test
+        final GeoPolygon testPolygon = new GeoConcavePolygon(planetModel, points, null, internalEdges, isInternal);
+        if (testPolygon.isWithin(testPoint)) {
+          return false;
+        }
       }
-    }
-    
-    final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
-    if (testPoint != null && (holes == null || holes.size() == 0)) {
-      if (realPolygon.isWithin(testPoint)) {
-        return false;
+        
+      final GeoPolygon realPolygon = new GeoConcavePolygon(planetModel, points, holes, internalEdges, isInternal);
+      if (testPoint != null && (holes == null || holes.size() == 0)) {
+        if (realPolygon.isWithin(testPoint)) {
+          return false;
+        }
       }
+        
+      rval.addShape(realPolygon);
+      return true;
+    } catch (IllegalArgumentException e) {
+      throw new TileException(e.getMessage());
     }
-    
-    rval.addShape(realPolygon);
-    return true;
   }
   
   /** Look for a convex polygon at the specified edge.  If we find it, create one and adjust the edge buffer.
@@ -1069,7 +1224,7 @@ public class GeoPolygonFactory {
     final GeoCompositePolygon rval,
     final EdgeBuffer edgeBuffer,
     final List<GeoPolygon> holes,
-    final GeoPoint testPoint) {
+    final GeoPoint testPoint) throws TileException {
     
     //System.out.println("Looking at edge "+currentEdge+" with startpoint "+currentEdge.startPoint+" endpoint "+currentEdge.endPoint);
       
@@ -1089,6 +1244,11 @@ public class GeoPolygonFactory {
       final Edge newLastEdge = edgeBuffer.getNext(lastEdge);
       if (Plane.arePointsCoplanar(lastEdge.startPoint, lastEdge.endPoint, newLastEdge.endPoint)) {
         break;
+      }
+      // Planes that are almost identical cannot be properly handled by the standard polygon logic.  Detect this case and, if found,
+      // give up on the tiling -- we'll need to create a large poly instead.
+      if (lastEdge.plane.isFunctionallyIdentical(newLastEdge.plane)) {
+        throw new TileException("Two adjacent edge planes are effectively parallel despite filtering; give up on tiling");
       }
       if (isWithin(newLastEdge.endPoint, includedEdges)) {
         //System.out.println(" maybe can extend to next edge");
@@ -1152,6 +1312,11 @@ public class GeoPolygonFactory {
       final Edge newFirstEdge = edgeBuffer.getPrevious(firstEdge);
       if (Plane.arePointsCoplanar(newFirstEdge.startPoint, newFirstEdge.endPoint, firstEdge.endPoint)) {
         break;
+      }
+      // Planes that are almost identical cannot be properly handled by the standard polygon logic.  Detect this case and, if found,
+      // give up on the tiling -- we'll need to create a large poly instead.
+      if (firstEdge.plane.isFunctionallyIdentical(newFirstEdge.plane)) {
+        throw new TileException("Two adjacent edge planes are effectively parallel despite filtering; give up on tiling");
       }
       if (isWithin(newFirstEdge.startPoint, includedEdges)) {
         //System.out.println(" maybe can extend to previous edge");
@@ -1232,6 +1397,10 @@ public class GeoPolygonFactory {
         // has no contents, so we generate no polygon.
         return false;
       }
+
+      if (firstEdge.plane.isFunctionallyIdentical(lastEdge.plane)) {
+        throw new TileException("Two adjacent edge planes are effectively parallel despite filtering; give up on tiling");
+      }
       
       // Now look for completely planar points.  This too is a degeneracy condition that we should
       // return "false" for.
@@ -1252,7 +1421,10 @@ public class GeoPolygonFactory {
       // Build the return edge (internal, of course)
       final SidedPlane returnSidedPlane = new SidedPlane(firstEdge.endPoint, false, firstEdge.startPoint, lastEdge.endPoint);
       final Edge returnEdge = new Edge(firstEdge.startPoint, lastEdge.endPoint, returnSidedPlane, true);
-
+      if (returnEdge.plane.isFunctionallyIdentical(lastEdge.plane) ||
+          returnEdge.plane.isFunctionallyIdentical(firstEdge.plane)) {
+        throw new TileException("Two adjacent edge planes are effectively parallel despite filtering; give up on tiling");
+      }
       // Build point list and edge list
       final List<Edge> edges = new ArrayList<Edge>(includedEdges.size());
       returnIsInternal = true;
@@ -1276,23 +1448,30 @@ public class GeoPolygonFactory {
     }
     
     // Now, construct the polygon
-    if (testPoint != null && holes != null && holes.size() > 0) {
-      // No holes, for test
-      final GeoPolygon testPolygon = new GeoConvexPolygon(planetModel, points, null, internalEdges, returnIsInternal);
-      if (testPolygon.isWithin(testPoint)) {
-        return null;
+    // Failures in construction mean we have a polygon that is too large (>180 degrees)
+    try {
+      if (testPoint != null && holes != null && holes.size() > 0) {
+        // No holes, for test
+        final GeoPolygon testPolygon = new GeoConvexPolygon(planetModel, points, null, internalEdges, returnIsInternal);
+        if (testPolygon.isWithin(testPoint)) {
+          return null;
+        }
       }
+      
+      final GeoPolygon realPolygon = new GeoConvexPolygon(planetModel, points, holes, internalEdges, returnIsInternal);
+      if (testPoint != null && (holes == null || holes.size() == 0)) {
+        if (realPolygon.isWithin(testPoint)) {
+          return null;
+        }
+      }
+      
+      rval.addShape(realPolygon);
+      return true;
+
+    } catch (IllegalArgumentException e) {
+      throw new TileException(e.getMessage());
     }
     
-    final GeoPolygon realPolygon = new GeoConvexPolygon(planetModel, points, holes, internalEdges, returnIsInternal);
-    if (testPoint != null && (holes == null || holes.size() == 0)) {
-      if (realPolygon.isWithin(testPoint)) {
-        return null;
-      }
-    }
-    
-    rval.addShape(realPolygon);
-    return true;
   }
   
   /** Check if a point is within a set of edges.
@@ -1651,4 +1830,11 @@ public class GeoPolygonFactory {
     public boolean value = false;
   }
   
+  /** Exception we throw when we can't tile a polygon due to numerical precision issues.
+   */
+  private static class TileException extends Exception {
+    public TileException(final String msg) {
+      super(msg);
+    }
+  }
 }

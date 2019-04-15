@@ -19,10 +19,12 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -34,8 +36,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.PrefixQuery;  // javadocs
-import org.apache.lucene.search.TermRangeQuery;  // javadocs
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -59,14 +59,6 @@ import org.apache.lucene.util.fst.Outputs;
  *  min/maxItemsPerBlock during indexing to control how
  *  much memory the terms index uses.</p>
  *
- *  <p>If auto-prefix terms were indexed (see
- *  {@link BlockTreeTermsWriter}), then the {@link Terms#intersect}
- *  implementation here will make use of these terms only if the
- *  automaton has a binary sink state, i.e. an accept state
- *  which has a transition to itself accepting all byte values.
- *  For example, both {@link PrefixQuery} and {@link TermRangeQuery}
- *  pass such automata to {@link Terms#intersect}.</p>
- *
  *  <p>The data structure used by this implementation is very
  *  similar to a burst trie
  *  (http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.18.3499),
@@ -83,6 +75,39 @@ import org.apache.lucene.util.fst.Outputs;
  */
 
 public final class BlockTreeTermsReader extends FieldsProducer {
+
+  /**
+   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
+   */
+  public enum FSTLoadMode {
+    /**
+     * Always read FSTs from disk.
+     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
+     * are used.
+     */
+    OFF_HEAP,
+    /**
+     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
+     */
+    ON_HEAP,
+    /**
+     * Always read FSTs from disk.
+     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
+     * This is useful to guarantee best update performance even if a non MMapDirectory is used.
+     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
+     * are used.
+     * See {@link FSTLoadMode#AUTO}
+     */
+    OPTIMIZE_UPDATES_OFF_HEAP,
+    /**
+     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
+     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
+     */
+    AUTO
+  }
+
+  /** Attribute key for fst mode. */
+  public static final String FST_MODE_KEY = "blocktree.terms.fst";
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
   
@@ -112,6 +137,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput termsIn;
+  // Open input to the terms index file (_X.tip)
+  final IndexInput indexIn;
 
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
@@ -126,9 +153,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
+  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, FSTLoadMode defaultLoadMode) throws IOException {
     boolean success = false;
-    IndexInput indexIn = null;
     
     this.postingsReader = postingsReader;
     this.segment = state.segmentInfo.name;
@@ -164,11 +190,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       seekDir(termsIn);
       seekDir(indexIn);
 
+      final FSTLoadMode fstLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY, defaultLoadMode);
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
         throw new CorruptIndexException("invalid numFields: " + numFields, termsIn);
       }
-
       for (int i = 0; i < numFields; ++i) {
         final int field = termsIn.readVInt();
         final long numTerms = termsIn.readVLong();
@@ -199,22 +225,34 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsIn);
         }
+        final FSTLoadMode perFieldLoadMode = getLoadMode(state.readerAttributes, FST_MODE_KEY + "." + fieldInfo.name, fstLoadMode);
         final long indexStartFP = indexIn.readVLong();
-        FieldReader previous = fields.put(fieldInfo.name,       
+        FieldReader previous = fields.put(fieldInfo.name,
                                           new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm));
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm, state.openedFromWriter, perFieldLoadMode));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsIn);
         }
       }
-      
-      indexIn.close();
       success = true;
     } finally {
       if (!success) {
         // this.close() will close in:
-        IOUtils.closeWhileHandlingException(indexIn, this);
+        IOUtils.closeWhileHandlingException(this);
       }
+    }
+  }
+
+  private static FSTLoadMode getLoadMode(Map<String, String> attributes, String key, FSTLoadMode defaultValue) {
+    String value = attributes.get(key);
+    if (value == null) {
+      return defaultValue;
+    }
+    try {
+      return FSTLoadMode.valueOf(value);
+    } catch (IllegalArgumentException ex) {
+      throw new IllegalArgumentException("Invalid value for " + key + " expected one of: "
+          + Arrays.toString(FSTLoadMode.values()) + " but was: " + value, ex);
     }
   }
 
@@ -247,7 +285,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(termsIn, postingsReader);
+      IOUtils.close(indexIn, termsIn, postingsReader);
     } finally { 
       // Clear so refs to terms index is GCable even if
       // app hangs onto us:

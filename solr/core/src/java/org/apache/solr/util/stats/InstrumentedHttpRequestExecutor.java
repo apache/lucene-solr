@@ -92,6 +92,8 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   }
 
   protected MetricRegistry metricsRegistry;
+  protected SolrMetricManager metricManager;
+  protected String registryName;
   protected String scope;
   protected HttpClientMetricNameStrategy nameStrategy;
 
@@ -128,9 +130,10 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registry;
     this.metricsRegistry = manager.registry(registry);
     this.scope = scope;
   }
-
 }

@@ -131,7 +131,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       // Indexing configuration.
       props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
       props.setProperty("content.source", LineDocSource.class.getName());
-      props.setProperty("directory", "RAMDirectory");
+      props.setProperty("directory", "ByteBuffersDirectory");
       props.setProperty("doc.stored", "true");
       props.setProperty("doc.index.props", "true");
       
@@ -154,7 +154,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       reader = DirectoryReader.open(runData.getDirectory());
       searcher = newSearcher(reader);
       TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
-      assertEquals(numAdds, td.totalHits);
+      assertEquals(numAdds, td.totalHits.value);
       assertNotNull(td.scoreDocs[0]);
       
       if (storedField==null) {

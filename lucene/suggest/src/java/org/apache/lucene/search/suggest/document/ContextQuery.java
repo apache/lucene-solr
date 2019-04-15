@@ -22,7 +22,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -167,11 +169,19 @@ public class ContextQuery extends CompletionQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, scoreMode, boost));
+    final Automaton innerAutomaton = innerWeight.getAutomaton();
+
+    // If the inner automaton matches nothing, then we return an empty weight to avoid
+    // traversing all contexts during scoring.
+    if (innerAutomaton.getNumStates() == 0) {
+      return new CompletionWeight(this, innerAutomaton);
+    }
+
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well
-    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(CompletionAnalyzer.SEP_LABEL));
-    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerWeight.getAutomaton());
+    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(ConcatenateGraphFilter.SEP_LABEL));
+    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerAutomaton);
     Automaton contextsAutomaton = Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
     contextsAutomaton = Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
 
@@ -294,7 +304,7 @@ public class ContextQuery extends CompletionQuery {
           }
           ref.offset = ++i;
           assert ref.offset < ref.length : "input should not end with the context separator";
-          if (ref.ints[i] == CompletionAnalyzer.SEP_LABEL) {
+          if (ref.ints[i] == ConcatenateGraphFilter.SEP_LABEL) {
             ref.offset++;
             assert ref.offset < ref.length : "input should not end with a context separator followed by SEP_LABEL";
           }
@@ -325,6 +335,11 @@ public class ContextQuery extends CompletionQuery {
   @Override
   public int hashCode() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
 }

@@ -34,8 +34,8 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -116,7 +116,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
-
+    if (core != null && (!core.indexEnabled || core.readOnly)) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN, "Indexing is temporarily disabled");
+    }
     boolean succeeded = false;
     lock(iwLock.readLock());
     try {
@@ -360,11 +362,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // have to 'wait in line' a bit or bail if a recovery is 
       // already queued up - the recovery execution itself is run
       // in another thread on another 'recovery' executor.
-      // The update executor is interrupted on shutdown and should 
-      // not do disk IO.
-      // The recovery executor is not interrupted on shutdown.
       //
-      // avoid deadlock: we can't use the recovery executor here
+      // avoid deadlock: we can't use the recovery executor here!
       cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down

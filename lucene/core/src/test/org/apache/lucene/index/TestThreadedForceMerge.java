@@ -121,8 +121,8 @@ public class TestThreadedForceMerge extends LuceneTestCase {
 
       final int expectedDocCount = (int) ((1+iter)*(200+8*NUM_ITER2*(NUM_THREADS/2.0)*(1+NUM_THREADS)));
 
-      assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
-      assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
+      assertEquals("index=" + writer.segString() + " numDocs=" + writer.getDocStats().numDocs + " maxDoc=" + writer.getDocStats().maxDoc + " config=" + writer.getConfig(), expectedDocCount, writer.getDocStats().numDocs);
+      assertEquals("index=" + writer.segString() + " numDocs=" + writer.getDocStats().numDocs + " maxDoc=" + writer.getDocStats().maxDoc + " config=" + writer.getConfig(), expectedDocCount, writer.getDocStats().maxDoc);
 
       writer.close();
       writer = new IndexWriter(directory, newIndexWriterConfig(ANALYZER)
@@ -137,10 +137,7 @@ public class TestThreadedForceMerge extends LuceneTestCase {
     writer.close();
   }
 
-  /*
-    Run above stress test against RAMDirectory and then
-    FSDirectory.
-  */
+  /* */
   public void testThreadedForceMerge() throws Exception {
     Directory directory = newDirectory();
     runTest(random(), directory);

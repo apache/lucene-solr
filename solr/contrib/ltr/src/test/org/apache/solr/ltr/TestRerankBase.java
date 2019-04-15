@@ -32,7 +32,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -411,7 +410,7 @@ public class TestRerankBase extends RestTestBase {
     }
 
     loadModel(name, LinearModel.class.getCanonicalName(), features,
-        "{\"weights\":{" + StringUtils.join(weights, ",") + "}}");
+        "{\"weights\":{" + String.join(",", weights) + "}}");
   }
 
   protected static void bulkIndex() throws Exception {

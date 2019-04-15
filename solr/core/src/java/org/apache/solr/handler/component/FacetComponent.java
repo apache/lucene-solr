@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -47,6 +47,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.QueryParsing;
@@ -650,7 +651,7 @@ public class FacetComponent extends SearchComponent {
       (fieldToOverRequest, FacetParams.FACET_SORT, defaultSort);
 
     int shardLimit = requestedLimit + offset;
-    int shardMinCount = requestedMinCount;
+    int shardMinCount = Math.min(requestedMinCount, 1);
 
     // per-shard mincount & overrequest
     if ( FacetParams.FACET_SORT_INDEX.equals(sort) && 
@@ -670,7 +671,6 @@ public class FacetComponent extends SearchComponent {
       if ( 0 < requestedLimit ) {
         shardLimit = doOverRequestMath(shardLimit, overRequestRatio, overRequestCount);
       }
-      shardMinCount = Math.min(requestedMinCount, 1);
     } 
     sreq.params.set(paramStart + FacetParams.FACET_LIMIT, shardLimit);
     sreq.params.set(paramStart + FacetParams.FACET_PIVOT_MINCOUNT, shardMinCount);
@@ -712,8 +712,19 @@ public class FacetComponent extends SearchComponent {
       NamedList facet_counts = null;
       try {
         facet_counts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
+        if (facet_counts==null) {
+          NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
+          if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+            continue;
+          } else {
+            log.warn("corrupted response on "+srsp.getShardRequest()+": "+srsp.getSolrResponse());
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "facet_counts is absent in response from " + srsp.getNodeName() +
+                ", but "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" hasn't been responded");
+          }
+        }
       } catch (Exception ex) {
-        if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+        if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
           continue; // looks like a shard did not return anything
         }
         throw new SolrException(ErrorCode.SERVER_ERROR,

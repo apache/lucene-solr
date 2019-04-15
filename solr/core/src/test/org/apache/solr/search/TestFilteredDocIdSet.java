@@ -37,9 +37,9 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class TestFilteredDocIdSet extends LuceneTestCase {
+public class TestFilteredDocIdSet extends SolrTestCase {
   public void testFilteredDocIdSet() throws Exception {
     final int maxdoc=10;
     final DocIdSet innerSet = new DocIdSet() {
@@ -125,7 +125,7 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
     
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
     // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
@@ -153,7 +153,7 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
         .add(new MatchAllDocsQuery(), Occur.MUST)
         .add(f, Occur.FILTER)
         .build();
-    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits);
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }
@@ -169,7 +169,7 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
     
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
       // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
@@ -214,7 +214,7 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
         .add(new MatchAllDocsQuery(), Occur.MUST)
         .add(f, Occur.FILTER)
         .build();
-    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits);
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }

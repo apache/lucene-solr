@@ -50,7 +50,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   boolean warmCalled;
@@ -487,7 +487,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
     FilterDirectoryReader reader = new MyFilterDirectoryReader(nrtReader);
     assertEquals(nrtReader, reader.getDelegate());
-    assertEquals(nrtReader, FilterDirectoryReader.unwrap(reader));
+    assertEquals(FilterDirectoryReader.unwrap(nrtReader), FilterDirectoryReader.unwrap(reader));
 
     SearcherManager mgr = new SearcherManager(reader, null);
     for(int i=0;i<10;i++) {
@@ -582,12 +582,13 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
               }
             }
             docs.close();
-            stop.set(true);
             if (VERBOSE) {
-              System.out.println("TEST: index count=" + writerRef.get().maxDoc());
+              System.out.println("TEST: index count=" + writerRef.get().getDocStats().maxDoc);
             }
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
+          } finally {
+            stop.set(true);
           }
         }
       };

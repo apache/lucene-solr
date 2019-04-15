@@ -1,4 +1,6 @@
 = JSON Query DSL
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,155 +18,362 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The JSON Query DSL provides a simple yet powerful query language for the JSON Request API.
+Queries and filters provided in JSON requests can be specified using a rich, powerful query DSL.
 
-== Structure of JSON Query DSL
-A JSON query can be:
+== Query DSL Structure
+The JSON Request API accepts query values in three different formats:
 
-* A valid <<the-standard-query-parser.adoc#the-standard-query-parser,query string>> for default `deftype` (the standard query parser in most cases), as in, `title:solr`.
+* A valid <<the-standard-query-parser.adoc#the-standard-query-parser,query string>> that uses the default `deftype` (`lucene`, in most cases). e.g. `title:solr`.
 
-* A valid <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters>> query string, as in, `{!dismax qf=myfield}solr rocks`.
+* A valid <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters query string>> that specifies its `deftype` explicitly. e.g. `{!dismax qf=title}solr`.
 
-* A JSON object with query parser name and arguments.
-The special key `v` in local parameters is replaced by key `query` in JSON object query, as in this example:
+* A valid JSON object with the name of the query parser and any relevant parameters. e.g. `{ "lucene": {"df":"title", "query":"solr"}}`.
+** The top level "query" JSON block generally only has a single property representing the name of the query parser to use.  The value for the query parser property is a child block containing any relevant parameters as JSON properties.  The whole structure is analogous to a "local-params" query string.  The query itself (often represented in local params using the name `v`) is specified with the key `query` instead.
 
-[source,json]
+All of these syntaxes can be used to specify queries for either the JSON Request API's `query` or `filter` properties.
+
+=== Query DSL Examples
+
+The examples below show how to use each of the syntaxes discussed above to represent a query.  Each snippet represents the same basic search: the term `iPod` in a field called `name`:
+
+. Using the standard query API, with a simple query string
++
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-basic]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/techproducts/query?q=name:iPod"
+----
+====
+[example.tab-pane#solrj-ipod-query-basic]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-basic]
+----
+====
+--
+
+. Using the JSON Request API, with a simple query string
++
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-dsl-1]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
-  "query-parser-name" : {
-     "param1": "value1",
-     "param2": "value2",
-     "query": "a-json-query",
-     "another-param": "another-json-query"
+  "query" : "name:iPod"
+}'
+----
+====
+[example.tab-pane#solrj-ipod-query-dsl-1]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-1]
+----
+====
+--
+
+. Using the JSON Request API, with a local-params string
++
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-dsl-2]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "{!lucene df=name v=iPod}"
+}'
+----
+====
+[example.tab-pane#solrj-ipod-query-dsl-2]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-2]
+----
+====
+--
+
+. Using the JSON Request API, with a fully expanded JSON object
++
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-dsl-3]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": {
+    "lucene": {
+      "df": "name",
+      "query": "iPod"
+    }
   }
-}
-
-== Basic Examples
-The four requests below are equivalent for searching for `solr lucene` in a field named `content`:
-
-. Passing all parameters on URI, with "lucene" as the default query parser.
-+
-[source,bash]
-curl -XGET "http://localhost:8983/solr/books/query?q=content:(solr lucene)"
-
-. Using the JSON Query DSL with valid query string for default `deftype`, with "lucene" as default query parser.
-+
-[source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
-{"query": "content:(solr lucene)"}'
-
-. Using JSON Query DSL with valid local parameters query defining the "lucene" query parser.
-+
-[source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
-{"query": "{!lucene df=content v='solr lucene'}"}'
-
-
-. Using JSON Query DSL in verbose way, as a valid JSON object with parser name and arguments.
-+
-[source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
-{"query": {"lucene": {
-            "df": "content",
-            "query": "solr lucene"
-        }
-    }}'
-
-Note that the JSON query in the examples above is provided under the key `query` of <<json-request-api.adoc#json-request-api,JSON Request API>>.
+}'
+----
+====
+[example.tab-pane#solrj-ipod-query-dsl-3]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-3]
+----
+====
+--
 
 == Nested Queries
-Some query parsers accept a query as an argument. JSON Query DSL makes it easier to write and read such complex query.
+Many of Solr's query parsers allow queries to be nested within one another.  When these are used, requests using the standard query API quickly become hard to write, read, and understand.  These sorts of queries are often much easier to work with in the JSON Request API.
 
-The three requests below are equivalent for wrapping the above example query (searching for `solr lucene` in field `content`) with a boost query:
+=== Nested Boost Query Example
+As an example, consider the three requests below, which wrap a simple query (the term `iPod` in the field `name`) within a boost query:
 
-. Passing all parameters on URI.
+. Using the standard query API.
 +
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-boosted-basic]
+====
+[.tab-label]*curl*
 [source,bash]
-http://localhost:8983/solr/books/query?q={!boost b=log(popularity) v='{!lucene df=content}(lucene solr)'}
+----
+curl -X GET "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}"
+----
+====
+[example.tab-pane#solrj-ipod-query-boosted-basic]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-basic]
+----
+====
+--
 
-. Converted into JSON Query DSL with use of local parameters.
-As you can see, the special key `v` is replaced by key `query`.
+. Using the JSON Request API, with a mix of fully-expanded and local-params queries.
+As you can see, the special key `v` is replaced with the key `query`.
 +
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-boosted-dsl-1]
+====
+[.tab-label]*curl*
 [source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
     "query" : {
         "boost": {
-            "query": {!lucene df=content}(lucene solr),
+            "query": {!lucene df=name}iPod,
             "b": "log(popularity)"
         }
     }
 }'
+----
+====
+[example.tab-pane#solrj-ipod-query-boosted-dsl-1]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-1]
+----
+====
+--
 
-. Using a verbose JSON Query DSL without local parameters.
+. Using the JSON Request API, with all queries fully expanded as JSON
 +
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-boosted-dsl-2]
+====
+[.tab-label]*curl*
 [source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "boost": {
             "query": {
                 "lucene": {
-                    "df": "content",
-                    "query": "solr lucene"
+                    "df": "name",
+                    "query": "iPod"
                 }
             },
             "b": "log(popularity)"
         }
     }
 }'
+----
+====
+[example.tab-pane#solrj-ipod-query-boosted-dsl-2]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-2]
+----
+====
+--
 
-== Compound Queries
-With the support of the <<other-parsers.adoc#boolean-query-parser,BoolQParser>>, the JSON Query DSL can create a very powerful nested query.
+=== Nested Boolean Query Example
+Query nesting is commonly seen when combining multiple query clauses together using pseudo-boolean logic with the <<other-parsers.adoc#boolean-query-parser,BoolQParser>>.
 
-This query searches for books where `content` contains `lucene` or `solr`, `title` contains `solr` and their `ranking` must larger than 3.0:
+The example below shows how the `BoolQParser` can be used to create powerful nested queries.  In this example, a user searches for results with `iPod` in the field `name` which are _not_ in the bottom half of the `popularity` rankings.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-bool]
+====
+[.tab-label]*curl*
 [source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
             "must": [
-                "title:solr",
-                {"lucene": {"df: "content", query: "lucene solr"}}
+                {"lucene": {"df": "name", query: "iPod"}}
             ],
             "must_not": [
-                {"frange": {"u": "3.0", query: "ranking"}}
+                {"frange": {"l": "0", "u": "5", "query": "popularity"}}
             ]
         }
     }
 }'
 
-If lucene is the default query parser query, the above can be rewritten in much less verbose way as in:
+----
+====
+[example.tab-pane#solrj-ipod-query-bool]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool]
+----
+====
+--
 
+If lucene is the default query parser, the example above can be simplified to:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-bool-condensed]
+====
+[.tab-label]*curl*
 [source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
             "must": [
-                "title:solr",
-                "content:(lucene solr)"
+                "name:iPod"
             ],
-            "must_not": "{!frange u:3.0}ranking"
+            "must_not": "{!frange l=0 u=5}popularity"
         }
     }
 }'
 
-== Use JSON Query DSL in JSON Request API
-JSON Query DSL is not only supported with the key `query` but also with the key `filter` of the <<json-request-api.adoc#json-request-api,JSON Request API>>.
+----
+====
+[example.tab-pane#solrj-ipod-query-bool-condensed]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-condensed]
+----
+====
+--
 
-For example, the above query can be rewritten using filter clause like this:
+== Filter Queries
+The syntaxes discussed above can also be used to specify query filters (under the `filter` key) in addition to the main query itself.
 
+For example, the above query can be rewritten using a filter clause as:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-ipod-query-bool-filter]
+====
+[.tab-label]*curl*
 [source,bash]
-curl -XGET http://localhost:8983/solr/books/query -d '
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
-            "must_not": "{!frange u:3.0}ranking"
+            "must_not": "{!frange l=0 u=5}popularity"
         }
     },
     "filter: [
-        "title:solr",
-        { "lucene" : {"df: "content", query : "lucene solr" }}
+        "name:iPod"
     ]
 }'
+
+----
+====
+[example.tab-pane#solrj-ipod-query-bool-filter]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-filter]
+----
+====
+--
+
+== Tagging in JSON Query DSL
+Query and filter clauses can also be individually "tagged".  Tags serve as handles for query clauses, allowing them to be referenced from elsewhere in the request.  This is most commonly used by the filter-exclusion functionality offered by both <<faceting.adoc#tagging-and-excluding-filters,traditional>> and <<json-faceting-domain-changes.adoc#filter-exclusions,JSON>> faceting.
+
+Queries and filters are tagged by wrapping them in a surrounding JSON object.  The name of the tag is specified as a JSON key, with the query string (or object) becoming the value associated with that key.  Tag name properties are prefixed with a hash, and may include multiple tags, separated by commas.  For example: `{"\#title,tag2,tag3":"title:solr"}`.  Note that unlike the rest of the JSON request API which uses lax JSON parsing rules, tags must be surrounded by double-quotes because of the leading `#` character.  The example below creates two tagged clauses: `titleTag` and `inStockTag`.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#curl-tagged-query]
+====
+[.tab-label]*curl*
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/select -d '
+{
+  "query": "*:*",
+  "filter": [
+    {
+      "#titleTag": "name:Solr"
+    },
+    {
+      "#inStockTag": "inStock:true"
+    }
+  ]
+}'
+
+----
+====
+[example.tab-pane#solrj-tagged-query]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-tagged-query]
+----
+====
+--
+
+Note that the tags created in the example above have no impact in how the search is executed.  Tags will not affect a query unless they are referenced by some other part of the request that uses them.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/** 
- * Solr metrics collector.
+/**
+ * Collects metrics from Solr via various endpoints.
  */
 package org.apache.solr.prometheus.collector;

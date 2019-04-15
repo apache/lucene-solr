@@ -73,6 +73,10 @@ public class RequestWriter {
     return req.getContentWriter(ClientUtils.TEXT_XML);
   }
 
+  /**
+   * @deprecated Use {@link #getContentWriter(SolrRequest)}.
+   */
+  @Deprecated
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
       return null;

@@ -17,15 +17,22 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
@@ -131,9 +138,136 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       QueryResponse rsp = req.process(cloudSolrClient, collectionName);
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
+      Collection<Slice> slices = cloudSolrClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlices();
+      Slice slice = getRandomEntry(slices);
+      Replica replica = getRandomEntry(slice.getReplicas());
+      JettySolrRunner jetty = miniCluster.getReplicaJetty(replica);
+      // Use the replica's core URL to avoid ZK communication
+      try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+        jetty.getCoreContainer().getZkController().getZkClient().close();
+        rsp = req.process(client);
+        assertFalse(rsp.getResponseHeader().getBooleanArg("zkConnected"));
+      }
     }
     finally {
       miniCluster.shutdown();
     }
+  }
+
+  @Test
+  public void testRequireZkConnected() throws Exception{
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+
+    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+
+    try {
+      assertNotNull(miniCluster.getZkServer());
+      List<JettySolrRunner> jettys = miniCluster.getJettySolrRunners();
+      assertEquals(5, jettys.size());
+      for (JettySolrRunner jetty : jettys) {
+        assertTrue(jetty.isRunning());
+      }
+
+      // create collection
+      String collectionName = "testRequireZkConnectedCollection";
+      String configName = collectionName + "Config";
+      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
+
+      CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
+          .process(miniCluster.getSolrClient());
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(ShardParams.SHARDS_TOLERANT, "requireZkConnected");
+      QueryRequest req = new QueryRequest(params);
+      QueryResponse rsp = req.process(cloudSolrClient, collectionName);
+      assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
+
+      Collection<Slice> slices = cloudSolrClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlices();
+      Slice disconnectedSlice = getRandomEntry(slices);
+      Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
+      JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
+      // Use the replica's core URL to avoid ZK communication
+      try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(disconnectedReplica.getCoreUrl()).build()) {
+        ignoreException("ZooKeeper is not connected");
+        disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
+        req.process(httpSolrClient);
+        fail("An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
+      } catch (Exception e) {
+        assertTrue(e.getMessage().contains("ZooKeeper is not connected"));
+      }
+    }
+    finally {
+      miniCluster.shutdown();
+    }
+  }
+
+  @Test
+  public void testRequireZkConnectedDistrib() throws Exception{
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig("/solr"));
+
+    final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
+
+    try {
+      assertNotNull(miniCluster.getZkServer());
+      List<JettySolrRunner> jettys = miniCluster.getJettySolrRunners();
+      assertEquals(2, jettys.size());
+      for (JettySolrRunner jetty : jettys) {
+        assertTrue(jetty.isRunning());
+      }
+
+      // create collection
+      String collectionName = "testRequireZkConnectedDistribCollection";
+      String configName = collectionName + "Config";
+      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
+
+      CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
+          .process(miniCluster.getSolrClient());
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(ShardParams.SHARDS_TOLERANT, "requireZkConnected");
+      QueryRequest req = new QueryRequest(params);
+      QueryResponse rsp = req.process(cloudSolrClient, collectionName);
+      assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
+
+      Collection<Slice> slices = cloudSolrClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlices();
+      Slice disconnectedSlice = getRandomEntry(slices);
+      Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
+
+      // Query a coordinating replica that is connected to ZooKeeper
+      Slice connectedSlice = getRandomEntry(slices);
+      while (connectedSlice.getName().equals(disconnectedSlice.getName())) {
+        connectedSlice = getRandomEntry(slices);
+      }
+      Replica connectedReplica = connectedSlice.getReplicas().iterator().next();
+      try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(connectedReplica.getCoreUrl()).build()) {
+        ignoreException("ZooKeeper is not connected");
+        ignoreException("no servers hosting shard:");
+        JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
+        disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
+        req.process(httpSolrClient);
+        fail("An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
+      } catch (Exception e) {
+        assertTrue("Unrecognized exception message: " + e, 
+            e.getMessage().contains("no servers hosting shard:") 
+                || e.getMessage().contains("ZooKeeper is not connected"));
+      }
+    }
+    finally {
+      miniCluster.shutdown();
+      unIgnoreException("no servers hosting shard:");
+      unIgnoreException("ZooKeeper is not connected");
+    }
+  }
+
+  private static <T> T getRandomEntry(Collection<T> collection) {
+    if (null == collection || collection.isEmpty())
+      return null;
+
+    Iterator<T> iterator = collection.iterator();
+    T entry = iterator.next();
+    int index = 0, rand = random().nextInt(collection.size());
+    while (index++ < rand)
+      entry = iterator.next();
+    return entry;
   }
 }

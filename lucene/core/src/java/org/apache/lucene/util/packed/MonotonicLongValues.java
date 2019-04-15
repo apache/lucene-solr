@@ -17,10 +17,9 @@
 package org.apache.lucene.util.packed;
 
 
-import java.util.Arrays;
-
 import static org.apache.lucene.util.packed.MonotonicBlockPackedReader.expected;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
@@ -72,9 +71,9 @@ class MonotonicLongValues extends DeltaPackedLongValues {
     public MonotonicLongValues build() {
       finish();
       pending = null;
-      final PackedInts.Reader[] values = Arrays.copyOf(this.values, valuesOff);
-      final long[] mins = Arrays.copyOf(this.mins, valuesOff);
-      final float[] averages = Arrays.copyOf(this.averages, valuesOff);
+      final PackedInts.Reader[] values = ArrayUtil.copyOfSubArray(this.values, 0, valuesOff);
+      final long[] mins = ArrayUtil.copyOfSubArray(this.mins, 0, valuesOff);
+      final float[] averages = ArrayUtil.copyOfSubArray(this.averages, 0, valuesOff);
       final long ramBytesUsed = MonotonicLongValues.BASE_RAM_BYTES_USED
           + RamUsageEstimator.sizeOf(values) + RamUsageEstimator.sizeOf(mins)
           + RamUsageEstimator.sizeOf(averages);
@@ -95,7 +94,7 @@ class MonotonicLongValues extends DeltaPackedLongValues {
     void grow(int newBlockCount) {
       super.grow(newBlockCount);
       ramBytesUsed -= RamUsageEstimator.sizeOf(averages);
-      averages = Arrays.copyOf(averages, newBlockCount);
+      averages = ArrayUtil.growExact(averages, newBlockCount);
       ramBytesUsed += RamUsageEstimator.sizeOf(averages);
     }
 

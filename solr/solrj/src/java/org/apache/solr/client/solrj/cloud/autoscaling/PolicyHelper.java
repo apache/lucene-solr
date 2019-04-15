@@ -19,21 +19,28 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.ConditionalMapWriter;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -48,9 +55,12 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.ConditionType.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
+import static org.apache.solr.common.util.Utils.handleExp;
 import static org.apache.solr.common.util.Utils.time;
 import static org.apache.solr.common.util.Utils.timeElapsed;
 
@@ -60,7 +70,7 @@ public class PolicyHelper {
   private static final String POLICY_MAPPING_KEY = "PolicyHelper.policyMapping";
 
   private static ThreadLocal<Map<String, String>> getPolicyMapping(SolrCloudManager cloudManager) {
-    return (ThreadLocal<Map<String, String>>)cloudManager.getObjectCache()
+    return (ThreadLocal<Map<String, String>>) cloudManager.getObjectCache()
         .computeIfAbsent(POLICY_MAPPING_KEY, k -> new ThreadLocal<>());
   }
 
@@ -93,7 +103,7 @@ public class PolicyHelper {
         if (autoScalingConfig != null) {
           return new DelegatingDistribStateManager(null) {
             @Override
-            public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
+            public AutoScalingConfig getAutoScalingConfig() {
               return autoScalingConfig;
             }
           };
@@ -120,14 +130,14 @@ public class PolicyHelper {
         if (coll != null) {
           for (String shardName : shardNames) {
             Replica ldr = coll.getLeader(shardName);
-            if (ldr != null) {
+            if (ldr != null && cloudManager.getClusterStateProvider().getLiveNodes().contains(ldr.getNodeName())) {
               Map<String, Map<String, List<ReplicaInfo>>> details = cloudManager.getNodeStateProvider().getReplicaInfo(ldr.getNodeName(),
                   Collections.singleton(FREEDISK.perReplicaValue));
               ReplicaInfo replicaInfo = details.getOrDefault(collName, emptyMap()).getOrDefault(shardName, singletonList(null)).get(0);
               if (replicaInfo != null) {
                 Object idxSz = replicaInfo.getVariables().get(FREEDISK.perReplicaValue);
                 if (idxSz != null) {
-                  diskSpaceReqd.put(shardName, 1.5 * (Double) Suggestion.ConditionType.FREEDISK.validate(null, idxSz, false));
+                  diskSpaceReqd.put(shardName, 1.5 * (Double) Variable.Type.FREEDISK.validate(null, idxSz, false));
                 }
               }
             }
@@ -135,7 +145,7 @@ public class PolicyHelper {
           }
         }
       } catch (IOException e) {
-        /*ignore*/
+        log.warn("Exception while reading disk free metric values for nodes to be used for collection: " + collName, e);
       }
 
 
@@ -160,8 +170,14 @@ public class PolicyHelper {
             }
             SolrRequest op = suggester.getSuggestion();
             if (op == null) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules " +
-                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
+              String errorId = "AutoScaling.error.diagnostics." + System.nanoTime();
+              Policy.Session sessionCopy = suggester.session;
+              log.error("errorId : " + errorId + "  " +
+                  handleExp(log, "", () -> Utils.writeJson(getDiagnostics(sessionCopy), new StringWriter(), true).toString()));
+
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " No node can satisfy the rules " +
+                  Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true) + " More details from logs in node : "
+                      + Utils.getMDCNode() + ", errorId : " + errorId));
             }
             session = suggester.getSession();
             positions.add(new ReplicaPosition(shardName, ++idx, e.getKey(), op.getParams().get(NODE)));
@@ -178,79 +194,174 @@ public class PolicyHelper {
   }
 
 
-  public static final int SESSION_EXPIRY = 180;//3 seconds
+  public static final int SESSION_EXPIRY = 180; // 3 minutes
 
   public static MapWriter getDiagnostics(Policy policy, SolrCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
-    List<Row> sorted = session.getSorted();
-    List<Violation> violations = session.getViolations();
+    return getDiagnostics(session);
+  }
 
-    List<Preference> clusterPreferences = policy.getClusterPreferences();
+  public static MapWriter getDiagnostics(Policy.Session session) {
+    List<Row> sorted = session.getSortedNodes();
+    return ew -> {
+      writeNodes(ew, sorted);
+      ew.put("liveNodes", session.cloudManager.getClusterStateProvider().getLiveNodes())
+          .put("violations", session.getViolations())
+          .put("config", session.getPolicy());
+    };
+  }
 
-    List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
-    for (Row row : sorted) {
-      Map<String, Object> map = Utils.makeMap("node", row.node);
-      for (Cell cell : row.getCells()) {
-        for (Preference clusterPreference : clusterPreferences) {
-          Policy.SortParam name = clusterPreference.getName();
-          if (cell.getName().equalsIgnoreCase(name.name())) {
-            map.put(name.name(), cell.getValue());
-            break;
-          }
+  static void writeNodes(MapWriter.EntryWriter ew, List<Row> sorted) throws IOException {
+    Set<CharSequence> alreadyWritten = new HashSet<>();
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(alreadyWritten)
+        .and(ConditionalMapWriter.NON_NULL_VAL)
+        .and((s, o) -> !(o instanceof Map) || !((Map) o).isEmpty());
+    ew.put("sortedNodes", (IteratorWriter) iw -> {
+      for (Row row : sorted) {
+        iw.add((MapWriter) ew1 -> {
+          alreadyWritten.clear();
+          ew1.put("node", row.node, p).
+              put("isLive", row.isLive, p);
+          for (Cell cell : row.getCells())
+            ew1.put(cell.name, cell.val, p);
+          ew1.put("replicas", row.collectionVsShardVsReplicas);
+        });
+      }
+    });
+  }
+
+  public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
+                                                              SolrCloudManager cloudManager) {
+    return getSuggestions(autoScalingConf, cloudManager, 20, 10);
+  }
+
+  public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
+                                                              SolrCloudManager cloudManager, int max, int timeoutInSecs) {
+    Policy policy = autoScalingConf.getPolicy();
+    Suggestion.Ctx ctx = new Suggestion.Ctx();
+    ctx.endTime = cloudManager.getTimeSource().getTimeNs() + TimeUnit.SECONDS.toNanos(timeoutInSecs);
+    ctx.max = max;
+    ctx.session = policy.createSession(cloudManager);
+    List<Violation> violations = ctx.session.getViolations();
+    for (Violation violation : violations) {
+      violation.getClause().getThirdTag().varType.getSuggestions(ctx.setViolation(violation));
+      ctx.violation = null;
+    }
+
+    for (Violation current : ctx.session.getViolations()) {
+      for (Violation old : violations) {
+        if (!ctx.needMore()) return ctx.getSuggestions();
+        if (current.equals(old)) {
+          //could not be resolved
+          ctx.suggestions.add(new Suggester.SuggestionInfo(current, null, "unresolved-violation"));
+          break;
         }
       }
-      sortedNodes.add(map);
     }
 
-    return ew -> {
-      ew.put("sortedNodes", sortedNodes);
-      ew.put("violations", violations);
-    };
-
-
-  }
-
-  public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf, SolrCloudManager cloudManager) {
-    Policy policy = autoScalingConf.getPolicy();
-    Suggestion.SuggestionCtx suggestionCtx = new Suggestion.SuggestionCtx();
-    suggestionCtx.session = policy.createSession(cloudManager);
-    List<Violation> violations = suggestionCtx.session.getViolations();
-    for (Violation violation : violations) {
-      Suggestion.ConditionType tagType = Suggestion.getTagType(violation.getClause().isPerCollectiontag() ?
-          violation.getClause().tag.name :
-          violation.getClause().globalTag.name);
-      tagType.getSuggestions(suggestionCtx.setViolation(violation));
-      suggestionCtx.violation = null;
+    if (ctx.needMore()) {
+      try {
+        addMissingReplicas(cloudManager, ctx);
+      } catch (IOException e) {
+        log.error("Unable to fetch cluster state", e);
+      }
     }
-    return suggestionCtx.getSuggestions();
+
+    if (ctx.needMore()) {
+      suggestOptimizations(ctx, Math.min(ctx.max - ctx.getSuggestions().size(), 10));
+    }
+    return ctx.getSuggestions();
+  }
+
+  private static void addMissingReplicas(SolrCloudManager cloudManager, Suggestion.Ctx ctx) throws IOException {
+    cloudManager.getClusterStateProvider().getClusterState().forEachCollection(coll -> coll.forEach(slice -> {
+      if (!ctx.needMore()) return;
+          ReplicaCount replicaCount = new ReplicaCount();
+          slice.forEach(replica -> {
+            if (replica.getState() == Replica.State.ACTIVE || replica.getState() == Replica.State.RECOVERING) {
+              replicaCount.increment(replica.getType());
+            }
+          });
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.NRT, ctx);
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.PULL, ctx);
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.TLOG, ctx);
+        }
+    ));
+  }
+
+  private static void addMissingReplicas(ReplicaCount count, DocCollection coll, String shard, Replica.Type type, Suggestion.Ctx ctx) {
+    int delta = count.delta(coll.getExpectedReplicaCount(type, 0), type);
+    for (; ; ) {
+      if (!ctx.needMore()) return;
+      if (delta >= 0) break;
+      SolrRequest suggestion = ctx.addSuggestion(
+          ctx.session.getSuggester(ADDREPLICA)
+              .hint(Hint.REPLICATYPE, type)
+              .hint(Hint.COLL_SHARD, new Pair(coll.getName(), shard)), "repair");
+      if (suggestion == null) return;
+      delta++;
+    }
   }
 
 
-  /**Use this to dump the state of a system and to generate a testcase
+  private static void suggestOptimizations(Suggestion.Ctx ctx, int count) {
+    int maxTotalSuggestions = ctx.getSuggestions().size() + count;
+    List<Row> matrix = ctx.session.matrix;
+    if (matrix.isEmpty()) return;
+    for (int i = 0; i < matrix.size(); i++) {
+      if (ctx.getSuggestions().size() >= maxTotalSuggestions || ctx.hasTimedOut()) break;
+      Row row = matrix.get(i);
+      Map<String, Collection<String>> collVsShards = new HashMap<>();
+      row.forEachReplica(ri -> collVsShards.computeIfAbsent(ri.getCollection(), s -> new HashSet<>()).add(ri.getShard()));
+      for (Map.Entry<String, Collection<String>> e : collVsShards.entrySet()) {
+        e.setValue(FreeDiskVariable.getSortedShards(Collections.singletonList(row), e.getValue(), e.getKey()));
+      }
+      for (Map.Entry<String, Collection<String>> e : collVsShards.entrySet()) {
+        if (!ctx.needMore()) return;
+        if (ctx.getSuggestions().size() >= maxTotalSuggestions || ctx.hasTimedOut()) break;
+        for (String shard : e.getValue()) {
+          Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
+              .hint(Hint.COLL_SHARD, new Pair<>(e.getKey(), shard))
+              .hint(Hint.SRC_NODE, row.node);
+          ctx.addSuggestion(suggester, "improvement");
+          if (ctx.getSuggestions().size() >= maxTotalSuggestions) break;
+        }
+      }
+    }
+  }
+
+
+  /**
+   * Use this to dump the state of a system and to generate a testcase
    */
   public static void logState(SolrCloudManager cloudManager, Suggester suggester) {
-    if(log.isTraceEnabled()) {
-      log.trace("LOGSTATE: {}",
-          Utils.toJSONString((MapWriter) ew -> {
-            ew.put("liveNodes", cloudManager.getClusterStateProvider().getLiveNodes());
-            ew.put("suggester", suggester);
-            if (suggester.session.nodeStateProvider instanceof MapWriter) {
-              MapWriter nodeStateProvider = (MapWriter) suggester.session.nodeStateProvider;
-              nodeStateProvider.writeMap(ew);
-            }
-            try {
-              ew.put("autoscalingJson", cloudManager.getDistribStateManager().getAutoScalingConfig());
-            } catch (InterruptedException e) {
-            }
-          }));
+    if (log.isTraceEnabled()) {
+      try {
+        log.trace("LOGSTATE: {}",
+            Utils.writeJson(loggingInfo(cloudManager.getDistribStateManager().getAutoScalingConfig().getPolicy(), cloudManager, suggester),
+                new StringWriter(), true).toString());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
+  }
+
+
+  static MapWriter loggingInfo(Policy policy, SolrCloudManager cloudManager, Suggester suggester) {
+    return ew -> {
+      ew.put("diagnostics", getDiagnostics(policy,
+          cloudManager));
+      if (suggester != null) {
+        ew.put("suggester", suggester);
+      }
+    };
   }
 
   public enum Status {
     NULL,
-    //it is just created and not yet used or all operations on it has been competed fully
+    //it is just created and not yet used or all operations on it has been completed fully
     UNUSED,
-    COMPUTING, EXECUTING;
+    COMPUTING, EXECUTING
   }
 
   /**
@@ -264,7 +375,7 @@ public class PolicyHelper {
    */
   static class SessionRef {
     private final Object lockObj = new Object();
-    private SessionWrapper sessionWrapper = SessionWrapper.DEF_INST;
+    private SessionWrapper sessionWrapper = SessionWrapper.DEFAULT_INSTANCE;
 
 
     public SessionRef() {
@@ -279,13 +390,12 @@ public class PolicyHelper {
     /**
      * All operations suggested by the current session object
      * is complete. Do not even cache anything
-     *
      */
     private void release(SessionWrapper sessionWrapper) {
       synchronized (lockObj) {
         if (sessionWrapper.createTime == this.sessionWrapper.createTime && this.sessionWrapper.refCount.get() <= 0) {
           log.debug("session set to NULL");
-          this.sessionWrapper = SessionWrapper.DEF_INST;
+          this.sessionWrapper = SessionWrapper.DEFAULT_INSTANCE;
         } // else somebody created a new session b/c of expiry . So no need to do anything about it
       }
     }
@@ -293,13 +403,12 @@ public class PolicyHelper {
     /**
      * Computing is over for this session and it may contain a new session with new state
      * The session can be used by others while the caller is performing operations
-     *
      */
     private void returnSession(SessionWrapper sessionWrapper) {
       TimeSource timeSource = sessionWrapper.session != null ? sessionWrapper.session.cloudManager.getTimeSource() : TimeSource.NANO_TIME;
       synchronized (lockObj) {
         sessionWrapper.status = Status.EXECUTING;
-        log.info("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} ", time(timeSource, MILLISECONDS),
+        log.debug("returnSession, curr-time {} sessionWrapper.createTime {}, this.sessionWrapper.createTime {} ", time(timeSource, MILLISECONDS),
             sessionWrapper.createTime,
             this.sessionWrapper.createTime);
         if (sessionWrapper.createTime == this.sessionWrapper.createTime) {
@@ -310,7 +419,7 @@ public class PolicyHelper {
           //one thread who is waiting for this need to be notified.
           lockObj.notify();
         } else {
-          log.info("create time NOT SAME {} ", SessionWrapper.DEF_INST.createTime);
+          log.debug("create time NOT SAME {} ", SessionWrapper.DEFAULT_INSTANCE.createTime);
           //else just ignore it
         }
       }
@@ -322,6 +431,7 @@ public class PolicyHelper {
       TimeSource timeSource = cloudManager.getTimeSource();
       synchronized (lockObj) {
         if (sessionWrapper.status == Status.NULL ||
+            sessionWrapper.zkVersion != cloudManager.getDistribStateManager().getAutoScalingConfig().getZkVersion() ||
             TimeUnit.SECONDS.convert(timeSource.getTimeNs() - sessionWrapper.lastUpdateTime, TimeUnit.NANOSECONDS) > SESSION_EXPIRY) {
           //no session available or the session is expired
           return createSession(cloudManager);
@@ -342,7 +452,7 @@ public class PolicyHelper {
             }
             log.debug("out of waiting curr-time:{} time-elapsed {}", time(timeSource, MILLISECONDS), timeElapsed(timeSource, waitStart, MILLISECONDS));
             // now this thread has woken up because it got timed out after 10 seconds or it is notified after
-            //the session was returned from another COMPUTING operation
+            // the session was returned from another COMPUTING operation
             if (this.sessionWrapper.status == Status.UNUSED || this.sessionWrapper.status == Status.EXECUTING) {
               log.debug("Wait over. reusing the existing session ");
               this.sessionWrapper.status = Status.COMPUTING;
@@ -400,12 +510,12 @@ public class PolicyHelper {
 
 
   public static class SessionWrapper {
-    public static final SessionWrapper DEF_INST = new SessionWrapper(null, null);
+    public static final SessionWrapper DEFAULT_INSTANCE = new SessionWrapper(null, null);
 
     static {
-      DEF_INST.status = Status.NULL;
-      DEF_INST.createTime = -1l;
-      DEF_INST.lastUpdateTime = -1l;
+      DEFAULT_INSTANCE.status = Status.NULL;
+      DEFAULT_INSTANCE.createTime = -1L;
+      DEFAULT_INSTANCE.lastUpdateTime = -1L;
     }
 
     private long createTime;
@@ -414,6 +524,7 @@ public class PolicyHelper {
     public Status status;
     private final SessionRef ref;
     private AtomicInteger refCount = new AtomicInteger();
+    public final long zkVersion;
 
     public long getCreateTime() {
       return createTime;
@@ -430,6 +541,9 @@ public class PolicyHelper {
       this.session = session;
       this.status = Status.UNUSED;
       this.ref = ref;
+      this.zkVersion = session == null ?
+          0 :
+          session.getPolicy().zkVersion;
     }
 
     public Policy.Session get() {

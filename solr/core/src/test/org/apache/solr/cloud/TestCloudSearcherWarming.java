@@ -22,22 +22,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -46,13 +40,12 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 
 /**
  * Tests related to SOLR-6086
@@ -67,31 +60,32 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     useFactory("solr.StandardDirectoryFactory"); // necessary to find the index+tlog intact after restart
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
   }
 
   @Before
-  public void before() {
+  public void setUp() throws Exception {
+    super.setUp();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+  }
+  
+  @After
+  @Override
+  public void tearDown() throws Exception {
     coreNameRef.set(null);
     coreNodeNameRef.set(null);
     sleepTime.set(-1);
-
-    try {
-      CollectionAdminRequest.deleteCollection("testRepFactor1LeaderStartup").process(cluster.getSolrClient());
-    } catch (Exception e) {
-      // ignore
-    }
-    try {
-      CollectionAdminRequest.deleteCollection("testPeersyncFailureReplicationSuccess").process(cluster.getSolrClient());
-    } catch (Exception e) {
-      // ignore
-    }
+    
+    cluster.deleteAllCollections();
+    cluster.deleteAllConfigSets();
+    cluster.shutdown();
+    TestInjection.wrongIndexFingerprint = null;
+    
+    super.tearDown();
   }
 
   @Test
   public void testRepFactor1LeaderStartup() throws Exception {
+
     CloudSolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testRepFactor1LeaderStartup";
@@ -99,7 +93,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName());
     create.process(solrClient);
 
-    waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
+   cluster.waitForActiveCollection(collectionName, 1, 1);
 
     solrClient.setDefaultCollection(collectionName);
 
@@ -108,7 +102,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "'add-listener' : {'name':'firstSearcherListener','event':'firstSearcher', 'class':'" + SleepingSolrEventListener.class.getName() + "'}" +
         "}";
 
-    ConfigRequest request = new ConfigRequest(SolrRequest.METHOD.POST, "/config", addListenerCommand);
+    ConfigRequest request = new ConfigRequest(addListenerCommand);
     solrClient.request(request);
 
     solrClient.add(new SolrInputDocument("id", "1"));
@@ -119,23 +113,29 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     CollectionStateWatcher stateWatcher = createActiveReplicaSearcherWatcher(expectedDocs, failingCoreNodeName);
 
     JettySolrRunner runner = cluster.getJettySolrRunner(0);
-    cluster.stopJettySolrRunner(0);
-    waitForState("", collectionName, clusterShape(1, 0));
+    runner.stop();
+    waitForState("jetty count:" + cluster.getJettySolrRunners().size(), collectionName, clusterShape(1, 0));
+    
+    cluster.waitForJettyToStop(runner);
+    
     // restart
-    sleepTime.set(10000);
-    cluster.startJettySolrRunner(runner);
+    sleepTime.set(1000);
+    runner.start();
+    cluster.waitForAllNodes(30);
     cluster.getSolrClient().getZkStateReader().registerCollectionStateWatcher(collectionName, stateWatcher);
-    waitForState("", collectionName, clusterShape(1, 1));
+    cluster.waitForActiveCollection(collectionName, 1, 1);
     assertNull("No replica should have been active without registering a searcher, found: " + failingCoreNodeName.get(), failingCoreNodeName.get());
     cluster.getSolrClient().getZkStateReader().removeCollectionStateWatcher(collectionName, stateWatcher);
   }
 
+  @Test
   public void testPeersyncFailureReplicationSuccess() throws Exception {
+
     CloudSolrClient solrClient = cluster.getSolrClient();
 
     String collectionName = "testPeersyncFailureReplicationSuccess";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 1)
-        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName());
+        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName()).setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
@@ -147,7 +147,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "'add-listener' : {'name':'firstSearcherListener','event':'firstSearcher', 'class':'" + SleepingSolrEventListener.class.getName() + "'}" +
         "}";
 
-    ConfigRequest request = new ConfigRequest(SolrRequest.METHOD.POST, "/config", addListenerCommand);
+    ConfigRequest request = new ConfigRequest(addListenerCommand);
     solrClient.request(request);
 
     solrClient.add(new SolrInputDocument("id", "1"));
@@ -169,6 +169,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     cluster.getSolrClient().getZkStateReader().registerCollectionStateWatcher(collectionName, stateWatcher);
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(newNode.getNodeName())
         .process(solrClient);
@@ -180,6 +181,8 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     log.info("Stopping old node 1");
     AtomicReference<String> oldNodeName = new AtomicReference<>(cluster.getJettySolrRunner(0).getNodeName());
     JettySolrRunner oldNode = cluster.stopJettySolrRunner(0);
+    
+    cluster.waitForJettyToStop(oldNode);
     // the newly created replica should become leader
     waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
     // the above call is not enough because we want to assert that the down'ed replica is not active
@@ -326,35 +329,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         }
         log.info("Finished sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}", sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
       }
-    }
-  }
-
-  public static class ConfigRequest extends SolrRequest {
-    protected final String message;
-
-    public ConfigRequest(METHOD m, String path, String message) {
-      super(m, path);
-      this.message = message;
-    }
-
-    @Override
-    public SolrParams getParams() {
-      return null;
-    }
-
-   /* @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return message != null ? Collections.singletonList(new ContentStreamBase.StringStream(message)) : null;
-    }*/
-
-    @Override
-    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-      return message == null? null: new RequestWriter.StringPayloadContentWriter(message, JSON_MIME);
-    }
-
-    @Override
-    protected SolrResponse createResponse(SolrClient client) {
-      return new SolrResponseBase();
     }
   }
 }

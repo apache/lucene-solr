@@ -91,7 +91,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         assertEquals("result count", expected, h.length);
         //System.out.println("TEST: now check");
         // bs2
-        TopScoreDocCollector collector = TopScoreDocCollector.create(1000);
+        TopScoreDocCollector collector = TopScoreDocCollector.create(1000, Integer.MAX_VALUE);
         s.search(q, collector);
         ScoreDoc[] h2 = collector.topDocs().scoreDocs;
         if (expected != h2.length) {
@@ -359,19 +359,19 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     private void assertSubsetOfSameScores(Query q, TopDocs top1, TopDocs top2) {
       // The constrained query
       // should be a subset to the unconstrained query.
-      if (top2.totalHits > top1.totalHits) {
+      if (top2.totalHits.value > top1.totalHits.value) {
         fail("Constrained results not a subset:\n"
                       + CheckHits.topdocsString(top1,0,0)
                       + CheckHits.topdocsString(top2,0,0)
                       + "for query:" + q.toString());
       }
 
-      for (int hit=0; hit<top2.totalHits; hit++) {
+      for (int hit=0; hit<top2.totalHits.value; hit++) {
         int id = top2.scoreDocs[hit].doc;
         float score = top2.scoreDocs[hit].score;
         boolean found=false;
         // find this doc in other hits
-        for (int other=0; other<top1.totalHits; other++) {
+        for (int other=0; other<top1.totalHits.value; other++) {
           if (top1.scoreDocs[other].doc == id) {
             found=true;
             float otherScore = top1.scoreDocs[other].score;

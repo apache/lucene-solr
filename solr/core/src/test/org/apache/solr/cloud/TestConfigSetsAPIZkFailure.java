@@ -38,7 +38,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
-import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -58,7 +57,6 @@ import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.quorum.Leader.Proposal;
 import org.apache.zookeeper.txn.TxnHeader;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -112,14 +110,10 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
       Create create = new Create();
       create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
-      try {
-        ConfigSetAdminResponse response = create.process(solrClient);
-        Assert.fail("Expected solr exception");
-      } catch (RemoteSolrException se) {
-        // partial creation should have been cleaned up
-        assertFalse(configManager.configExists(CONFIGSET_NAME));
-        assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
-      }
+      RemoteSolrException se = expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
+      // partial creation should have been cleaned up
+      assertFalse(configManager.configExists(CONFIGSET_NAME));
+      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
     } finally {
       zkClient.close();
     }

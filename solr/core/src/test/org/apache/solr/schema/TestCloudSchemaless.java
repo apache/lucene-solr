@@ -31,7 +31,6 @@ import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.Math;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -88,6 +87,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 8)
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void test() throws Exception {
     setupRestTestHarnesses();
 

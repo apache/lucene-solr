@@ -19,15 +19,19 @@ package org.apache.lucene.index;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -128,9 +132,15 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         queue.addAll(map.values());
         v = 2L * map.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
       } else {
-        v = super.accumulateObject(o, shallowSize, fieldValues, queue);
+        List<Object> references = new ArrayList<>();
+        v = super.accumulateObject(o, shallowSize, fieldValues, references);
+        for (Object r : references) {
+          // AssertingCodec adds Thread references to make sure objects are consumed in the right thread
+          if (r instanceof Thread == false) {
+            queue.add(r);
+          }
+        }
       }
-      // System.out.println(o.getClass() + "=" + v);
       return v;
     }
 
@@ -287,12 +297,26 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       new SimpleMergedSegmentWarmer(InfoStream.NO_OUTPUT).warm(reader);
     }
 
-    final long actualBytes = RamUsageTester.sizeOf(reader2, new Accumulator(reader2)) - RamUsageTester.sizeOf(reader1, new Accumulator(reader1));
-    final long expectedBytes = ((SegmentReader) reader2).ramBytesUsed() - ((SegmentReader) reader1).ramBytesUsed();
-    final long absoluteError = actualBytes - expectedBytes;
-    final double relativeError = (double) absoluteError / actualBytes;
-    final String message = "Actual RAM usage " + actualBytes + ", but got " + expectedBytes + ", " + 100*relativeError + "% error";
-    assertTrue(message, Math.abs(relativeError) < 0.20d || Math.abs(absoluteError) < 1000);
+    long act1 = RamUsageTester.sizeOf(reader2, new Accumulator(reader2));
+    long act2 = RamUsageTester.sizeOf(reader1, new Accumulator(reader1));
+    final long measuredBytes = act1 - act2;
+
+    long reported1 = ((SegmentReader) reader2).ramBytesUsed();
+    long reported2 = ((SegmentReader) reader1).ramBytesUsed();
+    final long reportedBytes = reported1 - reported2;
+
+    final long absoluteError = Math.abs(measuredBytes - reportedBytes);
+    final double relativeError = (double) absoluteError / measuredBytes;
+    final String message = String.format(Locale.ROOT,
+        "RamUsageTester reports %d bytes but ramBytesUsed() returned %d (%.1f error). " +
+        " [Measured: %d, %d. Reported: %d, %d]",
+        measuredBytes,
+        reportedBytes,
+        (100 * relativeError),
+        act1, act2,
+        reported1, reported2);
+
+    assertTrue(message, relativeError < 0.20d || absoluteError < 1000);
 
     reader1.close();
     reader2.close();
@@ -319,11 +343,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir("justSoYouGetSomeChannelErrors"));
     Codec codec = getCodec();
     
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), null);
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
                                     proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
-                                    proto.getPointDimensionCount(), proto.getPointNumBytes());
+                                    proto.getPointDataDimensionCount(), proto.getPointIndexDimensionCount(), proto.getPointNumBytes(), proto.isSoftDeletesField());
 
     FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
 
@@ -331,7 +355,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
                                                          segmentInfo, fieldInfos,
                                                          null, new IOContext(new FlushInfo(1, 20)));
     
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, IOContext.READ);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, false, IOContext.READ, Collections.emptyMap());
 
     // PostingsFormat
     NormsProducer fakeNorms = new NormsProducer() {
@@ -357,7 +381,25 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       
     };
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
-      consumer.write(MultiFields.getFields(oneDocReader), fakeNorms);
+      final Fields fields = new Fields() {
+        TreeSet<String> indexedFields = new TreeSet<>(FieldInfos.getIndexedFields(oneDocReader));
+
+        @Override
+        public Iterator<String> iterator() {
+          return indexedFields.iterator();
+        }
+
+        @Override
+        public Terms terms(String field) throws IOException {
+          return oneDocReader.terms(field);
+        }
+
+        @Override
+        public int size() {
+          return indexedFields.size();
+        }
+      };
+      consumer.write(fields, fakeNorms);
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
@@ -662,5 +704,20 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     }
     
     Rethrow.rethrow(e);
+  }
+
+  /**
+   * Returns {@code false} if only the regular fields reader should be tested,
+   * and {@code true} if only the merge instance should be tested.
+   */
+  protected boolean shouldTestMergeInstance() {
+    return false;
+  }
+
+  protected final DirectoryReader maybeWrapWithMergingReader(DirectoryReader r) throws IOException {
+    if (shouldTestMergeInstance()) {
+      r = new MergingDirectoryReaderWrapper(r);
+    }
+    return r;
   }
 }

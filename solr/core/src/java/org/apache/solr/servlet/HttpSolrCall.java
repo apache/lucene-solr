@@ -39,9 +39,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.CloseShieldInputStream;
-import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
@@ -94,12 +92,14 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationResponse;
-import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -135,7 +135,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 public class HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final Random random;
+  public static final Random random;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
@@ -442,9 +442,9 @@ public class HttpSolrCall {
       action = REMOTEQUERY;
     } else {
       if (!retry) {
-        // we couldn't find a core to work with, try reloading aliases
-        // TODO: it would be nice if admin ui elements skipped this...
+        // we couldn't find a core to work with, try reloading aliases & this collection
         cores.getZkController().getZkStateReader().aliasesManager.update();
+        cores.getZkController().zkStateReader.forceUpdateCollection(collectionName);
         action = RETRY;
       }
     }
@@ -464,6 +464,9 @@ public class HttpSolrCall {
 
     if (solrDispatchFilter.abortErrorMessage != null) {
       sendError(500, solrDispatchFilter.abortErrorMessage);
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, getReq()));
+      }
       return RETURN;
     }
 
@@ -483,12 +486,21 @@ public class HttpSolrCall {
             for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+          if (shouldAudit(EventType.REJECTED)) {
+            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
+          }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
+          if (shouldAudit(EventType.UNAUTHORIZED)) {
+            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+          }
           return RETURN;
+        }
+        if (shouldAudit(EventType.AUTHORIZED)) {
+          cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHORIZED, req, context));
         }
       }
 
@@ -498,6 +510,7 @@ public class HttpSolrCall {
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
+          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -515,6 +528,13 @@ public class HttpSolrCall {
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
             execute(solrRsp);
+            if (shouldAudit()) {
+              EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+              if (shouldAudit(eventType)) {
+                cores.getAuditLoggerPlugin().doAudit(
+                    new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+              }
+            }
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
             while (headers.hasNext()) {
@@ -529,6 +549,9 @@ public class HttpSolrCall {
         default: return action;
       }
     } catch (Throwable ex) {
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
+      }
       sendError(ex);
       // walk the the entire cause chain to search for an Error
       Throwable t = ex;
@@ -548,9 +571,18 @@ public class HttpSolrCall {
 
   }
 
+  private boolean shouldAudit() {
+    return cores.getAuditLoggerPlugin() != null;
+  }
+
+  private boolean shouldAudit(AuditEvent.EventType eventType) {
+    return shouldAudit() && cores.getAuditLoggerPlugin().shouldLog(eventType);
+  }
+
   private boolean shouldAuthorize() {
-    if(PKIAuthenticationPlugin.PATH.equals(path)) return false;
+    if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
+    if ("/".equals(path) || "/solr/".equals(path)) return false; // Static Admin UI files must always be served 
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
       log.debug("PkiAuthenticationPlugin says authorization required : {} ", b);
@@ -576,8 +608,9 @@ public class HttpSolrCall {
     }
   }
 
+  //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
-    HttpRequestBase method = null;
+    HttpRequestBase method;
     HttpEntity httpEntity = null;
     try {
       String urlstr = coreUrl + queryParams.toQueryString();
@@ -590,7 +623,7 @@ public class HttpSolrCall {
       } else if (isPostOrPutRequest) {
         HttpEntityEnclosingRequestBase entityRequest =
             "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
-        InputStream in = new CloseShieldInputStream(req.getInputStream()); // Prevent close of container streams
+        InputStream in = req.getInputStream();
         HttpEntity entity = new InputStreamEntity(in, req.getContentLength());
         entityRequest.setEntity(entity);
         method = entityRequest;
@@ -671,7 +704,7 @@ public class HttpSolrCall {
           solrParams = SolrRequestParsers.parseQueryString(req.getQueryString());
         } else {
           // we have no params at all, use empty ones:
-          solrParams = new MapSolrParams(Collections.<String, String>emptyMap());
+          solrParams = new MapSolrParams(Collections.emptyMap());
         }
         solrReq = new SolrQueryRequestBase(core, solrParams) {
         };
@@ -722,14 +755,29 @@ public class HttpSolrCall {
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
+    if (shouldAudit()) {
+      EventType eventType = solrResp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+      if (shouldAudit(eventType)) {
+        cores.getAuditLoggerPlugin().doAudit(
+            new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+      }
+    }
   }
 
+  /**
+   * Returns {@link QueryResponseWriter} to be used.
+   * When {@link CommonParams#WT} not specified in the request or specified value doesn't have
+   * corresponding {@link QueryResponseWriter} then, returns the default query response writer
+   * Note: This method must not return null
+   */
   protected QueryResponseWriter getResponseWriter() {
-    if (core != null) return core.getQueryResponseWriter(solrReq);
-    QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
-    if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");
-    return respWriter;
-
+    String wt = solrReq.getParams().get(CommonParams.WT);
+    if (core != null) {
+      return core.getQueryResponseWriter(wt);
+    } else {
+      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(wt,
+          SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+    }
   }
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
@@ -785,7 +833,7 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        OutputStream out = new CloseShieldOutputStream(response.getOutputStream()); // Prevent close of container streams, see SOLR-8933
+        OutputStream out = response.getOutputStream();
         QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
@@ -864,9 +912,9 @@ public class HttpSolrCall {
                                        Collection<Slice> slices, boolean activeSlices) {
     if (activeSlices) {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
-        final Collection<Slice> activeCollectionSlices = entry.getValue().getActiveSlices();
-        if (activeCollectionSlices != null) {
-          slices.addAll(activeCollectionSlices);
+        final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
+        for (Slice s : activeCollectionSlices) {
+          slices.add(s);
         }
       }
     } else {
@@ -879,48 +927,50 @@ public class HttpSolrCall {
     }
   }
 
-  private String getRemotCoreUrl(String collectionName, String origCorename) {
+  protected String getRemotCoreUrl(String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
-    Collection<Slice> slices = (docCollection != null) ? docCollection.getActiveSlices() : null;
+    Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
+    List<Slice> activeSlices = new ArrayList<>();
     boolean byCoreName = false;
 
     if (slices == null) {
-      slices = new ArrayList<>();
-      // look by core name
       byCoreName = true;
-      getSlicesForCollections(clusterState, slices, true);
-      if (slices.isEmpty()) {
-        getSlicesForCollections(clusterState, slices, false);
+      activeSlices = new ArrayList<>();
+      getSlicesForCollections(clusterState, activeSlices, true);
+      if (activeSlices.isEmpty()) {
+        getSlicesForCollections(clusterState, activeSlices, false);
+      }
+    } else {
+      for (Slice s : slices) {
+        activeSlices.add(s);
       }
     }
 
-    if (slices.isEmpty()) {
+    if (activeSlices.isEmpty()) {
       return null;
     }
 
     collectionsList.add(collectionName);
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-        slices, byCoreName, true);
+        activeSlices, byCoreName, true);
 
     if (coreUrl == null) {
       coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-          slices, byCoreName, false);
+          activeSlices, byCoreName, false);
     }
 
     return coreUrl;
   }
 
   private String getCoreUrl(String collectionName,
-                            String origCorename, ClusterState clusterState, Collection<Slice> slices,
+                            String origCorename, ClusterState clusterState, List<Slice> slices,
                             boolean byCoreName, boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    List<Slice> randomizedSlices = new ArrayList<>(slices.size());
-    randomizedSlices.addAll(slices);
-    Collections.shuffle(randomizedSlices, random);
+    Collections.shuffle(slices, random);
 
-    for (Slice slice : randomizedSlices) {
+    for (Slice slice : slices) {
       List<Replica> randomizedReplicas = new ArrayList<>();
       randomizedReplicas.addAll(slice.getReplicas());
       Collections.shuffle(randomizedReplicas, random);
@@ -929,7 +979,7 @@ public class HttpSolrCall {
         if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !collectionName.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }

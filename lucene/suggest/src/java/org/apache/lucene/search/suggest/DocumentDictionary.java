@@ -24,8 +24,8 @@ import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.Bits;
@@ -128,7 +128,7 @@ public class DocumentDictionary implements Dictionary {
       this.hasContexts = hasContexts;
       docCount = reader.maxDoc() - 1;
       weightValues = (weightField != null) ? MultiDocValues.getNumericValues(reader, weightField) : null;
-      liveDocs = (reader.leaves().size() > 0) ? MultiFields.getLiveDocs(reader) : null;
+      liveDocs = (reader.leaves().size() > 0) ? MultiBits.getLiveDocs(reader) : null;
       relevantFields = getRelevantFields(new String [] {field, weightField, payloadField, contextsField});
     }
 

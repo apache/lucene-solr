@@ -17,7 +17,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,9 +36,8 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.RTimer;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
@@ -78,7 +76,13 @@ public class FacetModule extends SearchComponent {
       if (!facetsEnabled) return;
       jsonFacet = new LegacyFacet(rb.req.getParams()).getLegacy();
     } else {
-      jsonFacet = (Map<String, Object>) json.get("facet");
+      Object jsonObj = json.get("facet");
+      if (jsonObj instanceof Map) {
+        jsonFacet = (Map<String, Object>) jsonObj;
+      } else if (jsonObj != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Expected Map for 'facet', received " + jsonObj.getClass().getSimpleName() + "=" + jsonObj);
+      }
     }
     if (jsonFacet == null) return;
 
@@ -99,13 +103,7 @@ public class FacetModule extends SearchComponent {
     rb.setNeedDocSet(true);
 
     // Parse the facet in the prepare phase?
-    FacetParser parser = new FacetTopParser(rb.req);
-    FacetRequest facetRequest = null;
-    try {
-      facetRequest = parser.parse(jsonFacet);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-    }
+    FacetRequest facetRequest = FacetRequest.parse(rb.req, jsonFacet);
 
     FacetComponentState fcState = new FacetComponentState();
     fcState.rb = rb;
@@ -139,28 +137,16 @@ public class FacetModule extends SearchComponent {
         fcontext.flags |= FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
       }
     }
-
-    FacetProcessor fproc = facetState.facetRequest.createFacetProcessor(fcontext);
     if (rb.isDebug()) {
       FacetDebugInfo fdebug = new FacetDebugInfo();
       fcontext.setDebugInfo(fdebug);
-      fdebug.setReqDescription(facetState.facetRequest.getFacetDescription());
-      fdebug.setProcessor(fproc.getClass().getSimpleName());
-     
-      final RTimer timer = new RTimer();
-      fproc.process();
-      long timeElapsed = (long) timer.getTime();
-      fdebug.setElapse(timeElapsed);
-      fdebug.putInfoItem("domainSize", (long)fcontext.base.size());
       rb.req.getContext().put("FacetDebugInfo", fdebug);
-    } else {
-      fproc.process();
     }
-    
-    rb.rsp.add("facets", fproc.getResponse());
+
+    Object results = facetState.facetRequest.process(fcontext);
+    // ExitableDirectory timeout causes absent "facets"
+    rb.rsp.add("facets", results);
   }
-
-
 
 
   private void clearFaceting(List<ShardRequest> outgoing) {
@@ -183,7 +169,7 @@ public class FacetModule extends SearchComponent {
     }
 
     // Check if there are any refinements possible
-    if (facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
+    if ((facetState.mcontext==null) ||facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
       clearFaceting(rb.outgoing);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -245,7 +231,7 @@ public class FacetModule extends SearchComponent {
         public void handleUnknownClass(Object o) {
           // handle date formatting correctly
           if (o instanceof Date) {
-            String s = Instant.ofEpochMilli(((Date)o).getTime()).toString();
+            String s = ((Date)o).toInstant().toString();
             writeString(s);
             return;
           }
@@ -293,7 +279,13 @@ public class FacetModule extends SearchComponent {
       NamedList<Object> top = rsp.getResponse();
       if (top == null) continue; // shards.tolerant=true will cause this to happen on exceptions/errors
       Object facet = top.get("facets");
-      if (facet == null) continue;
+      if (facet == null) {
+        SimpleOrderedMap shardResponseHeader = (SimpleOrderedMap)rsp.getResponse().get("responseHeader");
+        if(Boolean.TRUE.equals(shardResponseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        }
+        continue;
+      }
       if (facetState.merger == null) {
         facetState.merger = facetState.facetRequest.createFacetMerger(facet);
         facetState.mcontext = new FacetMerger.Context( sreq.responses.size() );
@@ -308,6 +300,7 @@ public class FacetModule extends SearchComponent {
         return;
       }
 
+      // System.err.println("MERGING FACET RESULT FROM SHARD = " + facet);
       facetState.mcontext.root = facet;
       facetState.mcontext.newShard(shardRsp.getShard());
       facetState.merger.merge(facet , facetState.mcontext);

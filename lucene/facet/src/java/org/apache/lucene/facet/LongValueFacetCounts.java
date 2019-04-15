@@ -40,7 +40,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 
 /** {@link Facets} implementation that computes counts for
- *  all uniqute long values, more efficiently counting small values (0-1023) using an int array,
+ *  all unique long values, more efficiently counting small values (0-1023) using an int array,
  *  and switching to a <code>HashMap</code> for values above 1023.
  *  Retrieve all facet counts, in value order, with {@link #getAllChildrenSortByValue},
  *  or get the topN values sorted by count with {@link #getTopChildrenSortByCount}.

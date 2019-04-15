@@ -78,6 +78,13 @@ public class DocValuesNumbersQuery extends Query {
     return 31 * classHash() + Objects.hash(field, numbers);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
   public String getField() {
     return field;
   }
@@ -102,7 +109,7 @@ public class DocValuesNumbersQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
 
           @Override
           public boolean matches() throws IOException {
@@ -129,4 +136,5 @@ public class DocValuesNumbersQuery extends Query {
 
     };
   }
+
 }

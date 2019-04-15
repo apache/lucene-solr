@@ -418,4 +418,12 @@ public class GeoCircleTest extends LuceneTestCase {
     assert gc.isWithin(gp)?solid.isWithin(gp):true;
     
   }
+
+  @Test
+  public void testWholeWorld() {
+    final GeoCircle circle1 = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, 0.0, 0.0, 3.1415926535897913);
+    final GeoCircle circle2 = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, Math.PI * 0.5, Math.PI, 3.141592653589792);
+
+    assertTrue(circle1.getRelationship(circle2) == GeoArea.OVERLAPS);
+  }
 }

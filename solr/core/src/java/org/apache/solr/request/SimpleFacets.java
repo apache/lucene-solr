@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,13 +35,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -65,7 +67,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -89,10 +90,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
-import org.apache.solr.search.facet.FacetProcessor;
+import org.apache.solr.search.facet.FacetRequest;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +106,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * to leverage any of its functionality.
  */
 public class SimpleFacets {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
@@ -169,6 +169,7 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
+    this.facetExecutor = req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
   }
 
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
@@ -517,7 +518,7 @@ public class SimpleFacets {
             if (ft.isPointField() && mincount <= 0) { // default is mincount=0.  See SOLR-10033 & SOLR-11174.
               String warningMessage 
                   = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
-              LOG.warn(warningMessage);
+              log.warn(warningMessage);
               List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
               if (null == warnings) {
                 warnings = new ArrayList<>();
@@ -564,29 +565,20 @@ public class SimpleFacets {
             }
             jsonFacet.put(SORT, sortVal );
 
-            Map<String, Object> topLevel = new HashMap<>();
-            topLevel.put(field, jsonFacet);
-              
-            topLevel.put("processEmpty", true);
-
-            FacetProcessor fproc = FacetProcessor.createProcessor(rb.req, topLevel, // rb.getResults().docSet
-                                                                    docs );
             //TODO do we handle debug?  Should probably already be handled by the legacy code
-            fproc.process();
 
+            Object resObj = FacetRequest.parseOneFacetReq(req, jsonFacet).process(req, docs);
             //Go through the response to build the expected output for SimpleFacets
-            Object res = fproc.getResponse();
-            counts = new NamedList<Integer>();
-            if(res != null) {
-              SimpleOrderedMap<Object> som = (SimpleOrderedMap<Object>)res;
-              SimpleOrderedMap<Object> asdf = (SimpleOrderedMap<Object>) som.get(field);
+            counts = new NamedList<>();
+            if(resObj != null) {
+              NamedList<Object> res = (NamedList<Object>) resObj;
 
-              List<SimpleOrderedMap<Object>> buckets = (List<SimpleOrderedMap<Object>>)asdf.get("buckets");
-              for(SimpleOrderedMap<Object> b : buckets) {
+              List<NamedList<Object>> buckets = (List<NamedList<Object>>)res.get("buckets");
+              for(NamedList<Object> b : buckets) {
                 counts.add(b.get("val").toString(), (Integer)b.get("count"));
               }
               if(missing) {
-                SimpleOrderedMap<Object> missingCounts = (SimpleOrderedMap<Object>) asdf.get("missing");
+                NamedList<Object> missingCounts = (NamedList<Object>) res.get("missing");
                 counts.add(null, (Integer)missingCounts.get("count"));
               }
             }
@@ -678,6 +670,13 @@ public class SimpleFacets {
        method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
      }
 
+     /* Unless isUninvertible() is true, we prohibit any use of UIF...
+        Here we just force FC(S) instead, and trust that the DocValues faceting logic will
+        do the right thing either way (with or w/o docvalues) */
+     if (FacetMethod.UIF == method && ! field.isUninvertible()) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+     
      /* ENUM can't deal with trie fields that index several terms per value */
      if (method == FacetMethod.ENUM
          && TrieField.getMainValuePrefix(type) != null) {
@@ -774,13 +773,7 @@ public class SimpleFacets {
     }
   };
 
-  static final Executor facetExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
-          new SynchronousQueue<Runnable>()  // directly hand off tasks
-          , new DefaultSolrThreadFactory("facetExecutor")
-  );
+  private final Executor facetExecutor;
   
   /**
    * Returns a list of value constraints and the associated facet counts 
@@ -836,7 +829,11 @@ public class SimpleFacets {
             return result;
           } catch (SolrException se) {
             throw se;
-          } catch (Exception e) {
+          } 
+          catch(ExitableDirectoryReader.ExitingReaderException timeout) {
+            throw timeout;
+          }
+          catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR,
                                     "Exception during facet.field: " + facetValue, e);
           } finally {
@@ -871,22 +868,39 @@ public class SimpleFacets {
   }
 
   /**
-   * Computes the term-&gt;count counts for the specified term values relative to the 
+   * Computes the term-&gt;count counts for the specified term values relative to the
+   *
    * @param field the name of the field to compute term counts against
    * @param parsed contains the docset to compute term counts relative to
-   * @param terms a list of term values (in the specified field) to compute the counts for 
+   * @param terms a list of term values (in the specified field) to compute the counts for
    */
-  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms) throws IOException {
-    SchemaField sf = searcher.getSchema().getField(field);
-    FieldType ft = sf.getType();
-    NamedList<Integer> res = new NamedList<>();
-    for (String term : terms) {
-      int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
-      res.add(term, count);
+  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms)
+      throws IOException {
+    final String sort = parsed.params.getFieldParam(field, FacetParams.FACET_SORT, "empty");
+    final SchemaField sf = searcher.getSchema().getField(field);
+    final FieldType ft = sf.getType();
+    final DocSet baseDocset = parsed.docs;
+    final NamedList<Integer> res = new NamedList<>();
+    Stream<String> inputStream = terms.stream();
+    if (sort.equals(FacetParams.FACET_SORT_INDEX)) { // it might always make sense
+      inputStream = inputStream.sorted();
     }
-    return res;    
+    Stream<SimpleImmutableEntry<String,Integer>> termCountEntries = inputStream
+        .map((term) -> new SimpleImmutableEntry<>(term, numDocs(term, sf, ft, baseDocset)));
+    if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
+      termCountEntries = termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+    }
+    termCountEntries.forEach(e -> res.add(e.getKey(), e.getValue()));
+    return res;
   }
 
+  private int numDocs(String term, final SchemaField sf, final FieldType ft, final DocSet baseDocset) {
+    try {
+      return searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
+    } catch (IOException e1) {
+      throw new RuntimeException(e1);
+    }
+  }
 
   /**
    * Returns a count of the documents in the set which do not have any 
@@ -946,9 +960,6 @@ public class SimpleFacets {
     IndexSchema schema = searcher.getSchema();
     FieldType ft = schema.getFieldType(field);
     assert !ft.isPointField(): "Point Fields don't support enum method";
-    
-    LeafReader r = searcher.getSlowAtomicReader();
-    
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");
     final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;
@@ -965,7 +976,7 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Terms terms = r.terms(field);
+    Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
@@ -1011,7 +1022,7 @@ public class SimpleFacets {
               if (deState == null) {
                 deState = new SolrIndexSearcher.DocsEnumState();
                 deState.fieldName = field;
-                deState.liveDocs = r.getLiveDocs();
+                deState.liveDocs = searcher.getLiveDocsBits();
                 deState.termsEnum = termsEnum;
                 deState.postingsEnum = postingsEnum;
               }

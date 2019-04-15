@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -180,7 +180,7 @@ public class StatsField {
   }
 
   /**
-   * the equivilent stats if "calcdistinct" is specified
+   * the equivalent stats if "calcdistinct" is specified
    * @see Stat#countDistinct
    * @see Stat#distinctValues
    */
@@ -639,7 +639,7 @@ public class StatsField {
       final NumberType hashableNumType = getHashableNumericType(field);
 
       // some sane defaults
-      int log2m = 13;   // roughly equivilent to "cardinality='0.33'"
+      int log2m = 13;   // roughly equivalent to "cardinality='0.33'"
       int regwidth = 6; // with decent hash, this is plenty for all valid long hashes
 
       if (NumberType.FLOAT.equals(hashableNumType) || NumberType.INTEGER.equals(hashableNumType)) {

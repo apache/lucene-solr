@@ -32,16 +32,16 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
-import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -292,7 +292,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
 
-    static final class BloomFilteredTermsEnum extends TermsEnum {
+    static final class BloomFilteredTermsEnum extends BaseTermsEnum {
       private Terms delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;
@@ -375,8 +375,8 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-        return delegate().impacts(scorer, flags);
+      public ImpactsEnum impacts(int flags) throws IOException {
+        return delegate().impacts(flags);
       }
     }
 

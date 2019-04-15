@@ -27,8 +27,9 @@
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <str name="urlScheme">${urlScheme:}</str>
-    <int name="socketTimeout">${socketTimeout:90000}</int>
+    <int name="socketTimeout">${socketTimeout:15000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
+    <str name="shardsWhitelist">${solr.tests.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
   <transientCoreCacheFactory name="transientCoreCacheFactory" class="TransientSolrCoreCacheFactoryDefault">
@@ -40,12 +41,12 @@
     <str name="host">127.0.0.1</str>
     <int name="hostPort">${hostPort:8983}</int>
     <str name="hostContext">${hostContext:solr}</str>
-    <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
+    <int name="zkClientTimeout">${solr.zkclienttimeout:60000}</int> <!-- This should be high by default - dc's are expensive -->
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
-    <int name="leaderVoteWait">${leaderVoteWait:10000}</int>
-    <int name="leaderConflictResolveWait">${leaderConflictResolveWait:180000}</int>
-    <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
-    <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>
+    <int name="leaderVoteWait">${leaderVoteWait:15000}</int>   <!-- We are running tests - the default should be low, not like production -->
+    <int name="leaderConflictResolveWait">${leaderConflictResolveWait:45000}</int> 
+    <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:5000}</int>
+    <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:30000}</int> <!-- We are running tests - the default should be low, not like production -->
     <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
     <int name="autoReplicaFailoverWorkLoopDelay">${autoReplicaFailoverWorkLoopDelay:10000}</int>
     <int name="autoReplicaFailoverBadNodeExpiration">${autoReplicaFailoverBadNodeExpiration:60000}</int>

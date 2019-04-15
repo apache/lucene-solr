@@ -18,12 +18,10 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -62,12 +60,35 @@ public abstract class Weight implements SegmentCacheable {
   }
 
   /**
-   * Expert: adds all terms occurring in this query to the terms set. If the
-   * {@link Weight} was created with {@code needsScores == true} then this
-   * method will only extract terms which are used for scoring, otherwise it
-   * will extract all terms which are used for matching.
+   * Returns {@link Matches} for a specific document, or {@code null} if the document
+   * does not match the parent query
+   *
+   * A query match that contains no position information (for example, a Point or
+   * DocValues query) will return {@link MatchesUtils#MATCH_WITH_NO_TERMS}
+   *
+   * @param context the reader's context to create the {@link Matches} for
+   * @param doc     the document's id relative to the given context's reader
+   * @lucene.experimental
    */
-  public abstract void extractTerms(Set<Term> terms);
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    ScorerSupplier scorerSupplier = scorerSupplier(context);
+    if (scorerSupplier == null) {
+      return null;
+    }
+    Scorer scorer = scorerSupplier.get(1);
+    final TwoPhaseIterator twoPhase = scorer.twoPhaseIterator();
+    if (twoPhase == null) {
+      if (scorer.iterator().advance(doc) != doc) {
+        return null;
+      }
+    }
+    else {
+      if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
+        return null;
+      }
+    }
+    return MatchesUtils.MATCH_WITH_NO_TERMS;
+  }
 
   /**
    * An explanation of the score computation for the named document.

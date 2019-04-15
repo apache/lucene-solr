@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,6 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
@@ -158,7 +158,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch.get(), SI_ID);
-      final byte[] id = Arrays.copyOfRange(scratch.bytes(), SI_ID.length, scratch.length());
+      final byte[] id = ArrayUtil.copyOfSubArray(scratch.bytes(), SI_ID.length, scratch.length());
       
       if (!Arrays.equals(segmentID, id)) {
         throw new CorruptIndexException("file mismatch, expected: " + StringHelper.idToString(segmentID)
@@ -304,8 +304,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
       SimpleTextUtil.checkFooter(input);
 
       SegmentInfo info = new SegmentInfo(directory, version, minVersion, segmentName, docCount,
-                                         isCompoundFile, null, Collections.unmodifiableMap(diagnostics),
-                                         id, Collections.unmodifiableMap(attributes), indexSort);
+                                         isCompoundFile, null, diagnostics, id, attributes, indexSort);
       info.setFiles(files);
       return info;
     }

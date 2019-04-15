@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -33,17 +35,20 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkDistributedQueueFactory;
@@ -51,7 +56,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -59,7 +66,6 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 @LuceneTestCase.Slow
@@ -83,10 +89,45 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
+  public void testCreateCollection() throws Exception  {
+    String commands =  "{ set-cluster-policy: [ {cores: '0', node: '#ANY'} ] }"; // disallow replica placement anywhere
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+    String collectionName = "testCreateCollection";
+    HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class,
+        () -> CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient()));
+
+    assertTrue(exp.getMessage().contains("No node can satisfy the rules"));
+    assertTrue(exp.getMessage().contains("AutoScaling.error.diagnostics"));
+
+    // wait for a while until we don't see the collection
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
+    boolean removed = false;
+    while (! timeout.hasTimedOut()) {
+      timeout.sleep(100);
+      removed = !cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collectionName);
+      if (removed) {
+        timeout.sleep(500); // just a bit of time so it's more likely other
+        // readers see on return
+        break;
+      }
+    }
+    if (!removed) {
+      fail("Collection should have been deleted from cluster state but still exists: " + collectionName);
+    }
+
+    commands =  "{ set-cluster-policy: [ {cores: '<2', node: '#ANY'} ] }";
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+    SolrClientCloudManager scm = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getSolrClient().getZkStateReader().getZkClient()), cluster.getSolrClient());
+    Policy.Session session = scm.getDistribStateManager().getAutoScalingConfig().getPolicy().createSession(scm);
+    System.out.println(Utils.writeJson(PolicyHelper.getDiagnostics(session), new StringWriter(), true).toString());
+
+  }
+
   public void testDataProviderPerReplicaDetails() throws Exception {
     CollectionAdminRequest.createCollection("perReplicaDataColl", "conf", 1, 5)
         .process(cluster.getSolrClient());
-
+    cluster.waitForActiveCollection("perReplicaDataColl", 1, 5);
     DocCollection coll = getCollectionState("perReplicaDataColl");
     String autoScaleJson = "{" +
         "  'cluster-preferences': [" +
@@ -106,14 +147,30 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "  }" +
         "}";
     AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
+    AtomicInteger count = new AtomicInteger(0);
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
+    String nodeName = cloudManager.getClusterStateProvider().getLiveNodes().iterator().next();
+    SolrClientNodeStateProvider nodeStateProvider = (SolrClientNodeStateProvider) cloudManager.getNodeStateProvider();
+    Map<String, Map<String, List<ReplicaInfo>>> result = nodeStateProvider.getReplicaInfo(nodeName, Collections.singleton("UPDATE./update.requests"));
+    nodeStateProvider.forEachReplica(nodeName, replicaInfo -> {
+      if (replicaInfo.getVariables().containsKey("UPDATE./update.requests")) count.incrementAndGet();
+    });
+    assertTrue(count.get() > 0);
+
     Policy.Session session = config.getPolicy().createSession(cloudManager);
 
-    AtomicInteger count = new AtomicInteger(0);
-    for (Row row : session.getSorted()) {
+    for (Row row : session.getSortedNodes()) {
+      Object val = row.getVal(Type.TOTALDISK.tagName, null);
+      log.info("node: {} , totaldisk : {}, freedisk : {}", row.node, val, row.getVal("freedisk",null));
+      assertTrue(val != null);
+
+    }
+
+    count .set(0);
+    for (Row row : session.getSortedNodes()) {
       row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
         for (ReplicaInfo replicaInfo : replicaInfos) {
-          if (replicaInfo.getVariables().containsKey(Suggestion.ConditionType.CORE_IDX.tagName)) count.incrementAndGet();
+          if (replicaInfo.getVariables().containsKey(Type.CORE_IDX.tagName)) count.incrementAndGet();
         }
       }));
     }
@@ -128,7 +185,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     int port = jetty.getLocalPort();
 
     String commands =  "{set-policy :{c1 : [{replica:0 , shard:'#EACH', port: '!" + port + "'}]}}";
-    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
@@ -156,14 +213,14 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     int secondNodePort = secondNode.getLocalPort();
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + firstNodePort + "'}, {replica:1, shard:'#EACH', port:'" + secondNodePort + "'}]}}";
-    NamedList<Object> response = cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    NamedList<Object> response = cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     assertEquals("success", response.get("result"));
 
     String collectionName = "testCreateCollectionSplitShard";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPolicy("c1")
         .process(cluster.getSolrClient());
-
+    cluster.waitForActiveCollection(collectionName, 1, 2);
     DocCollection docCollection = getCollectionState(collectionName);
     List<Replica> list = docCollection.getReplicas(firstNode.getNodeName());
     int replicasOnNode1 = list != null ? list.size() : 0;
@@ -199,7 +256,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "      {'metrics:abc':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     try {
       solrClient.request(req);
       fail("expected exception");
@@ -215,7 +272,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "      {'metrics:solr.node:ADMIN./admin/authorization.clientErrors:count':'>58768765', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     //org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
@@ -258,7 +315,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         "]}";
 
 
-    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
         Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
@@ -268,7 +325,10 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection("policiesTest", 1, 3);
 
     DocCollection coll = getCollectionState("policiesTest");
 
@@ -294,6 +354,9 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     CollectionAdminRequest.createShard("policiesTest", "s3").
         process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection("policiesTest", 2, 6);
+    
     coll = getCollectionState("policiesTest");
     assertEquals(3, coll.getSlice("s3").getReplicas().size());
     coll.forEachReplica(verifyReplicas);
@@ -304,7 +367,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     int port = jetty.getLocalPort();
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
-    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    cluster.getSolrClient().request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));
@@ -325,15 +388,20 @@ public class TestPolicyCloud extends SolrCloudTestCase {
   public void testDataProvider() throws IOException, SolrServerException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection("policiesTest", 1, 2);
+    
     DocCollection rulesCollection = getCollectionState("policiesTest");
 
     try (SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient())) {
       Map<String, Object> val = cloudManager.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
           "freedisk",
           "cores",
+          "host",
           "heapUsage",
           "sysLoadAvg"));
       assertNotNull(val.get("freedisk"));
+      assertNotNull(val.get("host"));
       assertNotNull(val.get("heapUsage"));
       assertNotNull(val.get("sysLoadAvg"));
       assertTrue(((Number) val.get("cores")).intValue() > 0);

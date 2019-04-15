@@ -335,76 +335,53 @@ public class TestRealTimeGet extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    long version = addAndGetVersion(sdoc("id","1") , null);
+    final long version = addAndGetVersion(sdoc("id","1") , null);
     long version2;
 
-    try {
-      // try version added directly on doc
-      version2 = addAndGetVersion(sdoc("id","1", "_version_", Long.toString(version-1)), null);
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try version added directly on doc
+    SolrException se = expectThrows(SolrException.class, "version should cause an error",
+        () -> addAndGetVersion(sdoc("id","1", "_version_", Long.toString(version-1)), null));
+    assertEquals("version should cause a conflict", 409, se.code());
 
-    try {
-      // try version added as a parameter on the request
-      version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version-1)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try version added as a parameter on the request
+    se = expectThrows(SolrException.class, "version should cause an error",
+        () -> addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version-1))));
+    assertEquals("version should cause a conflict", 409, se.code());
 
-    try {
-      // try an add specifying a negative version
-      version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(-version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try an add specifying a negative version
+    se = expectThrows(SolrException.class, "negative version should cause a conflict",
+        () -> addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(-version))));
+    assertEquals("version should cause a conflict", 409, se.code());
 
-    try {
-      // try an add with a greater version
-      version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version+random().nextInt(1000)+1)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try an add with a greater version
+    se = expectThrows(SolrException.class, "greater version should cause a conflict",
+        () -> addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version+random().nextInt(1000)+1))));
+    assertEquals("version should cause a conflict", 409, se.code());
 
     //
     // deletes
     //
 
-    try {
-      // try a delete with version on the request
-      version2 = deleteAndGetVersion("1", params("_version_", Long.toString(version-1)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try a delete with version on the request
+    se = expectThrows(SolrException.class, "version should cause an error",
+        () -> deleteAndGetVersion("1", params("_version_", Long.toString(version-1))));
+    assertEquals("version should cause a conflict", 409, se.code());
 
-    try {
-      // try a delete with a negative version
-      version2 = deleteAndGetVersion("1", params("_version_", Long.toString(-version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try a delete with a negative version
+    se = expectThrows(SolrException.class, "negative version should cause an error",
+        () -> deleteAndGetVersion("1", params("_version_", Long.toString(-version))));
+    assertEquals("version should cause a conflict", 409, se.code());
 
-    try {
-      // try a delete with a greater version
-      version2 = deleteAndGetVersion("1", params("_version_", Long.toString(version+random().nextInt(1000)+1)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try a delete with a greater version
+    se = expectThrows(SolrException.class, "greater version should cause an error",
+        () -> deleteAndGetVersion("1", params("_version_", Long.toString(version+random().nextInt(1000)+1))));
+    assertEquals("version should cause a conflict", 409, se.code());
 
-    try {
-      // try a delete of a document that doesn't exist, specifying a specific version
-      version2 = deleteAndGetVersion("I_do_not_exist", params("_version_", Long.toString(version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try a delete of a document that doesn't exist, specifying a specific version
+    se = expectThrows(SolrException.class, "document does not exist should cause an error",
+        () -> deleteAndGetVersion("I_do_not_exist", params("_version_", Long.toString(version))));
+    assertEquals("version should cause a conflict", 409, se.code());
+
 
     // try a delete of a document that doesn't exist, specifying that it should not
     version2 = deleteAndGetVersion("I_do_not_exist", params("_version_", Long.toString(-1)));
@@ -414,56 +391,44 @@ public class TestRealTimeGet extends TestRTGBase {
     version2 = addAndGetVersion(sdoc("id","1", "_version_", Long.toString(version)), null);
     assertTrue(version2 > version);
 
-    try {
-      // overwriting the previous version should now fail
-      version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // overwriting the previous version should now fail
+    se = expectThrows(SolrException.class, "overwriting previous version should fail",
+        () -> addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version))));
+    assertEquals(409, se.code());
 
-    try {
-      // deleting the previous version should now fail
-      version2 = deleteAndGetVersion("1", params("_version_", Long.toString(version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // deleting the previous version should now fail
+    se = expectThrows(SolrException.class, "deleting the previous version should now fail",
+        () -> deleteAndGetVersion("1", params("_version_", Long.toString(version))));
+    assertEquals(409, se.code());
 
-    version = version2;
+    final long prevVersion = version2;
 
     // deleting the current version should work
-    version2 = deleteAndGetVersion("1", params("_version_", Long.toString(version)));
+    version2 = deleteAndGetVersion("1", params("_version_", Long.toString(prevVersion)));
 
-    try {
-      // overwriting the previous existing doc should now fail (since it was deleted)
-      version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // overwriting the previous existing doc should now fail (since it was deleted)
+    se = expectThrows(SolrException.class, "overwriting the previous existing doc should now fail (since it was deleted)",
+        () -> addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(prevVersion))));
+    assertEquals(409, se.code());
 
-    try {
-      // deleting the previous existing doc should now fail (since it was deleted)
-      version2 = deleteAndGetVersion("1", params("_version_", Long.toString(version)));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // deleting the previous existing doc should now fail (since it was deleted)
+    se = expectThrows(SolrException.class, "deleting the previous existing doc should now fail (since it was deleted)",
+        () -> deleteAndGetVersion("1", params("_version_", Long.toString(prevVersion))));
+    assertEquals(409, se.code());
 
     // overwriting a negative version should work
-    version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(-(version-1))));
+    version2 = addAndGetVersion(sdoc("id","1"), params("_version_", Long.toString(-(prevVersion-1))));
     assertTrue(version2 > version);
-    version = version2;
+    long lastVersion = version2;
 
     // sanity test that we see the right version via rtg
     assertJQ(req("qt","/get","id","1")
-        ,"=={'doc':{'id':'1','_version_':" + version + "}}"
+        ,"=={'doc':{'id':'1','_version_':" + lastVersion + "}}"
     );
   }
 
 
-    /***
+  /***
     @Test
     public void testGetRealtime() throws Exception {
       SolrQueryRequest sr1 = req("q","foo");
@@ -626,12 +591,9 @@ public class TestRealTimeGet extends TestRTGBase {
                   if (correct) {
                     version = deleteAndGetVersion(Integer.toString(id), params("_version_", Long.toString(info.version)));
                   } else {
-                    try {
-                      version = deleteAndGetVersion(Integer.toString(id), params("_version_", Long.toString(badVersion)));
-                      fail();
-                    } catch (SolrException se) {
-                      assertEquals(409, se.code());
-                    }
+                    SolrException se = expectThrows(SolrException.class, "should not get random version",
+                        () -> deleteAndGetVersion(Integer.toString(id), params("_version_", Long.toString(badVersion))));
+                    assertEquals(409, se.code());
                   }
                 } else {
                   version = deleteAndGetVersion(Integer.toString(id), null);
@@ -674,12 +636,9 @@ public class TestRealTimeGet extends TestRTGBase {
                   if (correct) {
                     version = addAndGetVersion(sd, params("_version_", Long.toString(info.version)));
                   } else {
-                    try {
-                      version = addAndGetVersion(sd, params("_version_", Long.toString(badVersion)));
-                      fail();
-                    } catch (SolrException se) {
-                      assertEquals(409, se.code());
-                    }
+                    SolrException se = expectThrows(SolrException.class, "should not get bad version",
+                        () -> addAndGetVersion(sd, params("_version_", Long.toString(badVersion))));
+                    assertEquals(409, se.code());
                   }
                 } else {
                   version = addAndGetVersion(sd, null);

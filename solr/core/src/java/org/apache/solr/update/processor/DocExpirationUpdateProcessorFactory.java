@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -470,12 +472,13 @@ public final class DocExpirationUpdateProcessorFactory
     CloudDescriptor desc = core.getCoreDescriptor().getCloudDescriptor();
     String col = desc.getCollectionName();
 
-    List<Slice> slices = new ArrayList<Slice>(zk.getClusterState().getCollection(col).getActiveSlices());
-    Collections.sort(slices, COMPARE_SLICES_BY_NAME);
-    if (slices.isEmpty()) {
+    DocCollection docCollection = zk.getClusterState().getCollection(col);
+    if (docCollection.getActiveSlicesArr().length == 0) {
       log.error("Collection {} has no active Slices?", col);
       return false;
     }
+    List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
+    Collections.sort(slices, COMPARE_SLICES_BY_NAME);
     Replica firstSliceLeader = slices.get(0).getLeader();
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader",

@@ -161,7 +161,7 @@
         <plugin>
           <groupId>de.thetaphi</groupId>
           <artifactId>forbiddenapis</artifactId>
-          <version>2.4.1</version>
+          <version>2.6</version>
           <configuration>
             <!--
               This is the default setting, we don't support too new Java versions.
@@ -191,6 +191,10 @@
           <configuration>
             <source>${java.compat.version}</source>
             <target>${java.compat.version}</target>
+            <compilerArgs>
+              <!-- -proc:none was added because of LOG4J2-1925, JDK-8186647, https://github.com/apache/zookeeper/pull/317, JDK-8055048 -->
+              <arg>-proc:none</arg>
+            </compilerArgs>
           </configuration>
         </plugin>
         <plugin>

@@ -26,9 +26,9 @@ There are many hundreds of changes in Solr 7, however, so a thorough review of t
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 6.2, you should review changes made in all subsequent 6.x releases in addition to changes for 7.0.
 
-Re-indexing your data is considered the best practice and you should try to do so if possible. However, if re-indexing is not feasible, keep in mind you can only upgrade one major version at a time. Thus, Solr 6.x indexes will be compatible with Solr 7 but Solr 5.x indexes will not be.
+<<reindexing.adoc#upgrades,Reindexing>> your data is considered the best practice and you should try to do so if possible. However, if reindexing is not feasible, keep in mind you can only upgrade one major version at a time. Thus, Solr 6.x indexes will be compatible with Solr 7 but Solr 5.x indexes will not be.
 
-If you do not re-index now, keep in mind that you will need to either re-index your data or upgrade your indexes before you will be able to move to Solr 8 when it is released in the future. See the section <<indexupgrader-tool.adoc#indexupgrader-tool,IndexUpgrader Tool>> for more details on how to upgrade your indexes.
+If you do not reindex now, keep in mind that you will need to either reindex your data or upgrade your indexes before you will be able to move to Solr 8 when it is released in the future. See the section <<indexupgrader-tool.adoc#indexupgrader-tool,IndexUpgrader Tool>> for more details on how to upgrade your indexes.
 
 See also the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>> for details on how to upgrade a SolrCloud cluster.
 
@@ -131,7 +131,7 @@ The `qt` parameter is still used as a SolrJ special parameter that specifies the
 === Point Fields Are Default Numeric Types
 Solr has implemented \*PointField types across the board, to replace Trie* based numeric fields. All Trie* fields are now considered deprecated, and will be removed in Solr 8.
 
-If you are using Trie* fields in your schema, you should consider moving to PointFields as soon as feasible. Changing to the new PointField types will require you to re-index your data.
+If you are using Trie* fields in your schema, you should consider moving to PointFields as soon as feasible. Changing to the new PointField types will require you to reindex your data.
 
 === Spatial Fields
 
@@ -167,7 +167,7 @@ The following changes were made in SolrJ.
 * `HttpClientInterceptorPlugin` is now `HttpClientBuilderPlugin` and must work with a `SolrHttpClientBuilder` rather than an `HttpClientConfigurer`.
 * `HttpClientUtil` now allows configuring `HttpClient` instances via `SolrHttpClientBuilder` rather than an `HttpClientConfigurer`. Use of env variable `SOLR_AUTHENTICATION_CLIENT_CONFIGURER` no longer works, please use `SOLR_AUTHENTICATION_CLIENT_BUILDER`
 * `SolrClient` implementations now use their own internal configuration for socket timeouts, connect timeouts, and allowing redirects rather than what is set as the default when building the `HttpClient` instance. Use the appropriate setters on the `SolrClient` instance.
-* `HttpSolrClient#setAllowCompression` has been removed and compression must be enabled as a constructor param.
+* `HttpSolrClient#setAllowCompression` has been removed and compression must be enabled as a constructor parameter.
 * `HttpSolrClient#setDefaultMaxConnectionsPerHost` and `HttpSolrClient#setMaxTotalConnections` have been removed. These now default very high and can only be changed via parameter when creating an HttpClient instance.
 
 === Other Deprecations and Removals
@@ -187,7 +187,7 @@ Note again that this is not a complete list of all changes that may impact your 
 
 * The Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
 * JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any `mincount` greater than 1.
-* If you use historical dates, specifically on or before the year 1582, you should re-index for better date handling.
+* If you use historical dates, specifically on or before the year 1582, you should reindex for better date handling.
 * If you use the JSON Facet API (json.facet) with `method=stream`, you must now set `sort='index asc'` to get the streaming behavior; otherwise it won't stream. Reminder: `method` is a hint that doesn't change defaults of other parameters.
 * If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use `mincount=0` or if you set the prefix, you will now get an error as these options are incompatible with numeric faceting.
 * Solr's logging verbosity at the INFO level has been greatly reduced, and you may need to update the log configs to use the DEBUG level to see all the logging messages you used to see at INFO level before.

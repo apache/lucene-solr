@@ -25,7 +25,6 @@ import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -412,10 +411,10 @@ final class DocumentsWriterDeleteQueue implements Accountable {
       for (DocValuesUpdate update : item) {
         switch (update.type) {
           case NUMERIC:
-            bufferedUpdates.addNumericUpdate(new NumericDocValuesUpdate(update.term, update.field, (Long) update.value), docIDUpto);
+            bufferedUpdates.addNumericUpdate((NumericDocValuesUpdate) update, docIDUpto);
             break;
           case BINARY:
-            bufferedUpdates.addBinaryUpdate(new BinaryDocValuesUpdate(update.term, update.field, (BytesRef) update.value), docIDUpto);
+            bufferedUpdates.addBinaryUpdate((BinaryDocValuesUpdate) update, docIDUpto);
             break;
           default:
             throw new IllegalArgumentException(update.type + " DocValues updates not supported yet!");
@@ -436,7 +435,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
       if (item.length > 0) {
         sb.append("term=").append(item[0].term).append("; updates: [");
         for (DocValuesUpdate update : item) {
-          sb.append(update.field).append(':').append(update.value).append(',');
+          sb.append(update.field).append(':').append(update.valueToString()).append(',');
         }
         sb.setCharAt(sb.length()-1, ']');
       }
@@ -470,7 +469,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return globalBufferedUpdates.bytesUsed.get();
+    return globalBufferedUpdates.ramBytesUsed();
   }
 
   @Override

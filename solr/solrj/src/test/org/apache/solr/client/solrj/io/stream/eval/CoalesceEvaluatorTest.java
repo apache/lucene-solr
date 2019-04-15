@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class CoalesceEvaluatorTest extends LuceneTestCase {
+public class CoalesceEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -34,6 +33,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -281,11 +281,6 @@ public class GraphQuery extends Query {
     public boolean isCacheable(LeafReaderContext ctx) {
       return true;
     }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      // NoOp for now , not used.. / supported
-    }
     
   }
   
@@ -441,5 +436,10 @@ public class GraphQuery extends Query {
            Objects.equals(toField, other.toField) &&
            Objects.equals(traversalFilter, other.traversalFilter);
   }
-  
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
 }

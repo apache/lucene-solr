@@ -26,8 +26,10 @@ import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -50,42 +52,51 @@ public @interface LogLevel {
    */
   public String value();
 
-  @SuppressForbidden(reason="Specific to Log4J")
+  @SuppressForbidden(reason="Specific to Log4J2")
   public static class Configurer {
 
     private static Map<String, Level> parseFrom(String input) {
       Map<String, Level> testlevels = new HashMap<>();
       for (String levelSetting : input.split(";")) {
         String[] parts = levelSetting.split("=");
-        testlevels.put(parts[0], Level.toLevel(parts[1]));
+        testlevels.put(parts[0], parseLevel(parts[1]));
       }
       return testlevels;
-    }
-
-    private static String levelAsString(Level level) {
-      return level == null ? null : level.toString();
     }
 
     private static Level parseLevel(String level) {
       return level == null ? null : Level.toLevel(level);
     }
 
-    public static void restoreLogLevels(Map<String, String> savedLogLevels) {
-      savedLogLevels.forEach((name, level) -> {
-        Logger logger = Logger.getLogger(name);
-        logger.setLevel(parseLevel(level));
-      });
+    public static void restoreLogLevels(Map<String, Level> savedLogLevels) {
+      setLogLevels(savedLogLevels);
     }
 
-    public static Map<String, String> setLevels(String value) {
-      Map<String, String> oldLevels = new HashMap<>();
-      parseFrom(value).forEach((name, level) -> {
-        Logger logger = Logger.getLogger(name);
-        oldLevels.put(name, levelAsString(logger.getLevel()));
-        logger.setLevel(level);
+    public static Map<String, Level> setLevels(String value) {
+      return setLogLevels(parseFrom(value));
+    }
+
+    private static Map<String, Level> setLogLevels(Map<String, Level> logLevels) {
+      LoggerContext ctx = LoggerContext.getContext(false);
+      Configuration config = ctx.getConfiguration();
+
+      Map<String, Level> oldLevels = new HashMap<>();
+      logLevels.forEach((loggerName, level) -> {
+        LoggerConfig logConfig = config.getLoggerConfig(loggerName);
+        // what the initial logger level was. It will use the root value if logger is being defined for the first time
+        oldLevels.put(loggerName, logConfig.getLevel());
+        if (loggerName.equals(logConfig.getName())) {
+          logConfig.setLevel(level);
+        } else {
+          LoggerConfig loggerConfig = new LoggerConfig(loggerName, level, true);
+          loggerConfig.setLevel(level);
+          config.addLogger(loggerName, loggerConfig);
+        }
       });
+      ctx.updateLoggers();
       return oldLevels;
     }
+
   }
 
 }

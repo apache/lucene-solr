@@ -31,7 +31,7 @@ import org.apache.lucene.util.automaton.RegExp;
 /**
  * This tokenizer uses a Lucene {@link RegExp} or (expert usage) a pre-built determinized {@link Automaton}, to locate tokens.
  * The regexp syntax is more limited than {@link PatternTokenizer}, but the tokenization is quite a bit faster.  This is just
- * like {@link SimplePatternTokenizer} except that the pattern shold make valid token separator characters, like
+ * like {@link SimplePatternTokenizer} except that the pattern should make valid token separator characters, like
  * {@code String.split}.  Empty string tokens are never produced.
  *
  * @lucene.experimental

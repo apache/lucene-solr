@@ -25,88 +25,174 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
+ * Tests {@link ContentStream} such as "stream.file".
  */
-public class ContentStreamTest extends SolrTestCaseJ4 
-{  
-  public void testStringStream() throws IOException 
-  {
+public class ContentStreamTest extends SolrTestCaseJ4 {
+
+  public void testStringStream() throws IOException {
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
-    ContentStreamBase stream = new ContentStreamBase.StringStream( input );
-    assertEquals( input.length(), stream.getSize().intValue() );
-    assertEquals( input, IOUtils.toString( stream.getStream(), "UTF-8" ) );
-    assertEquals( input, IOUtils.toString( stream.getReader() ) );
+    ContentStreamBase stream = new ContentStreamBase.StringStream(input);
+    assertEquals(input.length(), stream.getSize().intValue());
+    assertEquals(input, IOUtils.toString(stream.getStream(), "UTF-8"));
+    assertEquals(input, IOUtils.toString(stream.getReader()));
   }
 
-  public void testFileStream() throws IOException 
-  {
-    File file = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader();
-         InputStream is = loader.openResource( "solrj/README" )) {
+  public void testFileStream() throws IOException {
+    File file = new File(createTempDir().toFile(), "README");
+    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
+         FileOutputStream os = new FileOutputStream(file)) {
       assertNotNull(is);
-      file = new File(createTempDir().toFile(), "README");
-      try (FileOutputStream os = new FileOutputStream(file)) {
-        IOUtils.copy(is, os);
-      }
+      IOUtils.copy(is, os);
     }
 
     ContentStreamBase stream = new ContentStreamBase.FileStream(file);
-    InputStream s = stream.getStream();
-    FileInputStream fis = new FileInputStream(file);
-    InputStreamReader isr = new InputStreamReader(
-        new FileInputStream(file), StandardCharsets.UTF_8);
-    Reader r = stream.getReader();
-    try {
+    try (InputStream s = stream.getStream();
+         FileInputStream fis = new FileInputStream(file);
+         InputStreamReader isr = new InputStreamReader(
+             new FileInputStream(file), StandardCharsets.UTF_8);
+         Reader r = stream.getReader()) {
       assertEquals(file.length(), stream.getSize().intValue());
+      // Test the code that sets content based on < being the 1st character
+      assertEquals("application/xml", stream.getContentType());
       assertTrue(IOUtils.contentEquals(fis, s));
       assertTrue(IOUtils.contentEquals(isr, r));
-    } finally {
-      s.close();
-      r.close();
-      isr.close();
-      fis.close();
     }
   }
-  
 
-  public void testURLStream() throws IOException 
-  {
-    File file = null;
-    FileOutputStream os = null;
+  public void testFileStreamGZIP() throws IOException {
+    File file = new File(createTempDir().toFile(), "README.gz");
 
-    try (SolrResourceLoader loader = new SolrResourceLoader();
-         InputStream is = loader.openResource( "solrj/README" )) {
-      assertNotNull(is);
-      file = new File(createTempDir().toFile(), "README");
-      os = new FileOutputStream(file);
-      IOUtils.copy(is, os);
-      os.close();
-      is.close();
+    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
+         FileOutputStream os = new FileOutputStream(file);
+         GZIPOutputStream zos = new GZIPOutputStream(os)) {
+      IOUtils.copy(is, zos);
     }
-    
-    ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file
-        .toURI().toASCIIString()));
-    InputStream s = stream.getStream();
-    FileInputStream fis = new FileInputStream(file);
-    FileInputStream fis2 = new FileInputStream(file);
-    InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
-    Reader r = stream.getReader();
-    try {
+
+    ContentStreamBase stream = new ContentStreamBase.FileStream(file);
+    try (InputStream s = stream.getStream();
+         FileInputStream fis = new FileInputStream(file);
+         GZIPInputStream zis = new GZIPInputStream(fis);
+         InputStreamReader isr = new InputStreamReader(zis, StandardCharsets.UTF_8);
+         FileInputStream fis2 = new FileInputStream(file);
+         GZIPInputStream zis2 = new GZIPInputStream(fis2);
+         Reader r = stream.getReader()) {
+      assertEquals(file.length(), stream.getSize().intValue());
+      // Test the code that sets content based on < being the 1st character
+      assertEquals("application/xml", stream.getContentType());
+      assertTrue(IOUtils.contentEquals(isr, r));
+      assertTrue(IOUtils.contentEquals(zis2, s));
+    }
+  }
+
+  public void testURLStream() throws IOException {
+    File file = new File(createTempDir().toFile(), "README");
+
+    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
+         FileOutputStream os = new FileOutputStream(file)) {
+      IOUtils.copy(is, os);
+    }
+
+    ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+
+    try (InputStream s = stream.getStream();
+         FileInputStream fis = new FileInputStream(file);
+         FileInputStream fis2 = new FileInputStream(file);
+         InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+         Reader r = stream.getReader()) {
+      // For File URLs, the content type is determined automatically by the mime type
+      // associated with the file extension,
+      // This is inconsistent from the FileStream as that code tries to guess the content based on the 1st character.
+      //
+      // HTTP URLS, the content type is determined by the headers.  Those are not tested here.
+      //
+      assertEquals("text/html", stream.getContentType());
       assertTrue(IOUtils.contentEquals(fis2, s));
       assertEquals(file.length(), stream.getSize().intValue());
       assertTrue(IOUtils.contentEquals(isr, r));
       assertEquals(file.length(), stream.getSize().intValue());
-    } finally {
-      r.close();
-      s.close();
-      isr.close();
-      fis.close();
-      fis2.close();
+    }
+  }
+
+  public void testURLStreamGZIP() throws IOException {
+    File file = new File(createTempDir().toFile(), "README.gz");
+
+    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
+         FileOutputStream os = new FileOutputStream(file);
+         GZIPOutputStream zos = new GZIPOutputStream(os)) {
+      IOUtils.copy(is, zos);
+    }
+
+    ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+    try (InputStream s = stream.getStream();
+         FileInputStream fis = new FileInputStream(file);
+         GZIPInputStream zis = new GZIPInputStream(fis);
+         InputStreamReader isr = new InputStreamReader(zis, StandardCharsets.UTF_8);
+         FileInputStream fis2 = new FileInputStream(file);
+         GZIPInputStream zis2 = new GZIPInputStream(fis2);
+         Reader r = stream.getReader()) {
+      // See the non-GZIP test case for an explanation of header handling.
+      assertEquals("application/xml", stream.getContentType());
+      assertTrue(IOUtils.contentEquals(isr, r));
+      assertTrue(IOUtils.contentEquals(zis2, s));
+      assertEquals(file.length(), stream.getSize().intValue());
+    }
+  }
+
+  public void testURLStreamCSVGZIPExtention() throws IOException {
+    File file = new File(createTempDir().toFile(), "README.CSV.gz");
+
+    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
+         FileOutputStream os = new FileOutputStream(file);
+         GZIPOutputStream zos = new GZIPOutputStream(os)) {
+      IOUtils.copy(is, zos);
+    }
+
+    ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+    try (InputStream s = stream.getStream();
+         FileInputStream fis = new FileInputStream(file);
+         GZIPInputStream zis = new GZIPInputStream(fis);
+         InputStreamReader isr = new InputStreamReader(zis, StandardCharsets.UTF_8);
+         FileInputStream fis2 = new FileInputStream(file);
+         GZIPInputStream zis2 = new GZIPInputStream(fis2);
+         Reader r = stream.getReader()) {
+      // See the non-GZIP test case for an explanation of header handling.
+      assertEquals("text/csv", stream.getContentType());
+      assertTrue(IOUtils.contentEquals(isr, r));
+      assertTrue(IOUtils.contentEquals(zis2, s));
+      assertEquals(file.length(), stream.getSize().intValue());
+    }
+  }
+
+  public void testURLStreamJSONGZIPExtention() throws IOException {
+    File file = new File(createTempDir().toFile(), "README.json.gzip");
+
+    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
+         FileOutputStream os = new FileOutputStream(file);
+         GZIPOutputStream zos = new GZIPOutputStream(os)) {
+      IOUtils.copy(is, zos);
+    }
+
+    ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+    try (InputStream s = stream.getStream();
+         FileInputStream fis = new FileInputStream(file);
+         GZIPInputStream zis = new GZIPInputStream(fis);
+         InputStreamReader isr = new InputStreamReader(zis, StandardCharsets.UTF_8);
+         FileInputStream fis2 = new FileInputStream(file);
+         GZIPInputStream zis2 = new GZIPInputStream(fis2);
+         Reader r = stream.getReader()) {
+      // See the non-GZIP test case for an explanation of header handling.
+      assertEquals("application/json", stream.getContentType());
+      assertTrue(IOUtils.contentEquals(isr, r));
+      assertTrue(IOUtils.contentEquals(zis2, s));
+      assertEquals(file.length(), stream.getSize().intValue());
     }
   }
 }

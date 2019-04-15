@@ -20,12 +20,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -38,9 +37,9 @@ import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field; this class is public so users
  *  can cast it to call {@link #seekExact(BytesRef, long)} for
- *  optimistic-concurreny, and also {@link #getVersion} to get the
+ *  optimistic-concurrency, and also {@link #getVersion} to get the
  *  version of the currently seek'd term. */
-public final class IDVersionSegmentTermsEnum extends TermsEnum {
+public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
   // Lazy init:
   IndexInput in;
@@ -1009,10 +1008,10 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   }
 
   @Override
-  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+  public ImpactsEnum impacts(int flags) throws IOException {
     // Only one posting, the slow impl is fine
     // We could make this throw UOE but then CheckIndex is angry
-    return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
+    return new SlowImpactsEnum(postings(null, flags));
   }
 
   @Override

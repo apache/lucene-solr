@@ -52,6 +52,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
     String collection = "collection1";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
@@ -72,6 +73,59 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
       waitFor(2, () -> zkShardTerms.getTerms().size());
       assertArrayEquals(new Long[]{0L, 0L}, zkShardTerms.getTerms().values().toArray(new Long[2]));
+    }
+  }
+
+  @Test
+  public void testRecoveringFlag() {
+    String collection = "recoveringFlag";
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+      // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
+      zkShardTerms.registerTerm("replica1");
+      zkShardTerms.registerTerm("replica2");
+
+      // normal case when leader failed to send an update to replica
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      zkShardTerms.startRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 0);
+
+      zkShardTerms.doneRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica1"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      assertEquals(zkShardTerms.getTerm("replica1"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
+      zkShardTerms.startRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
+
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      assertEquals(zkShardTerms.getTerm("replica1"), 3);
+      assertEquals(zkShardTerms.getTerm("replica2"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
+
+      zkShardTerms.doneRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2"), 2);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
+      zkShardTerms.startRecovering("replica2");
+      zkShardTerms.doneRecovering("replica2");
+
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      zkShardTerms.startRecovering("replica2");
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
+      zkShardTerms.startRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica1"), 5);
+      assertEquals(zkShardTerms.getTerm("replica2"), 5);
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), 3);
+      zkShardTerms.doneRecovering("replica2");
+      assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
+
     }
   }
 

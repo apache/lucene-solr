@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.analytics.function.mapping.EqualFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValueStream;

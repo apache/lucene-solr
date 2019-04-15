@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -63,8 +62,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath());
+    createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
 
     collection1 = getHttpSolrClient(url + "/collection1");
@@ -105,6 +105,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     jetty.stop();
     jetty=null;
     resetExceptionIgnores();
+    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @Test
@@ -185,7 +186,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       } else if (random().nextBoolean()) {
         shards.remove(shard2);
       }
-      q.set("shards", StringUtils.join(shards, ","));
+      q.set("shards", String.join(",", shards));
 
 
       List<String> debug = new ArrayList<String>(10);
@@ -342,7 +343,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     response = client.query(query);
     assertNull(response.getDebugMap());
   }
-  
+
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testCompareWithNonDistributedRequest() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("id:1 OR id:2");

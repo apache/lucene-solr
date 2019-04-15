@@ -160,7 +160,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(0, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(0, searcher.count(new DocValuesFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -175,7 +175,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.count(new DocValuesFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -193,7 +193,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.count(new DocValuesFieldExistsQuery("f")));
     reader.close();
     dir.close();
   }
@@ -202,7 +202,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
-    assertEquals(td1.totalHits, td2.totalHits);
+    assertEquals(td1.totalHits.value, td2.totalHits.value);
     for (int i = 0; i < td1.scoreDocs.length; ++i) {
       assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);
       if (scores) {

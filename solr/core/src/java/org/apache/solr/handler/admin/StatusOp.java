@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -42,23 +41,18 @@ class StatusOp implements CoreAdminHandler.CoreAdminOp {
     for (Map.Entry<String, CoreContainer.CoreLoadFailure> failure : it.handler.coreContainer.getCoreInitFailures().entrySet()) {
       failures.put(failure.getKey(), failure.getValue().exception);
     }
-    try {
-      if (cname == null) {
-        for (String name : it.handler.coreContainer.getAllCoreNames()) {
-          status.add(name, CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));
-        }
-        it.rsp.add("initFailures", failures);
-      } else {
-        failures = failures.containsKey(cname)
-            ? Collections.singletonMap(cname, failures.get(cname))
-            : Collections.<String, Exception>emptyMap();
-        it.rsp.add("initFailures", failures);
-        status.add(cname, CoreAdminOperation.getCoreStatus(it.handler.coreContainer, cname, isIndexInfoNeeded));
+    if (cname == null) {
+      for (String name : it.handler.coreContainer.getAllCoreNames()) {
+        status.add(name, CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));
       }
-      it.rsp.add("status", status);
-    } catch (Exception ex) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error handling 'status' action ", ex);
+      it.rsp.add("initFailures", failures);
+    } else {
+      failures = failures.containsKey(cname)
+          ? Collections.singletonMap(cname, failures.get(cname))
+              : Collections.<String, Exception>emptyMap();
+          it.rsp.add("initFailures", failures);
+          status.add(cname, CoreAdminOperation.getCoreStatus(it.handler.coreContainer, cname, isIndexInfoNeeded));
     }
+    it.rsp.add("status", status);
   }
 }

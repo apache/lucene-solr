@@ -107,11 +107,11 @@ The `SOLR_PID_DIR` variable sets the directory where the <<solr-control-script-r
 
 ==== Log Settings
 
-Solr uses Apache Log4J for logging. The installation script copies `/opt/solr/server/resources/log4j.properties` to `/var/solr/log4j.properties`. Take a moment to verify that the Solr include file is configured to send logs to the correct location by checking the following settings in `/etc/default/solr.in.sh`:
+Solr uses Apache Log4J for logging. The installation script copies `/opt/solr/server/resources/log4j2.xml` to `/var/solr/log4j2.xml`. Take a moment to verify that the Solr include file is configured to send logs to the correct location by checking the following settings in `/etc/default/solr.in.sh`:
 
 [source,bash]
 ----
-LOG4J_PROPS=/var/solr/log4j.properties
+LOG4J_PROPS=/var/solr/log4j2.xml
 SOLR_LOGS_DIR=/var/solr/logs
 ----
 

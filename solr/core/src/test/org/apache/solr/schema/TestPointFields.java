@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -50,6 +51,7 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -65,15 +67,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.IndexSchema.DynamicField;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableMap;
 
 /** Tests for PointField functionality */
 public class TestPointFields extends SolrTestCaseJ4 {
@@ -2276,15 +2274,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("q", "*:*"), "//*[@numFound='10']");
     assertQ("Can't search on index=false docValues=false field", req("q", field + ":[* TO *]"), "//*[@numFound='0']");
-    IndexReader ir;
-    RefCounted<SolrIndexSearcher> ref = null;
-    try {
-      ref = h.getCore().getSearcher();
-      ir = ref.get().getIndexReader();
+    h.getCore().withSearcher(searcher -> {
+      IndexReader ir = searcher.getIndexReader();
       assertEquals("Field " + field + " should have no point values", 0, PointValues.size(ir, field));
-    } finally {
-      ref.decref();
-    }
+      return null;
+    });
   }
   
    
@@ -3743,14 +3737,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }
     assertU(commit());
-    IndexReader ir;
-    RefCounted<SolrIndexSearcher> ref = null;
+
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
     boolean ignoredField = !(sf.indexed() || sf.stored() || sf.hasDocValues());
-    try {
-      ref = h.getCore().getSearcher();
-      SolrIndexSearcher searcher = ref.get(); 
-      ir = searcher.getIndexReader();
+    h.getCore().withSearcher(searcher -> {
+      DirectoryReader ir = searcher.getIndexReader();
       // our own SlowCompositeReader to check DocValues on disk w/o the UninvertingReader added by SolrIndexSearcher
       final LeafReader leafReaderForCheckingDVs = SlowCompositeReaderWrapper.wrap(searcher.getRawReader());
       
@@ -3795,9 +3786,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
           }
         }
       }
-    } finally {
-      ref.decref();
-    }
+      return null;
+    });
     clearIndex();
     assertU(commit());
   }
@@ -3903,7 +3893,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     
     for (Object value : values) {
       // ideally we should require that all input values be diff forms of the same logical value
-      // (ie '"42"' vs 'new Integer(42)') and assert that each produces an equivilent list of IndexableField objects
+      // (ie '"42"' vs 'new Integer(42)') and assert that each produces an equivalent list of IndexableField objects
       // but that doesn't seem to work -- appears not all IndexableField classes override Object.equals?
       final List<IndexableField> result = callAndCheckCreateFields(fieldName, pointType, value);
       assertNotNull(value + " => null", result);

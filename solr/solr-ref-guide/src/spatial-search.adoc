@@ -109,7 +109,12 @@ When used with `BBoxField`, additional options are supported:
 
 === geofilt
 
-The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter `&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5`. This filter returns all results within a circle of the given radius around the initial point:
+The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter:
+
+[source,text]
+&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5
+
+This filter returns all results within a circle of the given radius around the initial point:
 
 image::images/spatial-search/circle.png[5KM radius]
 
@@ -296,11 +301,9 @@ Underlying Solr is the Spatial4j library which implements them.  To support othe
 The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computational geometry library with a Euclidean/cartesian (flat 2D) model.
 It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
 With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
-Unfortunately Solr cannot include JTS due to its LGPL license.
 You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
-You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/.
+You can readily download it here: http://central.maven.org/maven2/org/locationtech/jts/jts-core/1.15.0/.
 _It will not work if placed in other more typical Solr lib directories, unfortunately._
-JTS's license is expected to be transitioned to BSD by the end of 2017.
 
 Set the `spatialContextFactory` attribute on the field type to `JTS`.
 
@@ -372,10 +375,13 @@ When using this field type, you will likely _not_ want to mark the field as stor
 
 The RPT field supports generating a 2D grid of facet counts for documents having spatial data in each grid cell. For high-detail grids, this can be used to plot points, and for lesser detail it can be used for heatmap generation. The grid cells are determined at index-time based on RPT's configuration. At facet counting time, the indexed cells in the region of interest are traversed and a grid of counters corresponding to each cell are incremented. Solr can return the data in a straight-forward 2D array of integers or in a PNG which compresses better for larger data sets but must be decoded.
 
-The heatmap feature is accessed from Solr's faceting feature. As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do. This allows multiple heatmaps to be returned on the same field with different filters.
+The heatmap feature is accessible both from Solr's standard faceting feature, plus the newer more flexible <<json-facet-api.adoc#heatmap-facet,JSON Facet API>>.
+We'll proceed now with standard faceting.
+As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do.
+This allows multiple heatmaps to be returned on the same field with different filters.
 
 `facet`::
-Set to `true` to enable faceting.
+Set to `true` to enable standard faceting.
 
 `facet.heatmap`::
 The field name of type RPT.

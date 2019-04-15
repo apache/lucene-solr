@@ -60,6 +60,13 @@ public abstract class ReturnFields {
   public abstract Set<String> getRequestedFieldNames();
 
   /**
+   * The explicitly requested field names (includes pseudo fields)
+   * <p>
+   * @return Set of explicitly requested field names or <code>null</code> (no explict)
+   */
+  public abstract Set<String> getExplicitlyRequestedFieldNames();
+
+  /**
    * Get the fields which have been renamed
    * @return a mapping of renamed fields
    */
@@ -67,7 +74,7 @@ public abstract class ReturnFields {
 
   /** 
    * Returns <code>true</code> if the specified field should be returned <em>to the external client</em> 
-   * -- either using it's own name, or via an alias. 
+   * -- either using its own name, or via an alias. 
    * This method returns <code>false</code> even if the specified name is needed as an "extra" field
    * for use by transformers.
    */

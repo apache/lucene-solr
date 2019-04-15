@@ -145,6 +145,22 @@ public class SidedPlane extends Plane implements Membership {
    * Construct a sided plane with a normal vector and offset.
    *
    * @param p point to evaluate.
+   * @param vX is the normal vector X.
+   * @param vY is the normal vector Y.
+   * @param vZ is the normal vector Z.
+   * @param D is the origin offset for the plan.
+   */
+  public SidedPlane(Vector p, double vX, double vY, double vZ, double D) {
+    super(vX, vY, vZ, D);
+    sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
+  }
+
+  /**
+   * Construct a sided plane with a normal vector and offset.
+   *
+   * @param p point to evaluate.
    * @param v is the normal vector.
    * @param D is the origin offset for the plan.
    */
@@ -232,6 +248,30 @@ public class SidedPlane extends Plane implements Membership {
       return true;
     double sigNum = Math.signum(evalResult);
     return sigNum == this.sigNum;
+  }
+
+  /**
+   * Check whether a point is strictly within a plane.
+   * @param v is the point.
+   * @return true if within.
+   */
+  public boolean strictlyWithin(final Vector v) {
+    double evalResult = evaluate(v.x, v.y, v.z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
+  }
+
+  /**
+   * Check whether a point is strictly within a plane.
+   * @param x is the point x value.
+   * @param y is the point y value.
+   * @param z is the point z value.
+   * @return true if within.
+   */
+  public boolean strictlyWithin(double x, double y, double z) {
+    double evalResult = evaluate(x, y, z);
+    double sigNum = Math.signum(evalResult);
+    return sigNum == 0.0 || sigNum == this.sigNum;
   }
 
   @Override

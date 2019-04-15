@@ -27,11 +27,11 @@ import java.nio.file.Path;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
@@ -127,8 +127,7 @@ public final class FST<T> implements Accountable {
    *  GB then bytesArray is set instead. */
   final BytesStore bytes;
 
-  /** Used at read time when the FST fits into a single byte[]. */
-  final byte[] bytesArray;
+  private final FSTStore fstStore;
 
   private long startNode = -1;
 
@@ -238,7 +237,7 @@ public final class FST<T> implements Accountable {
     this.inputType = inputType;
     this.outputs = outputs;
     version = VERSION_CURRENT;
-    bytesArray = null;
+    fstStore = null;
     bytes = new BytesStore(bytesPageBits);
     // pad: ensure no node gets address 0 which is reserved to mean
     // the stop state w/ no arcs
@@ -251,17 +250,15 @@ public final class FST<T> implements Accountable {
 
   /** Load a previously saved FST. */
   public FST(DataInput in, Outputs<T> outputs) throws IOException {
-    this(in, outputs, DEFAULT_MAX_BLOCK_BITS);
+    this(in, outputs, new OnHeapFSTStore(DEFAULT_MAX_BLOCK_BITS));
   }
 
   /** Load a previously saved FST; maxBlockBits allows you to
    *  control the size of the byte[] pages used to hold the FST bytes. */
-  public FST(DataInput in, Outputs<T> outputs, int maxBlockBits) throws IOException {
+  public FST(DataInput in, Outputs<T> outputs, FSTStore fstStore) throws IOException {
+    bytes = null;
+    this.fstStore = fstStore;
     this.outputs = outputs;
-
-    if (maxBlockBits < 1 || maxBlockBits > 30) {
-      throw new IllegalArgumentException("maxBlockBits should be 1 .. 30; got " + maxBlockBits);
-    }
 
     // NOTE: only reads most recent format; we don't have
     // back-compat promise for FSTs (they are experimental):
@@ -302,17 +299,7 @@ public final class FST<T> implements Accountable {
     startNode = in.readVLong();
 
     long numBytes = in.readVLong();
-    if (numBytes > 1 << maxBlockBits) {
-      // FST is big: we need multiple pages
-      bytes = new BytesStore(in, numBytes, 1<<maxBlockBits);
-      bytesArray = null;
-    } else {
-      // FST fits into a single block: use ByteArrayBytesStoreReader for less overhead
-      bytes = null;
-      bytesArray = new byte[(int) numBytes];
-      in.readBytes(bytesArray, 0, bytesArray.length);
-    }
-    
+    this.fstStore.init(in, numBytes);
     cacheRootArcs();
   }
 
@@ -344,11 +331,12 @@ public final class FST<T> implements Accountable {
   @Override
   public long ramBytesUsed() {
     long size = BASE_RAM_BYTES_USED;
-    if (bytesArray != null) {
-      size += bytesArray.length;
+    if (this.fstStore != null) {
+      size += this.fstStore.ramBytesUsed();
     } else {
       size += bytes.ramBytesUsed();
     }
+
     size += cachedArcsBytesUsed;
     return size;
   }
@@ -432,16 +420,14 @@ public final class FST<T> implements Accountable {
       out.writeByte((byte) 1);
 
       // Serialize empty-string output:
-      RAMOutputStream ros = new RAMOutputStream();
+      ByteBuffersDataOutput ros = new ByteBuffersDataOutput();
       outputs.writeFinalOutput(emptyOutput, ros);
-      
-      byte[] emptyOutputBytes = new byte[(int) ros.getFilePointer()];
-      ros.writeTo(emptyOutputBytes, 0);
+      byte[] emptyOutputBytes = ros.toArrayCopy();
 
       // reverse
       final int stopAt = emptyOutputBytes.length/2;
       int upto = 0;
-      while(upto < stopAt) {
+      while (upto < stopAt) {
         final byte b = emptyOutputBytes[upto];
         emptyOutputBytes[upto] = emptyOutputBytes[emptyOutputBytes.length-upto-1];
         emptyOutputBytes[emptyOutputBytes.length-upto-1] = b;
@@ -467,9 +453,8 @@ public final class FST<T> implements Accountable {
       out.writeVLong(numBytes);
       bytes.writeTo(out);
     } else {
-      assert bytesArray != null;
-      out.writeVLong(bytesArray.length);
-      out.writeBytes(bytesArray, 0, bytesArray.length);
+      assert fstStore != null;
+      fstStore.writeTo(out);
     }
   }
   
@@ -1139,8 +1124,8 @@ public final class FST<T> implements Accountable {
   /** Returns a {@link BytesReader} for this FST, positioned at
    *  position 0. */
   public BytesReader getBytesReader() {
-    if (bytesArray != null) {
-      return new ReverseBytesReader(bytesArray);
+    if (this.fstStore != null) {
+      return this.fstStore.getReverseBytesReader();
     } else {
       return bytes.getReverseReader();
     }

@@ -33,10 +33,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -44,11 +46,7 @@ import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
@@ -62,9 +60,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -107,6 +105,8 @@ public class IndexSchema {
   public static final String LUCENE_MATCH_VERSION_PARAM = "luceneMatchVersion";
   public static final String MAX_CHARS = "maxChars";
   public static final String NAME = "name";
+  public static final String NEST_PARENT_FIELD_NAME = "_nest_parent_";
+  public static final String NEST_PATH_FIELD_NAME = "_nest_path_";
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
@@ -127,9 +127,9 @@ public class IndexSchema {
   private static final String XPATH_OR = " | ";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected final SolrConfig solrConfig;
   protected String resourceName;
   protected String name;
+  protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
 
@@ -141,6 +141,8 @@ public class IndexSchema {
   protected volatile DynamicField[] dynamicFields;
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
+  protected Map<String, SchemaField> dynamicFieldCache = new ConcurrentHashMap<>();
+
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
 
@@ -148,7 +150,7 @@ public class IndexSchema {
 
   protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
-  
+
   protected DynamicCopy[] dynamicCopyFields;
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
 
@@ -160,20 +162,16 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
-    /**
+  /**
    * Constructs a schema using the specified resource name and stream.
    * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(SolrConfig solrConfig, String name, InputSource is) {
-    assert null != solrConfig : "SolrConfig should never be null";
-    assert null != name : "schema resource name should never be null";
-    assert null != is : "schema InputSource should never be null";
+  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader) {
+    this(luceneVersion, resourceLoader);
 
-    this.solrConfig = solrConfig;
-    this.resourceName = name;
-    loader = solrConfig.getResourceLoader();
+    this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
       loader.inform(loader);
@@ -181,14 +179,24 @@ public class IndexSchema {
       throw new RuntimeException(e);
     }
   }
-  
+
+  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
+    this.luceneVersion = Objects.requireNonNull(luceneVersion);
+    this.loader = loader;
+  }
+
   /**
+   * The resource loader to be used to load components related to the schema when the schema is loading
+   * / initialising.
+   * It should <em>not</em> be used for any other purpose or time;
+   * consider {@link SolrCore#getResourceLoader()} instead.
    * @since solr 1.4
    */
   public SolrResourceLoader getResourceLoader() {
+    //TODO consider asserting the schema has not finished loading somehow?
     return loader;
   }
-  
+
   /** Gets the name of the resource used to instantiate this schema. */
   public String getResourceName() {
     return resourceName;
@@ -203,10 +211,10 @@ public class IndexSchema {
   public String getSchemaName() {
     return name;
   }
-  
+
   /** The Default Lucene Match Version for this IndexSchema */
   public Version getDefaultLuceneMatchVersion() {
-    return solrConfig.luceneMatchVersion;
+    return luceneVersion;
   }
 
   public float getVersion() {
@@ -221,7 +229,7 @@ public class IndexSchema {
    * <p>
    * Modifying this Map (or any item in it) will affect the real schema
    * </p>
-   * 
+   *
    * <p>
    * NOTE: this function is not thread safe.  However, it is safe to use within the standard
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
@@ -235,11 +243,11 @@ public class IndexSchema {
    * in the index, keyed on field type name.
    *
    * <p>
-   * Modifying this Map (or any item in it) will affect the real schema.  However if you 
+   * Modifying this Map (or any item in it) will affect the real schema.  However if you
    * make any modifications, be sure to call {@link IndexSchema#refreshAnalyzers()} to
    * update the Analyzers for the registered fields.
    * </p>
-   * 
+   *
    * <p>
    * NOTE: this function is not thread safe.  However, it is safe to use within the standard
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
@@ -268,7 +276,7 @@ public class IndexSchema {
     if (null == similarity) {
       similarity = similarityFactory.getSimilarity();
     }
-    return similarity; 
+    return similarity;
   }
 
   protected SimilarityFactory similarityFactory;
@@ -277,7 +285,7 @@ public class IndexSchema {
 
   /** Returns the SimilarityFactory that constructed the Similarity for this index */
   public SimilarityFactory getSimilarityFactory() { return similarityFactory; }
-  
+
   /**
    * Returns the Analyzer used when indexing documents for this index
    *
@@ -298,7 +306,7 @@ public class IndexSchema {
    */
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
-  
+
   protected SchemaField uniqueKeyField;
 
   /**
@@ -340,35 +348,42 @@ public class IndexSchema {
     }
     return f;
   }
-  
+
   /**
    * This will re-create the Analyzers.  If you make any modifications to
    * the Field map ({@link IndexSchema#getFields()}, this function is required
    * to synch the internally cached field analyzers.
-   * 
+   *
    * @since solr 1.3
    */
   public void refreshAnalyzers() {
     indexAnalyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
   }
-  
-  public Map<String,UninvertingReader.Type> getUninversionMap(IndexReader reader) {
-    final Map<String,UninvertingReader.Type> map = new HashMap<>();
-    for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
-      if (f.getDocValuesType() == DocValuesType.NONE) {
-        // we have a field (of some kind) in the reader w/o DocValues
-        // if we have an equivilent indexed=true field in the schema, trust it's uninversion type (if any)
-        final SchemaField sf = getFieldOrNull(f.name);
-        if (sf != null && sf.indexed()) {
-          final UninvertingReader.Type type = sf.getType().getUninversionType(sf);
-          if (type != null) {
-            map.put(f.name, type);
-          }
-        }
+
+  /** @see UninvertingReader */
+  public Function<String, UninvertingReader.Type> getUninversionMapper() {
+    return name -> {
+      SchemaField sf = getFieldOrNull(name);
+      if (sf == null) {
+        return null;
       }
-    }
-    return map;
+
+      if (sf.isUninvertible()) {
+        return sf.getType().getUninversionType(sf);
+      }
+      // else...
+      
+      // It would be nice to throw a helpful error here, with a good useful message for the user,
+      // but unfortunately, inspite of the UninvertingReader class jdoc claims that the uninversion
+      // process is lazy, that doesn't mean it's lazy as of "When a caller attempts ot use doc values"
+      //
+      // The *mapping* function is consulted on LeafReader init/wrap for every FieldInfos found w/o docValues.
+      //
+      // So if we throw an error here instead of returning null, the act of just opening a
+      // newSearcher will trigger that error for any field, even if no one ever attempts to uninvert it
+      return null;
+    };
   }
 
   /**
@@ -435,10 +450,11 @@ public class IndexSchema {
   }
 
   protected void readSchema(InputSource is) {
+    assert null != is : "schema InputSource should never be null";
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
-      Config schemaConf = new Config(loader, SCHEMA, is, SLASH+SCHEMA+SLASH);
+      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH);
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);
@@ -971,7 +987,7 @@ public class IndexSchema {
         // configure a factory, get a similarity back
         final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
         namedList.add(SimilarityFactory.CLASS_NAME, classArg);
-        SolrParams params = SolrParams.toSolrParams(namedList);
+        SolrParams params = namedList.toSolrParams();
         similarityFactory = (SimilarityFactory)obj;
         similarityFactory.init(params);
       } else {
@@ -1190,9 +1206,14 @@ public class IndexSchema {
   public SchemaField getFieldOrNull(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f;
+    f = dynamicFieldCache.get(fieldName);
+    if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.makeSchemaField(fieldName);
+      if (df.matches(fieldName)) {
+        dynamicFieldCache.put(fieldName, f = df.makeSchemaField(fieldName));
+        break;
+      }
     }
 
     return f;
@@ -1582,11 +1603,6 @@ public class IndexSchema {
     return copyFieldProperties;
   }
 
-  protected IndexSchema(final SolrConfig solrConfig, final SolrResourceLoader loader) {
-    this.solrConfig = solrConfig;
-    this.loader = loader;
-  }
-
   /**
    * Copies this schema, adds the given field to the copy
    * Requires synchronizing on the object returned by
@@ -1936,10 +1952,26 @@ public class IndexSchema {
    * @lucene.internal
    */
   public boolean isUsableForChildDocs() {
-    FieldType rootType = getFieldType(ROOT_FIELD_NAME);
+    //TODO make this boolean a field so it needn't be looked up each time?
+    FieldType rootType = getFieldTypeNoEx(ROOT_FIELD_NAME);
     return (null != uniqueKeyFieldType &&
             null != rootType &&
             rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
+  }
+
+  /**
+   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
+   * same 'type' as the {@link #getUniqueKeyField()} and has {@link #NEST_PATH_FIELD_NAME}
+   * defined as a {@link NestPathField}
+   * @lucene.internal
+   */
+  public boolean savesChildDocRelations() {
+    //TODO make this boolean a field so it needn't be looked up each time?
+    if (!isUsableForChildDocs()) {
+      return false;
+    }
+    FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
+    return nestPathType instanceof NestPathField;
   }
 
   public PayloadDecoder getPayloadDecoder(String field) {

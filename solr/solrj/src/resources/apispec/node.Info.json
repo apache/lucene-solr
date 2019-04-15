@@ -1,11 +1,12 @@
 {
-   "description": "Provides information about system properties, threads, logging settings, and system details for a node.",
+   "description": "Provides information about system properties, threads, logging settings, system details and health (available in Solrcloud mode) for a node.",
   "methods": ["GET"],
   "url": {
     "paths": [
       "/node/properties",
       "/node/threads",
       "/node/logging",
-      "/node/system"]
+      "/node/system",
+      "/node/health"]
   }
 }

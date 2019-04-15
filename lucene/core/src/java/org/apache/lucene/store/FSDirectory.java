@@ -144,7 +144,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
@@ -168,7 +168,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    *
    *  <p>Currently this returns {@link MMapDirectory} for Linux, MacOSX, Solaris,
    *  and Windows 64-bit JREs, {@link NIOFSDirectory} for other
@@ -246,10 +246,12 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-
-    // If this file was pending delete, we are now bringing it back to life:
-    pendingDeletes.remove(name);
     maybeDeletePendingFiles();
+    // If this file was pending delete, we are now bringing it back to life:
+    if (pendingDeletes.remove(name)) {
+      privateDeleteFile(name, true); // try again to delete it - this is best effort
+      pendingDeletes.remove(name); // watch out - if the delete fails it put
+    }
     return new FSIndexOutput(name);
   }
 
@@ -293,9 +295,12 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.contains(source)) {
       throw new NoSuchFileException("file \"" + source + "\" is pending delete and cannot be moved");
     }
-    pendingDeletes.remove(dest);
-    Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
     maybeDeletePendingFiles();
+    if (pendingDeletes.remove(dest)) {
+      privateDeleteFile(dest, true); // try again to delete it - this is best effort
+      pendingDeletes.remove(dest); // watch out if the delete fails it's back in here.
+    }
+    Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
   }
 
   @Override
@@ -334,13 +339,6 @@ public abstract class FSDirectory extends BaseDirectory {
     }
     privateDeleteFile(name, false);
     maybeDeletePendingFiles();
-  }
-
-  /** Tries to delete any pending deleted files, and returns true if
-   *  there are still files that could not be deleted. */
-  public boolean checkPendingDeletions() throws IOException {
-    deletePendingFiles();
-    return pendingDeletes.isEmpty() == false;
   }
 
   /** Try to delete any pending files that we had previously tried to delete but failed
@@ -422,6 +420,16 @@ public abstract class FSDirectory extends BaseDirectory {
           }
         }
       }, CHUNK_SIZE);
+    }
+  }
+
+  @Override
+  public synchronized Set<String> getPendingDeletions() throws IOException {
+    deletePendingFiles();
+    if (pendingDeletes.isEmpty()) {
+      return Collections.emptySet();
+    } else {
+      return Collections.unmodifiableSet(new HashSet<>(pendingDeletes));
     }
   }
 }

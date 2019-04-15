@@ -18,7 +18,7 @@ package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergePolicyWrapper;
+import org.apache.lucene.index.FilterMergePolicy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * Solr tests utilizing the Lucene randomized test framework can refer 
  * to this class in solrconfig.xml to get a fully randomized merge policy.
  */
-public class RandomMergePolicy extends MergePolicyWrapper {
+public class RandomMergePolicy extends FilterMergePolicy {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   

@@ -19,16 +19,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -76,8 +75,21 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      terms.add(getTerm());
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      TermsEnum te = getTermsEnum(context);
+      if (te == null) {
+        return null;
+      }
+      if (context.reader().terms(term.field()).hasPositions() == false) {
+        return super.matches(context, doc);
+      }
+      return MatchesUtils.forField(term.field(), () -> {
+        PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
+        if (pe.advance(doc) != doc) {
+          return null;
+        }
+        return new TermMatchesIterator(getQuery(), pe);
+      });
     }
 
     @Override
@@ -92,23 +104,11 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
-      IndexOptions indexOptions = context.reader()
-          .getFieldInfos()
-          .fieldInfo(getTerm().field())
-          .getIndexOptions();
-      float maxFreq = getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq());
-      LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), scoreMode.needsScores(), maxFreq);
-      return new TermScorer(this, termsEnum, scoreMode, scorer);
-    }
-
-    private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
-      // TODO: store the max term freq?
-      if (indexOptions.compareTo(IndexOptions.DOCS) <= 0) {
-        // omitTFAP field, tf values are implicitly 1.
-        return 1;
+      LeafSimScorer scorer = new LeafSimScorer(simScorer, context.reader(), term.field(), scoreMode.needsScores());
+      if (scoreMode == ScoreMode.TOP_SCORES) {
+        return new TermScorer(this, termsEnum.impacts(PostingsEnum.FREQS), scorer);
       } else {
-        assert ttf >= 0;
-        return Math.min(Integer.MAX_VALUE, ttf - df + 1);
+        return new TermScorer(this, termsEnum.postings(null, scoreMode.needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE), scorer);
       }
     }
 
@@ -149,7 +149,7 @@ public class TermQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), true, Integer.MAX_VALUE);
+          LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), term.field(), true);
           Explanation freqExplanation = Explanation.match(freq, "freq, occurrences of term within document");
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
@@ -199,6 +199,13 @@ public class TermQuery extends Query {
     return new TermWeight(searcher, scoreMode, boost, termState);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(term.field())) {
+      visitor.consumeTerms(this, term);
+    }
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
@@ -211,7 +218,14 @@ public class TermQuery extends Query {
     return buffer.toString();
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns the {@link TermStates} passed to the constructor, or null if it was not passed.
+   *
+   * @lucene.experimental */
+  public TermStates getTermStates() {
+    return perReaderTermState;
+  }
+
+  /** Returns true iff <code>other</code> is equal to <code>this</code>. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&

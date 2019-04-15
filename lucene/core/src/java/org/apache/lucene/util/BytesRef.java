@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
-import java.util.Arrays;
-
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].  The {@link #bytes} member should never be null;
  *  use {@link #EMPTY_BYTES} if necessary.
@@ -172,11 +169,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * and an offset of zero.
    */
   public static BytesRef deepCopyOf(BytesRef other) {
-    BytesRef copy = new BytesRef();
-    copy.bytes = Arrays.copyOfRange(other.bytes, other.offset, other.offset + other.length);
-    copy.offset = 0;
-    copy.length = other.length;
-    return copy;
+    return new BytesRef(ArrayUtil.copyOfSubArray(other.bytes, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

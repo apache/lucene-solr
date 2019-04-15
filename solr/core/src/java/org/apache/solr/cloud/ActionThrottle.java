@@ -82,7 +82,7 @@ public class ActionThrottle {
     if (sleep > 0) {
       log.info("Throttling {} attempts - waiting for {}ms", name, sleep);
       try {
-        Thread.sleep(sleep);
+        timeSource.sleep(sleep);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

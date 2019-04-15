@@ -40,7 +40,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
 
@@ -170,8 +170,8 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            if (StringHelper.compare(3, uniquePointValue, 0, maxPackedValue, 0) > 0 ||
-                StringHelper.compare(3, uniquePointValue, 0, minPackedValue, 0) < 0) {
+            if (FutureArrays.compareUnsigned(uniquePointValue, 0, 3, maxPackedValue, 0, 3) > 0 ||
+                FutureArrays.compareUnsigned(uniquePointValue, 0, 3, minPackedValue, 0, 3) < 0) {
               return Relation.CELL_OUTSIDE_QUERY;
             }
             return Relation.CELL_CROSSES_QUERY;
@@ -267,8 +267,8 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         @Override
         public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
           for (int dim = 0; dim < 2; ++dim) {
-            if (StringHelper.compare(3, uniquePointValue[dim], 0, maxPackedValue, dim * 3) > 0 ||
-                StringHelper.compare(3, uniquePointValue[dim], 0, minPackedValue, dim * 3) < 0) {
+            if (FutureArrays.compareUnsigned(uniquePointValue[dim], 0, 3, maxPackedValue, dim * 3, dim * 3 + 3) > 0 ||
+                FutureArrays.compareUnsigned(uniquePointValue[dim], 0, 3, minPackedValue, dim * 3, dim * 3 + 3) < 0) {
               return Relation.CELL_OUTSIDE_QUERY;
             }
           }

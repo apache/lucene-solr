@@ -82,6 +82,11 @@ public class FacetsConfig {
      *  is required, which is unusual (default is false). */
     public boolean requireDimCount;
 
+    /** True if drilling down by a whole dimension, to match all
+     *  documents that had any value for this dimension, is necessary
+     *  (default is true)*/
+    public boolean requireDimensionDrillDown = true;
+
     /** Actual field where this dimension's facet labels
      *  should be indexed */
     public String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
@@ -162,6 +167,16 @@ public class FacetsConfig {
       fieldTypes.put(dimName, ft);
     }
     ft.indexFieldName = indexFieldName;
+  }
+
+  /** Specify whether drill down on just the dimension is necessary. */
+  public synchronized void setRequireDimensionDrillDown(String dimName, boolean v) {
+    DimConfig ft = fieldTypes.get(dimName);
+    if (ft == null) {
+      ft = new DimConfig();
+      fieldTypes.put(dimName, ft);
+    }
+    ft.requireDimensionDrillDown = v;
   }
 
   /** Returns map of field name to {@link DimConfig}. */
@@ -340,7 +355,13 @@ public class FacetsConfig {
         }
 
         // Drill down:
-        for (int i=1;i<=cp.length;i++) {
+        int start;
+        if (ft.requireDimensionDrillDown) {
+          start = 1;
+        } else {
+          start = 2;
+        }
+        for (int i=start;i<=cp.length;i++) {
           doc.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
         }
       }
@@ -368,7 +389,11 @@ public class FacetsConfig {
 
         // For drill-down:
         doc.add(new StringField(indexFieldName, fullPath, Field.Store.NO));
-        doc.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
+
+        FacetsConfig.DimConfig ft = getDimConfig(facetField.dim);        
+        if (ft.requireDimensionDrillDown) {
+          doc.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
+        }
       }
     }
   }
@@ -398,8 +423,16 @@ public class FacetsConfig {
         }
         System.arraycopy(field.assoc.bytes, field.assoc.offset, bytes, upto, field.assoc.length);
         upto += field.assoc.length;
+
+        FacetsConfig.DimConfig ft = getDimConfig(field.dim);        
         
         // Drill down:
+        int start;
+        if (ft.requireDimensionDrillDown) {
+          start = 1;
+        } else {
+          start = 2;
+        }
         for (int i = 1; i <= label.length; i++) {
           doc.add(new StringField(indexFieldName, pathToString(label.components, i), Field.Store.NO));
         }

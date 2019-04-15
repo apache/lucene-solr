@@ -64,7 +64,9 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName =  message.getStr(COLLECTION_PROP);
+    String extCollectionName =  message.getStr(COLLECTION_PROP);
+    String collectionName = ocmh.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
+
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
     SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
@@ -84,7 +86,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     Map<String, String> requestMap = new HashMap<>();
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {

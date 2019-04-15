@@ -42,7 +42,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -260,7 +259,7 @@ public class FSTTermsReader extends FieldsProducer {
     }
 
     // Only wraps common operations for PBF interact
-    abstract class BaseTermsEnum extends TermsEnum {
+    abstract class BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
 
       /* Current term stats + decoded metadata (customized by PBF) */
       final BlockTermState state;
@@ -301,9 +300,9 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       @Override
-      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      public ImpactsEnum impacts(int flags) throws IOException {
         decodeMetaData();
-        return postingsReader.impacts(fieldInfo, state, scorer, flags);
+        return postingsReader.impacts(fieldInfo, state, flags);
       }
 
       @Override

@@ -24,7 +24,7 @@ limitations under the License.
   padding: 0;
 }
 
-body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
+body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td, div.ui-tooltip-content
 {
   color: #333;
   font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
@@ -675,7 +675,7 @@ pre.syntax .tex .formula
   z-index: 100;
 }
 
-#connection-status-recovered:
+#connection-status-recovered
 {
   z-index:102;
 }

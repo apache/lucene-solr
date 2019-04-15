@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
-import org.apache.lucene.index.TermsEnum;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
@@ -31,83 +30,29 @@ final class TermScorer extends Scorer {
   private final ImpactsEnum impactsEnum;
   private final DocIdSetIterator iterator;
   private final LeafSimScorer docScorer;
-  private float minCompetitiveScore;
+  private final ImpactsDISI impactsDisi;
 
   /**
-   * Construct a <code>TermScorer</code>.
-   *
-   * @param weight
-   *          The weight of the <code>Term</code> in the query.
-   * @param te
-   *          A {@link TermsEnum} positioned on the expected term.
-   * @param docScorer
-   *          A {@link LeafSimScorer} for the appropriate field.
+   * Construct a {@link TermScorer} that will iterate all documents.
    */
-  TermScorer(Weight weight, TermsEnum te, ScoreMode scoreMode, LeafSimScorer docScorer) throws IOException {
+  TermScorer(Weight weight, PostingsEnum postingsEnum, LeafSimScorer docScorer) {
     super(weight);
+    iterator = this.postingsEnum = postingsEnum;
+    impactsEnum = new SlowImpactsEnum(postingsEnum);
+    impactsDisi = new ImpactsDISI(impactsEnum, impactsEnum, docScorer.getSimScorer());
     this.docScorer = docScorer;
-    if (scoreMode == ScoreMode.TOP_SCORES) {
-      impactsEnum = te.impacts(docScorer.getSimScorer(), PostingsEnum.FREQS);
-      postingsEnum = impactsEnum;
-      iterator = new DocIdSetIterator() {
+  }
 
-        int upTo = -1;
-        float maxScore;
-
-        private int advanceTarget(int target) throws IOException {
-          if (minCompetitiveScore == 0) {
-            // no potential for skipping
-            return target;
-          }
-
-          if (target > upTo) {
-            upTo = impactsEnum.advanceShallow(target);
-            maxScore = impactsEnum.getMaxScore(upTo);
-          }
-
-          while (true) {
-            assert upTo >= target;
-
-            if (maxScore >= minCompetitiveScore) {
-              return target;
-            }
-
-            if (upTo == NO_MORE_DOCS) {
-              return NO_MORE_DOCS;
-            }
-
-            target = upTo + 1;
-
-            upTo = impactsEnum.advanceShallow(target);
-            maxScore = impactsEnum.getMaxScore(upTo);
-          }
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          return impactsEnum.advance(advanceTarget(target));
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          return advance(impactsEnum.docID() + 1);
-        }
-
-        @Override
-        public int docID() {
-          return impactsEnum.docID();
-        }
-
-        @Override
-        public long cost() {
-          return impactsEnum.cost();
-        }
-      };
-    } else {
-      postingsEnum = te.postings(null, scoreMode.needsScores() ? PostingsEnum.FREQS : PostingsEnum.NONE);
-      impactsEnum = new SlowImpactsEnum(postingsEnum, docScorer.getSimScorer().score(Float.MAX_VALUE, 1));
-      iterator = postingsEnum;
-    }
+  /**
+   * Construct a {@link TermScorer} that will use impacts to skip blocks of
+   * non-competitive documents.
+   */
+  TermScorer(Weight weight, ImpactsEnum impactsEnum, LeafSimScorer docScorer) {
+    super(weight);
+    postingsEnum = this.impactsEnum = impactsEnum;
+    impactsDisi = new ImpactsDISI(impactsEnum, impactsEnum, docScorer.getSimScorer());
+    iterator = impactsDisi;
+    this.docScorer = docScorer;
   }
 
   @Override
@@ -132,20 +77,21 @@ final class TermScorer extends Scorer {
 
   @Override
   public int advanceShallow(int target) throws IOException {
-    return impactsEnum.advanceShallow(target);
+    return impactsDisi.advanceShallow(target);
   }
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
-    return impactsEnum.getMaxScore(upTo);
+    return impactsDisi.getMaxScore(upTo);
   }
 
   @Override
   public void setMinCompetitiveScore(float minScore) {
-    this.minCompetitiveScore = minScore;
+    impactsDisi.setMinCompetitiveScore(minScore);
   }
 
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")[" + super.toString() + "]"; }
+
 }

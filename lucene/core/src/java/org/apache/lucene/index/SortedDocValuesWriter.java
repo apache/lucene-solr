@@ -244,4 +244,9 @@ class SortedDocValuesWriter extends DocValuesWriter {
       return valueCount;
     }
   }
+
+  @Override
+  DocIdSetIterator getDocIdSet() {
+    return docsWithField.iterator();
+  }
 }

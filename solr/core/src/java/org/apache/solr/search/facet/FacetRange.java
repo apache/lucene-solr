@@ -27,29 +27,32 @@ import java.util.Map;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
+import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.CurrencyValue;
 import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.util.DateMathParser;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 public class FacetRange extends FacetRequestSorted {
+  static final String ACTUAL_END_JSON_KEY = "_actual_end";
+  
   String field;
   Object start;
   Object end;
   Object gap;
   boolean hardend = false;
-  EnumSet<FacetParams.FacetRangeInclude> include;
-  EnumSet<FacetParams.FacetRangeOther> others;
+  EnumSet<FacetRangeInclude> include;
+  EnumSet<FacetRangeOther> others;
 
   {
     // defaults
@@ -81,30 +84,68 @@ public class FacetRange extends FacetRequestSorted {
 
 
 class FacetRangeProcessor extends FacetProcessor<FacetRange> {
-  SchemaField sf;
-  Calc calc;
+  // TODO: the code paths for initial faceting, vs refinement, are very different...
+  // TODO: ...it might make sense to have seperate classes w/a common base?
+  // TODO: let FacetRange.createFacetProcessor decide which one to instantiate?
+  
+  final SchemaField sf;
+  final Calc calc;
+  final EnumSet<FacetRangeInclude> include;
+  final long effectiveMincount;
+  final Comparable start;
+  final Comparable end;
+  final String gap;
+  
+  /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> rangeList;
+  /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> otherList;
-  long effectiveMincount;
+
+  /**
+   * Serves two purposes depending on the type of request.
+   * <ul>
+   * <li>If this is a phase#1 shard request, then {@link #createRangeList} will set this value (non null)
+   *     if and only if it is needed for refinement (ie: <code>hardend:false</code> &amp; <code>other</code>
+   *     that requres an end value low/high value calculation).  And it wil be included in the response</li>
+   * <li>If this is a phase#2 refinement request, this variable will be used 
+   *     {@link #getOrComputeActualEndForRefinement} to track the value sent with the refinement request 
+   *     -- or to cache a recomputed value if the request omitted it -- for use in refining the 
+   *     <code>other</code> buckets that need them</li>
+   * </ul>
+   */
+  Comparable actual_end = null; // null until/unless we need it
 
   FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
+    include = freq.include;
+    sf = fcontext.searcher.getSchema().getField(freq.field);
+    calc = getCalcForField(sf);
+    start = calc.getValue(freq.start.toString());
+    end = calc.getValue(freq.end.toString());
+    gap = freq.gap.toString();
+
+    
+    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
+    // If mincount>0 then we could *potentially* set our sub mincount to 1...
+    // ...but that would require sorting the buckets (by their val) at the top level
+    //
+    // Rather then do that, which could be complicated by non trivial field types, we'll force the sub-shard effectiveMincount
+    // to be 0, ensuring that we can trivially merge all the buckets from every shard
+    // (we have to filter the merged buckets by the original mincount either way)
+    effectiveMincount = fcontext.isShard() ? 0 : freq.mincount;
   }
 
   @Override
   public void process() throws IOException {
     super.process();
 
-    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
-    // If mincount>0 then we could *potentially* set our sub mincount to 1...
-    // ...but that would require sorting the buckets (by their val) at the top level
-    //
-    // Tather then do that, which could be complicated by non trivial field types, we'll force the sub-shard effectiveMincount
-    // to be 0, ensuring that we can trivially merge all the buckets from every shard
-    // (we have to filter the merged buckets by the original mincount either way)
-    effectiveMincount = fcontext.isShard() ? 0 : freq.mincount;
-    sf = fcontext.searcher.getSchema().getField(freq.field);
-    response = getRangeCounts();
+    if (fcontext.facetInfo != null) { // refinement?
+      response = refineFacets();
+    } else {
+      // phase#1: build list of all buckets and return full facets...
+      createRangeList();
+      response = getRangeCountsIndexed();
+    }
   }
 
   private static class Range {
@@ -125,7 +166,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   /**
    * Returns a {@link Calc} instance to use for <em>term</em> faceting over a numeric field.
-   * This metod is unused for <code>range</code> faceting, and exists solely as a helper method for other classes
+   * This method is unused for <code>range</code> faceting, and exists solely as a helper method for other classes
    * 
    * @param sf A field to facet on, must be of a type such that {@link FieldType#getNumberType} is non null
    * @return a <code>Calc</code> instance with {@link Calc#bitsToValue} and {@link Calc#bitsToSortableBits} methods suitable for the specified field.
@@ -133,63 +174,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    */
   public static Calc getNumericCalc(SchemaField sf) {
     Calc calc;
-    final FieldType ft = sf.getType();
-
-    if (ft instanceof TrieField) {
-      switch (ft.getNumberType()) {
-        case FLOAT:
-          calc = new FloatCalc(sf);
-          break;
-        case DOUBLE:
-          calc = new DoubleCalc(sf);
-          break;
-        case INTEGER:
-          calc = new IntCalc(sf);
-          break;
-        case LONG:
-          calc = new LongCalc(sf);
-          break;
-        case DATE:
-          calc = new DateCalc(sf, null);
-          break;
-        default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Expected numeric field type :" + sf);
-      }
-    } else if (ft instanceof PointField) {
-      // TODO, this is the same in Trie and Point now
-      switch (ft.getNumberType()) {
-        case FLOAT:
-          calc = new FloatCalc(sf);
-          break;
-        case DOUBLE:
-          calc = new DoubleCalc(sf);
-          break;
-        case INTEGER:
-          calc = new IntCalc(sf);
-          break;
-        case LONG:
-          calc = new LongCalc(sf);
-          break;
-        case DATE:
-          calc = new DateCalc(sf, null);
-          break;
-        default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Expected numeric field type :" + sf);
-      }
-    } 
-    else {
-      throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-              "Expected numeric field type :" + sf);
-    }
-    return calc;
-  }
-
-  private SimpleOrderedMap<Object> getRangeCounts() throws IOException {
     final FieldType ft = sf.getType();
 
     if (ft instanceof TrieField || ft.isPointField()) {
@@ -212,45 +196,63 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         default:
           throw new SolrException
               (SolrException.ErrorCode.BAD_REQUEST,
-                  "Unable to range facet on tried field of unexpected type:" + freq.field);
+                  "Expected numeric field type :" + sf);
       }
-    } else if (ft instanceof CurrencyFieldType) {
-      calc = new CurrencyCalc(sf);
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
-              "Unable to range facet on field:" + sf);
+              "Expected numeric field type :" + sf);
     }
-
-    if (fcontext.facetInfo != null) {
-      return refineFacets();
-    }
-
-    createRangeList();
-    return getRangeCountsIndexed();
+    return calc;
   }
 
+  /**
+   * Helper method used in processor constructor
+   * @return a <code>Calc</code> instance with {@link Calc#bitsToValue} and {@link Calc#bitsToSortableBits} methods suitable for the specified field.
+   */
+  private static Calc getCalcForField(SchemaField sf) {
+    final FieldType ft = sf.getType();
+    if (ft instanceof TrieField || ft.isPointField()) {
+      switch (ft.getNumberType()) {
+        case FLOAT:
+          return new FloatCalc(sf);
+        case DOUBLE:
+          return new DoubleCalc(sf);
+        case INTEGER:
+          return new IntCalc(sf);
+        case LONG:
+          return new LongCalc(sf);
+        case DATE:
+          return new DateCalc(sf, null);
+        default:
+          throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                  "Unable to range facet on numeric field of unexpected type:" + sf.getName());
+      }
+    } else if (ft instanceof CurrencyFieldType) {
+      return new CurrencyCalc(sf);
+    }
+
+    // if we made it this far, we have no idea what it is...
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                            "Unable to range facet on field:" + sf.getName());
+  }
 
   private void createRangeList() throws IOException {
 
     rangeList = new ArrayList<>();
     otherList = new ArrayList<>(3);
 
-    Comparable start = calc.getValue(freq.start.toString());
-    Comparable end = calc.getValue(freq.end.toString());
-    EnumSet<FacetParams.FacetRangeInclude> include = freq.include;
-
-    String gap = freq.gap.toString();
-
     Comparable low = start;
-
+    Comparable loop_end = this.end;
+    
     while (low.compareTo(end) < 0) {
       Comparable high = calc.addGap(low, gap);
       if (end.compareTo(high) < 0) {
         if (freq.hardend) {
-          high = end;
+          high = loop_end;
         } else {
-          end = high;
+          loop_end = high;
         }
       }
       if (high.compareTo(low) < 0) {
@@ -264,15 +266,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
                 "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
       }
 
-      boolean incLower =
-          (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-              (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                  0 == low.compareTo(start)));
-      boolean incUpper =
-          (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-              (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                  0 == high.compareTo(end)));
-
+      boolean incLower =(include.contains(FacetRangeInclude.LOWER) ||
+                         (include.contains(FacetRangeInclude.EDGE) && 0 == low.compareTo(start)));
+      boolean incUpper = (include.contains(FacetRangeInclude.UPPER) ||
+                          (include.contains(FacetRangeInclude.EDGE) && 0 == high.compareTo(end)));
+      
       Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
       rangeList.add( range );
 
@@ -281,37 +279,28 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     // no matter what other values are listed, we don't do
     // anything if "none" is specified.
-    if (! freq.others.contains(FacetParams.FacetRangeOther.NONE) ) {
+    if (! freq.others.contains(FacetRangeOther.NONE) ) {
+      final boolean all = freq.others.contains(FacetRangeOther.ALL);
 
-      boolean all = freq.others.contains(FacetParams.FacetRangeOther.ALL);
-
-      if (all || freq.others.contains(FacetParams.FacetRangeOther.BEFORE)) {
-        // include upper bound if "outer" or if first gap doesn't already include it
-        boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
-            (!(include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-                include.contains(FacetParams.FacetRangeInclude.EDGE))));
-        otherList.add( new Range(FacetParams.FacetRangeOther.BEFORE.toString(), null, start, false, incUpper) );
+      if (all || freq.others.contains(FacetRangeOther.BEFORE)) {
+        otherList.add( buildBeforeRange() );
       }
-      if (all || freq.others.contains(FacetParams.FacetRangeOther.AFTER)) {
-        // include lower bound if "outer" or if last gap doesn't already include it
-        boolean incLower = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
-            (!(include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-                include.contains(FacetParams.FacetRangeInclude.EDGE))));
-        otherList.add( new Range(FacetParams.FacetRangeOther.AFTER.toString(), end, null, incLower, false));
+      if (all || freq.others.contains(FacetRangeOther.AFTER)) {
+        actual_end = loop_end;
+        otherList.add( buildAfterRange() );
       }
-      if (all || freq.others.contains(FacetParams.FacetRangeOther.BETWEEN)) {
-        boolean incLower = (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-            include.contains(FacetParams.FacetRangeInclude.EDGE));
-        boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-            include.contains(FacetParams.FacetRangeInclude.EDGE));
-
-        otherList.add( new Range(FacetParams.FacetRangeOther.BETWEEN.toString(), start, end, incLower, incUpper) );
+      if (all || freq.others.contains(FacetRangeOther.BETWEEN)) {
+        actual_end = loop_end;
+        otherList.add( buildBetweenRange() );
       }
     }
-
+    // if we're not a shard request, or this is a hardend:true situation, then actual_end isn't needed
+    if (freq.hardend || (! fcontext.isShard())) {
+      actual_end = null;
+    }
   }
-
-
+  
+  
   private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
 
     int slotCount = rangeList.size() + otherList.size();
@@ -352,6 +341,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       addStats(bucket, rangeList.size() + idx);
       doSubs(bucket, rangeList.size() + idx);
     }
+      
+    if (null != actual_end) {
+      res.add(FacetRange.ACTUAL_END_JSON_KEY, calc.formatValue(actual_end));
+    }
 
     return res;
   }
@@ -364,7 +357,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
     filters[slot] = rangeQ;
     intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
-    int num = collect(intersection, slot);
+    int num = collect(intersection, slot, slotNum -> { return new SlotContext(rangeQ); });
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
 
@@ -380,23 +373,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       }
     }
   }
-
-  private  SimpleOrderedMap<Object> rangeStats(Range range, boolean special ) throws IOException {
-    SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
-
-    // typically the start value of the range, but null for before/after/between
-    if (!special) {
-      bucket.add("val", range.label);
-    }
-
-    Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
-    fillBucket(bucket, rangeQ, null, false, null);
-
-    return bucket;
-  }
-
-
-
 
   // Essentially copied from SimpleFacets...
   // would be nice to unify this stuff w/ analytics component...
@@ -540,7 +516,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Float parseAndAddGap(Comparable value, String gap) {
-      return new Float(((Number)value).floatValue() + Float.parseFloat(gap));
+      return ((Number) value).floatValue() + Float.parseFloat(gap);
     }
   }
   private static class DoubleCalc extends Calc {
@@ -565,7 +541,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Double parseAndAddGap(Comparable value, String gap) {
-      return new Double(((Number)value).doubleValue() + Double.parseDouble(gap));
+      return ((Number) value).doubleValue() + Double.parseDouble(gap);
     }
   }
   private static class IntCalc extends Calc {
@@ -581,7 +557,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Integer parseAndAddGap(Comparable value, String gap) {
-      return new Integer(((Number)value).intValue() + Integer.parseInt(gap));
+      return ((Number) value).intValue() + Integer.parseInt(gap);
     }
   }
   private static class LongCalc extends Calc {
@@ -593,7 +569,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     @Override
     public Long parseAndAddGap(Comparable value, String gap) {
-      return new Long(((Number)value).longValue() + Long.parseLong(gap));
+      return ((Number) value).longValue() + Long.parseLong(gap);
     }
   }
   private static class DateCalc extends Calc {
@@ -711,33 +687,30 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   }
 
-  // this refineFacets method is patterned after FacetFieldProcessor.refineFacets and should
-  // probably be merged when range facet becomes more like field facet in it's ability to sort and limit
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
+    // this refineFacets method is patterned after FacetFieldProcessor.refineFacets such that
+    // the same "_s" skip bucket syntax is used and FacetRangeMerger can subclass FacetRequestSortedMerger
+    // for dealing with them & the refinement requests.
+    // 
+    // But range faceting does *NOT* use the "leaves" and "partial" syntax
+    // 
+    // If/When range facet becomes more like field facet in it's ability to sort and limit the "range buckets"
+    // FacetRangeProcessor and FacetFieldProcessor should prbably be refactored to share more code.
+    
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
-    List leaves = FacetFieldProcessor.asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
     List<List> skip = FacetFieldProcessor.asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
-    List<List> partial = FacetFieldProcessor.asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
 
-    // currently, only _s should be present for range facets.  In the future, range facets will
-    // be more like field facets and will have the same refinement cases.  When that happens, we should try to unify the refinement code more
-    assert leaves.size() == 0;
-    assert partial.size() == 0;
-
-    // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
-    // encounter leaf refinements that have sub-facets that return partial results.
+    // sanity check our merger's super class didn't send us something we can't handle ...
+    assert 0 == FacetFieldProcessor.asList(fcontext.facetInfo.get("_l")).size();
+    assert 0 == FacetFieldProcessor.asList(fcontext.facetInfo.get("_p")).size();
 
     SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
-    List<SimpleOrderedMap> bucketList = new ArrayList<>( leaves.size() + skip.size() + partial.size() );
+    List<SimpleOrderedMap> bucketList = new ArrayList<>( skip.size() );
     res.add("buckets", bucketList);
 
     // TODO: an alternate implementations can fill all accs at once
     createAccs(-1, 1);
-
-    for (Object bucketVal : leaves) {
-      bucketList.add( refineBucket(bucketVal, false, null) );
-    }
 
     for (List bucketAndFacetInfo : skip) {
       assert bucketAndFacetInfo.size() == 2;
@@ -747,51 +720,78 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       bucketList.add( refineBucket(bucketVal, true, facetInfo ) );
     }
 
-    // The only difference between skip and missing is the value of "skip" passed to refineBucket
-    for (List bucketAndFacetInfo : partial) {
-      assert bucketAndFacetInfo.size() == 2;
-      Object bucketVal = bucketAndFacetInfo.get(0);
-      Map<String,Object> facetInfo = (Map<String, Object>) bucketAndFacetInfo.get(1);
+    { // refine the special "other" buckets
+      
+      // NOTE: we're re-useing this variable for each special we look for...
+      Map<String,Object> specialFacetInfo;
 
-      bucketList.add( refineBucket(bucketVal, false, facetInfo ) );
-    }
-
-    /*** special buckets
-    if (freq.missing) {
-      Map<String,Object> bucketFacetInfo = (Map<String,Object>)fcontext.facetInfo.get("missing");
-
-      if (bucketFacetInfo != null || !skipThisFacet) {
-        SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-        fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, skipThisFacet, bucketFacetInfo);
-        res.add("missing", missingBucket);
+      specialFacetInfo = (Map<String, Object>) fcontext.facetInfo.get(FacetRangeOther.BEFORE.toString());
+      if (null != specialFacetInfo) {
+        res.add(FacetRangeOther.BEFORE.toString(),
+                refineRange(buildBeforeRange(), skipThisFacet, specialFacetInfo));
+      }
+      
+      specialFacetInfo = (Map<String, Object>) fcontext.facetInfo.get(FacetRangeOther.AFTER.toString());
+      if (null != specialFacetInfo) {
+        res.add(FacetRangeOther.AFTER.toString(),
+                refineRange(buildAfterRange(), skipThisFacet, specialFacetInfo));
+      }
+      
+      specialFacetInfo = (Map<String, Object>) fcontext.facetInfo.get(FacetRangeOther.BETWEEN.toString());
+      if (null != specialFacetInfo) {
+        res.add(FacetRangeOther.BETWEEN.toString(),
+                refineRange(buildBetweenRange(), skipThisFacet, specialFacetInfo));
       }
     }
-     **********/
-
-
-    // If there are just a couple of leaves, and if the domain is large, then
-    // going by term is likely the most efficient?
-    // If the domain is small, or if the number of leaves is large, then doing
-    // the normal collection method may be best.
-
+      
     return res;
   }
 
+  /** 
+   * Returns the "Actual End" value sent from the merge as part of the refinement request (if any) 
+   * or re-computes it as needed using the Calc and caches the result for re-use
+   */
+  private Comparable getOrComputeActualEndForRefinement() {
+    if (null != actual_end) {
+      return actual_end;
+    }
+    
+    if (freq.hardend) {
+      actual_end = this.end;
+    } else if (fcontext.facetInfo.containsKey(FacetRange.ACTUAL_END_JSON_KEY)) {
+      actual_end = calc.getValue(fcontext.facetInfo.get(FacetRange.ACTUAL_END_JSON_KEY).toString());
+    } else {
+      // a quick and dirty loop over the ranges (we don't need) to compute the actual_end...
+      Comparable low = start;
+      while (low.compareTo(end) < 0) {
+        Comparable high = calc.addGap(low, gap);
+        if (end.compareTo(high) < 0) {
+          actual_end = high;
+          break;
+        }
+        if (high.compareTo(low) <= 0) {
+          throw new SolrException
+            (SolrException.ErrorCode.BAD_REQUEST,
+             "Garbage input for facet refinement w/o " + FacetRange.ACTUAL_END_JSON_KEY);
+        }
+        low = high;
+      }
+    }
+    
+    assert null != actual_end;
+    return actual_end;
+  }
+  
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
-    // TODO: refactor this repeated code from above
-    Comparable start = calc.getValue(bucketVal.toString());
-    Comparable end = calc.getValue(freq.end.toString());
-    EnumSet<FacetParams.FacetRangeInclude> include = freq.include;
-
-    String gap = freq.gap.toString();
 
     Comparable low = calc.getValue(bucketVal.toString());
     Comparable high = calc.addGap(low, gap);
+    Comparable max_end = end;
     if (end.compareTo(high) < 0) {
       if (freq.hardend) {
-        high = end;
+        high = max_end;
       } else {
-        end = high;
+        max_end = high;
       }
     }
     if (high.compareTo(low) < 0) {
@@ -805,26 +805,58 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
     }
 
-    boolean incLower =
-        (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-            (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                0 == low.compareTo(start)));
-    boolean incUpper =
-        (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-            (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                0 == high.compareTo(end)));
+    boolean incLower = (include.contains(FacetRangeInclude.LOWER) ||
+                        (include.contains(FacetRangeInclude.EDGE) && 0 == low.compareTo(start)));
+    boolean incUpper = (include.contains(FacetRangeInclude.UPPER) ||
+                        (include.contains(FacetRangeInclude.EDGE) && 0 == high.compareTo(max_end)));
 
     Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
 
-
     // now refine this range
 
-    SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
+    final SimpleOrderedMap<Object> bucket = refineRange(range, skip, facetInfo);
     bucket.add("val", range.label);
-    
-    Query domainQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
-    fillBucket(bucket, domainQ, null, skip, facetInfo);
 
     return bucket;
+  }
+
+  /** Helper method for refining a Range
+   * @see #fillBucket
+   */
+  private SimpleOrderedMap<Object> refineRange(Range range, boolean skip, Map<String,Object> facetInfo) throws IOException {
+    final SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
+    final Query domainQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
+    fillBucket(bucket, domainQ, null, skip, facetInfo);
+    return bucket;
+  }
+  
+  /** Helper method for building a "before" Range */
+  private Range buildBeforeRange() {
+    // include upper bound if "outer" or if first gap doesn't already include it
+    final boolean incUpper = (include.contains(FacetRangeInclude.OUTER) ||
+                              (!(include.contains(FacetRangeInclude.LOWER) ||
+                                 include.contains(FacetRangeInclude.EDGE))));
+    return new Range(FacetRangeOther.BEFORE.toString(), null, start, false, incUpper);
+  }
+
+  /** Helper method for building a "after" Range */
+  private Range buildAfterRange() {
+    final Comparable the_end = getOrComputeActualEndForRefinement();
+    assert null != the_end;
+    final boolean incLower = (include.contains(FacetRangeInclude.OUTER) ||
+                              (!(include.contains(FacetRangeInclude.UPPER) ||
+                                 include.contains(FacetRangeInclude.EDGE))));
+    return new Range(FacetRangeOther.AFTER.toString(), the_end, null, incLower, false);
+  }
+
+  /** Helper method for building a "between" Range */
+  private Range buildBetweenRange() {
+    final Comparable the_end = getOrComputeActualEndForRefinement();
+    assert null != the_end;
+    final boolean incLower = (include.contains(FacetRangeInclude.LOWER) ||
+                              include.contains(FacetRangeInclude.EDGE));
+    final boolean incUpper = (include.contains(FacetRangeInclude.UPPER) ||
+                              include.contains(FacetRangeInclude.EDGE));
+    return new Range(FacetRangeOther.BETWEEN.toString(), start, the_end, incLower, incUpper);
   }
 }

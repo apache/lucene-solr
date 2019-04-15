@@ -67,7 +67,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Don't do anything if the framework is unknown
-    if(watcher==null) {
+    if (watcher==null) {
       rsp.add("error", "Logging Not Initialized");
       return;
     }
@@ -142,7 +142,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
       Collections.sort(loggers);
   
       List<SimpleOrderedMap<?>> info = new ArrayList<>();
-      for(LoggerInfo wrap:loggers) {
+      for (LoggerInfo wrap : loggers) {
         info.add(wrap.getInfo());
       }
       rsp.add("loggers", info);

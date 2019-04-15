@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -125,7 +124,7 @@ class FreqProxFields extends Fields {
     }
   }
 
-  private static class FreqProxTermsEnum extends TermsEnum {
+  private static class FreqProxTermsEnum extends BaseTermsEnum {
     final FreqProxTermsWriterPerField terms;
     final int[] sortedTermIDs;
     final FreqProxPostingsArray postingsArray;
@@ -275,7 +274,7 @@ class FreqProxFields extends Fields {
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+    public ImpactsEnum impacts(int flags) throws IOException {
       throw new UnsupportedOperationException();
     }
 

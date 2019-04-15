@@ -31,11 +31,14 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDoubleValuesSource extends LuceneTestCase {
+
+  private static final double LEAST_DOUBLE_VALUE = 45.72;
 
   private Directory dir;
   private IndexReader reader;
@@ -56,7 +59,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       document.add(new FloatDocValuesField("float", random().nextFloat()));
       document.add(new DoubleDocValuesField("double", random().nextDouble()));
       if (i == 545)
-        document.add(new DoubleDocValuesField("onefield", 45.72));
+        document.add(new DoubleDocValuesField("onefield", LEAST_DOUBLE_VALUE));
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -71,11 +74,41 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     super.tearDown();
   }
 
-  public void testSortMissing() throws Exception {
+  public void testSortMissingZeroDefault() throws Exception {
+    // docs w/no value get default missing value = 0
+
     DoubleValuesSource onefield = DoubleValuesSource.fromDoubleField("onefield");
+    // sort decreasing
     TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(true)));
     FieldDoc first = (FieldDoc) results.scoreDocs[0];
-    assertEquals(45.72, first.fields[0]);
+    assertEquals(LEAST_DOUBLE_VALUE, first.fields[0]);
+
+    // sort increasing
+    results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(false)));
+    first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(0d, first.fields[0]);
+  }
+
+  public void testSortMissingExplicit() throws Exception {
+    // docs w/no value get provided missing value
+
+    DoubleValuesSource onefield = DoubleValuesSource.fromDoubleField("onefield");
+
+    // sort decreasing, missing last
+    SortField oneFieldSort = onefield.getSortField(true);
+    oneFieldSort.setMissingValue(Double.MIN_VALUE);
+
+    TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(oneFieldSort));
+    FieldDoc first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(LEAST_DOUBLE_VALUE, first.fields[0]);
+
+    // sort increasing, missing last
+    oneFieldSort = onefield.getSortField(false);
+    oneFieldSort.setMissingValue(Double.MAX_VALUE);
+
+    results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(oneFieldSort));
+    first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(LEAST_DOUBLE_VALUE, first.fields[0]);
   }
 
   public void testSimpleFieldEquivalences() throws Exception {
@@ -122,7 +155,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     };
     Collections.shuffle(Arrays.asList(fields), random());
     int numSorts = TestUtil.nextInt(random(), 1, fields.length);
-    return new Sort(Arrays.copyOfRange(fields, 0, numSorts));
+    return new Sort(ArrayUtil.copyOfSubArray(fields, 0, numSorts));
   }
 
   // Take a Sort, and replace any field sorts with Sortables
@@ -162,13 +195,13 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
   void checkSorts(Query query, Sort sort) throws Exception {
     int size = TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc() / 5);
-    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean(), random().nextBoolean());
+    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean());
     Sort mutatedSort = convertSortToSortable(sort);
-    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean(), random().nextBoolean());
+    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean());
 
     CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
 
-    if (size < actual.totalHits) {
+    if (size < actual.totalHits.value) {
       expected = searcher.searchAfter(expected.scoreDocs[size-1], query, size, sort);
       actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
@@ -209,7 +242,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.v = rewritten.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }
 
@@ -237,7 +270,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     searcher.search(q, new SimpleCollector() {
 
       DoubleValues v;
-      Scorer scorer;
+      Scorable scorer;
       LeafReaderContext ctx;
 
       @Override
@@ -246,7 +279,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
         this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }

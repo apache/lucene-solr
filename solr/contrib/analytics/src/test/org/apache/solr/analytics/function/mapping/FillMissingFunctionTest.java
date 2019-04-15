@@ -343,13 +343,13 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     assertTrue(func.exists());
 
     val.setExists(false);
-    filler.setValue(new Boolean(true)).setExists(true);
-    assertEquals(new Boolean(true), func.getObject());
+    filler.setValue(Boolean.TRUE).setExists(true);
+    assertEquals(Boolean.TRUE, func.getObject());
     assertTrue(func.exists());
     
-    val.setValue(new Long(234)).setExists(true);
+    val.setValue(234L).setExists(true);
     filler.setExists(false);
-    assertEquals(new Long(234), func.getObject());
+    assertEquals(234L, func.getObject());
     assertTrue(func.exists());
   }
 
@@ -688,7 +688,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     
     // Values exist
     val.setValues("asdfs");
-    filler.setValues(new Date(12312), new Long(213123L));
+    filler.setValues(new Date(12312), 213123L);
     Iterator<Object> values1 = Arrays.<Object>asList("asdfs").iterator();
     func.streamObjects( value -> {
       assertTrue(values1.hasNext());
@@ -697,17 +697,17 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values1.hasNext());
 
     val.setValues();
-    filler.setValues(new Double(3234.42), "replacement");
-    Iterator<Object> values2 = Arrays.<Object>asList(new Double(3234.42), "replacement").iterator();
+    filler.setValues(3234.42d, "replacement");
+    Iterator<Object> values2 = Arrays.<Object>asList(3234.42d, "replacement").iterator();
     func.streamObjects( value -> {
       assertTrue(values2.hasNext());
       assertEquals(values2.next(), value);
     });
     assertFalse(values2.hasNext());
 
-    val.setValues(new Date(3), "3", new Float(3F));
+    val.setValues(new Date(3), "3", 3F);
     filler.setValues();
-    Iterator<Object> values3 = Arrays.<Object>asList(new Date(3), "3", new Float(3F)).iterator();
+    Iterator<Object> values3 = Arrays.<Object>asList(new Date(3), "3", 3F).iterator();
     func.streamObjects( value -> {
       assertTrue(values3.hasNext());
       assertEquals(values3.next(), value);

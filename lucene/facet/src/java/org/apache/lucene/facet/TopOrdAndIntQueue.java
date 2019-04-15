@@ -38,7 +38,7 @@ public class TopOrdAndIntQueue extends PriorityQueue<TopOrdAndIntQueue.OrdAndVal
 
   /** Sole constructor. */
   public TopOrdAndIntQueue(int topN) {
-    super(topN, false);
+    super(topN);
   }
 
   @Override

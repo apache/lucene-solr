@@ -21,6 +21,7 @@ import java.io.Closeable;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Implementations of this interface are notified of stages in event processing that they were
@@ -28,7 +29,24 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
  */
 public interface TriggerListener extends Closeable {
 
-  void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) throws Exception;
+  /**
+   * Called when listener is created but before it's initialized and used.
+   * This method should also verify that the configuration parameters are correct.
+   * It may be called multiple times.
+   * @param loader loader to use for instantiating sub-components
+   * @param cloudManager current instance of SolrCloudManager
+   * @param config coniguration
+   * @throws TriggerValidationException contains details of invalid configuration parameters.
+   */
+  void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException;
+
+  /**
+   * If this method returns false then the listener's {@link #onEvent(TriggerEvent, TriggerEventProcessorStage, String, ActionContext, Throwable, String)}
+   * method should not be called.
+   */
+  boolean isEnabled();
+
+  void init() throws Exception;
 
   AutoScalingConfig.TriggerListenerConfig getConfig();
 

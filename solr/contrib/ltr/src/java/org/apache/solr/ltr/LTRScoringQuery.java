@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -32,7 +31,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DisjunctionDISIApproximation;
@@ -40,6 +38,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -151,6 +150,11 @@ public class LTRScoringQuery extends Query {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   private boolean equalsTo(LTRScoringQuery other) {
@@ -443,13 +447,6 @@ public class LTRScoringQuery extends Query {
 
     }
 
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
-        feature.extractTerms(terms);
-      }
-    }
-
     protected void reset() {
       for (int i = 0; i < extractedFeatureWeights.length;++i){
         int featId = extractedFeatureWeights[i].getIndex();
@@ -508,7 +505,7 @@ public class LTRScoringQuery extends Query {
       }
 
       @Override
-      public Collection<ChildScorer> getChildren() throws IOException {
+      public Collection<ChildScorable> getChildren() throws IOException {
         return featureTraversalScorer.getChildren();
       }
 
@@ -592,10 +589,10 @@ public class LTRScoringQuery extends Query {
         }
 
         @Override
-        public final Collection<ChildScorer> getChildren() {
-          final ArrayList<ChildScorer> children = new ArrayList<>();
+        public final Collection<ChildScorable> getChildren() {
+          final ArrayList<ChildScorable> children = new ArrayList<>();
           for (final DisiWrapper scorer : subScorers) {
-            children.add(new ChildScorer(scorer.scorer, "SHOULD"));
+            children.add(new ChildScorable(scorer.scorer, "SHOULD"));
           }
           return children;
         }
@@ -674,10 +671,10 @@ public class LTRScoringQuery extends Query {
         }
         
         @Override
-        public final Collection<ChildScorer> getChildren() {
-          final ArrayList<ChildScorer> children = new ArrayList<>();
+        public final Collection<ChildScorable> getChildren() {
+          final ArrayList<ChildScorable> children = new ArrayList<>();
           for (final Scorer scorer : featureScorers) {
-            children.add(new ChildScorer(scorer, "SHOULD"));
+            children.add(new ChildScorable(scorer, "SHOULD"));
           }
           return children;
         }

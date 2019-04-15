@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -53,7 +52,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Directory dir = newDirectory();
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     FieldInfo fi = builder.getOrAdd("field");
     fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
@@ -75,7 +74,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     Directory dir = newDirectory();
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     FieldInfo fi = builder.getOrAdd("field");
     fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
@@ -115,7 +114,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     dir.failOn(fail);
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     FieldInfo fi = builder.getOrAdd("field");
     fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
@@ -150,7 +149,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     dir.failOn(fail);
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     FieldInfo fi = builder.getOrAdd("field");
     fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
@@ -185,7 +184,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     dir.failOn(fail);
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     FieldInfo fi = builder.getOrAdd("field");
     fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
@@ -221,7 +220,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     dir.failOn(fail);
     Codec codec = getCodec();
     SegmentInfo segmentInfo = newSegmentInfo(dir, "_123");
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     FieldInfo fi = builder.getOrAdd("field");
     fi.setIndexOptions(TextField.TYPE_STORED.indexOptions());
     addAttributes(fi);
@@ -251,7 +250,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     for (int i = 0; i < numFields; i++) {
       fieldNames.add(TestUtil.randomUnicodeString(random()));
     }
-    FieldInfos.Builder builder = new FieldInfos.Builder();
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     for (String field : fieldNames) {
       IndexableFieldType fieldType = randomFieldType(random());
       FieldInfo fi = builder.getOrAdd(field);
@@ -348,7 +347,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
     Version minVersion = random().nextBoolean() ? null : Version.LATEST;
-    return new SegmentInfo(dir, Version.LATEST, minVersion, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    return new SegmentInfo(dir, Version.LATEST, minVersion, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), null);
   }
   
   @Override

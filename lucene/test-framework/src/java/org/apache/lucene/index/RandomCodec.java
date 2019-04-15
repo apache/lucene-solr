@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -38,6 +39,7 @@ import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
@@ -46,8 +48,6 @@ import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.Directory;
@@ -108,17 +108,16 @@ public class RandomCodec extends AssertingCodec {
           public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
             PointValues values = reader.getValues(fieldInfo.name);
-            boolean singleValuePerDoc = values.size() == values.getDocCount();
 
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
                                                                    writeState.segmentInfo.name,
-                                                                   fieldInfo.getPointDimensionCount(),
+                                                                   fieldInfo.getPointDataDimensionCount(),
+                                                                   fieldInfo.getPointIndexDimensionCount(),
                                                                    fieldInfo.getPointNumBytes(),
                                                                    maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
                                                                    values.size(),
-                                                                   singleValuePerDoc,
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
                 values.intersect(new IntersectVisitor() {
                     @Override
@@ -190,7 +189,7 @@ public class RandomCodec extends AssertingCodec {
     bkdSplitRandomSeed = random.nextInt();
 
     add(avoidCodecs,
-        TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock, RandomPicks.randomFrom(random, BlockTreeTermsReader.FSTLoadMode.values())),
         new FSTPostingsFormat(),
         new FSTOrdPostingsFormat(),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
@@ -205,14 +204,11 @@ public class RandomCodec extends AssertingCodec {
         new LuceneVarGapFixedInterval(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapDocFreqInterval(TestUtil.nextInt(random, 1, 100), TestUtil.nextInt(random, 1, 1000)),
         TestUtil.getDefaultPostingsFormat(),
-        new AssertingPostingsFormat(),
-        new MemoryPostingsFormat(true, random.nextFloat()),
-        new MemoryPostingsFormat(false, random.nextFloat()));
+        new AssertingPostingsFormat());
     
     addDocValues(avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
         new DirectDocValuesFormat(), // maybe not a great idea...
-        new MemoryDocValuesFormat(),
         TestUtil.getDefaultDocValuesFormat(),
         new AssertingDocValuesFormat());
 
@@ -264,14 +260,10 @@ public class RandomCodec extends AssertingCodec {
 
     final Random random;
 
-    public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims,
+    public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims,
                                       int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
-                                      long totalPointCount, boolean singleValuePerDoc, int randomSeed) throws IOException {
-      super(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount,
-            getRandomSingleValuePerDoc(singleValuePerDoc, randomSeed),
-            getRandomLongOrds(totalPointCount, singleValuePerDoc, randomSeed),
-            getRandomOfflineSorterBufferMB(randomSeed),
-            getRandomOfflineSorterMaxTempFiles(randomSeed));
+                                      long totalPointCount, int randomSeed) throws IOException {
+      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
       this.random = new Random(randomSeed);
     }
 
@@ -296,7 +288,7 @@ public class RandomCodec extends AssertingCodec {
     @Override
     protected int split(byte[] minPackedValue, byte[] maxPackedValue, int[] parentDims) {
       // BKD normally defaults by the widest dimension, to try to make as squarish cells as possible, but we just pick a random one ;)
-      return random.nextInt(numDims);
+      return random.nextInt(numIndexDims);
     }
   }
 }

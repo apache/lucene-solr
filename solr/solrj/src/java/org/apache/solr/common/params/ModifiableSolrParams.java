@@ -23,7 +23,7 @@ import java.util.Set;
 
 
 /**
- * This class is similar to MultiMapSolrParams except you can edit the 
+ * This class is similar to {@link MultiMapSolrParams} except you can edit the
  * parameters after it is initialized.  It has helper functions to set/add
  * integer and boolean param values.
  * 
@@ -132,12 +132,13 @@ public class ModifiableSolrParams extends SolrParams
     return this;
   }
 
-  public void add(SolrParams params)
-  {
-    Iterator<String> names = params.getParameterNamesIterator();
-    while (names.hasNext()) {
-      String name = names.next();
-      set(name, params.getParams(name));
+  /**
+   * Add all of the params provided in the parameter to <em>this</em> params. Any current value(s) for the same
+   * key will be overridden.
+   */
+  public void add(SolrParams params) {
+    for (Map.Entry<String, String[]> pair: params) {
+      set(pair.getKey(), pair.getValue());
     }
   }
   
@@ -204,5 +205,10 @@ public class ModifiableSolrParams extends SolrParams
   @Override
   public String[] getParams(String param) {
     return vals.get( param );
+  }
+
+  @Override
+  public Iterator<Map.Entry<String, String[]>> iterator() {
+    return vals.entrySet().iterator();
   }
 }

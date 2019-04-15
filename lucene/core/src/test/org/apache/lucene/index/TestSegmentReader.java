@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentCommitInfo info = DocHelper.writeDoc(random(), dir, testDoc);
-    reader = new SegmentReader(info, Version.LATEST.major, IOContext.READ);
+    reader = new SegmentReader(info, Version.LATEST.major, false, IOContext.READ, Collections.emptyMap());
   }
   
   @Override
@@ -115,9 +116,9 @@ public class TestSegmentReader extends LuceneTestCase {
   } 
   
   public void testTerms() throws IOException {
-    Fields fields = MultiFields.getFields(reader);
+    final Collection<String> fields = FieldInfos.getIndexedFields(reader);
     for (String field : fields) {
-      Terms terms = fields.terms(field);
+      Terms terms = MultiTerms.getTerms(reader, field);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator();
       while(termsEnum.next() != null) {
@@ -144,7 +145,7 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(termDocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     
-    PostingsEnum positions = MultiFields.getTermPositionsEnum(reader,
+    PostingsEnum positions = MultiTerms.getTermPostingsEnum(reader,
                                                                       DocHelper.TEXT_FIELD_1_KEY,
                                                                       new BytesRef("field"));
     // NOTE: prior rev of this test was failing to first

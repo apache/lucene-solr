@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,7 +66,6 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -90,7 +90,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
  */
-public class HttpSolrClient extends SolrClient {
+public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
   private static final String DEFAULT_PATH = "/select";
@@ -252,7 +252,7 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
-    return executeMethod(method, processor, isV2ApiRequest(request));
+    return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
   private boolean isV2ApiRequest(final SolrRequest request) {
@@ -296,7 +296,7 @@ public class HttpSolrClient extends SolrClient {
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = pool.submit(() -> executeMethod(method, processor, isV2ApiRequest(request)));
+      mrr.future = pool.submit(() -> executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request)));
  
     } finally {
       pool.shutdown();
@@ -517,7 +517,7 @@ public class HttpSolrClient extends SolrClient {
 
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
 
-  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
+  protected NamedList<Object> executeMethod(HttpRequestBase method, Principal userPrincipal, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
@@ -539,6 +539,12 @@ public class HttpSolrClient extends SolrClient {
     try {
       // Execute the method.
       HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+      if (userPrincipal != null) {
+        // Normally the context contains a static userToken to enable reuse resources.
+        // However, if a personal Principal object exists, we use that instead, also as a means
+        // to transfer authentication information to Auth plugins that wish to intercept the request later
+        httpClientRequestContext.setUserToken(userPrincipal);
+      }
       final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
 
       int httpStatus = response.getStatusLine().getStatusCode();
@@ -553,7 +559,7 @@ public class HttpSolrClient extends SolrClient {
       } else {
         contentType = "";
       }
-      
+
       // handle some http level checks before trying to parse the response
       switch (httpStatus) {
         case HttpStatus.SC_OK:
@@ -650,11 +656,11 @@ public class HttpSolrClient extends SolrClient {
           + getBaseURL(), e);
     } catch (SocketTimeoutException e) {
       throw new SolrServerException(
-          "Timeout occured while waiting response from server at: "
+          "Timeout occurred while waiting response from server at: "
               + getBaseURL(), e);
     } catch (IOException e) {
       throw new SolrServerException(
-          "IOException occured when talking to server at: " + getBaseURL(), e);
+          "IOException occurred when talking to server at: " + getBaseURL(), e);
     } finally {
       if (shouldClose) {
         Utils.consumeFully(entity);
@@ -791,53 +797,26 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     this.useMultiPartPost = useMultiPartPost;
   }
 
+
   /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP
-   * status code that may have been returned by the remote server or a 
-   * proxy along the way.
+   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteSolrException} instead
    */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code Arbitrary HTTP status code
-     * @param msg Exception Message
-     * @param th Throwable to wrap with this Exception
-     */
+  @Deprecated
+  public static class RemoteSolrException extends BaseHttpSolrClient.RemoteSolrException {
+
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
+      super(remoteHost, code, msg, th);
     }
   }
 
   /**
-   * This should be thrown when a server has an error in executing the request and
-   * it sends a proper payload back to the client
+   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteExecutionException} instead
    */
-  public static class RemoteExecutionException extends RemoteSolrException {
-    private NamedList meta;
+  @Deprecated
+  public static class RemoteExecutionException extends BaseHttpSolrClient.RemoteExecutionException {
 
     public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, null);
-      this.meta = meta;
-    }
-
-
-    public static RemoteExecutionException create(String host, NamedList errResponse) {
-      Object errObj = errResponse.get("error");
-      if (errObj != null) {
-        Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
-        String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
-        return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg, errResponse);
-
-      } else {
-        throw new RuntimeException("No error");
-      }
-
-    }
-
-    public NamedList getMetaData() {
-
-      return meta;
+      super(remoteHost, code, msg, meta);
     }
   }
 
@@ -926,6 +905,12 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
       return this;
     }
 
+    /**
+     * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
+     *
+     * @param params a set of parameters to add to the invariant-params list.  These params must be unique and may not
+     *               duplicate a param already in the invariant list.
+     */
     public Builder withInvariantParams(ModifiableSolrParams params) {
       Objects.requireNonNull(params, "params must be non null!");
 

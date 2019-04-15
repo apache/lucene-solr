@@ -27,11 +27,12 @@ import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Analyzer for Indonesian (Bahasa)
+ *
+ * @since 3.1
  */
 public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Indonesian stopwords. */
@@ -104,15 +105,14 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter},
+   *         {@link LowerCaseFilter},
    *         {@link StopFilter}, {@link SetKeywordMarkerFilter}
    *         if a stem exclusion set is provided and {@link IndonesianStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
+    TokenStream result = new LowerCaseFilter(source);
     result = new StopFilter(result, stopwords);
     if (!stemExclusionSet.isEmpty()) {
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
@@ -122,8 +122,6 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
-    return result;
+    return new LowerCaseFilter(in);
   }
 }

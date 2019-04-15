@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * by the target cluster.
  * </p>
  */
-public class CdcrUpdateProcessor extends DistributedUpdateProcessor {
+public class CdcrUpdateProcessor extends DistributedZkUpdateProcessor {
 
   public static final String CDCR_UPDATE = "cdcr.update";
 

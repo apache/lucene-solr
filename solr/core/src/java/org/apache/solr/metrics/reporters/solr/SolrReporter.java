@@ -303,7 +303,7 @@ public class SolrReporter extends ScheduledReporter {
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
                       boolean cloudClient, boolean compact) {
-    super(null, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit);
+    super(null, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit, null, true);
     this.metricManager = metricManager;
     this.urlProvider = urlProvider;
     this.reporterId = reporterId;

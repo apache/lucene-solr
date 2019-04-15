@@ -373,7 +373,10 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     NamedList<NamedList> all_facets = (NamedList) queryServer
       ( params( "q", "*:*", "shards", getShardsString(), "rows" , "0", "json.facet",
                 "{ foo : { " + commonJson + " field: foo_s, facet: { " +
-                ALL_STATS_JSON + " bar: { " + commonJson + " field: bar_s, facet: { " + ALL_STATS_JSON + "} } } } }"
+                ALL_STATS_JSON + " bar: { " + commonJson + " field: bar_s, facet: { " + ALL_STATS_JSON +
+                // under bar, in addition to "ALL" simple stats, we also ask for skg...
+                ", skg : 'relatedness($skg_fore,$skg_back)' } } } } }",
+                "skg_fore", STAT_FIELD+":[0 TO 40]", "skg_back", STAT_FIELD+":[-10000 TO 10000]"
       ) ).getResponse().get("facets");
     
     assertNotNull(all_facets);
@@ -411,7 +414,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     List<NamedList> tail_bar_buckets = (List) ((NamedList)tail_Bucket.get("bar")).get("buckets");
    
     NamedList tailB_Bucket = tail_bar_buckets.get(0);
-    assertEquals(ALL_STATS.size() + 2, tailB_Bucket.size()); // val,count ... NO SUB FACETS
+    assertEquals(ALL_STATS.size() + 3, tailB_Bucket.size()); // val,count,skg ... NO SUB FACETS
     assertEquals("tailB", tailB_Bucket.get("val"));
     assertEquals(17L, tailB_Bucket.get("count"));
     assertEquals(35L, tailB_Bucket.get("min"));
@@ -423,6 +426,18 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(16910.0D, (double) tailB_Bucket.get("sumsq"), 0.1E-7);
     // assertEquals(1.78376517D, (double) tailB_Bucket.get("stddev"), 0.1E-7); // TODO: SOLR-11725
     assertEquals(1.70782513D, (double) tailB_Bucket.get("stddev"), 0.1E-7); // json.facet is using the "uncorrected stddev"
+
+    // check the SKG stats on our tailB bucket
+    NamedList tailB_skg = (NamedList) tailB_Bucket.get("skg");
+    assertEquals(tailB_skg.toString(),
+                 3, tailB_skg.size()); 
+    assertEquals(0.19990D,    tailB_skg.get("relatedness"));
+    assertEquals(0.00334D,    tailB_skg.get("foreground_popularity"));
+    assertEquals(0.00334D,    tailB_skg.get("background_popularity"));
+    //assertEquals(12L,       tailB_skg.get("foreground_count"));
+    //assertEquals(82L,       tailB_skg.get("foreground_size"));
+    //assertEquals(12L,       tailB_skg.get("background_count"));
+    //assertEquals(3591L,     tailB_skg.get("background_size"));
   }
 
 }

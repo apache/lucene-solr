@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.util.NamedList;
+
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
 
 /**
@@ -41,13 +44,18 @@ import org.apache.solr.common.util.NamedList;
  */
 public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> implements Iterable<Map.Entry<String, Object>>
 {
-  private final Map<String,Object> _fields;
+  protected final Map<String,Object> _fields;
   
   private List<SolrDocument> _childDocuments;
   
   public SolrDocument()
   {
     _fields = new LinkedHashMap<>();
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    _fields.forEach(ew.getBiConsumer());
   }
 
   public SolrDocument(Map<String, Object> fields) {
@@ -105,7 +113,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     else if( value instanceof NamedList ) {
       // nothing
     }
-    else if( value instanceof Iterable ) {
+    else if( value instanceof Iterable && !(value instanceof SolrDocumentBase)) {
       ArrayList<Object> lst = new ArrayList<>();
       for( Object o : (Iterable)value ) {
         lst.add( o );
@@ -154,7 +162,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
     }
     
     // Add the values to the collection
-    if( value instanceof Iterable ) {
+    if( value instanceof Iterable && !(value instanceof SolrDocumentBase)) {
       for( Object o : (Iterable<Object>)value ) {
         vals.add( o );
       }
@@ -281,14 +289,14 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
       /** Get the field Value */
       @Override
       public Object get(Object key) { 
-        return getFirstValue( (String)key ); 
+        return convertCharSeq(getFirstValue( (String)key));
       }
       
       // Easily Supported methods
       @Override
       public boolean containsKey(Object key) { return _fields.containsKey( key ); }
       @Override
-      public Set<String>  keySet()           { return _fields.keySet();  }
+      public Set<String>  keySet()           { return (Set<String>) convertCharSeq(_fields.keySet());  }
       @Override
       public int          size()             { return _fields.size();    }
       @Override
@@ -360,7 +368,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public Object remove(Object key) {
-    return _fields.remove(key);
+    return convertCharSeq(_fields.remove(key));
   }
 
   @Override
@@ -370,7 +378,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public Collection<Object> values() {
-    return _fields.values();
+    return convertCharSeq(_fields.values());
   }
 
   @Override
@@ -388,7 +396,6 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
      }
    }
 
-   /** Returns the list of child documents, or null if none. */
    @Override
    public List<SolrDocument> getChildDocuments() {
      return _childDocuments;
@@ -402,6 +409,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public int getChildDocumentCount() {
+    if (_childDocuments == null) return 0;
     return _childDocuments.size();
   }
 }

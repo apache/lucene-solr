@@ -48,6 +48,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileName = "solrconfig.xml";
   private static final String solrConfigFileNameWarmerRandomMergePolicyFactory = "solrconfig-warmer-randommergepolicyfactory.xml";
   private static final String solrConfigFileNameTieredMergePolicyFactory = "solrconfig-tieredmergepolicyfactory.xml";
+  private static final String solrConfigFileNameConnMSPolicyFactory = "solrconfig-concurrentmergescheduler.xml";
   private static final String solrConfigFileNameSortingMergePolicyFactory = "solrconfig-sortingmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
 
@@ -93,6 +94,29 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler)  iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
+    assertEquals("ms.isAutoIOThrottle", true, ms.getAutoIOThrottle());
+
+  }
+
+  @Test
+  public void testConcurrentMergeSchedularSolrIndexConfigCreation() throws Exception {
+    String solrConfigFileName = solrConfigFileNameConnMSPolicyFactory;
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName, null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    assertNotNull("null mp", iwc.getMergePolicy());
+    assertTrue("mp is not TieredMergePolicy", iwc.getMergePolicy() instanceof TieredMergePolicy);
+
+    assertNotNull("null ms", iwc.getMergeScheduler());
+    assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
+    ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler)  iwc.getMergeScheduler();
+    assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
+    assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
+    assertEquals("ms.isAutoIOThrottle", false, ms.getAutoIOThrottle());
 
   }
 

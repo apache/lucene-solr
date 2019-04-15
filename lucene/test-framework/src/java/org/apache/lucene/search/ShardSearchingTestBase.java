@@ -230,9 +230,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public Query rewrite(Query original) throws IOException {
         final IndexSearcher localSearcher = new IndexSearcher(getIndexReader());
-        final Weight weight = localSearcher.createNormalizedWeight(original, ScoreMode.COMPLETE);
+        original = localSearcher.rewrite(original);
         final Set<Term> terms = new HashSet<>();
-        weight.extractTerms(terms);
+        original.visit(QueryVisitor.termCollector(terms));
 
         // Make a single request to remote nodes for term
         // stats:
@@ -258,7 +258,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           }
         }
 
-        return weight.getQuery();
+        return original;
       }
 
       @Override

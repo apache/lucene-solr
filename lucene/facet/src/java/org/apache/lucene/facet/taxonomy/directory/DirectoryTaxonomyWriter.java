@@ -195,7 +195,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
     fullPathField = new StringField(Consts.FULL, "", Field.Store.YES);
 
-    nextID = indexWriter.maxDoc();
+    nextID = indexWriter.getDocStats().maxDoc;
 
     if (cache == null) {
       cache = defaultTaxonomyWriterCache();
@@ -216,6 +216,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // notice a few cache misses.
       cacheIsComplete = false;
     }
+  }
+
+  /** Returns the {@link TaxonomyWriterCache} in use by this writer. */
+  public TaxonomyWriterCache getCache() {
+    return cache;
   }
 
   /**
@@ -963,7 +968,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     shouldRefreshReaderManager = true;
     initReaderManager(); // ensure that it's initialized
     refreshReaderManager();
-    nextID = indexWriter.maxDoc();
+    nextID = indexWriter.getDocStats().maxDoc;
     taxoArrays = null; // must nullify so that it's re-computed next time it's needed
     
     // need to clear the cache, so that addCategory won't accidentally return

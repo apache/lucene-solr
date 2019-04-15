@@ -25,7 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
@@ -141,7 +141,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       list.add( doc );
 
       if( ids != null ) {
-        ids.put( doc, new Integer(docid) );
+        ids.put( doc, docid );
       }
     }
     return list;

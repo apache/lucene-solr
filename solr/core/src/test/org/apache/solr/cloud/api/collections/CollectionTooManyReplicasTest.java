@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -79,7 +78,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     });
 
     assertTrue("Should have gotten the right error message back",
-          e.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
+          e.getMessage().contains("given the current number of eligible live nodes"));
 
 
     // Oddly, we should succeed next just because setting property.name will not check for nodes being "full up"
@@ -106,7 +105,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     });
 
     assertTrue("Should have gotten the right error message back",
-        e2.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
+        e2.getMessage().contains("given the current number of eligible live nodes"));
 
     // wait for recoveries to finish, for a clean shutdown - see SOLR-9645
     waitForState("Expected to see all replicas active", collectionName, (n, c) -> {
@@ -141,13 +140,13 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
     });
     assertTrue("Should have gotten the right error message back",
-        e.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
+        e.getMessage().contains("given the current number of eligible live nodes"));
 
     // Hmmm, providing a nodeset also overrides the checks for max replicas, so prove it.
     List<String> nodes = getAllNodeNames(collectionName);
 
     CollectionAdminRequest.createShard(collectionName, "shard4")
-        .setNodeSet(StringUtils.join(nodes, ","))
+        .setNodeSet(String.join(",", nodes))
         .process(cluster.getSolrClient());
 
     // And just for yucks, insure we fail the "regular" one again.
@@ -156,9 +155,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
     });
     assertTrue("Should have gotten the right error message back",
-        e2.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
+        e2.getMessage().contains("given the current number of eligible live nodes"));
 
-    // And finally, insure that there are all the replcias we expect. We should have shards 1, 2 and 4 and each
+    // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
     waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c) -> {
       return DocCollection.isFullyActive(n, c, 4, 2);

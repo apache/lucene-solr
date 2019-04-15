@@ -124,8 +124,7 @@ public class SqlStream extends TupleStream implements Expressible {
 
     // parameters
 
-    ModifiableSolrParams mParams = new ModifiableSolrParams(SolrParams.toMultiMap(params.toNamedList()));
-    for (Entry<String, String[]> param : mParams.getMap().entrySet()) {
+    for (Entry<String, String[]> param : params) {
       String value = String.join(",", param.getValue());
 
       // SOLR-8409: This is a special case where the params contain a " character

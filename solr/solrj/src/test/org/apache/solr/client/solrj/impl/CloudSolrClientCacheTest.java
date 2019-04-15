@@ -108,7 +108,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   private LBHttpSolrClient getMockLbHttpSolrClient(Map<String, Function> responses) throws Exception {
     LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
 
-    when(mockLbclient.request(any(LBHttpSolrClient.Req.class))).then(invocationOnMock -> {
+    when(mockLbclient.request(any(LBSolrClient.Req.class))).then(invocationOnMock -> {
       LBHttpSolrClient.Req req = invocationOnMock.getArgument(0);
       Function f = responses.get("request");
       if (f == null) return null;

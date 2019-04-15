@@ -23,8 +23,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.store.Directory;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -32,14 +32,16 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -93,37 +95,53 @@ enum CoreAdminOperation implements CoreAdminOp {
   }),
   UNLOAD_OP(UNLOAD, it -> {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.CORE);
+    String cname = params.required().get(CoreAdminParams.CORE);
+
     boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
     boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
     boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
+    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, false);
+    CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
     it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+    if (deleteMetricsHistory) {
+      MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
+      if (historyHandler != null) {
+        CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
+        String registry;
+        if (cd == null) {
+          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
+        } else {
+          String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
+          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core,
+              cd.getCollectionName(),
+              cd.getShardId(),
+              replicaName);
+        }
+        historyHandler.checkSystemCollection();
+        historyHandler.removeHistory(registry);
+      }
+    }
 
     assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
-
   }),
   RELOAD_OP(RELOAD, it -> {
     SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
 
-    try {
-      it.handler.coreContainer.reload(cname);
-    } catch (Exception ex) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling 'reload' action", ex);
-    }
+    it.handler.coreContainer.reload(cname);
   }),
   STATUS_OP(STATUS, new StatusOp()),
   SWAP_OP(SWAP, it -> {
     final SolrParams params = it.req.getParams();
-    final String cname = params.get(CoreAdminParams.CORE);
+    final String cname = params.required().get(CoreAdminParams.CORE);
     String other = params.required().get(CoreAdminParams.OTHER);
     it.handler.coreContainer.swap(cname, other);
   }),
 
   RENAME_OP(RENAME, it -> {
     SolrParams params = it.req.getParams();
-    String name = params.get(CoreAdminParams.OTHER);
-    String cname = params.get(CoreAdminParams.CORE);
+    String name = params.required().get(CoreAdminParams.OTHER);
+    String cname = params.required().get(CoreAdminParams.CORE);
 
     if (cname.equals(name)) return;
 
@@ -138,7 +156,7 @@ enum CoreAdminOperation implements CoreAdminOp {
 
   REQUESTRECOVERY_OP(REQUESTRECOVERY, it -> {
     final SolrParams params = it.req.getParams();
-    final String cname = params.get(CoreAdminParams.CORE, "");
+    final String cname = params.required().get(CoreAdminParams.CORE);
     log().info("It has been requested that we recover: core=" + cname);
     
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
@@ -154,7 +172,7 @@ enum CoreAdminOperation implements CoreAdminOp {
 
   REQUESTBUFFERUPDATES_OP(REQUESTBUFFERUPDATES, it -> {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.NAME, "");
+    String cname = params.required().get(CoreAdminParams.NAME);
     log().info("Starting to buffer updates on core:" + cname);
 
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
@@ -180,7 +198,7 @@ enum CoreAdminOperation implements CoreAdminOp {
 
   REQUESTSTATUS_OP(REQUESTSTATUS, it -> {
     SolrParams params = it.req.getParams();
-    String requestId = params.get(CoreAdminParams.REQUESTID);
+    String requestId = params.required().get(CoreAdminParams.REQUESTID);
     log().info("Checking request status for : " + requestId);
 
     if (it.handler.getRequestStatusMap(RUNNING).containsKey(requestId)) {
@@ -225,10 +243,11 @@ enum CoreAdminOperation implements CoreAdminOp {
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),
   DELETESNAPSHOT_OP(DELETESNAPSHOT, new DeleteSnapshotOp()),
   LISTSNAPSHOTS_OP(LISTSNAPSHOTS, it -> {
-    CoreContainer cc = it.handler.getCoreContainer();
     final SolrParams params = it.req.getParams();
-
     String cname = params.required().get(CoreAdminParams.CORE);
+
+    CoreContainer cc = it.handler.getCoreContainer();
+
     try ( SolrCore core = cc.getCore(cname) ) {
       if (core == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
@@ -320,7 +339,7 @@ enum CoreAdminOperation implements CoreAdminOp {
               RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
               try {
                 SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-                long size = getIndexSize(core);
+                long size = core.getIndexSize();
                 indexInfo.add("sizeInBytes", size);
                 indexInfo.add("size", NumberUtils.readableSize(size));
                 info.add("index", indexInfo);
@@ -335,27 +354,15 @@ enum CoreAdminOperation implements CoreAdminOp {
     return info;
   }
 
-  static long getIndexSize(SolrCore core) {
-    Directory dir;
-    long size = 0;
-    try {
-
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-
-      try {
-        size = core.getDirectoryFactory().size(dir);
-      } finally {
-        core.getDirectoryFactory().release(dir);
-      }
-    } catch (IOException e) {
-      SolrException.log(log, "IO error while trying to get the size of the Directory", e);
-    }
-    return size;
-  }
-
   @Override
   public void execute(CallInfo it) throws Exception {
-    fun.execute(it);
+    try {
+      fun.execute(it);
+    } catch (SolrException | InterruptedException e) {
+      // No need to re-wrap; throw as-is.
+      throw e;
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling '" + action.name() + "' action", e);
+    }
   }
-
 }

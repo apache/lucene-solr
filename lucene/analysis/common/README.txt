@@ -15,6 +15,8 @@ A few changes has been made to the static Snowball code and compiled stemmers:
 If you want to add new stemmers, use the exact revision / Git commit above to generate the Java class, place it
 in src/java/org/tartarus/snowball/ext, and finally execute "ant patch-snowball". The latter will change the APIs
 of the generated class to make it compatible. Already patched classes are not modified.
+The Arabic stemmer has been generated from https://github.com/snowballstem/snowball/blob/master/algorithms/arabic.sbl
+using the latest version of snowball and patched manually.
 
 IMPORTANT NOTICE ON BACKWARDS COMPATIBILITY!
 

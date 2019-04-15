@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,6 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -33,11 +33,12 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
@@ -100,24 +101,42 @@ public class CollectionMutator {
     return new ZkWriteCommand(collection, newCollection);
   }
 
-  public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message){
+  public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
-    for (String prop : CollectionsHandler.MODIFIABLE_COLL_PROPS) {
-      if(message.get(prop)!= null) {
+    for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      if (message.containsKey(prop)) {
         hasAnyOps = true;
-        m.put(prop,message.get(prop));
+        if (message.get(prop) == null)  {
+          m.remove(prop);
+        } else  {
+          m.put(prop, message.get(prop));
+        }
+        if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
+          m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+        }
       }
     }
-    
-    if(!hasAnyOps) {
+    // other aux properties are also modifiable
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
+        hasAnyOps = true;
+        if (message.get(prop) == null) {
+          m.remove(prop);
+        } else {
+          m.put(prop, message.get(prop));
+        }
+      }
+    }
+
+    if (!hasAnyOps) {
       return ZkStateWriter.NO_OP;
     }
-    
+
     return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(),coll.getSlicesMap(),m,coll.getRouter(),coll.getZNodeVersion(),coll.getZNode()));
+        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode()));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {

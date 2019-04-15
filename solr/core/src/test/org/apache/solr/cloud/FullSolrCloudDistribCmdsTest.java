@@ -68,6 +68,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
 
   @Test
   @ShardsFixed(num = 6)
+  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);

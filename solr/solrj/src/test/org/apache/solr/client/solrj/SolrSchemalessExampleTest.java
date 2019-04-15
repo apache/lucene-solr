@@ -65,7 +65,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         } catch (Exception ignore){}
       }
     }
-    createJetty(tempSolrHome.getAbsolutePath());
+    createAndStartJetty(tempSolrHome.getAbsolutePath());
   }
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {

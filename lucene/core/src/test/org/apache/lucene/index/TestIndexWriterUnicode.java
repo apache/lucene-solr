@@ -136,7 +136,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   }
 
   private void checkTermsOrder(IndexReader r, Set<String> allTerms, boolean isTop) throws IOException {
-    TermsEnum terms = MultiFields.getTerms(r, "f").iterator();
+    TermsEnum terms = MultiTerms.getTerms(r, "f").iterator();
 
     BytesRefBuilder last = new BytesRefBuilder();
 

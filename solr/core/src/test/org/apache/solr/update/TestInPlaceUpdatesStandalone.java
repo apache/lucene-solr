@@ -18,9 +18,6 @@
 
 package org.apache.solr.update;
 
-import static org.junit.internal.matchers.StringContains.containsString;
-import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,13 +45,15 @@ import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
+import static org.hamcrest.core.StringContains.containsString;
 
 
 /**
@@ -414,13 +413,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   @Test
   public void testUpdateOfNonExistentDVsShouldNotFail() throws Exception {
     // schema sanity check: assert that the nonexistent_field_i_dvo doesn't exist already
-    FieldInfo fi;
-    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
-    try {
-      fi = holder.get().getSlowAtomicReader().getFieldInfos().fieldInfo("nonexistent_field_i_dvo");
-    } finally {
-      holder.decref();
-    }
+    FieldInfo fi = h.getCore().withSearcher(searcher ->
+        searcher.getSlowAtomicReader().getFieldInfos().fieldInfo("nonexistent_field_i_dvo"));
     assertNull(fi);
 
     // Partial update

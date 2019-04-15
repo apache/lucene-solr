@@ -25,14 +25,15 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 
 /**
  * Filters {@link org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer}
- * with {@link org.apache.lucene.analysis.standard.StandardFilter},
- * {@link org.apache.lucene.analysis.LowerCaseFilter} and
+ * with {@link org.apache.lucene.analysis.LowerCaseFilter} and
  * {@link org.apache.lucene.analysis.StopFilter}, using a list of
  * English stop words.
+ *
+ * @since 3.6.0
  */
 public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   
@@ -43,7 +44,7 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
 
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
-  public static final CharArraySet STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
+  public static final CharArraySet STOP_WORDS_SET = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
 
   /** Builds an analyzer with the given stop words.
    * @param stopWords stop words */
@@ -87,18 +88,12 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName) {
     final UAX29URLEmailTokenizer src = new UAX29URLEmailTokenizer();
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new StandardFilter(src);
-    tok = new LowerCaseFilter(tok);
+    TokenStream tok = new LowerCaseFilter(src);
     tok = new StopFilter(tok, stopwords);
-    return new TokenStreamComponents(src, tok) {
-      @Override
-      protected void setReader(final Reader reader) {
-        // So that if maxTokenLength was changed, the change takes
-        // effect next time tokenStream is called:
-        src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
-        super.setReader(reader);
-      }
-    };
+    return new TokenStreamComponents(r -> {
+      src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
+      src.setReader(r);
+    }, tok);
   }
 
   @Override

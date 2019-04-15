@@ -62,6 +62,13 @@ public final class NormsFieldExistsQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
@@ -73,7 +80,7 @@ public final class NormsFieldExistsQuery extends Query {
         }
         LeafReader reader = context.reader();
         DocIdSetIterator iterator = reader.getNormValues(field);
-        return new ConstantScoreScorer(this, score(), iterator);
+        return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
 
       @Override

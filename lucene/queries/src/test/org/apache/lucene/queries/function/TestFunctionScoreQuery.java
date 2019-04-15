@@ -109,7 +109,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     int expectedDocs[] = new int[]{ 4, 7, 9 };
     TopDocs docs = searcher.search(q, 4);
-    assertEquals(expectedDocs.length, docs.totalHits);
+    assertEquals(expectedDocs.length, docs.totalHits.value);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(docs.scoreDocs[i].doc, expectedDocs[i]);
     }
@@ -131,11 +131,14 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     int[] expectedDocs = new int[]{ 4, 7, 9, 8, 12 };
     TopDocs docs = searcher.search(fq, 5);
-    assertEquals(plain.totalHits, docs.totalHits);
+    assertEquals(plain.totalHits.value, docs.totalHits.value);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
-
     }
+
+    Explanation expl = searcher.explain(fq, 4);
+    assertTrue(expl.toString().contains("first"));
+    assertTrue(expl.toString().contains("iii"));
 
   }
 
@@ -152,11 +155,14 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     int[] expectedDocs = new int[]{ 6, 1, 0, 2, 8 };
     TopDocs docs = searcher.search(fq, 20);
-    assertEquals(plain.totalHits, docs.totalHits);
+    assertEquals(plain.totalHits.value, docs.totalHits.value);
     for (int i = 0; i < expectedDocs.length; i++) {
       assertEquals(expectedDocs[i], docs.scoreDocs[i].doc);
-
     }
+
+    Explanation expl = searcher.explain(fq, 6);
+    assertTrue(expl.toString().contains("rechecking"));
+    assertTrue(expl.toString().contains("text"));
   }
 
   // check boosts with non-distributive score source
@@ -171,7 +177,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
 
     Query boosted = new BoostQuery(q1, 2);
     TopDocs afterboost = searcher.search(boosted, 5);
-    assertEquals(plain.totalHits, afterboost.totalHits);
+    assertEquals(plain.totalHits.value, afterboost.totalHits.value);
     for (int i = 0; i < 5; i++) {
       assertEquals(plain.scoreDocs[i].doc, afterboost.scoreDocs[i].doc);
       assertEquals(plain.scoreDocs[i].score, afterboost.scoreDocs[i].score / 2, 0.0001);
@@ -214,4 +220,28 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     reader.close();
     dir.close();
   }
+
+  // check access to the score source of a functionScoreQuery
+  public void testAccessToValueSource() throws Exception {
+
+    FunctionScoreQuery q1 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "a")), DoubleValuesSource.constant(31));
+    Query q2 = new FunctionScoreQuery(q1.getWrappedQuery(), q1.getSource());
+    QueryUtils.check(q2);
+    QueryUtils.checkEqual(q2, q1);
+
+    FunctionScoreQuery q3 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "first")),
+            DoubleValuesSource.fromIntField(INT_FIELD));
+    Query q4 = new FunctionScoreQuery(q3.getWrappedQuery(), q3.getSource());
+    QueryUtils.checkEqual(q3, q4);
+
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("score", DoubleValuesSource.SCORES);
+    Expression expr = JavascriptCompiler.compile("ln(score + 4)");
+    FunctionScoreQuery q5 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "text")), expr.getDoubleValuesSource(bindings));
+    Query q6 = new FunctionScoreQuery(q5.getWrappedQuery(), q5.getSource());
+    QueryUtils.checkEqual(q5, q6);
+
+
+  }
+
 }

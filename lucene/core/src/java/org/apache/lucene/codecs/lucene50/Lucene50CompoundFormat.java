@@ -28,7 +28,6 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Lucene 5.0 compound file format
@@ -75,9 +74,6 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
   public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
     String entriesFile = IndexFileNames.segmentFileName(si.name, "", ENTRIES_EXTENSION);
-    
-    byte[] expectedID = si.getId();
-    byte[] id = new byte[StringHelper.ID_LENGTH];
 
     try (IndexOutput data =    dir.createOutput(dataFile, context);
          IndexOutput entries = dir.createOutput(entriesFile, context)) {
