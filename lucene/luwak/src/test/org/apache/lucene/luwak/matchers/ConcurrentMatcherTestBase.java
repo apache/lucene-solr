@@ -96,8 +96,8 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
         // The queries are all split into three by the QueryDecomposer, and the
         // 'test' and 'doc' parts will match.  'test' will have a higher score,
         // because of it's lower termfreq.  We need to check that each query ends
-        // up with the score for the 'test' subquery, not the 'doc' subquery
-        assertEquals(1.3076458f, match.getScore(), 0);
+        // up with the sum of the scores for the 'test' and 'doc' parts
+        assertEquals(1.4874471f, match.getScore(), 0);
       }
 
       executor.shutdown();
