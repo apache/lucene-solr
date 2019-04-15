@@ -57,7 +57,7 @@ public final class Line2D extends EdgeTree {
       if (isPointOnLine(tree, ax, ay)) {
         return Relation.CELL_INSIDE_QUERY;
       }
-    } else if (ax == cx && ay == cy) {
+    } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
       // indexed "triangle" is a line:
       if (tree.crossesLine(ax, ay, bx, by)) {
         return Relation.CELL_CROSSES_QUERY;
