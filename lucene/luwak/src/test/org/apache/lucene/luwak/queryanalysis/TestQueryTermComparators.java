@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,12 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.termextractor.weights.FieldSpecificTermWeightNorm;
-import org.apache.lucene.luwak.termextractor.weights.FieldWeightNorm;
-import org.apache.lucene.luwak.termextractor.weights.TermFrequencyWeightNorm;
-import org.apache.lucene.luwak.termextractor.weights.TermTypeNorm;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightNorm;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryTermComparators extends LuceneTestCase {
@@ -75,14 +70,14 @@ public class TestQueryTermComparators extends LuceneTestCase {
   }
 
   public void testFieldWeights() {
-    TermWeightor weightor = new TermWeightor(new FieldWeightNorm(1.5f, "g"));
-    assertEquals(1, weightor.weigh(new QueryTerm("f", "foo", QueryTerm.Type.EXACT)), 0);
-    assertEquals(1.5f, weightor.weigh(new QueryTerm("g", "foo", QueryTerm.Type.EXACT)), 0);
+    TermWeightor weightor = TermWeightor.fieldWeightor(1.5, "g");
+    assertEquals(1, weightor.applyAsDouble(new QueryTerm("f", "foo", QueryTerm.Type.EXACT)), 0);
+    assertEquals(1.5f, weightor.applyAsDouble(new QueryTerm("g", "foo", QueryTerm.Type.EXACT)), 0);
   }
 
   public void testTermWeights() {
-    TermWeightor weight = new TermWeightor(new TermWeightNorm(0.01f, Collections.singleton("START")));
-    assertEquals(0.01f, weight.weigh(new QueryTerm("f", "START", QueryTerm.Type.EXACT)), 0);
+    TermWeightor weight = TermWeightor.termWeightor(0.01f, new BytesRef("START"));
+    assertEquals(0.01f, weight.applyAsDouble(new QueryTerm("f", "START", QueryTerm.Type.EXACT)), 0);
   }
 
   public void testTermFrequencyNorms() {
@@ -90,27 +85,31 @@ public class TestQueryTermComparators extends LuceneTestCase {
     Map<String, Integer> termfreqs = new HashMap<>();
     termfreqs.put("france", 31635);
     termfreqs.put("s", 47088);
-    TermWeightor weight = new TermWeightor(new TermFrequencyWeightNorm(termfreqs, 100, 0.8f));
+    TermWeightor weight = TermWeightor.termFreqWeightor(termfreqs, 100, 0.8);
 
-    assertTrue(weight.weigh(new QueryTerm("f", "france", QueryTerm.Type.EXACT)) >
-        weight.weigh(new QueryTerm("f", "s", QueryTerm.Type.EXACT)));
+    assertTrue(weight.applyAsDouble(new QueryTerm("f", "france", QueryTerm.Type.EXACT)) >
+        weight.applyAsDouble(new QueryTerm("f", "s", QueryTerm.Type.EXACT)));
 
   }
 
   public void testFieldSpecificTermWeightNorms() {
-    TermWeightor weight = new TermWeightor(new FieldSpecificTermWeightNorm(0.1f, "field1", "f", "g"));
-    assertEquals(0.1f, weight.weigh(new QueryTerm("field1", "f", QueryTerm.Type.EXACT)), 0);
-    assertEquals(1, weight.weigh(new QueryTerm("field2", "f", QueryTerm.Type.EXACT)), 0);
+    TermWeightor weight = TermWeightor.termAndFieldWeightor(0.1,
+        new Term("field1", "f"),
+        new Term("field1", "g"));
+    assertEquals(0.1, weight.applyAsDouble(new QueryTerm("field1", "f", QueryTerm.Type.EXACT)), 0);
+    assertEquals(1, weight.applyAsDouble(new QueryTerm("field2", "f", QueryTerm.Type.EXACT)), 0);
   }
 
   public void testTermTypeWeightNorms() {
 
-    TermWeightor weight = new TermWeightor(new TermTypeNorm(QueryTerm.Type.CUSTOM, 0.2f),
-        new TermTypeNorm(QueryTerm.Type.CUSTOM, "wildcard", 0.1f));
+    TermWeightor weight = TermWeightor.combine(
+        TermWeightor.typeWeightor(0.2, QueryTerm.Type.CUSTOM),
+        TermWeightor.typeWeightor(0.1, QueryTerm.Type.CUSTOM, "wildcard")
+    );
 
-    assertEquals(0.1f, weight.weigh(new QueryTerm("field", "fooXX", QueryTerm.Type.CUSTOM, "wildcard")), 0);
-    assertEquals(1, weight.weigh(new QueryTerm("field", "foo", QueryTerm.Type.EXACT)), 0);
-    assertEquals(0.2f, weight.weigh(new QueryTerm("field", "foo", QueryTerm.Type.CUSTOM)), 0);
+    assertEquals(0.2 * 0.1, weight.applyAsDouble(new QueryTerm("field", "fooXX", QueryTerm.Type.CUSTOM, "wildcard")), 0);
+    assertEquals(1, weight.applyAsDouble(new QueryTerm("field", "foo", QueryTerm.Type.EXACT)), 0);
+    assertEquals(0.2, weight.applyAsDouble(new QueryTerm("field", "foo", QueryTerm.Type.CUSTOM)), 0);
 
   }
 

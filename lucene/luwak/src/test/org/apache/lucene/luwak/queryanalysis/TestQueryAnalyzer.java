@@ -15,29 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.luwak.termextractor.weights.TermWeightNorm;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
-import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
 import org.apache.lucene.luwak.testutils.ParserUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryAnalyzer extends LuceneTestCase {
 
   public static final QueryAnalyzer analyzer = new QueryAnalyzer();
-  private static final TermWeightor WEIGHTOR = new TermWeightor(new TokenLengthNorm());
 
   public void testAdvancesCollectDifferentTerms() throws Exception {
 
     Query q = ParserUtils.parse("field:(+hello +goodbye)");
-    QueryTree querytree = analyzer.buildTree(q, WEIGHTOR);
+    QueryTree querytree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "goodbye", QueryTerm.Type.EXACT));
     assertEquals(expected, analyzer.collectTerms(querytree));
@@ -57,7 +54,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     // disjunction containing a pure negative - we can't narrow this down
     Query q = ParserUtils.parse("hello goodbye (*:* -term)");
 
-    Set<QueryTerm> terms = analyzer.collectTerms(q, WEIGHTOR);
+    Set<QueryTerm> terms = analyzer.collectTerms(q, TermWeightor.DEFAULT);
     assertEquals(1, terms.size());
     assertEquals(QueryTerm.Type.ANY, terms.iterator().next().type);
 
@@ -66,7 +63,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
   public void testConjunctionsDoNotAdvanceOverANYTOKENs() throws Exception {
 
     Query q = ParserUtils.parse("+hello +howdyedo +(goodbye (*:* -whatever))");
-    QueryTree tree = analyzer.buildTree(q, WEIGHTOR);
+    QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "howdyedo", QueryTerm.Type.EXACT));
     assertEquals(expected, analyzer.collectTerms(tree));
@@ -82,7 +79,9 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   public void testConjunctionsCannotAdvanceOverZeroWeightedTokens() throws Exception {
 
-    TermWeightor weightor = new TermWeightor(new TermWeightNorm(0, "startterm"), new TokenLengthNorm(1, 1));
+    TermWeightor weightor = TermWeightor.combine(
+        TermWeightor.termWeightor(0, new BytesRef("startterm")),
+        TermWeightor.lengthWeightor(1, 1));
 
     QueryAnalyzer analyzer = new QueryAnalyzer();
 
@@ -103,7 +102,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
   public void testNestedConjunctions() throws Exception {
 
     Query q = ParserUtils.parse("+(+(+(+aaaa +cc) +(+d +bbb)))");
-    QueryTree tree = analyzer.buildTree(q, WEIGHTOR);
+    QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "aaaa", QueryTerm.Type.EXACT));
     assertEquals(expected, analyzer.collectTerms(tree));
@@ -126,7 +125,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
   public void testNestedDisjunctions() throws Exception {
 
     Query q = ParserUtils.parse("+(+((+aaaa +cc) (+dd +bbb +f)))");
-    QueryTree tree = analyzer.buildTree(q, WEIGHTOR);
+    QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = new HashSet<>(Arrays.asList(
         new QueryTerm("field", "aaaa", QueryTerm.Type.EXACT),

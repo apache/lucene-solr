@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 
 public abstract class QueryTree {
 
@@ -60,7 +59,7 @@ public abstract class QueryTree {
   }
 
   public static QueryTree term(QueryTerm queryTerm, TermWeightor weightor) {
-    return term(queryTerm, weightor.weigh(queryTerm));
+    return term(queryTerm, weightor.applyAsDouble(queryTerm));
   }
 
   public static QueryTree term(QueryTerm queryTerm, double weight) {

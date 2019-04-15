@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,8 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
-import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -43,7 +41,7 @@ public class TestSpanExtractors extends LuceneTestCase  {
 
   private static final QueryAnalyzer treeBuilder = new QueryAnalyzer();
 
-  private static final TermWeightor WEIGHTOR = new TermWeightor(new TokenLengthNorm());
+  private static final TermWeightor WEIGHTOR = TermWeightor.DEFAULT;
 
   public void testOrderedNearExtractor() {
     SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
@@ -127,5 +125,5 @@ public class TestSpanExtractors extends LuceneTestCase  {
     Query q = new SpanFirstQuery(new SpanTermQuery(t1), 10);
     assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
   }
-  
+
 }
