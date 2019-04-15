@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.luwak.analysis.SuffixingNGramTokenFilter;
 import org.apache.lucene.luwak.queryanalysis.QueryTerm;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;
 import org.apache.lucene.luwak.queryanalysis.TermWeightor;

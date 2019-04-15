@@ -36,8 +36,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryTermFilter;
-import org.apache.lucene.luwak.analysis.BytesRefFilteredTokenFilter;
-import org.apache.lucene.luwak.analysis.TermsEnumTokenStream;
 import org.apache.lucene.luwak.queryanalysis.QueryAnalyzer;
 import org.apache.lucene.luwak.queryanalysis.QueryTerm;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;

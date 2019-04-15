@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.analysis;
+package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
@@ -27,7 +27,7 @@ import org.apache.lucene.util.BytesRefIterator;
 /**
  * A TokenStream created from a {@link org.apache.lucene.index.TermsEnum}
  */
-public class TermsEnumTokenStream extends TokenStream {
+class TermsEnumTokenStream extends TokenStream {
 
   private final BytesRefIterator termsEnum;
   private final CharTermAttribute charTerm = addAttribute(CharTermAttribute.class);

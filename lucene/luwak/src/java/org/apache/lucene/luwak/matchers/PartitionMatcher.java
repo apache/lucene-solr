@@ -33,7 +33,6 @@ import org.apache.lucene.luwak.MatchError;
 import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.util.CollectionUtils;
 import org.apache.lucene.search.Query;
 
 /**
@@ -76,7 +75,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
 
   private final List<MatchTask> tasks = new ArrayList<>();
 
-  public PartitionMatcher(DocumentBatch docs, ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
+  private PartitionMatcher(DocumentBatch docs, ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
     super(docs);
     this.executor = executor;
     this.matcherFactory = matcherFactory;
@@ -98,7 +97,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
   public void finish(long buildTime, int queryCount) {
 
     List<Callable<Matches<T>>> workers = new ArrayList<>(threads);
-    for (List<MatchTask> taskset : CollectionUtils.partition(tasks, threads)) {
+    for (List<MatchTask> taskset : partition(tasks, threads)) {
       CandidateMatcher<T> matcher = matcherFactory.createMatcher(docs);
       matcher.setSlowLogLimit(this.slowlog.getLimit());
       workers.add(new MatcherWorker(taskset, matcher));
@@ -145,13 +144,13 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     }
   }
 
-  public static class PartitionMatcherFactory<T extends QueryMatch> implements MatcherFactory<T> {
+  private static class PartitionMatcherFactory<T extends QueryMatch> implements MatcherFactory<T> {
 
     private final ExecutorService executor;
     private final MatcherFactory<T> matcherFactory;
     private final int threads;
 
-    public PartitionMatcherFactory(ExecutorService executor, MatcherFactory<T> matcherFactory,
+    PartitionMatcherFactory(ExecutorService executor, MatcherFactory<T> matcherFactory,
                                    int threads) {
       this.executor = executor;
       this.matcherFactory = matcherFactory;
@@ -165,21 +164,20 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
   }
 
   /**
-   * Create a new PartitionMatcherFactory
+   * Create a new MatcherFactory for a PartitionMatcher
    *
    * @param executor       the ExecutorService to use
    * @param matcherFactory the MatcherFactory to use to create submatchers
    * @param threads        the number of threads to use
    * @param <T>            the type of QueryMatch generated
-   * @return a PartitionMatcherFactory
    */
-  public static <T extends QueryMatch> PartitionMatcherFactory<T> factory(ExecutorService executor,
+  public static <T extends QueryMatch> MatcherFactory<T> factory(ExecutorService executor,
                                                                           MatcherFactory<T> matcherFactory, int threads) {
     return new PartitionMatcherFactory<>(executor, matcherFactory, threads);
   }
 
   /**
-   * Create a new PartitionMatcherFactory
+   * Create a new MatcherFactory for a PartitionMatcher
    * <p>
    * This factory will create a PartitionMatcher that uses as many threads as there are cores available
    * to the JVM (as determined by {@code Runtime.getRuntime().availableProcessors()}).
@@ -187,11 +185,27 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
    * @param executor       the ExecutorService to use
    * @param matcherFactory the MatcherFactory to use to create submatchers
    * @param <T>            the type of QueryMatch generated
-   * @return a PartitionMatcherFactory
    */
-  public static <T extends QueryMatch> PartitionMatcherFactory<T> factory(ExecutorService executor,
+  public static <T extends QueryMatch> MatcherFactory<T> factory(ExecutorService executor,
                                                                           MatcherFactory<T> matcherFactory) {
     int threads = Runtime.getRuntime().availableProcessors();
     return new PartitionMatcherFactory<>(executor, matcherFactory, threads);
   }
+
+  static <T> List<List<T>> partition(List<T> items, int slices) {
+    double size = items.size() / (double) slices;
+    double accum = 0;
+    int start = 0;
+    List<List<T>> list = new ArrayList<>(slices);
+    for (int i = 0; i < slices; i++) {
+      int end = (int) Math.floor(accum + size);
+      if (i == slices - 1)
+        end = items.size();
+      list.add(items.subList(start, end));
+      accum += size;
+      start = (int) Math.floor(accum);
+    }
+    return list;
+  }
+
 }

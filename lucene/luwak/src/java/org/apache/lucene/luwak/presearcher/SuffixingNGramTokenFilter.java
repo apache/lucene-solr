@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.analysis;
+package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.analysis.CharArraySet;
 
-public final class SuffixingNGramTokenFilter extends TokenFilter {
+final class SuffixingNGramTokenFilter extends TokenFilter {
 
   private final String suffix;
   private final int maxTokenLength;

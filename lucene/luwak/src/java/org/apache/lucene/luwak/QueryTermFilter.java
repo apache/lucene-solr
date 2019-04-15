@@ -21,8 +21,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.luwak.analysis.BytesRefFilteredTokenFilter;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
@@ -31,8 +35,6 @@ import org.apache.lucene.util.BytesRefHash;
  * <p>
  * An instance of QueryTermFilter is passed to {@link Presearcher#buildQuery(LeafReader, QueryTermFilter)},
  * and can be used to restrict the presearcher's disjunction query to terms in the index.
- *
- * @see BytesRefFilteredTokenFilter
  */
 public class QueryTermFilter {
 

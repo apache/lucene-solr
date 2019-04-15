@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.analysis;
+package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
@@ -27,7 +27,7 @@ import org.apache.lucene.util.BytesRefHash;
 /**
  * A FilteringTokenFilter that only accepts terms already contained in a BytesRefHash
  */
-public class BytesRefFilteredTokenFilter extends FilteringTokenFilter {
+class BytesRefFilteredTokenFilter extends FilteringTokenFilter {
 
   private final BytesRefHash termsHash;
 

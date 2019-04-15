@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.analysis;
+package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.luwak.presearcher.TermsEnumTokenStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
 
 public class TestTermsEnumTokenFilter extends LuceneTestCase {
 

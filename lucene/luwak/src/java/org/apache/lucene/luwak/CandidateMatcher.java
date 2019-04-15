@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.luwak.util.ForceNoBulkScoringQuery;
 
 /**
  * Class used to match candidate queries selected by a Presearcher from a Monitor
