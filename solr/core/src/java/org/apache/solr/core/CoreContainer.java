@@ -337,6 +337,7 @@ public class CoreContainer {
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
     authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
+    int newVersion = readVersion(authorizationConf);
     //Initialize the Authorization module
     SecurityPluginHolder<AuthorizationPlugin> old = authorizationPlugin;
     SecurityPluginHolder<AuthorizationPlugin> authorizationPlugin = null;
@@ -345,11 +346,12 @@ public class CoreContainer {
       if (klas == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for authorization plugin");
       }
-      if (old != null && old.getZnodeVersion() == readVersion(authorizationConf)) {
+      if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+        log.debug("Authorization config not modified");
         return;
       }
       log.info("Initializing authorization plugin: " + klas);
-      authorizationPlugin = new SecurityPluginHolder<>(readVersion(authorizationConf),
+      authorizationPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(klas, AuthorizationPlugin.class));
 
       // Read and pass the authorization context to the plugin
@@ -369,6 +371,7 @@ public class CoreContainer {
 
   private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
     auditConf = Utils.getDeepCopy(auditConf, 4);
+    int newVersion = readVersion(auditConf);
     //Initialize the Auditlog module
     SecurityPluginHolder<AuditLoggerPlugin> old = auditloggerPlugin;
     SecurityPluginHolder<AuditLoggerPlugin> newAuditloggerPlugin = null;
@@ -377,11 +380,12 @@ public class CoreContainer {
       if (klas == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for auditlogger plugin");
       }
-      if (old != null && old.getZnodeVersion() == readVersion(auditConf)) {
+      if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+        log.debug("Auditlogger config not modified");
         return;
       }
       log.info("Initializing auditlogger plugin: " + klas);
-      newAuditloggerPlugin = new SecurityPluginHolder<>(readVersion(auditConf),
+      newAuditloggerPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
       newAuditloggerPlugin.plugin.init(auditConf);
@@ -401,6 +405,7 @@ public class CoreContainer {
   
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
+    int newVersion = readVersion(authenticationConfig);
     String pluginClassName = null;
     if (authenticationConfig != null) {
       if (authenticationConfig.containsKey("class")) {
@@ -422,10 +427,15 @@ public class CoreContainer {
     SecurityPluginHolder<AuthenticationPlugin> old = authenticationPlugin;
     SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin = null;
 
+    if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+      log.debug("Authentication config not modified");
+      return;
+    }
+
     // Initialize the plugin
     if (pluginClassName != null) {
       log.info("Initializing authentication plugin: " + pluginClassName);
-      authenticationPlugin = new SecurityPluginHolder<>(readVersion(authenticationConfig),
+      authenticationPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(pluginClassName,
               AuthenticationPlugin.class,
               null,
