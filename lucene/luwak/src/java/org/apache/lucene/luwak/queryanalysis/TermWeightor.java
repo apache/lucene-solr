@@ -155,7 +155,8 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
    * QueryTerms will be assigned a weight based on their term length
    *
    * Weights are assigned by the function {@code a * e ^ (-k * length)}. Longer
-   * terms are weighted higher. Terms of length > 32 all receive the same weight.
+   * terms are weighted higher. Terms of length greater than 32 all receive the
+   * same weight.
    *
    * @param a a
    * @param k k

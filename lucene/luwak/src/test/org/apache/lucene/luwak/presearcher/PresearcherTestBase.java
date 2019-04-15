@@ -117,7 +117,7 @@ public abstract class PresearcherTestBase extends LuceneTestCase {
 
     @Override
     public void visit(QueryVisitor visitor) {
-
+      visitor.visitLeaf(this);
     }
 
     @Override
