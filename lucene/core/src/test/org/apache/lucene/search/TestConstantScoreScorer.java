@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher.TerminationStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -236,12 +237,12 @@ public class TestConstantScoreScorer extends LuceneTestCase {
 
     IndexSearcher is = newSearcher(ir);
 
-    TopScoreDocCollector c = TopScoreDocCollector.create(10, null, 10);
+    TopScoreDocCollector c = TopScoreDocCollector.create(10, null, TerminationStrategy.RESULT_COUNT);
     is.search(new ConstantScoreQuery(new TermQuery(new Term("key", "foo"))), c);
     assertEquals(11, c.totalHits);
     assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
 
-    c = TopScoreDocCollector.create(10, null, 10);
+    c = TopScoreDocCollector.create(10, null, TerminationStrategy.RESULT_COUNT);
     Query query = new BooleanQuery.Builder()
         .add(new ConstantScoreQuery(new TermQuery(new Term("key", "foo"))), Occur.SHOULD)
         .add(new ConstantScoreQuery(new TermQuery(new Term("key", "bar"))), Occur.FILTER)
