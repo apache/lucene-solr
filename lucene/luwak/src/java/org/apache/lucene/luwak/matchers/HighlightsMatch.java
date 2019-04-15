@@ -21,22 +21,6 @@ import java.util.*;
 
 import org.apache.lucene.luwak.QueryMatch;
 
-/*
- * Copyright (c) 2014 Lemur Consulting Ltd.
- * <p/>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * QueryMatch object that contains the hit positions of a matching Query
  * <p>
@@ -47,21 +31,8 @@ import org.apache.lucene.luwak.QueryMatch;
 public class HighlightsMatch extends QueryMatch {
 
   private final Map<String, Set<Hit>> hits;
-  public Exception error;
 
-  /**
-   * Create a new QueryMatch object for a query
-   *
-   * @param queryId the ID of the query
-   * @param docId   document id of the matching document
-   * @param hits    the hits recorded for this query
-   */
-  public HighlightsMatch(String queryId, String docId, Map<String, Set<Hit>> hits) {
-    super(queryId, docId);
-    this.hits = new TreeMap<>(hits);
-  }
-
-  public HighlightsMatch(String queryId, String docId) {
+  HighlightsMatch(String queryId, String docId) {
     super(queryId, docId);
     this.hits = new TreeMap<>();
   }
@@ -104,7 +75,7 @@ public class HighlightsMatch extends QueryMatch {
     return c;
   }
 
-  public static HighlightsMatch merge(String queryId, String docId, HighlightsMatch... matches) {
+  static HighlightsMatch merge(String queryId, String docId, HighlightsMatch... matches) {
     HighlightsMatch newMatch = new HighlightsMatch(queryId, docId);
     for (HighlightsMatch match : matches) {
       assert newMatch.getDocId().equals(match.getDocId());
@@ -138,9 +109,7 @@ public class HighlightsMatch extends QueryMatch {
 
   @Override
   public String toString() {
-    if (error == null)
-      return super.toString() + "{hits=" + hits + "}";
-    return super.toString() + "{error=" + error + "}";
+    return super.toString() + "{hits=" + hits + "}";
   }
 
   void addHit(String field, int startPos, int endPos, int startOffset, int endOffset) {

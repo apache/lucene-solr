@@ -30,7 +30,7 @@ public class ScoringMatch extends QueryMatch {
 
   private final float score;
 
-  public ScoringMatch(String queryId, String docId, float score) {
+  ScoringMatch(String queryId, String docId, float score) {
     super(queryId, docId);
     this.score = score;
   }
