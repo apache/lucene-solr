@@ -163,6 +163,11 @@ Bug Fixes
 * SOLR-13336: add maxBooleanClauses (default to 1024) setting to solr.xml, reverting previous effective
   value of Integer.MAX_VALUE-1, to restrict risk of pathalogical query expansion.  (hossman)
 
+  * SOLR-13386: OverseerTaskQueue#remove should not throw an exception when no node exists after an exists 
+  check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
+  (Mark Miller, Fernandez-Lobbe, Mike Drob)
+
+
 Improvements
 ----------------------
 
