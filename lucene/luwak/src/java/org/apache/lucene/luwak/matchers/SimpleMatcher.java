@@ -17,19 +17,19 @@
 
 package org.apache.lucene.luwak.matchers;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
 
+/**
+ * A Matcher that records whether or not a query matches
+ */
 public class SimpleMatcher extends CollectingMatcher<QueryMatch> {
 
-  public SimpleMatcher(DocumentBatch docs) {
-    super(docs);
+  private SimpleMatcher(DocumentBatch docs) {
+    super(docs, ScoreMode.COMPLETE_NO_SCORES);
   }
 
   @Override
@@ -42,24 +42,9 @@ public class SimpleMatcher extends CollectingMatcher<QueryMatch> {
     return new QueryMatch(queryId, docId);
   }
 
-
-  @Override
-  protected MatchCollector buildMatchCollector(String queryId) {
-    return new SimpleMatchCollector(queryId);
-  }
-
-
+  /**
+   * A MatcherFactory to create new SimpleMatcher instances
+   */
   public static final MatcherFactory<QueryMatch> FACTORY = SimpleMatcher::new;
 
-
-  private class SimpleMatchCollector extends MatchCollector {
-    SimpleMatchCollector(String queryId) {
-      super(queryId);
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE_NO_SCORES;
-    }
-  }
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.luwak.matchers;
 import java.io.IOException;
 
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.luwak.DocumentBatch;
@@ -34,8 +35,8 @@ import org.apache.lucene.luwak.MatcherFactory;
  */
 public class ScoringMatcher extends CollectingMatcher<ScoringMatch> {
 
-  public ScoringMatcher(DocumentBatch docs) {
-    super(docs);
+  private ScoringMatcher(DocumentBatch docs) {
+    super(docs, ScoreMode.COMPLETE);
   }
 
   @Override
@@ -48,7 +49,7 @@ public class ScoringMatcher extends CollectingMatcher<ScoringMatch> {
 
   @Override
   public ScoringMatch resolve(ScoringMatch match1, ScoringMatch match2) {
-    return match1.getScore() < match2.getScore() ? match2 : match1;
+    return new ScoringMatch(match1.getQueryId(), match1.getDocId(), match1.getScore() + match2.getScore());
   }
 
   /**

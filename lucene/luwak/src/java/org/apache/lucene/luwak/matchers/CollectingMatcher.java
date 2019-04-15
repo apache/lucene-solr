@@ -20,7 +20,6 @@ package org.apache.lucene.luwak.matchers;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.luwak.CandidateMatcher;
 import org.apache.lucene.luwak.DocumentBatch;
@@ -33,19 +32,22 @@ import org.apache.lucene.luwak.QueryMatch;
  */
 public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
 
+  private final ScoreMode scoreMode;
+
   /**
    * Creates a new CollectingMatcher for the supplied DocumentBatch
    *
    * @param docs the documents to run queries against
    */
-  public CollectingMatcher(DocumentBatch docs) {
+  public CollectingMatcher(DocumentBatch docs, ScoreMode scoreMode) {
     super(docs);
+    this.scoreMode = scoreMode;
   }
 
   @Override
   protected void doMatchQuery(final String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
 
-    MatchCollector coll = buildMatchCollector(queryId);
+    MatchCollector coll = new MatchCollector(queryId, scoreMode);
 
     long t = System.nanoTime();
     IndexSearcher searcher = docs.getSearcher();
@@ -53,10 +55,6 @@ public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateM
     t = System.nanoTime() - t;
     this.slowlog.addQuery(queryId, t);
 
-  }
-
-  protected MatchCollector buildMatchCollector(String queryId) {
-    return new MatchCollector(queryId);
   }
 
   /**
@@ -70,42 +68,34 @@ public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateM
    */
   protected abstract T doMatch(String queryId, String docId, Scorable scorer) throws IOException;
 
-  protected class MatchCollector implements Collector {
+  protected class MatchCollector extends SimpleCollector {
 
-    T match = null;
-
-    private Scorable scorer;
     private final String queryId;
+    private final ScoreMode scoreMode;
+    private Scorable scorer;
 
-    public MatchCollector(String queryId) {
+    public MatchCollector(String queryId, ScoreMode scoreMode) {
       this.queryId = queryId;
+      this.scoreMode = scoreMode;
     }
 
+    @Override
+    public void collect(int doc) throws IOException {
+      T match = doMatch(queryId, docs.resolveDocId(doc), scorer);
+      if (match != null) {
+        addMatch(match);
+      }
+    }
 
     @Override
-    public LeafCollector getLeafCollector(LeafReaderContext leafReaderContext) {
-      return new MatchLeafCollector();
+    public void setScorer(Scorable scorer) {
+      this.scorer = scorer;
     }
 
     @Override
     public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE;
-    }
-
-    public class MatchLeafCollector implements LeafCollector {
-
-      @Override
-      public void setScorer(Scorable scorer) {
-        MatchCollector.this.scorer = scorer;
-      }
-
-      @Override
-      public void collect(int doc) throws IOException {
-        match = doMatch(queryId, docs.resolveDocId(doc), scorer);
-        if (match != null)
-          addMatch(match);
-      }
-
+      return scoreMode;
     }
   }
+
 }
