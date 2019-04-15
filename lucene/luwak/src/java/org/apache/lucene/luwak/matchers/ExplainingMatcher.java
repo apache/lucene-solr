@@ -36,12 +36,7 @@ public class ExplainingMatcher extends CandidateMatcher<ExplainingMatch> {
    */
   public static final MatcherFactory<ExplainingMatch> FACTORY = ExplainingMatcher::new;
 
-  /**
-   * Create a new ExplainingMatcher for the provided DocumentBatch
-   *
-   * @param docs batch of documents to match
-   */
-  public ExplainingMatcher(DocumentBatch docs) {
+  private ExplainingMatcher(DocumentBatch docs) {
     super(docs);
   }
 
@@ -57,7 +52,8 @@ public class ExplainingMatcher extends CandidateMatcher<ExplainingMatch> {
 
   @Override
   public ExplainingMatch resolve(ExplainingMatch match1, ExplainingMatch match2) {
-    return match1.getExplanation().getValue().doubleValue() > match2.getExplanation().getValue().doubleValue() ?
-        match1 : match2;
+    return new ExplainingMatch(match1.getQueryId(), match1.getDocId(),
+        Explanation.match(match1.getExplanation().getValue().doubleValue() + match2.getExplanation().getValue().doubleValue(),
+            "sum of:", match1.getExplanation(), match2.getExplanation()));
   }
 }

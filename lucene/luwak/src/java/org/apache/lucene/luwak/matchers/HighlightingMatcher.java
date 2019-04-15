@@ -33,15 +33,14 @@ import org.apache.lucene.search.Weight;
 /**
  * CandidateMatcher class that will return exact hit positions for all matching queries
  */
-
 public class HighlightingMatcher extends CandidateMatcher<HighlightsMatch> {
 
   /**
-   * Create a new HighlightingMatcher for a provided DocumentBatch, using a SpanRewriter
-   *
-   * @param docs     the batch to match
+   * A MatcherFactory for HighlightingMatchers
    */
-  public HighlightingMatcher(DocumentBatch docs) {
+  public static final MatcherFactory<HighlightsMatch> FACTORY = HighlightingMatcher::new;
+
+  private HighlightingMatcher(DocumentBatch docs) {
     super(docs);
   }
 
@@ -82,7 +81,5 @@ public class HighlightingMatcher extends CandidateMatcher<HighlightsMatch> {
     }
     return m;
   }
-
-  public static final MatcherFactory<HighlightsMatch> FACTORY = HighlightingMatcher::new;
 
 }
