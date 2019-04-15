@@ -38,11 +38,10 @@ import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryTermFilter;
 import org.apache.lucene.luwak.analysis.BytesRefFilteredTokenFilter;
 import org.apache.lucene.luwak.analysis.TermsEnumTokenStream;
-import org.apache.lucene.luwak.termextractor.QueryAnalyzer;
-import org.apache.lucene.luwak.termextractor.QueryTerm;
-import org.apache.lucene.luwak.termextractor.QueryTree;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
-import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
+import org.apache.lucene.luwak.queryanalysis.QueryAnalyzer;
+import org.apache.lucene.luwak.queryanalysis.QueryTerm;
+import org.apache.lucene.luwak.queryanalysis.QueryTree;
+import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -64,7 +63,7 @@ public class TermFilteredPresearcher extends Presearcher {
   /**
    * The default TermWeightor, weighting by token length
    */
-  public static final TermWeightor DEFAULT_WEIGHTOR = new TermWeightor(new TokenLengthNorm());
+  public static final TermWeightor DEFAULT_WEIGHTOR = TermWeightor.DEFAULT;
 
   static {
     BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE);

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,7 +27,6 @@ import java.util.function.Function;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.presearcher.PresearcherComponent;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;

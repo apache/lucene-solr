@@ -22,14 +22,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.luwak.termextractor.QueryTerm;
-import org.apache.lucene.luwak.termextractor.QueryTree;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
+import org.apache.lucene.luwak.queryanalysis.QueryTerm;
+import org.apache.lucene.luwak.queryanalysis.QueryTree;
+import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 

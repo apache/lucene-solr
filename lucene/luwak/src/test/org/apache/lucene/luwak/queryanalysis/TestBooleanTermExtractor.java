@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
-import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
 import org.apache.lucene.luwak.testutils.ParserUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -34,7 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestBooleanTermExtractor extends LuceneTestCase {
 
   private static final QueryAnalyzer treeBuilder = new QueryAnalyzer();
-  private static final TermWeightor WEIGHTOR = new TermWeightor(new TokenLengthNorm());
+  private static final TermWeightor WEIGHTOR = TermWeightor.DEFAULT;
 
   public void testAllDisjunctionQueriesAreIncluded() throws Exception {
 

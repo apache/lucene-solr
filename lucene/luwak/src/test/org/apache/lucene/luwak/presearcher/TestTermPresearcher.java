@@ -38,7 +38,7 @@ import org.apache.lucene.luwak.QueryTermFilter;
 import org.apache.lucene.luwak.UpdateException;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
-import org.apache.lucene.luwak.termextractor.QueryTree;
+import org.apache.lucene.luwak.queryanalysis.QueryTree;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermInSetQuery;

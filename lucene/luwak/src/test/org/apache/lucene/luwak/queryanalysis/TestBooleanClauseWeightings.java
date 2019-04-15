@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.termextractor;
+package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
-import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -42,7 +40,7 @@ public class TestBooleanClauseWeightings extends LuceneTestCase {
             .add(new TermQuery(new Term("field1", "term2")), BooleanClause.Occur.SHOULD)
             .build(), BooleanClause.Occur.MUST)
         .build();
-    assertEquals(2, treeBuilder.collectTerms(bq, new TermWeightor()).size());
+    assertEquals(2, treeBuilder.collectTerms(bq, TermWeightor.DEFAULT).size());
   }
 
   public void testLongerTermsPreferred() {
@@ -53,7 +51,7 @@ public class TestBooleanClauseWeightings extends LuceneTestCase {
         .build();
     Set<QueryTerm> expected
         = Collections.singleton(new QueryTerm("field1", "supercalifragilisticexpialidocious", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(q, new TermWeightor(new TokenLengthNorm())));
+    assertEquals(expected, treeBuilder.collectTerms(q, TermWeightor.DEFAULT));
   }
 
 }
