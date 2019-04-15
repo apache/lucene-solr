@@ -51,6 +51,13 @@ With the exception of in-place updates, the whole block must be updated or delet
   Consequently, the field need not be defined in the schema and probably shouldn't be as it would be confusing.
   There is no child document field type, at least not yet.
 
+[NOTE]
+====
+.Atomic Updates of Nested Documents
+\_root_ must be set either as stored (stored="true") or doc values (docValues="true") to enable
+<<updating-parts-of-documents#updating-child-documents, atomic updates of nested documents>>.
+====
+
 === Rudimentary Root-only Schemas
 
 These schemas do not contain any other nested related fields apart from `\_root_`.
