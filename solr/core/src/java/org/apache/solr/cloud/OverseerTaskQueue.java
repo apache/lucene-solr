@@ -93,9 +93,11 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       String path = event.getId();
       String responsePath = dir + "/" + RESPONSE_PREFIX
           + path.substring(path.lastIndexOf("-") + 1);
-      if (zookeeper.exists(responsePath, true)) {
+
+      try {
         zookeeper.setData(responsePath, event.getBytes(), true);
-      } else {
+      } catch (KeeperException.NoNodeException ignored) {
+        // we must handle the race case where the node no longer exists
         log.info("Response ZK path: " + responsePath + " doesn't exist."
             + "  Requestor may have disconnected from ZooKeeper");
       }
