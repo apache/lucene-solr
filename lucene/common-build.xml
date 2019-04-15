@@ -1439,7 +1439,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="-jacoco-install">
     <!-- download jacoco from ivy if needed -->
-    <ivy:cachepath organisation="org.jacoco" module="org.jacoco.ant" type="jar" inline="true" revision="0.7.4.201502262128"
+    <ivy:cachepath organisation="org.jacoco" module="org.jacoco.ant" type="jar" inline="true" revision="0.8.3"
                    log="download-only" pathid="jacoco.classpath" />
 
     <!-- install jacoco ant tasks -->
