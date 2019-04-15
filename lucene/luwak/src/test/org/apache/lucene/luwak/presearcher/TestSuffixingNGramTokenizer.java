@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.analysis;
+package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.luwak.presearcher.SuffixingNGramTokenFilter;
 
 public class TestSuffixingNGramTokenizer extends BaseTokenStreamTestCase {
 

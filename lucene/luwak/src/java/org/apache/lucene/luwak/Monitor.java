@@ -42,7 +42,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.luwak.presearcher.PresearcherMatches;
-import org.apache.lucene.luwak.util.ForceNoBulkScoringQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;

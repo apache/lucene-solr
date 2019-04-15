@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.util;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Matches;
 
 /**
  * Query wrapper that forces its wrapped Query to use the default doc-by-doc
  * BulkScorer.
  */
-public class ForceNoBulkScoringQuery extends Query {
+class ForceNoBulkScoringQuery extends Query {
 
   private final Query inner;
 
