@@ -80,7 +80,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
           assertNotNull( info.toString() );
           checked++;
         }
-        catch( InstantiationException ex ) {
+        catch( ReflectiveOperationException ex ) {
           // expected...
           //System.out.println( "unable to initialize: "+clazz );
         }
