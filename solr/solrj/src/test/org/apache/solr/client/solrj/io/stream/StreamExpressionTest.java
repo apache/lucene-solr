@@ -2800,7 +2800,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(cache);
-    String longQuery = "\"id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + ")\"";
+    // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored) BooleanQuery
+    // so we don't trip too many boolean clauses
+    String longQuery = "\"filter(id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + "))\"";
 
     try {
       assertSuccess("significantTerms("+COLLECTIONORALIAS+", q="+longQuery+", field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")", streamContext);
