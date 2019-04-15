@@ -22,11 +22,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.luwak.termextractor.querytree.AnyNode;
-import org.apache.lucene.luwak.termextractor.querytree.ConjunctionNode;
-import org.apache.lucene.luwak.termextractor.querytree.DisjunctionNode;
-import org.apache.lucene.luwak.termextractor.querytree.QueryTree;
-import org.apache.lucene.luwak.termextractor.querytree.TermNode;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightNorm;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
@@ -156,18 +151,18 @@ public class TestQueryAnalyzer extends LuceneTestCase {
   }
 
   public void testMinWeightAdvances() {
-    QueryTree tree = DisjunctionNode.build(
-        ConjunctionNode.build(
-            new TermNode(new QueryTerm("field", "term1", QueryTerm.Type.EXACT), 1),
-            new TermNode(new QueryTerm("field", "term2", QueryTerm.Type.EXACT), 0.1),
-            new AnyNode("*:*")
+    QueryTree tree = QueryTree.disjunction(
+        QueryTree.conjunction(
+            QueryTree.term(new QueryTerm("field", "term1", QueryTerm.Type.EXACT), 1),
+            QueryTree.term(new QueryTerm("field", "term2", QueryTerm.Type.EXACT), 0.1),
+            QueryTree.anyTerm("*:*")
         ),
-        ConjunctionNode.build(
-            DisjunctionNode.build(
-                new TermNode(new QueryTerm("field", "term4", QueryTerm.Type.EXACT), 0.2),
-                new TermNode(new QueryTerm("field", "term5", QueryTerm.Type.EXACT), 1)
+        QueryTree.conjunction(
+            QueryTree.disjunction(
+                QueryTree.term(new QueryTerm("field", "term4", QueryTerm.Type.EXACT), 0.2),
+                QueryTree.term(new QueryTerm("field", "term5", QueryTerm.Type.EXACT), 1)
             ),
-            new TermNode(new QueryTerm("field", "term3", QueryTerm.Type.EXACT), 0.5)
+            QueryTree.term(new QueryTerm("field", "term3", QueryTerm.Type.EXACT), 0.5)
         )
     );
 

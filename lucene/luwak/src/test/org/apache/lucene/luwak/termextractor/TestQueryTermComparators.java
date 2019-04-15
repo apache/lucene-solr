@@ -24,11 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.termextractor.querytree.AnyNode;
-import org.apache.lucene.luwak.termextractor.querytree.ConjunctionNode;
-import org.apache.lucene.luwak.termextractor.querytree.DisjunctionNode;
-import org.apache.lucene.luwak.termextractor.querytree.QueryTree;
-import org.apache.lucene.luwak.termextractor.querytree.TermNode;
 import org.apache.lucene.luwak.termextractor.weights.FieldSpecificTermWeightNorm;
 import org.apache.lucene.luwak.termextractor.weights.FieldWeightNorm;
 import org.apache.lucene.luwak.termextractor.weights.TermFrequencyWeightNorm;
@@ -41,10 +36,10 @@ public class TestQueryTermComparators extends LuceneTestCase {
 
   public void testAnyTokensAreNotPreferred() {
 
-    QueryTree node1 = new TermNode(new QueryTerm("f", "foo", QueryTerm.Type.EXACT), 1.0);
-    QueryTree node2 = new AnyNode("*:*");
+    QueryTree node1 = QueryTree.term(new QueryTerm("f", "foo", QueryTerm.Type.EXACT), 1.0);
+    QueryTree node2 = QueryTree.anyTerm("*:*");
 
-    QueryTree conjunction = ConjunctionNode.build(node1, node2);
+    QueryTree conjunction = QueryTree.conjunction(node1, node2);
     Set<QueryTerm> terms = new HashSet<>();
     conjunction.collectTerms(terms);
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "foo", QueryTerm.Type.EXACT));
@@ -53,10 +48,10 @@ public class TestQueryTermComparators extends LuceneTestCase {
 
   public void testHigherWeightsArePreferred() {
 
-    QueryTree node1 = new TermNode(new QueryTerm("f", "foo", QueryTerm.Type.EXACT), 1);
-    QueryTree node2 = new TermNode(new QueryTerm("f", "foobar", QueryTerm.Type.EXACT), 1.5);
+    QueryTree node1 = QueryTree.term(new QueryTerm("f", "foo", QueryTerm.Type.EXACT), 1);
+    QueryTree node2 = QueryTree.term(new QueryTerm("f", "foobar", QueryTerm.Type.EXACT), 1.5);
 
-    QueryTree conjunction = ConjunctionNode.build(node1, node2);
+    QueryTree conjunction = QueryTree.conjunction(node1, node2);
     Set<QueryTerm> terms = new HashSet<>();
     conjunction.collectTerms(terms);
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "foobar", QueryTerm.Type.EXACT));
@@ -67,11 +62,12 @@ public class TestQueryTermComparators extends LuceneTestCase {
 
     Term term = new Term("f", "foobar");
 
-    QueryTree node1 = new TermNode(new QueryTerm(term), 1);
-    QueryTree node2 = DisjunctionNode.build(new TermNode(new QueryTerm(term), 1),
-        new TermNode(new QueryTerm(term), 1));
+    QueryTree node1 = QueryTree.term(new QueryTerm(term), 1);
+    QueryTree node2 = QueryTree.disjunction(
+        QueryTree.term(new QueryTerm(term), 1),
+        QueryTree.term(new QueryTerm(term), 1));
 
-    QueryTree conjunction = ConjunctionNode.build(node1, node2);
+    QueryTree conjunction = QueryTree.conjunction(node1, node2);
     Set<QueryTerm> terms = new HashSet<>();
     conjunction.collectTerms(terms);
     assertEquals(1, terms.size());

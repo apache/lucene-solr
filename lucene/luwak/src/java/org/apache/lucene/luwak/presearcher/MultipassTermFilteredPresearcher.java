@@ -17,16 +17,13 @@
 
 package org.apache.lucene.luwak.presearcher;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.luwak.analysis.TermsEnumTokenStream;
-import org.apache.lucene.luwak.termextractor.querytree.QueryTree;
+import org.apache.lucene.luwak.termextractor.QueryTree;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.luwak.util.CollectionUtils;
 import org.apache.lucene.search.BooleanClause;

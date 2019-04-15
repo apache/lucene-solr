@@ -18,15 +18,18 @@
 package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.luwak.termextractor.QueryTerm;
-import org.apache.lucene.luwak.termextractor.QueryTreeBuilder;
+import org.apache.lucene.luwak.termextractor.QueryTree;
+import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
@@ -35,30 +38,25 @@ import org.apache.lucene.util.BytesRef;
  */
 public class PresearcherComponent {
 
-  private final List<? extends QueryTreeBuilder<?>> builders;
+  private final List<BiFunction<Query, TermWeightor, QueryTree>> builders;
 
   /**
    * Create a new PresearcherComponent from a list of QueryTreeBuilders
    *
    * @param builders the builders
    */
-  public PresearcherComponent(List<? extends QueryTreeBuilder<?>> builders) {
+  public PresearcherComponent(List<BiFunction<Query, TermWeightor, QueryTree>> builders) {
     this.builders = builders;
   }
 
-  /**
-   * Create a new PresearcherComponent from a list of QueryTreeBuilders
-   *
-   * @param builders the builders
-   */
-  public PresearcherComponent(QueryTreeBuilder<?>... builders) {
-    this(Arrays.asList(builders));
+  public PresearcherComponent() {
+    this.builders = Collections.emptyList();
   }
 
   /**
    * @return the QueryTreeBuilders for this component
    */
-  public List<? extends QueryTreeBuilder<?>> getQueryTreeBuilders() {
+  public List<BiFunction<Query, TermWeightor, QueryTree>> getQueryTreeBuilders() {
     return builders;
   }
 
