@@ -19,11 +19,15 @@ package org.apache.lucene.luwak.presearcher;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.luwak.analysis.SuffixingNGramTokenFilter;
 import org.apache.lucene.luwak.termextractor.QueryTerm;
-import org.apache.lucene.luwak.termextractor.treebuilder.RegexpNGramTermQueryTreeBuilder;
+import org.apache.lucene.luwak.termextractor.QueryTree;
+import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -70,7 +74,7 @@ public class WildcardNGramPresearcherComponent extends PresearcherComponent {
    * @param excludedFields a Set of fields to ignore when generating ngrams
    */
   public WildcardNGramPresearcherComponent(String ngramSuffix, int maxTokenSize, String wildcardToken, Set<String> excludedFields) {
-    super(new RegexpNGramTermQueryTreeBuilder(ngramSuffix, wildcardToken));
+    super(Collections.singletonList(buildMapper(ngramSuffix, wildcardToken)));
     this.ngramSuffix = ngramSuffix;
     this.maxTokenSize = maxTokenSize;
     this.wildcardToken = wildcardToken;
@@ -105,5 +109,35 @@ public class WildcardNGramPresearcherComponent extends PresearcherComponent {
     if (term.type == QueryTerm.Type.CUSTOM && wildcardToken.equals(term.payload))
       return new BytesRef(wildcardToken);
     return null;
+  }
+
+  private static BiFunction<Query, TermWeightor, QueryTree> buildMapper(String ngramSuffix, String wildcardToken) {
+    return (q, w) -> {
+      if (q instanceof RegexpQuery == false) {
+        return null;
+      }
+      RegexpQuery query = (RegexpQuery) q;
+      String regexp = parseOutRegexp(query.toString(""));
+      String selected = selectLongestSubstring(regexp);
+      QueryTerm term = new QueryTerm(query.getField(), selected + ngramSuffix, QueryTerm.Type.CUSTOM, wildcardToken);
+      return QueryTree.term(term, w);
+    };
+  }
+
+  private static String parseOutRegexp(String rep) {
+    int fieldSepPos = rep.indexOf(":");
+    int firstSlash = rep.indexOf("/", fieldSepPos);
+    int lastSlash = rep.lastIndexOf("/");
+    return rep.substring(firstSlash + 1, lastSlash);
+  }
+
+  private static String selectLongestSubstring(String regexp) {
+    String selected = "";
+    for (String substr : regexp.split("\\.|\\*|.\\?")) {
+      if (substr.length() > selected.length()) {
+        selected = substr;
+      }
+    }
+    return selected;
   }
 }

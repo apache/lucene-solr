@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.termextractor.treebuilder.RegexpNGramTermQueryTreeBuilder;
+import org.apache.lucene.luwak.presearcher.WildcardNGramPresearcherComponent;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
 import org.apache.lucene.search.BooleanClause;
@@ -41,16 +41,12 @@ public class TestExtractors extends LuceneTestCase {
 
   private static final QueryAnalyzer treeBuilder = new QueryAnalyzer();
 
-  private static QueryAnalyzer getBuilder(QueryTreeBuilder<?>... queryTreeBuilder) {
-    return new QueryAnalyzer(queryTreeBuilder);
-  }
-
   private static final TermWeightor WEIGHTOR = new TermWeightor(new TokenLengthNorm());
 
   public void testRegexpExtractor() {
 
-    RegexpNGramTermQueryTreeBuilder extractor = new RegexpNGramTermQueryTreeBuilder("XX", "WILDCARD");
-    QueryAnalyzer builder = getBuilder(extractor);
+    QueryAnalyzer builder = QueryAnalyzer.fromComponents(
+        new WildcardNGramPresearcherComponent("XX", 30, "WILDCARD", null));
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "califragilisticXX", QueryTerm.Type.CUSTOM, "WILDCARD"));
     assertEquals(expected, builder.collectTerms(new RegexpQuery(new Term("field", "super.*califragilistic")), WEIGHTOR));

@@ -18,7 +18,6 @@
 package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,8 +40,7 @@ import org.apache.lucene.luwak.analysis.BytesRefFilteredTokenFilter;
 import org.apache.lucene.luwak.analysis.TermsEnumTokenStream;
 import org.apache.lucene.luwak.termextractor.QueryAnalyzer;
 import org.apache.lucene.luwak.termextractor.QueryTerm;
-import org.apache.lucene.luwak.termextractor.querytree.QueryTree;
-import org.apache.lucene.luwak.termextractor.querytree.QueryTreeViewer;
+import org.apache.lucene.luwak.termextractor.QueryTree;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
 import org.apache.lucene.search.BooleanClause;
@@ -181,16 +179,6 @@ public class TermFilteredPresearcher extends Presearcher {
     }
 
     return doc;
-  }
-
-  /**
-   * Debugging: write the parsed query tree to a PrintStream
-   *
-   * @param query the query to analyze
-   * @param out   a {@link PrintStream}
-   */
-  public void showQueryTree(Query query, PrintStream out) {
-    QueryTreeViewer.view(extractor.buildTree(query, weightor), out);
   }
 
   protected Document buildQueryDocument(QueryTree querytree) {
