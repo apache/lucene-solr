@@ -69,6 +69,8 @@ Bug fixes
 
 * SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
 
+* SOLR-12371: Editing authorization config via REST API now works in standalone mode (janhoy)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
