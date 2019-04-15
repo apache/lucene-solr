@@ -152,6 +152,10 @@ Bug Fixes
   processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
   odd errors/delays when restart/shutting down solr nodes.  (hossman)
 
+  * SOLR-13386: OverseerTaskQueue#remove should not throw an exception when no node exists after an exists 
+  check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
+  (Mark Miller, Fernandez-Lobbe, Mike Drob)
+
 Improvements
 ----------------------
 
