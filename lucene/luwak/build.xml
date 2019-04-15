@@ -34,11 +34,10 @@
     <pathelement path="${memory.jar}"/>
     <pathelement path="${analyzers-common.jar}"/>
     <pathelement path="${queryparser.jar}"/>
-    <pathelement path="${queries.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="init" depends="module-build.init,jar-analyzers-common,jar-queryparser,jar-queries,jar-memory"/>
+  <target name="init" depends="module-build.init,jar-analyzers-common,jar-queryparser,jar-memory"/>
 
   <target name="javadocs" depends="javadocs-memory,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
@@ -46,7 +45,6 @@
       <links>
         <link href="../memory"/>
         <link href="../analyzers-common"/>
-        <link href="../queries"/>
         <link href="../queryparser"/>
       </links>
     </invoke-module-javadoc>

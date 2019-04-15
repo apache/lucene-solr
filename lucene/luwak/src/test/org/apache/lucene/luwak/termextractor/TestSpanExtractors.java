@@ -25,10 +25,6 @@ import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.termextractor.weights.TermWeightor;
 import org.apache.lucene.luwak.termextractor.weights.TokenLengthNorm;
-import org.apache.lucene.queries.payloads.MaxPayloadFunction;
-import org.apache.lucene.queries.payloads.PayloadDecoder;
-import org.apache.lucene.queries.payloads.PayloadScoreQuery;
-import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -131,16 +127,5 @@ public class TestSpanExtractors extends LuceneTestCase  {
     Query q = new SpanFirstQuery(new SpanTermQuery(t1), 10);
     assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
   }
-
-  public void testPayloadScoreQuery() {
-    Term t1 = new Term("field", "term");
-    Query q = new PayloadScoreQuery(new SpanTermQuery(t1), new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
-    assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
-  }
-
-  public void testSpanPayloadCheckQuery() {
-    Term t1 = new Term("field", "term");
-    Query q = new SpanPayloadCheckQuery(new SpanTermQuery(t1), Collections.emptyList());
-    assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
-  }
+  
 }
