@@ -17,7 +17,6 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
