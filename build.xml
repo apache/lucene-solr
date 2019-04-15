@@ -433,7 +433,7 @@ File | Project Structure | Platform Settings | SDKs):
   </target>
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it  (pass '-DsmokeTestRelease.java12=/path/to/jdk-12' to additionally test with Java 12 or later)"
-    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks">
+    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks,-nightly-smoke-java12params">
     <fail message="To run nightly smoke, the JDK must be exactly Java 11, was: ${java.specification.version}">
       <condition>
         <not><equals arg1="${java.specification.version}" arg2="11"/></not>
