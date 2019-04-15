@@ -416,7 +416,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, false, IOContext.DEFAULT);
+            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, false, IOContext.DEFAULT, Collections.emptyMap());
 
             //checkParallelReader(leaf, parLeafReader, schemaGen);
 

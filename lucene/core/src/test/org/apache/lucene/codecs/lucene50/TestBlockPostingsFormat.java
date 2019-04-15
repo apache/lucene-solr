@@ -21,14 +21,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.codecs.lucene50.Lucene50ScoreSkipReader.MutableImpactList;
@@ -127,17 +127,37 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
         assertFalse(field.isFstOffHeap());
       }
     }
+
+    try (Directory d = new SimpleFSDirectory(tempDir)) {
+      // test per field
+      Map<String, String> readerAttributes = new HashMap<>();
+      readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name());
+      readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY + ".field", BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name());
+      try (DirectoryReader r = DirectoryReader.open(d, readerAttributes)) {
+        assertEquals(1, r.leaves().size());
+        FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
+        FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
+        assertTrue(id.isFstOffHeap());
+        assertFalse(field.isFstOffHeap());
+      }
+    }
+
+    IllegalArgumentException invalid = expectThrows(IllegalArgumentException.class, () -> {
+      try (Directory d = new SimpleFSDirectory(tempDir)) {
+        Map<String, String> readerAttributes = new HashMap<>();
+        readerAttributes.put(BlockTreeTermsReader.FST_MODE_KEY, "invalid");
+        DirectoryReader.open(d, readerAttributes);
+      }
+    });
+
+    assertEquals("Invalid value for blocktree.terms.fst expected one of: [OFF_HEAP, ON_HEAP, OPTIMIZE_UPDATES_OFF_HEAP, AUTO] but was: invalid", invalid.getMessage());
   }
 
   public void testDisableFSTOffHeap() throws IOException {
     Path tempDir = createTempDir();
     try (Directory d = MMapDirectory.open(tempDir)) {
-      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())).setCodec(new AssertingCodec() {
-        @Override
-        public PostingsFormat getPostingsFormatForField(String field) {
-          return new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, Lucene50PostingsFormat.FSTLoadMode.ON_HEAP);
-        }
-      }))) {
+      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random()))
+          .setReaderAttributes(Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name())))) {
         assumeTrue("only works with mmap directory", d instanceof MMapDirectory);
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
         for (int i = 0; i < 50; i++) {
@@ -171,7 +191,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
         w.forceMerge(1);
         w.commit();
       }
-      try (DirectoryReader r = DirectoryReader.open(d)) {
+      try (DirectoryReader r = DirectoryReader.open(d, Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.ON_HEAP.name()))) {
         assertEquals(1, r.leaves().size());
         FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
         FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
@@ -183,19 +203,15 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
 
   public void testAlwaysFSTOffHeap() throws IOException {
     boolean alsoLoadIdOffHeap = random().nextBoolean();
-    Lucene50PostingsFormat.FSTLoadMode loadMode;
+    BlockTreeTermsReader.FSTLoadMode loadMode;
     if (alsoLoadIdOffHeap) {
-      loadMode = Lucene50PostingsFormat.FSTLoadMode.OFF_HEAP;
+      loadMode = BlockTreeTermsReader.FSTLoadMode.OFF_HEAP;
     } else {
-      loadMode = Lucene50PostingsFormat.FSTLoadMode.OPTIMIZE_UPDATES_OFF_HEAP;
+      loadMode = BlockTreeTermsReader.FSTLoadMode.OPTIMIZE_UPDATES_OFF_HEAP;
     }
     try (Directory d = newDirectory()) { // any directory should work now
-      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())).setCodec(new AssertingCodec() {
-        @Override
-        public PostingsFormat getPostingsFormatForField(String field) {
-          return new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, loadMode);
-        }
-      }))) {
+      try (IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random()))
+          .setReaderAttributes(Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, loadMode.name())))) {
         DirectoryReader readerFromWriter = DirectoryReader.open(w);
         for (int i = 0; i < 50; i++) {
           Document doc = new Document();
@@ -232,7 +248,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
         w.forceMerge(1);
         w.commit();
       }
-      try (DirectoryReader r = DirectoryReader.open(d)) {
+      try (DirectoryReader r = DirectoryReader.open(d, Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, loadMode.name()))) {
         assertEquals(1, r.leaves().size());
         FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
         FieldReader id = (FieldReader) r.leaves().get(0).reader().terms("id");
@@ -268,7 +284,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
 
   private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
     expectThrows(IllegalArgumentException.class, () -> {
-      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock, Lucene50PostingsFormat.FSTLoadMode.AUTO);
+      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock, BlockTreeTermsReader.FSTLoadMode.AUTO);
     });
   }
 
