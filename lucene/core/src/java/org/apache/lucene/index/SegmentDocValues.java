@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ final class SegmentDocValues {
     }
 
     // set SegmentReadState to list only the fields that are relevant to that gen
-    SegmentReadState srs = new SegmentReadState(dvDir, si.info, infos, false, IOContext.READ, segmentSuffix);
+    SegmentReadState srs = new SegmentReadState(dvDir, si.info, infos, false, IOContext.READ, segmentSuffix, Collections.emptyMap());
     DocValuesFormat dvFormat = si.info.getCodec().docValuesFormat();
     return new RefCount<DocValuesProducer>(dvFormat.fieldsProducer(srs)) {
       @SuppressWarnings("synthetic-access")
