@@ -37,6 +37,7 @@ import org.apache.lucene.luwak.UpdateException;
 import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.IsNot.not;
@@ -57,7 +58,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       }
       monitor.update(queries);
 
-      ExecutorService executor = Executors.newFixedThreadPool(10);
+      ExecutorService executor = Executors.newFixedThreadPool(10, new NamedThreadFactory("matchers"));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1").addField("field", "test", ANALYZER).build());
 
@@ -80,7 +81,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       monitor.update(queries);
       assertEquals(30, monitor.getDisjunctCount());
 
-      ExecutorService executor = Executors.newFixedThreadPool(4);
+      ExecutorService executor = Executors.newFixedThreadPool(4, new NamedThreadFactory("matchers"));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1")
           .addField("field", "test doc doc", ANALYZER)
@@ -106,7 +107,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
   public void testParallelSlowLog() throws IOException, UpdateException {
 
-    ExecutorService executor = Executors.newCachedThreadPool();
+    ExecutorService executor = Executors.newCachedThreadPool(new NamedThreadFactory("matchers"));
 
     try (Monitor monitor = new Monitor(new TestSlowLog.SlowQueryParser(250), MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", "slow"), new MonitorQuery("2", "fast"), new MonitorQuery("3", "slow"));

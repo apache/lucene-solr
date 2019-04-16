@@ -53,6 +53,7 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NamedThreadFactory;
 
 /**
  * A Monitor contains a set of MonitorQuery objects, and runs them against
@@ -109,7 +110,7 @@ public class Monitor implements Closeable {
     prepareQueryCache(this.storeQueries);
 
     long purgeFrequency = configuration.getPurgeFrequency();
-    this.purgeExecutor = Executors.newSingleThreadScheduledExecutor();
+    this.purgeExecutor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("cache-purge"));
     this.purgeExecutor.scheduleAtFixedRate(() -> {
       try {
         purgeCache();
