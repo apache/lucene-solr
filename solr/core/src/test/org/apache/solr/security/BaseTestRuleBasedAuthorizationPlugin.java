@@ -57,7 +57,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 
 @SuppressWarnings("unchecked")
-public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
+public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   protected String permissions;
   protected Map rules;
 
@@ -71,6 +71,32 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     resetPermissionsAndRoles();
   }
 
+  void resetPermissionsAndRoles() {
+    permissions = "{" +
+        "  user-role : {" +
+        "    steve: [dev,user]," +
+        "    tim: [dev,admin]," +
+        "    joe: [user]," +
+        "    noble:[dev,user]" +
+        "  }," +
+        "  permissions : [" +
+        "    {name:'schema-edit'," +
+        "      role:admin}," +
+        "    {name:'collection-admin-read'," +
+        "      role:null}," +
+        "    {name:collection-admin-edit ," +
+        "      role:admin}," +
+        "    {name:mycoll_update," +
+        "      collection:mycoll," +
+        "      path:'/update/*'," +
+        "      role:[dev,admin]" +
+        "    }," +
+        "{name:read, role:dev }," +
+        "{name:freeforall, path:'/foo', role:'*'}]}";
+    rules = (Map) Utils.fromJSONString(permissions);
+  }
+
+  @Test
   public void testBasicPermissions() {
     checkRules(makeMap("resource", "/update/json/docs",
         "httpMethod", "POST",
@@ -401,19 +427,16 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   public void testAllPermissionDeniesActionsWhenUserIsNotCorrectRole() {
     SolrRequestHandler handler = new UpdateRequestHandler();
     assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    setUserRole("dev", "dev");
+    setUserRole("admin", "admin");
+    addPermission("all", "admin");
     checkRules(makeMap("resource", "/update",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
         "collectionRequests", "go",
         "handler", new UpdateRequestHandler(),
         "params", new MapSolrParams(singletonMap("key", "VAL2")))
-        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{" +
-            "    user-role:{" +
-            "      dev:[dev_role]," +
-            "      admin:[admin_role]}," +
-            "    permissions:[" +
-            "      {name:all, role:'admin_role'}" +
-            "]}"));
+        , FORBIDDEN);
 
     handler = new PropertiesRequestHandler();
     assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
@@ -423,13 +446,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "collectionRequests", "go",
         "handler", handler,
         "params", new MapSolrParams(emptyMap()))
-        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{" +
-            "    user-role:{" +
-            "      dev:[dev_role]," +
-            "      admin:[admin_role]}," +
-            "    permissions:[" +
-            "      {name:all, role:'admin_role'}" +
-            "]}"));
+        , FORBIDDEN);
   }
 
   void addPermission(String permissionName, String role, String path, Map<String, Object> params) {
@@ -444,31 +461,6 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
   protected void addPermission(String permissionName, String role) {
     ((List)rules.get("permissions")).add( makeMap("name", permissionName, "role", role));
-  }
-
-  void resetPermissionsAndRoles() {
-    permissions = "{" +
-        "  user-role : {" +
-        "    steve: [dev,user]," +
-        "    tim: [dev,admin]," +
-        "    joe: [user]," +
-        "    noble:[dev,user]" +
-        "  }," +
-        "  permissions : [" +
-        "    {name:'schema-edit'," +
-        "      role:admin}," +
-        "    {name:'collection-admin-read'," +
-        "      role:null}," +
-        "    {name:collection-admin-edit ," +
-        "      role:admin}," +
-        "    {name:mycoll_update," +
-        "      collection:mycoll," +
-        "      path:'/update/*'," +
-        "      role:[dev,admin]" +
-        "    }," +
-        "{name:read, role:dev }," +
-        "{name:freeforall, path:'/foo', role:'*'}]}";
-    rules = (Map) Utils.fromJSONString(permissions);
   }
 
   void clearUserRoles() {

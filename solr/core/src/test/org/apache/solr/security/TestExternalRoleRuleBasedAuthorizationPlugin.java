@@ -25,31 +25,14 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.solr.common.util.Utils;
 
-public class TestExternalRoleRuleBasedAuthorizationPlugin extends TestRuleBasedAuthorizationPlugin {
+public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBasedAuthorizationPlugin {
   private HashMap<String, Principal> principals;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    permissions = "{" +
-          "  permissions : [" +
-          "    {name:'schema-edit'," +
-          "     role:admin}," +
-          "    {name:'collection-admin-read'," +
-          "    role:null}," +
-          "    {name:collection-admin-edit ," +
-          "    role:admin}," +
-          "    {name:mycoll_update," +
-          "      collection:mycoll," +
-          "      path:'/update/*'," +
-          "      role:[dev,admin]" +
-          "    }," +
-          "{name:read , role:dev }," +
-          "{name:freeforall, path:'/foo', role:'*'}]}";
-    
-    rules = (Map) Utils.fromJSONString(permissions);
+    rules.remove("user-role");
 
     principals = new HashMap<>();
     setUserRoles("steve", "dev", "user");
