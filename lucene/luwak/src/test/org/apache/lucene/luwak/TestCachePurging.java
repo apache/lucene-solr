@@ -44,7 +44,7 @@ public class TestCachePurging extends LuceneTestCase {
       }
     };
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       MonitorQuery[] queries = new MonitorQuery[]{
           new MonitorQuery("1", "test1 test4"),
           new MonitorQuery("2", "test2"),
@@ -86,7 +86,7 @@ public class TestCachePurging extends LuceneTestCase {
     final CountDownLatch startUpdating = new CountDownLatch(1);
     final CountDownLatch finishUpdating = new CountDownLatch(1);
 
-    try (final Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (final Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       Runnable updaterThread = () -> {
         try {
           startUpdating.await();
@@ -134,7 +134,7 @@ public class TestCachePurging extends LuceneTestCase {
   public void testBackgroundPurges() throws IOException, InterruptedException, UpdateException {
 
     QueryIndexConfiguration config = new QueryIndexConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher(), config)) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
 

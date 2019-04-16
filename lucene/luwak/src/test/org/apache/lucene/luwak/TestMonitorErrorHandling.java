@@ -84,7 +84,7 @@ public class TestMonitorErrorHandling extends LuceneTestCase {
 
   public void testMonitorErrors() throws Exception {
 
-    try (Monitor monitor = new Monitor(createMockCache(), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(createMockCache(), MatchAllPresearcher.INSTANCE)) {
 
       UpdateException e = expectThrows(UpdateException.class,
           () -> monitor.update(

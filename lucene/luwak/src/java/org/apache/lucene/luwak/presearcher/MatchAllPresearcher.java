@@ -32,7 +32,9 @@ import org.apache.lucene.luwak.QueryTermFilter;
  */
 public class MatchAllPresearcher extends Presearcher {
 
-  public MatchAllPresearcher() {
+  public static final Presearcher INSTANCE = new MatchAllPresearcher();
+
+  private MatchAllPresearcher() {
     super();
   }
 

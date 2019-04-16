@@ -40,20 +40,23 @@ public class PresearcherComponent {
   private final List<BiFunction<Query, TermWeightor, QueryTree>> builders;
 
   /**
-   * Create a new PresearcherComponent from a list of QueryTreeBuilders
+   * Create a new PresearcherComponent with special query handling
    *
-   * @param builders the builders
+   * @param builders a list of functions to analyze specific query types
    */
   public PresearcherComponent(List<BiFunction<Query, TermWeightor, QueryTree>> builders) {
     this.builders = builders;
   }
 
-  public PresearcherComponent() {
+  /**
+   * Create a PresearcherComponent with no special query handling
+   */
+  protected PresearcherComponent() {
     this.builders = Collections.emptyList();
   }
 
   /**
-   * @return the QueryTreeBuilders for this component
+   * @return the query analysis functions for this component
    */
   public List<BiFunction<Query, TermWeightor, QueryTree>> getQueryTreeBuilders() {
     return builders;

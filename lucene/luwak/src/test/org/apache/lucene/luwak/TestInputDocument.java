@@ -55,7 +55,7 @@ public class TestInputDocument extends LuceneTestCase {
         .setDefaultAnalyzer(new StandardAnalyzer())
         .addField(f).build();
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("text"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("text"), MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("q", "length"));
 
       Matches<ExplainingMatch> matches = monitor.match(doc, ExplainingMatcher.FACTORY);

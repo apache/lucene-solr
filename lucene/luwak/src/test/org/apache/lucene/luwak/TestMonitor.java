@@ -43,7 +43,7 @@ public class TestMonitor extends LuceneTestCase {
   private static final Analyzer ANALYZER = new WhitespaceAnalyzer();
 
   private Monitor newMonitor() throws IOException {
-    return new Monitor(new LuceneQueryParser(TEXTFIELD, ANALYZER), new MatchAllPresearcher());
+    return new Monitor(new LuceneQueryParser(TEXTFIELD, ANALYZER), MatchAllPresearcher.INSTANCE);
   }
 
   public void testSingleTermQueryMatchesSingleDocument() throws IOException, UpdateException {
@@ -171,7 +171,7 @@ public class TestMonitor extends LuceneTestCase {
       }
     };
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser(TEXTFIELD, ANALYZER), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser(TEXTFIELD, ANALYZER), MatchAllPresearcher.INSTANCE)) {
       monitor.addQueryIndexUpdateListener(listener);
       monitor.update(queries);
       assertEquals(10355, updateCount.get());
@@ -179,7 +179,7 @@ public class TestMonitor extends LuceneTestCase {
   }
 
   public void testMatcherMetadata() throws IOException, UpdateException {
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       HashMap<String, String> metadataMap = new HashMap<>();
       metadataMap.put("key", "value");
 
