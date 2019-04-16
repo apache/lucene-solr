@@ -58,7 +58,6 @@ import static org.apache.solr.common.util.CommandOperation.captureErrors;
 
 @SuppressWarnings("unchecked")
 public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
-  protected String permissions;
   protected Map rules;
 
   final int STATUS_OK = 200;
@@ -72,7 +71,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   }
 
   void resetPermissionsAndRoles() {
-    permissions = "{" +
+    String permissions = "{" +
         "  user-role : {" +
         "    steve: [dev,user]," +
         "    tim: [dev,admin]," +
@@ -346,19 +345,16 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   public void testAllPermissionAllowsActionsWhenUserHasCorrectRole() {
     SolrRequestHandler handler = new UpdateRequestHandler();
     assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    setUserRole("dev", "dev");
+    setUserRole("admin", "admin");
+    addPermission("all", "dev", "admin");
     checkRules(makeMap("resource", "/update",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
         "collectionRequests", "go",
         "handler", handler,
         "params", new MapSolrParams(singletonMap("key", "VAL2")))
-        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
-            "    user-role:{" +
-            "      dev:[dev_role]," +
-            "      admin:[admin_role]}," +
-            "    permissions:[" +
-            "      {name:all, role:[dev_role, admin_role]}" +
-            "]}"));
+        , STATUS_OK);
 
     handler = new PropertiesRequestHandler();
     assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
@@ -368,13 +364,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "collectionRequests", "go",
         "handler", handler,
         "params", new MapSolrParams(emptyMap()))
-        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
-            "    user-role:{" +
-            "      dev:[dev_role]," +
-            "      admin:[admin_role]}," +
-            "    permissions:[" +
-            "      {name:all, role:[dev_role, admin_role]}" +
-            "]}"));
+        , STATUS_OK);
   }
 
 
@@ -387,19 +377,16 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   public void testAllPermissionAllowsActionsWhenAssociatedRoleIsWildcard() {
     SolrRequestHandler handler = new UpdateRequestHandler();
     assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    setUserRole("dev", "dev");
+    setUserRole("admin", "admin");
+    addPermission("all", "*");
     checkRules(makeMap("resource", "/update",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
         "collectionRequests", "go",
         "handler", new UpdateRequestHandler(),
         "params", new MapSolrParams(singletonMap("key", "VAL2")))
-        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
-            "    user-role:{" +
-            "      dev:[dev_role]," +
-            "      admin:[admin_role]}," +
-            "    permissions:[" +
-            "      {name:all, role:'*'}" +
-            "]}"));
+        , STATUS_OK);
 
     handler = new PropertiesRequestHandler();
     assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
@@ -409,13 +396,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "collectionRequests", "go",
         "handler", handler,
         "params", new MapSolrParams(emptyMap()))
-        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
-            "    user-role:{" +
-            "      dev:[dev_role]," +
-            "      admin:[admin_role]}," +
-            "    permissions:[" +
-            "      {name:all, role:'*'}" +
-            "]}"));
+        , STATUS_OK);
   }
 
   /*
@@ -459,8 +440,8 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     rules.put("permissions", newPerm);
   }
 
-  protected void addPermission(String permissionName, String role) {
-    ((List)rules.get("permissions")).add( makeMap("name", permissionName, "role", role));
+  protected void addPermission(String permissionName, String... roles) {
+    ((List)rules.get("permissions")).add( makeMap("name", permissionName, "role", Arrays.asList(roles)));
   }
 
   void clearUserRoles() {
@@ -468,7 +449,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   }
 
   protected void setUserRole(String user, String role) {
-    ((Map)rules.get("user-role")).put("cio","su");
+    ((Map)rules.get("user-role")).put(user, role);
   }
 
   public void testEditRules() throws IOException {
