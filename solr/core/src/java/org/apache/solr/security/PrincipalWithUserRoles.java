@@ -18,7 +18,6 @@ package org.apache.solr.security;
 
 import java.io.Serializable;
 import java.security.Principal;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.http.util.Args;
