@@ -70,6 +70,9 @@ Bug fixes
 * LUCENE-8754: Fix ConcurrentModificationException in SegmentInfo if
   attributes are accessed in MergePolicy while the merge is running (Simon Willnauer)
 
+* LUCENE-8765: Fixed validation of the number of added points in KD trees.
+  (Zhao Yang via Adrien Grand)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead

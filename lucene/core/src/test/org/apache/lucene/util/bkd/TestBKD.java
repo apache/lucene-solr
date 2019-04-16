@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -1244,5 +1245,95 @@ public class TestBKD extends LuceneTestCase {
 
     pointsIn.close();
     dir.close();
+  }
+
+  public void testTotalPointCountValidation() throws IOException {
+    Directory dir = newDirectory();
+    final int numValues = 10;
+    final int numPointsAdded = 50; // exceeds totalPointCount
+    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+    final byte[] pointValue = new byte[numBytesPerDim];
+    random().nextBytes(pointValue);
+
+    MutablePointValues reader = new MutablePointValues() {
+
+      @Override
+      public void intersect(IntersectVisitor visitor) throws IOException {
+        for(int i=0;i<numPointsAdded;i++) {
+          visitor.visit(0, pointValue);
+        }
+      }
+
+      @Override
+      public long estimatePointCount(IntersectVisitor visitor) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public byte[] getMinPackedValue() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public byte[] getMaxPackedValue() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int getNumDataDimensions() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int getNumIndexDimensions() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int getBytesPerDimension() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long size() {
+        return numPointsAdded;
+      }
+
+      @Override
+      public int getDocCount() {
+        return numPointsAdded;
+      }
+
+      @Override
+      public void swap(int i, int j) {
+        // do nothing
+      }
+
+      @Override
+      public int getDocID(int i) {
+        return 0;
+      }
+
+      @Override
+      public void getValue(int i, BytesRef packedValue) {
+        packedValue.bytes = pointValue;
+      }
+
+      @Override
+      public byte getByteAt(int i, int k) {
+        throw new UnsupportedOperationException();
+      }
+    };
+
+    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
+        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+    expectThrows(IllegalStateException.class, () -> {
+      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+        w.writeField(out, "test_field_name", reader);
+      } finally {
+        w.close();
+        dir.close();
+      }
+    });
   }
 }
