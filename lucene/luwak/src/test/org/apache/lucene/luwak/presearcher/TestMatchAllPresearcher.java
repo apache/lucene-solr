@@ -23,7 +23,7 @@ public class TestMatchAllPresearcher extends PresearcherTestBase {
 
   @Override
   protected Presearcher createPresearcher() {
-    return new MatchAllPresearcher();
+    return MatchAllPresearcher.INSTANCE;
   }
 
 }

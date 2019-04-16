@@ -70,7 +70,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   }
 
   private static Monitor newMonitor() throws IOException {
-    return new Monitor(new LuceneQueryParser(textfield), new MatchAllPresearcher());
+    return new Monitor(new LuceneQueryParser(textfield), MatchAllPresearcher.INSTANCE);
   }
 
   public void testSingleTermQueryMatchesSingleDocument() throws IOException, UpdateException {
@@ -166,7 +166,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         };
       }
       return new LuceneQueryParser(textfield).parse(queryString, metadata);
-    }, new MatchAllPresearcher())) {
+    }, MatchAllPresearcher.INSTANCE)) {
 
       monitor.update(new MonitorQuery("1", "test"),
           new MonitorQuery("2", "error!"),
@@ -183,7 +183,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testWildcards() throws IOException, UpdateException {
 
     try (Monitor monitor = new Monitor(
-        (queryString, metadata) -> new RegexpQuery(new Term(textfield, "he.*")), new MatchAllPresearcher())) {
+        (queryString, metadata) -> new RegexpQuery(new Term(textfield, "he.*")), MatchAllPresearcher.INSTANCE)) {
 
       monitor.update(new MonitorQuery("1", ""));
 
@@ -202,7 +202,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(new TermQuery(new Term(textfield, "term3")), BooleanClause.Occur.MUST_NOT)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term22 term4"), HighlightingMatcher.FACTORY);
@@ -218,7 +218,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         new TermQuery(new Term(textfield, "term1")), new PrefixQuery(new Term(textfield, "term2"))
     ), 1.0f);
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> query, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> query, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term2 term3"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
@@ -235,7 +235,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(new TermQuery(new Term(textfield, "term1")), BooleanClause.Occur.SHOULD)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term2"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
@@ -262,7 +262,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(wrapper2, BooleanClause.Occur.MUST_NOT)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
 
       monitor.update(new MonitorQuery("1", ""));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term2 term"), HighlightingMatcher.FACTORY);
@@ -283,7 +283,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .addClause(new SpanTermQuery(new Term(textfield, "foo")))
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> snq, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> snq, MatchAllPresearcher.INSTANCE)) {
 
       monitor.update(new MonitorQuery("1", ""));
 
@@ -309,7 +309,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(bq, BooleanClause.Occur.MUST)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
 
       InputDocument doc = buildDoc("1", "a b x x x x c");
@@ -337,7 +337,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(bq, BooleanClause.Occur.MUST)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
 
       InputDocument doc = buildDoc("1", "a b x x x x c");
@@ -442,7 +442,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(bq, BooleanClause.Occur.MUST)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
 
       InputDocument doc = buildDoc("1", "a b c");
@@ -495,7 +495,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .build();
 
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> outerConjunct, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> outerConjunct, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
 
       InputDocument doc = buildDoc("1", "now is the time for all good men");
@@ -524,7 +524,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .add(minq, BooleanClause.Occur.SHOULD)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", ""));
 
       InputDocument doc = buildDoc("1", "a b x");
@@ -543,7 +543,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
 
     ComplexPhraseQueryParser cpqp = new ComplexPhraseQueryParser(textfield, new StandardAnalyzer());
     MonitorQueryParser cqp = (queryString, metadata) -> cpqp.parse(queryString);
-    try (Monitor monitor = new Monitor(cqp, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(cqp, MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", "\"x b\""));
 
       InputDocument doc = buildDoc("1", "x b c");

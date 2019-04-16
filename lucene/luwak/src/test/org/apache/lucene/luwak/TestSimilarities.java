@@ -32,7 +32,7 @@ public class TestSimilarities extends LuceneTestCase {
 
   public void testNonStandardSimilarity() throws IOException, UpdateException {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", "test"));
 
       Similarity similarity = new ClassicSimilarity() {

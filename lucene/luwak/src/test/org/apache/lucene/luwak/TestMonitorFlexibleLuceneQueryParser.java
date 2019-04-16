@@ -49,7 +49,7 @@ public class TestMonitorFlexibleLuceneQueryParser extends LuceneTestCase {
         .build();
     MonitorQuery mq = new MonitorQuery("query1", "(age:1 somethingelse:2)");
 
-    try (Monitor monitor = new Monitor(parser, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(parser, MatchAllPresearcher.INSTANCE)) {
       monitor.update(mq);
       Matches<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
@@ -73,7 +73,7 @@ public class TestMonitorFlexibleLuceneQueryParser extends LuceneTestCase {
         .build();
     MonitorQuery mq = new MonitorQuery("query1", "(money:1.0 somethingelse:2)");
 
-    try (Monitor monitor = new Monitor(parser, new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(parser, MatchAllPresearcher.INSTANCE)) {
       monitor.update(mq);
       Matches<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));

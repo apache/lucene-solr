@@ -50,7 +50,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
   public void testAllMatchesAreCollected() throws IOException, UpdateException {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 1000; i++) {
         queries.add(new MonitorQuery(Integer.toString(i), "+test " + i));
@@ -72,7 +72,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
   public void testMatchesAreDisambiguated() throws IOException, UpdateException {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 10; i++) {
         queries.add(new MonitorQuery(Integer.toString(i), "test^10 doc " + i));
@@ -108,7 +108,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
     ExecutorService executor = Executors.newCachedThreadPool();
 
-    try (Monitor monitor = new Monitor(new TestSlowLog.SlowQueryParser(250), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new TestSlowLog.SlowQueryParser(250), MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", "slow"), new MonitorQuery("2", "fast"), new MonitorQuery("3", "slow"));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1").build());

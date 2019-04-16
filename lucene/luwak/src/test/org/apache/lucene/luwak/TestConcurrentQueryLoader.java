@@ -28,7 +28,7 @@ public class TestConcurrentQueryLoader extends LuceneTestCase {
 
   public void testLoading() throws Exception {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), MatchAllPresearcher.INSTANCE)) {
       List<QueryError> errors = new ArrayList<>();
       try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor, errors)) {
         for (int i = 0; i < 2000; i++) {
@@ -45,7 +45,7 @@ public class TestConcurrentQueryLoader extends LuceneTestCase {
 
   public void testErrorHandling() throws Exception {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), MatchAllPresearcher.INSTANCE)) {
       List<QueryError> errors = new ArrayList<>();
       try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor, errors)) {
         for (int i = 0; i < 2000; i++) {

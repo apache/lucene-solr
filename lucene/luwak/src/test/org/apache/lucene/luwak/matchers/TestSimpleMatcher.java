@@ -34,7 +34,7 @@ public class TestSimpleMatcher extends LuceneTestCase {
 
   public void testSimpleMatcher() throws IOException, UpdateException {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", "test"), new MonitorQuery("2", "wibble"));
 
       InputDocument doc1 = InputDocument.builder("doc1").addField("field", "test", new StandardAnalyzer()).build();

@@ -86,7 +86,7 @@ public class TestSlowLog extends LuceneTestCase {
   @Test
   public void testSlowLog() throws IOException, UpdateException {
 
-    try (Monitor monitor = new Monitor(new SlowQueryParser(250), new MatchAllPresearcher())) {
+    try (Monitor monitor = new Monitor(new SlowQueryParser(250), MatchAllPresearcher.INSTANCE)) {
       monitor.update(new MonitorQuery("1", "slow"), new MonitorQuery("2", "fast"), new MonitorQuery("3", "slow"));
 
       InputDocument doc1 = InputDocument.builder("doc1").build();
