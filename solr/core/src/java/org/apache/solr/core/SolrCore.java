@@ -1699,17 +1699,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return refCount.get() <= 0;
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (getOpenCount() != 0) {
-        log.error("REFCOUNT ERROR: unreferenced {} ({}) has a reference count of {}", this, getName(), getOpenCount());
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
   private Collection<CloseHook> closeHooks = null;
 
    /**
@@ -2698,7 +2687,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {
       m.put("xlsx",
-          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").newInstance());
+          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getConstructor().newInstance());
     } catch (Exception e) {
       //don't worry; solrcell contrib not in class path
     }

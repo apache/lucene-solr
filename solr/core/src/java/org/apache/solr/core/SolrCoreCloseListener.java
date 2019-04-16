@@ -14,39 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
-import java.util.Objects;
+package org.apache.solr.core;
 
-import org.apache.lucene.util.Bits;
-
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 /**
- * Exposes a slice of an existing Bits as a new Bits.
- *
- * @lucene.internal
+ * Notifies observers implementing this class about cores that need to be closed.
  */
-final class BitsSlice implements Bits {
-  private final Bits parent;
-  private final int start;
-  private final int length;
+public interface SolrCoreCloseListener extends PropertyChangeListener {
 
-  // start is inclusive; end is exclusive (length = end-start)
-  public BitsSlice(Bits parent, ReaderSlice slice) {
-    this.parent = parent;
-    this.start = slice.start;
-    this.length = slice.length;
-    assert length >= 0: "length=" + length;
-  }
-    
-  @Override
-  public boolean get(int doc) {
-    Objects.checkIndex(doc, length);
-    return parent.get(doc+start);
-  }
+  /**
+   * Called by TransientSolrCoreCache to notify the CoreContainer / SolrCores about cores that need to be closed.
+   * @param core Core that need to be queued for close
+   */
+  void queueCoreClose(SolrCore core);
 
   @Override
-  public int length() {
-    return length;
+  default void propertyChange(PropertyChangeEvent evt) {
+    queueCoreClose((SolrCore) evt.getOldValue());
   }
+
 }
+
+
+  

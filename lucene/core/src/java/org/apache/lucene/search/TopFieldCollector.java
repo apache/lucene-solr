@@ -21,12 +21,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.TotalHits.Relation;
-import org.apache.lucene.util.FutureObjects;
 
 /**
  * A {@link Collector} that sorts by {@link SortField} using
@@ -434,7 +434,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     Scorer currentScorer = null;
     for (ScoreDoc scoreDoc : topDocs) {
       if (currentContext == null || scoreDoc.doc >= currentContext.docBase + currentContext.reader().maxDoc()) {
-        FutureObjects.checkIndex(scoreDoc.doc, searcher.getIndexReader().maxDoc());
+        Objects.checkIndex(scoreDoc.doc, searcher.getIndexReader().maxDoc());
         int newContextIndex = ReaderUtil.subIndex(scoreDoc.doc, contexts);
         currentContext = contexts.get(newContextIndex);
         final ScorerSupplier scorerSupplier = weight.scorerSupplier(currentContext);

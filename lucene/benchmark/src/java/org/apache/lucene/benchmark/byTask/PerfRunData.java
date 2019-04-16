@@ -115,16 +115,16 @@ public class PerfRunData implements Closeable {
 
     // content source
     String sourceClass = config.get("content.source", "org.apache.lucene.benchmark.byTask.feeds.SingleDocSource");
-    contentSource = Class.forName(sourceClass).asSubclass(ContentSource.class).newInstance();
+    contentSource = Class.forName(sourceClass).asSubclass(ContentSource.class).getConstructor().newInstance();
     contentSource.setConfig(config);
 
     // doc maker
     docMaker = Class.forName(config.get("doc.maker",
-        "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).asSubclass(DocMaker.class).newInstance();
+        "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).asSubclass(DocMaker.class).getConstructor().newInstance();
     docMaker.setConfig(config, contentSource);
     // facet source
     facetSource = Class.forName(config.get("facet.source",
-        "org.apache.lucene.benchmark.byTask.feeds.RandomFacetSource")).asSubclass(FacetSource.class).newInstance();
+        "org.apache.lucene.benchmark.byTask.feeds.RandomFacetSource")).asSubclass(FacetSource.class).getConstructor().newInstance();
     facetSource.setConfig(config);
     // query makers
     readTaskQueryMaker = new HashMap<>();
@@ -453,7 +453,7 @@ public class PerfRunData implements Closeable {
     QueryMaker qm = readTaskQueryMaker.get(readTaskClass);
     if (qm == null) {
       try {
-        qm = qmkrClass.newInstance();
+        qm = qmkrClass.getConstructor().newInstance();
         qm.setConfig(config);
       } catch (Exception e) {
         throw new RuntimeException(e);

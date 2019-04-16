@@ -20,7 +20,6 @@ package org.apache.lucene.luke.app.desktop.util;
 import javax.swing.JTextArea;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 /** PrintStream for text areas */
@@ -30,8 +29,8 @@ public final class TextAreaPrintStream extends PrintStream {
 
   private final JTextArea textArea;
 
-  public TextAreaPrintStream(JTextArea textArea) throws UnsupportedEncodingException {
-    super(new ByteArrayOutputStream(), false, StandardCharsets.UTF_8.name()); // TODO: replace by Charset in Java 11
+  public TextAreaPrintStream(JTextArea textArea) {
+    super(new ByteArrayOutputStream(), false, StandardCharsets.UTF_8);
     this.baos = (ByteArrayOutputStream) out;
     this.textArea = textArea;
     baos.reset();
@@ -40,9 +39,7 @@ public final class TextAreaPrintStream extends PrintStream {
   @Override
   public void flush() {
     try {
-      textArea.append(baos.toString(StandardCharsets.UTF_8.name())); // TODO: replace by Charset in Java 11
-    } catch (UnsupportedEncodingException e) {
-      setError();
+      textArea.append(baos.toString(StandardCharsets.UTF_8));
     } finally {
       baos.reset();
     }

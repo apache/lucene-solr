@@ -31,6 +31,9 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
+* LUCENE-8738: Move to Java 11 as minimum Java version.
+  (Adrien Grand, Uwe Schindler)
+
 * SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
   see commeints in the log4j2 configuration files (log4j2.xml by default).
@@ -47,6 +50,12 @@ Upgrade Notes
 
 * SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
   confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
+
+* LUCENE-8738: Du to the change to Java 11 as a minimum version, TransientSolrCoreCache no longer extends
+  the java.util.Observable, which was deprecated in Java 9. The implementation was therefore replaced by a more
+  type-safe implementation. If a plugin implemented its own TransientSolrCoreCache, the implementation needs
+  to be changed to call the new methods for registering/deregistering listener and notify them.
+  (Uwe Schindler, Erick Erickson, Adrien Grand)
 
 New Features
 ----------------------

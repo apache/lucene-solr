@@ -18,10 +18,10 @@
 package org.apache.solr.core;
 
 
+import java.beans.PropertyChangeSupport;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Observable;
 import java.util.Set;
 
 import org.apache.http.annotation.Experimental;
@@ -45,7 +45,7 @@ import org.apache.http.annotation.Experimental;
  *          necessary and to coordinate shutting down cores, manipulating the internal structures and the like..
  *          
  *          The only real action you should _initiate_ is to close a core for whatever reason, and do that by 
- *          calling notifyObservers(coreToClose); The observer will call back to removeCore(name) at the appropriate 
+ *          calling notifyCoreCloseListener(coreToClose); The observer will call back to removeCore(name) at the appropriate 
  *          time. There is no need to directly remove the core _at that time_ from the transientCores list, a call
  *          will come back to this class when CoreContainer is closing this core.
  *          
@@ -65,7 +65,7 @@ import org.apache.http.annotation.Experimental;
  *  In particular, DO NOT reach into the transientCores structure from a method called to manipulate core descriptors
  *  or vice-versa.
  */
-public abstract class TransientSolrCoreCache extends Observable {
+public abstract class TransientSolrCoreCache {
 
   // Gets the core container that encloses this cache.
   public abstract CoreContainer getContainer();
@@ -121,6 +121,30 @@ public abstract class TransientSolrCoreCache extends Observable {
   // These two methods allow custom implementations to communicate arbitrary information as necessary.
   public abstract int getStatus(String coreName);
   public abstract void setStatus(String coreName, int status);
+  
+  
+  /**
+   * Registers a listener to be notified when a core should close
+   */
+  protected final void registerCoreCloseListener(SolrCoreCloseListener listener) {
+    pcs.addPropertyChangeListener(listener);
+  }
+  
+  /**
+   * Removes a listener registered by {@link #registerCoreCloseListener(SolrCoreCloseListener)}
+   */
+  protected final void removeCoreCloseListener(SolrCoreCloseListener listener) {
+    pcs.removePropertyChangeListener(listener);
+  }
+  
+  /**
+   * Notifies all listeners to close a core that were previously registered using {@link #registerCoreCloseListener(SolrCoreCloseListener)}
+   */
+  protected final void notifyCoreCloseListeners(SolrCore core) {
+    pcs.firePropertyChange("core", core, null);
+  }
+  
+  private final PropertyChangeSupport pcs = new  PropertyChangeSupport(this);
 }
 
 

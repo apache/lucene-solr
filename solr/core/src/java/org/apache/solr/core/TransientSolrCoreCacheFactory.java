@@ -50,7 +50,7 @@ public abstract class TransientSolrCoreCacheFactory {
 
     try {
       // According to the docs, this returns a TransientSolrCoreCacheFactory with the default c'tor
-      TransientSolrCoreCacheFactory tccf = loader.findClass(info.className, TransientSolrCoreCacheFactory.class).newInstance(); 
+      TransientSolrCoreCacheFactory tccf = loader.findClass(info.className, TransientSolrCoreCacheFactory.class).getConstructor().newInstance(); 
       
       // OK, now we call it's init method.
       if (PluginInfoInitialized.class.isAssignableFrom(tccf.getClass()))
