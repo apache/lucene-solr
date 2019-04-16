@@ -17,14 +17,14 @@
 
 package org.apache.lucene.luwak.matchers;
 
-import org.apache.lucene.luwak.DocumentBatch;
+import org.apache.lucene.luwak.DocumentBatch.Builder;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A QueryMatch that reports scores for each match
  *
- * @see DocumentBatch.Builder#setSimilarity(Similarity)
+ * @see Builder#setSimilarity(Similarity)
  */
 public class ScoringMatch extends QueryMatch {
 

@@ -20,6 +20,7 @@ package org.apache.lucene.luwak.matchers;
 import java.io.IOException;
 
 import org.apache.lucene.luwak.DocumentBatch;
+import org.apache.lucene.luwak.DocumentBatch.Builder;
 import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
@@ -29,7 +30,7 @@ import org.apache.lucene.search.similarities.Similarity;
  * A Matcher that reports the scores of queries run against its DocumentBatch
  * <p>
  * To change the {@link Similarity} implementation used for scoring here, use
- * {@link DocumentBatch.Builder#setSimilarity(Similarity)} when building the
+ * {@link Builder#setSimilarity(Similarity)} when building the
  * batch.
  */
 public class ScoringMatcher extends CollectingMatcher<ScoringMatch> {
