@@ -31,6 +31,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.NamedThreadFactory;
+
 /**
  * Utility class for concurrently loading queries into a Monitor.
  * <p>
@@ -85,7 +87,7 @@ public class ConcurrentQueryLoader implements Closeable {
     this.monitor = monitor;
     this.errorOutput = errors;
     this.queue = new LinkedBlockingQueue<>(queueSize);
-    this.executor = Executors.newFixedThreadPool(threads);
+    this.executor = Executors.newFixedThreadPool(threads, new NamedThreadFactory("loader"));
     this.shutdownLatch = new CountDownLatch(threads);
     for (int i = 0; i < threads; i++) {
       this.executor.submit(new Worker(queueSize / threads));

@@ -29,6 +29,7 @@ import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 
 import static org.hamcrest.core.Is.is;
 
@@ -99,7 +100,7 @@ public class TestCachePurging extends LuceneTestCase {
         }
       };
 
-      ExecutorService executor = Executors.newFixedThreadPool(1);
+      ExecutorService executor = Executors.newFixedThreadPool(1, new NamedThreadFactory("updaters"));
       try {
         executor.submit(updaterThread);
 
