@@ -18,8 +18,8 @@
 package org.apache.lucene.luwak.matchers;
 
 import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A QueryMatch that reports scores for each match

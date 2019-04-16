@@ -19,12 +19,11 @@ package org.apache.lucene.luwak.matchers;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.MatcherFactory;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A Matcher that reports the scores of queries run against its DocumentBatch
