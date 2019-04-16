@@ -68,31 +68,9 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    permissions = "{" +
-          "  user-role : {" +
-          "    steve: [dev,user]," +
-          "    tim: [dev,admin]," +
-          "    joe: [user]," +
-          "    noble:[dev,user]" +
-          "  }," +
-          "  permissions : [" +
-          "    {name:'schema-edit'," +
-          "     role:admin}," +
-          "    {name:'collection-admin-read'," +
-          "    role:null}," +
-          "    {name:collection-admin-edit ," +
-          "    role:admin}," +
-          "    {name:mycoll_update," +
-          "      collection:mycoll," +
-          "      path:'/update/*'," +
-          "      role:[dev,admin]" +
-          "    }," +
-          "{name:read , role:dev }," +
-          "{name:freeforall, path:'/foo', role:'*'}]}";
-    rules = (Map) Utils.fromJSONString(permissions);
+    resetPermissionsAndRoles();
   }
 
-  @SuppressWarnings("unchecked")
   public void testBasicPermissions() {
     checkRules(makeMap("resource", "/update/json/docs",
         "httpMethod", "POST",
@@ -199,7 +177,6 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "userPrincipal", "joe")
         , FORBIDDEN);
 
-
     setUserRole("cio", "su");
     addPermission("all", "su");
 
@@ -225,6 +202,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         , STATUS_OK);
 
+    resetPermissionsAndRoles();
     addPermission("core-admin-edit", "su");
     addPermission("core-admin-read", "user");
     setUserRole("cio", "su");
@@ -262,7 +240,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         ,STATUS_OK);
 
-    removePermission("all");
+    resetPermissionsAndRoles();
     addPermission("test-params", "admin", "/x", makeMap("key", Arrays.asList("REGEX:(?i)val1", "VAL2")));
 
     checkRules(makeMap("resource", "/x",
@@ -468,6 +446,31 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     ((List)rules.get("permissions")).add( makeMap("name", permissionName, "role", role));
   }
 
+  void resetPermissionsAndRoles() {
+    permissions = "{" +
+        "  user-role : {" +
+        "    steve: [dev,user]," +
+        "    tim: [dev,admin]," +
+        "    joe: [user]," +
+        "    noble:[dev,user]" +
+        "  }," +
+        "  permissions : [" +
+        "    {name:'schema-edit'," +
+        "      role:admin}," +
+        "    {name:'collection-admin-read'," +
+        "      role:null}," +
+        "    {name:collection-admin-edit ," +
+        "      role:admin}," +
+        "    {name:mycoll_update," +
+        "      collection:mycoll," +
+        "      path:'/update/*'," +
+        "      role:[dev,admin]" +
+        "    }," +
+        "{name:read, role:dev }," +
+        "{name:freeforall, path:'/foo', role:'*'}]}";
+    rules = (Map) Utils.fromJSONString(permissions);
+  }
+
   void clearUserRoles() {
     rules.put("user-role", new HashMap<String,Object>());
   }
@@ -529,7 +532,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     checkRules(values, expected, rules);
   }
 
-  void checkRules(Map<String, Object> values, int expected, Map<String ,Object> permissions) {
+  void checkRules(Map<String, Object> values, int expected, Map<String, Object> permissions) {
     AuthorizationContext context = getMockContext(values);
     try (RuleBasedAuthorizationPluginBase plugin = createPlugin()) {
       plugin.init(permissions);

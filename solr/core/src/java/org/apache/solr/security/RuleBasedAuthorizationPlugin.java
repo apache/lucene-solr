@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -48,11 +49,11 @@ public class RuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBa
 
   /**
    * Returns roles of the user based on the configured user-role map
-   * @param context the Authorization context from which to pull username
+   * @param principal the Authorization context from which to pull username
    * @return set of roles as strings
    */
   @Override
-  protected Set<String> getUserRoles(AuthorizationContext context) {
-    return usersVsRoles.get(context.getUserPrincipal().getName());
+  protected Set<String> getUserRoles(Principal principal) {
+    return usersVsRoles.get(principal.getName());
   }
 }

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
@@ -35,7 +35,6 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -129,68 +128,90 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   private MatchStatus checkPathPerm(List<Permission> permissions, AuthorizationContext context) {
     if (permissions == null || permissions.isEmpty()) return MatchStatus.NO_PERMISSIONS_FOUND;
     Principal principal = context.getUserPrincipal();
-    loopPermissions:
+
+    final Permission governingPermission = findFirstGoverningPermission(permissions, context);
+    if (governingPermission == null) {
+      log.debug("No permissions configured for the resource {} . So allowed to access", context.getResource());
+      return MatchStatus.NO_PERMISSIONS_FOUND;
+    }
+
+    return determineIfPermissionPermitsPrincipal(principal, governingPermission);
+  }
+
+  private Permission findFirstGoverningPermission(List<Permission> permissions, AuthorizationContext context) {
     for (int i = 0; i < permissions.size(); i++) {
       Permission permission = permissions.get(i);
-      if (PermissionNameProvider.values.containsKey(permission.name)) {
-        if (context.getHandler() instanceof PermissionNameProvider) {
-          PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
-          PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
-          if (permissionName == null || !permission.name.equals(permissionName.name)) {
-            continue;
-          }
-        } else {
-          //all is special. it can match any
-          if(permission.wellknownName != PermissionNameProvider.Name.ALL) continue;
-        }
-      } else {
-        if (permission.method != null && !permission.method.contains(context.getHttpMethod())) {
-          //this permissions HTTP method does not match this rule. try other rules
-          continue;
-        }
-        if (permission.params != null) {
-          for (Map.Entry<String, Function<String[], Boolean>> e : permission.params.entrySet()) {
-            String[] paramVal = context.getParams().getParams(e.getKey());
-            if(!e.getValue().apply(paramVal)) continue loopPermissions;
-          }
-        }
-      }
-
-      if (permission.role == null) {
-        //no role is assigned permission.That means everybody is allowed to access
-        return MatchStatus.PERMITTED;
-      }
-      if (principal == null) {
-        log.info("request has come without principal. failed permission {} ",permission);
-        //this resource needs a principal but the request has come without
-        //any credential.
-        return MatchStatus.USER_REQUIRED;
-      } else if (permission.role.contains("*")) {
-        return MatchStatus.PERMITTED;
-      }
-
-      for (String role : permission.role) {
-        try {
-          Set<String> userRoles = getUserRoles(context);
-          if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
-        } catch (SolrException se) {
-          log.warn("Problems finding user roles for principal " + principal.getName(), se);
-          return MatchStatus.FORBIDDEN;
-        }
-      }
-      log.info("This resource is configured to have a permission {}, The principal {} does not have the right role ", permission, principal);
-      return MatchStatus.FORBIDDEN;
+      if (permissionAppliesToRequest(permission, context)) return permission;
     }
-    log.debug("No permissions configured for the resource {} . So allowed to access", context.getResource());
-    return MatchStatus.NO_PERMISSIONS_FOUND;
+
+    return null;
   }
+
+  private boolean permissionAppliesToRequest(Permission permission, AuthorizationContext context) {
+    if (PermissionNameProvider.values.containsKey(permission.name)) {
+      return predefinedPermissionAppliesToRequest(permission, context);
+    } else {
+      return customPermissionAppliesToRequest(permission, context);
+    }
+  }
+
+  private boolean predefinedPermissionAppliesToRequest(Permission predefinedPermission, AuthorizationContext context) {
+    if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
+      return true; //'ALL' applies to everything!
+    } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
+      return false; // We're not 'ALL', and the handler isn't associated with any other predefined permissions
+    } else {
+      PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
+      PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
+
+      return permissionName != null && predefinedPermission.name.equals(permissionName.name);
+    }
+  }
+
+  private boolean customPermissionAppliesToRequest(Permission customPermission, AuthorizationContext context) {
+    if (customPermission.method != null && !customPermission.method.contains(context.getHttpMethod())) {
+      //this permissions HTTP method does not match this rule. try other rules
+      return false;
+    }
+    if (customPermission.params != null) {
+      for (Map.Entry<String, Function<String[], Boolean>> e : customPermission.params.entrySet()) {
+        String[] paramVal = context.getParams().getParams(e.getKey());
+        if(!e.getValue().apply(paramVal)) return false;
+      }
+    }
+
+    return true;
+  }
+
+  private MatchStatus determineIfPermissionPermitsPrincipal(Principal principal, Permission governingPermission) {
+    if (governingPermission.role == null) {
+      //no role is assigned permission.That means everybody is allowed to access
+      return MatchStatus.PERMITTED;
+    }
+    if (principal == null) {
+      log.info("request has come without principal. failed permission {} ", governingPermission);
+      //this resource needs a principal but the request has come without
+      //any credential.
+      return MatchStatus.USER_REQUIRED;
+    } else if (governingPermission.role.contains("*")) {
+      return MatchStatus.PERMITTED;
+    }
+
+    for (String role : governingPermission.role) {
+      Set<String> userRoles = getUserRoles(principal);
+      if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
+    }
+    log.info("This resource is configured to have a permission {}, The principal {} does not have the right role ", governingPermission, principal);
+    return MatchStatus.FORBIDDEN;
+  }
+
 
   /**
    * Finds users roles
-   * @param authorizationContext the authorization context, which contains the Principal mm
+   * @param principal the user Principal to fetch roles for
    * @return set of roles as strings
    */
-  protected abstract Set<String> getUserRoles(AuthorizationContext authorizationContext);
+  protected abstract Set<String> getUserRoles(Principal principal);
 
   //this is to do optimized lookup of permissions for a given collection/path
   void add2Mapping(Permission permission) {
@@ -222,7 +243,6 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     }
   }
 
-  
   @Override
   public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
     for (CommandOperation op : commands) {
@@ -238,8 +258,9 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     return latestConf;
   }
 
-  private static final Map<String, AutorizationEditOperation> ops = unmodifiableMap(asList(AutorizationEditOperation.values()).stream().collect(toMap(AutorizationEditOperation::getOperationName, identity())));
-
+  private static final Map<String, AutorizationEditOperation> ops = unmodifiableMap(
+      Arrays.stream(AutorizationEditOperation.values())
+          .collect(toMap(AutorizationEditOperation::getOperationName, identity())));
 
   @Override
   public ValidatingJsonMap getSpec() {

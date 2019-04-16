@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
+import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,13 +42,13 @@ public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthoriza
 
   /**
    * Pulls roles from the Principal
-   * @param context the Authorization context from which to find the user Principal
+   * @param principal the user Principal which should contain roles
    * @return set of roles as strings
    */
   @Override
-  protected Set<String> getUserRoles(AuthorizationContext context) {
-    if(context.getUserPrincipal() instanceof VerifiedUserRoles) {
-      return ((VerifiedUserRoles)context.getUserPrincipal()).getVerifiedRoles();
+  protected Set<String> getUserRoles(Principal principal) {
+    if(principal instanceof VerifiedUserRoles) {
+      return ((VerifiedUserRoles) principal).getVerifiedRoles();
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request does not contain a Principal with roles");
     }
