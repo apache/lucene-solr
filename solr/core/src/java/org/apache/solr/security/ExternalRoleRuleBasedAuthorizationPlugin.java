@@ -18,6 +18,7 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthoriza
     if(principal instanceof VerifiedUserRoles) {
       return ((VerifiedUserRoles) principal).getVerifiedRoles();
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request does not contain a Principal with roles");
+      return Collections.emptySet();
     }
   }
 }

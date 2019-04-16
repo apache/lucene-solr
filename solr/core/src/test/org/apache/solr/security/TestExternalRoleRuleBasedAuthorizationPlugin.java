@@ -32,7 +32,6 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBa
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    rules.remove("user-role");
 
     principals = new HashMap<>();
     setUserRoles("steve", "dev", "user");
@@ -66,5 +65,11 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBa
   @Override
   protected RuleBasedAuthorizationPluginBase createPlugin() {
     return new ExternalRoleRuleBasedAuthorizationPlugin();
+  }
+
+  @Override
+  protected void resetPermissionsAndRoles() {
+    super.resetPermissionsAndRoles();
+    rules.remove("user-role");
   }
 }

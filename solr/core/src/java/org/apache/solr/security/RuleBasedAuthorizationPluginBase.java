@@ -197,9 +197,9 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
       return MatchStatus.PERMITTED;
     }
 
-    for (String role : governingPermission.role) {
-      Set<String> userRoles = getUserRoles(principal);
-      if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
+    Set<String> userRoles = getUserRoles(principal);
+    if (userRoles != null && governingPermission.role.stream().anyMatch(userRoles::contains)) {
+      return MatchStatus.PERMITTED;
     }
     log.info("This resource is configured to have a permission {}, The principal {} does not have the right role ", governingPermission, principal);
     return MatchStatus.FORBIDDEN;
@@ -209,7 +209,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   /**
    * Finds users roles
    * @param principal the user Principal to fetch roles for
-   * @return set of roles as strings
+   * @return set of roles as strings or empty set if no roles found
    */
   protected abstract Set<String> getUserRoles(Principal principal);
 

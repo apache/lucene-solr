@@ -70,7 +70,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     resetPermissionsAndRoles();
   }
 
-  void resetPermissionsAndRoles() {
+  protected void resetPermissionsAndRoles() {
     String permissions = "{" +
         "  user-role : {" +
         "    steve: [dev,user]," +
