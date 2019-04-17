@@ -11,7 +11,7 @@ See http://lucene.apache.org/solr for more information.
 
 Getting Started
 ---------------
-You need a Java 1.8 VM or later installed.
+You need a Java 11 VM or later installed.
 In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Solr tutorial at https://lucene.apache.org/solr/guide/solr-tutorial.html
