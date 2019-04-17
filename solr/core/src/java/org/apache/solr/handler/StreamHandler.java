@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -192,33 +193,46 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   private void handleAdmin(SolrQueryRequest req, SolrQueryResponse rsp, SolrParams params) {
-    String action = params.get("action");
-    if ("stop".equalsIgnoreCase(action)) {
-      String id = params.get(ID);
-      DaemonStream d = daemons.get(id);
-      if (d != null) {
+    String action = params.get("action").toLowerCase(Locale.ROOT).trim();
+
+    if ("list".equals(action)) {
+      Collection<DaemonStream> vals = daemons.values();
+      rsp.add("result-set", new DaemonCollectionStream(vals));
+      return;
+    }
+
+    String id = params.get(ID);
+    DaemonStream d = daemons.get(id);
+    if (d == null) {
+      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
+      return;
+    }
+
+    switch (action) {
+      case "stop":
         d.close();
         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " stopped on " + coreName));
-      } else {
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
-      }
-    } else {
-      if ("start".equalsIgnoreCase(action)) {
-        String id = params.get(ID);
-        DaemonStream d = daemons.get(id);
-        d.open();
-        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
-      } else if ("list".equalsIgnoreCase(action)) {
-        Collection<DaemonStream> vals = daemons.values();
-        rsp.add("result-set", new DaemonCollectionStream(vals));
-      } else if ("kill".equalsIgnoreCase(action)) {
-        String id = params.get("id");
-        DaemonStream d = daemons.remove(id);
-        if (d != null) {
-          d.close();
+        break;
+
+      case "start":
+        try {
+          d.open();
+        } catch (IOException e) {
+          rsp.add("result-set", new DaemonResponseStream("Daemon: " + id + " error: " + e.getMessage()));
         }
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
+        break;
+
+      case "kill":
+        daemons.remove(id);
+        d.close(); // we already found it in the daemons list, so we don't need to verify we removed it.
         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
-      }
+        break;
+
+       default:
+         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " action '"
+             + action + "' not recognized on " + coreName));
+         break;
     }
   }
 

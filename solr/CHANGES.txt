@@ -115,6 +115,8 @@ Bug Fixes
   this issue reverts the default replica placement policy to the 'legacy' assignment policy that was the default until
   Solr 7.4. (Gus Heck, Andrzej Bialecki, Bram Van Dam, shalin)
 
+* SOLR-13408: Cannot start/stop DaemonStream repeatedly, other API improvements (Erick Erickson)
+
 ==================  7.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
