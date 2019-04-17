@@ -2,6 +2,8 @@
 
 Apache Lucene runs on Java 8 or greater.
 
+For HiDPI graphics on Windows/Linux, Java 11 or greater is recommended to run the bundled GUI application Luke.
+
 It is also recommended to always use the latest update version of your
 Java VM, because bugs may affect Lucene. An overview of known JVM bugs
 can be found on http://wiki.apache.org/lucene-java/JavaBugs
