@@ -179,7 +179,7 @@
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" location="${common.dir}/build/docs"/>
   <property name="javadoc.maxmemory" value="512m" />
-  <property name="javadoc.noindex" value="true"/>
+  <property name="javadoc.noindex" value="false"/>
 
   <!---TODO: Fix accessibility (order of H1/H2/H3 headings), see https://issues.apache.org/jira/browse/LUCENE-8729 -->
   <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing -Xdoclint:-accessibility"/>
@@ -2097,6 +2097,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
+          additionalparam="--no-module-directories"
           packagenames="org.apache.lucene.*,org.apache.solr.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
