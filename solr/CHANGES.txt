@@ -242,6 +242,8 @@ Other Changes
 
 * SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
 
+* SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
