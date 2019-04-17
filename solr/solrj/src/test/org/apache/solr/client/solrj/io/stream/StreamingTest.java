@@ -1739,58 +1739,69 @@ public void testParallelRankStream() throws Exception {
       daemonStream.setStreamContext(context);
 
       daemonStream.open();
+      CheckDaemonStream(context, daemonStream);
 
-      // Wait for the checkpoint
-      JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
+      // We should get an error if we try to open an already-open stream.
+      final IOException ex = expectThrows(IOException.class, () -> {
+        daemonStream.open();
+      });
+      assertEquals("Should have an intelligible exception message", ex.getMessage(), "There is already an open daemon named 'daemon1', no action taken.");
+      daemonStream.close();
 
-
-      SolrParams sParams1 = mapParams("qt", "/get", "ids", "50000000", "fl", "id");
-      int count = 0;
-      while (count == 0) {
-        SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
-        solrStream.setStreamContext(context);
-        List<Tuple> tuples = getTuples(solrStream);
-        count = tuples.size();
-        if (count > 0) {
-          Tuple t = tuples.get(0);
-          assertTrue(t.getLong("id") == 50000000);
-        } else {
-          System.out.println("###### Waiting for checkpoint #######:" + count);
-        }
-      }
-
-      new UpdateRequest()
-          .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-          .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-          .add(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3")
-          .add(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4")
-          .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-      for (int i = 0; i < 5; i++) {
-        daemonStream.read();
-      }
-
-      new UpdateRequest()
-          .add(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4")
-          .add(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4")
-          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-      for (int i = 0; i < 2; i++) {
-        daemonStream.read();
-      }
-
-      daemonStream.shutdown();
-
-      Tuple tuple = daemonStream.read();
-
-      assertTrue(tuple.EOF);
+      // We should be able to close then re-open the stream, then close it again, see SOLR-13408
+      daemonStream.open();
+      CheckDaemonStream(context, daemonStream);
       daemonStream.close();
     } finally {
       cache.close();
     }
+  }
 
+  private void CheckDaemonStream(StreamContext context, DaemonStream daemonStream) throws IOException, SolrServerException {
+    // Wait for the checkpoint
+    JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
 
+    SolrParams sParams1 = mapParams("qt", "/get", "ids", "50000000", "fl", "id");
+    int count = 0;
+    while (count == 0) {
+      SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
+      solrStream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(solrStream);
+      count = tuples.size();
+      if (count > 0) {
+        Tuple t = tuples.get(0);
+        assertTrue(t.getLong("id") == 50000000);
+      } else {
+        System.out.println("###### Waiting for checkpoint #######:" + count);
+      }
+    }
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    for (int i = 0; i < 5; i++) {
+      daemonStream.read();
+    }
+
+    new UpdateRequest()
+        .add(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4")
+        .add(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    for (int i = 0; i < 2; i++) {
+      daemonStream.read();
+    }
+
+    daemonStream.shutdown();
+
+    Tuple tuple = daemonStream.read();
+
+    assertTrue(tuple.EOF);
   }
 
   @Test

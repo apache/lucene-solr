@@ -169,6 +169,8 @@ Bug Fixes
 
 * SOLR-12371: Editing authorization config via REST API now works in standalone mode (janhoy)
 
+* SOLR-13408: Cannot start/stop DaemonStream repeatedly, other API improvements (Erick Erickson)
+
 Improvements
 ----------------------
 
