@@ -87,7 +87,7 @@ public final class SegmentInfo {
   Version minVersion;
 
   void setDiagnostics(Map<String, String> diagnostics) {
-    this.diagnostics = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(diagnostics)));
+    this.diagnostics = Map.copyOf(Objects.requireNonNull(diagnostics));
   }
 
   /** Returns diagnostics saved into the segment when it was
@@ -112,12 +112,12 @@ public final class SegmentInfo {
     this.maxDoc = maxDoc;
     this.isCompoundFile = isCompoundFile;
     this.codec = codec;
-    this.diagnostics = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(diagnostics)));
+    this.diagnostics = Map.copyOf(Objects.requireNonNull(diagnostics));
     this.id = id;
     if (id.length != StringHelper.ID_LENGTH) {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
-    this.attributes = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(attributes)));
+    this.attributes = Map.copyOf(Objects.requireNonNull(attributes));
     this.indexSort = indexSort;
   }
 

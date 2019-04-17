@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
@@ -82,7 +80,7 @@ public class SegmentReadState {
     this.context = context;
     this.segmentSuffix = segmentSuffix;
     this.openedFromWriter = openedFromWriter;
-    this.readerAttributes = Collections.unmodifiableMap(new HashMap<>(readerAttributes));
+    this.readerAttributes = Map.copyOf(readerAttributes);
   }
 
   /** Create a {@code SegmentReadState}. */
