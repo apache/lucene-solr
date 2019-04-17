@@ -73,6 +73,8 @@ Bug fixes
 
 * SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
 
+* SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
