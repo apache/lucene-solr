@@ -271,7 +271,9 @@ public final class Polygon2D extends EdgeTree {
     if (isOnEdge.get() == false && lat <= edge.max) {
       if (lat == edge.lat1 && lat == edge.lat2 ||
           (lat <= edge.lat1 && lat >= edge.lat2) != (lat >= edge.lat1 && lat <= edge.lat2)) {
-        if (GeoUtils.orient(edge.lon1, edge.lat1, edge.lon2, edge.lat2, lon, lat) == 0) {
+        if ((lon == edge.lon1 && lon == edge.lon2) ||
+            ((lon <= edge.lon1 && lon >= edge.lon2) != (lon >= edge.lon1 && lon <= edge.lon2) &&
+            GeoUtils.orient(edge.lon1, edge.lat1, edge.lon2, edge.lat2, lon, lat) == 0)) {
           // if its on the boundary return true
           isOnEdge.set(true);
           return true;
