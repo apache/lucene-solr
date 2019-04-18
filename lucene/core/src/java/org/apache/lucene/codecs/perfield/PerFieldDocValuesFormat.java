@@ -18,10 +18,10 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
@@ -138,7 +138,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
         DocValuesConsumer consumer = getInstance(fi);
         Collection<String> fieldsForConsumer = consumersToField.get(consumer);
         if (fieldsForConsumer == null) {
-          fieldsForConsumer = new ArrayList<>();
+          fieldsForConsumer = new LinkedHashSet<>();
           consumersToField.put(consumer, fieldsForConsumer);
         }
         fieldsForConsumer.add(fi.name);
