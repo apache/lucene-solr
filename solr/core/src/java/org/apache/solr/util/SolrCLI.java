@@ -416,7 +416,7 @@ public class SolrCLI implements CLIO {
     // classpath scanning
 
     for (Class<Tool> next : findToolClassesInPackage("org.apache.solr.util")) {
-      Tool tool = next.newInstance();
+      Tool tool = next.getConstructor().newInstance();
       if (toolType.equals(tool.getName()))
         return tool;
     }
@@ -445,7 +445,7 @@ public class SolrCLI implements CLIO {
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
-      Tool tool = next.newInstance();
+      Tool tool = next.getConstructor().newInstance();
       formatter.printHelp(tool.getName(), getToolOptions(tool));
     }
   }

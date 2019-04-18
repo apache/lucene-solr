@@ -355,7 +355,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
                                                          segmentInfo, fieldInfos,
                                                          null, new IOContext(new FlushInfo(1, 20)));
     
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, false, IOContext.READ);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, false, IOContext.READ, Collections.emptyMap());
 
     // PostingsFormat
     NormsProducer fakeNorms = new NormsProducer() {

@@ -67,7 +67,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName = message.getStr(COLLECTION_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
 
@@ -92,7 +93,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String strategy = message.getStr(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
     switch (strategy) {
       case CollectionAdminParams.COPY_FILES_STRATEGY: {
-        copyIndexFiles(backupPath, message, results);
+        copyIndexFiles(backupPath, collectionName, message, results);
         break;
       }
       case CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY: {
@@ -115,6 +116,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
     properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
+    properties.put(BackupManager.COLLECTION_ALIAS_PROP, extCollectionName);
     properties.put(CollectionAdminParams.COLL_CONF, configName);
     properties.put(BackupManager.START_TIME_PROP, startTime.toString());
     properties.put(BackupManager.INDEX_VERSION_PROP, Version.LATEST.toString());
@@ -155,8 +157,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     return r.get();
   }
 
-  private void copyIndexFiles(URI backupPath, ZkNodeProps request, NamedList results) throws Exception {
-    String collectionName = request.getStr(COLLECTION_PROP);
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList results) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);

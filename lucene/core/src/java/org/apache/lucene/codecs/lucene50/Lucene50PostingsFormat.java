@@ -370,10 +370,7 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    */
   public static final String PAY_EXTENSION = "pay";
 
-  /** Attribute key for fst mode. */
-  static final String MODE_KEY = Lucene50PostingsFormat.class.getSimpleName() + ".fstMode";
-
-  /** 
+  /**
    * Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.
    */
@@ -391,37 +388,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;
-  private final FSTLoadMode fstLoadMode;
-
-  /**
-   * An enum that allows to control if term index FSTs are loaded into memory or read off-heap
-   */
-  public enum FSTLoadMode {
-    /**
-     * Always read FSTs from disk.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     */
-    OFF_HEAP,
-    /**
-     * Never read FSTs from disk ie. all fields FSTs are loaded into memory
-     */
-    ON_HEAP,
-    /**
-     * Always read FSTs from disk.
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     * This is useful to guarantee best update performance even if a non MMapDirectory is used.
-     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
-     * are used.
-     * See {@link FSTLoadMode#AUTO}
-     */
-    OPTIMIZE_UPDATES_OFF_HEAP,
-    /**
-     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
-     * An exception is made for ID fields in an IndexWriter context which are always loaded into memory.
-     */
-    AUTO
-  }
 
   /**
    * Fixed packed block size, number of integers encoded in 
@@ -429,23 +395,24 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    */
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
+  private final BlockTreeTermsReader.FSTLoadMode fstLoadMode;
 
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, FSTLoadMode.AUTO);
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, BlockTreeTermsReader.FSTLoadMode.AUTO);
   }
 
   /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, FSTLoadMode fstLoadMode) {
+  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, BlockTreeTermsReader.FSTLoadMode loadMode) {
     super("Lucene50");
     BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
     this.minTermBlockSize = minTermBlockSize;
     this.maxTermBlockSize = maxTermBlockSize;
-    this.fstLoadMode = fstLoadMode;
+    this.fstLoadMode = loadMode;
   }
 
   @Override
@@ -456,11 +423,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
-    if (state.segmentInfo.getAttribute(MODE_KEY) != null && fstLoadMode.name().equals(state.segmentInfo.getAttribute(MODE_KEY)) == false) {
-      throw new IllegalStateException("found existing value for " + MODE_KEY + " for segment: " + state.segmentInfo.name +
-          " old=" + state.segmentInfo.getAttribute(MODE_KEY) + ", new=" + fstLoadMode.name());
-    }
-    state.segmentInfo.putAttribute(MODE_KEY, fstLoadMode.name());
     boolean success = false;
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
@@ -479,11 +441,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
-    String fstLoadModeKey = state.segmentInfo.getAttribute(MODE_KEY);
-    FSTLoadMode fstLoadMode = FSTLoadMode.AUTO;
-    if (fstLoadModeKey != null) {
-      fstLoadMode = FSTLoadMode.valueOf(fstLoadModeKey);
-    }
     boolean success = false;
     try {
       FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, fstLoadMode);

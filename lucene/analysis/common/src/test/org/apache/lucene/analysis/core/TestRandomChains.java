@@ -408,7 +408,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         try {
           String lang = TestSnowball.SNOWBALL_LANGS[random.nextInt(TestSnowball.SNOWBALL_LANGS.length)];
           Class<? extends SnowballProgram> clazz = Class.forName("org.tartarus.snowball.ext." + lang + "Stemmer").asSubclass(SnowballProgram.class);
-          return clazz.newInstance();
+          return clazz.getConstructor().newInstance();
         } catch (Exception ex) {
           Rethrow.rethrow(ex);
           return null; // unreachable code

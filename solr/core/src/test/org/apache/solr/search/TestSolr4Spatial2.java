@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -183,8 +184,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // a random point using the number of decimal places we support for round-tripping.
     String randPointStr =
-        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString() +
-        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString();
+        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() +
+        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
 
     List<RetrievalCombo> combos = Arrays.asList(
         new RetrievalCombo("llp_1_dv_st", ptHighPrecision),

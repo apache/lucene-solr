@@ -20,7 +20,6 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
 import static java.lang.Integer.BYTES;
@@ -162,17 +161,17 @@ public class Rectangle2D {
                                                             int minXOffset, int minYOffset, byte[] minTriangle,
                                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     // check bounding box (DISJOINT)
-    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
-        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
-        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
-        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0) {
+    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
+        Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
+        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
+        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
 
-    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
-        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
       return PointValues.Relation.CELL_INSIDE_QUERY;
     }
     return PointValues.Relation.CELL_CROSSES_QUERY;
@@ -233,19 +232,14 @@ public class Rectangle2D {
     }
 
     // shortcut: check if either of the end points fall inside the box
-    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY)
-        || bboxContainsPoint(bx, by, minX, maxX, minY, maxY)) {
+    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(bx, by, minX, maxX, minY, maxY)) {
       return true;
     }
 
     // shortcut: check bboxes of edges are disjoint
     if (boxesAreDisjoint(Math.min(ax, bx), Math.max(ax, bx), Math.min(ay, by), Math.max(ay, by),
         minX, maxX, minY, maxY)) {
-      return false;
-    }
-
-    // shortcut: edge is a point
-    if (ax == bx && ay == by) {
       return false;
     }
 

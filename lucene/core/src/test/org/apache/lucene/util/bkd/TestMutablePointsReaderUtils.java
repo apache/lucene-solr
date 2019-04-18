@@ -23,7 +23,6 @@ import java.util.Comparator;
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -86,7 +85,7 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
       final int offset = sortedDim * bytesPerDim;
       BytesRef previousValue = reader.points[i-1].packedValue;
       BytesRef currentValue = reader.points[i].packedValue;
-      int cmp = FutureArrays.compareUnsigned(previousValue.bytes, previousValue.offset + offset, previousValue.offset + offset + bytesPerDim, currentValue.bytes, currentValue.offset + offset, currentValue.offset + offset + bytesPerDim);
+      int cmp = Arrays.compareUnsigned(previousValue.bytes, previousValue.offset + offset, previousValue.offset + offset + bytesPerDim, currentValue.bytes, currentValue.offset + offset, currentValue.offset + offset + bytesPerDim);
       if (cmp == 0) {
         cmp = reader.points[i - 1].doc - reader.points[i].doc;
       }
@@ -121,7 +120,7 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     int offset = splitDim * bytesPerDim;
     for (int i = 0; i < points.length; ++i) {
       BytesRef value = reader.points[i].packedValue;
-      int cmp = FutureArrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + offset + bytesPerDim, pivotValue.bytes, pivotValue.offset + offset, pivotValue.offset + offset + bytesPerDim);
+      int cmp = Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + offset + bytesPerDim, pivotValue.bytes, pivotValue.offset + offset, pivotValue.offset + offset + bytesPerDim);
       if (cmp == 0) {
         cmp = reader.points[i].doc - reader.points[pivot].doc;
       }

@@ -82,7 +82,7 @@
 # Set to true to activate the JMX RMI connector to allow remote JMX client applications
 # to monitor the JVM hosting Solr; set to "false" to disable that behavior
 # (false is recommended in production environments)
-#ENABLE_REMOTE_JMX_OPTS="false"
+ENABLE_REMOTE_JMX_OPTS="true"
 
 # The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983

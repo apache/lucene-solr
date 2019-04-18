@@ -61,6 +61,7 @@ import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.NONE;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.SYNCHRONOUS;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.TZ;
 
 /**
