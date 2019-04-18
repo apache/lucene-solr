@@ -80,9 +80,9 @@ public abstract class DocumentsTestBase extends LuceneTestCase {
     downloadsType.setStored(true);
 
     Document doc1 = new Document();
-    doc1.add(newField("title", "Pride and Prejudice", titleType));
-    doc1.add(newField("author", "Jane Austen", authorType));
-    doc1.add(newField("text",
+    doc1.add(new Field("title", "Pride and Prejudice", titleType));
+    doc1.add(new Field("author", "Jane Austen", authorType));
+    doc1.add(new Field("text",
         "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
         textType));
     doc1.add(new SortedSetDocValuesField("subject", new BytesRef("Fiction")));
@@ -91,18 +91,18 @@ public abstract class DocumentsTestBase extends LuceneTestCase {
     writer.addDocument(doc1);
 
     Document doc2 = new Document();
-    doc2.add(newField("title", "Alice's Adventures in Wonderland", titleType));
-    doc2.add(newField("author", "Lewis Carroll", authorType));
-    doc2.add(newField("text", "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, ‘and what is the use of a book,’ thought Alice ‘without pictures or conversations?’",
+    doc2.add(new Field("title", "Alice's Adventures in Wonderland", titleType));
+    doc2.add(new Field("author", "Lewis Carroll", authorType));
+    doc2.add(new Field("text", "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, ‘and what is the use of a book,’ thought Alice ‘without pictures or conversations?’",
         textType));
     doc2.add(new SortedSetDocValuesField("subject", new BytesRef("Fantasy literature")));
     doc2.add(new Field("downloads", packInt(18712), downloadsType));
     writer.addDocument(doc2);
 
     Document doc3 = new Document();
-    doc3.add(newField("title", "Frankenstein; Or, The Modern Prometheus", titleType));
-    doc3.add(newField("author", "Mary Wollstonecraft Shelley", authorType));
-    doc3.add(newField("text", "You will rejoice to hear that no disaster has accompanied the commencement of an enterprise which you have regarded with such evil forebodings. I arrived here yesterday, and my first task is to assure my dear sister of my welfare and increasing confidence in the success of my undertaking.",
+    doc3.add(new Field("title", "Frankenstein; Or, The Modern Prometheus", titleType));
+    doc3.add(new Field("author", "Mary Wollstonecraft Shelley", authorType));
+    doc3.add(new Field("text", "You will rejoice to hear that no disaster has accompanied the commencement of an enterprise which you have regarded with such evil forebodings. I arrived here yesterday, and my first task is to assure my dear sister of my welfare and increasing confidence in the success of my undertaking.",
         textType));
     doc3.add(new SortedSetDocValuesField("subject", new BytesRef("Science fiction")));
     doc3.add(new SortedSetDocValuesField("subject", new BytesRef("Horror tales")));
@@ -111,18 +111,18 @@ public abstract class DocumentsTestBase extends LuceneTestCase {
     writer.addDocument(doc3);
 
     Document doc4 = new Document();
-    doc4.add(newField("title", "A Doll's House : a play", titleType));
-    doc4.add(newField("author", "Henrik Ibsen", authorType));
-    doc4.add(newField("text", "",
+    doc4.add(new Field("title", "A Doll's House : a play", titleType));
+    doc4.add(new Field("author", "Henrik Ibsen", authorType));
+    doc4.add(new Field("text", "",
         textType));
     doc4.add(new SortedSetDocValuesField("subject", new BytesRef("Drama")));
     doc4.add(new Field("downloads", packInt(14629), downloadsType));
     writer.addDocument(doc4);
 
     Document doc5 = new Document();
-    doc5.add(newField("title", "The Adventures of Sherlock Holmes", titleType));
-    doc5.add(newField("author", "Arthur Conan Doyle", authorType));
-    doc5.add(newField("text", "To Sherlock Holmes she is always the woman. I have seldom heard him mention her under any other name. In his eyes she eclipses and predominates the whole of her sex.",
+    doc5.add(new Field("title", "The Adventures of Sherlock Holmes", titleType));
+    doc5.add(new Field("author", "Arthur Conan Doyle", authorType));
+    doc5.add(new Field("text", "To Sherlock Holmes she is always the woman. I have seldom heard him mention her under any other name. In his eyes she eclipses and predominates the whole of her sex.",
         textType));
     doc5.add(new SortedSetDocValuesField("subject", new BytesRef("Fiction")));
     doc5.add(new SortedSetDocValuesField("subject", new BytesRef("Detective and mystery stories")));
