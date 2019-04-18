@@ -140,6 +140,8 @@ public abstract class EdgeTree {
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
     if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
       return Relation.CELL_OUTSIDE_QUERY;
+    } else if (bx == cx && by == cy) {
+      return componentRelateTriangle(bx, by, ax, ay, cx, cy);
     }
     return componentRelateTriangle(ax, ay, bx, by, cx, cy);
   }
