@@ -125,6 +125,10 @@ Changes in Runtime Behavior
   the only difference in output between the two is in the position length
   attribute.  (Alan Woodward, Jim Ferenczi)
 
+* LUCENE-7386: Disjunctions nested in disjunctions are now flattened. This might
+  trigger changes in the produced scores due to changes to the order in which
+  scores of sub clauses are summed up. (Adrien Grand)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
