@@ -190,6 +190,20 @@ public class Aliases {
   }
 
   /**
+   * Returns true if an alias exists and is a routed alias, false otherwise.
+   */
+  public boolean isRoutedAlias(String aliasName) {
+    if (!collectionAliases.containsKey(aliasName)) {
+      return false;
+    }
+    Map<String, String> props = collectionAliasProperties.get(aliasName);
+    if (props == null) {
+      return false;
+    }
+    return props.entrySet().stream().anyMatch(e -> e.getKey().startsWith(CollectionAdminParams.ROUTER_PREFIX));
+  }
+
+  /**
    * Resolve an alias that points to a single collection. One level of alias indirection is supported.
    * @param aliasName alias name
    * @return original name if there's no such alias, or a resolved name. If an alias points to more than 1

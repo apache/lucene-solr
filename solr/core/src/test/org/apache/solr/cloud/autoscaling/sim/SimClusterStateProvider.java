@@ -2146,6 +2146,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
+  public Map<String, String> getAliasProperties(String alias) {
+    throw new UnsupportedOperationException("getAliasProperties not implemented");
+  }
+
+  @Override
   public ClusterState getClusterState() throws IOException {
     ensureNotClosed();
     try {
