@@ -43,16 +43,14 @@ public class TestSimilarities extends LuceneTestCase {
 
       DocumentBatch batch = new DocumentBatch.Builder()
           .add(doc)
-          .setSimilarity(similarity)
           .build();
 
       DocumentBatch standardBatch = new DocumentBatch.Builder()
           .add(doc)
-          .setSimilarity(new ClassicSimilarity())
           .build();
 
-      Matches<ScoringMatch> standard = monitor.match(standardBatch, ScoringMatcher.FACTORY);
-      Matches<ScoringMatch> withSim = monitor.match(batch, ScoringMatcher.FACTORY);
+      Matches<ScoringMatch> standard = monitor.match(standardBatch, ScoringMatcher.factory(new ClassicSimilarity()));
+      Matches<ScoringMatch> withSim = monitor.match(batch, ScoringMatcher.factory(similarity));
 
       float standScore = standard.getMatches("doc").iterator().next().getScore();
       float simScore = withSim.getMatches("doc").iterator().next().getScore();
