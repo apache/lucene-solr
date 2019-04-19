@@ -53,7 +53,7 @@ public class TestInputDocument extends MonitorTestBase {
         .addField(f).build();
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("q", parse("length")));
+      monitor.register(new MonitorQuery("q", parse("length")));
 
       Matches<ExplainingMatch> matches = monitor.match(doc, ExplainingMatcher.FACTORY);
       DocumentMatches<ExplainingMatch> m = matches.getMatches("id");

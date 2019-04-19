@@ -52,7 +52,7 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
   public void testSimpleBoolean() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(
+      monitor.register(
           new MonitorQuery("1", parse("field:\"hello world\"")),
           new MonitorQuery("2", parse("field:world")),
           new MonitorQuery("3", parse("field:\"hello there world\"")),
@@ -68,7 +68,7 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
   public void testComplexBoolean() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("field:(+foo +bar +(badger cormorant))")));
+      monitor.register(new MonitorQuery("1", parse("field:(+foo +bar +(badger cormorant))")));
 
       Matches<QueryMatch> matches
           = monitor.match(buildDoc("doc1", "field", "a badger walked into a bar"), SimpleMatcher.FACTORY);
@@ -100,7 +100,7 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
     };
     try (Monitor monitor = new Monitor(presearcher, config)) {
 
-      monitor.update(new MonitorQuery("1", parse("f:test")));
+      monitor.register(new MonitorQuery("1", parse("f:test")));
 
       try (IndexReader reader = DirectoryReader.open(writer, false, false)) {
 

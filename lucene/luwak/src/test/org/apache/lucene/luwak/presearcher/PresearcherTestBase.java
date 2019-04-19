@@ -60,7 +60,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
   public void testNullFieldHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("field_1:test")));
+      monitor.register(new MonitorQuery("1", parse("field_1:test")));
 
       assertEquals(0,
           monitor.match(buildDoc("doc1", "field_2", "test"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
@@ -78,7 +78,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
   public void testMatchAllQueryHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", new MatchAllDocsQuery()));
+      monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
       assertEquals(1,
           monitor.match(buildDoc("doc1", "f", "wibble"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
     }
@@ -90,7 +90,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
         .add(new TermQuery(new Term("f", "foo")), BooleanClause.Occur.MUST_NOT)
         .build();
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", q));
+      monitor.register(new MonitorQuery("1", q));
 
       DocumentBatch batch = DocumentBatch.of(
           InputDocument.builder("doc1").addField("f", "bar", WHITESPACE).build(),
@@ -105,7 +105,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
   public void testAnyTokenHandling() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", new MatchAllDocsQuery()));
+      monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
       Matches<QueryMatch> matches = monitor.match(buildDoc("1", "f", "wibble"), SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("1"));
       assertEquals(1, matches.getQueriesRun());
@@ -158,7 +158,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
   public void testNonStringTermHandling() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", new TermQuery(new Term("f", NON_STRING_TERM))));
+      monitor.register(new MonitorQuery("1", new TermQuery(new Term("f", NON_STRING_TERM))));
 
       InputDocument doc = InputDocument.builder("1").addField(new TextField("f", new NonStringTokenStream())).build();
       Matches<QueryMatch> m = monitor.match(doc, SimpleMatcher.FACTORY);

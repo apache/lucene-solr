@@ -19,10 +19,11 @@ package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.MatchAllDocsQuery;
 
 public class TestMonitorPersistence extends MonitorTestBase {
 
@@ -32,16 +33,20 @@ public class TestMonitorPersistence extends MonitorTestBase {
 
     InputDocument doc = InputDocument.builder("doc1").addField(FIELD, "test", new StandardAnalyzer()).build();
     QueryIndexConfiguration config = new QueryIndexConfiguration()
-        .setIndexPath(indexDirectory, MonitorQuerySerializer.fromParser(MonitorTestBase::parse, MonitorTestBase.QUERY_META_FIELD));
+        .setIndexPath(indexDirectory, MonitorQuerySerializer.fromParser(MonitorTestBase::parse));
 
     try (Monitor monitor = new Monitor(config)) {
-      monitor.update(
+      monitor.register(
           mq("1", "test"),
           mq("2", "test"),
           mq("3", "test", "language", "en"),
           mq("4", "test", "wibble", "quack"));
 
       assertEquals(4, monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount("doc1"));
+
+      IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+          () -> monitor.register(new MonitorQuery("5", new MatchAllDocsQuery(), null, Collections.emptyMap())));
+      assertEquals("Cannot add a MonitorQuery with a null string representation to a non-ephemeral Monitor", e.getMessage());
     }
 
     try (Monitor monitor2 = new Monitor(config)) {

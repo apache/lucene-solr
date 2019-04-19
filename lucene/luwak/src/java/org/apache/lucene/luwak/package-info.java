@@ -21,6 +21,12 @@
  * This package contains classes to allow the monitoring of a stream of
  * documents with a set of queries.
  *
+ * To use, instantiate a {@link org.apache.lucene.luwak.Monitor} object,
+ * register queries with it via
+ * {@link org.apache.lucene.luwak.Monitor#register(org.apache.lucene.luwak.MonitorQuery...)},
+ * and then match documents against it either invidually via
+ * {@link org.apache.lucene.luwak.Monitor#match(org.apache.lucene.luwak.InputDocument, org.apache.lucene.luwak.MatcherFactory)}
+ * or in batches via {@link org.apache.lucene.luwak.Monitor#match(org.apache.lucene.luwak.DocumentBatch, org.apache.lucene.luwak.MatcherFactory)}
  *
  */
 package org.apache.lucene.luwak;

@@ -26,7 +26,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -72,7 +71,7 @@ public class TestSlowLog extends MonitorTestBase {
   public void testSlowLog() throws IOException {
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(
+      monitor.register(
           new MonitorQuery("1", slowQuery(250)),
           new MonitorQuery("2", new MatchAllDocsQuery()),
           new MonitorQuery("3", slowQuery(250)));

@@ -32,7 +32,7 @@ public class TestSimpleMatcher extends MonitorTestBase {
   public void testSimpleMatcher() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(
+      monitor.register(
           new MonitorQuery("1", parse("test")),
           new MonitorQuery("2", parse("wibble")));
       InputDocument doc1 = InputDocument.builder("doc1").addField("field", "test", new StandardAnalyzer()).build();

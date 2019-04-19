@@ -32,7 +32,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
 
   public void testFiltersWildcards() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("/hell.*/")));
+      monitor.register(new MonitorQuery("1", parse("/hell.*/")));
       assertEquals(1,
           monitor.match(buildDoc("doc1", TEXTFIELD, "well hello there"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
 
@@ -41,7 +41,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
 
   public void testNgramsOnlyMatchWildcards() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("hello")));
+      monitor.register(new MonitorQuery("1", parse("hello")));
       assertEquals(0, monitor.match(buildDoc("doc1", TEXTFIELD, "hellopolis"), SimpleMatcher.FACTORY).getQueriesRun());
     }
   }
@@ -57,7 +57,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
   public void testLongTermsStillMatchWildcards() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("/a.*/")));
+      monitor.register(new MonitorQuery("1", parse("/a.*/")));
 
       InputDocument doc1 = InputDocument.builder("doc1")
           .addField(TEXTFIELD, repeat("a", WildcardNGramPresearcherComponent.DEFAULT_MAX_TOKEN_SIZE + 1), new KeywordAnalyzer())
@@ -72,7 +72,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
 
   public void testCaseSensitivity() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("foo")));
+      monitor.register(new MonitorQuery("1", parse("foo")));
       assertEquals(1,
           monitor.match(buildDoc("doc1", TEXTFIELD, "Foo foo"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
     }

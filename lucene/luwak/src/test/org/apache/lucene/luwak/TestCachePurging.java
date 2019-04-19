@@ -50,7 +50,7 @@ public class TestCachePurging extends MonitorTestBase {
           new MonitorQuery("3", parse("test3"))
       };
       monitor.addQueryIndexUpdateListener(listener);
-      monitor.update(queries);
+      monitor.register(queries);
       assertThat(monitor.getQueryCount(), is(3));
       assertThat(monitor.getDisjunctCount(), is(4));
       assertThat(monitor.getQueryCacheStats().cachedQueries, is(4));
@@ -90,7 +90,7 @@ public class TestCachePurging extends MonitorTestBase {
         try {
           startUpdating.await();
           for (int i = 200; i < 400; i++) {
-            monitor.update(newMonitorQuery(i));
+            monitor.register(newMonitorQuery(i));
           }
           finishUpdating.countDown();
         } catch (Exception e) {
@@ -103,7 +103,7 @@ public class TestCachePurging extends MonitorTestBase {
         executor.submit(updaterThread);
 
         for (int i = 0; i < 200; i++) {
-          monitor.update(newMonitorQuery(i));
+          monitor.register(newMonitorQuery(i));
         }
         for (int i = 20; i < 80; i++) {
           monitor.deleteById(Integer.toString(i));
@@ -138,7 +138,7 @@ public class TestCachePurging extends MonitorTestBase {
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
 
       for (int i = 0; i < 100; i++) {
-        monitor.update(newMonitorQuery(i));
+        monitor.register(newMonitorQuery(i));
       }
       monitor.deleteById("5");
       assertEquals(99, monitor.getQueryCacheStats().queries);

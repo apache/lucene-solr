@@ -23,37 +23,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.luwak.presearcher.PresearcherMatches;
 import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NamedThreadFactory;
 
 /**
@@ -204,10 +187,8 @@ public class Monitor implements Closeable {
    * Add new queries to the monitor
    *
    * @param queries the MonitorQueries to add
-   * @throws IOException     on IO errors
-   * @throws UpdateException if any of the queries could not be added
    */
-  public void update(Iterable<MonitorQuery> queries) throws IOException {
+  public void register(Iterable<MonitorQuery> queries) throws IOException {
     List<MonitorQuery> updates = new ArrayList<>();
     for (MonitorQuery query : queries) {
       updates.add(query);
@@ -230,10 +211,9 @@ public class Monitor implements Closeable {
    *
    * @param queries the MonitorQueries to add
    * @throws IOException     on IO errors
-   * @throws UpdateException if any of the queries could not be added
    */
-  public void update(MonitorQuery... queries) throws IOException {
-    update(Arrays.asList(queries));
+  public void register(MonitorQuery... queries) throws IOException {
+    register(Arrays.asList(queries));
   }
 
   /**
