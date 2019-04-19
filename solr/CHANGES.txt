@@ -235,6 +235,9 @@ Improvements
 
 * SOLR-13407: Reject update requests sent to non-routed multi collection aliases. (ab)
 
+* SOLR-11035: (at least) 2 distinct failures possible when clients attempt searches during SolrCore reload,
+  added test band-aid for DocValuesNotIndexedTest.
+
 Other Changes
 ----------------------
 
