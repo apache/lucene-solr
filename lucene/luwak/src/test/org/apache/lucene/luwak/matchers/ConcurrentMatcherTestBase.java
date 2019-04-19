@@ -56,7 +56,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       for (int i = 0; i < 1000; i++) {
         queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("+test " + i)));
       }
-      monitor.update(queries);
+      monitor.register(queries);
 
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1").addField("field", "test", ANALYZER).build());
@@ -80,7 +80,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       for (int i = 0; i < 10; i++) {
         queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("test^10 doc " + i)));
       }
-      monitor.update(queries);
+      monitor.register(queries);
       assertEquals(30, monitor.getDisjunctCount());
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1")
@@ -111,7 +111,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
     ExecutorService executor = Executors.newCachedThreadPool(new NamedThreadFactory("matchers"));
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(
+      monitor.register(
           new MonitorQuery("1", TestSlowLog.slowQuery(250)),
           new MonitorQuery("2", new MatchAllDocsQuery()),
           new MonitorQuery("3", TestSlowLog.slowQuery(250)));

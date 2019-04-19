@@ -58,7 +58,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
     MonitorQuery query3 = new MonitorQuery("3", parse("\"a document\""));  // will be selected but not match
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(query1, query2, query3);
+      monitor.register(query1, query2, query3);
 
       Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
@@ -73,7 +73,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
   public void testIgnoresTermsOnNotQueries() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("document -test")));
+      monitor.register(new MonitorQuery("1", parse("document -test")));
 
       Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
       assertEquals(0, matches.getMatchCount("doc1"));
@@ -89,7 +89,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
   public void testMatchesAnyQueries() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("/hell./")));
+      monitor.register(new MonitorQuery("1", parse("/hell./")));
 
       Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "hello"), SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
@@ -129,7 +129,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
 
     try (Monitor monitor = new Monitor(presearcher, config)) {
 
-      monitor.update(new MonitorQuery("1", parse("f:test")));
+      monitor.register(new MonitorQuery("1", parse("f:test")));
 
       try (IndexReader reader = DirectoryReader.open(writer, false, false)) {
 

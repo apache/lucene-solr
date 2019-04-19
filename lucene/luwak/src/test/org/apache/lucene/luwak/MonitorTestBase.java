@@ -34,7 +34,6 @@ public abstract class MonitorTestBase extends LuceneTestCase {
 
   public static final String FIELD = "field";
   public static final Analyzer ANALYZER = new StandardAnalyzer();
-  public static final String QUERY_META_FIELD = "__query";
 
   public static Query parse(String query) {
     QueryParser parser = new QueryParser(FIELD, ANALYZER);
@@ -52,8 +51,7 @@ public abstract class MonitorTestBase extends LuceneTestCase {
     for (int i = 0; i < metadata.length / 2; i += 2) {
       mm.put(metadata[i], metadata[i + 1]);
     }
-    mm.put(QUERY_META_FIELD, query);
-    return new MonitorQuery(id, q, mm);
+    return new MonitorQuery(id, q, query, mm);
   }
 
   protected Monitor newMonitor() throws IOException {

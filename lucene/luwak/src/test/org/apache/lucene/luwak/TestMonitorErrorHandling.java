@@ -32,7 +32,7 @@ public class TestMonitorErrorHandling extends MonitorTestBase {
   public void testMonitorErrors() throws Exception {
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(
+      monitor.register(
           MonitorTestBase.mq("1", "test"),
           new MonitorQuery("2", MonitorTestBase.parse("test")),
           new MonitorQuery("3", new ThrowOnRewriteQuery()));
@@ -51,7 +51,7 @@ public class TestMonitorErrorHandling extends MonitorTestBase {
     IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
       Map<String, String> metadata2 = new HashMap<>();
       metadata2.put("key", null);
-      new MonitorQuery("id", new MatchAllDocsQuery(), metadata2);
+      new MonitorQuery("id", new MatchAllDocsQuery(), null, metadata2);
     });
     assertEquals("Null value for key key in metadata map", e.getMessage());
   }

@@ -61,7 +61,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
       MonitorQuery mq = new MonitorQuery("query1", parse("test"));
-      monitor.update(mq);
+      monitor.register(mq);
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("doc1", "this is a test document"),
           HighlightingMatcher.FACTORY);
@@ -75,7 +75,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
       MonitorQuery mq = new MonitorQuery("query1", parse("\"test document\""));
-      monitor.update(mq);
+      monitor.register(mq);
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("doc1", "this is a test document"),
           HighlightingMatcher.FACTORY);
@@ -104,7 +104,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("query1", parse("field1:test field2:test")));
+      monitor.register(new MonitorQuery("query1", parse("field1:test field2:test")));
 
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
@@ -122,7 +122,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = new Monitor(MatchAllPresearcher.INSTANCE)) {
 
-      monitor.update(new MonitorQuery("1", parse("test")),
+      monitor.register(new MonitorQuery("1", parse("test")),
           new MonitorQuery("2", new ThrowOnRewriteQuery()),
           new MonitorQuery("3", parse("document")),
           new MonitorQuery("4", parse("foo")));
@@ -138,7 +138,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
 
-      monitor.update(new MonitorQuery("1", new RegexpQuery(new Term(FIELD, "he.*"))));
+      monitor.register(new MonitorQuery("1", new RegexpQuery(new Term(FIELD, "he.*"))));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "hello world"), HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getQueriesRun());
@@ -156,7 +156,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", bq));
+      monitor.register(new MonitorQuery("1", bq));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term22 term4"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
@@ -172,7 +172,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
     ), 1.0f);
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", query));
+      monitor.register(new MonitorQuery("1", query));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term2 term3"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
@@ -189,7 +189,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("1", bq));
+      monitor.register(new MonitorQuery("1", bq));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term2"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
@@ -217,7 +217,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = new Monitor()) {
 
-      monitor.update(new MonitorQuery("1", bq));
+      monitor.register(new MonitorQuery("1", bq));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term2 term"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
@@ -238,7 +238,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
 
-      monitor.update(new MonitorQuery("1", snq));
+      monitor.register(new MonitorQuery("1", snq));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 foo"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
@@ -263,7 +263,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("1", parent));
+      monitor.register(new MonitorQuery("1", parent));
 
       InputDocument doc = buildDoc("1", "a b x x x x c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -291,7 +291,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("1", parent));
+      monitor.register(new MonitorQuery("1", parent));
 
       InputDocument doc = buildDoc("1", "a b x x x x c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -344,7 +344,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     MonitorQuery mq = new MonitorQuery("query", parse(FIELD + ":\"hello world\"~5"));
     try (Monitor monitor = newMonitor()) {
-      monitor.update(mq);
+      monitor.register(mq);
 
       InputDocument doc1 = InputDocument.builder("doc1")
           .addField(FIELD, "hello world", analyzer)
@@ -396,7 +396,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parent));
+      monitor.register(new MonitorQuery("1", parent));
 
       InputDocument doc = buildDoc("1", "a b c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -449,7 +449,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("1", outerConjunct));
+      monitor.register(new MonitorQuery("1", outerConjunct));
 
       InputDocument doc = buildDoc("1", "now is the time for all good men");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -478,7 +478,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
         .build();
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", bq));
+      monitor.register(new MonitorQuery("1", bq));
 
       InputDocument doc = buildDoc("1", "a b x");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -497,7 +497,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
     ComplexPhraseQueryParser cpqp = new ComplexPhraseQueryParser(FIELD, new StandardAnalyzer());
     Query query = cpqp.parse("\"x b\"");
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", query));
+      monitor.register(new MonitorQuery("1", query));
 
       InputDocument doc = buildDoc("1", "x b c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -515,9 +515,9 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
 
-      monitor.update(new MonitorQuery("query0", parse("non matching query")));
-      monitor.update(new MonitorQuery("query1", parse(query)));
-      monitor.update(new MonitorQuery("query2", parse("biology")));
+      monitor.register(new MonitorQuery("query0", parse("non matching query")));
+      monitor.register(new MonitorQuery("query1", parse(query)));
+      monitor.register(new MonitorQuery("query2", parse("biology")));
 
       DocumentBatch batch = DocumentBatch.of(
           InputDocument.builder("doc1").addField(FIELD, matching_document, WHITESPACE).build(),

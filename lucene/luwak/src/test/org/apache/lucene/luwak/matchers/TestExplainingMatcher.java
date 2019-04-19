@@ -32,7 +32,7 @@ public class TestExplainingMatcher extends MonitorTestBase {
   public void testExplainingMatcher() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("test")), new MonitorQuery("2", parse("wibble")));
+      monitor.register(new MonitorQuery("1", parse("test")), new MonitorQuery("2", parse("wibble")));
 
       InputDocument doc1 = InputDocument.builder("doc1").addField("field", "test", new StandardAnalyzer()).build();
 

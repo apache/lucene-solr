@@ -50,13 +50,9 @@ public interface MonitorQuerySerializer {
   /**
    * Build a serializer from a query parser
    *
-   * This expects the MonitorQuery to have a string representation of its query as one of the entries
-   * in its metadata map
-   *
-   * @param parser          a parser to convert a String representation of a query into a lucene query object
-   * @param metadataField   the field in the metadata map holding the string representation of the query
+   * @param parser a parser to convert a String representation of a query into a lucene query object
    */
-  static MonitorQuerySerializer fromParser(Function<String, Query> parser, String metadataField) {
+  static MonitorQuerySerializer fromParser(Function<String, Query> parser) {
     return new MonitorQuerySerializer() {
       @Override
       public MonitorQuery deserialize(BytesRef binaryValue) {
@@ -68,8 +64,7 @@ public interface MonitorQuerySerializer {
           for (int i = data.readInt(); i > 0; i--) {
             metadata.put(data.readString(), data.readString());
           }
-          metadata.put(metadataField, query);
-          return new MonitorQuery(id, parser.apply(query), metadata);
+          return new MonitorQuery(id, parser.apply(query), query, metadata);
         } catch (IOException e) {
           throw new RuntimeException(e);  // shouldn't happen, we're reading from a bytearray!
         }
@@ -80,12 +75,9 @@ public interface MonitorQuerySerializer {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         try (OutputStreamDataOutput data = new OutputStreamDataOutput(os)) {
           data.writeString(query.getId());
-          data.writeString(query.getMetadata().get(metadataField));
-          Map<String, String> mdWithoutQuery = query.getMetadata().entrySet().stream()
-              .filter(e -> e.getKey().equals(metadataField) == false)
-              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-          data.writeInt(mdWithoutQuery.size());
-          for (Map.Entry<String, String> entry : mdWithoutQuery.entrySet()) {
+          data.writeString(query.getQueryString());
+          data.writeInt(query.getMetadata().size());
+          for (Map.Entry<String, String> entry : query.getMetadata().entrySet()) {
             data.writeString(entry.getKey());
             data.writeString(entry.getValue());
           }

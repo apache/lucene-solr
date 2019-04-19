@@ -39,12 +39,12 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
 
   public void testBatchFiltering() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(
-          new MonitorQuery("1", parse("test"), Collections.singletonMap("language", "en")),
-          new MonitorQuery("2", parse("wahl"), Collections.singletonMap("language", "de")),
-          new MonitorQuery("3", parse("wibble"), Collections.singletonMap("language", "en")),
-          new MonitorQuery("4", parse("*:*"), Collections.singletonMap("language", "de")),
-          new MonitorQuery("5", parse("*:*"), Collections.singletonMap("language", "es")));
+      monitor.register(
+          mq("1", "test", "language", "en"),
+          mq("2", "wahl", "language", "de"),
+          mq("3", "wibble", "language", "en"),
+          mq("4", "*:*", "language", "de"),
+          mq("5", "*:*", "language", "es"));
 
       DocumentBatch enBatch = DocumentBatch.of(
           InputDocument.builder("en1")
@@ -88,11 +88,11 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
   public void testFieldFiltering() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(
-          new MonitorQuery("1", parse("test"), Collections.singletonMap("language", "en")),
-          new MonitorQuery("2", parse("test"), Collections.singletonMap("language", "de")),
-          new MonitorQuery("3", parse("wibble"), Collections.singletonMap("language", "en")),
-          new MonitorQuery("4", parse("*:*"), Collections.singletonMap("language", "de")));
+      monitor.register(
+          new MonitorQuery("1", parse("test"), null, Collections.singletonMap("language", "en")),
+          new MonitorQuery("2", parse("test"), null, Collections.singletonMap("language", "de")),
+          new MonitorQuery("3", parse("wibble"), null, Collections.singletonMap("language", "en")),
+          new MonitorQuery("4", parse("*:*"), null, Collections.singletonMap("language", "de")));
 
       InputDocument enDoc = InputDocument.builder("enDoc")
           .addField(TEXTFIELD, "this is a test", ANALYZER)
@@ -127,7 +127,7 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
 
   public void testFilteringOnMatchAllQueries() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", new MatchAllDocsQuery(), Collections.singletonMap("language", "de")));
+      monitor.register(new MonitorQuery("1", new MatchAllDocsQuery(), null, Collections.singletonMap("language", "de")));
 
       InputDocument doc = InputDocument.builder("enDoc")
           .addField(TEXTFIELD, "this is a test", ANALYZER)
@@ -141,7 +141,7 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
 
   public void testDebugQueries() throws Exception {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", parse("test"), Collections.singletonMap("language", "en")));
+      monitor.register(new MonitorQuery("1", parse("test"), null, Collections.singletonMap("language", "en")));
 
       InputDocument doc = InputDocument.builder("enDoc")
           .addField(TEXTFIELD, "this is a test", ANALYZER)

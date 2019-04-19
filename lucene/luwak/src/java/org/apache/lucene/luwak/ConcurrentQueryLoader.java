@@ -139,7 +139,7 @@ public class ConcurrentQueryLoader implements Closeable {
           if (workerQueue.size() == 0 && shutdown)
             running = false;
           if (workerQueue.size() > 0) {
-            monitor.update(workerQueue);
+            monitor.register(workerQueue);
           }
         }
       } catch (IOException e) {

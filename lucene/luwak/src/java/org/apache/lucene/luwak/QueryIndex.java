@@ -186,6 +186,9 @@ class QueryIndex implements Closeable {
   private List<Indexable> buildIndexables(List<MonitorQuery> updates) {
     List<Indexable> indexables = new ArrayList<>();
     for (MonitorQuery mq : updates) {
+      if (serializer != null && mq.getQueryString() == null) {
+        throw new IllegalArgumentException("Cannot add a MonitorQuery with a null string representation to a non-ephemeral Monitor");
+      }
       BytesRef serialized = serializer == null ? EMPTY : serializer.serialize(mq);
       for (QueryCacheEntry qce : QueryCacheEntry.decompose(mq, decomposer)) {
         Document doc = presearcher.indexQuery(qce.matchQuery, mq.getMetadata());
@@ -276,13 +279,13 @@ class QueryIndex implements Closeable {
     // for the new, allowing it to be garbage-collected.
 
     // In order to not drop cached queries that have been added while a purge is ongoing,
-    // we use a ReadWriteLock to guard the creation and removal of an update log.  Commits take
-    // the read lock.  If the update log has been created, then a purge is ongoing, and queries
-    // are added to the update log within the read lock guard.
+    // we use a ReadWriteLock to guard the creation and removal of an register log.  Commits take
+    // the read lock.  If the register log has been created, then a purge is ongoing, and queries
+    // are added to the register log within the read lock guard.
 
-    // The purge takes the write lock when creating the update log, and then when swapping out
-    // the old query cache.  Within the second write lock guard, the contents of the update log
-    // are added to the new query cache, and the update log itself is removed.
+    // The purge takes the write lock when creating the register log, and then when swapping out
+    // the old query cache.  Within the second write lock guard, the contents of the register log
+    // are added to the new query cache, and the register log itself is removed.
 
     final ConcurrentMap<String, QueryCacheEntry> newCache = new ConcurrentHashMap<>();
 

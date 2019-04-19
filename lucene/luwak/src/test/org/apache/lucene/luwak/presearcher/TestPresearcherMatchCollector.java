@@ -34,10 +34,10 @@ public class TestPresearcherMatchCollector extends MonitorTestBase {
   public void testMatchCollectorShowMatches() throws IOException {
 
     try (Monitor monitor = new Monitor(new TermFilteredPresearcher())) {
-      monitor.update(new MonitorQuery("1", parse("test")));
-      monitor.update(new MonitorQuery("2", parse("foo bar -baz f2:quuz")));
-      monitor.update(new MonitorQuery("3", parse("foo -test")));
-      monitor.update(new MonitorQuery("4", parse("baz")));
+      monitor.register(new MonitorQuery("1", parse("test")));
+      monitor.register(new MonitorQuery("2", parse("foo bar -baz f2:quuz")));
+      monitor.register(new MonitorQuery("3", parse("foo -test")));
+      monitor.register(new MonitorQuery("4", parse("baz")));
       assertEquals(4, monitor.getQueryCount());
 
       InputDocument doc = InputDocument.builder("doc1")

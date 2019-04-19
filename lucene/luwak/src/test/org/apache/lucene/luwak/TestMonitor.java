@@ -32,7 +32,6 @@ import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMonitor extends MonitorTestBase {
 
@@ -47,7 +46,7 @@ public class TestMonitor extends MonitorTestBase {
         .build());
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("query1", new TermQuery(new Term(FIELD, "test"))));
+      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(FIELD, "test"))));
 
       Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
       assertNotNull(matches.getMatches("doc1"));
@@ -63,7 +62,7 @@ public class TestMonitor extends MonitorTestBase {
         .build());
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "test"))));
+      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "test"))));
 
       Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
       assertEquals(1, matches.getQueriesRun());
@@ -74,8 +73,8 @@ public class TestMonitor extends MonitorTestBase {
 
   public void testUpdatesOverwriteOldQueries() throws IOException {
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
-      monitor.update(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))));
+      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
+      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1").addField(MonitorTestBase.FIELD, "that", ANALYZER).build());
       Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
@@ -87,8 +86,8 @@ public class TestMonitor extends MonitorTestBase {
   public void testCanDeleteById() throws IOException {
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
-      monitor.update(
+      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
+      monitor.register(
           new MonitorQuery("query2", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))),
           new MonitorQuery("query3", new TermQuery(new Term(MonitorTestBase.FIELD, "other"))));
       assertEquals(3, monitor.getQueryCount());
@@ -106,7 +105,7 @@ public class TestMonitor extends MonitorTestBase {
 
   public void testCanClearTheMonitor() throws IOException {
     try (Monitor monitor = new Monitor()) {
-      monitor.update(
+      monitor.register(
           new MonitorQuery("query1", new MatchAllDocsQuery()),
           new MonitorQuery("query2", new MatchAllDocsQuery()),
           new MonitorQuery("query3", new MatchAllDocsQuery()));
@@ -152,7 +151,7 @@ public class TestMonitor extends MonitorTestBase {
 
     try (Monitor monitor = new Monitor()) {
       monitor.addQueryIndexUpdateListener(listener);
-      monitor.update(queries);
+      monitor.register(queries);
       assertEquals(10355, updateCount.get());
     }
   }
@@ -162,7 +161,7 @@ public class TestMonitor extends MonitorTestBase {
       HashMap<String, String> metadataMap = new HashMap<>();
       metadataMap.put("key", "value");
 
-      monitor.update(new MonitorQuery(Integer.toString(1), MonitorTestBase.parse("+test " + 1), metadataMap));
+      monitor.register(new MonitorQuery(Integer.toString(1), MonitorTestBase.parse("+test " + 1), null, metadataMap));
 
       InputDocument doc = InputDocument.builder("1").addField("field", "test", ANALYZER).build();
 
@@ -190,7 +189,7 @@ public class TestMonitor extends MonitorTestBase {
     );
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("1", new TermQuery(new Term(MonitorTestBase.FIELD, "kangaroo"))));
+      monitor.register(new MonitorQuery("1", new TermQuery(new Term(MonitorTestBase.FIELD, "kangaroo"))));
 
       Matches<QueryMatch> response = monitor.match(batch, SimpleMatcher.FACTORY);
       assertEquals(2, response.getBatchSize());
@@ -219,7 +218,7 @@ public class TestMonitor extends MonitorTestBase {
     MonitorQuery mq = new MonitorQuery("query", MonitorTestBase.parse(MonitorTestBase.FIELD + ":\"hello world\"~5"));
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(mq);
+      monitor.register(mq);
 
       InputDocument doc1 = InputDocument.builder("doc1")
           .addField(MonitorTestBase.FIELD, "hello world", analyzer)

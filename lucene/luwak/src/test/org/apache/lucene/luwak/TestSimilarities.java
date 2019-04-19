@@ -29,7 +29,7 @@ public class TestSimilarities extends LuceneTestCase {
   public void testNonStandardSimilarity() throws Exception {
 
     try (Monitor monitor = new Monitor()) {
-      monitor.update(new MonitorQuery("1", MonitorTestBase.parse("test")));
+      monitor.register(new MonitorQuery("1", MonitorTestBase.parse("test")));
 
       Similarity similarity = new ClassicSimilarity() {
         @Override
