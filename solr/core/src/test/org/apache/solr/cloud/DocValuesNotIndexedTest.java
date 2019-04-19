@@ -243,7 +243,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(docs)
         .commit(client, COLLECTION);
-    
+    Solr11035BandAid(client, COLLECTION, "id", 4, "*:*");
+
     checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
     checkSortOrder(client, fieldsToTestGroupSortFirst, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"2", "3", "1", "4"});
 
@@ -286,6 +287,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .add(docs)
         .commit(client, COLLECTION);
 
+    Solr11035BandAid(client, COLLECTION, "id", 4, "*:*");
     // when grouping on any of these DV-only (not indexed) fields we expect exactly 4 groups except for Boolean.
     for (FieldProps prop : fieldsToTestGroupSortFirst) {
       // Special handling until SOLR-9802 is fixed
@@ -321,17 +323,21 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF");
     doGroupingDvOnly(fieldsToTestGroupSortLast, "boolGSL");
   }
-  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName) throws IOException, SolrServerException {
 
+  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName) throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(50);
     for (int idx = 0; idx < 49; ++idx) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", idx);
-      boolean doInc = ((idx % 7) == 0);
+
+      // Every 7th doc we bump a counter by some random amount
       for (FieldProps prop : fieldProps) {
-        doc.addField(prop.getName(), prop.getValue(doInc));
+        doc.addField(prop.getName(), prop.getValue((idx % 7) == 0));
       }
       docs.add(doc);
+
+      // Every fifth time through we add a doc with no values in any of the "fields of interest", so there shoule be
+      // 10 docs with nulls
       if ((idx % 5) == 0) {
         doc = new SolrInputDocument();
         doc.addField("id", idx + 10_000);
@@ -345,6 +351,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .add(docs)
         .commit(client, COLLECTION);
 
+    Solr11035BandAid(client, COLLECTION,"id", 59, "*:*");
+
     // OK, we should have one group with 10 entries for null, a group with 1 entry and 7 groups with 7
     for (FieldProps prop : fieldProps) {
 
@@ -356,7 +364,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
           "rows", "100",
           "group", "true",
           "group.field", prop.getName(),
-          "group.limit", "100");
+          "group.limit", "100",
+          "group.sort", "id asc");
 
       final QueryResponse rsp = client.query(COLLECTION, solrQuery);
 
