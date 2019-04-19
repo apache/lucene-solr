@@ -23,6 +23,10 @@ Bug fixes:
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
+Other
+
+* LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
 ======================= Lucene 8.1.0 =======================
 
 API Changes
