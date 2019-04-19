@@ -217,6 +217,8 @@ Bug Fixes
 
 * SOLR-13408: Cannot start/stop DaemonStream repeatedly, other API improvements (Erick Erickson)
 
+* SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
+
 Improvements
 ----------------------
 
