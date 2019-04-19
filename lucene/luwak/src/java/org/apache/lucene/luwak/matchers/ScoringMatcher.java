@@ -22,8 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.DocumentBatch.Builder;
 import org.apache.lucene.luwak.MatcherFactory;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
@@ -35,8 +37,20 @@ import org.apache.lucene.search.similarities.Similarity;
  */
 public class ScoringMatcher extends CollectingMatcher<ScoringMatch> {
 
-  private ScoringMatcher(DocumentBatch docs) {
+  private static final Similarity DEFAULT_SIMILARITY = new BM25Similarity();
+
+  private final Similarity similarity;
+
+  private ScoringMatcher(DocumentBatch docs, Similarity similarity) {
     super(docs, ScoreMode.COMPLETE);
+    this.similarity = similarity;
+  }
+
+  @Override
+  protected IndexSearcher getSearcher() throws IOException {
+    IndexSearcher searcher = super.getSearcher();
+    searcher.setSimilarity(similarity);
+    return searcher;
   }
 
   @Override
@@ -55,6 +69,13 @@ public class ScoringMatcher extends CollectingMatcher<ScoringMatch> {
   /**
    * A MatcherFactory for ScoringMatcher objects
    */
-  public static final MatcherFactory<ScoringMatch> FACTORY = ScoringMatcher::new;
+  public static final MatcherFactory<ScoringMatch> FACTORY = batch -> new ScoringMatcher(batch, DEFAULT_SIMILARITY);
+
+  /**
+   * A factory for ScoringMatchers with a custom similarity
+   */
+  public static MatcherFactory<ScoringMatch> factory(Similarity similarity) {
+    return batch -> new ScoringMatcher(batch, similarity);
+  }
 
 }

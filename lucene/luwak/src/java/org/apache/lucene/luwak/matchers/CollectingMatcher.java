@@ -50,11 +50,15 @@ public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateM
     MatchCollector coll = new MatchCollector(queryId, scoreMode);
 
     long t = System.nanoTime();
-    IndexSearcher searcher = docs.getSearcher();
+    IndexSearcher searcher = getSearcher();
     searcher.search(matchQuery, coll);
     t = System.nanoTime() - t;
     this.slowlog.addQuery(queryId, t);
 
+  }
+
+  protected IndexSearcher getSearcher() throws IOException {
+    return docs.getSearcher();
   }
 
   /**

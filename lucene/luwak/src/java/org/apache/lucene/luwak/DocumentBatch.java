@@ -48,18 +48,12 @@ import org.apache.lucene.util.IOUtils;
  * <pre>
  *     DocumentBatch batch1 = DocumentBatch.of(doc1, doc2)
  *     DocumentBatch batch2 = new DocumentBatch.Builder()
- *                                  .setSimilarity(new MySimilarity())
  *                                  .add(doc1)
  *                                  .addAll(listOfDocs)
  *                                  .build()
  * </pre>
  */
 public abstract class DocumentBatch implements Closeable, Iterable<InputDocument> {
-
-  /**
-   * The {@link Similarity} to be used for scoring (if scoring is required)
-   */
-  protected final Similarity similarity;
 
   /**
    * A list of {@link InputDocument} objects to match
@@ -101,7 +95,6 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
    */
   public static class Builder {
 
-    private Similarity similarity = new BM25Similarity();
     private List<InputDocument> documents = new ArrayList<>();
 
     /**
@@ -127,17 +120,6 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
     }
 
     /**
-     * Set the {@link Similarity} to be used for scoring this batch
-     *
-     * @param similarity the {@link Similarity} to be used for scoring this batch
-     * @return the current builder object
-     */
-    public Builder setSimilarity(Similarity similarity) {
-      this.similarity = similarity;
-      return this;
-    }
-
-    /**
      * Create the DocumentBatch
      *
      * @return the newly created DocumentBatch
@@ -146,8 +128,8 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
       if (documents.size() == 0)
         throw new IllegalStateException("Cannot build DocumentBatch with zero documents");
       if (documents.size() == 1)
-        return new SingletonDocumentBatch(documents, similarity);
-      return new MultiDocumentBatch(documents, similarity);
+        return new SingletonDocumentBatch(documents);
+      return new MultiDocumentBatch(documents);
     }
 
   }
@@ -156,10 +138,8 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
    * Create a new DocumentBatch
    *
    * @param documents  the documents to match
-   * @param similarity the {@link Similarity} to use for scoring
    */
-  protected DocumentBatch(Collection<InputDocument> documents, Similarity similarity) {
-    this.similarity = similarity;
+  protected DocumentBatch(Collection<InputDocument> documents) {
     this.documents.addAll(documents);
   }
 
@@ -183,7 +163,6 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
    */
   public IndexSearcher getSearcher() throws IOException {
     IndexSearcher searcher = new IndexSearcher(getIndexReader());
-    searcher.setSimilarity(similarity);
     searcher.setQueryCache(null);
     return searcher;
   }
@@ -207,10 +186,10 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
     private LeafReader reader = null;
     private String[] docIds = null;
 
-    MultiDocumentBatch(List<InputDocument> docs, Similarity similarity) {
-      super(docs, similarity);
+    MultiDocumentBatch(List<InputDocument> docs) {
+      super(docs);
       assert docs.size() > 1;
-      IndexWriterConfig iwc = new IndexWriterConfig(docs.get(0).getAnalyzers()).setSimilarity(similarity);
+      IndexWriterConfig iwc = new IndexWriterConfig(docs.get(0).getAnalyzers());
       try (IndexWriter writer = new IndexWriter(directory, iwc)) {
         this.reader = build(writer);
       } catch (IOException e) {
@@ -262,10 +241,9 @@ public abstract class DocumentBatch implements Closeable, Iterable<InputDocument
     private final MemoryIndex memoryindex = new MemoryIndex(true, true);
     private final LeafReader reader;
 
-    private SingletonDocumentBatch(Collection<InputDocument> documents, Similarity similarity) {
-      super(documents, similarity);
+    private SingletonDocumentBatch(Collection<InputDocument> documents) {
+      super(documents);
       assert documents.size() == 1;
-      memoryindex.setSimilarity(similarity);
       for (InputDocument doc : documents) {
         for (IndexableField field : doc.getDocument()) {
           memoryindex.addField(field, doc.getAnalyzers());
