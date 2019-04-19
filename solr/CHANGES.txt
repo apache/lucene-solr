@@ -71,6 +71,8 @@ Bug fixes
 
 * SOLR-12371: Editing authorization config via REST API now works in standalone mode (janhoy)
 
+* SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
