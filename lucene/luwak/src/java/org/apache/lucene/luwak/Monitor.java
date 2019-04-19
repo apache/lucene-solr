@@ -42,6 +42,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.luwak.presearcher.PresearcherMatches;
+import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
@@ -61,9 +62,7 @@ import org.apache.lucene.util.NamedThreadFactory;
  */
 public class Monitor implements Closeable {
 
-  protected final MonitorQueryParser queryParser;
   protected final Presearcher presearcher;
-  protected final QueryDecomposer decomposer;
 
   private final QueryIndex queryIndex;
 
@@ -72,42 +71,29 @@ public class Monitor implements Closeable {
   protected long slowLogLimit = 2000000;
 
   private final long commitBatchSize;
-  private final boolean storeQueries;
-
-  public static final class FIELDS {
-    public static final String id = "_id";
-    public static final String del = "_del";
-    public static final String hash = "_hash";
-    public static final String mq = "_mq";
-  }
 
   private final ScheduledExecutorService purgeExecutor;
 
   private long lastPurged = -1;
 
   /**
-   * Create a new Monitor instance, using a passed in IndexWriter for its queryindex
-   * <p>
-   * Note that when the Monitor is closed, both the IndexWriter and its underlying
-   * Directory will also be closed.
-   *
-   * @param queryParser   the query parser to use
-   * @param presearcher   the presearcher to use
-   * @param indexWriter   an indexWriter for the query index
-   * @param configuration the MonitorConfiguration
-   * @throws IOException on IO errors
+   * Create a non-persistent Monitor instance with the default term-filtering Presearcher
    */
-  public Monitor(MonitorQueryParser queryParser, Presearcher presearcher,
-                 IndexWriter indexWriter, QueryIndexConfiguration configuration) throws IOException {
+  public Monitor() throws IOException {
+    this(new TermFilteredPresearcher());
+  }
 
-    this.queryParser = queryParser;
+  /**
+   * Create a new Monitor instance
+   *
+   * @param presearcher   the presearcher to use
+   * @param configuration the MonitorConfiguration
+   */
+  public Monitor(Presearcher presearcher,
+                 QueryIndexConfiguration configuration) throws IOException {
+
     this.presearcher = presearcher;
-    this.decomposer = configuration.getQueryDecomposer();
-
-    this.queryIndex = new QueryIndex(indexWriter);
-
-    this.storeQueries = configuration.storeQueries();
-    prepareQueryCache(this.storeQueries);
+    this.queryIndex = new QueryIndex(configuration, presearcher);
 
     long purgeFrequency = configuration.getPurgeFrequency();
     this.purgeExecutor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("cache-purge"));
@@ -115,7 +101,7 @@ public class Monitor implements Closeable {
       try {
         purgeCache();
       } catch (Throwable e) {
-        afterPurgeError(e);
+        listeners.forEach(l -> l.onPurgeError(e));
       }
     }, purgeFrequency, purgeFrequency, configuration.getPurgeFrequencyUnits());
 
@@ -123,76 +109,19 @@ public class Monitor implements Closeable {
   }
 
   /**
-   * Create a new Monitor instance, using a RAMDirectory and the default configuration
+   * Create a new non-persistent Monitor instance
    *
-   * @param queryParser the query parser to use
    * @param presearcher the presearcher to use
-   * @throws IOException on IO errors
    */
-  public Monitor(MonitorQueryParser queryParser, Presearcher presearcher) throws IOException {
-    this(queryParser, presearcher, defaultIndexWriter(new ByteBuffersDirectory()), new QueryIndexConfiguration());
+  public Monitor(Presearcher presearcher) throws IOException {
+    this(presearcher, new QueryIndexConfiguration());
   }
 
   /**
-   * Create a new Monitor instance using a RAMDirectory
-   *
-   * @param queryParser the query parser to use
-   * @param presearcher the presearcher to use
-   * @param config      the monitor configuration
-   * @throws IOException on IO errors
+   * Create a new Monitor instance with a specific configuration
    */
-  public Monitor(MonitorQueryParser queryParser, Presearcher presearcher, QueryIndexConfiguration config) throws IOException {
-    this(queryParser, presearcher, defaultIndexWriter(new ByteBuffersDirectory()), config);
-  }
-
-  /**
-   * Create a new Monitor instance, using the default QueryDecomposer and IndexWriter configuration
-   *
-   * @param queryParser the query parser to use
-   * @param presearcher the presearcher to use
-   * @param directory   the directory where the queryindex is stored
-   * @throws IOException on IO errors
-   */
-  public Monitor(MonitorQueryParser queryParser, Presearcher presearcher, Directory directory) throws IOException {
-    this(queryParser, presearcher, defaultIndexWriter(directory), new QueryIndexConfiguration());
-  }
-
-  /**
-   * Create a new Monitor instance
-   *
-   * @param queryParser the query parser to use
-   * @param presearcher the presearcher to use
-   * @param directory   the directory where the queryindex is to be stored
-   * @param config      the monitor configuration
-   * @throws IOException on IO errors
-   */
-  public Monitor(MonitorQueryParser queryParser, Presearcher presearcher, Directory directory, QueryIndexConfiguration config) throws IOException {
-    this(queryParser, presearcher, defaultIndexWriter(directory), config);
-  }
-
-  /**
-   * Create a new Monitor instance, using the default QueryDecomposer
-   *
-   * @param queryParser the query parser to use
-   * @param presearcher the presearcher to use
-   * @param indexWriter a {@link IndexWriter} for the Monitor's query index
-   * @throws IOException on IO errors
-   */
-  public Monitor(MonitorQueryParser queryParser, Presearcher presearcher, IndexWriter indexWriter) throws IOException {
-    this(queryParser, presearcher, indexWriter, new QueryIndexConfiguration());
-  }
-
-  // package-private for testing
-  static IndexWriter defaultIndexWriter(Directory directory) throws IOException {
-
-    IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
-    TieredMergePolicy mergePolicy = new TieredMergePolicy();
-    mergePolicy.setSegmentsPerTier(4);
-    iwc.setMergePolicy(mergePolicy);
-    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-    return new IndexWriter(directory, iwc);
-
+  public Monitor(QueryIndexConfiguration config) throws IOException {
+    this(new TermFilteredPresearcher(), config);
   }
 
   /**
@@ -239,89 +168,6 @@ public class Monitor implements Closeable {
     }
   }
 
-  private void prepareQueryCache(boolean storeQueries) throws IOException {
-
-    if (storeQueries == false) {
-      // we're not storing the queries, so ensure that the queryindex is empty
-      // before we add any.
-      clear();
-      return;
-    }
-
-    // load any queries that have already been added to the queryindex
-    final List<Exception> parseErrors = new LinkedList<>();
-    final Set<BytesRef> seenHashes = new HashSet<>();
-    final Set<String> seenIds = new HashSet<>();
-
-    queryIndex.purgeCache(newCache -> queryIndex.scan((id, query, dataValues) -> {
-      if (seenIds.contains(id)) {
-        return;
-      }
-      seenIds.add(id);
-
-      BytesRef serializedMQ = dataValues.mq.binaryValue();
-      MonitorQuery mq = MonitorQuery.deserialize(serializedMQ);
-
-      BytesRef hash = mq.hash();
-      if (seenHashes.contains(hash)) {
-        return;
-      }
-      seenHashes.add(hash);
-
-      try {
-        for (QueryCacheEntry ce : decomposeQuery(mq)) {
-          newCache.put(ce.hash, ce);
-        }
-      } catch (Exception e) {
-        parseErrors.add(e);
-      }
-    }));
-    if (parseErrors.size() != 0)
-      throw new IOException("Error populating cache - some queries couldn't be parsed:" + parseErrors);
-  }
-
-  private void commit(List<Indexable> updates) throws IOException {
-    beforeCommit(updates);
-    queryIndex.commit(updates);
-    afterCommit(updates);
-  }
-
-  private void afterPurge() {
-    for (QueryIndexUpdateListener listener : listeners) {
-      listener.onPurge();
-    }
-  }
-
-  private void afterPurgeError(Throwable t) {
-    for (QueryIndexUpdateListener listener : listeners) {
-      listener.onPurgeError(t);
-    }
-  }
-
-  private void beforeCommit(List<Indexable> updates) {
-    if (updates == null) {
-      for (QueryIndexUpdateListener listener : listeners) {
-        listener.beforeDelete();
-      }
-    } else {
-      for (QueryIndexUpdateListener listener : listeners) {
-        listener.beforeUpdate(updates);
-      }
-    }
-  }
-
-  private void afterCommit(List<Indexable> updates) {
-    if (updates == null) {
-      for (QueryIndexUpdateListener listener : listeners) {
-        listener.afterDelete();
-      }
-    } else {
-      for (QueryIndexUpdateListener listener : listeners) {
-        listener.afterUpdate(updates);
-      }
-    }
-  }
-
   /**
    * Remove unused queries from the query cache.
    * <p>
@@ -330,13 +176,9 @@ public class Monitor implements Closeable {
    * @throws IOException on IO errors
    */
   public void purgeCache() throws IOException {
-    queryIndex.purgeCache(newCache -> queryIndex.scan((id, query, dataValues) -> {
-      if (query != null)
-        newCache.put(BytesRef.deepCopyOf(query.hash), query);
-    }));
-
+    queryIndex.purgeCache();
     lastPurged = System.nanoTime();
-    afterPurge();
+    listeners.forEach(QueryIndexUpdateListener::onPurge);
   }
 
   /**
@@ -355,7 +197,7 @@ public class Monitor implements Closeable {
   @Override
   public void close() throws IOException {
     purgeExecutor.shutdown();
-    queryIndex.closeWhileHandlingException();
+    queryIndex.close();
   }
 
   /**
@@ -365,46 +207,22 @@ public class Monitor implements Closeable {
    * @throws IOException     on IO errors
    * @throws UpdateException if any of the queries could not be added
    */
-  public void update(Iterable<MonitorQuery> queries) throws IOException, UpdateException {
-
-    List<QueryError> errors = new ArrayList<>();
-    List<Indexable> updates = new ArrayList<>();
-
+  public void update(Iterable<MonitorQuery> queries) throws IOException {
+    List<MonitorQuery> updates = new ArrayList<>();
     for (MonitorQuery query : queries) {
-      try {
-        for (QueryCacheEntry queryCacheEntry : decomposeQuery(query)) {
-          updates.add(new Indexable(query.getId(), queryCacheEntry, buildIndexableQuery(query.getId(), query, queryCacheEntry)));
-        }
-      } catch (Exception e) {
-        errors.add(new QueryError(query, e));
-      }
+      updates.add(query);
       if (updates.size() > commitBatchSize) {
         commit(updates);
         updates.clear();
       }
     }
     commit(updates);
-
-    if (errors.isEmpty() == false)
-      throw new UpdateException(errors);
   }
 
-  private Iterable<QueryCacheEntry> decomposeQuery(MonitorQuery query) throws Exception {
-
-    Query q = queryParser.parse(query.getQuery(), query.getMetadata());
-
-    BytesRef rootHash = query.hash();
-
-    int upto = 0;
-    List<QueryCacheEntry> cacheEntries = new LinkedList<>();
-    for (Query subquery : decomposer.decompose(q)) {
-      BytesRefBuilder subHash = new BytesRefBuilder();
-      subHash.append(rootHash);
-      subHash.append(new BytesRef("_" + upto++));
-      cacheEntries.add(new QueryCacheEntry(subHash.toBytesRef(), subquery, query.getMetadata()));
-    }
-
-    return cacheEntries;
+  private void commit(List<MonitorQuery> updates) throws IOException {
+    listeners.forEach(l -> l.beforeUpdate(updates));
+    queryIndex.commit(updates);
+    listeners.forEach(l -> l.afterUpdate(updates));
   }
 
   /**
@@ -414,21 +232,8 @@ public class Monitor implements Closeable {
    * @throws IOException     on IO errors
    * @throws UpdateException if any of the queries could not be added
    */
-  public void update(MonitorQuery... queries) throws IOException, UpdateException {
+  public void update(MonitorQuery... queries) throws IOException {
     update(Arrays.asList(queries));
-  }
-
-  /**
-   * Delete queries from the monitor
-   *
-   * @param queries the queries to remove
-   * @throws IOException on IO errors
-   */
-  public void delete(Iterable<MonitorQuery> queries) throws IOException {
-    for (MonitorQuery mq : queries) {
-      queryIndex.deleteDocuments(new Term(Monitor.FIELDS.del, mq.getId()));
-    }
-    commit(null);
   }
 
   /**
@@ -438,10 +243,9 @@ public class Monitor implements Closeable {
    * @throws IOException on IO errors
    */
   public void deleteById(Iterable<String> queryIds) throws IOException {
-    for (String queryId : queryIds) {
-      queryIndex.deleteDocuments(new Term(FIELDS.del, queryId));
-    }
-    commit(null);
+    listeners.forEach(QueryIndexUpdateListener::beforeDelete);
+    queryIndex.deleteQueries(queryIds);
+    listeners.forEach(QueryIndexUpdateListener::afterDelete);
   }
 
   /**
@@ -460,8 +264,9 @@ public class Monitor implements Closeable {
    * @throws IOException on IO errors
    */
   public void clear() throws IOException {
-    queryIndex.deleteDocuments(new MatchAllDocsQuery());
-    commit(null);
+    listeners.forEach(QueryIndexUpdateListener::beforeDelete);
+    queryIndex.clear();
+    listeners.forEach(QueryIndexUpdateListener::afterDelete);
   }
 
   /**
@@ -524,14 +329,7 @@ public class Monitor implements Closeable {
    * @throws IllegalStateException if queries are not stored in the queryindex
    */
   public MonitorQuery getQuery(final String queryId) throws IOException {
-    if (storeQueries == false)
-      throw new IllegalStateException("Cannot call getQuery() as queries are not stored");
-    final MonitorQuery[] queryHolder = new MonitorQuery[]{null};
-    queryIndex.search(new TermQuery(new Term(FIELDS.id, queryId)), (id, query, dataValues) -> {
-      BytesRef serializedMQ = dataValues.mq.binaryValue();
-      queryHolder[0] = MonitorQuery.deserialize(serializedMQ);
-    });
-    return queryHolder[0];
+    return queryIndex.getQuery(queryId);
   }
 
   /**
@@ -557,25 +355,6 @@ public class Monitor implements Closeable {
     final Set<String> ids = new HashSet<>();
     queryIndex.scan((id, query, dataValues) -> ids.add(id));
     return ids;
-  }
-
-  /**
-   * Build a lucene {@link Document} to be stored in the queryindex from a query entry
-   *
-   * @param id    the query id
-   * @param mq    the MonitorQuery to be indexed
-   * @param query the (possibly partial after decomposition) query to be indexed
-   * @return a Document that will be indexed in the Monitor's queryindex
-   */
-  protected Document buildIndexableQuery(String id, MonitorQuery mq, QueryCacheEntry query) {
-    Document doc = presearcher.indexQuery(query.matchQuery, mq.getMetadata());
-    doc.add(new StringField(FIELDS.id, id, Field.Store.NO));
-    doc.add(new StringField(FIELDS.del, id, Field.Store.NO));
-    doc.add(new SortedDocValuesField(FIELDS.id, new BytesRef(id)));
-    doc.add(new BinaryDocValuesField(FIELDS.hash, query.hash));
-    if (storeQueries)
-      doc.add(new BinaryDocValuesField(FIELDS.mq, MonitorQuery.serialize(mq)));
-    return doc;
   }
 
   // For each query selected by the presearcher, pass on to a CandidateMatcher

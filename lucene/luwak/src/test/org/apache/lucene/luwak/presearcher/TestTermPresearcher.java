@@ -33,11 +33,10 @@ import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.Presearcher;
+import org.apache.lucene.luwak.QueryIndexConfiguration;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.QueryTermFilter;
-import org.apache.lucene.luwak.UpdateException;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -50,13 +49,13 @@ import org.apache.lucene.util.BytesRefHash;
 
 public class TestTermPresearcher extends PresearcherTestBase {
 
-  public void testFiltersOnTermQueries() throws IOException, UpdateException {
+  public void testFiltersOnTermQueries() throws IOException {
 
     MonitorQuery query1
-        = new MonitorQuery("1", "furble");
+        = new MonitorQuery("1", parse("furble"));
     MonitorQuery query2
-        = new MonitorQuery("2", "document");
-    MonitorQuery query3 = new MonitorQuery("3", "\"a document\"");  // will be selected but not match
+        = new MonitorQuery("2", parse("document"));
+    MonitorQuery query3 = new MonitorQuery("3", parse("\"a document\""));  // will be selected but not match
 
     try (Monitor monitor = newMonitor()) {
       monitor.update(query1, query2, query3);
@@ -71,10 +70,10 @@ public class TestTermPresearcher extends PresearcherTestBase {
     }
   }
 
-  public void testIgnoresTermsOnNotQueries() throws IOException, UpdateException {
+  public void testIgnoresTermsOnNotQueries() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "document -test"));
+      monitor.update(new MonitorQuery("1", parse("document -test")));
 
       Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
       assertEquals(0, matches.getMatchCount("doc1"));
@@ -87,10 +86,10 @@ public class TestTermPresearcher extends PresearcherTestBase {
 
   }
 
-  public void testMatchesAnyQueries() throws IOException, UpdateException {
+  public void testMatchesAnyQueries() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "/hell./"));
+      monitor.update(new MonitorQuery("1", parse("/hell./")));
 
       Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "hello"), SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
@@ -114,16 +113,23 @@ public class TestTermPresearcher extends PresearcherTestBase {
 
   }
 
-  public void testQueryBuilder() throws IOException, UpdateException {
+  public void testQueryBuilder() throws IOException {
 
-    IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
     Presearcher presearcher = createPresearcher();
 
+    IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
     Directory dir = new ByteBuffersDirectory();
     IndexWriter writer = new IndexWriter(dir, iwc);
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), presearcher, writer)) {
+    QueryIndexConfiguration config = new QueryIndexConfiguration(){
+      @Override
+      public IndexWriter buildIndexWriter() {
+        return writer;
+      }
+    };
 
-      monitor.update(new MonitorQuery("1", "f:test"));
+    try (Monitor monitor = new Monitor(presearcher, config)) {
+
+      monitor.update(new MonitorQuery("1", parse("f:test")));
 
       try (IndexReader reader = DirectoryReader.open(writer, false, false)) {
 

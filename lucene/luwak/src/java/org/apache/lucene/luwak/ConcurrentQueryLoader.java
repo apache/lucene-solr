@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,11 +56,9 @@ public class ConcurrentQueryLoader implements Closeable {
   private final ExecutorService executor;
   private final CountDownLatch shutdownLatch;
   private final BlockingQueue<MonitorQuery> queue;
-  private final List<QueryError> errors = new CopyOnWriteArrayList<>();
-  private final List<QueryError> errorOutput;
 
   private boolean shutdown = false;
-  private IOException error;
+  private List<IOException> errors = new ArrayList<>();
 
   public static final int DEFAULT_QUEUE_SIZE = 2000;
 
@@ -69,23 +66,20 @@ public class ConcurrentQueryLoader implements Closeable {
    * Create a new ConcurrentQueryLoader for a {@link Monitor}
    *
    * @param monitor Monitor
-   * @param errors  a List that will be populated with any query errors
    */
-  public ConcurrentQueryLoader(Monitor monitor, List<QueryError> errors) {
-    this(monitor, errors, Runtime.getRuntime().availableProcessors(), DEFAULT_QUEUE_SIZE);
+  public ConcurrentQueryLoader(Monitor monitor) {
+    this(monitor, Runtime.getRuntime().availableProcessors(), DEFAULT_QUEUE_SIZE);
   }
 
   /**
    * Create a new ConcurrentQueryLoader
    *
    * @param monitor   the Monitor to load queries to
-   * @param errors    a List that will be populated with any query errors
    * @param threads   the number of threads to use
    * @param queueSize the size of the buffer to hold queries in
    */
-  public ConcurrentQueryLoader(Monitor monitor, List<QueryError> errors, int threads, int queueSize) {
+  public ConcurrentQueryLoader(Monitor monitor, int threads, int queueSize) {
     this.monitor = monitor;
-    this.errorOutput = errors;
     this.queue = new LinkedBlockingQueue<>(queueSize);
     this.executor = Executors.newFixedThreadPool(threads, new NamedThreadFactory("loader"));
     this.shutdownLatch = new CountDownLatch(threads);
@@ -118,9 +112,11 @@ public class ConcurrentQueryLoader implements Closeable {
     } catch (InterruptedException e) {
       // fine
     }
-    errorOutput.addAll(errors);
-    if (error != null)
-      throw error;
+    if (errors.size() > 0) {
+      IOException e = new IOException();
+      errors.forEach(e::addSuppressed);
+      throw e;
+    }
   }
 
   private class Worker implements Runnable {
@@ -143,15 +139,11 @@ public class ConcurrentQueryLoader implements Closeable {
           if (workerQueue.size() == 0 && shutdown)
             running = false;
           if (workerQueue.size() > 0) {
-            try {
-              monitor.update(workerQueue);
-            } catch (UpdateException e) {
-              errors.addAll(e.errors);
-            }
+            monitor.update(workerQueue);
           }
         }
       } catch (IOException e) {
-        error = e;
+        errors.add(e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       } finally {

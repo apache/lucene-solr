@@ -31,11 +31,10 @@ import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
+import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.TestSlowLog;
-import org.apache.lucene.luwak.UpdateException;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 
@@ -49,16 +48,16 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
   protected abstract <T extends QueryMatch>
   MatcherFactory<T> matcherFactory(ExecutorService executor, MatcherFactory<T> factory, int threads);
 
-  public void testAllMatchesAreCollected() throws IOException, UpdateException {
+  public void testAllMatchesAreCollected() throws Exception {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
+    ExecutorService executor = Executors.newFixedThreadPool(10, new NamedThreadFactory("matchers"));
+    try (Monitor monitor = new Monitor()) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 1000; i++) {
-        queries.add(new MonitorQuery(Integer.toString(i), "+test " + i));
+        queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("+test " + i)));
       }
       monitor.update(queries);
 
-      ExecutorService executor = Executors.newFixedThreadPool(10, new NamedThreadFactory("matchers"));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1").addField("field", "test", ANALYZER).build());
 
@@ -66,22 +65,23 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
           = monitor.match(batch, matcherFactory(executor, SimpleMatcher.FACTORY, 10));
 
       assertEquals(1000, matches.getMatchCount("1"));
-
+    }
+    finally {
       executor.shutdown();
     }
   }
 
-  public void testMatchesAreDisambiguated() throws IOException, UpdateException {
+  public void testMatchesAreDisambiguated() throws Exception {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
+    ExecutorService executor = Executors.newFixedThreadPool(4, new NamedThreadFactory("matchers"));
+
+    try (Monitor monitor = new Monitor()) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 10; i++) {
-        queries.add(new MonitorQuery(Integer.toString(i), "test^10 doc " + i));
+        queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("test^10 doc " + i)));
       }
       monitor.update(queries);
       assertEquals(30, monitor.getDisjunctCount());
-
-      ExecutorService executor = Executors.newFixedThreadPool(4, new NamedThreadFactory("matchers"));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1")
           .addField("field", "test doc doc", ANALYZER)
@@ -90,8 +90,8 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       Matches<ScoringMatch> matches
           = monitor.match(batch, matcherFactory(executor, ScoringMatcher.FACTORY, 10));
 
+      assertEquals(20, matches.getQueriesRun());
       assertEquals(10, matches.getMatchCount("1"));
-      assertEquals(30, matches.getQueriesRun());
       assertTrue(matches.getErrors().isEmpty());
       for (ScoringMatch match : matches.getMatches("1")) {
         // The queries are all split into three by the QueryDecomposer, and the
@@ -100,17 +100,21 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
         // up with the sum of the scores for the 'test' and 'doc' parts
         assertEquals(1.4874471f, match.getScore(), 0);
       }
-
+    }
+    finally {
       executor.shutdown();
     }
   }
 
-  public void testParallelSlowLog() throws IOException, UpdateException {
+  public void testParallelSlowLog() throws IOException {
 
     ExecutorService executor = Executors.newCachedThreadPool(new NamedThreadFactory("matchers"));
 
-    try (Monitor monitor = new Monitor(new TestSlowLog.SlowQueryParser(250), MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", "slow"), new MonitorQuery("2", "fast"), new MonitorQuery("3", "slow"));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(
+          new MonitorQuery("1", TestSlowLog.slowQuery(250)),
+          new MonitorQuery("2", new MatchAllDocsQuery()),
+          new MonitorQuery("3", TestSlowLog.slowQuery(250)));
 
       DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1").build());
 
@@ -131,7 +135,10 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       monitor.setSlowLogLimit(2000000000000L);
       assertFalse(monitor.match(batch, factory).getSlowLog().iterator().hasNext());
     }
+    finally {
+      executor.shutdown();
+    }
 
-    executor.shutdown();
   }
+
 }

@@ -31,11 +31,10 @@ import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.Presearcher;
+import org.apache.lucene.luwak.QueryIndexConfiguration;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.QueryTermFilter;
-import org.apache.lucene.luwak.UpdateException;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -50,13 +49,14 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
     return new MultipassTermFilteredPresearcher(4);
   }
 
-  public void testSimpleBoolean() throws IOException, UpdateException {
+  public void testSimpleBoolean() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "field:\"hello world\""),
-          new MonitorQuery("2", "field:world"),
-          new MonitorQuery("3", "field:\"hello there world\""),
-          new MonitorQuery("4", "field:\"this and that\""));
+      monitor.update(
+          new MonitorQuery("1", parse("field:\"hello world\"")),
+          new MonitorQuery("2", parse("field:world")),
+          new MonitorQuery("3", parse("field:\"hello there world\"")),
+          new MonitorQuery("4", parse("field:\"this and that\"")));
 
       Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", "field", "hello world and goodbye"),
           SimpleMatcher.FACTORY);
@@ -65,10 +65,10 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
     }
   }
 
-  public void testComplexBoolean() throws IOException, UpdateException {
+  public void testComplexBoolean() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "field:(+foo +bar +(badger cormorant))"));
+      monitor.update(new MonitorQuery("1", parse("field:(+foo +bar +(badger cormorant))")));
 
       Matches<QueryMatch> matches
           = monitor.match(buildDoc("doc1", "field", "a badger walked into a bar"), SimpleMatcher.FACTORY);
@@ -85,16 +85,22 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
 
   }
 
-  public void testQueryBuilder() throws IOException, UpdateException {
+  public void testQueryBuilder() throws IOException {
 
     IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
     Presearcher presearcher = createPresearcher();
 
     Directory dir = new ByteBuffersDirectory();
     IndexWriter writer = new IndexWriter(dir, iwc);
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), presearcher, writer)) {
+    QueryIndexConfiguration config = new QueryIndexConfiguration(){
+      @Override
+      public IndexWriter buildIndexWriter() {
+        return writer;
+      }
+    };
+    try (Monitor monitor = new Monitor(presearcher, config)) {
 
-      monitor.update(new MonitorQuery("1", "f:test"));
+      monitor.update(new MonitorQuery("1", parse("f:test")));
 
       try (IndexReader reader = DirectoryReader.open(writer, false, false)) {
 

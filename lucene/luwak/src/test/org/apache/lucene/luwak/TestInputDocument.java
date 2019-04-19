@@ -24,14 +24,11 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.luwak.matchers.ExplainingMatch;
 import org.apache.lucene.luwak.matchers.ExplainingMatcher;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.util.LuceneTestCase;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-public class TestInputDocument extends LuceneTestCase {
+public class TestInputDocument extends MonitorTestBase {
 
   public void testCannotAddReservedFieldName() {
     IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
@@ -55,8 +52,8 @@ public class TestInputDocument extends LuceneTestCase {
         .setDefaultAnalyzer(new StandardAnalyzer())
         .addField(f).build();
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("text"), MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("q", "length"));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(new MonitorQuery("q", parse("length")));
 
       Matches<ExplainingMatch> matches = monitor.match(doc, ExplainingMatcher.FACTORY);
       DocumentMatches<ExplainingMatch> m = matches.getMatches("id");

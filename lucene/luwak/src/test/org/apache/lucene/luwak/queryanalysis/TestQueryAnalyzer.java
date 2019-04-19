@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.luwak.testutils.ParserUtils;
+import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,7 +33,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   public void testAdvancesCollectDifferentTerms() throws Exception {
 
-    Query q = ParserUtils.parse("field:(+hello +goodbye)");
+    Query q = MonitorTestBase.parse("field:(+hello +goodbye)");
     QueryTree querytree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "goodbye", QueryTerm.Type.EXACT));
@@ -52,7 +52,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
   public void testDisjunctionsWithAnyClausesOnlyReturnANYTOKEN() throws Exception {
 
     // disjunction containing a pure negative - we can't narrow this down
-    Query q = ParserUtils.parse("hello goodbye (*:* -term)");
+    Query q = MonitorTestBase.parse("hello goodbye (*:* -term)");
 
     Set<QueryTerm> terms = analyzer.collectTerms(q, TermWeightor.DEFAULT);
     assertEquals(1, terms.size());
@@ -62,7 +62,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   public void testConjunctionsDoNotAdvanceOverANYTOKENs() throws Exception {
 
-    Query q = ParserUtils.parse("+hello +howdyedo +(goodbye (*:* -whatever))");
+    Query q = MonitorTestBase.parse("+hello +howdyedo +(goodbye (*:* -whatever))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "howdyedo", QueryTerm.Type.EXACT));
@@ -85,7 +85,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
     QueryAnalyzer analyzer = new QueryAnalyzer();
 
-    Query q = ParserUtils.parse("+startterm +hello +goodbye");
+    Query q = MonitorTestBase.parse("+startterm +hello +goodbye");
     QueryTree tree = analyzer.buildTree(q, weightor);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "goodbye", QueryTerm.Type.EXACT));
@@ -101,7 +101,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   public void testNestedConjunctions() throws Exception {
 
-    Query q = ParserUtils.parse("+(+(+(+aaaa +cc) +(+d +bbb)))");
+    Query q = MonitorTestBase.parse("+(+(+(+aaaa +cc) +(+d +bbb)))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "aaaa", QueryTerm.Type.EXACT));
@@ -124,7 +124,7 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   public void testNestedDisjunctions() throws Exception {
 
-    Query q = ParserUtils.parse("+(+((+aaaa +cc) (+dd +bbb +f)))");
+    Query q = MonitorTestBase.parse("+(+((+aaaa +cc) (+dd +bbb +f)))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
     Set<QueryTerm> expected = new HashSet<>(Arrays.asList(

@@ -17,23 +17,19 @@
 
 package org.apache.lucene.luwak;
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.luwak.matchers.ScoringMatch;
 import org.apache.lucene.luwak.matchers.ScoringMatcher;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSimilarities extends LuceneTestCase {
 
-  public void testNonStandardSimilarity() throws IOException, UpdateException {
+  public void testNonStandardSimilarity() throws Exception {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", "test"));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(new MonitorQuery("1", MonitorTestBase.parse("test")));
 
       Similarity similarity = new ClassicSimilarity() {
         @Override

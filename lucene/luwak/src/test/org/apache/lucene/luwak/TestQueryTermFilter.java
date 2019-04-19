@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -34,25 +35,12 @@ public class TestQueryTermFilter extends LuceneTestCase {
 
   private static final String FIELD = "f";
 
-  private static List<Indexable> indexable(String id, String query) {
-    QueryCacheEntry e = new QueryCacheEntry(
-        new BytesRef(id.getBytes(StandardCharsets.UTF_8)),
-        new TermQuery(new Term(FIELD, query)),
-        Collections.emptyMap()
-    );
-    Document doc = new Document();
-    doc.add(new StringField(FIELD, query, Field.Store.NO));
-    return Collections.singletonList(
-        new Indexable(id, e, doc)
-    );
-  }
-
   public void testFiltersAreRemoved() throws IOException {
 
-    QueryIndex qi = new QueryIndex();
-    qi.commit(indexable("1", "term"));
+    QueryIndex qi = new QueryIndex(new QueryIndexConfiguration(), new TermFilteredPresearcher());
+    qi.commit(Collections.singletonList(new MonitorQuery("1", new TermQuery(new Term(FIELD, "term")))));
     assertEquals(1, qi.termFilters.size());
-    qi.commit(indexable("2", "term2"));
+    qi.commit(Collections.singletonList(new MonitorQuery("2", new TermQuery(new Term(FIELD, "term2")))));
     assertEquals(1, qi.termFilters.size());
 
     QueryTermFilter tf = qi.termFilters.values().iterator().next();

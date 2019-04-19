@@ -17,123 +17,33 @@
 
 package org.apache.lucene.luwak;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
+import org.apache.lucene.search.MatchAllDocsQuery;
 
-public class TestMonitorErrorHandling extends LuceneTestCase {
-
-  private static final String FIELD = "f";
+public class TestMonitorErrorHandling extends MonitorTestBase {
 
   private static final Analyzer ANALYZER = new WhitespaceAnalyzer();
 
-  private static class ThrowOnRewriteQuery extends Query {
-
-    @Override
-    public Query rewrite(IndexReader reader) throws IOException {
-      throw new IOException("Error rewriting");
-    }
-
-    @Override
-    public String toString(String field) {
-      return null;
-    }
-
-    @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return 0;
-    }
-  }
-
-  private static MonitorQueryParser createMockCache() {
-    return (query, metadata) -> {
-      if (query == null)
-        return null;
-      if ("unparseable".equals(query))
-        throw new RuntimeException("Error parsing query [unparseable]");
-      if ("error".equals(query))
-        return new ThrowOnRewriteQuery();
-      return new TermQuery(new Term(FIELD, query));
-    };
-  }
-
   public void testMonitorErrors() throws Exception {
 
-    try (Monitor monitor = new Monitor(createMockCache(), MatchAllPresearcher.INSTANCE)) {
-
-      UpdateException e = expectThrows(UpdateException.class,
-          () -> monitor.update(
-              new MonitorQuery("1", "unparseable"),
-              new MonitorQuery("2", "test"),
-              new MonitorQuery("3", "error")));
-      assertEquals(1, e.errors.size());
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(
+          MonitorTestBase.mq("1", "test"),
+          new MonitorQuery("2", MonitorTestBase.parse("test")),
+          new MonitorQuery("3", new ThrowOnRewriteQuery()));
 
       InputDocument doc = InputDocument.builder("doc").addField(FIELD, "test", ANALYZER).build();
       DocumentBatch batch = DocumentBatch.of(doc);
       Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
 
       assertEquals(1, matches.getErrors().size());
-      assertEquals(1, matches.getMatchCount("doc"));
-      assertEquals(2, matches.getQueriesRun());
-    }
-  }
-
-  @Test
-  public void testPresearcherErrors() throws Exception {
-
-    Presearcher presearcher = new Presearcher() {
-
-      int calls = 0;
-
-      @Override
-      public Query buildQuery(LeafReader reader, QueryTermFilter queryTermFilter) {
-        return null;
-      }
-
-      @Override
-      public Document indexQuery(Query query, Map<String, String> metadata) {
-        calls++;
-        if (calls == 2) {
-          throw new UnsupportedOperationException("Oops");
-        }
-        return new Document();
-      }
-    };
-
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), presearcher)) {
-      UpdateException e = expectThrows(UpdateException.class, () -> monitor.update(
-          new MonitorQuery("1", "1"),
-          new MonitorQuery("2", "2"),
-          new MonitorQuery("3", "3")
-      ));
-      assertEquals(1, e.errors.size());
-      assertEquals("2", e.errors.get(0).query.getId());
-      assertEquals(2, monitor.getQueryCount());
+      assertEquals(2, matches.getMatchCount("doc"));
+      assertEquals(3, matches.getQueriesRun());
     }
   }
 
@@ -141,7 +51,7 @@ public class TestMonitorErrorHandling extends LuceneTestCase {
     IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
       Map<String, String> metadata2 = new HashMap<>();
       metadata2.put("key", null);
-      new MonitorQuery("id", "query", metadata2);
+      new MonitorQuery("id", new MatchAllDocsQuery(), metadata2);
     });
     assertEquals("Null value for key key in metadata map", e.getMessage());
   }

@@ -18,10 +18,8 @@
 package org.apache.lucene.luwak;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -34,60 +32,50 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.IsNot.not;
 
-public class TestSlowLog extends LuceneTestCase {
+public class TestSlowLog extends MonitorTestBase {
 
-  public static class SlowQueryParser implements MonitorQueryParser {
-
-    final long delay;
-
-    public SlowQueryParser(long delay) {
-      this.delay = delay;
-    }
-
-    @Override
-    public Query parse(String queryString, Map<String, String> metadata) {
-      if (queryString.equals("slow")) {
-        return new Query() {
-          @Override
-          public String toString(String s) {
-            return "";
-          }
-
-          @Override
-          public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
-            try {
-              Thread.sleep(delay);
-            } catch (InterruptedException e) {
-              throw new RuntimeException(e);
-            }
-            return new MatchAllDocsQuery().createWeight(searcher, scoreMode, boost);
-          }
-
-          @Override
-          public void visit(QueryVisitor visitor) {
-
-          }
-
-          @Override
-          public boolean equals(Object o) {
-            return false;
-          }
-
-          @Override
-          public int hashCode() {
-            return 0;
-          }
-        };
+  public static Query slowQuery(long delay) {
+    return new Query() {
+      @Override
+      public String toString(String s) {
+        return "";
       }
-      return new MatchAllDocsQuery();
-    }
+
+      @Override
+      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        return new MatchAllDocsQuery().createWeight(searcher, scoreMode, boost);
+      }
+
+      @Override
+      public void visit(QueryVisitor visitor) {
+        visitor.visitLeaf(this);
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        return false;
+      }
+
+      @Override
+      public int hashCode() {
+        return 0;
+      }
+    };
   }
 
   @Test
-  public void testSlowLog() throws IOException, UpdateException {
+  public void testSlowLog() throws IOException {
 
-    try (Monitor monitor = new Monitor(new SlowQueryParser(250), MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", "slow"), new MonitorQuery("2", "fast"), new MonitorQuery("3", "slow"));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(
+          new MonitorQuery("1", slowQuery(250)),
+          new MonitorQuery("2", new MatchAllDocsQuery()),
+          new MonitorQuery("3", slowQuery(250)));
 
       InputDocument doc1 = InputDocument.builder("doc1").build();
 

@@ -18,54 +18,49 @@
 package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.InputDocument;
 import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
-import org.apache.lucene.luwak.MonitorQueryParser;
+import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.UpdateException;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 
-public abstract class PresearcherTestBase extends LuceneTestCase {
+public abstract class PresearcherTestBase extends MonitorTestBase {
 
-  Monitor newMonitor() throws IOException {
-    return new Monitor(new LuceneQueryParser(TEXTFIELD, WHITESPACE), createPresearcher());
+  public Monitor newMonitor() throws IOException {
+    return new Monitor(createPresearcher());
   }
 
   protected abstract Presearcher createPresearcher();
 
-  static final String TEXTFIELD = "text";
+  static final String TEXTFIELD = FIELD;
   static final Analyzer WHITESPACE = new WhitespaceAnalyzer();
 
   public static InputDocument buildDoc(String id, String field, String text) {
     return InputDocument.builder(id).addField(field, text, WHITESPACE).build();
   }
 
-  public void testNullFieldHandling() throws IOException, UpdateException {
+  public void testNullFieldHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "field_1:test"));
+      monitor.update(new MonitorQuery("1", parse("field_1:test")));
 
       assertEquals(0,
           monitor.match(buildDoc("doc1", "field_2", "test"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
@@ -81,17 +76,21 @@ public abstract class PresearcherTestBase extends LuceneTestCase {
     }
   }
 
-  public void testMatchAllQueryHandling() throws IOException, UpdateException {
+  public void testMatchAllQueryHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "*:*"));
+      monitor.update(new MonitorQuery("1", new MatchAllDocsQuery()));
       assertEquals(1,
           monitor.match(buildDoc("doc1", "f", "wibble"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
     }
   }
 
-  public void testNegativeQueryHandling() throws IOException, UpdateException {
+  public void testNegativeQueryHandling() throws IOException {
+    Query q = new BooleanQuery.Builder()
+        .add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("f", "foo")), BooleanClause.Occur.MUST_NOT)
+        .build();
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "*:* -f:foo"));
+      monitor.update(new MonitorQuery("1", q));
 
       DocumentBatch batch = DocumentBatch.of(
           InputDocument.builder("doc1").addField("f", "bar", WHITESPACE).build(),
@@ -103,46 +102,10 @@ public abstract class PresearcherTestBase extends LuceneTestCase {
     }
   }
 
-  static class TestQuery extends Query {
+  public void testAnyTokenHandling() throws IOException {
 
-    @Override
-    public String toString(String field) {
-      return "TestQuery";
-    }
-
-    @Override
-    public Query rewrite(IndexReader reader) {
-      return new MatchAllDocsQuery();
-    }
-
-    @Override
-    public void visit(QueryVisitor visitor) {
-      visitor.visitLeaf(this);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return 0;
-    }
-  }
-
-  static class TestQueryParser implements MonitorQueryParser {
-
-    @Override
-    public Query parse(String queryString, Map<String, String> metadata) {
-      return new TestQuery();
-    }
-  }
-
-  public void testAnyTokenHandling() throws IOException, UpdateException {
-
-    try (Monitor monitor = new Monitor(new TestQueryParser(), createPresearcher())) {
-      monitor.update(new MonitorQuery("1", "testquery"));
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", new MatchAllDocsQuery()));
       Matches<QueryMatch> matches = monitor.match(buildDoc("1", "f", "wibble"), SimpleMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("1"));
       assertEquals(1, matches.getQueriesRun());
@@ -150,14 +113,6 @@ public abstract class PresearcherTestBase extends LuceneTestCase {
   }
 
   private static final BytesRef NON_STRING_TERM = new BytesRef(new byte[]{60, 8, 0, 0, 0, 9});
-
-  static class NonStringTermQueryParser implements MonitorQueryParser {
-
-    @Override
-    public Query parse(String queryString, Map<String, String> metadata) {
-      return new TermQuery(new Term("f", NON_STRING_TERM));
-    }
-  }
 
   static class BytesRefAttribute extends AttributeImpl implements TermToBytesRefAttribute {
 
@@ -200,10 +155,10 @@ public abstract class PresearcherTestBase extends LuceneTestCase {
     }
   }
 
-  public void testNonStringTermHandling() throws IOException, UpdateException {
+  public void testNonStringTermHandling() throws IOException {
 
-    try (Monitor monitor = new Monitor(new NonStringTermQueryParser(), createPresearcher())) {
-      monitor.update(new MonitorQuery("1", "testquery"));
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", new TermQuery(new Term("f", NON_STRING_TERM))));
 
       InputDocument doc = InputDocument.builder("1").addField(new TextField("f", new NonStringTokenStream())).build();
       Matches<QueryMatch> m = monitor.match(doc, SimpleMatcher.FACTORY);

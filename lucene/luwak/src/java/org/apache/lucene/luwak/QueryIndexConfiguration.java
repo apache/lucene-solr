@@ -17,7 +17,17 @@
 
 package org.apache.lucene.luwak;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  * Encapsulates various configuration settings for a Monitor's query index
@@ -28,7 +38,36 @@ public class QueryIndexConfiguration {
   private long purgeFrequency = 5;
   private TimeUnit purgeFrequencyUnits = TimeUnit.MINUTES;
   private QueryDecomposer queryDecomposer = new QueryDecomposer();
-  private boolean storeQueries = true;
+  private Path indexPath = null;
+  private MonitorQuerySerializer serializer;
+
+  private static IndexWriterConfig defaultIndexWriterConfig() {
+    IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
+    TieredMergePolicy mergePolicy = new TieredMergePolicy();
+    mergePolicy.setSegmentsPerTier(4);
+    iwc.setMergePolicy(mergePolicy);
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+    return iwc;
+  }
+
+  public QueryIndexConfiguration setIndexPath(Path indexPath, MonitorQuerySerializer serializer) {
+    this.indexPath = indexPath;
+    this.serializer = serializer;
+    return this;
+  }
+
+  public IndexWriter buildIndexWriter() throws IOException {
+    Directory directory = indexPath == null ? new ByteBuffersDirectory() : FSDirectory.open(indexPath);
+    return new IndexWriter(directory, getIndexWriterConfig());
+  }
+
+  protected IndexWriterConfig getIndexWriterConfig() {
+    return defaultIndexWriterConfig();
+  }
+
+  public MonitorQuerySerializer getQuerySerializer() {
+    return serializer;
+  }
 
   /**
    * Set the QueryDecomposer to be used by the Monitor
@@ -91,27 +130,6 @@ public class QueryIndexConfiguration {
    */
   public int getQueryUpdateBufferSize() {
     return queryUpdateBufferSize;
-  }
-
-  /**
-   * Set whether or not the Monitor should store its MonitorQueries
-   * <p>
-   * If you don't need to call Monitor.getQuery() at all, you can save some memory
-   * by setting this to {@code false}.
-   *
-   * @param storeQueries whether or not the Monitor should store its MonitorQueries
-   * @return the current configuration
-   */
-  public QueryIndexConfiguration storeQueries(boolean storeQueries) {
-    this.storeQueries = storeQueries;
-    return this;
-  }
-
-  /**
-   * @return whether or not the Monitor is storing its MonitorQueries
-   */
-  public boolean storeQueries() {
-    return storeQueries;
   }
 
 }
