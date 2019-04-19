@@ -24,19 +24,17 @@ import org.apache.lucene.luwak.InputDocument;
 import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
+import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.UpdateException;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSimpleMatcher extends LuceneTestCase {
+public class TestSimpleMatcher extends MonitorTestBase {
 
-  public void testSimpleMatcher() throws IOException, UpdateException {
+  public void testSimpleMatcher() throws IOException {
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", "test"), new MonitorQuery("2", "wibble"));
-
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(
+          new MonitorQuery("1", parse("test")),
+          new MonitorQuery("2", parse("wibble")));
       InputDocument doc1 = InputDocument.builder("doc1").addField("field", "test", new StandardAnalyzer()).build();
 
       Matches<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);

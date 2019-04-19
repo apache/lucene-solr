@@ -28,22 +28,23 @@ import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.UpdateException;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
 public abstract class FieldFilterPresearcherComponentTestBase extends PresearcherTestBase {
 
-  public static final Analyzer ANALYZER = new StandardAnalyzer();
+  private static final Analyzer ANALYZER = new StandardAnalyzer();
 
-  public void testBatchFiltering() throws IOException, UpdateException {
+  public void testBatchFiltering() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "test", Collections.singletonMap("language", "en")),
-          new MonitorQuery("2", "wahl", Collections.singletonMap("language", "de")),
-          new MonitorQuery("3", "wibble", Collections.singletonMap("language", "en")),
-          new MonitorQuery("4", "*:*", Collections.singletonMap("language", "de")),
-          new MonitorQuery("5", "*:*", Collections.singletonMap("language", "es")));
+      monitor.update(
+          new MonitorQuery("1", parse("test"), Collections.singletonMap("language", "en")),
+          new MonitorQuery("2", parse("wahl"), Collections.singletonMap("language", "de")),
+          new MonitorQuery("3", parse("wibble"), Collections.singletonMap("language", "en")),
+          new MonitorQuery("4", parse("*:*"), Collections.singletonMap("language", "de")),
+          new MonitorQuery("5", parse("*:*"), Collections.singletonMap("language", "es")));
 
       DocumentBatch enBatch = DocumentBatch.of(
           InputDocument.builder("en1")
@@ -78,20 +79,20 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
     );
 
     try (Monitor monitor = newMonitor()) {
-      IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-        monitor.match(batch, SimpleMatcher.FACTORY);
-      });
+      IllegalArgumentException e
+          = expectThrows(IllegalArgumentException.class, () -> monitor.match(batch, SimpleMatcher.FACTORY));
       assertThat(e.getMessage(), containsString("language:"));
     }
   }
 
-  public void testFieldFiltering() throws IOException, UpdateException {
+  public void testFieldFiltering() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "test", Collections.singletonMap("language", "en")),
-          new MonitorQuery("2", "test", Collections.singletonMap("language", "de")),
-          new MonitorQuery("3", "wibble", Collections.singletonMap("language", "en")),
-          new MonitorQuery("4", "*:*", Collections.singletonMap("language", "de")));
+      monitor.update(
+          new MonitorQuery("1", parse("test"), Collections.singletonMap("language", "en")),
+          new MonitorQuery("2", parse("test"), Collections.singletonMap("language", "de")),
+          new MonitorQuery("3", parse("wibble"), Collections.singletonMap("language", "en")),
+          new MonitorQuery("4", parse("*:*"), Collections.singletonMap("language", "de")));
 
       InputDocument enDoc = InputDocument.builder("enDoc")
           .addField(TEXTFIELD, "this is a test", ANALYZER)
@@ -124,9 +125,9 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
     }
   }
 
-  public void testFilteringOnMatchAllQueries() throws IOException, UpdateException {
+  public void testFilteringOnMatchAllQueries() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "*:*", Collections.singletonMap("language", "de")));
+      monitor.update(new MonitorQuery("1", new MatchAllDocsQuery(), Collections.singletonMap("language", "de")));
 
       InputDocument doc = InputDocument.builder("enDoc")
           .addField(TEXTFIELD, "this is a test", ANALYZER)
@@ -140,7 +141,7 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
 
   public void testDebugQueries() throws Exception {
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("1", "test", Collections.singletonMap("language", "en")));
+      monitor.update(new MonitorQuery("1", parse("test"), Collections.singletonMap("language", "en")));
 
       InputDocument doc = InputDocument.builder("enDoc")
           .addField(TEXTFIELD, "this is a test", ANALYZER)

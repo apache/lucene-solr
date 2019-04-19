@@ -17,10 +17,14 @@
 
 package org.apache.lucene.luwak;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * An entry in the query cache
@@ -33,18 +37,41 @@ public class QueryCacheEntry {
   public final Query matchQuery;
 
   /**
-   * A hash value for lookups
+   * The id of this query
    */
-  public final BytesRef hash;
+  public final String cacheId;
+
+  /**
+   * The id of the MonitorQuery that produced this entry
+   *
+   * Note that this may be different to {@link #cacheId} due to decomposition
+   */
+  public final String queryId;
 
   /**
    * The metadata from the entry's parent {@link MonitorQuery}
    */
   public final Map<String, String> metadata;
 
-  public QueryCacheEntry(BytesRef hash, Query matchQuery, Map<String, String> metadata) {
-    this.hash = hash;
+  QueryCacheEntry(String cacheId, String queryId, Query matchQuery, Map<String, String> metadata) {
+    this.cacheId = cacheId;
+    this.queryId = queryId;
     this.matchQuery = matchQuery;
     this.metadata = metadata;
+  }
+
+  static List<QueryCacheEntry> decompose(MonitorQuery mq, QueryDecomposer decomposer) {
+    int upto = 0;
+    List<QueryCacheEntry> cacheEntries = new ArrayList<>();
+    for (Query subquery : decomposer.decompose(mq.getQuery())) {
+      cacheEntries.add(new QueryCacheEntry(mq.getId() + "_" + upto, mq.getId(), subquery, mq.getMetadata()));
+      upto++;
+    }
+    return cacheEntries;
+  }
+
+  @Override
+  public String toString() {
+    return queryId + "/" + cacheId + "/" + matchQuery;
   }
 }

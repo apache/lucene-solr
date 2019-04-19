@@ -17,45 +17,119 @@
 
 package org.apache.lucene.luwak;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-class QueryIndex {
+class QueryIndex implements Closeable {
+
+  static final class FIELDS {
+    public static final String query_id = "_query_id";
+    public static final String cache_id = "_cache_id";
+    public static final String mq = "_mq";
+  }
 
   private final IndexWriter writer;
   private final SearcherManager manager;
+  private final QueryDecomposer decomposer;
+  private final MonitorQuerySerializer serializer;
+  private final Presearcher presearcher;
 
   /* Used to cache updates while a purge is ongoing */
-  private volatile Map<BytesRef, QueryCacheEntry> purgeCache = null;
+  private volatile Map<String, QueryCacheEntry> purgeCache = null;
 
   /* Used to lock around the creation of the purgeCache */
   private final ReadWriteLock purgeLock = new ReentrantReadWriteLock();
   private final Object commitLock = new Object();
 
   /* The current query cache */
-  private volatile ConcurrentMap<BytesRef, QueryCacheEntry> queries = new ConcurrentHashMap<>();
+  private volatile ConcurrentMap<String, QueryCacheEntry> queries = new ConcurrentHashMap<>();
   // NB this is not final because it can be replaced by purgeCache()
 
   // package-private for testing
   final Map<IndexReader.CacheKey, QueryTermFilter> termFilters = new HashMap<>();
 
-  QueryIndex(IndexWriter indexWriter) throws IOException {
-    this.writer = indexWriter;
+  QueryIndex(QueryIndexConfiguration config, Presearcher presearcher) throws IOException {
+    this.writer = config.buildIndexWriter();
     this.manager = new SearcherManager(writer, true, true, new TermsHashBuilder());
+    this.decomposer = config.getQueryDecomposer();
+    this.serializer = config.getQuerySerializer();
+    this.presearcher = presearcher;
+    populateQueryCache(serializer, decomposer);
   }
 
-  QueryIndex() throws IOException {
-    this(Monitor.defaultIndexWriter(new ByteBuffersDirectory()));
+  private void populateQueryCache(MonitorQuerySerializer serializer, QueryDecomposer decomposer) throws IOException {
+    if (serializer == null) {
+      // No query serialization happening here - check that the cache is empty
+      IndexSearcher searcher = manager.acquire();
+      try {
+        if (searcher.count(new MatchAllDocsQuery()) != 0) {
+          throw new IllegalStateException("Attempting to open a non-empty monitor query index with no MonitorQuerySerializer");
+        }
+      }
+      finally {
+        manager.release(searcher);
+      }
+      return;
+    }
+    Set<String> ids = new HashSet<>();
+    List<Exception> errors = new ArrayList<>();
+    purgeCache(newCache -> scan((id, cacheEntry, dataValues) -> {
+      if (ids.contains(id)) {
+        // this is a branch of a query that has already been reconstructed, but
+        // then split by decomposition - we don't need to parse it again
+        return;
+      }
+      ids.add(id);
+      try {
+        MonitorQuery mq = serializer.deserialize(dataValues.mq.binaryValue());
+        for (QueryCacheEntry entry : QueryCacheEntry.decompose(mq, decomposer)) {
+          newCache.put(entry.cacheId, entry);
+        }
+      }
+      catch (Exception e) {
+        errors.add(e);
+      }
+    }));
+    if (errors.size() > 0) {
+      IllegalStateException e = new IllegalStateException("Couldn't parse some queries from the index");
+      for (Exception parseError : errors) {
+        e.addSuppressed(parseError);
+      }
+      throw e;
+    }
   }
 
   private class TermsHashBuilder extends SearcherFactory {
@@ -69,23 +143,24 @@ class QueryIndex {
     }
   }
 
-  void commit(List<Indexable> updates) throws IOException {
+  void commit(List<MonitorQuery> updates) throws IOException {
+    List<Indexable> indexables = buildIndexables(updates);
     synchronized (commitLock) {
       purgeLock.readLock().lock();
       try {
-        if (updates != null) {
+        if (indexables.size() > 0) {
           Set<String> ids = new HashSet<>();
-          for (Indexable update : updates) {
-            ids.add(update.id);
+          for (Indexable update : indexables) {
+            ids.add(update.queryCacheEntry.queryId);
           }
           for (String id : ids) {
-            writer.deleteDocuments(new Term(Monitor.FIELDS.del, id));
+            writer.deleteDocuments(new Term(FIELDS.query_id, id));
           }
-          for (Indexable update : updates) {
-            this.queries.put(update.queryCacheEntry.hash, update.queryCacheEntry);
+          for (Indexable update : indexables) {
+            this.queries.put(update.queryCacheEntry.cacheId, update.queryCacheEntry);
             writer.addDocument(update.document);
             if (purgeCache != null)
-              purgeCache.put(update.queryCacheEntry.hash, update.queryCacheEntry);
+              purgeCache.put(update.queryCacheEntry.cacheId, update.queryCacheEntry);
           }
         }
         writer.commit();
@@ -96,8 +171,47 @@ class QueryIndex {
     }
   }
 
+  private static class Indexable {
+    final QueryCacheEntry queryCacheEntry;
+    final Document document;
+
+    private Indexable(QueryCacheEntry queryCacheEntry, Document document) {
+      this.queryCacheEntry = queryCacheEntry;
+      this.document = document;
+    }
+  }
+
+  private static final BytesRef EMPTY = new BytesRef();
+
+  private List<Indexable> buildIndexables(List<MonitorQuery> updates) {
+    List<Indexable> indexables = new ArrayList<>();
+    for (MonitorQuery mq : updates) {
+      BytesRef serialized = serializer == null ? EMPTY : serializer.serialize(mq);
+      for (QueryCacheEntry qce : QueryCacheEntry.decompose(mq, decomposer)) {
+        Document doc = presearcher.indexQuery(qce.matchQuery, mq.getMetadata());
+        doc.add(new StringField(FIELDS.query_id, qce.queryId, Field.Store.NO));
+        doc.add(new SortedDocValuesField(FIELDS.cache_id, new BytesRef(qce.cacheId)));
+        doc.add(new SortedDocValuesField(FIELDS.query_id, new BytesRef(qce.queryId)));
+        doc.add(new BinaryDocValuesField(FIELDS.mq, serialized));
+        indexables.add(new Indexable(qce, doc));
+      }
+    }
+    return indexables;
+  }
+
   interface QueryBuilder {
     Query buildQuery(QueryTermFilter termFilter) throws IOException;
+  }
+
+  MonitorQuery getQuery(String queryId) throws IOException {
+    if (serializer == null) {
+      throw new IllegalStateException("Cannot get queries from an index with no MonitorQuerySerializer");
+    }
+    BytesRef[] bytesHolder = new BytesRef[1];
+    search(new TermQuery(new Term(FIELDS.query_id, queryId)), (id, query, dataValues) -> {
+      bytesHolder[0] = dataValues.mq.binaryValue();
+    });
+    return serializer.deserialize(bytesHolder[0]);
   }
 
   void scan(QueryCollector matcher) throws IOException {
@@ -112,7 +226,7 @@ class QueryIndex {
   long search(QueryBuilder queryBuilder, QueryCollector matcher) throws IOException {
     IndexSearcher searcher = null;
     try {
-      Map<BytesRef, QueryCacheEntry> queries;
+      Map<String, QueryCacheEntry> queries;
 
       purgeLock.readLock().lock();
       try {
@@ -136,7 +250,14 @@ class QueryIndex {
   }
 
   interface CachePopulator {
-    void populateCacheWithIndex(Map<BytesRef, QueryCacheEntry> newCache) throws IOException;
+    void populateCacheWithIndex(Map<String, QueryCacheEntry> newCache) throws IOException;
+  }
+
+  void purgeCache() throws IOException {
+    purgeCache(newCache -> scan((id, query, dataValues) -> {
+      if (query != null)
+        newCache.put(query.cacheId, query);
+    }));
   }
 
   /**
@@ -148,24 +269,22 @@ class QueryIndex {
    */
   synchronized void purgeCache(CachePopulator populator) throws IOException {
 
-        /*
-            Note on implementation
+    // Note on implementation
 
-            The purge works by scanning the query index and creating a new query cache populated
-            for each query in the index.  When the scan is complete, the old query cache is swapped
-            for the new, allowing it to be garbage-collected.
+    // The purge works by scanning the query index and creating a new query cache populated
+    // for each query in the index.  When the scan is complete, the old query cache is swapped
+    // for the new, allowing it to be garbage-collected.
 
-            In order to not drop cached queries that have been added while a purge is ongoing,
-            we use a ReadWriteLock to guard the creation and removal of an update log.  Commits take
-            the read lock.  If the update log has been created, then a purge is ongoing, and queries
-            are added to the update log within the read lock guard.
+    // In order to not drop cached queries that have been added while a purge is ongoing,
+    // we use a ReadWriteLock to guard the creation and removal of an update log.  Commits take
+    // the read lock.  If the update log has been created, then a purge is ongoing, and queries
+    // are added to the update log within the read lock guard.
 
-            The purge takes the write lock when creating the update log, and then when swapping out
-            the old query cache.  Within the second write lock guard, the contents of the update log
-            are added to the new query cache, and the update log itself is removed.
-         */
+    // The purge takes the write lock when creating the update log, and then when swapping out
+    // the old query cache.  Within the second write lock guard, the contents of the update log
+    // are added to the new query cache, and the update log itself is removed.
 
-    final ConcurrentMap<BytesRef, QueryCacheEntry> newCache = new ConcurrentHashMap<>();
+    final ConcurrentMap<String, QueryCacheEntry> newCache = new ConcurrentHashMap<>();
 
     purgeLock.writeLock().lock();
     try {
@@ -191,8 +310,9 @@ class QueryIndex {
   //  Proxy trivial operations...
   // ---------------------------------------------
 
-  void closeWhileHandlingException() {
-    IOUtils.closeWhileHandlingException(manager, writer, writer.getDirectory());
+  @Override
+  public void close() throws IOException {
+    IOUtils.close(manager, writer, writer.getDirectory());
   }
 
   int numDocs() {
@@ -203,12 +323,18 @@ class QueryIndex {
     return queries.size();
   }
 
-  void deleteDocuments(Term term) throws IOException {
-    writer.deleteDocuments(term);
+  void deleteQueries(Iterable<String> ids) throws IOException {
+    for (String id : ids) {
+      writer.deleteDocuments(new Term(FIELDS.query_id, id));
+    }
+    writer.commit();
+    manager.maybeRefresh();
   }
 
-  void deleteDocuments(Query query) throws IOException {
-    writer.deleteDocuments(query);
+  void clear() throws IOException {
+    writer.deleteAll();
+    writer.commit();
+    manager.maybeRefresh();
   }
 
   interface QueryCollector {
@@ -226,16 +352,16 @@ class QueryIndex {
   // ---------------------------------------------
 
   static final class DataValues {
-    public BinaryDocValues hash;
-    public SortedDocValues id;
+    SortedDocValues queryId;
+    SortedDocValues cacheId;
     BinaryDocValues mq;
     Scorable scorer;
     LeafReaderContext ctx;
 
     void advanceTo(int doc) throws IOException {
       assert scorer.docID() == doc;
-      hash.advanceExact(doc);
-      id.advanceExact(doc);
+      queryId.advanceExact(doc);
+      cacheId.advanceExact(doc);
       if (mq != null) {
         mq.advanceExact(doc);
       }
@@ -247,11 +373,11 @@ class QueryIndex {
    */
   static final class MonitorQueryCollector extends SimpleCollector {
 
-    private final Map<BytesRef, QueryCacheEntry> queries;
+    private final Map<String, QueryCacheEntry> queries;
     private final QueryCollector matcher;
     private final DataValues dataValues = new DataValues();
 
-    MonitorQueryCollector(Map<BytesRef, QueryCacheEntry> queries, QueryCollector matcher) {
+    MonitorQueryCollector(Map<String, QueryCacheEntry> queries, QueryCollector matcher) {
       this.queries = queries;
       this.matcher = matcher;
     }
@@ -264,17 +390,17 @@ class QueryIndex {
     @Override
     public void collect(int doc) throws IOException {
       dataValues.advanceTo(doc);
-      BytesRef hash = dataValues.hash.binaryValue();
-      BytesRef id = dataValues.id.binaryValue();
-      QueryCacheEntry query = queries.get(hash);
-      matcher.matchQuery(id.utf8ToString(), query, dataValues);
+      BytesRef cache_id = dataValues.cacheId.binaryValue();
+      BytesRef query_id = dataValues.queryId.binaryValue();
+      QueryCacheEntry query = queries.get(cache_id.utf8ToString());
+      matcher.matchQuery(query_id.utf8ToString(), query, dataValues);
     }
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.dataValues.hash = context.reader().getBinaryDocValues(Monitor.FIELDS.hash);
-      this.dataValues.id = context.reader().getSortedDocValues(Monitor.FIELDS.id);
-      this.dataValues.mq = context.reader().getBinaryDocValues(Monitor.FIELDS.mq);
+      this.dataValues.cacheId = context.reader().getSortedDocValues(FIELDS.cache_id);
+      this.dataValues.queryId = context.reader().getSortedDocValues(FIELDS.query_id);
+      this.dataValues.mq = context.reader().getBinaryDocValues(FIELDS.mq);
       this.dataValues.ctx = context;
     }
 

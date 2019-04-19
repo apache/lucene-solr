@@ -24,24 +24,20 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.InputDocument;
 import org.apache.lucene.luwak.Matches;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
-import org.apache.lucene.luwak.MonitorQueryParser;
-import org.apache.lucene.luwak.UpdateException;
+import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -49,50 +45,43 @@ import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.util.LuceneTestCase;
 
 
-public class TestHighlightingMatcher extends LuceneTestCase {
-
-  private static final String textfield = "textfield";
+public class TestHighlightingMatcher extends MonitorTestBase {
 
   private static final Analyzer WHITESPACE = new WhitespaceAnalyzer();
 
   public static InputDocument buildDoc(String id, String text) {
     return InputDocument.builder(id)
-        .addField(textfield, text, WHITESPACE)
+        .addField(FIELD, text, WHITESPACE)
         .build();
   }
 
-  private static Monitor newMonitor() throws IOException {
-    return new Monitor(new LuceneQueryParser(textfield), MatchAllPresearcher.INSTANCE);
-  }
-
-  public void testSingleTermQueryMatchesSingleDocument() throws IOException, UpdateException {
+  public void testSingleTermQueryMatchesSingleDocument() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      MonitorQuery mq = new MonitorQuery("query1", "test");
+      MonitorQuery mq = new MonitorQuery("query1", parse("test"));
       monitor.update(mq);
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("doc1", "this is a test document"),
           HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
       HighlightsMatch match = matches.matches("query1", "doc1");
-      assertTrue(match.getHits(textfield).contains(new HighlightsMatch.Hit(3, 10, 3, 14)));
+      assertTrue(match.getHits(FIELD).contains(new HighlightsMatch.Hit(3, 10, 3, 14)));
     }
   }
 
-  public void testSinglePhraseQueryMatchesSingleDocument() throws IOException, UpdateException {
+  public void testSinglePhraseQueryMatchesSingleDocument() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      MonitorQuery mq = new MonitorQuery("query1", "\"test document\"");
+      MonitorQuery mq = new MonitorQuery("query1", parse("\"test document\""));
       monitor.update(mq);
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("doc1", "this is a test document"),
           HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
       HighlightsMatch m = matches.matches("query1", "doc1");
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(3, 10, 4, 23)));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(3, 10, 4, 23)));
     }
 
   }
@@ -107,7 +96,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
     assertEquals("Match(doc=1,query=1){hits={afield=[0(0)->1(4)], field=[0(-1)->1(-1), 2(-1)->3(-1)]}}", match.toString());
   }
 
-  public void testMultiFieldQueryMatches() throws IOException, UpdateException {
+  public void testMultiFieldQueryMatches() throws IOException {
 
     InputDocument doc = InputDocument.builder("doc1")
         .addField("field1", "this is a test of field one", WHITESPACE)
@@ -115,7 +104,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .build();
 
     try (Monitor monitor = newMonitor()) {
-      monitor.update(new MonitorQuery("query1", "field1:test field2:test"));
+      monitor.update(new MonitorQuery("query1", parse("field1:test field2:test")));
 
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getMatchCount("doc1"));
@@ -129,44 +118,14 @@ public class TestHighlightingMatcher extends LuceneTestCase {
 
   }
 
-  public void testQueryErrors() throws IOException, UpdateException {
+  public void testQueryErrors() throws IOException {
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> {
-      if (queryString.equals("error!")) {
-        return new Query() {
-          @Override
-          public String toString(String field) {
-            return "";
-          }
+    try (Monitor monitor = new Monitor(MatchAllPresearcher.INSTANCE)) {
 
-          @Override
-          public Query rewrite(IndexReader reader) {
-            throw new RuntimeException("Oops!");
-          }
-
-          @Override
-          public void visit(QueryVisitor visitor) {
-
-          }
-
-          @Override
-          public boolean equals(Object o) {
-            return false;
-          }
-
-          @Override
-          public int hashCode() {
-            return 0;
-          }
-        };
-      }
-      return new LuceneQueryParser(textfield).parse(queryString, metadata);
-    }, MatchAllPresearcher.INSTANCE)) {
-
-      monitor.update(new MonitorQuery("1", "test"),
-          new MonitorQuery("2", "error!"),
-          new MonitorQuery("3", "document"),
-          new MonitorQuery("4", "foo"));
+      monitor.update(new MonitorQuery("1", parse("test")),
+          new MonitorQuery("2", new ThrowOnRewriteQuery()),
+          new MonitorQuery("3", parse("document")),
+          new MonitorQuery("4", parse("foo")));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("doc1", "this is a test document"), HighlightingMatcher.FACTORY);
       assertEquals(4, matches.getQueriesRun());
@@ -175,12 +134,11 @@ public class TestHighlightingMatcher extends LuceneTestCase {
     }
   }
 
-  public void testWildcards() throws IOException, UpdateException {
+  public void testWildcards() throws IOException {
 
-    try (Monitor monitor = new Monitor(
-        (queryString, metadata) -> new RegexpQuery(new Term(textfield, "he.*")), MatchAllPresearcher.INSTANCE)) {
+    try (Monitor monitor = newMonitor()) {
 
-      monitor.update(new MonitorQuery("1", ""));
+      monitor.update(new MonitorQuery("1", new RegexpQuery(new Term(FIELD, "he.*"))));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "hello world"), HighlightingMatcher.FACTORY);
       assertEquals(1, matches.getQueriesRun());
@@ -192,13 +150,13 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testWildcardCombinations() throws Exception {
 
     final BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "term1")), BooleanClause.Occur.MUST)
-        .add(new PrefixQuery(new Term(textfield, "term2")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(textfield, "term3")), BooleanClause.Occur.MUST_NOT)
+        .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.MUST)
+        .add(new PrefixQuery(new Term(FIELD, "term2")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "term3")), BooleanClause.Occur.MUST_NOT)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", bq));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term22 term4"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
@@ -208,13 +166,13 @@ public class TestHighlightingMatcher extends LuceneTestCase {
 
   }
 
-  public void testDisjunctionMaxQuery() throws IOException, UpdateException {
+  public void testDisjunctionMaxQuery() throws IOException {
     final DisjunctionMaxQuery query = new DisjunctionMaxQuery(Arrays.asList(
-        new TermQuery(new Term(textfield, "term1")), new PrefixQuery(new Term(textfield, "term2"))
+        new TermQuery(new Term(FIELD, "term1")), new PrefixQuery(new Term(FIELD, "term2"))
     ), 1.0f);
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> query, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", query));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term2 term3"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
@@ -226,12 +184,12 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testIdenticalMatches() throws Exception {
 
     final BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "term1")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(textfield, "term1")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.SHOULD)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(new MonitorQuery("1", bq));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 term2"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
@@ -242,7 +200,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
 
   public void testWildcardBooleanRewrites() throws Exception {
 
-    final Query wc = new PrefixQuery(new Term(textfield, "term1"));
+    final Query wc = new PrefixQuery(new Term(FIELD, "term1"));
 
     final Query wrapper = new BooleanQuery.Builder()
         .add(wc, BooleanClause.Occur.MUST)
@@ -253,13 +211,13 @@ public class TestHighlightingMatcher extends LuceneTestCase {
         .build();
 
     final BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new PrefixQuery(new Term(textfield, "term2")), BooleanClause.Occur.MUST)
+        .add(new PrefixQuery(new Term(FIELD, "term2")), BooleanClause.Occur.MUST)
         .add(wrapper2, BooleanClause.Occur.MUST_NOT)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
+    try (Monitor monitor = new Monitor()) {
 
-      monitor.update(new MonitorQuery("1", ""));
+      monitor.update(new MonitorQuery("1", bq));
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term2 term"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
@@ -273,14 +231,14 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   }
 
   public void testWildcardProximityRewrites() throws Exception {
-    final SpanNearQuery snq = SpanNearQuery.newOrderedNearQuery(textfield)
-        .addClause(new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term(textfield, "term*"))))
-        .addClause(new SpanTermQuery(new Term(textfield, "foo")))
+    final SpanNearQuery snq = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term(FIELD, "term*"))))
+        .addClause(new SpanTermQuery(new Term(FIELD, "foo")))
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> snq, MatchAllPresearcher.INSTANCE)) {
+    try (Monitor monitor = newMonitor()) {
 
-      monitor.update(new MonitorQuery("1", ""));
+      monitor.update(new MonitorQuery("1", snq));
 
       Matches<HighlightsMatch> matches = monitor.match(buildDoc("1", "term1 foo"), HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
@@ -292,20 +250,20 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testDisjunctionWithOrderedNearSpans() throws Exception {
 
     final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.SHOULD)
-        .add(SpanNearQuery.newOrderedNearQuery(textfield)
-            .addClause(new SpanTermQuery(new Term(textfield, "b")))
-            .addClause(new SpanTermQuery(new Term(textfield, "c")))
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
+        .add(SpanNearQuery.newOrderedNearQuery(FIELD)
+            .addClause(new SpanTermQuery(new Term(FIELD, "b")))
+            .addClause(new SpanTermQuery(new Term(FIELD, "c")))
             .setSlop(1)
             .build(), BooleanClause.Occur.SHOULD)
         .build();
     final Query parent = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
         .add(bq, BooleanClause.Occur.MUST)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(new MonitorQuery("1", parent));
 
       InputDocument doc = buildDoc("1", "a b x x x x c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -320,20 +278,20 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testDisjunctionWithUnorderedNearSpans() throws Exception {
 
     final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.SHOULD)
-        .add(SpanNearQuery.newUnorderedNearQuery(textfield)
-            .addClause(new SpanTermQuery(new Term(textfield, "b")))
-            .addClause(new SpanTermQuery(new Term(textfield, "c")))
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
+        .add(SpanNearQuery.newUnorderedNearQuery(FIELD)
+            .addClause(new SpanTermQuery(new Term(FIELD, "b")))
+            .addClause(new SpanTermQuery(new Term(FIELD, "c")))
             .setSlop(1)
             .build(), BooleanClause.Occur.SHOULD)
         .build();
     final Query parent = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
         .add(bq, BooleanClause.Occur.MUST)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(new MonitorQuery("1", parent));
 
       InputDocument doc = buildDoc("1", "a b x x x x c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -365,7 +323,7 @@ public class TestHighlightingMatcher extends LuceneTestCase {
     assertNotEquals(m1, m4);
   }
 
-  public void testMutliValuedFieldWithNonDefaultGaps() throws IOException, UpdateException {
+  public void testMutliValuedFieldWithNonDefaultGaps() throws IOException {
 
     Analyzer analyzer = new Analyzer() {
       @Override
@@ -384,40 +342,40 @@ public class TestHighlightingMatcher extends LuceneTestCase {
       }
     };
 
-    MonitorQuery mq = new MonitorQuery("query", textfield + ":\"hello world\"~5");
+    MonitorQuery mq = new MonitorQuery("query", parse(FIELD + ":\"hello world\"~5"));
     try (Monitor monitor = newMonitor()) {
       monitor.update(mq);
 
       InputDocument doc1 = InputDocument.builder("doc1")
-          .addField(textfield, "hello world", analyzer)
-          .addField(textfield, "goodbye", analyzer)
+          .addField(FIELD, "hello world", analyzer)
+          .addField(FIELD, "goodbye", analyzer)
           .build();
       Matches<HighlightsMatch> matcher1 = monitor.match(doc1, HighlightingMatcher.FACTORY);
       assertEquals(1, matcher1.getMatchCount("doc1"));
       HighlightsMatch m1 = matcher1.matches("query", "doc1");
       assertNotNull(m1);
-      assertTrue(m1.getFields().contains(textfield));
-      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
+      assertTrue(m1.getFields().contains(FIELD));
+      assertTrue(m1.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
 
       InputDocument doc2 = InputDocument.builder("doc2")
-          .addField(textfield, "hello", analyzer)
-          .addField(textfield, "world", analyzer)
+          .addField(FIELD, "hello", analyzer)
+          .addField(FIELD, "world", analyzer)
           .build();
       Matches<HighlightsMatch> matcher2 = monitor.match(doc2, HighlightingMatcher.FACTORY);
       assertNull(matcher2.matches("query", "doc2"));
       assertEquals(0, matcher2.getMatchCount("doc2"));
 
       InputDocument doc3 = InputDocument.builder("doc3")
-          .addField(textfield, "hello world", analyzer)
-          .addField(textfield, "hello goodbye world", analyzer)
+          .addField(FIELD, "hello world", analyzer)
+          .addField(FIELD, "hello goodbye world", analyzer)
           .build();
       Matches<HighlightsMatch> matcher3 = monitor.match(doc3, HighlightingMatcher.FACTORY);
       assertEquals(1, matcher3.getMatchCount("doc3"));
       HighlightsMatch m3 = matcher3.matches("query", "doc3");
       assertNotNull(m3);
-      assertTrue(m3.getFields().contains(textfield));
-      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
-      assertTrue(m3.getHits(textfield).contains(new HighlightsMatch.Hit(1002, 2011, 1004, 2030)));
+      assertTrue(m3.getFields().contains(FIELD));
+      assertTrue(m3.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
+      assertTrue(m3.getHits(FIELD).contains(new HighlightsMatch.Hit(1002, 2011, 1004, 2030)));
     }
 
   }
@@ -425,20 +383,20 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testDisjunctionWithOrderedNearMatch() throws Exception {
 
     final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.SHOULD)
-        .add(SpanNearQuery.newOrderedNearQuery(textfield)
-            .addClause(new SpanTermQuery(new Term(textfield, "b")))
-            .addClause(new SpanTermQuery(new Term(textfield, "c")))
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
+        .add(SpanNearQuery.newOrderedNearQuery(FIELD)
+            .addClause(new SpanTermQuery(new Term(FIELD, "b")))
+            .addClause(new SpanTermQuery(new Term(FIELD, "c")))
             .setSlop(1)
             .build(), BooleanClause.Occur.SHOULD)
         .build();
     final Query parent = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
         .add(bq, BooleanClause.Occur.MUST)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> parent, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", parent));
 
       InputDocument doc = buildDoc("1", "a b c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
@@ -446,60 +404,60 @@ public class TestHighlightingMatcher extends LuceneTestCase {
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
       assertEquals(3, m.getHitCount());
-      assertTrue(m.getFields().contains(textfield));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 1)));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(1, 2, 1, 3)));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(2, 4, 2, 5)));
+      assertTrue(m.getFields().contains(FIELD));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 1)));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(1, 2, 1, 3)));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(2, 4, 2, 5)));
     }
 
   }
 
   public void testUnorderedNearWithinOrderedNear() throws Exception {
 
-    final SpanQuery spanPhrase = SpanNearQuery.newOrderedNearQuery(textfield)
-        .addClause(new SpanTermQuery(new Term(textfield, "time")))
-        .addClause(new SpanTermQuery(new Term(textfield, "men")))
+    final SpanQuery spanPhrase = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanTermQuery(new Term(FIELD, "time")))
+        .addClause(new SpanTermQuery(new Term(FIELD, "men")))
         .setSlop(1)
         .build();
 
-    final SpanQuery unorderedNear = SpanNearQuery.newUnorderedNearQuery(textfield)
+    final SpanQuery unorderedNear = SpanNearQuery.newUnorderedNearQuery(FIELD)
         .addClause(spanPhrase)
-        .addClause(new SpanTermQuery(new Term(textfield, "all")))
+        .addClause(new SpanTermQuery(new Term(FIELD, "all")))
         .setSlop(5)
         .build();
 
-    final SpanQuery orderedNear = SpanNearQuery.newOrderedNearQuery(textfield)
-        .addClause(new SpanTermQuery(new Term(textfield, "the")))
+    final SpanQuery orderedNear = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanTermQuery(new Term(FIELD, "the")))
         .addClause(unorderedNear)
         .setSlop(10)
         .build();
 
     final Query innerConjunct = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "is")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "is")), BooleanClause.Occur.MUST)
         .add(orderedNear, BooleanClause.Occur.MUST)
         .build();
 
     final Query disjunct = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "now")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term(FIELD, "now")), BooleanClause.Occur.SHOULD)
         .add(innerConjunct, BooleanClause.Occur.SHOULD)
         .build();
 
     final Query outerConjunct = new BooleanQuery.Builder()
         .add(disjunct, BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(textfield, "good")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "good")), BooleanClause.Occur.MUST)
         .build();
 
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> outerConjunct, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = new Monitor()) {
+      monitor.update(new MonitorQuery("1", outerConjunct));
 
       InputDocument doc = buildDoc("1", "now is the time for all good men");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertEquals(2, m.getHitCount());
-      assertTrue(m.getFields().contains(textfield));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 3)));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(6, 24, 6, 28)));
+      assertTrue(m.getFields().contains(FIELD));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 3)));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(6, 24, 6, 28)));
     }
 
   }
@@ -507,46 +465,46 @@ public class TestHighlightingMatcher extends LuceneTestCase {
   public void testMinShouldMatchQuery() throws Exception {
 
     final Query minq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "x")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term(textfield, "y")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term(textfield, "z")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term(FIELD, "x")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term(FIELD, "y")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term(FIELD, "z")), BooleanClause.Occur.SHOULD)
         .setMinimumNumberShouldMatch(2)
         .build();
 
     final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(textfield, "a")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(textfield, "b")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
+        .add(new TermQuery(new Term(FIELD, "b")), BooleanClause.Occur.MUST)
         .add(minq, BooleanClause.Occur.SHOULD)
         .build();
 
-    try (Monitor monitor = new Monitor((queryString, metadata) -> bq, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", ""));
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", bq));
 
       InputDocument doc = buildDoc("1", "a b x");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
       assertEquals(2, m.getHitCount());
-      assertTrue(m.getFields().contains(textfield));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 1)));
-      assertTrue(m.getHits(textfield).contains(new HighlightsMatch.Hit(1, 2, 1, 3)));
+      assertTrue(m.getFields().contains(FIELD));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 1)));
+      assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(1, 2, 1, 3)));
     }
 
   }
 
-  public void testComplexPhraseQueryParser() throws IOException, UpdateException {
+  public void testComplexPhraseQueryParser() throws Exception {
 
-    ComplexPhraseQueryParser cpqp = new ComplexPhraseQueryParser(textfield, new StandardAnalyzer());
-    MonitorQueryParser cqp = (queryString, metadata) -> cpqp.parse(queryString);
-    try (Monitor monitor = new Monitor(cqp, MatchAllPresearcher.INSTANCE)) {
-      monitor.update(new MonitorQuery("1", "\"x b\""));
+    ComplexPhraseQueryParser cpqp = new ComplexPhraseQueryParser(FIELD, new StandardAnalyzer());
+    Query query = cpqp.parse("\"x b\"");
+    try (Monitor monitor = newMonitor()) {
+      monitor.update(new MonitorQuery("1", query));
 
       InputDocument doc = buildDoc("1", "x b c");
       Matches<HighlightsMatch> matches = monitor.match(doc, HighlightingMatcher.FACTORY);
       HighlightsMatch m = matches.matches("1", "1");
       assertNotNull(m);
       assertEquals(2, m.getHitCount());
-      assertTrue(m.getFields().contains(textfield));
+      assertTrue(m.getFields().contains(FIELD));
     }
 
   }
@@ -557,14 +515,14 @@ public class TestHighlightingMatcher extends LuceneTestCase {
 
     try (Monitor monitor = newMonitor()) {
 
-      monitor.update(new MonitorQuery("query0", "non matching query"));
-      monitor.update(new MonitorQuery("query1", query));
-      monitor.update(new MonitorQuery("query2", "biology"));
+      monitor.update(new MonitorQuery("query0", parse("non matching query")));
+      monitor.update(new MonitorQuery("query1", parse(query)));
+      monitor.update(new MonitorQuery("query2", parse("biology")));
 
       DocumentBatch batch = DocumentBatch.of(
-          InputDocument.builder("doc1").addField(textfield, matching_document, WHITESPACE).build(),
-          InputDocument.builder("doc2").addField(textfield, "nope", WHITESPACE).build(),
-          InputDocument.builder("doc3").addField(textfield, "biology text", WHITESPACE).build()
+          InputDocument.builder("doc1").addField(FIELD, matching_document, WHITESPACE).build(),
+          InputDocument.builder("doc2").addField(FIELD, "nope", WHITESPACE).build(),
+          InputDocument.builder("doc3").addField(FIELD, "biology text", WHITESPACE).build()
       );
 
       Matches<HighlightsMatch> matches = monitor.match(batch, HighlightingMatcher.FACTORY);
@@ -572,9 +530,9 @@ public class TestHighlightingMatcher extends LuceneTestCase {
       assertEquals(0, matches.getMatchCount("doc2"));
       assertEquals(1, matches.getMatchCount("doc3"));
       HighlightsMatch m1 = matches.matches("query1", "doc1");
-      assertTrue(m1.getHits(textfield).contains(new HighlightsMatch.Hit(1, 4, 2, 16)));
+      assertTrue(m1.getHits(FIELD).contains(new HighlightsMatch.Hit(1, 4, 2, 16)));
       HighlightsMatch m2 = matches.matches("query2", "doc3");
-      assertTrue(m2.getHits(textfield).contains(new HighlightsMatch.Hit(0, 0, 0, 7)));
+      assertTrue(m2.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 7)));
     }
   }
 

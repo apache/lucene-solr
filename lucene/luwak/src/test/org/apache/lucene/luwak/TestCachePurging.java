@@ -27,15 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 
 import static org.hamcrest.core.Is.is;
 
-public class TestCachePurging extends LuceneTestCase {
+public class TestCachePurging extends MonitorTestBase {
 
-  public void testQueryCacheCanBePurged() throws IOException, UpdateException {
+  public void testQueryCacheCanBePurged() throws IOException {
 
     final AtomicInteger purgeCount = new AtomicInteger();
     QueryIndexUpdateListener listener = new QueryIndexUpdateListener() {
@@ -45,11 +43,11 @@ public class TestCachePurging extends LuceneTestCase {
       }
     };
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
+    try (Monitor monitor = new Monitor()) {
       MonitorQuery[] queries = new MonitorQuery[]{
-          new MonitorQuery("1", "test1 test4"),
-          new MonitorQuery("2", "test2"),
-          new MonitorQuery("3", "test3")
+          new MonitorQuery("1", parse("test1 test4")),
+          new MonitorQuery("2", parse("test2")),
+          new MonitorQuery("3", parse("test3"))
       };
       monitor.addQueryIndexUpdateListener(listener);
       monitor.update(queries);
@@ -87,7 +85,7 @@ public class TestCachePurging extends LuceneTestCase {
     final CountDownLatch startUpdating = new CountDownLatch(1);
     final CountDownLatch finishUpdating = new CountDownLatch(1);
 
-    try (final Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE)) {
+    try (final Monitor monitor = new Monitor()) {
       Runnable updaterThread = () -> {
         try {
           startUpdating.await();
@@ -129,13 +127,13 @@ public class TestCachePurging extends LuceneTestCase {
   }
 
   private static MonitorQuery newMonitorQuery(int id) {
-    return new MonitorQuery(Integer.toString(id), "+test " + Integer.toString(id));
+    return new MonitorQuery(Integer.toString(id), parse("+test " + Integer.toString(id)));
   }
 
-  public void testBackgroundPurges() throws IOException, InterruptedException, UpdateException {
+  public void testBackgroundPurges() throws IOException, InterruptedException {
 
     QueryIndexConfiguration config = new QueryIndexConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("field"), MatchAllPresearcher.INSTANCE, config)) {
+    try (Monitor monitor = new Monitor(MatchAllPresearcher.INSTANCE, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
 

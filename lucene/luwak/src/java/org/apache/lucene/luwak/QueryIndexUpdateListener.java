@@ -24,10 +24,10 @@ import java.util.List;
  */
 public abstract class QueryIndexUpdateListener {
 
-  public void beforeUpdate(List<Indexable> updates) {
+  public void beforeUpdate(List<MonitorQuery> updates) {
   }
 
-  public void afterUpdate(List<Indexable> updates) {
+  public void afterUpdate(List<MonitorQuery> updates) {
   }
 
   public void beforeDelete() {

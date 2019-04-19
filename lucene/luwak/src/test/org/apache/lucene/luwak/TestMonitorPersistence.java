@@ -19,66 +19,46 @@ package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
-import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
-import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestMonitorPersistence extends LuceneTestCase {
+public class TestMonitorPersistence extends MonitorTestBase {
 
   private Path indexDirectory = createTempDir();
 
-  public void testCacheIsRepopulated() throws IOException, UpdateException {
+  public void testCacheIsRepopulated() throws IOException {
 
-    InputDocument doc = InputDocument.builder("doc1").addField("f", "test", new StandardAnalyzer()).build();
+    InputDocument doc = InputDocument.builder("doc1").addField(FIELD, "test", new StandardAnalyzer()).build();
+    QueryIndexConfiguration config = new QueryIndexConfiguration()
+        .setIndexPath(indexDirectory, MonitorQuerySerializer.fromParser(MonitorTestBase::parse, MonitorTestBase.QUERY_META_FIELD));
 
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), new TermFilteredPresearcher(),
-        new MMapDirectory(indexDirectory))) {
-      monitor.update(new MonitorQuery("1", "test"),
-          new MonitorQuery("2", "test"),
-          new MonitorQuery("3", "test", Collections.singletonMap("language", "en")),
-          new MonitorQuery("4", "test", Collections.singletonMap("wibble", "quack")));
+    try (Monitor monitor = new Monitor(config)) {
+      monitor.update(
+          mq("1", "test"),
+          mq("2", "test"),
+          mq("3", "test", "language", "en"),
+          mq("4", "test", "wibble", "quack"));
 
       assertEquals(4, monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount("doc1"));
     }
 
-    try (Monitor monitor2 = new Monitor(new LuceneQueryParser("f"), new TermFilteredPresearcher(),
-        new MMapDirectory(indexDirectory))) {
-
+    try (Monitor monitor2 = new Monitor(config)) {
       assertEquals(4, monitor2.getQueryCount());
       assertEquals(4, monitor2.match(doc, SimpleMatcher.FACTORY).getMatchCount("doc1"));
+
+      MonitorQuery mq = monitor2.getQuery("4");
+      assertEquals("quack", mq.getMetadata().get("wibble"));
     }
 
   }
 
-  public void testMonitorCanAvoidStoringQueries() throws IOException, UpdateException {
+  public void testEphemeralMonitorDoesNotStoreQueries() throws IOException {
 
-    QueryIndexConfiguration config = new QueryIndexConfiguration().storeQueries(false);
-    InputDocument doc = InputDocument.builder("doc1").addField("f", "test", new StandardAnalyzer()).build();
-
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), new TermFilteredPresearcher(),
-        new MMapDirectory(indexDirectory), config)) {
-
-      monitor.update(new MonitorQuery("1", "test"),
-          new MonitorQuery("2", "test"),
-          new MonitorQuery("3", "test", Collections.singletonMap("language", "en")),
-          new MonitorQuery("4", "test", Collections.singletonMap("wibble", "quack")));
-
-      assertEquals(4, monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount("doc1"));
-    }
-
-    try (Monitor monitor2 = new Monitor(new LuceneQueryParser("f"), new TermFilteredPresearcher(),
-        new MMapDirectory(indexDirectory), config)) {
-
-      assertEquals(0, monitor2.getQueryCount());
-      assertEquals(0, monitor2.getDisjunctCount());
+    try (Monitor monitor2 = new Monitor()) {
       IllegalStateException e = expectThrows(IllegalStateException.class, () -> monitor2.getQuery("query"));
-      assertEquals("Cannot call getQuery() as queries are not stored", e.getMessage());
-
+      assertEquals("Cannot get queries from an index with no MonitorQuerySerializer", e.getMessage());
     }
 
   }

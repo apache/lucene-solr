@@ -17,49 +17,17 @@
 
 package org.apache.lucene.luwak;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.queryparsers.LuceneQueryParser;
-import org.apache.lucene.util.LuceneTestCase;
-
-public class TestConcurrentQueryLoader extends LuceneTestCase {
+public class TestConcurrentQueryLoader extends MonitorTestBase {
 
   public void testLoading() throws Exception {
-
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), MatchAllPresearcher.INSTANCE)) {
-      List<QueryError> errors = new ArrayList<>();
-      try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor, errors)) {
+    try (Monitor monitor = new Monitor()) {
+      try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor)) {
         for (int i = 0; i < 2000; i++) {
-          loader.add(new MonitorQuery(Integer.toString(i), "\"test " + i + "\""));
+          loader.add(new MonitorQuery(Integer.toString(i), parse("\"test " + i + "\"")));
         }
-        assertTrue(errors.isEmpty());
       }
-
       assertEquals(2000, monitor.getQueryCount());
-
     }
-
   }
 
-  public void testErrorHandling() throws Exception {
-
-    try (Monitor monitor = new Monitor(new LuceneQueryParser("f"), MatchAllPresearcher.INSTANCE)) {
-      List<QueryError> errors = new ArrayList<>();
-      try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor, errors)) {
-        for (int i = 0; i < 2000; i++) {
-          String query = "test" + i;
-          if (i % 200 == 0)
-            query += " [";
-          loader.add(new MonitorQuery(Integer.toString(i), query));
-        }
-      }
-
-      assertEquals(10, errors.size());
-      assertEquals(1990, monitor.getQueryCount());
-
-    }
-
-  }
 }
