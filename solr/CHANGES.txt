@@ -101,6 +101,9 @@ Upgrade Notes
 * SolrGangliaReporter has been removed from Solr because support for Ganglia has been removed from Dropwizard Metrics 4
   due to a transitive dependency on LGPL.
 
+* Custom TransientSolrCoreCache implementations no longer use the Observer/Observable pattern. To notify Solr that
+  a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore). See SOLR-13400 for details.
+
 
 New Features
 ----------------------
@@ -293,6 +296,8 @@ Other Changes
 * SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
 
 * SOLR-12461: Upgrade Dropwizard Metrics to 4.0.5 release. (ab)
+
+* SOLR-13400: Replace Observable pattern in TransientSolrCoreCache (Erick Erickson)
 
 ==================  8.0.0 ==================
 

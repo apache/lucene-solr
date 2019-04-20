@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 
-import java.beans.PropertyChangeSupport;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -115,36 +114,14 @@ public abstract class TransientSolrCoreCache {
   /**
    * Must be called in order to free resources!
    */
-  public abstract void close();
+  public  void close(){
+    // Nothing to do currently
+  };
 
 
   // These two methods allow custom implementations to communicate arbitrary information as necessary.
   public abstract int getStatus(String coreName);
   public abstract void setStatus(String coreName, int status);
-  
-  
-  /**
-   * Registers a listener to be notified when a core should close
-   */
-  protected final void registerCoreCloseListener(SolrCoreCloseListener listener) {
-    pcs.addPropertyChangeListener(listener);
-  }
-  
-  /**
-   * Removes a listener registered by {@link #registerCoreCloseListener(SolrCoreCloseListener)}
-   */
-  protected final void removeCoreCloseListener(SolrCoreCloseListener listener) {
-    pcs.removePropertyChangeListener(listener);
-  }
-  
-  /**
-   * Notifies all listeners to close a core that were previously registered using {@link #registerCoreCloseListener(SolrCoreCloseListener)}
-   */
-  protected final void notifyCoreCloseListeners(SolrCore core) {
-    pcs.firePropertyChange("core", core, null);
-  }
-  
-  private final PropertyChangeSupport pcs = new  PropertyChangeSupport(this);
 }
 
 

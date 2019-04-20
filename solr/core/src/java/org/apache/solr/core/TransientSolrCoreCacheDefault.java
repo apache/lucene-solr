@@ -35,7 +35,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   private int cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
 
-  protected SolrCoreCloseListener coreCloseListener;
   protected CoreContainer coreContainer;
 
   protected final Map<String, CoreDescriptor> transientDescriptors = new LinkedHashMap<>();
@@ -48,8 +47,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   public TransientSolrCoreCacheDefault(final CoreContainer container) {
     this.coreContainer = container;
-    this.coreCloseListener = coreContainer.solrCores;
-    
+
     NodeConfig cfg = container.getNodeConfig();
     if (cfg.getTransientCachePluginInfo() == null) {
       // Still handle just having transientCacheSize defined in the body of solr.xml  not in a transient handler clause.
@@ -79,7 +77,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
 
     log.info("Allocating transient cache for {} transient cores", cacheSize);
-    this.registerCoreCloseListener(this.coreCloseListener);
     // it's possible for cache
     if (cacheSize < 0) { // Trap old flag
       cacheSize = Integer.MAX_VALUE;
@@ -92,7 +89,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
         if (size() > cacheSize) {
           SolrCore coreToClose = eldest.getValue();
           log.info("Closing transient core [{}]", coreToClose.getName());
-          notifyCoreCloseListeners(coreToClose);
+          coreContainer.queueCoreToClose(coreToClose);
           return true;
         }
         return false;
@@ -176,15 +173,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
     return ret;
   }
-
-  /**
-   * Must be called in order to free resources!
-   */
-  @Override
-  public void close() {
-    this.removeCoreCloseListener(this.coreCloseListener);
-  }
-
 
   // For custom implementations to communicate arbitrary information as necessary.
   @Override
