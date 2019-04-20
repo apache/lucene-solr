@@ -1838,6 +1838,11 @@ public class CoreContainer {
     return solrCores.isLoadedNotPendingClose(name);
   }
 
+
+  // Primarily for transient core when a core is aged out
+  public void queueCoreToClose(SolrCore coreToClose) {
+    solrCores.queueCoreToClose(coreToClose);
+  }
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a
    * loaded core, the unloaded descriptor will be returned.
