@@ -2397,7 +2397,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <property name="groovy.version" value="2.5.6"/>
+    <property name="groovy.version" value="2.4.16"/>
     <ivy:cachepath transitive="true" resolveId="groovy" pathid="groovy.classpath">
       <ivy:dependency org="org.codehaus.groovy" name="groovy" rev="${groovy.version}" conf="default" />
       <ivy:dependency org="org.codehaus.groovy" name="groovy-ant" rev="${groovy.version}" conf="default" />
