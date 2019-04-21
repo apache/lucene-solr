@@ -212,6 +212,9 @@ Improvements
 * SOLR-11035: (at least) 2 distinct failures possible when clients attempt searches during SolrCore reload,
   added test band-aid for DocValuesNotIndexedTest.
 
+* SOLR-13337: Only request the minimum required number of terms from each shard when using terms.sort=index and none
+  are discarded due to terms.min/maxcount (Morten Bøgeskov,Munendra S N via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 

@@ -16,7 +16,14 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Stream;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.Test;
 
 /**
@@ -30,15 +37,16 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
   @Test
   public void test() throws Exception {
     
+    Random random = random();
     del("*:*");
-    index(id, 18, "b_t", "snake a,b spider shark snail slug seal", "foo_i", "1");
-    index(id, 19, "b_t", "snake spider shark snail slug", "foo_i", "2");
-    index(id, 20, "b_t", "snake spider shark snail", "foo_i", "3");
-    index(id, 21, "b_t", "snake spider shark", "foo_i", "2");
-    index(id, 22, "b_t", "snake spider", "c_t", "snake spider");
-    index(id, 23, "b_t", "snake", "c_t", "snake");
-    index(id, 24, "b_t", "ant zebra", "c_t", "ant zebra");
-    index(id, 25, "b_t", "zebra", "c_t", "zebra");
+    index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i", "1");
+    index(id, random.nextInt(), "b_t", "snake spider shark snail slug", "foo_i", "2");
+    index(id, random.nextInt(), "b_t", "snake spider shark snail", "foo_i", "3");
+    index(id, random.nextInt(), "b_t", "snake spider shark", "foo_i", "2");
+    index(id, random.nextInt(), "b_t", "snake spider", "c_t", "snake spider");
+    index(id, random.nextInt(), "b_t", "snake", "c_t", "snake");
+    index(id, random.nextInt(), "b_t", "ant zebra", "c_t", "ant zebra");
+    index(id, random.nextInt(), "b_t", "zebra", "c_t", "zebra");
     commit();
 
     handle.clear();
@@ -48,13 +56,37 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.lower", "s");
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "sn", "terms.lower", "sn");
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn");
+    // terms.sort
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.sort", "index");
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn", "terms.sort", "index");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.sort", "index");
+    // terms.list
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra,ant,bad");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.list", "2,3,1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2,3,1");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra", "terms.ttf", "true");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake,ant,zebra", "terms.ttf", "true");
+  }
+  
+  protected QueryResponse query(Object... q) throws Exception {
+    if (Stream.of(q).noneMatch(s->s.equals("terms.list"))) { 
+      // SOLR-9243 doesn't support max/min count
+      for (int i = 0; i < q.length; i+=2) {
+        if (q[i].equals("terms.sort") && q[i+1].equals("index") || rarely()) {
+          List<Object> params = new ArrayList<Object>(Arrays.asList(q));
+          if (usually()) {
+            params.add("terms.mincount");
+            params.add(random().nextInt(4)-1);
+          }
+          if (usually()) {
+            params.add("terms.maxcount");
+            params.add(random().nextInt(4)-1);
+          }
+          q = params.toArray(new Object[params.size()]);
+          break;
+        }
+      }
+    }
+    return super.query(q);
   }
 }
