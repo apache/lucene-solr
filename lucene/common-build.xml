@@ -2131,6 +2131,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <classpath refid="javadoc.classpath"/>
         <arg line="--no-module-directories --release ${javac.release}"/>
         <arg line="${javadoc.doclint.args}"/>
+        <!-- force locale to be "en_US", as Javadoc tool ignores locale parameter (in some cases) -->
+        <arg line="-J-Duser.language=en -J-Duser.country=US"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       
