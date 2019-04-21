@@ -20,7 +20,6 @@ package org.apache.lucene.luke.util.reflection;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -55,7 +54,7 @@ final class SubtypeCollector<T> implements Runnable {
   }
 
   Set<Class<? extends T>> getTypes() {
-    return Collections.unmodifiableSet(types);
+    return Set.copyOf(types);
   }
 
   @Override
