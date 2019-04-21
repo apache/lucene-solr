@@ -22,15 +22,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.lucene.luwak.CandidateMatcher;
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.DocumentMatches;
 import org.apache.lucene.luwak.MatchError;
 import org.apache.lucene.luwak.MatcherFactory;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.luwak.MultiMatchingQueries;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 /**
@@ -60,20 +64,20 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
   /**
    * Create a new ParallelMatcher
    *
-   * @param docs           the DocumentBatch to match against
+   * @param searcher       the IndexSearcher to match against
    * @param executor       an ExecutorService to use for parallel execution
    * @param matcherFactory MatcherFactory to use to create CandidateMatchers
    * @param threads        the number of threads to execute on
    */
-  private ParallelMatcher(DocumentBatch docs, ExecutorService executor,
-                         MatcherFactory<T> matcherFactory, int threads) {
-    super(docs);
+  private ParallelMatcher(IndexSearcher searcher, ExecutorService executor,
+                          MatcherFactory<T> matcherFactory, int threads) {
+    super(searcher);
     for (int i = 0; i < threads; i++) {
       MatcherWorker mw = new MatcherWorker(matcherFactory);
       workers.add(mw);
       futures.add(executor.submit(mw));
     }
-    collectorMatcher = matcherFactory.createMatcher(docs);
+    collectorMatcher = matcherFactory.createMatcher(searcher);
   }
 
   @Override
@@ -105,10 +109,10 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
       }
 
       for (Future<CandidateMatcher<T>> future : futures) {
-        Matches<T> matches = future.get().getMatches();
-        for (DocumentMatches<T> docMatches : matches) {
-          for (T match : docMatches) {
-            this.addMatch(match);
+        MultiMatchingQueries<T> matches = future.get().getMatches();
+        for (int doc = 0; doc < matches.getBatchSize(); doc++) {
+          for (T match : matches.getMatches(doc)) {
+            this.addMatch(match, doc);
           }
         }
         for (MatchError error : matches.getErrors()) {
@@ -128,7 +132,7 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
     final CandidateMatcher<T> matcher;
 
     private MatcherWorker(MatcherFactory<T> matcherFactory) {
-      this.matcher = matcherFactory.createMatcher(docs);
+      this.matcher = matcherFactory.createMatcher(searcher);
       this.matcher.setSlowLogLimit(slowlog.getLimit());
     }
 
@@ -149,7 +153,7 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
       return matcher;
     }
 
-    public void setSlowLogLimit(long t) {
+    void setSlowLogLimit(long t) {
       matcher.setSlowLogLimit(t);
     }
 
@@ -186,8 +190,8 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
     }
 
     @Override
-    public ParallelMatcher<T> createMatcher(DocumentBatch docs) {
-      return new ParallelMatcher<>(docs, executor, matcherFactory, threads);
+    public ParallelMatcher<T> createMatcher(IndexSearcher searcher) {
+      return new ParallelMatcher<>(searcher, executor, matcherFactory, threads);
     }
   }
 

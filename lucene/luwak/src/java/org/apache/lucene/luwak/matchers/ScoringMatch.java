@@ -17,21 +17,17 @@
 
 package org.apache.lucene.luwak.matchers;
 
-import org.apache.lucene.luwak.DocumentBatch.Builder;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A QueryMatch that reports scores for each match
- *
- * @see Builder#setSimilarity(Similarity)
  */
 public class ScoringMatch extends QueryMatch {
 
   private final float score;
 
-  ScoringMatch(String queryId, String docId, float score) {
-    super(queryId, docId);
+  ScoringMatch(String queryId, float score) {
+    super(queryId);
     this.score = score;
   }
 
@@ -44,12 +40,9 @@ public class ScoringMatch extends QueryMatch {
     if (this == o) return true;
     if (!(o instanceof ScoringMatch)) return false;
     if (!super.equals(o)) return false;
-
     ScoringMatch that = (ScoringMatch) o;
+    return Float.compare(that.score, score) == 0;
 
-    if (Float.compare(that.score, score) != 0) return false;
-
-    return true;
   }
 
   @Override

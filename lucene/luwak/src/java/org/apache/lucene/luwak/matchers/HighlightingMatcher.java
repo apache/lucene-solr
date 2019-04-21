@@ -22,9 +22,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.luwak.CandidateMatcher;
-import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -40,19 +40,18 @@ public class HighlightingMatcher extends CandidateMatcher<HighlightsMatch> {
    */
   public static final MatcherFactory<HighlightsMatch> FACTORY = HighlightingMatcher::new;
 
-  private HighlightingMatcher(DocumentBatch docs) {
-    super(docs);
+  private HighlightingMatcher(IndexSearcher searcher) {
+    super(searcher);
   }
 
   @Override
   protected void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-    IndexSearcher searcher = docs.getSearcher();
     Weight w = searcher.createWeight(searcher.rewrite(matchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
-    for (LeafReaderContext ctx : docs.getIndexReader().leaves()) {
+    for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
       for (int i = 0; i < ctx.reader().maxDoc(); i++) {
-        org.apache.lucene.search.Matches matches = w.matches(ctx, i);
+        Matches matches = w.matches(ctx, i);
         if (matches != null) {
-          addMatch(buildMatch(matches, queryId, docs.resolveDocId(i + ctx.docBase)));
+          addMatch(buildMatch(matches, queryId), i);
         }
       }
     }
@@ -60,11 +59,11 @@ public class HighlightingMatcher extends CandidateMatcher<HighlightsMatch> {
 
   @Override
   public HighlightsMatch resolve(HighlightsMatch match1, HighlightsMatch match2) {
-    return HighlightsMatch.merge(match1.getQueryId(), match1.getDocId(), match1, match2);
+    return HighlightsMatch.merge(match1.getQueryId(), match1, match2);
   }
 
-  private HighlightsMatch buildMatch(org.apache.lucene.search.Matches matches, String queryId, String docId) throws IOException {
-    HighlightsMatch m = new HighlightsMatch(queryId, docId);
+  private HighlightsMatch buildMatch(Matches matches, String queryId) throws IOException {
+    HighlightsMatch m = new HighlightsMatch(queryId);
     for (String field : matches) {
       MatchesIterator mi = matches.getMatches(field);
       while (mi.next()) {

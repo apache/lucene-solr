@@ -19,6 +19,7 @@ package org.apache.lucene.luwak;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -70,15 +71,15 @@ public class TestSlowLog extends MonitorTestBase {
   @Test
   public void testSlowLog() throws IOException {
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = newMonitor()) {
       monitor.register(
           new MonitorQuery("1", slowQuery(250)),
           new MonitorQuery("2", new MatchAllDocsQuery()),
           new MonitorQuery("3", slowQuery(250)));
 
-      InputDocument doc1 = InputDocument.builder("doc1").build();
+      Document doc1 = new Document();
 
-      Matches<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
       String slowlog = matches.getSlowLog().toString();
       assertThat(slowlog, containsString("1 ["));
       assertThat(slowlog, containsString("3 ["));

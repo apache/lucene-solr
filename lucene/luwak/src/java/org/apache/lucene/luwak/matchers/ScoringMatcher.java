@@ -19,8 +19,6 @@ package org.apache.lucene.luwak.matchers;
 
 import java.io.IOException;
 
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.DocumentBatch.Builder;
 import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorable;
@@ -30,40 +28,27 @@ import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A Matcher that reports the scores of queries run against its DocumentBatch
- * <p>
- * To change the {@link Similarity} implementation used for scoring here, use
- * {@link Builder#setSimilarity(Similarity)} when building the
- * batch.
  */
 public class ScoringMatcher extends CollectingMatcher<ScoringMatch> {
 
   private static final Similarity DEFAULT_SIMILARITY = new BM25Similarity();
 
-  private final Similarity similarity;
-
-  private ScoringMatcher(DocumentBatch docs, Similarity similarity) {
-    super(docs, ScoreMode.COMPLETE);
-    this.similarity = similarity;
+  private ScoringMatcher(IndexSearcher searcher, Similarity similarity) {
+    super(searcher, ScoreMode.COMPLETE);
+    this.searcher.setSimilarity(similarity);
   }
 
   @Override
-  protected IndexSearcher getSearcher() throws IOException {
-    IndexSearcher searcher = super.getSearcher();
-    searcher.setSimilarity(similarity);
-    return searcher;
-  }
-
-  @Override
-  protected ScoringMatch doMatch(String queryId, String docId, Scorable scorer) throws IOException {
+  protected ScoringMatch doMatch(String queryId, int docId, Scorable scorer) throws IOException {
     float score = scorer.score();
     if (score > 0)
-      return new ScoringMatch(queryId, docId, score);
+      return new ScoringMatch(queryId, score);
     return null;
   }
 
   @Override
   public ScoringMatch resolve(ScoringMatch match1, ScoringMatch match2) {
-    return new ScoringMatch(match1.getQueryId(), match1.getDocId(), match1.getScore() + match2.getScore());
+    return new ScoringMatch(match1.getQueryId(), match1.getScore() + match2.getScore());
   }
 
   /**

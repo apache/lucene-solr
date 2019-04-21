@@ -20,10 +20,13 @@ package org.apache.lucene.luwak.matchers;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.search.*;
 import org.apache.lucene.luwak.CandidateMatcher;
-import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 
 /**
  * Extend this class to create matches that require a Scorer
@@ -36,41 +39,32 @@ public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateM
 
   /**
    * Creates a new CollectingMatcher for the supplied DocumentBatch
-   *
-   * @param docs the documents to run queries against
    */
-  public CollectingMatcher(DocumentBatch docs, ScoreMode scoreMode) {
-    super(docs);
+  public CollectingMatcher(IndexSearcher searcher, ScoreMode scoreMode) {
+    super(searcher);
     this.scoreMode = scoreMode;
   }
 
   @Override
   protected void doMatchQuery(final String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-
     MatchCollector coll = new MatchCollector(queryId, scoreMode);
-
     long t = System.nanoTime();
-    IndexSearcher searcher = getSearcher();
     searcher.search(matchQuery, coll);
     t = System.nanoTime() - t;
     this.slowlog.addQuery(queryId, t);
 
   }
 
-  protected IndexSearcher getSearcher() throws IOException {
-    return docs.getSearcher();
-  }
-
   /**
-   * Called when a query matches an InputDocument
+   * Called when a query matches a Document
    *
    * @param queryId the query ID
-   * @param docId   the docId for the InputDocument in the DocumentBatch
+   * @param doc     the index of the document in the DocumentBatch
    * @param scorer  the Scorer for this query
    * @return a match object
    * @throws IOException on IO error
    */
-  protected abstract T doMatch(String queryId, String docId, Scorable scorer) throws IOException;
+  protected abstract T doMatch(String queryId, int doc, Scorable scorer) throws IOException;
 
   protected class MatchCollector extends SimpleCollector {
 
@@ -85,9 +79,9 @@ public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateM
 
     @Override
     public void collect(int doc) throws IOException {
-      T match = doMatch(queryId, docs.resolveDocId(doc), scorer);
+      T match = doMatch(queryId, doc, scorer);
       if (match != null) {
-        addMatch(match);
+        addMatch(match, doc);
       }
     }
 

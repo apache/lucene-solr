@@ -19,9 +19,9 @@ package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.luwak.InputDocument;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.Presearcher;
@@ -34,7 +34,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("/hell.*/")));
       assertEquals(1,
-          monitor.match(buildDoc("doc1", TEXTFIELD, "well hello there"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
+          monitor.match(buildDoc(TEXTFIELD, "well hello there"), SimpleMatcher.FACTORY).getMatchCount());
 
     }
   }
@@ -42,7 +42,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
   public void testNgramsOnlyMatchWildcards() throws IOException {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("hello")));
-      assertEquals(0, monitor.match(buildDoc("doc1", TEXTFIELD, "hellopolis"), SimpleMatcher.FACTORY).getQueriesRun());
+      assertEquals(0, monitor.match(buildDoc(TEXTFIELD, "hellopolis"), SimpleMatcher.FACTORY).getQueriesRun());
     }
   }
 
@@ -59,13 +59,12 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("/a.*/")));
 
-      InputDocument doc1 = InputDocument.builder("doc1")
-          .addField(TEXTFIELD, repeat("a", WildcardNGramPresearcherComponent.DEFAULT_MAX_TOKEN_SIZE + 1), new KeywordAnalyzer())
-          .build();
+      Document doc = new Document();
+      doc.add(newTextField(TEXTFIELD, repeat("a", WildcardNGramPresearcherComponent.DEFAULT_MAX_TOKEN_SIZE + 1), Field.Store.NO));
 
-      Matches<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
       assertEquals(1, matches.getQueriesRun());
-      assertNotNull(matches.matches("1", "doc1"));
+      assertNotNull(matches.matches("1"));
     }
 
   }
@@ -74,7 +73,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("foo")));
       assertEquals(1,
-          monitor.match(buildDoc("doc1", TEXTFIELD, "Foo foo"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
+          monitor.match(buildDoc(TEXTFIELD, "Foo foo"), SimpleMatcher.FACTORY).getMatchCount());
     }
   }
 

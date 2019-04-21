@@ -29,8 +29,8 @@ public class ExplainingMatch extends QueryMatch {
 
   private final Explanation explanation;
 
-  ExplainingMatch(String queryId, String docId, Explanation explanation) {
-    super(queryId, docId);
+  ExplainingMatch(String queryId, Explanation explanation) {
+    super(queryId);
     this.explanation = explanation;
   }
 

@@ -27,12 +27,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.luwak.CandidateMatcher;
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.DocumentMatches;
 import org.apache.lucene.luwak.MatchError;
 import org.apache.lucene.luwak.MatcherFactory;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.luwak.MatchingQueries;
+import org.apache.lucene.luwak.MultiMatchingQueries;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 /**
@@ -75,12 +75,12 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
 
   private final List<MatchTask> tasks = new ArrayList<>();
 
-  private PartitionMatcher(DocumentBatch docs, ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
-    super(docs);
+  private PartitionMatcher(IndexSearcher searcher, ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
+    super(searcher);
     this.executor = executor;
     this.matcherFactory = matcherFactory;
     this.threads = threads;
-    this.resolvingMatcher = matcherFactory.createMatcher(docs);
+    this.resolvingMatcher = matcherFactory.createMatcher(searcher);
   }
 
   @Override
@@ -96,19 +96,19 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
   @Override
   public void finish(long buildTime, int queryCount) {
 
-    List<Callable<Matches<T>>> workers = new ArrayList<>(threads);
+    List<Callable<MultiMatchingQueries<T>>> workers = new ArrayList<>(threads);
     for (List<MatchTask> taskset : partition(tasks, threads)) {
-      CandidateMatcher<T> matcher = matcherFactory.createMatcher(docs);
+      CandidateMatcher<T> matcher = matcherFactory.createMatcher(searcher);
       matcher.setSlowLogLimit(this.slowlog.getLimit());
       workers.add(new MatcherWorker(taskset, matcher));
     }
 
     try {
-      for (Future<Matches<T>> future : executor.invokeAll(workers)) {
-        Matches<T> matches = future.get();
-        for (DocumentMatches<T> docMatches : matches) {
-          for (T match : docMatches) {
-            addMatch(match);
+      for (Future<MultiMatchingQueries<T>> future : executor.invokeAll(workers)) {
+        MultiMatchingQueries<T> matches = future.get();
+        for (int doc = 0; doc < matches.getBatchSize(); doc++) {
+          for (T match : matches.getMatches(doc)) {
+            addMatch(match, doc);
           }
         }
         this.slowlog.addAll(matches.getSlowLog());
@@ -121,7 +121,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     super.finish(buildTime, queryCount);
   }
 
-  private class MatcherWorker implements Callable<Matches<T>> {
+  private class MatcherWorker implements Callable<MultiMatchingQueries<T>> {
 
     final List<MatchTask> tasks;
     final CandidateMatcher<T> matcher;
@@ -132,7 +132,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     }
 
     @Override
-    public Matches<T> call() {
+    public MultiMatchingQueries<T> call() {
       for (MatchTask task : tasks) {
         try {
           matcher.matchQuery(task.queryId, task.matchQuery, task.metadata);
@@ -158,8 +158,8 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     }
 
     @Override
-    public PartitionMatcher<T> createMatcher(DocumentBatch docs) {
-      return new PartitionMatcher<>(docs, executor, matcherFactory, threads);
+    public PartitionMatcher<T> createMatcher(IndexSearcher searcher) {
+      return new PartitionMatcher<>(searcher, executor, matcherFactory, threads);
     }
   }
 

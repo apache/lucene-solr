@@ -21,15 +21,14 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.InputDocument;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.index.memory.MemoryIndex;
+import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.Presearcher;
@@ -60,9 +59,9 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(query1, query2, query3);
 
-      Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
-      assertEquals(1, matches.getMatchCount("doc1"));
-      assertNotNull(matches.matches("2", "doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
+      assertEquals(1, matches.getMatchCount());
+      assertNotNull(matches.matches("2"));
       assertEquals(2, matches.getQueriesRun());
       assertEquals(2, matches.getPresearcherHits().size());
       assertTrue(matches.getPresearcherHits().contains("2"));
@@ -75,12 +74,12 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("document -test")));
 
-      Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
-      assertEquals(0, matches.getMatchCount("doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
+      assertEquals(0, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
 
-      matches = monitor.match(buildDoc("doc2", TEXTFIELD, "weeble sclup test"), SimpleMatcher.FACTORY);
-      assertEquals(0, matches.getMatchCount("doc2"));
+      matches = monitor.match(buildDoc(TEXTFIELD, "weeble sclup test"), SimpleMatcher.FACTORY);
+      assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
     }
 
@@ -91,8 +90,8 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("/hell./")));
 
-      Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", TEXTFIELD, "hello"), SimpleMatcher.FACTORY);
-      assertEquals(1, matches.getMatchCount("doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "hello"), SimpleMatcher.FACTORY);
+      assertEquals(1, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
     }
 
@@ -127,17 +126,17 @@ public class TestTermPresearcher extends PresearcherTestBase {
       }
     };
 
-    try (Monitor monitor = new Monitor(presearcher, config)) {
+    try (Monitor monitor = new Monitor(ANALYZER, presearcher, config)) {
 
       monitor.register(new MonitorQuery("1", parse("f:test")));
 
       try (IndexReader reader = DirectoryReader.open(writer, false, false)) {
 
-        DocumentBatch batch = DocumentBatch.of(
-            InputDocument.builder("doc1").addField("f", "this is a test document", new StandardAnalyzer()).build()
-        );
+        MemoryIndex mindex = new MemoryIndex();
+        mindex.addField("f", "this is a test document", WHITESPACE);
+        LeafReader docsReader = (LeafReader) mindex.createSearcher().getIndexReader();
 
-        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(batch.getIndexReader(), new QueryTermFilter(reader));
+        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, new QueryTermFilter(reader));
         BooleanQuery expected = new BooleanQuery.Builder()
             .add(should(new BooleanQuery.Builder()
                 .add(should(new TermInSetQuery("f", new BytesRef("test")))).build()))

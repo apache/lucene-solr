@@ -22,27 +22,27 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 
 public class TestMonitorErrorHandling extends MonitorTestBase {
 
-  private static final Analyzer ANALYZER = new WhitespaceAnalyzer();
-
   public void testMonitorErrors() throws Exception {
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = newMonitor()) {
       monitor.register(
           MonitorTestBase.mq("1", "test"),
           new MonitorQuery("2", MonitorTestBase.parse("test")),
           new MonitorQuery("3", new ThrowOnRewriteQuery()));
 
-      InputDocument doc = InputDocument.builder("doc").addField(FIELD, "test", ANALYZER).build();
-      DocumentBatch batch = DocumentBatch.of(doc);
-      Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
+      Document doc = new Document();
+      doc.add(newTextField(FIELD, "test", Field.Store.NO));
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
 
       assertEquals(1, matches.getErrors().size());
-      assertEquals(2, matches.getMatchCount("doc"));
+      assertEquals(2, matches.getMatchCount());
       assertEquals(3, matches.getQueriesRun());
     }
   }

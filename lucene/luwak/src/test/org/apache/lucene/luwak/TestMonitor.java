@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -39,32 +41,28 @@ public class TestMonitor extends MonitorTestBase {
 
   public void testSingleTermQueryMatchesSingleDocument() throws IOException {
 
-    String document = "This is a test document";
-
-    DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1")
-        .addField(FIELD, document, ANALYZER)
-        .build());
+    Document doc = new Document();
+    doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(FIELD, "test"))));
 
-      Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
-      assertNotNull(matches.getMatches("doc1"));
-      assertEquals(1, matches.getMatchCount("doc1"));
-      assertNotNull(matches.matches("query1", "doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      assertNotNull(matches.getMatches());
+      assertEquals(1, matches.getMatchCount());
+      assertNotNull(matches.matches("query1"));
     }
   }
 
   public void testMatchStatisticsAreReported() throws IOException {
-    String document = "This is a test document";
-    DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1")
-        .addField(MonitorTestBase.FIELD, document, ANALYZER)
-        .build());
 
-    try (Monitor monitor = new Monitor()) {
+    Document doc = new Document();
+    doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
+
+    try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "test"))));
 
-      Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
       assertEquals(1, matches.getQueriesRun());
       assertTrue(matches.getQueryBuildTime() > -1);
       assertTrue(matches.getSearchTime() > -1);
@@ -72,20 +70,26 @@ public class TestMonitor extends MonitorTestBase {
   }
 
   public void testUpdatesOverwriteOldQueries() throws IOException {
-    try (Monitor monitor = new Monitor()) {
+
+    Document doc = new Document();
+    doc.add(newTextField(FIELD, "that", Field.Store.NO));
+
+    try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))));
 
-      DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1").addField(MonitorTestBase.FIELD, "that", ANALYZER).build());
-      Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
-      assertNotNull(matches.matches("query1", "doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      assertNotNull(matches.matches("query1"));
       assertEquals(1, matches.getQueriesRun());
     }
   }
 
   public void testCanDeleteById() throws IOException {
 
-    try (Monitor monitor = new Monitor()) {
+    Document doc = new Document();
+    doc.add(newTextField(FIELD, "other things", Field.Store.NO));
+
+    try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
       monitor.register(
           new MonitorQuery("query2", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))),
@@ -95,16 +99,15 @@ public class TestMonitor extends MonitorTestBase {
       monitor.deleteById("query2", "query1");
       assertEquals(1, monitor.getQueryCount());
 
-      DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1").addField(MonitorTestBase.FIELD, "other things", ANALYZER).build());
-      Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
       assertEquals(1, matches.getQueriesRun());
-      assertNotNull(matches.matches("query3", "doc1"));
+      assertNotNull(matches.matches("query3"));
     }
 
   }
 
   public void testCanClearTheMonitor() throws IOException {
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = newMonitor()) {
       monitor.register(
           new MonitorQuery("query1", new MatchAllDocsQuery()),
           new MonitorQuery("query2", new MatchAllDocsQuery()),
@@ -118,11 +121,11 @@ public class TestMonitor extends MonitorTestBase {
 
   public void testMatchesAgainstAnEmptyMonitor() throws IOException {
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = newMonitor()) {
       assertEquals(0, monitor.getQueryCount());
-
-      InputDocument doc = InputDocument.builder("doc1").addField(MonitorTestBase.FIELD, "other things", ANALYZER).build();
-      Matches<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      Document doc = new Document();
+      doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
       assertEquals(0, matches.getQueriesRun());
     }
 
@@ -149,7 +152,7 @@ public class TestMonitor extends MonitorTestBase {
       }
     };
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.addQueryIndexUpdateListener(listener);
       monitor.register(queries);
       assertEquals(10355, updateCount.get());
@@ -157,13 +160,14 @@ public class TestMonitor extends MonitorTestBase {
   }
 
   public void testMatcherMetadata() throws IOException {
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = newMonitor()) {
       HashMap<String, String> metadataMap = new HashMap<>();
       metadataMap.put("key", "value");
 
       monitor.register(new MonitorQuery(Integer.toString(1), MonitorTestBase.parse("+test " + 1), null, metadataMap));
 
-      InputDocument doc = InputDocument.builder("1").addField("field", "test", ANALYZER).build();
+      Document doc = new Document();
+      doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
 
       MatcherFactory<QueryMatch> testMatcherFactory = docs -> new CandidateMatcher<QueryMatch>(docs) {
         @Override
@@ -183,15 +187,16 @@ public class TestMonitor extends MonitorTestBase {
 
   public void testDocumentBatching() throws IOException {
 
-    DocumentBatch batch = DocumentBatch.of(
-        InputDocument.builder("doc1").addField(MonitorTestBase.FIELD, "this is a test", ANALYZER).build(),
-        InputDocument.builder("doc2").addField(MonitorTestBase.FIELD, "this is a kangaroo", ANALYZER).build()
-    );
+    Document doc1 = new Document();
+    doc1.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
+    Document doc2 = new Document();
+    doc2.add(newTextField(FIELD, "This is a kangaroo document", Field.Store.NO));
 
-    try (Monitor monitor = new Monitor()) {
+
+    try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.register(new MonitorQuery("1", new TermQuery(new Term(MonitorTestBase.FIELD, "kangaroo"))));
 
-      Matches<QueryMatch> response = monitor.match(batch, SimpleMatcher.FACTORY);
+      MultiMatchingQueries<QueryMatch> response = monitor.match(new Document[]{ doc1, doc2 }, SimpleMatcher.FACTORY);
       assertEquals(2, response.getBatchSize());
     }
   }
@@ -217,24 +222,23 @@ public class TestMonitor extends MonitorTestBase {
 
     MonitorQuery mq = new MonitorQuery("query", MonitorTestBase.parse(MonitorTestBase.FIELD + ":\"hello world\"~5"));
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = new Monitor(analyzer)) {
       monitor.register(mq);
 
-      InputDocument doc1 = InputDocument.builder("doc1")
-          .addField(MonitorTestBase.FIELD, "hello world", analyzer)
-          .addField(MonitorTestBase.FIELD, "goodbye", analyzer)
-          .build();
-      Matches<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
-      assertNotNull(matches.getMatches("doc1"));
-      assertEquals(1, matches.getMatchCount("doc1"));
-      assertNotNull(matches.matches("query", "doc1"));
+      Document doc1 = new Document();
+      doc1.add(newTextField(FIELD, "hello world", Field.Store.NO));
+      doc1.add(newTextField(FIELD, "goodbye", Field.Store.NO));
 
-      InputDocument doc2 = InputDocument.builder("doc2")
-          .addField(MonitorTestBase.FIELD, "hello", analyzer)
-          .addField(MonitorTestBase.FIELD, "world", analyzer)
-          .build();
+      MatchingQueries<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
+      assertNotNull(matches.getMatches());
+      assertEquals(1, matches.getMatchCount());
+      assertNotNull(matches.matches("query"));
+
+      Document doc2 = new Document();
+      doc2.add(newTextField(FIELD, "hello", Field.Store.NO));
+      doc2.add(newTextField(FIELD, "world", Field.Store.NO));
       matches = monitor.match(doc2, SimpleMatcher.FACTORY);
-      assertEquals(0, matches.getMatchCount("doc2"));
+      assertEquals(0, matches.getMatchCount());
     }
 
   }

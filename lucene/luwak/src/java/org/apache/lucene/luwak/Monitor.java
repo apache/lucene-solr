@@ -29,9 +29,13 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.luwak.presearcher.PresearcherMatches;
 import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -46,6 +50,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 public class Monitor implements Closeable {
 
   protected final Presearcher presearcher;
+  private final Analyzer analyzer;
 
   private final QueryIndex queryIndex;
 
@@ -62,8 +67,8 @@ public class Monitor implements Closeable {
   /**
    * Create a non-persistent Monitor instance with the default term-filtering Presearcher
    */
-  public Monitor() throws IOException {
-    this(new TermFilteredPresearcher());
+  public Monitor(Analyzer analyzer) throws IOException {
+    this(analyzer, new TermFilteredPresearcher());
   }
 
   /**
@@ -72,9 +77,10 @@ public class Monitor implements Closeable {
    * @param presearcher   the presearcher to use
    * @param configuration the MonitorConfiguration
    */
-  public Monitor(Presearcher presearcher,
+  public Monitor(Analyzer analyzer, Presearcher presearcher,
                  QueryIndexConfiguration configuration) throws IOException {
 
+    this.analyzer = analyzer;
     this.presearcher = presearcher;
     this.queryIndex = new QueryIndex(configuration, presearcher);
 
@@ -96,15 +102,15 @@ public class Monitor implements Closeable {
    *
    * @param presearcher the presearcher to use
    */
-  public Monitor(Presearcher presearcher) throws IOException {
-    this(presearcher, new QueryIndexConfiguration());
+  public Monitor(Analyzer analyzer, Presearcher presearcher) throws IOException {
+    this(analyzer, presearcher, new QueryIndexConfiguration());
   }
 
   /**
    * Create a new Monitor instance with a specific configuration
    */
-  public Monitor(QueryIndexConfiguration config) throws IOException {
-    this(new TermFilteredPresearcher(), config);
+  public Monitor(Analyzer analyzer, QueryIndexConfiguration config) throws IOException {
+    this(analyzer, new TermFilteredPresearcher(), config);
   }
 
   /**
@@ -171,7 +177,7 @@ public class Monitor implements Closeable {
    * the slow log.  The default is 2,000,000 (2 milliseconds)
    *
    * @param limit the limit in nanoseconds
-   * @see Matches#getSlowLog()
+   * @see MatchingQueries#getSlowLog()
    */
   public void setSlowLogLimit(long limit) {
     this.slowLogLimit = limit;
@@ -250,34 +256,36 @@ public class Monitor implements Closeable {
   }
 
   /**
-   * Match a {@link DocumentBatch} against the queryindex, calling a {@link CandidateMatcher} produced by the
+   * Match an array of {@link Document}s against the queryindex, calling a {@link CandidateMatcher} produced by the
    * supplied {@link MatcherFactory} for each possible matching query.
    *
    * @param docs    the DocumentBatch to match
    * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the match run
    * @param <T>     the type of {@link QueryMatch} to return
-   * @return a {@link Matches} object summarizing the match run.
+   * @return a {@link MatchingQueries} object summarizing the match run.
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> Matches<T> match(DocumentBatch docs, MatcherFactory<T> factory) throws IOException {
-    CandidateMatcher<T> matcher = factory.createMatcher(docs);
-    matcher.setSlowLogLimit(slowLogLimit);
-    match(matcher);
-    return matcher.getMatches();
+  public <T extends QueryMatch> MultiMatchingQueries<T> match(Document[] docs, MatcherFactory<T> factory) throws IOException {
+    try (DocumentBatch batch = DocumentBatch.of(analyzer, docs)) {
+      CandidateMatcher<T> matcher = factory.createMatcher(new IndexSearcher(batch.get()));
+      matcher.setSlowLogLimit(slowLogLimit);
+      match(matcher);
+      return matcher.getMatches();
+    }
   }
 
   /**
-   * Match a single {@link InputDocument} against the queryindex, calling a {@link CandidateMatcher} produced by the
+   * Match a single {@link Document} against the queryindex, calling a {@link CandidateMatcher} produced by the
    * supplied {@link MatcherFactory} for each possible matching query.
    *
    * @param doc     the InputDocument to match
    * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the match run
    * @param <T>     the type of {@link QueryMatch} to return
-   * @return a {@link Matches} object summarizing the match run.
+   * @return a {@link MatchingQueries} object summarizing the match run.
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> Matches<T> match(InputDocument doc, MatcherFactory<T> factory) throws IOException {
-    return match(DocumentBatch.of(doc), factory);
+  public <T extends QueryMatch> MatchingQueries<T> match(Document doc, MatcherFactory<T> factory) throws IOException {
+    return match(new Document[]{ doc }, factory).singleton();
   }
 
   private class PresearcherQueryBuilder implements QueryIndex.QueryBuilder {
@@ -371,21 +379,26 @@ public class Monitor implements Closeable {
    * @return a {@link PresearcherMatches} object containing debug information
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> PresearcherMatches<T> debug(final DocumentBatch docs, MatcherFactory<T> factory)
+  public <T extends QueryMatch> PresearcherMatches<T> debug(Document[] docs, MatcherFactory<T> factory)
       throws IOException {
-    PresearcherQueryCollector<T> collector = new PresearcherQueryCollector<>(factory.createMatcher(docs));
-    QueryIndex.QueryBuilder queryBuilder = new PresearcherQueryBuilder(docs.getIndexReader()) {
-      @Override
-      public Query buildQuery(QueryTermFilter termFilter) throws IOException {
-        return new ForceNoBulkScoringQuery(super.buildQuery(termFilter));
-      }
-    };
-    queryIndex.search(queryBuilder, collector);
-    return collector.getMatches();
+    try (DocumentBatch batch = DocumentBatch.of(analyzer, docs)) {
+      LeafReader reader = batch.get();
+      IndexSearcher searcher = new IndexSearcher(reader);
+      searcher.setQueryCache(null);
+      PresearcherQueryCollector<T> collector = new PresearcherQueryCollector<>(factory.createMatcher(searcher));
+      QueryIndex.QueryBuilder queryBuilder = new PresearcherQueryBuilder(reader) {
+        @Override
+        public Query buildQuery(QueryTermFilter termFilter) throws IOException {
+          return new ForceNoBulkScoringQuery(super.buildQuery(termFilter));
+        }
+      };
+      queryIndex.search(queryBuilder, collector);
+      return collector.getMatches();
+    }
   }
 
   /**
-   * Match a single {@link InputDocument} against the queries stored in the Monitor, also returning information
+   * Match a single {@link Document} against the queries stored in the Monitor, also returning information
    * about which queries were selected by the presearcher, and why.
    *
    * @param doc     an InputDocument to match against the index
@@ -394,8 +407,8 @@ public class Monitor implements Closeable {
    * @return a {@link PresearcherMatches} object containing debug information
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> PresearcherMatches<T> debug(InputDocument doc, MatcherFactory<T> factory) throws IOException {
-    return debug(DocumentBatch.of(doc), factory);
+  public <T extends QueryMatch> PresearcherMatches<T> debug(Document doc, MatcherFactory<T> factory) throws IOException {
+    return debug(new Document[]{doc}, factory);
   }
 
   private class PresearcherQueryCollector<T extends QueryMatch> extends StandardQueryCollector<T> {
@@ -418,7 +431,7 @@ public class Monitor implements Closeable {
     @Override
     public void matchQuery(final String id, QueryCacheEntry query, QueryIndex.DataValues dataValues) throws IOException {
       Weight w = ((Scorer)dataValues.scorer).getWeight();
-      org.apache.lucene.search.Matches matches = w.matches(dataValues.ctx, dataValues.scorer.docID());
+      Matches matches = w.matches(dataValues.ctx, dataValues.scorer.docID());
       for (String field : matches) {
         MatchesIterator mi = matches.getMatches(field);
         while (mi.next()) {

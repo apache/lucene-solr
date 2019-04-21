@@ -19,9 +19,9 @@ package org.apache.lucene.luwak.matchers;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luwak.InputDocument;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.MonitorTestBase;
@@ -35,10 +35,11 @@ public class TestSimpleMatcher extends MonitorTestBase {
       monitor.register(
           new MonitorQuery("1", parse("test")),
           new MonitorQuery("2", parse("wibble")));
-      InputDocument doc1 = InputDocument.builder("doc1").addField("field", "test", new StandardAnalyzer()).build();
+      Document doc = new Document();
+      doc.add(newTextField(FIELD, "test", Field.Store.NO));
 
-      Matches<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
-      assertNotNull(matches.matches("1", "doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      assertNotNull(matches.matches("1"));
     }
   }
 }
