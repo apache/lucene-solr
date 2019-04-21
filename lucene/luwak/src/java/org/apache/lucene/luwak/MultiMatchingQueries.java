@@ -17,16 +17,15 @@
 
 package org.apache.lucene.luwak;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * Class to hold a response from the Monitor
- *
- * @param <T> the type of QueryMatch returned
- */
-public class Matches<T extends QueryMatch> implements Iterable<DocumentMatches<T>> {
+public class MultiMatchingQueries<T extends QueryMatch> {
 
-  private final Map<String, DocumentMatches<T>> matches;
+  private final List<Map<String, T>> matches;
   private final Set<String> presearcherHits;
   private final List<MatchError> errors;
 
@@ -37,9 +36,9 @@ public class Matches<T extends QueryMatch> implements Iterable<DocumentMatches<T
 
   private final SlowLog slowlog;
 
-  Matches(Map<String, DocumentMatches<T>> matches, Set<String> presearcherHits, List<MatchError> errors,
-          long queryBuildTime, long searchTime, int queriesRun, int batchSize, SlowLog slowlog) {
-    this.matches = Collections.unmodifiableMap(matches);
+  MultiMatchingQueries(List<Map<String, T>> matches, Set<String> presearcherHits, List<MatchError> errors,
+                  long queryBuildTime, long searchTime, int queriesRun, int batchSize, SlowLog slowlog) {
+    this.matches = Collections.unmodifiableList(matches);
     this.errors = Collections.unmodifiableList(errors);
     this.presearcherHits = Collections.unmodifiableSet(presearcherHits);
     this.queryBuildTime = queryBuildTime;
@@ -49,11 +48,6 @@ public class Matches<T extends QueryMatch> implements Iterable<DocumentMatches<T
     this.slowlog = slowlog;
   }
 
-  @Override
-  public Iterator<DocumentMatches<T>> iterator() {
-    return matches.values().iterator();
-  }
-
   /**
    * Returns the QueryMatch for the given query and document, or null if it did not match
    *
@@ -61,25 +55,19 @@ public class Matches<T extends QueryMatch> implements Iterable<DocumentMatches<T
    * @param docId   the doc id
    * @return the QueryMatch for the given query and document, or null if it did not match
    */
-  public T matches(String queryId, String docId) {
-    DocumentMatches<T> docMatches = matches.get(docId);
+  public T matches(String queryId, int docId) {
+    Map<String, T> docMatches = matches.get(docId);
     if (docMatches == null)
       return null;
-
-    for (T match : docMatches) {
-      if (match.getQueryId().equals(queryId))
-        return match;
-    }
-
-    return null;
+    return docMatches.get(queryId);
   }
 
   /**
    * @param docId document id to check
    * @return all matches for a particular document
    */
-  public DocumentMatches<T> getMatches(String docId) {
-    return matches.get(docId);
+  public Collection<T> getMatches(int docId) {
+    return matches.get(docId).values();
   }
 
   /**
@@ -93,11 +81,11 @@ public class Matches<T extends QueryMatch> implements Iterable<DocumentMatches<T
    * @param docId document id to check
    * @return the number of queries that matched for a given document
    */
-  public int getMatchCount(String docId) {
-    DocumentMatches<T> docMatches = matches.get(docId);
+  public int getMatchCount(int docId) {
+    Map<String, T> docMatches = matches.get(docId);
     if (docMatches == null)
       return 0;
-    return docMatches.getMatches().size();
+    return docMatches.size();
   }
 
   /**
@@ -147,4 +135,8 @@ public class Matches<T extends QueryMatch> implements Iterable<DocumentMatches<T
     return slowlog;
   }
 
+  MatchingQueries<T> singleton() {
+    assert matches.size() == 1;
+    return new MatchingQueries<>(matches.get(0), presearcherHits, errors, queryBuildTime, searchTime, queriesRun, slowlog);
+  }
 }

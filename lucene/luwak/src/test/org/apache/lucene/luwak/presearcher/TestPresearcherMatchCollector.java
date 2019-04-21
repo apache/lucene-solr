@@ -19,8 +19,8 @@ package org.apache.lucene.luwak.presearcher;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luwak.InputDocument;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.MonitorTestBase;
@@ -33,34 +33,33 @@ public class TestPresearcherMatchCollector extends MonitorTestBase {
 
   public void testMatchCollectorShowMatches() throws IOException {
 
-    try (Monitor monitor = new Monitor(new TermFilteredPresearcher())) {
+    try (Monitor monitor = new Monitor(ANALYZER, new TermFilteredPresearcher())) {
       monitor.register(new MonitorQuery("1", parse("test")));
       monitor.register(new MonitorQuery("2", parse("foo bar -baz f2:quuz")));
       monitor.register(new MonitorQuery("3", parse("foo -test")));
       monitor.register(new MonitorQuery("4", parse("baz")));
       assertEquals(4, monitor.getQueryCount());
 
-      InputDocument doc = InputDocument.builder("doc1")
-          .addField(FIELD, "this is a foo test", new StandardAnalyzer())
-          .addField("f2", "quuz", new StandardAnalyzer())
-          .build();
+      Document doc = new Document();
+      doc.add(newTextField(FIELD, "this is a foo test", Field.Store.NO));
+      doc.add(newTextField("f2", "quuz", Field.Store.NO));
 
       PresearcherMatches<QueryMatch> matches = monitor.debug(doc, SimpleMatcher.FACTORY);
 
-      assertNotNull(matches.match("1", "doc1"));
-      assertEquals(" field:test", matches.match("1", "doc1").presearcherMatches);
-      assertNotNull(matches.match("1", "doc1").queryMatch);
+      assertNotNull(matches.match("1", 0));
+      assertEquals(" field:test", matches.match("1", 0).presearcherMatches);
+      assertNotNull(matches.match("1", 0).queryMatch);
 
-      assertNotNull(matches.match("2", "doc1"));
-      String pm = matches.match("2", "doc1").presearcherMatches;
+      assertNotNull(matches.match("2", 0));
+      String pm = matches.match("2", 0).presearcherMatches;
       assertThat(pm, containsString("field:foo"));
       assertThat(pm, containsString("f2:quuz"));
 
-      assertNotNull(matches.match("3", "doc1"));
-      assertEquals(" field:foo", matches.match("3", "doc1").presearcherMatches);
-      assertNull(matches.match("3", "doc1").queryMatch);
+      assertNotNull(matches.match("3", 0));
+      assertEquals(" field:foo", matches.match("3", 0).presearcherMatches);
+      assertNull(matches.match("3", 0).queryMatch);
 
-      assertNull(matches.match("4", "doc1"));
+      assertNull(matches.match("4", 0));
     }
   }
 

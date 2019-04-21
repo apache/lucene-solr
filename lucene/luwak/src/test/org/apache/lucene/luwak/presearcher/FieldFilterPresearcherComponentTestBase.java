@@ -22,11 +22,12 @@ import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.InputDocument;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
+import org.apache.lucene.luwak.MultiMatchingQueries;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -34,8 +35,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import static org.hamcrest.CoreMatchers.containsString;
 
 public abstract class FieldFilterPresearcherComponentTestBase extends PresearcherTestBase {
-
-  private static final Analyzer ANALYZER = new StandardAnalyzer();
 
   public void testBatchFiltering() throws IOException {
     try (Monitor monitor = newMonitor()) {
@@ -46,41 +45,38 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
           mq("4", "*:*", "language", "de"),
           mq("5", "*:*", "language", "es"));
 
-      DocumentBatch enBatch = DocumentBatch.of(
-          InputDocument.builder("en1")
-              .addField(TEXTFIELD, "this is a test", ANALYZER)
-              .addField("language", "en", ANALYZER)
-              .build(),
-          InputDocument.builder("en2")
-              .addField(TEXTFIELD, "this is a wibble", ANALYZER)
-              .addField("language", "en", ANALYZER)
-              .build(),
-          InputDocument.builder("en3")
-              .addField(TEXTFIELD, "wahl is a misspelling of whale", ANALYZER)
-              .addField("language", "en", ANALYZER)
-              .build()
-      );
+      Document doc1 = new Document();
+      doc1.add(newTextField(TEXTFIELD, "this is a test", Field.Store.NO));
+      doc1.add(newTextField("language", "en", Field.Store.NO));
+      Document doc2 = new Document();
+      doc2.add(newTextField(TEXTFIELD, "this is a wibble", Field.Store.NO));
+      doc2.add(newTextField("language", "en", Field.Store.NO));
+      Document doc3 = new Document();
+      doc3.add(newTextField(TEXTFIELD, "wahl is a misspelling of whale", Field.Store.NO));
+      doc3.add(newTextField("language", "en", Field.Store.NO));
 
-      Matches<QueryMatch> matches = monitor.match(enBatch, SimpleMatcher.FACTORY);
-      assertEquals(1, matches.getMatchCount("en1"));
-      assertNotNull(matches.matches("1", "en1"));
-      assertEquals(1, matches.getMatchCount("en2"));
-      assertNotNull(matches.matches("3", "en2"));
-      assertEquals(0, matches.getMatchCount("en3"));
+      MultiMatchingQueries<QueryMatch> matches = monitor.match(new Document[]{ doc1, doc2, doc3 }, SimpleMatcher.FACTORY);
+      assertEquals(1, matches.getMatchCount(0));
+      assertNotNull(matches.matches("1", 0));
+      assertEquals(1, matches.getMatchCount(1));
+      assertNotNull(matches.matches("3", 1));
+      assertEquals(0, matches.getMatchCount(2));
       assertEquals(2, matches.getQueriesRun());
     }
   }
 
   public void testBatchesWithDissimilarFieldValuesThrowExceptions() throws IOException {
 
-    DocumentBatch batch = DocumentBatch.of(
-        InputDocument.builder("1").addField(TEXTFIELD, "test", ANALYZER).addField("language", "en", ANALYZER).build(),
-        InputDocument.builder("2").addField(TEXTFIELD, "test", ANALYZER).addField("language", "de", ANALYZER).build()
-    );
+    Document doc1 = new Document();
+    doc1.add(newTextField(TEXTFIELD, "test", Field.Store.NO));
+    doc1.add(newTextField("language", "en", Field.Store.NO));
+    Document doc2 = new Document();
+    doc2.add(newTextField(TEXTFIELD, "test", Field.Store.NO));
+    doc2.add(newTextField("language", "de", Field.Store.NO));
 
     try (Monitor monitor = newMonitor()) {
       IllegalArgumentException e
-          = expectThrows(IllegalArgumentException.class, () -> monitor.match(batch, SimpleMatcher.FACTORY));
+          = expectThrows(IllegalArgumentException.class, () -> monitor.match(new Document[]{ doc1, doc2 }, SimpleMatcher.FACTORY));
       assertThat(e.getMessage(), containsString("language:"));
     }
   }
@@ -94,33 +90,32 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
           new MonitorQuery("3", parse("wibble"), null, Collections.singletonMap("language", "en")),
           new MonitorQuery("4", parse("*:*"), null, Collections.singletonMap("language", "de")));
 
-      InputDocument enDoc = InputDocument.builder("enDoc")
-          .addField(TEXTFIELD, "this is a test", ANALYZER)
-          .addField("language", "en", ANALYZER)
-          .build();
+      Document enDoc = new Document();
+      enDoc.add(newTextField(TEXTFIELD, "this is a test", Field.Store.NO));
+      enDoc.add(newTextField("language", "en", Field.Store.NO));
 
-      Matches<QueryMatch> en = monitor.match(enDoc, SimpleMatcher.FACTORY);
-      assertEquals(1, en.getMatchCount("enDoc"));
-      assertNotNull(en.matches("1", "enDoc"));
+      MatchingQueries<QueryMatch> en = monitor.match(enDoc, SimpleMatcher.FACTORY);
+      assertEquals(1, en.getMatchCount());
+      assertNotNull(en.matches("1"));
       assertEquals(1, en.getQueriesRun());
 
-      InputDocument deDoc = InputDocument.builder("deDoc")
-          .addField(TEXTFIELD, "das ist ein test", ANALYZER)
-          .addField("language", "de", ANALYZER)
-          .build();
-      Matches<QueryMatch> de = monitor.match(deDoc, SimpleMatcher.FACTORY);
-      assertEquals(2, de.getMatchCount("deDoc"));
-      assertEquals(2, de.getQueriesRun());
-      assertNotNull(de.matches("2", "deDoc"));
-      assertNotNull(de.matches("4", "deDoc"));
+      Document deDoc = new Document();
+      deDoc.add(newTextField(TEXTFIELD, "das ist ein test", Field.Store.NO));
+      deDoc.add(newTextField("language", "de", Field.Store.NO));
 
-      InputDocument bothDoc = InputDocument.builder("bothDoc")
-          .addField(TEXTFIELD, "this is ein test", ANALYZER)
-          .addField("language", "en", ANALYZER)
-          .addField("language", "de", ANALYZER)
-          .build();
-      Matches<QueryMatch> both = monitor.match(bothDoc, SimpleMatcher.FACTORY);
-      assertEquals(3, both.getMatchCount("bothDoc"));
+      MatchingQueries<QueryMatch> de = monitor.match(deDoc, SimpleMatcher.FACTORY);
+      assertEquals(2, de.getMatchCount());
+      assertEquals(2, de.getQueriesRun());
+      assertNotNull(de.matches("2"));
+      assertNotNull(de.matches("4"));
+
+      Document bothDoc = new Document();
+      bothDoc.add(newTextField(TEXTFIELD, "this is ein test", Field.Store.NO));
+      bothDoc.add(newTextField("language", "en", Field.Store.NO));
+      bothDoc.add(newTextField("language", "de", Field.Store.NO));
+
+      MatchingQueries<QueryMatch> both = monitor.match(bothDoc, SimpleMatcher.FACTORY);
+      assertEquals(3, both.getMatchCount());
       assertEquals(3, both.getQueriesRun());
     }
   }
@@ -129,12 +124,11 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery(), null, Collections.singletonMap("language", "de")));
 
-      InputDocument doc = InputDocument.builder("enDoc")
-          .addField(TEXTFIELD, "this is a test", ANALYZER)
-          .addField("language", "en", ANALYZER)
-          .build();
-      Matches<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
-      assertEquals(0, matches.getMatchCount("enDoc"));
+      Document enDoc = new Document();
+      enDoc.add(newTextField(TEXTFIELD, "this is a test", Field.Store.NO));
+      enDoc.add(newTextField("language", "en", Field.Store.NO));
+      MatchingQueries<QueryMatch> matches = monitor.match(enDoc, SimpleMatcher.FACTORY);
+      assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
     }
   }
@@ -143,13 +137,12 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("test"), null, Collections.singletonMap("language", "en")));
 
-      InputDocument doc = InputDocument.builder("enDoc")
-          .addField(TEXTFIELD, "this is a test", ANALYZER)
-          .addField("language", "en", ANALYZER)
-          .build();
+      Document enDoc = new Document();
+      enDoc.add(newTextField(TEXTFIELD, "this is a test", Field.Store.NO));
+      enDoc.add(newTextField("language", "en", Field.Store.NO));
 
-      PresearcherMatches<QueryMatch> matches = monitor.debug(doc, SimpleMatcher.FACTORY);
-      assertFalse(matches.match("1", "enDoc").presearcherMatches.isEmpty());
+      PresearcherMatches<QueryMatch> matches = monitor.debug(enDoc, SimpleMatcher.FACTORY);
+      assertFalse(matches.match("1", 0).presearcherMatches.isEmpty());
     }
   }
 

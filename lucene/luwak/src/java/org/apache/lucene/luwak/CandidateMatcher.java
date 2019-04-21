@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 /**
@@ -31,10 +32,10 @@ import org.apache.lucene.search.Query;
 public abstract class CandidateMatcher<T extends QueryMatch> {
 
   private final Set<String> presearcherHits = new HashSet<>();
-  protected final DocumentBatch docs;
+  protected final IndexSearcher searcher;
 
   private final List<MatchError> errors = new LinkedList<>();
-  private final Map<String, MatchHolder<T>> matches = new HashMap<>();
+  private final List<MatchHolder<T>> matches;
 
   private long queryBuildTime = -1;
   private long searchTime = System.nanoTime();
@@ -49,10 +50,15 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   /**
    * Creates a new CandidateMatcher for the supplied DocumentBatch
    *
-   * @param docs the documents to run queries against
+   * @param searcher the IndexSearcher to run queries against
    */
-  public CandidateMatcher(DocumentBatch docs) {
-    this.docs = docs;
+  public CandidateMatcher(IndexSearcher searcher) {
+    this.searcher = searcher;
+    int docCount = searcher.getIndexReader().maxDoc();
+    this.matches = new ArrayList<>(docCount);
+    for (int i = 0; i < docCount; i++) {
+      this.matches.add(new MatchHolder<>());
+    }
   }
 
   /**
@@ -79,8 +85,8 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
    */
   protected abstract void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException;
 
-  private void addMatch(String queryId, String docId, T match) {
-    MatchHolder<T> docMatches = matches.computeIfAbsent(docId, k -> new MatchHolder<>());
+  private void addMatch(String queryId, int doc, T match) {
+    MatchHolder<T> docMatches = matches.get(doc);
     docMatches.matches.compute(queryId, (key, oldValue) -> {
       if (oldValue != null) {
         return resolve(match, oldValue);
@@ -94,8 +100,8 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
    *
    * @param match a QueryMatch object
    */
-  protected void addMatch(T match) {
-    addMatch(match.getQueryId(), match.getDocId(), match);
+  protected void addMatch(T match, int doc) {
+    addMatch(match.getQueryId(), doc, match);
   }
 
   /**
@@ -139,12 +145,12 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   /**
    * Returns the QueryMatch for the given document and query, or null if it did not match
    *
-   * @param docId   the document id
+   * @param doc     the document index
    * @param queryId the query id
    * @return the QueryMatch for the given document and query, or null if it did not match
    */
-  protected T matches(String docId, String queryId) {
-    MatchHolder<T> docMatches = matches.get(docId);
+  protected T matches(int doc, String queryId) {
+    MatchHolder<T> docMatches = matches.get(doc);
     if (docMatches == null)
       return null;
     return docMatches.matches.get(queryId);
@@ -153,26 +159,20 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   /**
    * @return the matches from this matcher
    */
-  public Matches<T> getMatches() {
-    Map<String, DocumentMatches<T>> results = new HashMap<>();
-    for (InputDocument doc : docs) {
-      String id = doc.getId();
-      MatchHolder<T> matchHolder = matches.get(id);
-      if (matchHolder != null)
-        results.put(id, new DocumentMatches<>(id, matchHolder.matches.values()));
-      else
-        results.put(id, DocumentMatches.noMatches(id));
+  public MultiMatchingQueries<T> getMatches() {
+    List<Map<String, T>> results = new ArrayList<>();
+    for (MatchHolder<T> matchHolder : matches) {
+      results.add(matchHolder.matches);
     }
-    return new Matches<>(results, presearcherHits, errors, queryBuildTime, searchTime, queriesRun, docs.getBatchSize(), slowlog);
+    return new MultiMatchingQueries<>(results, presearcherHits, errors, queryBuildTime, searchTime, queriesRun, matches.size(), slowlog);
   }
 
   /**
-   * Get a {@link LeafReader} over the documents in this matcher's {@link DocumentBatch}
+   * Get a {@link LeafReader} over the documents in this matcher's {@link IndexSearcher}
    *
    * @return a {@link LeafReader} over the documents in this matcher's {@link DocumentBatch}
-   * @throws IOException on I/O error
    */
-  public LeafReader getIndexReader() throws IOException {
-    return docs.getIndexReader();
+  public LeafReader getIndexReader() {
+    return (LeafReader) searcher.getIndexReader();
   }
 }

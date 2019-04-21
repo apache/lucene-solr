@@ -36,17 +36,13 @@ public class QueryMatch {
 
   private final String queryId;
 
-  private final String docId;
-
   /**
    * Creates a new QueryMatch for a specific query and document
    *
    * @param queryId the query id
-   * @param docId   the document id
    */
-  public QueryMatch(String queryId, String docId) {
+  public QueryMatch(String queryId) {
     this.queryId = Objects.requireNonNull(queryId);
-    this.docId = Objects.requireNonNull(docId);
   }
 
   /**
@@ -56,28 +52,21 @@ public class QueryMatch {
     return queryId;
   }
 
-  /**
-   * @return the docid of this match
-   */
-  public String getDocId() {
-    return docId;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof QueryMatch)) return false;
     QueryMatch that = (QueryMatch) o;
-    return Objects.equals(queryId, that.queryId) && Objects.equals(docId, that.docId);
+    return Objects.equals(queryId, that.queryId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(queryId, docId);
+    return Objects.hash(queryId);
   }
 
   @Override
   public String toString() {
-    return "Match(doc=" + docId + ",query=" + queryId + ")";
+    return "Match(query=" + queryId + ")";
   }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.lucene.luwak;
 
+import org.apache.lucene.search.IndexSearcher;
+
 /**
  * Interface for the creation of new CandidateMatcher objects
  *
@@ -25,11 +27,9 @@ package org.apache.lucene.luwak;
 public interface MatcherFactory<T extends QueryMatch> {
 
   /**
-   * Create a new {@link CandidateMatcher} object
-   *
-   * @param doc an {@link InputDocument} to match.
-   * @return the CandidateMatcher
+   * Create a new {@link CandidateMatcher} object, to select
+   * queries to match against the passed-in IndexSearcher
    */
-  CandidateMatcher<T> createMatcher(DocumentBatch doc);
+  CandidateMatcher<T> createMatcher(IndexSearcher searcher);
 
 }

@@ -24,7 +24,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -43,7 +44,7 @@ public class TestCachePurging extends MonitorTestBase {
       }
     };
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = new Monitor(ANALYZER)) {
       MonitorQuery[] queries = new MonitorQuery[]{
           new MonitorQuery("1", parse("test1 test4")),
           new MonitorQuery("2", parse("test2")),
@@ -55,20 +56,20 @@ public class TestCachePurging extends MonitorTestBase {
       assertThat(monitor.getDisjunctCount(), is(4));
       assertThat(monitor.getQueryCacheStats().cachedQueries, is(4));
 
-      InputDocument doc = InputDocument.builder("doc1")
-          .addField("field", "test1 test2 test3", new StandardAnalyzer()).build();
-      assertThat(monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount("doc1"), is(3));
+      Document doc = new Document();
+      doc.add(newTextField("field", "test1 test2 test3", Field.Store.NO));
+      assertThat(monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount(), is(3));
 
       monitor.deleteById("1");
       assertThat(monitor.getQueryCount(), is(2));
       assertThat(monitor.getQueryCacheStats().cachedQueries, is(4));
-      assertThat(monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount("doc1"), is(2));
+      assertThat(monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount(), is(2));
 
       monitor.purgeCache();
       assertThat(monitor.getQueryCacheStats().cachedQueries, is(2));
 
-      Matches<QueryMatch> result = monitor.match(doc, SimpleMatcher.FACTORY);
-      assertThat(result.getMatchCount("doc1"), is(2));
+      MatchingQueries<QueryMatch> result = monitor.match(doc, SimpleMatcher.FACTORY);
+      assertThat(result.getMatchCount(), is(2));
       assertTrue(purgeCount.get() > 0);
     }
   }
@@ -85,7 +86,7 @@ public class TestCachePurging extends MonitorTestBase {
     final CountDownLatch startUpdating = new CountDownLatch(1);
     final CountDownLatch finishUpdating = new CountDownLatch(1);
 
-    try (final Monitor monitor = new Monitor()) {
+    try (final Monitor monitor = new Monitor(ANALYZER)) {
       Runnable updaterThread = () -> {
         try {
           startUpdating.await();
@@ -116,10 +117,11 @@ public class TestCachePurging extends MonitorTestBase {
         finishUpdating.await();
 
         assertEquals(340, monitor.getQueryCacheStats().cachedQueries);
-        InputDocument doc = InputDocument.builder("doc1").addField("field", "test", new StandardAnalyzer()).build();
-        Matches<QueryMatch> matcher = monitor.match(doc, SimpleMatcher.FACTORY);
+        Document doc = new Document();
+        doc.add(newTextField("field", "test", Field.Store.NO));
+        MatchingQueries<QueryMatch> matcher = monitor.match(doc, SimpleMatcher.FACTORY);
         assertEquals(0, matcher.getErrors().size());
-        assertEquals(340, matcher.getMatchCount("doc1"));
+        assertEquals(340, matcher.getMatchCount());
       } finally {
         executor.shutdownNow();
       }
@@ -127,13 +129,13 @@ public class TestCachePurging extends MonitorTestBase {
   }
 
   private static MonitorQuery newMonitorQuery(int id) {
-    return new MonitorQuery(Integer.toString(id), parse("+test " + Integer.toString(id)));
+    return new MonitorQuery(Integer.toString(id), parse("+test " + id));
   }
 
   public void testBackgroundPurges() throws IOException, InterruptedException {
 
     QueryIndexConfiguration config = new QueryIndexConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
-    try (Monitor monitor = new Monitor(MatchAllPresearcher.INSTANCE, config)) {
+    try (Monitor monitor = new Monitor(ANALYZER, MatchAllPresearcher.INSTANCE, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
 

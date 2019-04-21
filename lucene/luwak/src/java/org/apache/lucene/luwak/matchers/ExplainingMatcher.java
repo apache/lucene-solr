@@ -20,11 +20,11 @@ package org.apache.lucene.luwak.matchers;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.luwak.CandidateMatcher;
-import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.MatcherFactory;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 
 /**
  * Return {@link Explanation}s for each match
@@ -36,23 +36,23 @@ public class ExplainingMatcher extends CandidateMatcher<ExplainingMatch> {
    */
   public static final MatcherFactory<ExplainingMatch> FACTORY = ExplainingMatcher::new;
 
-  private ExplainingMatcher(DocumentBatch docs) {
-    super(docs);
+  private ExplainingMatcher(IndexSearcher searcher) {
+    super(searcher);
   }
 
   @Override
   public void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-    int maxDocs = docs.getIndexReader().maxDoc();
+    int maxDocs = searcher.getIndexReader().maxDoc();
     for (int i = 0; i < maxDocs; i++) {
-      Explanation explanation = docs.getSearcher().explain(matchQuery, i);
+      Explanation explanation = searcher.explain(matchQuery, i);
       if (explanation.isMatch())
-        addMatch(new ExplainingMatch(queryId, docs.resolveDocId(i), explanation));
+        addMatch(new ExplainingMatch(queryId, explanation), i);
     }
   }
 
   @Override
   public ExplainingMatch resolve(ExplainingMatch match1, ExplainingMatch match2) {
-    return new ExplainingMatch(match1.getQueryId(), match1.getDocId(),
+    return new ExplainingMatch(match1.getQueryId(),
         Explanation.match(match1.getExplanation().getValue().doubleValue() + match2.getExplanation().getValue().doubleValue(),
             "sum of:", match1.getExplanation(), match2.getExplanation()));
   }

@@ -55,8 +55,12 @@ public abstract class MonitorTestBase extends LuceneTestCase {
   }
 
   protected Monitor newMonitor() throws IOException {
-    // TODO: randomize presearcher, query persistence
-    return new Monitor();
+    return newMonitor(new StandardAnalyzer());
+  }
+
+  protected Monitor newMonitor(Analyzer analyzer) throws IOException {
+    // TODO: randomize presearcher
+    return new Monitor(analyzer);
   }
 
   public static class ThrowOnRewriteQuery extends Query {

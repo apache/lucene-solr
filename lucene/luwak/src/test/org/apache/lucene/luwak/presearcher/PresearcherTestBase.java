@@ -23,14 +23,16 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.InputDocument;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.MonitorTestBase;
+import org.apache.lucene.luwak.MultiMatchingQueries;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.matchers.SimpleMatcher;
@@ -46,7 +48,7 @@ import org.apache.lucene.util.BytesRef;
 public abstract class PresearcherTestBase extends MonitorTestBase {
 
   public Monitor newMonitor() throws IOException {
-    return new Monitor(createPresearcher());
+    return new Monitor(WHITESPACE, createPresearcher());
   }
 
   protected abstract Presearcher createPresearcher();
@@ -54,8 +56,10 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
   static final String TEXTFIELD = FIELD;
   static final Analyzer WHITESPACE = new WhitespaceAnalyzer();
 
-  public static InputDocument buildDoc(String id, String field, String text) {
-    return InputDocument.builder(id).addField(field, text, WHITESPACE).build();
+  public static Document buildDoc(String field, String text) {
+    Document doc = new Document();
+    doc.add(newTextField(field, text, Field.Store.NO));
+    return doc;
   }
 
   public void testNullFieldHandling() throws IOException {
@@ -63,15 +67,15 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
       monitor.register(new MonitorQuery("1", parse("field_1:test")));
 
       assertEquals(0,
-          monitor.match(buildDoc("doc1", "field_2", "test"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
+          monitor.match(buildDoc("field_2", "test"), SimpleMatcher.FACTORY).getMatchCount());
     }
 
   }
 
   public void testEmptyMonitorHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      Matches<QueryMatch> matches = monitor.match(buildDoc("doc1", "field_2", "test"), SimpleMatcher.FACTORY);
-      assertEquals(0, matches.getMatchCount("doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("field_2", "test"), SimpleMatcher.FACTORY);
+      assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
     }
   }
@@ -80,7 +84,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
       assertEquals(1,
-          monitor.match(buildDoc("doc1", "f", "wibble"), SimpleMatcher.FACTORY).getMatchCount("doc1"));
+          monitor.match(buildDoc("f", "wibble"), SimpleMatcher.FACTORY).getMatchCount());
     }
   }
 
@@ -92,13 +96,11 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", q));
 
-      DocumentBatch batch = DocumentBatch.of(
-          InputDocument.builder("doc1").addField("f", "bar", WHITESPACE).build(),
-          InputDocument.builder("doc2").addField("f", "foo", WHITESPACE).build());
-
-      Matches<QueryMatch> matches = monitor.match(batch, SimpleMatcher.FACTORY);
-      assertEquals(1, matches.getMatchCount("doc1"));
-      assertEquals(0, matches.getMatchCount("doc2"));
+      MultiMatchingQueries<QueryMatch> matches = monitor.match(new Document[]{
+          buildDoc("f", "bar"), buildDoc("f", "foo")
+      }, SimpleMatcher.FACTORY);
+      assertEquals(1, matches.getMatchCount(0));
+      assertEquals(0, matches.getMatchCount(1));
     }
   }
 
@@ -106,8 +108,8 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
-      Matches<QueryMatch> matches = monitor.match(buildDoc("1", "f", "wibble"), SimpleMatcher.FACTORY);
-      assertEquals(1, matches.getMatchCount("1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("f", "wibble"), SimpleMatcher.FACTORY);
+      assertEquals(1, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
     }
   }
@@ -157,12 +159,17 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
   public void testNonStringTermHandling() throws IOException {
 
+    FieldType ft = new FieldType();
+    ft.setTokenized(true);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new TermQuery(new Term("f", NON_STRING_TERM))));
 
-      InputDocument doc = InputDocument.builder("1").addField(new TextField("f", new NonStringTokenStream())).build();
-      Matches<QueryMatch> m = monitor.match(doc, SimpleMatcher.FACTORY);
-      assertEquals(1, m.getMatchCount("1"));
+      Document doc = new Document();
+      doc.add(new Field("f", new NonStringTokenStream(), ft));
+      MatchingQueries<QueryMatch> m = monitor.match(doc, SimpleMatcher.FACTORY);
+      assertEquals(1, m.getMatchCount());
       assertEquals(1, m.getQueriesRun());
     }
 

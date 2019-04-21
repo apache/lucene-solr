@@ -17,9 +17,9 @@
 
 package org.apache.lucene.luwak.matchers;
 
-import org.apache.lucene.luwak.DocumentBatch;
 import org.apache.lucene.luwak.MatcherFactory;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 
@@ -28,8 +28,8 @@ import org.apache.lucene.search.ScoreMode;
  */
 public class SimpleMatcher extends CollectingMatcher<QueryMatch> {
 
-  private SimpleMatcher(DocumentBatch docs) {
-    super(docs, ScoreMode.COMPLETE_NO_SCORES);
+  private SimpleMatcher(IndexSearcher searcher) {
+    super(searcher, ScoreMode.COMPLETE_NO_SCORES);
   }
 
   @Override
@@ -38,8 +38,8 @@ public class SimpleMatcher extends CollectingMatcher<QueryMatch> {
   }
 
   @Override
-  protected QueryMatch doMatch(String queryId, String docId, Scorable scorer) {
-    return new QueryMatch(queryId, docId);
+  protected QueryMatch doMatch(String queryId, int docId, Scorable scorer) {
+    return new QueryMatch(queryId);
   }
 
   /**

@@ -32,8 +32,8 @@ public class HighlightsMatch extends QueryMatch {
 
   private final Map<String, Set<Hit>> hits;
 
-  HighlightsMatch(String queryId, String docId) {
-    super(queryId, docId);
+  HighlightsMatch(String queryId) {
+    super(queryId);
     this.hits = new TreeMap<>();
   }
 
@@ -75,10 +75,9 @@ public class HighlightsMatch extends QueryMatch {
     return c;
   }
 
-  static HighlightsMatch merge(String queryId, String docId, HighlightsMatch... matches) {
-    HighlightsMatch newMatch = new HighlightsMatch(queryId, docId);
+  static HighlightsMatch merge(String queryId, HighlightsMatch... matches) {
+    HighlightsMatch newMatch = new HighlightsMatch(queryId);
     for (HighlightsMatch match : matches) {
-      assert newMatch.getDocId().equals(match.getDocId());
       for (String field : match.getFields()) {
         Set<Hit> hitSet = newMatch.hits.computeIfAbsent(field, f -> new TreeSet<>());
         hitSet.addAll(match.getHits(field));

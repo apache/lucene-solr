@@ -25,10 +25,10 @@ import java.util.concurrent.Executors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.luwak.DocumentBatch;
-import org.apache.lucene.luwak.InputDocument;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.luwak.MatcherFactory;
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.MonitorTestBase;
@@ -45,26 +45,26 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
   private static final Analyzer ANALYZER = new StandardAnalyzer();
 
-  protected abstract <T extends QueryMatch>
-  MatcherFactory<T> matcherFactory(ExecutorService executor, MatcherFactory<T> factory, int threads);
+  protected abstract <T extends QueryMatch> MatcherFactory<T> matcherFactory(ExecutorService executor,
+                                                                             MatcherFactory<T> factory, int threads);
 
   public void testAllMatchesAreCollected() throws Exception {
 
     ExecutorService executor = Executors.newFixedThreadPool(10, new NamedThreadFactory("matchers"));
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = new Monitor(ANALYZER)) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 1000; i++) {
         queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("+test " + i)));
       }
       monitor.register(queries);
 
+      Document doc = new Document();
+      doc.add(newTextField("field", "test", Field.Store.NO));
 
-      DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1").addField("field", "test", ANALYZER).build());
+      MatchingQueries<QueryMatch> matches
+          = monitor.match(doc, matcherFactory(executor, SimpleMatcher.FACTORY, 10));
 
-      Matches<QueryMatch> matches
-          = monitor.match(batch, matcherFactory(executor, SimpleMatcher.FACTORY, 10));
-
-      assertEquals(1000, matches.getMatchCount("1"));
+      assertEquals(1000, matches.getMatchCount());
     }
     finally {
       executor.shutdown();
@@ -75,7 +75,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
     ExecutorService executor = Executors.newFixedThreadPool(4, new NamedThreadFactory("matchers"));
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = new Monitor(ANALYZER)) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 10; i++) {
         queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("test^10 doc " + i)));
@@ -83,17 +83,16 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       monitor.register(queries);
       assertEquals(30, monitor.getDisjunctCount());
 
-      DocumentBatch batch = DocumentBatch.of(InputDocument.builder("1")
-          .addField("field", "test doc doc", ANALYZER)
-          .build());
+      Document doc = new Document();
+      doc.add(newTextField("field", "test doc doc", Field.Store.NO));
 
-      Matches<ScoringMatch> matches
-          = monitor.match(batch, matcherFactory(executor, ScoringMatcher.FACTORY, 10));
+      MatchingQueries<ScoringMatch> matches
+          = monitor.match(doc, matcherFactory(executor, ScoringMatcher.FACTORY, 10));
 
       assertEquals(20, matches.getQueriesRun());
-      assertEquals(10, matches.getMatchCount("1"));
+      assertEquals(10, matches.getMatchCount());
       assertTrue(matches.getErrors().isEmpty());
-      for (ScoringMatch match : matches.getMatches("1")) {
+      for (ScoringMatch match : matches.getMatches()) {
         // The queries are all split into three by the QueryDecomposer, and the
         // 'test' and 'doc' parts will match.  'test' will have a higher score,
         // because of it's lower termfreq.  We need to check that each query ends
@@ -110,30 +109,30 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
     ExecutorService executor = Executors.newCachedThreadPool(new NamedThreadFactory("matchers"));
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.register(
           new MonitorQuery("1", TestSlowLog.slowQuery(250)),
           new MonitorQuery("2", new MatchAllDocsQuery()),
           new MonitorQuery("3", TestSlowLog.slowQuery(250)));
 
-      DocumentBatch batch = DocumentBatch.of(InputDocument.builder("doc1").build());
+      Document doc = new Document();
 
       MatcherFactory<QueryMatch> factory = matcherFactory(executor, SimpleMatcher.FACTORY, 10);
 
-      Matches<QueryMatch> matches = monitor.match(batch, factory);
-      assertEquals(3, matches.getMatchCount("doc1"));
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, factory);
+      assertEquals(3, matches.getMatchCount());
       assertThat(matches.getSlowLog().toString(), containsString("1 ["));
       assertThat(matches.getSlowLog().toString(), containsString("3 ["));
       assertThat(matches.getSlowLog().toString(), not(containsString("2 [")));
 
       monitor.setSlowLogLimit(1);
-      String slowlog = monitor.match(batch, factory).getSlowLog().toString();
+      String slowlog = monitor.match(doc, factory).getSlowLog().toString();
       assertThat(slowlog, containsString("1 ["));
       assertThat(slowlog, containsString("2 ["));
       assertThat(slowlog, containsString("3 ["));
 
       monitor.setSlowLogLimit(2000000000000L);
-      assertFalse(monitor.match(batch, factory).getSlowLog().iterator().hasNext());
+      assertFalse(monitor.match(doc, factory).getSlowLog().iterator().hasNext());
     }
     finally {
       executor.shutdown();

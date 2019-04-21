@@ -17,18 +17,18 @@
 
 package org.apache.lucene.luwak;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.luwak.matchers.ScoringMatch;
 import org.apache.lucene.luwak.matchers.ScoringMatcher;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSimilarities extends LuceneTestCase {
+public class TestSimilarities extends MonitorTestBase {
 
   public void testNonStandardSimilarity() throws Exception {
 
-    try (Monitor monitor = new Monitor()) {
+    try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", MonitorTestBase.parse("test")));
 
       Similarity similarity = new ClassicSimilarity() {
@@ -38,22 +38,14 @@ public class TestSimilarities extends LuceneTestCase {
         }
       };
 
-      InputDocument doc = InputDocument.builder("doc")
-          .addField("field", "this is a test", new StandardAnalyzer()).build();
+      Document doc = new Document();
+      doc.add(newTextField("field", "this is a test", Field.Store.NO));
 
-      DocumentBatch batch = new DocumentBatch.Builder()
-          .add(doc)
-          .build();
+      MatchingQueries<ScoringMatch> standard = monitor.match(doc, ScoringMatcher.factory(new ClassicSimilarity()));
+      MatchingQueries<ScoringMatch> withSim = monitor.match(doc, ScoringMatcher.factory(similarity));
 
-      DocumentBatch standardBatch = new DocumentBatch.Builder()
-          .add(doc)
-          .build();
-
-      Matches<ScoringMatch> standard = monitor.match(standardBatch, ScoringMatcher.factory(new ClassicSimilarity()));
-      Matches<ScoringMatch> withSim = monitor.match(batch, ScoringMatcher.factory(similarity));
-
-      float standScore = standard.getMatches("doc").iterator().next().getScore();
-      float simScore = withSim.getMatches("doc").iterator().next().getScore();
+      float standScore = standard.getMatches().iterator().next().getScore();
+      float simScore = withSim.getMatches().iterator().next().getScore();
       assertEquals(standScore, simScore / 1000, 0.1f);
     }
   }

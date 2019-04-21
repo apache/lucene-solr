@@ -17,59 +17,38 @@
 
 package org.apache.lucene.luwak.presearcher;
 
-import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.lucene.luwak.Matches;
+import org.apache.lucene.luwak.MatchingQueries;
+import org.apache.lucene.luwak.MultiMatchingQueries;
 import org.apache.lucene.luwak.QueryMatch;
 
 /**
- * Wraps a {@link Matches} with information on which presearcher queries were selected
+ * Wraps a {@link MultiMatchingQueries} with information on which presearcher queries were selected
  */
-public class PresearcherMatches<T extends QueryMatch> implements Iterable<PresearcherMatch<T>> {
+public class PresearcherMatches<T extends QueryMatch> {
 
   private final Map<String, StringBuilder> matchingTerms;
 
   /** The wrapped Matches */
-  public final Matches<T> matcher;
+  public final MultiMatchingQueries<T> matcher;
 
   /**
    * Builds a new PresearcherMatches
    */
-  public PresearcherMatches(Map<String, StringBuilder> matchingTerms, Matches<T> matcher) {
+  public PresearcherMatches(Map<String, StringBuilder> matchingTerms, MultiMatchingQueries<T> matcher) {
     this.matcher = matcher;
     this.matchingTerms = matchingTerms;
   }
 
   /**
-   * Returns match information for a given query and document
+   * Returns match information for a given query
    */
-  public PresearcherMatch<T> match(String queryId, String docId) {
+  public PresearcherMatch<T> match(String queryId, int doc) {
     StringBuilder found = matchingTerms.get(queryId);
     if (found != null)
-      return new PresearcherMatch<>(queryId, found.toString(), matcher.matches(queryId, docId));
+      return new PresearcherMatch<>(queryId, found.toString(), matcher.matches(queryId, doc));
     return null;
   }
 
-  @Override
-  public Iterator<PresearcherMatch<T>> iterator() {
-    final Iterator<String> ids = matchingTerms.keySet().iterator();
-    return new Iterator<PresearcherMatch<T>>() {
-      @Override
-      public boolean hasNext() {
-        return ids.hasNext();
-      }
-
-      @Override
-      public PresearcherMatch<T> next() {
-        String id = ids.next();
-        return new PresearcherMatch<>(id, matchingTerms.get(id).toString(), matcher.matches(id, ""));
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException();
-      }
-    };
-  }
 }
