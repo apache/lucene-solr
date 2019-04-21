@@ -35,7 +35,6 @@ import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryIndexConfiguration;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.QueryTermFilter;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -59,7 +58,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(query1, query2, query3);
 
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount());
       assertNotNull(matches.matches("2"));
       assertEquals(2, matches.getQueriesRun());
@@ -74,11 +73,11 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("document -test")));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
 
-      matches = monitor.match(buildDoc(TEXTFIELD, "weeble sclup test"), SimpleMatcher.FACTORY);
+      matches = monitor.match(buildDoc(TEXTFIELD, "weeble sclup test"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
     }
@@ -90,7 +89,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("/hell./")));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "hello"), SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "hello"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
     }

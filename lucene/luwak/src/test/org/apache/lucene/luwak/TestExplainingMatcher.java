@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.luwak.ExplainingMatch;
 import org.apache.lucene.luwak.MatchingQueries;
 import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
@@ -37,7 +38,7 @@ public class TestExplainingMatcher extends MonitorTestBase {
       Document doc = new Document();
       doc.add(newTextField("field", "test", Field.Store.NO));
 
-      MatchingQueries<ExplainingMatch> matches = monitor.match(doc, ExplainingMatcher.FACTORY);
+      MatchingQueries<ExplainingMatch> matches = monitor.match(doc, ExplainingMatch.MATCHER);
       assertNotNull(matches.matches("1"));
       assertNotNull(matches.matches("1").getExplanation());
     }

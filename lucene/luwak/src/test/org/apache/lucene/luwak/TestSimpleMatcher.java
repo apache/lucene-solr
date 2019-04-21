@@ -15,36 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
-import org.apache.lucene.luwak.MatcherFactory;
+import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.luwak.MatchingQueries;
+import org.apache.lucene.luwak.Monitor;
+import org.apache.lucene.luwak.MonitorQuery;
+import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.ScoreMode;
 
-/**
- * A Matcher that records whether or not a query matches
- */
-public class SimpleMatcher extends CollectingMatcher<QueryMatch> {
+public class TestSimpleMatcher extends MonitorTestBase {
 
-  private SimpleMatcher(IndexSearcher searcher) {
-    super(searcher, ScoreMode.COMPLETE_NO_SCORES);
+  public void testSimpleMatcher() throws IOException {
+
+    try (Monitor monitor = newMonitor()) {
+      monitor.register(
+          new MonitorQuery("1", parse("test")),
+          new MonitorQuery("2", parse("wibble")));
+      Document doc = new Document();
+      doc.add(newTextField(FIELD, "test", Field.Store.NO));
+
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
+      assertNotNull(matches.matches("1"));
+    }
   }
-
-  @Override
-  public QueryMatch resolve(QueryMatch match1, QueryMatch match2) {
-    return match1;
-  }
-
-  @Override
-  protected QueryMatch doMatch(String queryId, int docId, Scorable scorer) {
-    return new QueryMatch(queryId);
-  }
-
-  /**
-   * A MatcherFactory to create new SimpleMatcher instances
-   */
-  public static final MatcherFactory<QueryMatch> FACTORY = SimpleMatcher::new;
-
 }

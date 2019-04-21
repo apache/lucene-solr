@@ -25,7 +25,6 @@ import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -44,7 +43,7 @@ public class TestPresearcherMatchCollector extends MonitorTestBase {
       doc.add(newTextField(FIELD, "this is a foo test", Field.Store.NO));
       doc.add(newTextField("f2", "quuz", Field.Store.NO));
 
-      PresearcherMatches<QueryMatch> matches = monitor.debug(doc, SimpleMatcher.FACTORY);
+      PresearcherMatches<QueryMatch> matches = monitor.debug(doc, QueryMatch.SIMPLE_MATCHER);
 
       assertNotNull(matches.match("1", 0));
       assertEquals(" field:test", matches.match("1", 0).presearcherMatches);

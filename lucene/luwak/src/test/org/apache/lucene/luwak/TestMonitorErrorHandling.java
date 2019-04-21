@@ -20,11 +20,8 @@ package org.apache.lucene.luwak;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 
 public class TestMonitorErrorHandling extends MonitorTestBase {
@@ -39,7 +36,7 @@ public class TestMonitorErrorHandling extends MonitorTestBase {
 
       Document doc = new Document();
       doc.add(newTextField(FIELD, "test", Field.Store.NO));
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
 
       assertEquals(1, matches.getErrors().size());
       assertEquals(2, matches.getMatchCount());

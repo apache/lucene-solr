@@ -23,7 +23,6 @@ import java.util.Collections;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 
 public class TestMonitorPersistence extends MonitorTestBase {
@@ -44,7 +43,7 @@ public class TestMonitorPersistence extends MonitorTestBase {
           mq("3", "test", "language", "en"),
           mq("4", "test", "wibble", "quack"));
 
-      assertEquals(4, monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount());
+      assertEquals(4, monitor.match(doc, QueryMatch.SIMPLE_MATCHER).getMatchCount());
 
       IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
           () -> monitor.register(new MonitorQuery("5", new MatchAllDocsQuery(), null, Collections.emptyMap())));
@@ -53,7 +52,7 @@ public class TestMonitorPersistence extends MonitorTestBase {
 
     try (Monitor monitor2 = new Monitor(ANALYZER, config)) {
       assertEquals(4, monitor2.getQueryCount());
-      assertEquals(4, monitor2.match(doc, SimpleMatcher.FACTORY).getMatchCount());
+      assertEquals(4, monitor2.match(doc, QueryMatch.SIMPLE_MATCHER).getMatchCount());
 
       MonitorQuery mq = monitor2.getQuery("4");
       assertEquals("quack", mq.getMetadata().get("wibble"));

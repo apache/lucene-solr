@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.QueryMatch;
+import org.apache.lucene.luwak.ScoringMatch;
 import org.apache.lucene.luwak.TestSlowLog;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
@@ -62,7 +63,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       doc.add(newTextField("field", "test", Field.Store.NO));
 
       MatchingQueries<QueryMatch> matches
-          = monitor.match(doc, matcherFactory(executor, SimpleMatcher.FACTORY, 10));
+          = monitor.match(doc, matcherFactory(executor, QueryMatch.SIMPLE_MATCHER, 10));
 
       assertEquals(1000, matches.getMatchCount());
     }
@@ -87,7 +88,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       doc.add(newTextField("field", "test doc doc", Field.Store.NO));
 
       MatchingQueries<ScoringMatch> matches
-          = monitor.match(doc, matcherFactory(executor, ScoringMatcher.FACTORY, 10));
+          = monitor.match(doc, matcherFactory(executor, ScoringMatch.DEFAULT_MATCHER, 10));
 
       assertEquals(20, matches.getQueriesRun());
       assertEquals(10, matches.getMatchCount());
@@ -117,7 +118,7 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
       Document doc = new Document();
 
-      MatcherFactory<QueryMatch> factory = matcherFactory(executor, SimpleMatcher.FACTORY, 10);
+      MatcherFactory<QueryMatch> factory = matcherFactory(executor, QueryMatch.SIMPLE_MATCHER, 10);
 
       MatchingQueries<QueryMatch> matches = monitor.match(doc, factory);
       assertEquals(3, matches.getMatchCount());

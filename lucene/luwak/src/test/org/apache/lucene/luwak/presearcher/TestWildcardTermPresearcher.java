@@ -26,7 +26,6 @@ import org.apache.lucene.luwak.Monitor;
 import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 
 public class TestWildcardTermPresearcher extends PresearcherTestBase {
 
@@ -34,7 +33,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("/hell.*/")));
       assertEquals(1,
-          monitor.match(buildDoc(TEXTFIELD, "well hello there"), SimpleMatcher.FACTORY).getMatchCount());
+          monitor.match(buildDoc(TEXTFIELD, "well hello there"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
 
     }
   }
@@ -42,7 +41,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
   public void testNgramsOnlyMatchWildcards() throws IOException {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("hello")));
-      assertEquals(0, monitor.match(buildDoc(TEXTFIELD, "hellopolis"), SimpleMatcher.FACTORY).getQueriesRun());
+      assertEquals(0, monitor.match(buildDoc(TEXTFIELD, "hellopolis"), QueryMatch.SIMPLE_MATCHER).getQueriesRun());
     }
   }
 
@@ -62,7 +61,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
       Document doc = new Document();
       doc.add(newTextField(TEXTFIELD, repeat("a", WildcardNGramPresearcherComponent.DEFAULT_MAX_TOKEN_SIZE + 1), Field.Store.NO));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getQueriesRun());
       assertNotNull(matches.matches("1"));
     }
@@ -73,7 +72,7 @@ public class TestWildcardTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("foo")));
       assertEquals(1,
-          monitor.match(buildDoc(TEXTFIELD, "Foo foo"), SimpleMatcher.FACTORY).getMatchCount());
+          monitor.match(buildDoc(TEXTFIELD, "Foo foo"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
     }
   }
 
