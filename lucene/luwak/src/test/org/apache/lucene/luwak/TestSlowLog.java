@@ -20,7 +20,6 @@ package org.apache.lucene.luwak;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -79,21 +78,21 @@ public class TestSlowLog extends MonitorTestBase {
 
       Document doc1 = new Document();
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc1, QueryMatch.SIMPLE_MATCHER);
       String slowlog = matches.getSlowLog().toString();
       assertThat(slowlog, containsString("1 ["));
       assertThat(slowlog, containsString("3 ["));
       assertThat(slowlog, not(containsString("2 [")));
 
       monitor.setSlowLogLimit(1);
-      matches = monitor.match(doc1, SimpleMatcher.FACTORY);
+      matches = monitor.match(doc1, QueryMatch.SIMPLE_MATCHER);
       slowlog = matches.getSlowLog().toString();
       assertThat(slowlog, containsString("1 ["));
       assertThat(slowlog, containsString("2 ["));
       assertThat(slowlog, containsString("3 ["));
 
       monitor.setSlowLogLimit(2000000000000L);
-      assertFalse(monitor.match(doc1, SimpleMatcher.FACTORY).getSlowLog().iterator().hasNext());
+      assertFalse(monitor.match(doc1, QueryMatch.SIMPLE_MATCHER).getSlowLog().iterator().hasNext());
     }
   }
 }

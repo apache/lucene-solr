@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-
-import org.apache.lucene.luwak.MatcherFactory;
-import org.apache.lucene.luwak.QueryMatch;
 
 public class TestPartitionMatcher extends ConcurrentMatcherTestBase {
 

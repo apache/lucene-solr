@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,11 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.lucene.luwak.CandidateMatcher;
-import org.apache.lucene.luwak.MatchError;
-import org.apache.lucene.luwak.MatcherFactory;
-import org.apache.lucene.luwak.MultiMatchingQueries;
-import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 

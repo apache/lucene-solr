@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.Map;
@@ -28,19 +28,11 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
-/**
- * Extend this class to create matches that require a Scorer
- *
- * @param <T> the type of QueryMatch that this class returns
- */
-public abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
+abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
 
   private final ScoreMode scoreMode;
 
-  /**
-   * Creates a new CollectingMatcher for the supplied DocumentBatch
-   */
-  public CollectingMatcher(IndexSearcher searcher, ScoreMode scoreMode) {
+  CollectingMatcher(IndexSearcher searcher, ScoreMode scoreMode) {
     super(searcher);
     this.scoreMode = scoreMode;
   }

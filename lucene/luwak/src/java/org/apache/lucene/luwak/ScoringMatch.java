@@ -15,14 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.matchers;
+package org.apache.lucene.luwak;
 
-import org.apache.lucene.luwak.QueryMatch;
+import java.io.IOException;
+
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A QueryMatch that reports scores for each match
  */
 public class ScoringMatch extends QueryMatch {
+
+  public static final MatcherFactory<ScoringMatch> matchWithSimilarity(Similarity similarity) {
+    return searcher -> {
+      searcher.setSimilarity(similarity);
+      return new CollectingMatcher<ScoringMatch>(searcher, ScoreMode.COMPLETE) {
+        @Override
+        protected ScoringMatch doMatch(String queryId, int doc, Scorable scorer) throws IOException {
+          float score = scorer.score();
+          if (score > 0)
+            return new ScoringMatch(queryId, score);
+          return null;
+        }
+
+        @Override
+        public ScoringMatch resolve(ScoringMatch match1, ScoringMatch match2) {
+          return new ScoringMatch(match1.getQueryId(), match1.getScore() + match2.getScore());
+        }
+      };
+    };
+  }
+
+  public static final MatcherFactory<ScoringMatch> DEFAULT_MATCHER = matchWithSimilarity(new BM25Similarity());
 
   private final float score;
 

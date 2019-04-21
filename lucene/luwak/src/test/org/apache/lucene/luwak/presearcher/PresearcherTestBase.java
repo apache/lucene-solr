@@ -35,7 +35,6 @@ import org.apache.lucene.luwak.MonitorTestBase;
 import org.apache.lucene.luwak.MultiMatchingQueries;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -67,14 +66,14 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
       monitor.register(new MonitorQuery("1", parse("field_1:test")));
 
       assertEquals(0,
-          monitor.match(buildDoc("field_2", "test"), SimpleMatcher.FACTORY).getMatchCount());
+          monitor.match(buildDoc("field_2", "test"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
     }
 
   }
 
   public void testEmptyMonitorHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("field_2", "test"), SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("field_2", "test"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
     }
@@ -84,7 +83,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
       assertEquals(1,
-          monitor.match(buildDoc("f", "wibble"), SimpleMatcher.FACTORY).getMatchCount());
+          monitor.match(buildDoc("f", "wibble"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
     }
   }
 
@@ -98,7 +97,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
       MultiMatchingQueries<QueryMatch> matches = monitor.match(new Document[]{
           buildDoc("f", "bar"), buildDoc("f", "foo")
-      }, SimpleMatcher.FACTORY);
+      }, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount(0));
       assertEquals(0, matches.getMatchCount(1));
     }
@@ -108,7 +107,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("f", "wibble"), SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("f", "wibble"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
     }
@@ -168,7 +167,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
       Document doc = new Document();
       doc.add(new Field("f", new NonStringTokenStream(), ft));
-      MatchingQueries<QueryMatch> m = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> m = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, m.getMatchCount());
       assertEquals(1, m.getQueriesRun());
     }

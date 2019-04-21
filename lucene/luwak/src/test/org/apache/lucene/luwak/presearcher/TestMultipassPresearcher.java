@@ -34,7 +34,6 @@ import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryIndexConfiguration;
 import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.luwak.QueryTermFilter;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -59,7 +58,7 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
           new MonitorQuery("4", parse("field:\"this and that\"")));
 
       MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("field", "hello world and goodbye"),
-          SimpleMatcher.FACTORY);
+          QueryMatch.SIMPLE_MATCHER);
       assertEquals(2, matches.getQueriesRun());
       assertNotNull(matches.matches("1"));
     }
@@ -71,15 +70,15 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
       monitor.register(new MonitorQuery("1", parse("field:(+foo +bar +(badger cormorant))")));
 
       MatchingQueries<QueryMatch> matches
-          = monitor.match(buildDoc("field", "a badger walked into a bar"), SimpleMatcher.FACTORY);
+          = monitor.match(buildDoc("field", "a badger walked into a bar"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
 
-      matches = monitor.match(buildDoc("field", "foo badger cormorant"), SimpleMatcher.FACTORY);
+      matches = monitor.match(buildDoc("field", "foo badger cormorant"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
 
-      matches = monitor.match(buildDoc("field", "bar badger foo"), SimpleMatcher.FACTORY);
+      matches = monitor.match(buildDoc("field", "bar badger foo"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount());
     }
 

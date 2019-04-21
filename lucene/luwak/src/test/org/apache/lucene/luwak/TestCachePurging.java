@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.util.NamedThreadFactory;
 
@@ -58,17 +57,17 @@ public class TestCachePurging extends MonitorTestBase {
 
       Document doc = new Document();
       doc.add(newTextField("field", "test1 test2 test3", Field.Store.NO));
-      assertThat(monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount(), is(3));
+      assertThat(monitor.match(doc, QueryMatch.SIMPLE_MATCHER).getMatchCount(), is(3));
 
       monitor.deleteById("1");
       assertThat(monitor.getQueryCount(), is(2));
       assertThat(monitor.getQueryCacheStats().cachedQueries, is(4));
-      assertThat(monitor.match(doc, SimpleMatcher.FACTORY).getMatchCount(), is(2));
+      assertThat(monitor.match(doc, QueryMatch.SIMPLE_MATCHER).getMatchCount(), is(2));
 
       monitor.purgeCache();
       assertThat(monitor.getQueryCacheStats().cachedQueries, is(2));
 
-      MatchingQueries<QueryMatch> result = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> result = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertThat(result.getMatchCount(), is(2));
       assertTrue(purgeCount.get() > 0);
     }
@@ -119,7 +118,7 @@ public class TestCachePurging extends MonitorTestBase {
         assertEquals(340, monitor.getQueryCacheStats().cachedQueries);
         Document doc = new Document();
         doc.add(newTextField("field", "test", Field.Store.NO));
-        MatchingQueries<QueryMatch> matcher = monitor.match(doc, SimpleMatcher.FACTORY);
+        MatchingQueries<QueryMatch> matcher = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
         assertEquals(0, matcher.getErrors().size());
         assertEquals(340, matcher.getMatchCount());
       } finally {

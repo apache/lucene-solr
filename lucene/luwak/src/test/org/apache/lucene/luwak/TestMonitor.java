@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.matchers.SimpleMatcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -47,7 +46,7 @@ public class TestMonitor extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(FIELD, "test"))));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertNotNull(matches.getMatches());
       assertEquals(1, matches.getMatchCount());
       assertNotNull(matches.matches("query1"));
@@ -62,7 +61,7 @@ public class TestMonitor extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "test"))));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getQueriesRun());
       assertTrue(matches.getQueryBuildTime() > -1);
       assertTrue(matches.getSearchTime() > -1);
@@ -78,7 +77,7 @@ public class TestMonitor extends MonitorTestBase {
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
       monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertNotNull(matches.matches("query1"));
       assertEquals(1, matches.getQueriesRun());
     }
@@ -99,7 +98,7 @@ public class TestMonitor extends MonitorTestBase {
       monitor.deleteById("query2", "query1");
       assertEquals(1, monitor.getQueryCount());
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getQueriesRun());
       assertNotNull(matches.matches("query3"));
     }
@@ -125,7 +124,7 @@ public class TestMonitor extends MonitorTestBase {
       assertEquals(0, monitor.getQueryCount());
       Document doc = new Document();
       doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getQueriesRun());
     }
 
@@ -196,7 +195,7 @@ public class TestMonitor extends MonitorTestBase {
     try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.register(new MonitorQuery("1", new TermQuery(new Term(MonitorTestBase.FIELD, "kangaroo"))));
 
-      MultiMatchingQueries<QueryMatch> response = monitor.match(new Document[]{ doc1, doc2 }, SimpleMatcher.FACTORY);
+      MultiMatchingQueries<QueryMatch> response = monitor.match(new Document[]{ doc1, doc2 }, QueryMatch.SIMPLE_MATCHER);
       assertEquals(2, response.getBatchSize());
     }
   }
@@ -229,7 +228,7 @@ public class TestMonitor extends MonitorTestBase {
       doc1.add(newTextField(FIELD, "hello world", Field.Store.NO));
       doc1.add(newTextField(FIELD, "goodbye", Field.Store.NO));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(doc1, SimpleMatcher.FACTORY);
+      MatchingQueries<QueryMatch> matches = monitor.match(doc1, QueryMatch.SIMPLE_MATCHER);
       assertNotNull(matches.getMatches());
       assertEquals(1, matches.getMatchCount());
       assertNotNull(matches.matches("query"));
@@ -237,7 +236,7 @@ public class TestMonitor extends MonitorTestBase {
       Document doc2 = new Document();
       doc2.add(newTextField(FIELD, "hello", Field.Store.NO));
       doc2.add(newTextField(FIELD, "world", Field.Store.NO));
-      matches = monitor.match(doc2, SimpleMatcher.FACTORY);
+      matches = monitor.match(doc2, QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
     }
 
