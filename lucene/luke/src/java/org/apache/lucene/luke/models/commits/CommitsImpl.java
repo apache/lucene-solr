@@ -200,7 +200,7 @@ public final class CommitsImpl extends LukeModel implements Commits {
     if (dir == null) {
       return Collections.emptyMap();
     }
-    return Collections.unmodifiableMap(commitMap);
+    return new TreeMap<>(commitMap);
   }
 
   private SegmentInfos findSegmentInfos(long commitGen) throws LukeException, IOException {
