@@ -141,7 +141,7 @@ public class TermFilteredPresearcher extends Presearcher {
       Map<String, List<BytesRef>> terms = new HashMap<>();
 
       @Override
-      public void addTerm(String field, BytesRef term) throws IOException {
+      public void addTerm(String field, BytesRef term) {
         List<BytesRef> t = terms.computeIfAbsent(field, f -> new ArrayList<>());
         t.add(term);
       }
@@ -157,7 +157,7 @@ public class TermFilteredPresearcher extends Presearcher {
     };
   }
 
-  public static final FieldType QUERYFIELDTYPE;
+  static final FieldType QUERYFIELDTYPE;
 
   static {
     QUERYFIELDTYPE = new FieldType(TextField.TYPE_NOT_STORED);
@@ -196,13 +196,13 @@ public class TermFilteredPresearcher extends Presearcher {
     int upto = -1;
 
 
-    public BytesRefHashIterator(BytesRefHash terms) {
+    BytesRefHashIterator(BytesRefHash terms) {
       this.terms = terms;
       this.sortedTerms = terms.sort();
     }
 
     @Override
-    public BytesRef next() throws IOException {
+    public BytesRef next() {
       if (upto >= sortedTerms.length)
         return null;
       upto++;
