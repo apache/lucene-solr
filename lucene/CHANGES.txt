@@ -56,6 +56,10 @@ Improvements
 * LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
   executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
 
+* LUCENE-8757: When provided with an ExecutorService to run queries across
+  multiple threads, IndexSearcher now groups small segments together, up to
+  250k docs per slice. (Atri Sharma via Adrien Grand)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
