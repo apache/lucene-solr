@@ -31,25 +31,25 @@ public class TestQueryTermComparators extends LuceneTestCase {
 
   public void testAnyTokensAreNotPreferred() {
 
-    QueryTree node1 = QueryTree.term(new QueryTerm("f", "foo", QueryTerm.Type.EXACT), 1.0);
+    QueryTree node1 = QueryTree.term("f", new BytesRef("foo"), 1.0);
     QueryTree node2 = QueryTree.anyTerm("*:*");
 
     QueryTree conjunction = QueryTree.conjunction(node1, node2);
-    Set<QueryTerm> terms = new HashSet<>();
-    conjunction.collectTerms(terms);
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "foo", QueryTerm.Type.EXACT));
+    Set<Term> terms = new HashSet<>();
+    conjunction.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    Set<Term> expected = Collections.singleton(new Term("f", "foo"));
     assertEquals(expected, terms);
   }
 
   public void testHigherWeightsArePreferred() {
 
-    QueryTree node1 = QueryTree.term(new QueryTerm("f", "foo", QueryTerm.Type.EXACT), 1);
-    QueryTree node2 = QueryTree.term(new QueryTerm("f", "foobar", QueryTerm.Type.EXACT), 1.5);
+    QueryTree node1 = QueryTree.term(new Term("f", "foo"), 1);
+    QueryTree node2 = QueryTree.term(new Term("f", "foobar"), 1.5);
 
     QueryTree conjunction = QueryTree.conjunction(node1, node2);
-    Set<QueryTerm> terms = new HashSet<>();
-    conjunction.collectTerms(terms);
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "foobar", QueryTerm.Type.EXACT));
+    Set<Term> terms = new HashSet<>();
+    conjunction.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    Set<Term> expected = Collections.singleton(new Term("f", "foobar"));
     assertEquals(expected, terms);
   }
 
@@ -57,27 +57,27 @@ public class TestQueryTermComparators extends LuceneTestCase {
 
     Term term = new Term("f", "foobar");
 
-    QueryTree node1 = QueryTree.term(new QueryTerm(term), 1);
+    QueryTree node1 = QueryTree.term(term, 1);
     QueryTree node2 = QueryTree.disjunction(
-        QueryTree.term(new QueryTerm(term), 1),
-        QueryTree.term(new QueryTerm(term), 1));
+        QueryTree.term(term, 1),
+        QueryTree.term(term, 1));
 
     QueryTree conjunction = QueryTree.conjunction(node1, node2);
-    Set<QueryTerm> terms = new HashSet<>();
-    conjunction.collectTerms(terms);
+    Set<Term> terms = new HashSet<>();
+    conjunction.collectTerms((f, b) -> terms.add(new Term(f, b)));
     assertEquals(1, terms.size());
 
   }
 
   public void testFieldWeights() {
     TermWeightor weightor = TermWeightor.fieldWeightor(1.5, "g");
-    assertEquals(1, weightor.applyAsDouble(new QueryTerm("f", "foo", QueryTerm.Type.EXACT)), 0);
-    assertEquals(1.5f, weightor.applyAsDouble(new QueryTerm("g", "foo", QueryTerm.Type.EXACT)), 0);
+    assertEquals(1, weightor.applyAsDouble(new Term("f", "foo")), 0);
+    assertEquals(1.5f, weightor.applyAsDouble(new Term("g", "foo")), 0);
   }
 
   public void testTermWeights() {
     TermWeightor weight = TermWeightor.termWeightor(0.01f, new BytesRef("START"));
-    assertEquals(0.01f, weight.applyAsDouble(new QueryTerm("f", "START", QueryTerm.Type.EXACT)), 0);
+    assertEquals(0.01f, weight.applyAsDouble(new Term("f", "START")), 0);
   }
 
   public void testTermFrequencyNorms() {
@@ -87,8 +87,8 @@ public class TestQueryTermComparators extends LuceneTestCase {
     termfreqs.put("s", 47088);
     TermWeightor weight = TermWeightor.termFreqWeightor(termfreqs, 100, 0.8);
 
-    assertTrue(weight.applyAsDouble(new QueryTerm("f", "france", QueryTerm.Type.EXACT)) >
-        weight.applyAsDouble(new QueryTerm("f", "s", QueryTerm.Type.EXACT)));
+    assertTrue(weight.applyAsDouble(new Term("f", "france")) >
+        weight.applyAsDouble(new Term("f", "s")));
 
   }
 
@@ -96,21 +96,8 @@ public class TestQueryTermComparators extends LuceneTestCase {
     TermWeightor weight = TermWeightor.termAndFieldWeightor(0.1,
         new Term("field1", "f"),
         new Term("field1", "g"));
-    assertEquals(0.1, weight.applyAsDouble(new QueryTerm("field1", "f", QueryTerm.Type.EXACT)), 0);
-    assertEquals(1, weight.applyAsDouble(new QueryTerm("field2", "f", QueryTerm.Type.EXACT)), 0);
-  }
-
-  public void testTermTypeWeightNorms() {
-
-    TermWeightor weight = TermWeightor.combine(
-        TermWeightor.typeWeightor(0.2, QueryTerm.Type.CUSTOM),
-        TermWeightor.typeWeightor(0.1, QueryTerm.Type.CUSTOM, "wildcard")
-    );
-
-    assertEquals(0.2 * 0.1, weight.applyAsDouble(new QueryTerm("field", "fooXX", QueryTerm.Type.CUSTOM, "wildcard")), 0);
-    assertEquals(1, weight.applyAsDouble(new QueryTerm("field", "foo", QueryTerm.Type.EXACT)), 0);
-    assertEquals(0.2, weight.applyAsDouble(new QueryTerm("field", "foo", QueryTerm.Type.CUSTOM)), 0);
-
+    assertEquals(0.1, weight.applyAsDouble(new Term("field1", "f")), 0);
+    assertEquals(1, weight.applyAsDouble(new Term("field2", "f")), 0);
   }
 
 }

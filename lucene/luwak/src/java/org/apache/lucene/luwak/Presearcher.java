@@ -22,25 +22,33 @@ import java.util.function.BiPredicate;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
-import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
-import org.apache.lucene.luwak.presearcher.WildcardNGramPresearcherComponent;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract base class of all Presearcher implementations
- * <p>
  * A Presearcher is used by the Monitor to reduce the number of queries actually
  * run against a Document.  It defines how queries are stored in the monitor's
  * internal index, and how a Document is converted to a query against that
  * index.
- * <p>
- * See {@link MatchAllPresearcher}
- * See {@link TermFilteredPresearcher}
- * See {@link WildcardNGramPresearcherComponent}
  */
 public abstract class Presearcher {
+
+  /**
+   * A Presearcher implementation that does no query filtering, and runs all
+   * registered queries
+   */
+  public static final Presearcher NO_FILTERING = new Presearcher() {
+    @Override
+    public Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor) {
+      return new MatchAllDocsQuery();
+    }
+
+    @Override
+    public Document indexQuery(Query query, Map<String, String> metadata) {
+      return new Document();
+    }
+  };
 
   /**
    * Build a query for a Monitor's queryindex from a LeafReader over a set of documents to monitor.

@@ -23,16 +23,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
+import org.apache.lucene.util.BytesRef;
 
 public abstract class QueryTree {
 
   public abstract double weight();
 
-  public abstract void collectTerms(Set<QueryTerm> termsList);
+  public abstract void collectTerms(BiConsumer<String, BytesRef> termCollector);
 
   public abstract boolean advancePhase(float minWeight);
 
@@ -54,15 +57,14 @@ public abstract class QueryTree {
   }
 
   public static QueryTree term(Term term, TermWeightor weightor) {
-    QueryTerm queryTerm = new QueryTerm(term);
-    return term(queryTerm, weightor);
+    return term(term.field(), term.bytes(), weightor.applyAsDouble(term));
   }
 
-  public static QueryTree term(QueryTerm queryTerm, TermWeightor weightor) {
-    return term(queryTerm, weightor.applyAsDouble(queryTerm));
+  public static QueryTree term(Term term, double weight) {
+    return term(term.field(), term.bytes(), weight);
   }
 
-  public static QueryTree term(QueryTerm queryTerm, double weight) {
+  public static QueryTree term(String field, BytesRef term, double weight) {
     return new QueryTree() {
       @Override
       public double weight() {
@@ -70,8 +72,8 @@ public abstract class QueryTree {
       }
 
       @Override
-      public void collectTerms(Set<QueryTerm> termsList) {
-        termsList.add(queryTerm);
+      public void collectTerms(BiConsumer<String, BytesRef> termCollector) {
+        termCollector.accept(field, term);
       }
 
       @Override
@@ -86,7 +88,7 @@ public abstract class QueryTree {
 
       @Override
       public String toString(int depth) {
-        return space(depth) + queryTerm + "^" + weight;
+        return space(depth) + field + ":" + term.utf8ToString() + "^" + weight;
       }
     };
   }
@@ -99,8 +101,8 @@ public abstract class QueryTree {
       }
 
       @Override
-      public void collectTerms(Set<QueryTerm> termsList) {
-        termsList.add(new QueryTerm("__any__", reason, QueryTerm.Type.ANY));
+      public void collectTerms(BiConsumer<String, BytesRef> termCollector) {
+        termCollector.accept(TermFilteredPresearcher.ANYTOKEN_FIELD, new BytesRef(TermFilteredPresearcher.ANYTOKEN));
       }
 
       @Override
@@ -176,8 +178,8 @@ public abstract class QueryTree {
     }
 
     @Override
-    public void collectTerms(Set<QueryTerm> termsList) {
-      children.get(0).collectTerms(termsList);
+    public void collectTerms(BiConsumer<String, BytesRef> termCollector) {
+      children.get(0).collectTerms(termCollector);
     }
 
     @Override
@@ -234,9 +236,9 @@ public abstract class QueryTree {
     }
 
     @Override
-    public void collectTerms(Set<QueryTerm> termsList) {
+    public void collectTerms(BiConsumer<String, BytesRef> termCollector) {
       for (QueryTree child : children) {
-        child.collectTerms(termsList);
+        child.collectTerms(termCollector);
       }
     }
 

@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.presearcher.WildcardNGramPresearcherComponent;
+import org.apache.lucene.luwak.presearcher.RegexpQueryHandler;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -39,22 +39,11 @@ public class TestExtractors extends LuceneTestCase {
 
   private static final QueryAnalyzer treeBuilder = new QueryAnalyzer();
 
-  private static final TermWeightor WEIGHTOR = TermWeightor.DEFAULT;
-
-  public void testRegexpExtractor() {
-
-    QueryAnalyzer builder = QueryAnalyzer.fromComponents(
-        new WildcardNGramPresearcherComponent("XX", 30, "WILDCARD", null));
-
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "califragilisticXX", QueryTerm.Type.CUSTOM, "WILDCARD"));
-    assertEquals(expected, builder.collectTerms(new RegexpQuery(new Term("field", "super.*califragilistic")), WEIGHTOR));
-
-    expected = Collections.singleton(new QueryTerm("field", "hellXX", QueryTerm.Type.CUSTOM, "WILDCARD"));
-    assertEquals(expected, builder.collectTerms(new RegexpQuery(new Term("field", "hell.")), WEIGHTOR));
-
-    expected = Collections.singleton(new QueryTerm("field", "heXX", QueryTerm.Type.CUSTOM, "WILDCARD"));
-    assertEquals(expected, builder.collectTerms(new RegexpQuery(new Term("field", "hel?o")), WEIGHTOR));
-
+  private Set<Term> collectTerms(Query query) {
+    Set<Term> terms = new HashSet<>();
+    QueryTree tree = treeBuilder.buildTree(query, TermWeightor.DEFAULT);
+    tree.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    return terms;
   }
 
   public void testConstantScoreQueryExtractor() {
@@ -64,8 +53,8 @@ public class TestExtractors extends LuceneTestCase {
     bq.add(new TermQuery(new Term("f", "q2")), BooleanClause.Occur.SHOULD);
 
     Query csqWithQuery = new ConstantScoreQuery(bq.build());
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "q1", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(csqWithQuery, WEIGHTOR));
+    Set<Term> expected = Collections.singleton(new Term("f", "q1"));
+    assertEquals(expected, collectTerms(csqWithQuery));
 
   }
 
@@ -75,8 +64,8 @@ public class TestExtractors extends LuceneTestCase {
     pq.add(new Term("f", "hello"));
     pq.add(new Term("f", "encyclopedia"));
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "encyclopedia", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(pq.build(), WEIGHTOR));
+    Set<Term> expected = Collections.singleton(new Term("f", "encyclopedia"));
+    assertEquals(expected, collectTerms(pq.build()));
 
   }
 
@@ -87,8 +76,8 @@ public class TestExtractors extends LuceneTestCase {
     bq.add(new TermQuery(new Term("f", "q2")), BooleanClause.Occur.SHOULD);
 
     Query boostQuery = new BoostQuery(bq.build(), 0.5f);
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "q1", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(boostQuery, WEIGHTOR));
+    Set<Term> expected = Collections.singleton(new Term("f", "q1"));
+    assertEquals(expected, collectTerms(boostQuery));
   }
 
   public void testDisjunctionMaxExtractor() {
@@ -96,11 +85,11 @@ public class TestExtractors extends LuceneTestCase {
     Query query = new DisjunctionMaxQuery(
         Arrays.asList(new TermQuery(new Term("f", "t1")), new TermQuery(new Term("f", "t2"))), 0.1f
     );
-    Set<QueryTerm> expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("f", "t1", QueryTerm.Type.EXACT),
-        new QueryTerm("f", "t2", QueryTerm.Type.EXACT)
+    Set<Term> expected = new HashSet<>(Arrays.asList(
+        new Term("f", "t1"),
+        new Term("f", "t2")
     ));
-    assertEquals(expected, treeBuilder.collectTerms(query, WEIGHTOR));
+    assertEquals(expected, collectTerms(query));
   }
 
   public void testBooleanExtractsFilter() {
@@ -108,8 +97,8 @@ public class TestExtractors extends LuceneTestCase {
         .add(new TermQuery(new Term("f", "must")), BooleanClause.Occur.MUST)
         .add(new TermQuery(new Term("f", "filter")), BooleanClause.Occur.FILTER)
         .build();
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("f", "filter", QueryTerm.Type.EXACT)); // it's longer, so it wins
-    assertEquals(expected, treeBuilder.collectTerms(q, WEIGHTOR));
+    Set<Term> expected = Collections.singleton(new Term("f", "filter")); // it's longer, so it wins
+    assertEquals(expected, collectTerms(q));
   }
 
 

@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.util.NamedThreadFactory;
 
 import static org.hamcrest.core.Is.is;
@@ -134,7 +133,7 @@ public class TestCachePurging extends MonitorTestBase {
   public void testBackgroundPurges() throws IOException, InterruptedException {
 
     QueryIndexConfiguration config = new QueryIndexConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
-    try (Monitor monitor = new Monitor(ANALYZER, MatchAllPresearcher.INSTANCE, config)) {
+    try (Monitor monitor = new Monitor(ANALYZER, Presearcher.NO_FILTERING, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
 

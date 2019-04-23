@@ -19,10 +19,10 @@ package org.apache.lucene.luwak.presearcher;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.luwak.queryanalysis.QueryTerm;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;
 import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 import org.apache.lucene.search.Query;
@@ -30,8 +30,8 @@ import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A Presearcher implementation that matches Wildcard queries by indexing regex
- * terms by their longest static substring, and generates ngrams from InputDocument
+ * A query handler implementation that matches Regexp queries by indexing regex
+ * terms by their longest static substring, and generates ngrams from Document
  * tokens to match them.
  * <p>
  * This implementation will filter out more wildcard queries than TermFilteredPresearcher,
@@ -39,7 +39,7 @@ import org.apache.lucene.util.BytesRef;
  * on the type and number of queries registered in the Monitor, and the size of documents
  * to be monitored.  Profiling is recommended.
  */
-public class WildcardNGramPresearcherComponent extends PresearcherComponent {
+public class RegexpQueryHandler implements CustomQueryHandler {
 
   /**
    * The default suffix with which to mark ngrams
@@ -59,67 +59,87 @@ public class WildcardNGramPresearcherComponent extends PresearcherComponent {
   private final String ngramSuffix;
 
   private final String wildcardToken;
+  private final BytesRef wildcardTokenBytes;
 
   private final int maxTokenSize;
 
   private final Set<String> excludedFields;
 
   /**
-   * Create a new WildcardNGramPresearcherComponent
+   * Creates a new RegexpQueryHandler
    *
    * @param ngramSuffix    the suffix with which to mark ngrams
    * @param maxTokenSize   the maximum length of an input token before WILDCARD tokens are generated
    * @param wildcardToken  the token to emit if a token is longer than maxTokenSize in length
    * @param excludedFields a Set of fields to ignore when generating ngrams
    */
-  public WildcardNGramPresearcherComponent(String ngramSuffix, int maxTokenSize, String wildcardToken, Set<String> excludedFields) {
-    super(Collections.singletonList(buildMapper(ngramSuffix, wildcardToken)));
+  public RegexpQueryHandler(String ngramSuffix, int maxTokenSize, String wildcardToken, Set<String> excludedFields) {
     this.ngramSuffix = ngramSuffix;
     this.maxTokenSize = maxTokenSize;
+    this.wildcardTokenBytes = new BytesRef(wildcardToken);
     this.wildcardToken = wildcardToken;
     this.excludedFields = excludedFields == null ? Collections.emptySet() : excludedFields;
   }
 
   /**
-   * Create a new WildcardNGramPresearcherComponent using default settings
+   * Creates a new RegexpQueryHandler using default settings
    */
-  public WildcardNGramPresearcherComponent() {
+  public RegexpQueryHandler() {
     this(DEFAULT_NGRAM_SUFFIX, DEFAULT_MAX_TOKEN_SIZE, DEFAULT_WILDCARD_TOKEN, null);
   }
 
   /**
-   * Create a new WildcardNGramPresearcherComponent with a maximum token size
+   * Creates a new RegexpQueryHandler with a maximum token size
    *
    * @param maxTokenSize the maximum length of an input token before WILDCARD tokens are generated
    */
-  public WildcardNGramPresearcherComponent(int maxTokenSize) {
+  public RegexpQueryHandler(int maxTokenSize) {
     this(DEFAULT_NGRAM_SUFFIX, maxTokenSize, DEFAULT_WILDCARD_TOKEN, null);
   }
 
   @Override
-  public TokenStream filterDocumentTokens(String field, TokenStream ts) {
+  public TokenStream wrapTermStream(String field, TokenStream ts) {
     if (excludedFields.contains(field))
       return ts;
     return new SuffixingNGramTokenFilter(ts, ngramSuffix, wildcardToken, maxTokenSize);
   }
 
   @Override
-  public BytesRef extraToken(QueryTerm term) {
-    if (term.type == QueryTerm.Type.CUSTOM && wildcardToken.equals(term.payload))
-      return new BytesRef(wildcardToken);
-    return null;
-  }
-
-  private static BiFunction<Query, TermWeightor, QueryTree> buildMapper(String ngramSuffix, String wildcardToken) {
-    return (q, w) -> {
-      if (q instanceof RegexpQuery == false) {
-        return null;
+  public QueryTree handleQuery(Query q, TermWeightor termWeightor) {
+    if (q instanceof RegexpQuery == false) {
+      return null;
+    }
+    RegexpQuery query = (RegexpQuery) q;
+    String regexp = parseOutRegexp(query.toString(""));
+    String selected = selectLongestSubstring(regexp);
+    Term term = new Term(query.getField(), selected + ngramSuffix);
+    double weight = termWeightor.applyAsDouble(term);
+    return new QueryTree() {
+      @Override
+      public double weight() {
+        return weight;
       }
-      RegexpQuery query = (RegexpQuery) q;
-      String regexp = parseOutRegexp(query.toString(""));
-      String selected = selectLongestSubstring(regexp);
-      QueryTerm term = new QueryTerm(query.getField(), selected + ngramSuffix, QueryTerm.Type.CUSTOM, wildcardToken);
-      return QueryTree.term(term, w);
+
+      @Override
+      public void collectTerms(BiConsumer<String, BytesRef> termCollector) {
+        termCollector.accept(term.field(), term.bytes());
+        termCollector.accept(term.field(), wildcardTokenBytes);
+      }
+
+      @Override
+      public boolean advancePhase(float minWeight) {
+        return false;
+      }
+
+      @Override
+      public boolean isAny() {
+        return false;
+      }
+
+      @Override
+      public String toString(int depth) {
+        return "WILDCARD_NGRAM[" + term.toString() + "]^" + weight;
+      }
     };
   }
 

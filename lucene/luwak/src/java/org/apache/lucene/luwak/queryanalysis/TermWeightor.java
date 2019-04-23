@@ -28,9 +28,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Calculates the weight of a {@link QueryTerm}
+ * Calculates the weight of a {@link Term}
  */
-public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
+public interface TermWeightor extends ToDoubleFunction<Term> {
 
   /**
    * A default TermWeightor based on token length
@@ -55,7 +55,7 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
    */
   static TermWeightor fieldWeightor(double weight, Set<String> fields) {
     return value -> {
-      if (fields.contains(value.term.field())) {
+      if (fields.contains(value.field())) {
         return weight;
       }
       return 1;
@@ -74,7 +74,7 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
    */
   static TermWeightor termWeightor(double weight, Set<BytesRef> terms) {
     return value -> {
-      if (terms.contains(value.term.bytes())) {
+      if (terms.contains(value.bytes())) {
         return weight;
       }
       return 1;
@@ -93,7 +93,7 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
    */
   static TermWeightor termAndFieldWeightor(double weight, Set<Term> terms) {
     return value -> {
-      if (terms.contains(value.term)) {
+      if (terms.contains(value)) {
         return weight;
       }
       return 1;
@@ -105,30 +105,6 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
    */
   static TermWeightor termAndFieldWeightor(double weight, Term... terms) {
     return termAndFieldWeightor(weight, new HashSet<>(Arrays.asList(terms)));
-  }
-
-  /**
-   * QueryTerms with the given type will be assigned the given weight
-   */
-  static TermWeightor typeWeightor(double weight, QueryTerm.Type type) {
-    return value -> {
-      if (Objects.equals(type, value.type)) {
-        return weight;
-      }
-      return 1;
-    };
-  }
-
-  /**
-   * QueryTerms with the given type and payload will be assigned the given weight
-   */
-  static TermWeightor typeWeightor(double weight, QueryTerm.Type type, String payload) {
-    return value -> {
-      if (Objects.equals(type, value.type) && Objects.equals(payload, value.payload)) {
-        return weight;
-      }
-      return 1;
-    };
   }
 
   /**
@@ -144,7 +120,7 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
    */
   static TermWeightor termFreqWeightor(Map<String, Integer> frequencies, double n, double k) {
     return value -> {
-      Integer mapVal = frequencies.get(value.term.text());
+      Integer mapVal = frequencies.get(value.text());
       if (mapVal != null)
         return (n / mapVal) + k;
       return 1;
@@ -167,10 +143,10 @@ public interface TermWeightor extends ToDoubleFunction<QueryTerm> {
       lengthNorms[i] = (float) (a * (Math.exp(-k * i)));
     }
     return value -> {
-      if (value.term.bytes().length >= 32) {
+      if (value.bytes().length >= 32) {
         return 4 - lengthNorms[31];
       }
-      return 4 - lengthNorms[value.term.bytes().length];
+      return 4 - lengthNorms[value.bytes().length];
     };
   }
 

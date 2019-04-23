@@ -17,12 +17,16 @@
 
 package org.apache.lucene.luwak.presearcher;
 
+import java.util.Collections;
+
 import org.apache.lucene.luwak.Presearcher;
+import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 
 public class TestFieldFilteredMultipassPresearcher extends FieldFilterPresearcherComponentTestBase {
 
   @Override
   protected Presearcher createPresearcher() {
-    return new MultipassTermFilteredPresearcher(2, new FieldFilterPresearcherComponent("language"));
+    return new MultipassTermFilteredPresearcher(2, 0, TermWeightor.DEFAULT,
+        Collections.emptyList(), Collections.singleton("language"));
   }
 }

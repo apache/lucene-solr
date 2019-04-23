@@ -18,6 +18,7 @@
 package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.document.LongPoint;
@@ -40,7 +41,10 @@ public class TestBooleanClauseWeightings extends LuceneTestCase {
             .add(new TermQuery(new Term("field1", "term2")), BooleanClause.Occur.SHOULD)
             .build(), BooleanClause.Occur.MUST)
         .build();
-    assertEquals(2, treeBuilder.collectTerms(bq, TermWeightor.DEFAULT).size());
+    QueryTree tree = treeBuilder.buildTree(bq, TermWeightor.DEFAULT);
+    Set<Term> terms = new HashSet<>();
+    tree.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    assertEquals(2, terms.size());
   }
 
   public void testLongerTermsPreferred() {
@@ -49,9 +53,12 @@ public class TestBooleanClauseWeightings extends LuceneTestCase {
         .add(new TermQuery(new Term("field1", "supercalifragilisticexpialidocious")), BooleanClause.Occur.MUST)
         .add(new TermQuery(new Term("field1", "b")), BooleanClause.Occur.MUST)
         .build();
-    Set<QueryTerm> expected
-        = Collections.singleton(new QueryTerm("field1", "supercalifragilisticexpialidocious", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(q, TermWeightor.DEFAULT));
+    Set<Term> expected
+        = Collections.singleton(new Term("field1", "supercalifragilisticexpialidocious"));
+    QueryTree tree = treeBuilder.buildTree(q, TermWeightor.DEFAULT);
+    Set<Term> terms = new HashSet<>();
+    tree.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    assertEquals(expected, terms);
   }
 
 }
