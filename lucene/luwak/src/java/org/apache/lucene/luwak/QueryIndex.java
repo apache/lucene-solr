@@ -20,6 +20,7 @@ package org.apache.lucene.luwak;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiPredicate;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -36,11 +38,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -51,14 +56,15 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
 
 class QueryIndex implements Closeable {
 
   static final class FIELDS {
-    public static final String query_id = "_query_id";
-    public static final String cache_id = "_cache_id";
-    public static final String mq = "_mq";
+    static final String query_id = "_query_id";
+    static final String cache_id = "_cache_id";
+    static final String mq = "_mq";
   }
 
   private final IndexWriter writer;
@@ -203,7 +209,37 @@ class QueryIndex implements Closeable {
   }
 
   interface QueryBuilder {
-    Query buildQuery(QueryTermFilter termFilter) throws IOException;
+    Query buildQuery(BiPredicate<String, BytesRef> termAcceptor) throws IOException;
+  }
+
+  static class QueryTermFilter implements BiPredicate<String, BytesRef> {
+
+    private final Map<String, BytesRefHash> termsHash = new HashMap<>();
+
+    QueryTermFilter(IndexReader reader) throws IOException {
+      for (LeafReaderContext ctx : reader.leaves()) {
+        for (FieldInfo fi : ctx.reader().getFieldInfos()) {
+          BytesRefHash terms = termsHash.computeIfAbsent(fi.name, f -> new BytesRefHash());
+          Terms t = ctx.reader().terms(fi.name);
+          if (t != null) {
+            TermsEnum te = t.iterator();
+            BytesRef term;
+            while ((term = te.next()) != null) {
+              terms.add(term);
+            }
+          }
+        }
+      }
+    }
+
+    @Override
+    public boolean test(String field, BytesRef term) {
+      BytesRefHash bytes = termsHash.get(field);
+      if (bytes == null) {
+        return false;
+      }
+      return bytes.find(term) != -1;
+    }
   }
 
   MonitorQuery getQuery(String queryId) throws IOException {
@@ -211,9 +247,8 @@ class QueryIndex implements Closeable {
       throw new IllegalStateException("Cannot get queries from an index with no MonitorQuerySerializer");
     }
     BytesRef[] bytesHolder = new BytesRef[1];
-    search(new TermQuery(new Term(FIELDS.query_id, queryId)), (id, query, dataValues) -> {
-      bytesHolder[0] = dataValues.mq.binaryValue();
-    });
+    search(new TermQuery(new Term(FIELDS.query_id, queryId)),
+        (id, query, dataValues) -> bytesHolder[0] = dataValues.mq.binaryValue());
     return serializer.deserialize(bytesHolder[0]);
   }
 
@@ -270,7 +305,7 @@ class QueryIndex implements Closeable {
    *
    * @throws IOException on IO errors
    */
-  synchronized void purgeCache(CachePopulator populator) throws IOException {
+  private synchronized void purgeCache(CachePopulator populator) throws IOException {
 
     // Note on implementation
 
@@ -330,14 +365,12 @@ class QueryIndex implements Closeable {
     for (String id : ids) {
       writer.deleteDocuments(new Term(FIELDS.query_id, id));
     }
-    writer.commit();
-    manager.maybeRefresh();
+    commit(Collections.emptyList());
   }
 
   void clear() throws IOException {
     writer.deleteAll();
-    writer.commit();
-    manager.maybeRefresh();
+    commit(Collections.emptyList());
   }
 
   interface QueryCollector {

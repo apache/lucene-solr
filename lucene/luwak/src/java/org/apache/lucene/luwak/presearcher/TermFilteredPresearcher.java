@@ -23,7 +23,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
 
+import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
@@ -35,7 +37,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.Presearcher;
-import org.apache.lucene.luwak.QueryTermFilter;
 import org.apache.lucene.luwak.queryanalysis.QueryAnalyzer;
 import org.apache.lucene.luwak.queryanalysis.QueryTerm;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;
@@ -98,7 +99,7 @@ public class TermFilteredPresearcher extends Presearcher {
   }
 
   @Override
-  public final Query buildQuery(LeafReader reader, QueryTermFilter queryTermFilter) {
+  public final Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor) {
     try {
       DocumentQueryBuilder queryBuilder = getQueryBuilder();
       for (FieldInfo field : reader.getFieldInfos()) {
@@ -108,7 +109,13 @@ public class TermFilteredPresearcher extends Presearcher {
           ts = component.filterDocumentTokens(field.name, ts);
         }
 
-        ts = new BytesRefFilteredTokenFilter(ts, queryTermFilter.getTerms(field.name));
+        ts = new FilteringTokenFilter(ts) {
+          TermToBytesRefAttribute termAtt = addAttribute(TermToBytesRefAttribute.class);
+          @Override
+          protected boolean accept() {
+            return termAcceptor.test(field.name, termAtt.getBytesRef());
+          }
+        };
 
         TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
         while (ts.incrementToken()) {

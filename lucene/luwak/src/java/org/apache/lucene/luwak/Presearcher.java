@@ -18,6 +18,7 @@
 package org.apache.lucene.luwak;
 
 import java.util.Map;
+import java.util.function.BiPredicate;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
@@ -25,13 +26,14 @@ import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.luwak.presearcher.WildcardNGramPresearcherComponent;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Abstract base class of all Presearcher implementations
  * <p>
  * A Presearcher is used by the Monitor to reduce the number of queries actually
- * run against an InputDocument.  It defines how queries are stored in the monitor's
- * internal index, and how an InputDocument is converted to a query against that
+ * run against a Document.  It defines how queries are stored in the monitor's
+ * internal index, and how a Document is converted to a query against that
  * index.
  * <p>
  * See {@link MatchAllPresearcher}
@@ -41,13 +43,13 @@ import org.apache.lucene.search.Query;
 public abstract class Presearcher {
 
   /**
-   * Build a query for a Monitor's queryindex from a LeafReader over a {@link DocumentBatch}.
+   * Build a query for a Monitor's queryindex from a LeafReader over a set of documents to monitor.
    *
-   * @param reader          a {@link LeafReader} over the input {@link DocumentBatch} index
-   * @param queryTermFilter a {@link QueryTermFilter} for the queryindex
+   * @param reader          a {@link LeafReader} over the input documents
+   * @param termAcceptor    a predicate indicating if a term should be added to the query
    * @return a Query to run over a Monitor's queryindex
    */
-  public abstract Query buildQuery(LeafReader reader, QueryTermFilter queryTermFilter);
+  public abstract Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor);
 
   /**
    * Build a lucene Document to index the query in a Monitor's queryindex

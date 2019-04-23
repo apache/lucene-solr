@@ -18,13 +18,9 @@
 package org.apache.lucene.luwak;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
+import java.util.function.BiPredicate;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.search.TermQuery;
@@ -40,12 +36,17 @@ public class TestQueryTermFilter extends LuceneTestCase {
     QueryIndex qi = new QueryIndex(new QueryIndexConfiguration(), new TermFilteredPresearcher());
     qi.commit(Collections.singletonList(new MonitorQuery("1", new TermQuery(new Term(FIELD, "term")))));
     assertEquals(1, qi.termFilters.size());
+    BiPredicate<String, BytesRef> filter = qi.termFilters.values().iterator().next();
+    assertTrue(filter.test(FIELD, new BytesRef("term")));
+    assertFalse(filter.test(FIELD, new BytesRef("term2")));
+
     qi.commit(Collections.singletonList(new MonitorQuery("2", new TermQuery(new Term(FIELD, "term2")))));
     assertEquals(1, qi.termFilters.size());
 
-    QueryTermFilter tf = qi.termFilters.values().iterator().next();
-    assertNotNull(tf);
-    assertEquals(2, tf.getTerms(FIELD).size());
+    filter = qi.termFilters.values().iterator().next();
+    assertTrue(filter.test(FIELD, new BytesRef("term")));
+    assertTrue(filter.test(FIELD, new BytesRef("term2")));
+    assertFalse(filter.test(FIELD, new BytesRef("term3")));
   }
 
 }

@@ -28,7 +28,7 @@ public class MatchingQueries<T extends QueryMatch> {
 
   private final Map<String, T> matches;
   private final Set<String> presearcherHits;
-  private final List<MatchError> errors;
+  private final Map<String, Exception> errors;
 
   private final long queryBuildTime;
   private final long searchTime;
@@ -36,10 +36,10 @@ public class MatchingQueries<T extends QueryMatch> {
 
   private final SlowLog slowlog;
 
-  MatchingQueries(Map<String, T> matches, Set<String> presearcherHits, List<MatchError> errors,
+  MatchingQueries(Map<String, T> matches, Set<String> presearcherHits, Map<String, Exception> errors,
                   long queryBuildTime, long searchTime, int queriesRun, SlowLog slowlog) {
     this.matches = Collections.unmodifiableMap(matches);
-    this.errors = Collections.unmodifiableList(errors);
+    this.errors = Collections.unmodifiableMap(errors);
     this.presearcherHits = Collections.unmodifiableSet(presearcherHits);
     this.queryBuildTime = queryBuildTime;
     this.searchTime = searchTime;
@@ -101,7 +101,7 @@ public class MatchingQueries<T extends QueryMatch> {
   /**
    * @return a List of any MatchErrors created during the matcher run
    */
-  public List<MatchError> getErrors() {
+  public Map<String, Exception> getErrors() {
     return errors;
   }
 

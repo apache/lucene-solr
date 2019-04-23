@@ -110,8 +110,8 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
             this.addMatch(match, doc);
           }
         }
-        for (MatchError error : matches.getErrors()) {
-          this.reportError(error);
+        for (Map.Entry<String, Exception> error : matches.getErrors().entrySet()) {
+          this.reportError(error.getKey(), error.getValue());
         }
         this.slowlog.addAll(matches.getSlowLog());
       }
@@ -139,7 +139,7 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
           try {
             matcher.matchQuery(task.id, task.matchQuery, task.metadata);
           } catch (IOException e) {
-            matcher.reportError(new MatchError(task.id, e));
+            matcher.reportError(task.id, e);
           }
         }
       } catch (InterruptedException e) {

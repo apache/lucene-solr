@@ -131,7 +131,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
         try {
           matcher.matchQuery(task.queryId, task.matchQuery, task.metadata);
         } catch (IOException e) {
-          PartitionMatcher.this.reportError(new MatchError(task.queryId, e));
+          PartitionMatcher.this.reportError(task.queryId, e);
         }
       }
       return matcher.getMatches();

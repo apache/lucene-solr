@@ -34,7 +34,7 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   private final Set<String> presearcherHits = new HashSet<>();
   protected final IndexSearcher searcher;
 
-  private final List<MatchError> errors = new LinkedList<>();
+  private final Map<String, Exception> errors = new HashMap<>();
   private final List<MatchHolder<T>> matches;
 
   private long queryBuildTime = -1;
@@ -116,11 +116,9 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
 
   /**
    * Called by the Monitor if running a query throws an Exception
-   *
-   * @param e the MatchError detailing the problem
    */
-  public void reportError(MatchError e) {
-    this.errors.add(e);
+  public void reportError(String queryId, Exception e) {
+    this.errors.put(queryId, e);
   }
 
   /**
