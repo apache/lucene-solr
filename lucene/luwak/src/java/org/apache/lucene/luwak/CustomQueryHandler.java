@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.luwak.queryanalysis.QueryTree;
-import org.apache.lucene.luwak.queryanalysis.TermWeightor;
+import org.apache.lucene.luwak.QueryTree;
+import org.apache.lucene.luwak.TermWeightor;
 import org.apache.lucene.search.Query;
 
 public interface CustomQueryHandler {

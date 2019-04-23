@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.queryanalysis;
+package org.apache.lucene.luwak;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToDoubleFunction;
 

@@ -15,17 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
-import java.util.Collections;
+import org.apache.lucene.luwak.QueryMatch;
 
-import org.apache.lucene.luwak.Presearcher;
-import org.apache.lucene.luwak.queryanalysis.TermWeightor;
+/**
+ * Wraps a {@link QueryMatch} with information about which queries were selected by the presearcher
+ */
+public class PresearcherMatch<T extends QueryMatch> {
 
-public class TestFieldTermFilteredPresearcher extends FieldFilterPresearcherComponentTestBase {
+  /**
+   * The presearcher hits
+   */
+  public final String presearcherMatches;
 
-  @Override
-  protected Presearcher createPresearcher() {
-    return new TermFilteredPresearcher(TermWeightor.DEFAULT, Collections.emptyList(), Collections.singleton("language"));
+  /**
+   * The QueryMatch
+   */
+  public final T queryMatch;
+
+  /**
+   * The query id
+   */
+  public final String queryId;
+
+  PresearcherMatch(String id, String presearcherMatches, T queryMatch) {
+    this.presearcherMatches = presearcherMatches;
+    this.queryMatch = queryMatch;
+    this.queryId = id;
   }
 }

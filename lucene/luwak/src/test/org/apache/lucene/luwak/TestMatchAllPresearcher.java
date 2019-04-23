@@ -15,33 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
-import org.apache.lucene.luwak.QueryMatch;
+public class TestMatchAllPresearcher extends PresearcherTestBase {
 
-/**
- * Wraps a {@link QueryMatch} with information about which queries were selected by the presearcher
- */
-public class PresearcherMatch<T extends QueryMatch> {
-
-  /**
-   * The presearcher hits
-   */
-  public final String presearcherMatches;
-
-  /**
-   * The QueryMatch
-   */
-  public final T queryMatch;
-
-  /**
-   * The query id
-   */
-  public final String queryId;
-
-  PresearcherMatch(String id, String presearcherMatches, T queryMatch) {
-    this.presearcherMatches = presearcherMatches;
-    this.queryMatch = queryMatch;
-    this.queryId = id;
+  @Override
+  protected Presearcher createPresearcher() {
+    return Presearcher.NO_FILTERING;
   }
+
 }

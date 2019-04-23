@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,10 +39,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.luwak.Presearcher;
-import org.apache.lucene.luwak.queryanalysis.QueryAnalyzer;
-import org.apache.lucene.luwak.queryanalysis.QueryTree;
-import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;

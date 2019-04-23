@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import java.util.Collections;
 import java.util.Set;
@@ -23,8 +23,6 @@ import java.util.function.BiConsumer;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.queryanalysis.QueryTree;
-import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.util.BytesRef;

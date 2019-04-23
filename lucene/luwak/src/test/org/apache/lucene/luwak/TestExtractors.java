@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.queryanalysis;
+package org.apache.lucene.luwak;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.presearcher.RegexpQueryHandler;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -31,7 +30,6 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 

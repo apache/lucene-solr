@@ -15,18 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.Collections;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.luwak.MatchingQueries;
-import org.apache.lucene.luwak.Monitor;
-import org.apache.lucene.luwak.MonitorQuery;
-import org.apache.lucene.luwak.MultiMatchingQueries;
-import org.apache.lucene.luwak.QueryMatch;
 import org.apache.lucene.search.MatchAllDocsQuery;
 
 import static org.hamcrest.CoreMatchers.containsString;

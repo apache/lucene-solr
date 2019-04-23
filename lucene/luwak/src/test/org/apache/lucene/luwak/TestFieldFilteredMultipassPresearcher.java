@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
-import org.apache.lucene.luwak.Presearcher;
+import java.util.Collections;
 
-public class TestMatchAllPresearcher extends PresearcherTestBase {
+public class TestFieldFilteredMultipassPresearcher extends FieldFilterPresearcherComponentTestBase {
 
   @Override
   protected Presearcher createPresearcher() {
-    return Presearcher.NO_FILTERING;
+    return new MultipassTermFilteredPresearcher(2, 0, TermWeightor.DEFAULT,
+        Collections.emptyList(), Collections.singleton("language"));
   }
-
 }
