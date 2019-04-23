@@ -34,7 +34,6 @@ import org.apache.lucene.luwak.MonitorQuery;
 import org.apache.lucene.luwak.Presearcher;
 import org.apache.lucene.luwak.QueryIndexConfiguration;
 import org.apache.lucene.luwak.QueryMatch;
-import org.apache.lucene.luwak.QueryTermFilter;
 import org.apache.lucene.luwak.queryanalysis.QueryTree;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -135,7 +134,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
         mindex.addField("f", "this is a test document", WHITESPACE);
         LeafReader docsReader = (LeafReader) mindex.createSearcher().getIndexReader();
 
-        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, new QueryTermFilter(reader));
+        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, (s, b) -> b.bytesEquals(new BytesRef("test")));
         BooleanQuery expected = new BooleanQuery.Builder()
             .add(should(new BooleanQuery.Builder()
                 .add(should(new TermInSetQuery("f", new BytesRef("test")))).build()))

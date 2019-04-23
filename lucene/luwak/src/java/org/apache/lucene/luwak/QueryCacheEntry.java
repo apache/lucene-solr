@@ -26,34 +26,31 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-/**
- * An entry in the query cache
- */
-public class QueryCacheEntry {
+class QueryCacheEntry {
 
   /**
    * The (possibly partial due to decomposition) query
    */
-  public final Query matchQuery;
+  final Query matchQuery;
 
   /**
    * The id of this query
    */
-  public final String cacheId;
+  final String cacheId;
 
   /**
    * The id of the MonitorQuery that produced this entry
    *
    * Note that this may be different to {@link #cacheId} due to decomposition
    */
-  public final String queryId;
+  final String queryId;
 
   /**
    * The metadata from the entry's parent {@link MonitorQuery}
    */
-  public final Map<String, String> metadata;
+  final Map<String, String> metadata;
 
-  QueryCacheEntry(String cacheId, String queryId, Query matchQuery, Map<String, String> metadata) {
+  private QueryCacheEntry(String cacheId, String queryId, Query matchQuery, Map<String, String> metadata) {
     this.cacheId = cacheId;
     this.queryId = queryId;
     this.matchQuery = matchQuery;

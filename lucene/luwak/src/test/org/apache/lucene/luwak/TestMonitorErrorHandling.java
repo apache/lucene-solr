@@ -39,6 +39,7 @@ public class TestMonitorErrorHandling extends MonitorTestBase {
       MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
 
       assertEquals(1, matches.getErrors().size());
+      assertEquals("Error rewriting", matches.getErrors().get("3").getMessage());
       assertEquals(2, matches.getMatchCount());
       assertEquals(3, matches.getQueriesRun());
     }

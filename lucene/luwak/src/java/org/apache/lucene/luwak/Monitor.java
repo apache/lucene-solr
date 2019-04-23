@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiPredicate;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NamedThreadFactory;
 
 /**
@@ -297,8 +299,8 @@ public class Monitor implements Closeable {
     }
 
     @Override
-    public Query buildQuery(QueryTermFilter termFilter) throws IOException {
-      return presearcher.buildQuery(batchIndexReader, termFilter);
+    public Query buildQuery(BiPredicate<String, BytesRef> termAcceptor) throws IOException {
+      return presearcher.buildQuery(batchIndexReader, termAcceptor);
     }
   }
 
@@ -363,7 +365,7 @@ public class Monitor implements Closeable {
         queryCount++;
         matcher.matchQuery(id, query.matchQuery, query.metadata);
       } catch (Exception e) {
-        matcher.reportError(new MatchError(id, e));
+        matcher.reportError(id, e);
       }
     }
 
@@ -388,7 +390,7 @@ public class Monitor implements Closeable {
       PresearcherQueryCollector<T> collector = new PresearcherQueryCollector<>(factory.createMatcher(searcher));
       QueryIndex.QueryBuilder queryBuilder = new PresearcherQueryBuilder(reader) {
         @Override
-        public Query buildQuery(QueryTermFilter termFilter) throws IOException {
+        public Query buildQuery(BiPredicate<String, BytesRef> termFilter) throws IOException {
           return new ForceNoBulkScoringQuery(super.buildQuery(termFilter));
         }
       };
