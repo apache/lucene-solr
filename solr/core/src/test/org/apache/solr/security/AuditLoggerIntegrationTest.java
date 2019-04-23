@@ -123,10 +123,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testAsyncQueueDrain() throws Exception {
-    setupCluster(true, 100, false, null);
+    setupCluster(true, 150, false, null);
     runAdminCommands();
-    assertTrue("Expecting <2 callbacks in buffer, was " + testHarness.get().receiver.getBuffer().size(),
-        testHarness.get().receiver.getBuffer().size() < 2); // Events still on queue
+    assertTrue("Expecting <3 callbacks in buffer, was " + testHarness.get().receiver.getBuffer().size(),
+        testHarness.get().receiver.getBuffer().size() < 3); // Events still on queue
     // We shutdown cluster while events are still in queue
     testHarness.get().shutdownCluster();
     assertThreeAdminEvents();
@@ -218,7 +218,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private void waitForAuditEventCallbacks(int number) throws InterruptedException {
-    waitForAuditEventCallbacks(number, 5);
+    waitForAuditEventCallbacks(number, 30);
   }
 
   private void waitForAuditEventCallbacks(int number, int timeoutSeconds) throws InterruptedException {
