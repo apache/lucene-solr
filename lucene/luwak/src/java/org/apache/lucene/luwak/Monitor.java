@@ -33,8 +33,6 @@ import java.util.function.BiPredicate;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.luwak.presearcher.PresearcherMatches;
-import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -27,9 +27,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.queryanalysis.QueryAnalyzer;
-import org.apache.lucene.luwak.queryanalysis.QueryTree;
-import org.apache.lucene.luwak.queryanalysis.TermWeightor;
+import org.apache.lucene.luwak.CustomQueryHandler;
+import org.apache.lucene.luwak.QueryAnalyzer;
+import org.apache.lucene.luwak.QueryTree;
+import org.apache.lucene.luwak.RegexpQueryHandler;
+import org.apache.lucene.luwak.TermWeightor;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 

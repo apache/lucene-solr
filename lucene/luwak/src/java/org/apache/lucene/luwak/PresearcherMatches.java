@@ -15,13 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.presearcher;
+package org.apache.lucene.luwak;
 
 import java.util.Map;
-
-import org.apache.lucene.luwak.MatchingQueries;
-import org.apache.lucene.luwak.MultiMatchingQueries;
-import org.apache.lucene.luwak.QueryMatch;
 
 /**
  * Wraps a {@link MultiMatchingQueries} with information on which presearcher queries were selected

@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.queryanalysis;
+package org.apache.lucene.luwak;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.util.BytesRef;
 
 public abstract class QueryTree {

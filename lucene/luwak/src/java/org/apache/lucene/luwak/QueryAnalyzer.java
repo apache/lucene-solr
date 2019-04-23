@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.luwak.queryanalysis;
+package org.apache.lucene.luwak;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +23,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.Presearcher;
-import org.apache.lucene.luwak.presearcher.CustomQueryHandler;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -34,20 +32,15 @@ import org.apache.lucene.search.QueryVisitor;
  * Class to analyze and extract terms from a lucene query, to be used by
  * a {@link Presearcher} in indexing.
  */
-public class QueryAnalyzer {
+class QueryAnalyzer {
 
   private final BiFunction<Query, TermWeightor, QueryTree> unknownQueryMapper;
 
-  /**
-   * Create a QueryAnalyzer using provided QueryTreeBuilders, in addition to the default set
-   *
-   * @param queryTreeBuilders QueryTreeBuilders used to analyze queries
-   */
-  public QueryAnalyzer(List<CustomQueryHandler> queryTreeBuilders) {
+  QueryAnalyzer(List<CustomQueryHandler> queryTreeBuilders) {
     this.unknownQueryMapper = buildMapper(queryTreeBuilders);
   }
 
-  public QueryAnalyzer() {
+  QueryAnalyzer() {
     this.unknownQueryMapper = (q, w) -> null;
   }
 
@@ -69,7 +62,7 @@ public class QueryAnalyzer {
    * @param luceneQuery the query to analyze
    * @return a QueryTree describing the analyzed query
    */
-  public QueryTree buildTree(Query luceneQuery, TermWeightor weightor) {
+  QueryTree buildTree(Query luceneQuery, TermWeightor weightor) {
     QueryBuilder builder = new QueryBuilder();
     luceneQuery.visit(builder);
     return builder.apply(weightor);
