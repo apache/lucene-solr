@@ -109,7 +109,7 @@ final public class Tessellator {
       }
     }
     // Calculate the tessellation using the doubly LinkedList.
-    List<Triangle> result = earcutLinkedList(outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
+    List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
     if (result.size() == 0) {
       throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
     }
@@ -271,7 +271,7 @@ final public class Tessellator {
   }
 
   /** Main ear slicing loop which triangulates the vertices of a polygon, provided as a doubly-linked list. **/
-  private static final List<Triangle> earcutLinkedList(Node currEar, final List<Triangle> tessellation,
+  private static final List<Triangle> earcutLinkedList(Polygon polygon, Node currEar, final List<Triangle> tessellation,
                                                        State state, final boolean mortonOptimized) {
     earcut : do {
       if (currEar == null || currEar.previous == currEar.next) {
@@ -316,9 +316,9 @@ final public class Tessellator {
               continue earcut;
             case SPLIT:
               // as a last resort, try splitting the remaining polygon into two
-              if (splitEarcut(currEar, tessellation, mortonOptimized) == false) {
+              if (splitEarcut(polygon, currEar, tessellation, mortonOptimized) == false) {
                 //we could not process all points. Tessellation failed
-                tessellation.clear();
+                throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
               }
               break;
           }
@@ -431,7 +431,7 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
-  private static final boolean splitEarcut(final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
+  private static final boolean splitEarcut(Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -439,7 +439,7 @@ final public class Tessellator {
       nextNode = searchNode.next;
       Node diagonal = nextNode.next;
       while (diagonal != searchNode.previous) {
-        if(isValidDiagonal(searchNode, diagonal)) {
+        if(searchNode.idx != diagonal.idx && isValidDiagonal(searchNode, diagonal)) {
           // Split the polygon into two at the point of the diagonal
           Node splitNode = splitPolygon(searchNode, diagonal);
           // Filter the resulting polygon.
@@ -450,8 +450,8 @@ final public class Tessellator {
             sortByMortonWithReset(searchNode);
             sortByMortonWithReset(splitNode);
           }
-          earcutLinkedList(searchNode, tessellation, State.INIT, mortonIndexed);
-          earcutLinkedList(splitNode,  tessellation, State.INIT, mortonIndexed);
+          earcutLinkedList(polygon, searchNode, tessellation, State.INIT, mortonIndexed);
+          earcutLinkedList(polygon, splitNode,  tessellation, State.INIT, mortonIndexed);
           // Finish the iterative search
           return true;
         }
@@ -489,6 +489,14 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
+    //Check the split polygons are CW
+    if (isCWPolygon(a, b) == false || isCWPolygon(b, a) == false) {
+      return false;
+    }
+    //If points are equal then use it
+    if (isVertexEquals(a, b)) {
+      return true;
+    }
     return a.next.idx != b.idx && a.previous.idx != b.idx
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
@@ -504,6 +512,19 @@ final public class Tessellator {
     // ccw
     return area(a.getX(), a.getY(), b.getX(), b.getY(), a.previous.getX(), a.previous.getY()) < 0
         || area(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY()) < 0;
+  }
+
+  /** Determine whether the polygon defined between node start and node end is CW */
+  private static boolean isCWPolygon(Node start, Node end) {
+    Node next = start;
+    double windingSum = 0;
+    do {
+      // compute signed area
+      windingSum += area(next.getLon(), next.getLat(), next.next.getLon(), next.next.getLat(), end.getLon(), end.getLat());
+      next = next.next;
+    } while (next.next != end);
+    //The polygon must be CW
+    return (windingSum < 0) ? true : false;
   }
 
   /** Determine whether the middle point of a polygon diagonal is contained within the polygon */
