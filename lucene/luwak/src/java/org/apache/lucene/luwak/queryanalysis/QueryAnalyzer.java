@@ -18,15 +18,13 @@
 package org.apache.lucene.luwak.queryanalysis;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.Presearcher;
-import org.apache.lucene.luwak.presearcher.PresearcherComponent;
+import org.apache.lucene.luwak.presearcher.CustomQueryHandler;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -45,7 +43,7 @@ public class QueryAnalyzer {
    *
    * @param queryTreeBuilders QueryTreeBuilders used to analyze queries
    */
-  public QueryAnalyzer(List<BiFunction<Query, TermWeightor, QueryTree>> queryTreeBuilders) {
+  public QueryAnalyzer(List<CustomQueryHandler> queryTreeBuilders) {
     this.unknownQueryMapper = buildMapper(queryTreeBuilders);
   }
 
@@ -53,33 +51,16 @@ public class QueryAnalyzer {
     this.unknownQueryMapper = (q, w) -> null;
   }
 
-  private static BiFunction<Query, TermWeightor, QueryTree> buildMapper(List<BiFunction<Query, TermWeightor, QueryTree>> mappers) {
+  private static BiFunction<Query, TermWeightor, QueryTree> buildMapper(List<CustomQueryHandler> mappers) {
     return (q, w) -> {
-      for (BiFunction<Query, TermWeightor, QueryTree> mapper : mappers) {
-        QueryTree qt = mapper.apply(q, w);
+      for (CustomQueryHandler mapper : mappers) {
+        QueryTree qt = mapper.handleQuery(q, w);
         if (qt != null) {
           return qt;
         }
       }
       return null;
     };
-  }
-
-  /**
-   * Build a new QueryAnalyzer using a TreeWeightor and a list of PresearcherComponents
-   * <p>
-   * A list of QueryTreeBuilders is extracted from each component, and combined to use
-   * on the QueryAnalyzer
-   *
-   * @param components a list of PresearcherComponents
-   * @return a QueryAnalyzer
-   */
-  public static QueryAnalyzer fromComponents(PresearcherComponent... components) {
-    List<BiFunction<Query, TermWeightor, QueryTree>> builders = new ArrayList<>();
-    for (PresearcherComponent component : components) {
-      builders.addAll(component.getQueryTreeBuilders());
-    }
-    return new QueryAnalyzer(builders);
   }
 
   /**
@@ -92,28 +73,6 @@ public class QueryAnalyzer {
     QueryBuilder builder = new QueryBuilder();
     luceneQuery.visit(builder);
     return builder.apply(weightor);
-  }
-
-  /**
-   * Collect terms from a QueryTree
-   *
-   * @param queryTree the analyzed QueryTree to collect terms from
-   * @return a list of QueryTerms
-   */
-  public Set<QueryTerm> collectTerms(QueryTree queryTree) {
-    Set<QueryTerm> terms = new HashSet<>();
-    queryTree.collectTerms(terms);
-    return terms;
-  }
-
-  /**
-   * Collect terms from a lucene Query
-   *
-   * @param luceneQuery the query to analyze and collect terms from
-   * @return a list of QueryTerms
-   */
-  public Set<QueryTerm> collectTerms(Query luceneQuery, TermWeightor weightor) {
-    return collectTerms(buildTree(luceneQuery, weightor));
   }
 
   private class QueryBuilder extends QueryVisitor implements Function<TermWeightor, QueryTree> {

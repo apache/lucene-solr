@@ -17,35 +17,17 @@
 
 package org.apache.lucene.luwak.presearcher;
 
-import java.util.Map;
-import java.util.function.BiPredicate;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.luwak.Presearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.luwak.queryanalysis.QueryTree;
+import org.apache.lucene.luwak.queryanalysis.TermWeightor;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.BytesRef;
 
-/**
- * A simple Presearcher implementation that runs all queries in a Monitor against
- * each supplied InputDocument.
- */
-public class MatchAllPresearcher extends Presearcher {
+public interface CustomQueryHandler {
 
-  public static final Presearcher INSTANCE = new MatchAllPresearcher();
+  QueryTree handleQuery(Query query, TermWeightor termWeightor);
 
-  private MatchAllPresearcher() {
-    super();
+  default TokenStream wrapTermStream(String field, TokenStream in) {
+    return in;
   }
 
-  @Override
-  public Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor) {
-    return new MatchAllDocsQuery();
-  }
-
-  @Override
-  public Document indexQuery(Query query, Map<String, String> metadata) {
-    return new Document();
-  }
 }

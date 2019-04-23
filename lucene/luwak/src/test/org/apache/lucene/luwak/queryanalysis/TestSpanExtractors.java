@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -41,7 +42,12 @@ public class TestSpanExtractors extends LuceneTestCase  {
 
   private static final QueryAnalyzer treeBuilder = new QueryAnalyzer();
 
-  private static final TermWeightor WEIGHTOR = TermWeightor.DEFAULT;
+  private Set<Term> collectTerms(Query q) {
+    QueryTree tree = treeBuilder.buildTree(q, TermWeightor.DEFAULT);
+    Set<Term> terms = new HashSet<>();
+    tree.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    return terms;
+  }
 
   public void testOrderedNearExtractor() {
     SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
@@ -49,8 +55,8 @@ public class TestSpanExtractors extends LuceneTestCase  {
         new SpanTermQuery(new Term("field1", "term"))
     }, 0, true);
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field1", "term1", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(q, WEIGHTOR));
+    Set<Term> expected = Collections.singleton(new Term("field1", "term1"));
+    assertEquals(expected, collectTerms(q));
   }
 
   public void testOrderedNearWithWildcardExtractor() {
@@ -59,25 +65,25 @@ public class TestSpanExtractors extends LuceneTestCase  {
         new SpanTermQuery(new Term("field", "is"))
     }, 0, true);
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "is", QueryTerm.Type.EXACT));
-    assertEquals(expected, treeBuilder.collectTerms(q, WEIGHTOR));
+    Set<Term> expected = Collections.singleton(new Term("field", "is"));
+    assertEquals(expected, collectTerms(q));
   }
 
   public void testSpanOrExtractor() {
     SpanOrQuery or = new SpanOrQuery(new SpanTermQuery(new Term("field", "term1")),
         new SpanTermQuery(new Term("field", "term2")));
-    Set<QueryTerm> expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("field", "term1", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "term2", QueryTerm.Type.EXACT)
+    Set<Term> expected = new HashSet<>(Arrays.asList(
+        new Term("field", "term1"),
+        new Term("field", "term2")
     ));
-    assertEquals(expected, treeBuilder.collectTerms(or, WEIGHTOR));
+    assertEquals(expected, collectTerms(or));
   }
 
   public void testSpanMultiTerms() {
     SpanQuery q = new SpanMultiTermQueryWrapper<>(new RegexpQuery(new Term("field", "term.*")));
-    Set<QueryTerm> terms = treeBuilder.collectTerms(q, WEIGHTOR);
+    Set<Term> terms = collectTerms(q);
     assertEquals(1, terms.size());
-    assertEquals(QueryTerm.Type.ANY, terms.iterator().next().type);
+    assertEquals(TermFilteredPresearcher.ANYTOKEN_FIELD, terms.iterator().next().field());
   }
 
   public void testSpanWithin() {
@@ -91,7 +97,7 @@ public class TestSpanExtractors extends LuceneTestCase  {
             .build(),
         new SpanTermQuery(t3));
 
-    assertEquals(Collections.singleton(new QueryTerm(t3)), treeBuilder.collectTerms(swq, WEIGHTOR));
+    assertEquals(Collections.singleton(t3), collectTerms(swq));
   }
 
   public void testSpanContains() {
@@ -105,25 +111,25 @@ public class TestSpanExtractors extends LuceneTestCase  {
             .build(),
         new SpanTermQuery(t3));
 
-    assertEquals(Collections.singleton(new QueryTerm(t3)), treeBuilder.collectTerms(swq, WEIGHTOR));
+    assertEquals(Collections.singleton(t3), collectTerms(swq));
   }
 
   public void testSpanBoost() {
     Term t1 = new Term("field", "term1");
     SpanBoostQuery q = new SpanBoostQuery(new SpanTermQuery(t1), 0.1f);
-    assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
+    assertEquals(Collections.singleton(t1), collectTerms(q));
   }
 
   public void testFieldMaskingSpanQuery() {
     Term t1 = new Term("field", "term1");
     FieldMaskingSpanQuery q = new FieldMaskingSpanQuery(new SpanTermQuery(t1), "field2");
-    assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
+    assertEquals(Collections.singleton(t1), collectTerms(q));
   }
 
   public void testSpanPositionQuery() {
     Term t1 = new Term("field", "term");
     Query q = new SpanFirstQuery(new SpanTermQuery(t1), 10);
-    assertEquals(Collections.singleton(new QueryTerm(t1)), treeBuilder.collectTerms(q, WEIGHTOR));
+    assertEquals(Collections.singleton(t1), collectTerms(q));
   }
 
 }

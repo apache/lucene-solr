@@ -17,8 +17,11 @@
 
 package org.apache.lucene.luwak.presearcher;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -62,10 +65,10 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
    * @param passes     the number of times a query should be indexed
    * @param minWeight  the minimum weight a querytree should be advanced over
    * @param weightor   the TreeWeightor to use
-   * @param components optional PresearcherComponents
    */
-  public MultipassTermFilteredPresearcher(int passes, float minWeight, TermWeightor weightor, PresearcherComponent... components) {
-    super(weightor, components);
+  public MultipassTermFilteredPresearcher(int passes, float minWeight, TermWeightor weightor,
+                                          List<CustomQueryHandler> queryHandlers, Set<String> filterFields) {
+    super(weightor, queryHandlers, filterFields);
     this.passes = passes;
     this.minWeight = minWeight;
   }
@@ -76,10 +79,9 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
    * Note that this will be constructed with a minimum advance weight of zero
    *
    * @param passes     the number of times a query should be indexed
-   * @param components optional PresearcherComponents
    */
-  public MultipassTermFilteredPresearcher(int passes, PresearcherComponent... components) {
-    this(passes, 0, DEFAULT_WEIGHTOR, components);
+  public MultipassTermFilteredPresearcher(int passes) {
+    this(passes, 0, DEFAULT_WEIGHTOR, Collections.emptyList(), Collections.emptySet());
   }
 
   @Override

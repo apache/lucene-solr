@@ -27,13 +27,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.luwak.HighlightsMatch;
-import org.apache.lucene.luwak.MatchingQueries;
-import org.apache.lucene.luwak.Monitor;
-import org.apache.lucene.luwak.MonitorQuery;
-import org.apache.lucene.luwak.MonitorTestBase;
-import org.apache.lucene.luwak.MultiMatchingQueries;
-import org.apache.lucene.luwak.presearcher.MatchAllPresearcher;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -121,7 +114,7 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
   public void testQueryErrors() throws IOException {
 
-    try (Monitor monitor = new Monitor(ANALYZER, MatchAllPresearcher.INSTANCE)) {
+    try (Monitor monitor = new Monitor(ANALYZER, Presearcher.NO_FILTERING)) {
 
       monitor.register(new MonitorQuery("1", parse("test")),
           new MonitorQuery("2", new ThrowOnRewriteQuery()),

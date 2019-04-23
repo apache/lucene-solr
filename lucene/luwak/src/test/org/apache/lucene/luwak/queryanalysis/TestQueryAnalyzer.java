@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.luwak.MonitorTestBase;
+import org.apache.lucene.luwak.presearcher.TermFilteredPresearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -31,53 +33,63 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   public static final QueryAnalyzer analyzer = new QueryAnalyzer();
 
-  public void testAdvancesCollectDifferentTerms() throws Exception {
+  private Set<Term> collectTerms(QueryTree tree) {
+    Set<Term> terms = new HashSet<>();
+    tree.collectTerms((f, b) -> terms.add(new Term(f, b)));
+    return terms;
+  }
+
+  private Set<Term> collectTerms(Query query) {
+    return collectTerms(analyzer.buildTree(query, TermWeightor.DEFAULT));
+  }
+
+  public void testAdvancesCollectDifferentTerms() {
 
     Query q = MonitorTestBase.parse("field:(+hello +goodbye)");
     QueryTree querytree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "goodbye", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(querytree));
+    Set<Term> expected = Collections.singleton(new Term("field", "goodbye"));
+    assertEquals(expected, collectTerms(querytree));
 
     assertTrue(querytree.advancePhase(0));
-    expected = Collections.singleton(new QueryTerm("field", "hello", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(querytree));
+    expected = Collections.singleton(new Term("field", "hello"));
+    assertEquals(expected, collectTerms(querytree));
 
     assertFalse(querytree.advancePhase(0));
 
-    assertEquals(expected, analyzer.collectTerms(querytree));
+    assertEquals(expected, collectTerms(querytree));
 
   }
 
-  public void testDisjunctionsWithAnyClausesOnlyReturnANYTOKEN() throws Exception {
+  public void testDisjunctionsWithAnyClausesOnlyReturnANYTOKEN() {
 
     // disjunction containing a pure negative - we can't narrow this down
     Query q = MonitorTestBase.parse("hello goodbye (*:* -term)");
 
-    Set<QueryTerm> terms = analyzer.collectTerms(q, TermWeightor.DEFAULT);
+    Set<Term> terms = collectTerms(q);
     assertEquals(1, terms.size());
-    assertEquals(QueryTerm.Type.ANY, terms.iterator().next().type);
+    assertEquals(TermFilteredPresearcher.ANYTOKEN_FIELD, terms.iterator().next().field());
 
   }
 
-  public void testConjunctionsDoNotAdvanceOverANYTOKENs() throws Exception {
+  public void testConjunctionsDoNotAdvanceOverANYTOKENs() {
 
     Query q = MonitorTestBase.parse("+hello +howdyedo +(goodbye (*:* -whatever))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "howdyedo", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    Set<Term> expected = Collections.singleton(new Term("field", "howdyedo"));
+    assertEquals(expected, collectTerms(tree));
 
     assertTrue(tree.advancePhase(0));
-    expected = Collections.singleton(new QueryTerm("field", "hello", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    expected = Collections.singleton(new Term("field", "hello"));
+    assertEquals(expected, collectTerms(tree));
 
     assertFalse(tree.advancePhase(0));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    assertEquals(expected, collectTerms(tree));
 
   }
 
-  public void testConjunctionsCannotAdvanceOverZeroWeightedTokens() throws Exception {
+  public void testConjunctionsCannotAdvanceOverZeroWeightedTokens() {
 
     TermWeightor weightor = TermWeightor.combine(
         TermWeightor.termWeightor(0, new BytesRef("startterm")),
@@ -88,96 +100,96 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     Query q = MonitorTestBase.parse("+startterm +hello +goodbye");
     QueryTree tree = analyzer.buildTree(q, weightor);
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "goodbye", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    Set<Term> expected = Collections.singleton(new Term("field", "goodbye"));
+    assertEquals(expected, collectTerms(tree));
 
     assertTrue(tree.advancePhase(0));
-    expected = Collections.singleton(new QueryTerm("field", "hello", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    expected = Collections.singleton(new Term("field", "hello"));
+    assertEquals(expected, collectTerms(tree));
 
     assertFalse(tree.advancePhase(0));
 
   }
 
-  public void testNestedConjunctions() throws Exception {
+  public void testNestedConjunctions() {
 
     Query q = MonitorTestBase.parse("+(+(+(+aaaa +cc) +(+d +bbb)))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
-    Set<QueryTerm> expected = Collections.singleton(new QueryTerm("field", "aaaa", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    Set<Term> expected = Collections.singleton(new Term("field", "aaaa"));
+    assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
-    expected = Collections.singleton(new QueryTerm("field", "bbb", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    expected = Collections.singleton(new Term("field", "bbb"));
+    assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
-    expected = Collections.singleton(new QueryTerm("field", "cc", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    expected = Collections.singleton(new Term("field", "cc"));
+    assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
-    expected = Collections.singleton(new QueryTerm("field", "d", QueryTerm.Type.EXACT));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    expected = Collections.singleton(new Term("field", "d"));
+    assertEquals(expected, collectTerms(tree));
     assertFalse(tree.advancePhase(0));
 
   }
 
-  public void testNestedDisjunctions() throws Exception {
+  public void testNestedDisjunctions() {
 
     Query q = MonitorTestBase.parse("+(+((+aaaa +cc) (+dd +bbb +f)))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
-    Set<QueryTerm> expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("field", "aaaa", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "bbb", QueryTerm.Type.EXACT)
-    ));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    Set<Term> expected = new HashSet<>(Arrays.asList(
+        new Term("field", "aaaa"),
+        new Term("field", "bbb"
+    )));
+    assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
     expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("field", "cc", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "dd", QueryTerm.Type.EXACT)
+        new Term("field", "cc"),
+        new Term("field", "dd")
     ));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
     expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("field", "cc", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "f", QueryTerm.Type.EXACT)
+        new Term("field", "cc"),
+        new Term("field", "f")
     ));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    assertEquals(expected, collectTerms(tree));
     assertFalse(tree.advancePhase(0));
   }
 
   public void testMinWeightAdvances() {
     QueryTree tree = QueryTree.disjunction(
         QueryTree.conjunction(
-            QueryTree.term(new QueryTerm("field", "term1", QueryTerm.Type.EXACT), 1),
-            QueryTree.term(new QueryTerm("field", "term2", QueryTerm.Type.EXACT), 0.1),
+            QueryTree.term(new Term("field", "term1"), 1),
+            QueryTree.term(new Term("field", "term2"), 0.1),
             QueryTree.anyTerm("*:*")
         ),
         QueryTree.conjunction(
             QueryTree.disjunction(
-                QueryTree.term(new QueryTerm("field", "term4", QueryTerm.Type.EXACT), 0.2),
-                QueryTree.term(new QueryTerm("field", "term5", QueryTerm.Type.EXACT), 1)
+                QueryTree.term(new Term("field", "term4"), 0.2),
+                QueryTree.term(new Term("field", "term5"), 1)
             ),
-            QueryTree.term(new QueryTerm("field", "term3", QueryTerm.Type.EXACT), 0.5)
+            QueryTree.term(new Term("field", "term3"), 0.5)
         )
     );
 
-    Set<QueryTerm> expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("field", "term1", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "term3", QueryTerm.Type.EXACT)
+    Set<Term> expected = new HashSet<>(Arrays.asList(
+        new Term("field", "term1"),
+        new Term("field", "term3")
     ));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0.1f));
 
     expected = new HashSet<>(Arrays.asList(
-        new QueryTerm("field", "term1", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "term4", QueryTerm.Type.EXACT),
-        new QueryTerm("field", "term5", QueryTerm.Type.EXACT)
+        new Term("field", "term1"),
+        new Term("field", "term4"),
+        new Term("field", "term5")
     ));
-    assertEquals(expected, analyzer.collectTerms(tree));
+    assertEquals(expected, collectTerms(tree));
     assertFalse(tree.advancePhase(0.1f));
   }
 
