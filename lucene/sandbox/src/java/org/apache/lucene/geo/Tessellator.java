@@ -163,7 +163,13 @@ final public class Tessellator {
 
     // Sort the hole vertices by x coordinate
     holeList.sort((Node pNodeA, Node pNodeB) ->
-        pNodeA.getX() < pNodeB.getX() ? -1 : pNodeA.getX() == pNodeB.getX() ? 0 : 1);
+    {
+      double diff = pNodeA.getX() - pNodeB.getX();
+      if (diff == 0) {
+        diff = pNodeA.getY() - pNodeB.getY();
+      }
+      return diff < 0 ? -1 : diff > 0 ? 1 : 0;
+    });
 
     // Process holes from left to right.
     for(int i = 0; i < holeList.size(); ++i) {
@@ -258,7 +264,7 @@ final public class Tessellator {
     Node leftMost = start;
     do {
       // Determine if the current node possesses a lesser X position.
-      if (node.getX() < leftMost.getX()) {
+      if (node.getX() < leftMost.getX() || (node.getX() == leftMost.getX() && node.getY() < leftMost.getY())) {
         // Maintain a reference to this Node.
         leftMost = node;
       }
