@@ -49,6 +49,22 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
 
   /**
    * Create a new TopGroupsCollector
+   * @param groupReducer      the group reducer used to collect the groups
+   * @param groupSelector     the group selector used to define groups
+   * @param groups            the groups to collect TopDocs for
+   * @param groupSort         the order in which groups are returned
+   * @param withinGroupSort   the order in which documents are sorted in each group
+   * @param maxDocsPerGroup   the maximum number of docs to collect for each group
+   */
+  protected TopGroupsCollector(GroupReducer groupReducer, GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup) {
+    super(groupSelector, groups, groupReducer);
+    this.groupSort = Objects.requireNonNull(groupSort);
+    this.withinGroupSort = Objects.requireNonNull(withinGroupSort);
+    this.maxDocsPerGroup = maxDocsPerGroup;
+  }
+
+  /**
+   * Create a new TopGroupsCollector
    * @param groupSelector     the group selector used to define groups
    * @param groups            the groups to collect TopDocs for
    * @param groupSort         the order in which groups are returned
@@ -58,12 +74,7 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
    */
   public TopGroupsCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort,
                             int maxDocsPerGroup, boolean getMaxScores) {
-    super(groupSelector, groups,
-        new TopDocsReducer<>(withinGroupSort, maxDocsPerGroup, getMaxScores));
-    this.groupSort = Objects.requireNonNull(groupSort);
-    this.withinGroupSort = Objects.requireNonNull(withinGroupSort);
-    this.maxDocsPerGroup = maxDocsPerGroup;
-
+    this(new TopDocsReducer<>(withinGroupSort, maxDocsPerGroup, getMaxScores), groupSelector, groups, groupSort, withinGroupSort, maxDocsPerGroup);
   }
 
   private static class MaxScoreCollector extends SimpleCollector {

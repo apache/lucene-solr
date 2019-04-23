@@ -66,6 +66,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -617,6 +618,7 @@ public class QueryComponent extends SearchComponent
   protected void groupedFinishStage(final ResponseBuilder rb) {
     // To have same response as non-distributed request.
     GroupingSpecification groupSpec = rb.getGroupingSpec();
+
     if (rb.mergedTopGroups.isEmpty()) {
       for (String field : groupSpec.getFields()) {
         rb.mergedTopGroups.put(field, new TopGroups(null, null, 0, 0, new GroupDocs[]{}, Float.NaN));
@@ -1283,10 +1285,17 @@ public class QueryComponent extends SearchComponent
         .setSearcher(searcher);
 
     for (String field : groupingSpec.getFields()) {
+      final int topNGroups;
+      Query query = cmd.getQuery();
+      if (query instanceof AbstractReRankQuery){
+        topNGroups = Math.max(((AbstractReRankQuery)query).getReRankDocs(), cmd.getOffset() + cmd.getLen());
+      } else {
+        topNGroups = cmd.getOffset() + cmd.getLen();
+      }
       topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
           .setField(schema.getField(field))
           .setGroupSort(groupingSpec.getGroupSort())
-          .setTopNGroups(cmd.getOffset() + cmd.getLen())
+          .setTopNGroups(topNGroups)
           .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
           .build()
       );
@@ -1301,10 +1310,26 @@ public class QueryComponent extends SearchComponent
     rb.setResult(result);
   }
 
+  private static List<SearchGroup<BytesRef>> createSearchGroups(SchemaField schemaField, String[] topGroupsValues){
+    List<SearchGroup<BytesRef>> topGroups = new ArrayList<>(topGroupsValues.length);
+    for (String topGroup : topGroupsValues) {
+      SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
+      if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        schemaField.getType().readableToIndexed(topGroup, builder);
+        searchGroup.groupValue = builder.get();
+      }
+      topGroups.add(searchGroup);
+    }
+    return topGroups;
+  }
+
   private void doProcessGroupedDistributedSearchSecondPhase(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
+
+    Query query = cmd.getQuery();
 
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
@@ -1326,25 +1351,16 @@ public class QueryComponent extends SearchComponent
 
     for (String field : groupingSpec.getFields()) {
       SchemaField schemaField = schema.getField(field);
+      // get the top groups for each field
       String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
       if (topGroupsParam == null) {
         topGroupsParam = new String[0];
       }
 
-      List<SearchGroup<BytesRef>> topGroups = new ArrayList<>(topGroupsParam.length);
-      for (String topGroup : topGroupsParam) {
-        SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
-        if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
-          BytesRefBuilder builder = new BytesRefBuilder();
-          schemaField.getType().readableToIndexed(topGroup, builder);
-          searchGroup.groupValue = builder.get();
-        }
-        topGroups.add(searchGroup);
-      }
-
+      List<SearchGroup<BytesRef>> topGroups = createSearchGroups(schemaField, topGroupsParam);
       secondPhaseBuilder.addCommandField(
           new TopGroupsFieldCommand.Builder()
-              .setQuery(cmd.getQuery())
+              .setQuery(query)
               .setField(schemaField)
               .setGroupSort(groupingSpec.getGroupSort())
               .setSortWithinGroup(groupingSpec.getSortWithinGroup())
@@ -1352,15 +1368,16 @@ public class QueryComponent extends SearchComponent
               .setMaxDocPerGroup(docsToCollect)
               .setNeedScores(needScores)
               .setNeedMaxScore(needScores)
+              .setSearcher(searcher)
               .build()
       );
     }
 
-    for (String query : groupingSpec.getQueries()) {
+    for (String groupingQuery : groupingSpec.getQueries()) {
       secondPhaseBuilder.addCommandField(new Builder()
           .setDocsToCollect(docsToCollect)
           .setSort(groupingSpec.getGroupSort())
-          .setQuery(query, rb.req)
+          .setQuery(groupingQuery, rb.req)
           .setDocSet(searcher)
           .build()
       );
@@ -1400,6 +1417,12 @@ public class QueryComponent extends SearchComponent
         .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
         .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
         .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
+
+    if (cmd.getQuery() instanceof AbstractReRankQuery) {
+      AbstractReRankQuery rankQuery = (AbstractReRankQuery) cmd.getQuery();
+      final int reRankGroups =  rankQuery.getReRankDocs();
+      grouping.setReRankGroups(reRankGroups);
+    }
 
     if (groupingSpec.getFields() != null) {
       for (String field : groupingSpec.getFields()) {

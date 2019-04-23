@@ -28,6 +28,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
+import org.apache.solr.search.ReRankQParserPlugin;
 import org.junit.Test;
 
 /**
@@ -327,6 +328,30 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     
     //Debug
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
+
+    // SOLR-8776
+    simpleQuery("q", "{!func}id_i1", "rows", 10, "fl",  "id," + i1+",score", "group", "true",
+        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}"+i1); // original rank: by id, rerank by i1 field (final score will be 2 * i1 + id)
+    rsp = query("q", "{!func}id_i1", "rows", 10, "fl",  "id," + i1+",score", "group", "true",
+        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}"+i1);
+    int groupLimit = 1;
+
+    rsp = query("q", "{!func}id_i1", "rows", 100, "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "group.limit", groupLimit, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", t1+":eggs");
+
+    rsp = query("q", "{!func}id_i1", "rows", 2, "fl",  "id,score," + i1, "group", "true",
+        "group.field", i1dv, "group.limit", groupLimit, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func }"+i1);
+
+    // test random limit between [2..5]
+    groupLimit = random().nextInt(3)+2;
+
+    rsp = query("q", "{!func}id_i1", "rows", 2, "fl",  "id,score," + i1, "group", "true",
+        "group.field", i1dv, "group.limit", groupLimit, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func }"+i1);
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {

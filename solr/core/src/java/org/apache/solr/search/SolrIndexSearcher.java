@@ -1504,22 +1504,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private TopDocsCollector buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
 
     Query q = cmd.getQuery();
-    if (q instanceof RankQuery) {
-      RankQuery rq = (RankQuery) q;
-      return rq.getTopDocsCollector(len, cmd, this);
-    }
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
+      if (q instanceof RankQuery) {
+        RankQuery rq = (RankQuery) q;
+        return rq.getTopDocsCollector(len, cmd.getSort(), this);
+      }
       return TopScoreDocCollector.create(len, Integer.MAX_VALUE);
-    } else {
-      // we have a sort
-      final Sort weightedSort = weightSort(cmd.getSort());
-      final CursorMark cursor = cmd.getCursorMark();
-
-      final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, Integer.MAX_VALUE);
     }
+    // we have a sort
+    final Sort weightedSort = weightSort(cmd.getSort());
+    if (q instanceof RankQuery) {
+      RankQuery rq = (RankQuery) q;
+      return rq.getTopDocsCollector(len, weightedSort, this);
+    }
+    final CursorMark cursor = cmd.getCursorMark();
+
+    final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
+    return TopFieldCollector.create(weightedSort, len, searchAfter, Integer.MAX_VALUE);
   }
 
   private void getDocListNC(QueryResult qr, QueryCommand cmd) throws IOException {

@@ -51,15 +51,14 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
    */
   public SecondPassGroupingCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, GroupReducer<T, ?> reducer) {
 
-    //System.out.println("SP init");
-    if (groups.isEmpty()) {
-      throw new IllegalArgumentException("no groups to collect (groups is empty)");
+    if (groups == null || groups.isEmpty()) {
+      throw new IllegalArgumentException("no groups to collect (groups is "+ ((groups == null) ? "null" : "empty")+")");
     }
 
     this.groupSelector = Objects.requireNonNull(groupSelector);
     this.groupSelector.setGroups(groups);
 
-    this.groups = Objects.requireNonNull(groups);
+    this.groups = groups;
     this.groupReducer = reducer;
     reducer.setGroups(groups);
   }

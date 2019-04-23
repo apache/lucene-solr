@@ -19,7 +19,9 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -68,6 +70,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
 import org.apache.solr.search.grouping.collector.FilterCollector;
+import org.apache.solr.search.grouping.collector.ReRankTopGroupsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,6 +97,7 @@ public class Grouping {
   private int limitDefault;
   private int docsPerGroupDefault;
   private int groupOffsetDefault;
+  private int reRankGroups;
   private Format defaultFormat;
   private TotalCount defaultTotalCount;
 
@@ -479,6 +483,10 @@ public class Grouping {
     return signalCacheWarning;
   }
 
+  public void setReRankGroups(int reRankGroups) {
+    this.reRankGroups = reRankGroups;
+  }
+
   //======================================   Inner classes =============================================================
 
   public static enum Format {
@@ -720,7 +728,11 @@ public class Grouping {
 
     @Override
     protected void prepare() throws IOException {
-      actualGroupsToFind = getMax(offset, numGroups, maxDoc);
+      if (reRankGroups > 0){
+        actualGroupsToFind = getMax(offset, reRankGroups, maxDoc);
+      } else {
+        actualGroupsToFind = getMax(offset, numGroups, maxDoc);
+      }
     }
 
     @Override
@@ -738,6 +750,7 @@ public class Grouping {
 
     @Override
     protected Collector createSecondPassCollector() throws IOException {
+      actualGroupsToFind = getMax(offset, numGroups, maxDoc);
       if (actualGroupsToFind <= 0) {
         allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(groupBy));
         return totalCount == TotalCount.grouped ? allGroupsCollector : null;
@@ -758,9 +771,17 @@ public class Grouping {
       int groupedDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupedDocsToCollect = Math.max(groupedDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
-      secondPass = new TopGroupsCollector<>(new TermGroupSelector(groupBy),
-          topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores
-      );
+
+      if (query instanceof RankQuery) {
+            secondPass = new ReRankTopGroupsCollector<>(new TermGroupSelector(groupBy),
+            topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false, (RankQuery) query, searcher);
+      }
+      else {
+        secondPass = new TopGroupsCollector<>(new TermGroupSelector(groupBy),
+            topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores
+        );
+      }
+
 
       if (totalCount == TotalCount.grouped) {
         allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(groupBy));
@@ -782,6 +803,26 @@ public class Grouping {
         result = secondPass.getTopGroups(0);
         populateScoresIfNecessary();
       }
+      if (result != null && query instanceof RankQuery && groupSort == Sort.RELEVANCE) {
+        // if we are sorting for relevance and query is a RankQuery, it may be that
+        // the order of the groups changed, we need to reorder
+        GroupDocs[] groups = result.groups;
+        Arrays.sort(groups, new Comparator<GroupDocs>() {
+          @Override
+          public int compare(GroupDocs o1, GroupDocs o2) {
+            if (o1.maxScore > o2.maxScore) return -1;
+            if (o1.maxScore < o2.maxScore) return 1;
+            return 0;
+          }
+        });
+
+        result = new TopGroups(groupSort.getSort(),
+            withinGroupSort.getSort(),
+            result.totalHitCount, result.totalGroupedHitCount, Arrays.copyOfRange(result.groups, 0, Math.min(result.groups.length, limitDefault)),
+            maxScore);
+      }
+
+
       if (main) {
         mainResult = createSimpleResponse();
         return;
@@ -936,7 +977,11 @@ public class Grouping {
     protected void prepare() throws IOException {
       context = ValueSource.newContext(searcher);
       groupBy.createWeight(context, searcher);
-      actualGroupsToFind = getMax(offset, numGroups, maxDoc);
+      if (reRankGroups > 0){
+        actualGroupsToFind = getMax(offset, reRankGroups, maxDoc);
+      } else {
+        actualGroupsToFind = getMax(offset, numGroups, maxDoc);
+      }
     }
 
     @Override
@@ -954,6 +999,7 @@ public class Grouping {
 
     @Override
     protected Collector createSecondPassCollector() throws IOException {
+      actualGroupsToFind = getMax(offset, numGroups, maxDoc);
       if (actualGroupsToFind <= 0) {
         allGroupsCollector = new AllGroupsCollector<>(newSelector());
         return totalCount == TotalCount.grouped ? allGroupsCollector : null;
@@ -974,9 +1020,15 @@ public class Grouping {
       int groupdDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupdDocsToCollect = Math.max(groupdDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
-      secondPass = new TopGroupsCollector<>(newSelector(),
-          topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores
-      );
+
+      if (query instanceof RankQuery){
+        secondPass = new ReRankTopGroupsCollector<>(newSelector(),
+            topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false, (RankQuery)query, searcher);
+      } else {
+        secondPass = new TopGroupsCollector<>(newSelector(),
+            topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores
+        );
+      }
 
       if (totalCount == TotalCount.grouped) {
         allGroupsCollector = new AllGroupsCollector<>(newSelector());
@@ -998,6 +1050,27 @@ public class Grouping {
         result = secondPass.getTopGroups(0);
         populateScoresIfNecessary();
       }
+
+      if (result != null && query instanceof RankQuery && groupSort == Sort.RELEVANCE) {
+        // if we are sorting for relevance and query is a RankQuery, it may be that
+        // the order of the groups changed, we need to reorder
+        GroupDocs[] groups = result.groups;
+        Arrays.sort(groups, new Comparator<GroupDocs>() {
+          @Override
+          public int compare(GroupDocs o1, GroupDocs o2) {
+            if (o1.maxScore > o2.maxScore) return -1;
+            if (o1.maxScore < o2.maxScore) return 1;
+            return 0;
+          }
+        });
+        result = new TopGroups(groupSort.getSort(),
+            withinGroupSort.getSort(),
+            result.totalHitCount, result.totalGroupedHitCount, Arrays.copyOfRange(result.groups, 0, Math.min(result.groups.length, limitDefault)),
+            maxScore);
+
+      }
+
+
       if (main) {
         mainResult = createSimpleResponse();
         return;

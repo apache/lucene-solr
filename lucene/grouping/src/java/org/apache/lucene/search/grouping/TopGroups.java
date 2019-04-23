@@ -169,7 +169,9 @@ public class TopGroups<T> {
               shardGroupDocs.scoreDocs,
               docSort.getSort());
         }
-        maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
+        if (! Float.isNaN(shardGroupDocs.maxScore)){
+          maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
+        }
         assert shardGroupDocs.totalHits.relation == Relation.EQUAL_TO;
         totalHits += shardGroupDocs.totalHits.value;
         scoreSum += shardGroupDocs.score;
