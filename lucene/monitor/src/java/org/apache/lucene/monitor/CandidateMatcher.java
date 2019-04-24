@@ -62,7 +62,7 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   }
 
   /**
-   * Runs the supplied query against this CandidateMatcher's DocumentBatch, storing any
+   * Runs the supplied query against this CandidateMatcher's set of documents, storing any
    * resulting match, and recording the query in the presearcher hits
    *
    * @param queryId    the query id
@@ -167,8 +167,6 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
 
   /**
    * Get a {@link LeafReader} over the documents in this matcher's {@link IndexSearcher}
-   *
-   * @return a {@link LeafReader} over the documents in this matcher's {@link DocumentBatch}
    */
   public LeafReader getIndexReader() {
     return (LeafReader) searcher.getIndexReader();

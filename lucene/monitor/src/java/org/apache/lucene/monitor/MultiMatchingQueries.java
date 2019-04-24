@@ -23,6 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Class to hold the results of matching a batch of {@link org.apache.lucene.document.Document}s
+ * against queries held in the Monitor
+ *
+ * @param <T> the type of QueryMatch returned
+ */
 public class MultiMatchingQueries<T extends QueryMatch> {
 
   private final List<Map<String, T>> matches;

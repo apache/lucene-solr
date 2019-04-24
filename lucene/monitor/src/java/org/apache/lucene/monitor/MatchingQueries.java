@@ -20,7 +20,8 @@ package org.apache.lucene.monitor;
 import java.util.*;
 
 /**
- * Class to hold a response from the Monitor
+ * Class to hold the results of matching a single {@link org.apache.lucene.document.Document}
+ * against queries held in the Monitor
  *
  * @param <T> the type of QueryMatch returned
  */

@@ -95,9 +95,10 @@ public class TestTermPresearcher extends PresearcherTestBase {
 
   public void testAnyTermsAreCorrectlyAnalyzed() {
 
-    TermFilteredPresearcher presearcher = new TermFilteredPresearcher();
-    QueryTree qt = presearcher.extractor.buildTree(new MatchAllDocsQuery(), TermFilteredPresearcher.DEFAULT_WEIGHTOR);
+    QueryAnalyzer analyzer = new QueryAnalyzer();
+    QueryTree qt = analyzer.buildTree(new MatchAllDocsQuery(), TermFilteredPresearcher.DEFAULT_WEIGHTOR);
 
+    TermFilteredPresearcher presearcher = new TermFilteredPresearcher();
     Map<String, BytesRefHash> extractedTerms = presearcher.collectTerms(qt);
     assertEquals(1, extractedTerms.size());
 

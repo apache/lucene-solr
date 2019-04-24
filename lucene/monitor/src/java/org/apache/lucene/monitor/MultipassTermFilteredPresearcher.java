@@ -37,7 +37,7 @@ import org.apache.lucene.util.BytesRefHash;
  * from different routes through a querytree.  Each route will produce a set of terms
  * that are *sufficient* to select the query, and are indexed into a separate, suffixed field.
  * <p>
- * Incoming InputDocuments are then converted to a set of Disjunction queries over each
+ * Incoming documents are then converted to a set of Disjunction queries over each
  * suffixed field, and these queries are combined into a conjunction query, such that the
  * document's set of terms must match a term from each route.
  * <p>
@@ -60,9 +60,11 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
   /**
    * Construct a new MultipassTermFilteredPresearcher
    *
-   * @param passes     the number of times a query should be indexed
-   * @param minWeight  the minimum weight a querytree should be advanced over
-   * @param weightor   the TreeWeightor to use
+   * @param passes        the number of times a query should be indexed
+   * @param minWeight     the minimum weight a querytree should be advanced over
+   * @param weightor      the TreeWeightor to use
+   * @param queryHandlers a list of custom query handlers
+   * @param filterFields  a set of fields to use as filters
    */
   public MultipassTermFilteredPresearcher(int passes, float minWeight, TermWeightor weightor,
                                           List<CustomQueryHandler> queryHandlers, Set<String> filterFields) {

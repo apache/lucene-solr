@@ -87,10 +87,10 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
   }
 
-  public void testConjunctionsCannotAdvanceOverZeroWeightedTokens() {
+  public void testConjunctionsCannotAdvanceOverMinWeightedTokens() {
 
     TermWeightor weightor = TermWeightor.combine(
-        TermWeightor.termWeightor(0, new BytesRef("startterm")),
+        TermWeightor.termWeightor(0.1, new BytesRef("startterm")),
         TermWeightor.lengthWeightor(1, 1));
 
     QueryAnalyzer analyzer = new QueryAnalyzer();
@@ -101,11 +101,11 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     Set<Term> expected = Collections.singleton(new Term("field", "goodbye"));
     assertEquals(expected, collectTerms(tree));
 
-    assertTrue(tree.advancePhase(0));
+    assertTrue(tree.advancePhase(0.5));
     expected = Collections.singleton(new Term("field", "hello"));
     assertEquals(expected, collectTerms(tree));
 
-    assertFalse(tree.advancePhase(0));
+    assertFalse(tree.advancePhase(0.5));
 
   }
 

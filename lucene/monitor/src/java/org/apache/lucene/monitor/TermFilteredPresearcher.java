@@ -50,10 +50,17 @@ import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Presearcher implementation that uses terms extracted from queries to index
- * them in the Monitor, and builds a BooleanQuery from InputDocuments to match
+ * them in the Monitor, and builds a disjunction from terms in a document to match
  * them.
- * <p>
- * This Presearcher uses a QueryTermExtractor to extract terms from queries.
+ *
+ * Handling of queries that do not support term extraction through the
+ * {@link org.apache.lucene.search.QueryVisitor} API can be configured by passing
+ * a list of {@link CustomQueryHandler} implementations.
+ *
+ * Filtering by additional fields can be configured by passing a set of field names.
+ * Documents that contain values in those fields will only be checked against
+ * {@link MonitorQuery} instances that have the same fieldname-value mapping in
+ * their metadata.
  */
 public class TermFilteredPresearcher extends Presearcher {
 
@@ -62,37 +69,34 @@ public class TermFilteredPresearcher extends Presearcher {
    */
   public static final TermWeightor DEFAULT_WEIGHTOR = TermWeightor.DEFAULT;
 
-  static {
-    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE);
-  }
-
-  protected final QueryAnalyzer extractor;
-  protected final TermWeightor weightor;
+  private final QueryAnalyzer extractor;
+  private final TermWeightor weightor;
 
   private final Set<String> filterFields;
   private final List<CustomQueryHandler> queryHandlers = new ArrayList<>();
 
-  public static final String ANYTOKEN_FIELD = "__anytokenfield";
-
-  public static final String ANYTOKEN = "__ANYTOKEN__";
+  static final String ANYTOKEN_FIELD = "__anytokenfield";
+  static final String ANYTOKEN = "__ANYTOKEN__";
 
   /**
-   * Create a new TermFilteredPresearcher using a defined TermWeightor
+   * Creates a new TermFilteredPresearcher using the default term weighting
+   */
+  public TermFilteredPresearcher() {
+    this(DEFAULT_WEIGHTOR, Collections.emptyList(), Collections.emptySet());
+  }
+
+  /**
+   * Creates a new TermFilteredPresearcher
    *
-   * @param weightor   the TermWeightor
+   * @param weightor            the TermWeightor
+   * @param customQueryHandlers A list of custom query handlers to extract terms from non-core queries
+   * @param filterFields        A set of fields to filter on
    */
   public TermFilteredPresearcher(TermWeightor weightor, List<CustomQueryHandler> customQueryHandlers, Set<String> filterFields) {
     this.extractor = new QueryAnalyzer(customQueryHandlers);
     this.filterFields = filterFields;
     this.queryHandlers.addAll(customQueryHandlers);
     this.weightor = weightor;
-  }
-
-  /**
-   * Create a new TermFilteredPresearcher using the default term weighting
-   */
-  public TermFilteredPresearcher() {
-    this(DEFAULT_WEIGHTOR, Collections.emptyList(), Collections.emptySet());
   }
 
   @Override
@@ -187,6 +191,9 @@ public class TermFilteredPresearcher extends Presearcher {
     return built;
   }
 
+  /**
+   * Constructs a document disjunction from a set of terms
+   */
   protected interface DocumentQueryBuilder {
 
     /**
@@ -201,6 +208,9 @@ public class TermFilteredPresearcher extends Presearcher {
 
   }
 
+  /**
+   * Returns a {@link DocumentQueryBuilder} for this presearcher
+   */
   protected DocumentQueryBuilder getQueryBuilder() {
     return new DocumentQueryBuilder() {
 
@@ -243,6 +253,9 @@ public class TermFilteredPresearcher extends Presearcher {
     return doc;
   }
 
+  /**
+   * Builds a {@link Document} from the terms extracted from a query
+   */
   protected Document buildQueryDocument(QueryTree querytree) {
     Map<String, BytesRefHash> fieldTerms = collectTerms(querytree);
     Document doc = new Document();
@@ -253,6 +266,9 @@ public class TermFilteredPresearcher extends Presearcher {
     return doc;
   }
 
+  /**
+   * Collects terms from a {@link QueryTree} and maps them per-field
+   */
   protected Map<String, BytesRefHash> collectTerms(QueryTree querytree) {
     Map<String, BytesRefHash> fieldTerms = new HashMap<>();
     querytree.collectTerms((field, term) -> {
@@ -262,6 +278,9 @@ public class TermFilteredPresearcher extends Presearcher {
     return fieldTerms;
   }
 
+  /**
+   * Implements a {@link BytesRefIterator} over a {@link BytesRefHash}
+   */
   protected class BytesRefHashIterator implements BytesRefIterator {
 
     final BytesRef scratch = new BytesRef();
