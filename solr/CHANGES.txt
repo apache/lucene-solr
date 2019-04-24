@@ -296,6 +296,8 @@ Other Changes
 
 * SOLR-13400: Replace Observable pattern in TransientSolrCoreCache (Erick Erickson)
 
+* SOLR-13425: Ref-Guide: Wrong color of text in left column of horizontal definition list (janhoy)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
