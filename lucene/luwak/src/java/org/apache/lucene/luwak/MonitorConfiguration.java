@@ -32,7 +32,7 @@ import org.apache.lucene.store.FSDirectory;
 /**
  * Encapsulates various configuration settings for a Monitor's query index
  */
-public class QueryIndexConfiguration {
+public class MonitorConfiguration {
 
   private int queryUpdateBufferSize = 5000;
   private long purgeFrequency = 5;
@@ -50,7 +50,7 @@ public class QueryIndexConfiguration {
     return iwc;
   }
 
-  public QueryIndexConfiguration setIndexPath(Path indexPath, MonitorQuerySerializer serializer) {
+  public MonitorConfiguration setIndexPath(Path indexPath, MonitorQuerySerializer serializer) {
     this.indexPath = indexPath;
     this.serializer = serializer;
     return this;
@@ -75,7 +75,7 @@ public class QueryIndexConfiguration {
    * @param queryDecomposer the QueryDecomposer to be used by the Monitor
    * @return the current configuration
    */
-  public QueryIndexConfiguration setQueryDecomposer(QueryDecomposer queryDecomposer) {
+  public MonitorConfiguration setQueryDecomposer(QueryDecomposer queryDecomposer) {
     this.queryDecomposer = queryDecomposer;
     return this;
   }
@@ -94,7 +94,7 @@ public class QueryIndexConfiguration {
    * @param units     the frequency units
    * @return the current configuration
    */
-  public QueryIndexConfiguration setPurgeFrequency(long frequency, TimeUnit units) {
+  public MonitorConfiguration setPurgeFrequency(long frequency, TimeUnit units) {
     this.purgeFrequency = frequency;
     this.purgeFrequencyUnits = units;
     return this;
@@ -120,7 +120,7 @@ public class QueryIndexConfiguration {
    * @param size how many queries will be buffered in memory before being committed to the queryindex
    * @return the current configuration
    */
-  public QueryIndexConfiguration setQueryUpdateBufferSize(int size) {
+  public MonitorConfiguration setQueryUpdateBufferSize(int size) {
     this.queryUpdateBufferSize = size;
     return this;
   }

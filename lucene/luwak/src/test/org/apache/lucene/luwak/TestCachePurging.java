@@ -35,7 +35,7 @@ public class TestCachePurging extends MonitorTestBase {
   public void testQueryCacheCanBePurged() throws IOException {
 
     final AtomicInteger purgeCount = new AtomicInteger();
-    QueryIndexUpdateListener listener = new QueryIndexUpdateListener() {
+    MonitorUpdateListener listener = new MonitorUpdateListener() {
       @Override
       public void onPurge() {
         purgeCount.incrementAndGet();
@@ -132,7 +132,7 @@ public class TestCachePurging extends MonitorTestBase {
 
   public void testBackgroundPurges() throws IOException, InterruptedException {
 
-    QueryIndexConfiguration config = new QueryIndexConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
+    MonitorConfiguration config = new MonitorConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
     try (Monitor monitor = new Monitor(ANALYZER, Presearcher.NO_FILTERING, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);

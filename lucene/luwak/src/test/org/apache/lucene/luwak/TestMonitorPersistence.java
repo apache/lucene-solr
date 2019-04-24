@@ -33,7 +33,7 @@ public class TestMonitorPersistence extends MonitorTestBase {
 
     Document doc = new Document();
     doc.add(newTextField(FIELD, "test", Field.Store.NO));
-    QueryIndexConfiguration config = new QueryIndexConfiguration()
+    MonitorConfiguration config = new MonitorConfiguration()
         .setIndexPath(indexDirectory, MonitorQuerySerializer.fromParser(MonitorTestBase::parse));
 
     try (Monitor monitor = new Monitor(ANALYZER, config)) {

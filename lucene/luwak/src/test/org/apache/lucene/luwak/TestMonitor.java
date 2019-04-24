@@ -141,7 +141,7 @@ public class TestMonitor extends MonitorTestBase {
     final AtomicInteger callCount = new AtomicInteger();
     final AtomicInteger updateCount = new AtomicInteger();
 
-    QueryIndexUpdateListener listener = new QueryIndexUpdateListener() {
+    MonitorUpdateListener listener = new MonitorUpdateListener() {
 
       @Override
       public void afterUpdate(List<MonitorQuery> updates) {

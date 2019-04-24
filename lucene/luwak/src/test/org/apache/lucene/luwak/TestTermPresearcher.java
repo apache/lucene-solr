@@ -110,7 +110,7 @@ public class TestTermPresearcher extends PresearcherTestBase {
     IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
     Directory dir = new ByteBuffersDirectory();
     IndexWriter writer = new IndexWriter(dir, iwc);
-    QueryIndexConfiguration config = new QueryIndexConfiguration(){
+    MonitorConfiguration config = new MonitorConfiguration(){
       @Override
       public IndexWriter buildIndexWriter() {
         return writer;
