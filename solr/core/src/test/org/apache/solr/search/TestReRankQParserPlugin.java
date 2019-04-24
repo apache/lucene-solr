@@ -650,8 +650,6 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='2']", // group1
         "//result/doc[4]/str[@name='id'][.='1']");// group1
 
-    System.out.println(h.query(req(params)));
-
     params.add("group", "true");
     params.add("group.field", "group_s");
 
