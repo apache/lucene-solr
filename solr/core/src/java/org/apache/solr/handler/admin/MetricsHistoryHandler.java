@@ -25,6 +25,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -754,7 +755,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         }
         if (factory.exists(name)) {
           // get a throwaway copy (safe to close and discard)
-          RrdDb db = new RrdDb(URI_PREFIX + name, true, factory);
+          RrdDb db = RrdDb.getBuilder().setBackendFactory(factory).setReadOnly(true).setPath(new URI(URI_PREFIX + name)).build();
           SimpleOrderedMap<Object> status = new SimpleOrderedMap<>();
           status.add("status", getDbStatus(db));
           status.add("node", nodeName);

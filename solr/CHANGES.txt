@@ -274,6 +274,8 @@ Other Changes
 
 * SOLR-13400: Replace Observable pattern in TransientSolrCoreCache (Erick Erickson)
 
+* SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
