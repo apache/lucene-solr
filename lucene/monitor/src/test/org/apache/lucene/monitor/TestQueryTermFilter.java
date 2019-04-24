@@ -32,20 +32,21 @@ public class TestQueryTermFilter extends LuceneTestCase {
 
   public void testFiltersAreRemoved() throws IOException {
 
-    QueryIndex qi = new QueryIndex(new MonitorConfiguration(), new TermFilteredPresearcher());
-    qi.commit(Collections.singletonList(new MonitorQuery("1", new TermQuery(new Term(FIELD, "term")))));
-    assertEquals(1, qi.termFilters.size());
-    BiPredicate<String, BytesRef> filter = qi.termFilters.values().iterator().next();
-    assertTrue(filter.test(FIELD, new BytesRef("term")));
-    assertFalse(filter.test(FIELD, new BytesRef("term2")));
+    try (QueryIndex qi = new QueryIndex(new MonitorConfiguration(), new TermFilteredPresearcher())) {
+      qi.commit(Collections.singletonList(new MonitorQuery("1", new TermQuery(new Term(FIELD, "term")))));
+      assertEquals(1, qi.termFilters.size());
+      BiPredicate<String, BytesRef> filter = qi.termFilters.values().iterator().next();
+      assertTrue(filter.test(FIELD, new BytesRef("term")));
+      assertFalse(filter.test(FIELD, new BytesRef("term2")));
 
-    qi.commit(Collections.singletonList(new MonitorQuery("2", new TermQuery(new Term(FIELD, "term2")))));
-    assertEquals(1, qi.termFilters.size());
+      qi.commit(Collections.singletonList(new MonitorQuery("2", new TermQuery(new Term(FIELD, "term2")))));
+      assertEquals(1, qi.termFilters.size());
 
-    filter = qi.termFilters.values().iterator().next();
-    assertTrue(filter.test(FIELD, new BytesRef("term")));
-    assertTrue(filter.test(FIELD, new BytesRef("term2")));
-    assertFalse(filter.test(FIELD, new BytesRef("term3")));
+      filter = qi.termFilters.values().iterator().next();
+      assertTrue(filter.test(FIELD, new BytesRef("term")));
+      assertTrue(filter.test(FIELD, new BytesRef("term2")));
+      assertFalse(filter.test(FIELD, new BytesRef("term3")));
+    }
   }
 
 }

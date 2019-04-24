@@ -29,16 +29,39 @@ import java.util.stream.Collectors;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * A representation of a node in a query tree
+ *
+ * Queries are analyzed and converted into an abstract tree, consisting
+ * of conjunction and disjunction nodes, and leaf nodes containing terms.
+ *
+ * Terms may be collected from a node, which will use the weights of its
+ * sub-nodes to determine which paths are followed.  The path may be changed
+ * by calling {@link #advancePhase(double)}
+ */
 public abstract class QueryTree {
 
+  /**
+   * The weight of this node
+   */
   public abstract double weight();
 
+  /**
+   * Collect terms from the most highly-weighted path below this node
+   */
   public abstract void collectTerms(BiConsumer<String, BytesRef> termCollector);
 
-  public abstract boolean advancePhase(float minWeight);
+  /**
+   * Find the next-most highly-weighted path below this node
+   * @param minWeight do not advance if the next path has a weight below this value
+   * @return {@code false} if there are no more paths above the minimum weight
+   */
+  public abstract boolean advancePhase(double minWeight);
 
-  public abstract boolean isAny();
-
+  /**
+   * Returns a string representation of the node
+   * @param depth the current depth of this node in the overall query tree
+   */
   public abstract String toString(int depth);
 
   @Override
@@ -46,7 +69,10 @@ public abstract class QueryTree {
     return toString(0);
   }
 
-  String space(int width) {
+  /**
+   * Returns a string of {@code width} spaces
+   */
+  protected String space(int width) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < width; i++) {
       sb.append(" ");
@@ -54,18 +80,34 @@ public abstract class QueryTree {
     return sb.toString();
   }
 
+  /**
+   * Returns a leaf node for a particular term
+   */
   public static QueryTree term(Term term, TermWeightor weightor) {
     return term(term.field(), term.bytes(), weightor.applyAsDouble(term));
   }
 
+  /**
+   * Returns a leaf node for a particular term and weight
+   *
+   * The weight must be greater than 0
+   */
   public static QueryTree term(Term term, double weight) {
     return term(term.field(), term.bytes(), weight);
   }
 
+  /**
+   * Returns a leaf node for a particular term and weight
+   *
+   * The weight must be greater than 0
+   */
   public static QueryTree term(String field, BytesRef term, double weight) {
     return new QueryTree() {
       @Override
       public double weight() {
+        if (weight <= 0) {
+          throw new IllegalArgumentException("Term weights must be greater than 0");
+        }
         return weight;
       }
 
@@ -75,12 +117,7 @@ public abstract class QueryTree {
       }
 
       @Override
-      public boolean advancePhase(float minWeight) {
-        return false;
-      }
-
-      @Override
-      public boolean isAny() {
+      public boolean advancePhase(double minWeight) {
         return false;
       }
 
@@ -91,6 +128,9 @@ public abstract class QueryTree {
     };
   }
 
+  /**
+   * Returns a leaf node that will match any document
+   */
   public static QueryTree anyTerm(String reason) {
     return new QueryTree() {
       @Override
@@ -104,13 +144,8 @@ public abstract class QueryTree {
       }
 
       @Override
-      public boolean advancePhase(float minWeight) {
+      public boolean advancePhase(double minWeight) {
         return false;
-      }
-
-      @Override
-      public boolean isAny() {
-        return true;
       }
 
       @Override
@@ -120,6 +155,9 @@ public abstract class QueryTree {
     };
   }
 
+  /**
+   * Returns a conjunction of a set of child nodes
+   */
   public static QueryTree conjunction(List<Function<TermWeightor, QueryTree>> children, TermWeightor weightor) {
     if (children.size() == 0) {
       throw new IllegalArgumentException("Cannot build a conjunction with no children");
@@ -129,7 +167,7 @@ public abstract class QueryTree {
     }
     List<QueryTree> qt = children.stream()
         .map(f -> f.apply(weightor)).collect(Collectors.toList());
-    List<QueryTree> restricted = qt.stream().filter(t -> t.isAny() == false).collect(Collectors.toList());
+    List<QueryTree> restricted = qt.stream().filter(t -> t.weight() > 0).collect(Collectors.toList());
     if (restricted.size() == 0) {
       // all children are ANY, so just return the first one
       return qt.get(0);
@@ -141,6 +179,9 @@ public abstract class QueryTree {
     return new ConjunctionQueryTree(Arrays.asList(children));
   }
 
+  /**
+   * Returns a disjunction of a set of child nodes
+   */
   public static QueryTree disjunction(List<Function<TermWeightor, QueryTree>> children, TermWeightor weightor) {
     if (children.size() == 0) {
       throw new IllegalArgumentException("Cannot build a disjunction with no children");
@@ -150,7 +191,7 @@ public abstract class QueryTree {
     }
     List<QueryTree> qt = children.stream()
         .map(f -> f.apply(weightor)).collect(Collectors.toList());
-    Optional<QueryTree> firstAnyChild = qt.stream().filter(QueryTree::isAny).findAny();
+    Optional<QueryTree> firstAnyChild = qt.stream().filter(q -> q.weight() == 0).findAny();
     // if any of the children is an ANY node, just return that, otherwise build the disjunction
     return firstAnyChild.orElseGet(() -> new DisjunctionQueryTree(qt));
   }
@@ -181,7 +222,7 @@ public abstract class QueryTree {
     }
 
     @Override
-    public boolean advancePhase(float minWeight) {
+    public boolean advancePhase(double minWeight) {
       if (children.get(0).advancePhase(minWeight)) {
         this.children.sort(COMPARATOR);
         return true;
@@ -193,15 +234,6 @@ public abstract class QueryTree {
         return false;
       }
       children.remove(0);
-      return true;
-    }
-
-    @Override
-    public boolean isAny() {
-      for (QueryTree child : children) {
-        if (!child.isAny())
-          return false;
-      }
       return true;
     }
 
@@ -241,7 +273,7 @@ public abstract class QueryTree {
     }
 
     @Override
-    public boolean advancePhase(float minWeight) {
+    public boolean advancePhase(double minWeight) {
       boolean changed = false;
       for (QueryTree child : children) {
         changed |= child.advancePhase(minWeight);
@@ -250,13 +282,7 @@ public abstract class QueryTree {
         return false;
       }
       children.sort(Comparator.comparingDouble(QueryTree::weight));
-      return changed;
-    }
-
-    @Override
-    public boolean isAny() {
-      // if a child is an ANY token, then the disjunction doesn't get built in the first place
-      return false;
+      return true;
     }
 
     @Override

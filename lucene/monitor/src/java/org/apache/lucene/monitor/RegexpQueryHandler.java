@@ -125,18 +125,13 @@ public class RegexpQueryHandler implements CustomQueryHandler {
       }
 
       @Override
-      public boolean advancePhase(float minWeight) {
-        return false;
-      }
-
-      @Override
-      public boolean isAny() {
+      public boolean advancePhase(double minWeight) {
         return false;
       }
 
       @Override
       public String toString(int depth) {
-        return "WILDCARD_NGRAM[" + term.toString() + "]^" + weight;
+        return space(depth) + "WILDCARD_NGRAM[" + term.toString() + "]^" + weight;
       }
     };
   }
