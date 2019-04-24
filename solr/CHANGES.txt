@@ -240,6 +240,9 @@ Improvements
 * SOLR-13337: Only request the minimum required number of terms from each shard when using terms.sort=index and none
   are discarded due to terms.min/maxcount (Morten Bøgeskov,Munendra S N via Mikhail Khludnev)
 
+* SOLR-12167: Throw an exception, instead of just a warning, when unknown atomic update operation is
+  encountered (Munendra S N via Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
@@ -297,6 +300,8 @@ Other Changes
 * SOLR-13400: Replace Observable pattern in TransientSolrCoreCache (Erick Erickson)
 
 * SOLR-13425: Ref-Guide: Wrong color of text in left column of horizontal definition list (janhoy)
+
+* SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
 
 ==================  8.0.0 ==================
 

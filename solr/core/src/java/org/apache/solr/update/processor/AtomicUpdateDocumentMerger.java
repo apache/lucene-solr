@@ -101,39 +101,36 @@ public class AtomicUpdateDocumentMerger {
         for (Entry<String,Object> entry : ((Map<String,Object>) val).entrySet()) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
-          boolean updateField = false;
           switch (key) {
             case "add":
-              updateField = true;
               doAdd(toDoc, sif, fieldVal);
               break;
             case "set":
-              updateField = true;
               doSet(toDoc, sif, fieldVal);
               break;
             case "remove":
-              updateField = true;
               doRemove(toDoc, sif, fieldVal);
               break;
             case "removeregex":
-              updateField = true;
               doRemoveRegex(toDoc, sif, fieldVal);
               break;
             case "inc":
-              updateField = true;
               doInc(toDoc, sif, fieldVal);
               break;
             case "add-distinct":
-              updateField = true;
               doAddDistinct(toDoc, sif, fieldVal);
               break;
             default:
-              //Perhaps throw an error here instead?
-              log.warn("Unknown operation for the an atomic update, operation ignored: " + key);
-              break;
+              Object id = toDoc.containsKey(idField.getName())? toDoc.getFieldValue(idField.getName()):
+                  fromDoc.getFieldValue(idField.getName());
+              String err = "Unknown operation for the an atomic update, operation ignored: " + key;
+              if (id != null) {
+                err = err + " for id:" + id;
+              }
+              throw new SolrException(ErrorCode.BAD_REQUEST, err);
           }
           // validate that the field being modified is not the id field.
-          if (updateField && idField.getName().equals(sif.getName())) {
+          if (idField.getName().equals(sif.getName())) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid update of id field: " + sif);
           }
 
