@@ -32,7 +32,7 @@ public class TestQueryTermFilter extends LuceneTestCase {
 
   public void testFiltersAreRemoved() throws IOException {
 
-    QueryIndex qi = new QueryIndex(new QueryIndexConfiguration(), new TermFilteredPresearcher());
+    QueryIndex qi = new QueryIndex(new MonitorConfiguration(), new TermFilteredPresearcher());
     qi.commit(Collections.singletonList(new MonitorQuery("1", new TermQuery(new Term(FIELD, "term")))));
     assertEquals(1, qi.termFilters.size());
     BiPredicate<String, BytesRef> filter = qi.termFilters.values().iterator().next();

@@ -87,7 +87,7 @@ class QueryIndex implements Closeable {
   // package-private for testing
   final Map<IndexReader.CacheKey, QueryTermFilter> termFilters = new HashMap<>();
 
-  QueryIndex(QueryIndexConfiguration config, Presearcher presearcher) throws IOException {
+  QueryIndex(MonitorConfiguration config, Presearcher presearcher) throws IOException {
     this.writer = config.buildIndexWriter();
     this.manager = new SearcherManager(writer, true, true, new TermsHashBuilder());
     this.decomposer = config.getQueryDecomposer();

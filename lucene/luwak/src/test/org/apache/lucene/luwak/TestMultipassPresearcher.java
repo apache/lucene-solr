@@ -84,7 +84,7 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
 
     Directory dir = new ByteBuffersDirectory();
     IndexWriter writer = new IndexWriter(dir, iwc);
-    QueryIndexConfiguration config = new QueryIndexConfiguration(){
+    MonitorConfiguration config = new MonitorConfiguration(){
       @Override
       public IndexWriter buildIndexWriter() {
         return writer;

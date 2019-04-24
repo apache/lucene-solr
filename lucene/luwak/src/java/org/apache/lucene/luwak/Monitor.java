@@ -44,8 +44,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NamedThreadFactory;
 
 /**
- * A Monitor contains a set of MonitorQuery objects, and runs them against
- * passed-in InputDocuments.
+ * A Monitor contains a set of {@link Query} objects with associated IDs, and efficiently
+ * matches them against sets of {@link Document} objects.
  */
 public class Monitor implements Closeable {
 
@@ -54,9 +54,9 @@ public class Monitor implements Closeable {
 
   private final QueryIndex queryIndex;
 
-  private final List<QueryIndexUpdateListener> listeners = new ArrayList<>();
+  private final List<MonitorUpdateListener> listeners = new ArrayList<>();
 
-  protected long slowLogLimit = 2000000;
+  private long slowLogLimit = 2000000;
 
   private final long commitBatchSize;
 
@@ -66,19 +66,42 @@ public class Monitor implements Closeable {
 
   /**
    * Create a non-persistent Monitor instance with the default term-filtering Presearcher
+   *
+   * @param analyzer to analyze {@link Document}s at match time
    */
   public Monitor(Analyzer analyzer) throws IOException {
     this(analyzer, new TermFilteredPresearcher());
   }
 
   /**
+   * Create a new non-persistent Monitor instance
+   *
+   * @param analyzer to analyze {@link Document}s at match time
+   * @param presearcher the presearcher to use
+   */
+  public Monitor(Analyzer analyzer, Presearcher presearcher) throws IOException {
+    this(analyzer, presearcher, new MonitorConfiguration());
+  }
+
+  /**
+   * Create a new Monitor instance with a specific configuration
+   *
+   * @param analyzer to analyze {@link Document}s at match time
+   * @param config   the configuration
+   */
+  public Monitor(Analyzer analyzer, MonitorConfiguration config) throws IOException {
+    this(analyzer, new TermFilteredPresearcher(), config);
+  }
+
+  /**
    * Create a new Monitor instance
    *
+   * @param analyzer      to analyze {@link Document}s at match time
    * @param presearcher   the presearcher to use
-   * @param configuration the MonitorConfiguration
+   * @param configuration the configuration
    */
   public Monitor(Analyzer analyzer, Presearcher presearcher,
-                 QueryIndexConfiguration configuration) throws IOException {
+                 MonitorConfiguration configuration) throws IOException {
 
     this.analyzer = analyzer;
     this.presearcher = presearcher;
@@ -98,28 +121,12 @@ public class Monitor implements Closeable {
   }
 
   /**
-   * Create a new non-persistent Monitor instance
-   *
-   * @param presearcher the presearcher to use
-   */
-  public Monitor(Analyzer analyzer, Presearcher presearcher) throws IOException {
-    this(analyzer, presearcher, new QueryIndexConfiguration());
-  }
-
-  /**
-   * Create a new Monitor instance with a specific configuration
-   */
-  public Monitor(Analyzer analyzer, QueryIndexConfiguration config) throws IOException {
-    this(analyzer, new TermFilteredPresearcher(), config);
-  }
-
-  /**
-   * Register a {@link QueryIndexUpdateListener} that will be notified whenever changes
+   * Register a {@link MonitorUpdateListener} that will be notified whenever changes
    * are made to the Monitor's queryindex
    *
    * @param listener listener to register
    */
-  public void addQueryIndexUpdateListener(QueryIndexUpdateListener listener) {
+  public void addQueryIndexUpdateListener(MonitorUpdateListener listener) {
     listeners.add(listener);
   }
 
@@ -167,7 +174,7 @@ public class Monitor implements Closeable {
   public void purgeCache() throws IOException {
     queryIndex.purgeCache();
     lastPurged = System.nanoTime();
-    listeners.forEach(QueryIndexUpdateListener::onPurge);
+    listeners.forEach(MonitorUpdateListener::onPurge);
   }
 
   /**
@@ -207,7 +214,6 @@ public class Monitor implements Closeable {
   }
 
   private void commit(List<MonitorQuery> updates) throws IOException {
-    listeners.forEach(l -> l.beforeUpdate(updates));
     queryIndex.commit(updates);
     listeners.forEach(l -> l.afterUpdate(updates));
   }
@@ -228,10 +234,9 @@ public class Monitor implements Closeable {
    * @param queryIds the IDs to delete
    * @throws IOException on IO errors
    */
-  public void deleteById(Iterable<String> queryIds) throws IOException {
-    listeners.forEach(QueryIndexUpdateListener::beforeDelete);
+  public void deleteById(List<String> queryIds) throws IOException {
     queryIndex.deleteQueries(queryIds);
-    listeners.forEach(QueryIndexUpdateListener::afterDelete);
+    listeners.forEach(l -> l.afterDelete(queryIds));
   }
 
   /**
@@ -250,9 +255,8 @@ public class Monitor implements Closeable {
    * @throws IOException on IO errors
    */
   public void clear() throws IOException {
-    listeners.forEach(QueryIndexUpdateListener::beforeDelete);
     queryIndex.clear();
-    listeners.forEach(QueryIndexUpdateListener::afterDelete);
+    listeners.forEach(MonitorUpdateListener::afterClear);
   }
 
   /**

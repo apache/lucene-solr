@@ -20,26 +20,33 @@ package org.apache.lucene.luwak;
 import java.util.List;
 
 /**
- * Base class for reporting events on a Monitor's query index
+ * For reporting events on a Monitor's query index
  */
-public abstract class QueryIndexUpdateListener {
+public interface MonitorUpdateListener {
 
-  public void beforeUpdate(List<MonitorQuery> updates) {
-  }
+  /**
+   * Called after a set of queries have been added to the Monitor's query index
+   */
+  void afterUpdate(List<MonitorQuery> updates);
 
-  public void afterUpdate(List<MonitorQuery> updates) {
-  }
+  /**
+   * Called after a set of queries have been deleted from the Monitor's query index
+   */
+  void afterDelete(List<String> queryIds);
 
-  public void beforeDelete() {
-  }
+  /**
+   * Called after all queries have been removed from the Monitor's query index
+   */
+  void afterClear();
 
-  public void afterDelete() {
-  }
+  /**
+   * Called after the Monitor's query cache has been purged of deleted queries
+   */
+  void onPurge();
 
-  public void onPurge() {
-  }
-
-  public void onPurgeError(Throwable t) {
-  }
+  /**
+   * Called if there was an error removing deleted queries from the Monitor's query cache
+   */
+  void onPurgeError(Throwable t);
 
 }
