@@ -496,7 +496,9 @@ final public class Tessellator {
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
     //Check the split polygons are CW
-    if (isCWPolygon(a, b) == false || isCWPolygon(b, a) == false) {
+    if (isCWPolygon(a, b) == false || isCWPolygon(b, a) == false ||
+        pointInPolygon(a, b, b.next) || pointInPolygon(b, a, a.next) ||
+        pointInPolygon(a, b, a.previous) || pointInPolygon(b, a, b.previous)) {
       return false;
     }
     //If points are equal then use it
@@ -510,14 +512,19 @@ final public class Tessellator {
   }
 
   private static final boolean isLocallyInside(final Node a, final Node b) {
-    // if a is cw
-    if (area(a.previous.getX(), a.previous.getY(), a.getX(), a.getY(), a.next.getX(), a.next.getY()) < 0) {
+    double area = area(a.previous.getX(), a.previous.getY(), a.getX(), a.getY(), a.next.getX(), a.next.getY());
+    if (area == 0) {
+      // parallel
+      return false;
+    } else if (area < 0) {
+      // if a is cw
       return area(a.getX(), a.getY(), b.getX(), b.getY(), a.next.getX(), a.next.getY()) >= 0
           && area(a.getX(), a.getY(), a.previous.getX(), a.previous.getY(), b.getX(), b.getY()) >= 0;
+    } else {
+      // ccw
+      return area(a.getX(), a.getY(), b.getX(), b.getY(), a.previous.getX(), a.previous.getY()) < 0
+          || area(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY()) < 0;
     }
-    // ccw
-    return area(a.getX(), a.getY(), b.getX(), b.getY(), a.previous.getX(), a.previous.getY()) < 0
-        || area(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY()) < 0;
   }
 
   /** Determine whether the polygon defined between node start and node end is CW */
@@ -530,7 +537,29 @@ final public class Tessellator {
       next = next.next;
     } while (next.next != end);
     //The polygon must be CW
-    return (windingSum < 0) ? true : false;
+    return windingSum < 0;
+  }
+
+  /** Determine whether the point is in the polygon defined between node start and node end */
+  private static final boolean pointInPolygon(final Node start, Node end, Node point) {
+    Node node = start;
+    Node nextNode;
+    boolean lIsInside = false;
+    final double lDx = point.getX();
+    final double lDy =point.getY();
+    do {
+      nextNode = node.next;
+      if (node.getY() > lDy != nextNode.getY() > lDy &&
+          lDx < (nextNode.getX() - node.getX()) * (lDy - node.getY()) / (nextNode.getY() - node.getY()) + node.getX()) {
+        lIsInside = !lIsInside;
+      }
+      node = node.next;
+    } while (node != end);
+    if (end.getY() > lDy != start.getY() > lDy &&
+        lDx < (start.getX() - end.getX()) * (lDy - end.getY()) / (start.getY() - end.getY()) + end.getX()) {
+      lIsInside = !lIsInside;
+    }
+    return lIsInside;
   }
 
   /** Determine whether the middle point of a polygon diagonal is contained within the polygon */
