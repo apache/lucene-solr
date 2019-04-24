@@ -27,26 +27,26 @@ public interface MonitorUpdateListener {
   /**
    * Called after a set of queries have been added to the Monitor's query index
    */
-  void afterUpdate(List<MonitorQuery> updates);
+  default void afterUpdate(List<MonitorQuery> updates) {};
 
   /**
    * Called after a set of queries have been deleted from the Monitor's query index
    */
-  void afterDelete(List<String> queryIds);
+  default void afterDelete(List<String> queryIds) {};
 
   /**
    * Called after all queries have been removed from the Monitor's query index
    */
-  void afterClear();
+  default void afterClear() {};
 
   /**
    * Called after the Monitor's query cache has been purged of deleted queries
    */
-  void onPurge();
+  default void onPurge() {};
 
   /**
    * Called if there was an error removing deleted queries from the Monitor's query cache
    */
-  void onPurgeError(Throwable t);
+  default void onPurgeError(Throwable t) {};
 
 }
