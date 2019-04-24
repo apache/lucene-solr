@@ -2170,12 +2170,6 @@ th.hdlist1
     background: none;
 }
 
-.hdlist > table > tbody > tr > th > code
-{
-    color: black;
-    font-weight: bold;
-}
-
 td.hdlist1,
 td.hdlist1 > code
 {
