@@ -215,6 +215,9 @@ Improvements
 * SOLR-13337: Only request the minimum required number of terms from each shard when using terms.sort=index and none
   are discarded due to terms.min/maxcount (Morten Bøgeskov,Munendra S N via Mikhail Khludnev)
 
+* SOLR-12167: Throw an exception, instead of just a warning, when unknown atomic update operation is 
+  encountered (Munendra S N via Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
