@@ -156,14 +156,6 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
-    <configuration default="false" name="Module luwak" type="JUnit" factoryName="JUnit">
-      <module name="luwak" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/luwak" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
     <configuration default="false" name="Module memory" type="JUnit" factoryName="JUnit">
       <module name="memory" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -176,6 +168,14 @@
       <module name="misc" />
       <option name="TEST_OBJECT" value="pattern" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/misc" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
+    </configuration>
+    <configuration default="false" name="Module monitor" type="JUnit" factoryName="JUnit">
+      <module name="monitor" />
+      <option name="TEST_OBJECT" value="pattern" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/monitor" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>

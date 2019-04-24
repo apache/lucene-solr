@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="luwak" default="default">
+<project name="monitor" default="default">
 
   <description>
     Reverse-search implementation for monitoring and classification
