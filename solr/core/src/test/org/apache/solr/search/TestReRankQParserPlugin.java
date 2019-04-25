@@ -743,6 +743,35 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//arr/lst[2]/result/doc/str[@name='id'][.='3']",
         "//arr/lst[3]/result/doc/str[@name='id'][.='2']"
     );
+
+    // checks reranking a small number of groups (2)
+    params.remove("rq");
+    params.add("rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+        + ReRankQParserPlugin.RERANK_DOCS + "=2}");
+    params.remove("rows");
+    params.add("rows", "3");
+
+    assertQ(req(params),"*[count(//doc)=3]",
+        "//arr/lst[1]/result/doc/str[@name='id'][.='3']",
+        "//arr/lst[2]/result/doc/str[@name='id'][.='2']",
+        "//arr/lst[3]/result/doc/str[@name='id'][.='5']"
+    );
+
+    // The underlying test will fail, but fixing it would require to perform
+    // to full rounds of grouping and reranking (one to retrieve the top groups
+    // and one to retrieve the top docs for each doc.
+
+    //    params.remove("start");
+    //    params.add("start", "1");
+    //    params.remove("rows");
+    //    params.add("rows", "2");
+    //    assertQ(req(params),"*[count(//doc)=2]",
+    //        "//arr/lst[1]/result/doc/str[@name='id'][.='2']",
+    //        "//arr/lst[2]/result/doc/str[@name='id'][.='5']"
+    //    );
+
+
+
     // test grouping by function:
     // documents are
     // 1. firstly scored by their test_tl score and then

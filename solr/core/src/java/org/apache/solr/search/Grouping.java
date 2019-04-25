@@ -729,7 +729,7 @@ public class Grouping {
     @Override
     protected void prepare() throws IOException {
       if (reRankGroups > 0){
-        actualGroupsToFind = getMax(offset, reRankGroups, maxDoc);
+        actualGroupsToFind = getMax(offset, Math.max(numGroups, reRankGroups), maxDoc);
       } else {
         actualGroupsToFind = getMax(offset, numGroups, maxDoc);
       }
@@ -774,7 +774,7 @@ public class Grouping {
 
       if (query instanceof RankQuery) {
             secondPass = new ReRankTopGroupsCollector<>(new TermGroupSelector(groupBy),
-            topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false, (RankQuery) query, searcher);
+            topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, (RankQuery) query, searcher);
       }
       else {
         secondPass = new TopGroupsCollector<>(new TermGroupSelector(groupBy),
@@ -803,11 +803,16 @@ public class Grouping {
         result = secondPass.getTopGroups(0);
         populateScoresIfNecessary();
       }
-      if (result != null && query instanceof RankQuery && groupSort == Sort.RELEVANCE) {
+      if (result != null && query instanceof AbstractReRankQuery && groupSort == Sort.RELEVANCE) {
         // if we are sorting for relevance and query is a RankQuery, it may be that
         // the order of the groups changed, we need to reorder
         GroupDocs[] groups = result.groups;
-        Arrays.sort(groups, new Comparator<GroupDocs>() {
+        // we don't want to rerank all the time starting from the current page
+
+        int rerankGroups = Math.max(((AbstractReRankQuery)query).getReRankDocs()-cmd.getOffset(), 0);
+        rerankGroups = Math.min(rerankGroups, groups.length);
+
+        Arrays.sort(groups, 0, rerankGroups,  new Comparator<GroupDocs>() {
           @Override
           public int compare(GroupDocs o1, GroupDocs o2) {
             if (o1.maxScore > o2.maxScore) return -1;
@@ -978,7 +983,7 @@ public class Grouping {
       context = ValueSource.newContext(searcher);
       groupBy.createWeight(context, searcher);
       if (reRankGroups > 0){
-        actualGroupsToFind = getMax(offset, reRankGroups, maxDoc);
+        actualGroupsToFind = getMax(offset, Math.max(numGroups, reRankGroups), maxDoc);
       } else {
         actualGroupsToFind = getMax(offset, numGroups, maxDoc);
       }
@@ -1023,7 +1028,7 @@ public class Grouping {
 
       if (query instanceof RankQuery){
         secondPass = new ReRankTopGroupsCollector<>(newSelector(),
-            topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false, (RankQuery)query, searcher);
+            topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, (RankQuery)query, searcher);
       } else {
         secondPass = new TopGroupsCollector<>(newSelector(),
             topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores
@@ -1051,11 +1056,13 @@ public class Grouping {
         populateScoresIfNecessary();
       }
 
-      if (result != null && query instanceof RankQuery && groupSort == Sort.RELEVANCE) {
+      if (result != null && query instanceof AbstractReRankQuery && groupSort == Sort.RELEVANCE) {
         // if we are sorting for relevance and query is a RankQuery, it may be that
         // the order of the groups changed, we need to reorder
         GroupDocs[] groups = result.groups;
-        Arrays.sort(groups, new Comparator<GroupDocs>() {
+        int rerankGroups = Math.max(((AbstractReRankQuery)query).getReRankDocs()-cmd.getOffset(), 0);
+        rerankGroups = Math.min(rerankGroups, groups.length);
+        Arrays.sort(groups, 0, rerankGroups, new Comparator<GroupDocs>() {
           @Override
           public int compare(GroupDocs o1, GroupDocs o2) {
             if (o1.maxScore > o2.maxScore) return -1;

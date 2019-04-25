@@ -161,7 +161,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
       if (query instanceof RankQuery){
         secondPassCollector = new ReRankTopGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()), v,
-            groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true, (RankQuery)query, searcher);
+            groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, (RankQuery)query, searcher);
       } else {
         secondPassCollector = new TopGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()),
             v, groupSort, withinGroupSort, maxDocPerGroup, needMaxScore
@@ -169,7 +169,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       }
     } else {
       if (query instanceof RankQuery) {
-        secondPassCollector = new ReRankTopGroupsCollector(new TermGroupSelector(field.getName()),firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true, (RankQuery)query, searcher);
+        secondPassCollector = new ReRankTopGroupsCollector(new TermGroupSelector(field.getName()),firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, (RankQuery)query, searcher);
       }
       else {
         secondPassCollector = new TopGroupsCollector<>(new TermGroupSelector(field.getName()),
