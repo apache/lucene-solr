@@ -98,6 +98,8 @@ Upgrade Notes
 * Custom TransientSolrCoreCache implementations no longer use the Observer/Observable pattern. To notify Solr that
   a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore). See SOLR-13400 for details.
 
+* SOLR-13394: The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any
+  other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
 
 New Features
 ----------------------
@@ -242,6 +244,10 @@ Improvements
 
 * SOLR-12167: Throw an exception, instead of just a warning, when unknown atomic update operation is 
   encountered (Munendra S N via Ishan Chattopadhyaya)
+
+* SOLR-13394: Switch default GC from CMS to G1 (Ishan Chattopadhyaya, Kesharee Nandan Vishwakarma, Shawn Heisey,
+  Uwe Schindler, Erick Ericsson)
+
 
 Other Changes
 ----------------------
