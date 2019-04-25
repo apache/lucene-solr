@@ -75,6 +75,8 @@ def blockBoundaryPattern = ~$/----\s*/$;
 def blockTitlePattern = ~$/\..*/$;
 def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
 def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
+def validSPINamePattern = ~$/(?s)\b(public\s|static\s|final\s){3}+\s*String\s+NAME+\s+=\s+"[a-zA-Z][a-zA-Z0-9]*";/$;
+def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
 def isLicense = { matcher, ratDocument ->
   licenseMatcher.reset();
@@ -175,6 +177,15 @@ ant.fileScanner{
       }
       if (!validLoggerNamePattern.matcher(text).find()) {
         reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
+      }
+    }
+    if (!f.name.contains("Test") && !f.name.contains("Mock") &&
+        f.name.contains("CharFilterFactory") && !f.name.equals("CharFilterFactory.java")) {
+      if (!validSPINamePattern.matcher(text).find()) {
+        reportViolation(f, 'invalid spi name')
+      }
+      if (!validSPINameJavadocTag.matcher(text).find()) {
+        reportViolation(f, 'invalid spi name documentation')
       }
     }
     checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
