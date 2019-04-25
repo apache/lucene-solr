@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRefHash;
  *
  * @lucene.experimental
  */
-public class TermsQuery extends MultiTermQuery {
+class TermsQuery extends MultiTermQuery {
 
   private final BytesRefHash terms;
   private final int[] ords;
@@ -48,7 +48,7 @@ public class TermsQuery extends MultiTermQuery {
    * @param terms                 The terms that matching documents should have. The terms must be sorted by natural order.
    * @param indexReaderContextId  Refers to the top level index reader used to create the set of terms in the previous parameter.
    */
-  public TermsQuery(String toField, BytesRefHash terms, String fromField, Query fromQuery, Object indexReaderContextId) {
+  TermsQuery(String toField, BytesRefHash terms, String fromField, Query fromQuery, Object indexReaderContextId) {
     super(toField);
     this.terms = terms;
     ords = terms.sort();

@@ -25,7 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.SimpleCollector;
 
-public abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
+abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
   
   @FunctionalInterface
   static interface Function<R> {
@@ -48,7 +48,7 @@ public abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
     return (ctx) -> DocValues.getBinary(ctx, field);
   }
 
-  public static Function<SortedSetDocValues> sortedSetDocValues(String field) {
+  static Function<SortedSetDocValues> sortedSetDocValues(String field) {
     return (ctx) -> DocValues.getSortedSet(ctx, field);
   }
 }
