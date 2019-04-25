@@ -18,7 +18,6 @@ package org.apache.solr.handler.sql;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -38,7 +37,6 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.luke.FieldFlag;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -99,8 +97,14 @@ class SolrSchema extends AbstractSchema {
     for(Map.Entry<String, LukeResponse.FieldInfo> entry : luceneFieldInfoMap.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
 
+      String luceneFieldType = luceneFieldInfo.getType();
+      // SOLR-13414: Luke can return a field definition with no type in rare situations
+      if(luceneFieldType == null) {
+        continue;
+      }
+
       RelDataType type;
-      switch (luceneFieldInfo.getType()) {
+      switch (luceneFieldType) {
         case "string":
           type = typeFactory.createJavaType(String.class);
           break;
@@ -124,8 +128,8 @@ class SolrSchema extends AbstractSchema {
           type = typeFactory.createJavaType(String.class);
       }
 
-      EnumSet<FieldFlag> flags = luceneFieldInfo.parseFlags(luceneFieldInfo.getSchema());
       /*
+      EnumSet<FieldFlag> flags = luceneFieldInfo.parseFlags(luceneFieldInfo.getSchema());
       if(flags != null && flags.contains(FieldFlag.MULTI_VALUED)) {
         type = typeFactory.createArrayType(type, -1);
       }

@@ -78,6 +78,8 @@ Bug fixes
 * SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
   matched (Alan Woodward, Mikhail Khludnev)
 
+* SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
