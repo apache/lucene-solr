@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -41,6 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -115,11 +115,11 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     Assert.assertThat("Lucene doc id should not be changed for In-Place Updates.", solrDocument.get("[docid]"), is(luceneDocId));
     
     try {
-    sdoc.remove("shardName");
-    new UpdateRequest()
-       .add(sdoc).process(cluster.getSolrClient(), COLLECTION);
-    fail("should be exception w/o route field");
-    }catch(RemoteSolrException ex) {
+      sdoc.remove("shardName");
+      new UpdateRequest()
+         .add(sdoc).process(cluster.getSolrClient(), COLLECTION);
+      fail("expect  an exception w/o route field");
+    }catch(SolrException ex) {
       assertThat("expecting 400 in "+ex.getMessage(), ex.code(), is(400));
     }
   }
