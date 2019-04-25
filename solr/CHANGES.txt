@@ -57,7 +57,7 @@ Bug fixes
 * SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
   Ishan Chattopadhyaya)
 
-  * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+* SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
 
 * SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
 
@@ -74,6 +74,9 @@ Bug fixes
 * SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
 
 * SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
+
+* SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
+  matched (Alan Woodward, Mikhail Khludnev)
 
 ==================  7.7.1 ==================
 
