@@ -256,19 +256,7 @@ final public class Tessellator {
     }
     //In case more than one hole uses this connection point,
     // make sure we choose the right one
-    return getBestConnector(connection, holeNode);
-  }
-
-  private static Node getBestConnector(Node connection, Node holeNode) {
-    Node candidate = connection;
-    Node next = connection.next;
-    do {
-      if (isVertexEquals(next, connection) && isLocallyInside(next, holeNode)) {
-        candidate = next;
-      }
-      next = next.next;
-    } while (next.next != connection);
-    return candidate;
+    return connection;
   }
 
   /** Finds the left-most hole of a polygon ring. **/
