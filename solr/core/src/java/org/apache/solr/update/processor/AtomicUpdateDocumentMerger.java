@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -35,11 +37,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -53,8 +58,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * @lucene.experimental
@@ -176,11 +179,13 @@ public class AtomicUpdateDocumentMerger {
       return Collections.emptySet();
     }
     
+    String routeFieldOrNull = getRouteField(cmd);
     // first pass, check the things that are virtually free,
     // and bail out early if anything is obviously not a valid in-place update
     for (String fieldName : sdoc.getFieldNames()) {
       if (fieldName.equals(uniqueKeyFieldName)
-          || fieldName.equals(CommonParams.VERSION_FIELD)) {
+          || fieldName.equals(CommonParams.VERSION_FIELD)
+          || fieldName.equals(routeFieldOrNull)) {
         continue;
       }
       Object fieldValue = sdoc.getField(fieldName).getValue();
@@ -246,6 +251,19 @@ public class AtomicUpdateDocumentMerger {
     return candidateFields;
   }
 
+  private static String getRouteField(AddUpdateCommand cmd) {
+    String result = null;
+    SolrCore core = cmd.getReq().getCore();
+    CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+    if (cloudDescriptor != null) {
+      String collectionName = cloudDescriptor.getCollectionName();
+      ZkController zkController = core.getCoreContainer().getZkController();
+      DocCollection collection = zkController.getClusterState().getCollection(collectionName);
+      result = collection.getRouter().getRouteField(collection);
+    }
+    return result;
+  }
+  
   /**
    *
    * @param fullDoc the full doc to  be compared against
