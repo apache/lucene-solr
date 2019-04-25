@@ -286,6 +286,8 @@ Other Changes
 
 * SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
 
+* SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
+
 ==================  8.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
