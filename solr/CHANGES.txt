@@ -184,6 +184,8 @@ Bug Fixes
 
 * SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
 
+* SOLR-13081: In-Place Update doesn't work with route.field (Dr Oleg Savrasov via Mikhail Khludnev)
+
 Improvements
 ----------------------
 
