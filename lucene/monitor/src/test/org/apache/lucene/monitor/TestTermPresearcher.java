@@ -18,6 +18,7 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
@@ -50,13 +51,17 @@ public class TestTermPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(query1, query2, query3);
 
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"), QueryMatch.SIMPLE_MATCHER);
+      Map<String, Long> timings = new HashMap<>();
+      QueryTimeListener timeListener =
+          (queryId, timeInNanos) -> timings.compute(queryId, (q, t) -> t == null ? timeInNanos : t + timeInNanos);
+      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc(TEXTFIELD, "this is a test document"),
+          QueryTimeListener.timingMatcher(QueryMatch.SIMPLE_MATCHER, timeListener));
       assertEquals(1, matches.getMatchCount());
       assertNotNull(matches.matches("2"));
       assertEquals(2, matches.getQueriesRun());
-      assertEquals(2, matches.getPresearcherHits().size());
-      assertTrue(matches.getPresearcherHits().contains("2"));
-      assertTrue(matches.getPresearcherHits().contains("3"));
+      assertEquals(2, timings.size());
+      assertTrue(timings.keySet().contains("2"));
+      assertTrue(timings.keySet().contains("3"));
     }
   }
 

@@ -56,8 +56,6 @@ public class Monitor implements Closeable {
 
   private final List<MonitorUpdateListener> listeners = new ArrayList<>();
 
-  private long slowLogLimit = 2000000;
-
   private final long commitBatchSize;
 
   private final ScheduledExecutorService purgeExecutor;
@@ -177,19 +175,6 @@ public class Monitor implements Closeable {
     listeners.forEach(MonitorUpdateListener::onPurge);
   }
 
-  /**
-   * Set the slow log limit
-   * <p>
-   * All queries that take longer than t nanoseconds to run will be recorded in
-   * the slow log.  The default is 2,000,000 (2 milliseconds)
-   *
-   * @param limit the limit in nanoseconds
-   * @see MatchingQueries#getSlowLog()
-   */
-  public void setSlowLogLimit(long limit) {
-    this.slowLogLimit = limit;
-  }
-
   @Override
   public void close() throws IOException {
     purgeExecutor.shutdown();
@@ -271,10 +256,11 @@ public class Monitor implements Closeable {
    */
   public <T extends QueryMatch> MultiMatchingQueries<T> match(Document[] docs, MatcherFactory<T> factory) throws IOException {
     try (DocumentBatch batch = DocumentBatch.of(analyzer, docs)) {
+      LeafReader reader = batch.get();
       CandidateMatcher<T> matcher = factory.createMatcher(new IndexSearcher(batch.get()));
-      matcher.setSlowLogLimit(slowLogLimit);
-      match(matcher);
-      return matcher.getMatches();
+      StandardQueryCollector<T> collector = new StandardQueryCollector<>(matcher);
+      long buildTime = queryIndex.search(t -> presearcher.buildQuery(reader, t), collector);
+      return matcher.finish(buildTime, collector.queryCount);
     }
   }
 
@@ -290,26 +276,6 @@ public class Monitor implements Closeable {
    */
   public <T extends QueryMatch> MatchingQueries<T> match(Document doc, MatcherFactory<T> factory) throws IOException {
     return match(new Document[]{ doc }, factory).singleton();
-  }
-
-  private class PresearcherQueryBuilder implements QueryIndex.QueryBuilder {
-
-    final LeafReader batchIndexReader;
-
-    private PresearcherQueryBuilder(LeafReader batchIndexReader) {
-      this.batchIndexReader = batchIndexReader;
-    }
-
-    @Override
-    public Query buildQuery(BiPredicate<String, BytesRef> termAcceptor) throws IOException {
-      return presearcher.buildQuery(batchIndexReader, termAcceptor);
-    }
-  }
-
-  private <T extends QueryMatch> void match(CandidateMatcher<T> matcher) throws IOException {
-    StandardQueryCollector<T> collector = new StandardQueryCollector<>(matcher);
-    long buildTime = queryIndex.search(new PresearcherQueryBuilder(matcher.getIndexReader()), collector);
-    matcher.finish(buildTime, collector.queryCount);
   }
 
   /**
@@ -390,14 +356,8 @@ public class Monitor implements Closeable {
       IndexSearcher searcher = new IndexSearcher(reader);
       searcher.setQueryCache(null);
       PresearcherQueryCollector<T> collector = new PresearcherQueryCollector<>(factory.createMatcher(searcher));
-      QueryIndex.QueryBuilder queryBuilder = new PresearcherQueryBuilder(reader) {
-        @Override
-        public Query buildQuery(BiPredicate<String, BytesRef> termFilter) throws IOException {
-          return new ForceNoBulkScoringQuery(super.buildQuery(termFilter));
-        }
-      };
-      queryIndex.search(queryBuilder, collector);
-      return collector.getMatches();
+      long buildTime = queryIndex.search(t -> new ForceNoBulkScoringQuery(presearcher.buildQuery(reader, t)), collector);
+      return collector.getMatches(buildTime);
     }
   }
 
@@ -417,14 +377,14 @@ public class Monitor implements Closeable {
 
   private class PresearcherQueryCollector<T extends QueryMatch> extends StandardQueryCollector<T> {
 
-    public final Map<String, StringBuilder> matchingTerms = new HashMap<>();
+    final Map<String, StringBuilder> matchingTerms = new HashMap<>();
 
     private PresearcherQueryCollector(CandidateMatcher<T> matcher) {
       super(matcher);
     }
 
-    public PresearcherMatches<T> getMatches() {
-      return new PresearcherMatches<>(matchingTerms, matcher.getMatches());
+    public PresearcherMatches<T> getMatches(long buildTime) {
+      return new PresearcherMatches<>(matchingTerms, matcher.finish(buildTime, queryCount));
     }
 
     @Override

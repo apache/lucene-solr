@@ -18,10 +18,12 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -31,17 +33,15 @@ import org.apache.lucene.search.Query;
  */
 public abstract class CandidateMatcher<T extends QueryMatch> {
 
-  private final Set<String> presearcherHits = new HashSet<>();
+  /**
+   * The searcher to run candidate queries against
+   */
   protected final IndexSearcher searcher;
 
   private final Map<String, Exception> errors = new HashMap<>();
   private final List<MatchHolder<T>> matches;
 
-  private long queryBuildTime = -1;
   private long searchTime = System.nanoTime();
-  private int queriesRun = -1;
-
-  protected final SlowLog slowlog = new SlowLog();
 
   private static class MatchHolder<T> {
     Map<String, T> matches = new HashMap<>();
@@ -70,38 +70,21 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
    * @param metadata   the query metadata
    * @throws IOException on IO errors
    */
-  public final void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-    presearcherHits.add(queryId);
-    doMatchQuery(queryId, new ForceNoBulkScoringQuery(matchQuery), metadata);
-  }
-
-  /**
-   * Override this method to actually run the query
-   *
-   * @param queryId    the query id
-   * @param matchQuery the query to run
-   * @param metadata   the query metadata
-   * @throws IOException on error
-   */
-  protected abstract void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException;
-
-  private void addMatch(String queryId, int doc, T match) {
-    MatchHolder<T> docMatches = matches.get(doc);
-    docMatches.matches.compute(queryId, (key, oldValue) -> {
-      if (oldValue != null) {
-        return resolve(match, oldValue);
-      }
-      return match;
-    });
-  }
+  protected abstract void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException;
 
   /**
    * Record a match
    *
    * @param match a QueryMatch object
    */
-  protected void addMatch(T match, int doc) {
-    addMatch(match.getQueryId(), doc, match);
+  protected final void addMatch(T match, int doc) {
+    MatchHolder<T> docMatches = matches.get(doc);
+    docMatches.matches.compute(match.getQueryId(), (key, oldValue) -> {
+      if (oldValue != null) {
+        return resolve(match, oldValue);
+      }
+      return match;
+    });
   }
 
   /**
@@ -117,58 +100,34 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   /**
    * Called by the Monitor if running a query throws an Exception
    */
-  public void reportError(String queryId, Exception e) {
+  void reportError(String queryId, Exception e) {
     this.errors.put(queryId, e);
-  }
-
-  /**
-   * Called when matching has finished
-   *
-   * @param buildTime  the time taken to construct the document disjunction
-   * @param queryCount the number of queries run
-   */
-  public void finish(long buildTime, int queryCount) {
-    this.queryBuildTime = buildTime;
-    this.queriesRun = queryCount;
-    this.searchTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - searchTime, TimeUnit.NANOSECONDS);
-  }
-
-  /*
-   * Called by the Monitor to set the {@link SlowLog} limit
-   */
-  public void setSlowLogLimit(long t) {
-    this.slowlog.setLimit(t);
-  }
-
-  /**
-   * Returns the QueryMatch for the given document and query, or null if it did not match
-   *
-   * @param doc     the document index
-   * @param queryId the query id
-   * @return the QueryMatch for the given document and query, or null if it did not match
-   */
-  protected T matches(int doc, String queryId) {
-    MatchHolder<T> docMatches = matches.get(doc);
-    if (docMatches == null)
-      return null;
-    return docMatches.matches.get(queryId);
   }
 
   /**
    * @return the matches from this matcher
    */
-  public MultiMatchingQueries<T> getMatches() {
+  final MultiMatchingQueries<T> finish(long buildTime, int queryCount) {
+    doFinish();
+    this.searchTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - searchTime, TimeUnit.NANOSECONDS);
     List<Map<String, T>> results = new ArrayList<>();
     for (MatchHolder<T> matchHolder : matches) {
       results.add(matchHolder.matches);
     }
-    return new MultiMatchingQueries<>(results, presearcherHits, errors, queryBuildTime, searchTime, queriesRun, matches.size(), slowlog);
+    return new MultiMatchingQueries<>(results, errors, buildTime, searchTime, queryCount, matches.size());
   }
 
   /**
-   * Get a {@link LeafReader} over the documents in this matcher's {@link IndexSearcher}
+   * Called when all monitoring of a batch of documents is complete
    */
-  public LeafReader getIndexReader() {
-    return (LeafReader) searcher.getIndexReader();
+  protected void doFinish() { }
+
+  /**
+   * Copy all matches from another CandidateMatcher
+   */
+  protected void copyMatches(CandidateMatcher<T> other) {
+    this.matches.clear();
+    this.matches.addAll(other.matches);
   }
+
 }

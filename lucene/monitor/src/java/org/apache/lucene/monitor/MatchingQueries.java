@@ -28,24 +28,19 @@ import java.util.*;
 public class MatchingQueries<T extends QueryMatch> {
 
   private final Map<String, T> matches;
-  private final Set<String> presearcherHits;
   private final Map<String, Exception> errors;
 
   private final long queryBuildTime;
   private final long searchTime;
   private final int queriesRun;
 
-  private final SlowLog slowlog;
-
-  MatchingQueries(Map<String, T> matches, Set<String> presearcherHits, Map<String, Exception> errors,
-                  long queryBuildTime, long searchTime, int queriesRun, SlowLog slowlog) {
+  MatchingQueries(Map<String, T> matches, Map<String, Exception> errors,
+                  long queryBuildTime, long searchTime, int queriesRun) {
     this.matches = Collections.unmodifiableMap(matches);
     this.errors = Collections.unmodifiableMap(errors);
-    this.presearcherHits = Collections.unmodifiableSet(presearcherHits);
     this.queryBuildTime = queryBuildTime;
     this.searchTime = searchTime;
     this.queriesRun = queriesRun;
-    this.slowlog = slowlog;
   }
 
   /**
@@ -62,13 +57,6 @@ public class MatchingQueries<T extends QueryMatch> {
    */
   public Collection<T> getMatches() {
     return matches.values();
-  }
-
-  /**
-   * @return ids of all queries selected by the presearcher
-   */
-  public Set<String> getPresearcherHits() {
-    return presearcherHits;
   }
 
   /**
@@ -104,18 +92,6 @@ public class MatchingQueries<T extends QueryMatch> {
    */
   public Map<String, Exception> getErrors() {
     return errors;
-  }
-
-  /**
-   * Return the slow log for this match run.
-   * <p>
-   * The slow log contains a list of all queries that took longer than the slow log
-   * limit to run.
-   *
-   * @return the slow log
-   */
-  public SlowLog getSlowLog() {
-    return slowlog;
   }
 
 }
