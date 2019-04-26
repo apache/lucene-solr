@@ -36,13 +36,8 @@ abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<
   }
 
   @Override
-  protected void doMatchQuery(final String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-    MatchCollector coll = new MatchCollector(queryId, scoreMode);
-    long t = System.nanoTime();
-    searcher.search(matchQuery, coll);
-    t = System.nanoTime() - t;
-    this.slowlog.addQuery(queryId, t);
-
+  protected void matchQuery(final String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+    searcher.search(matchQuery, new MatchCollector(queryId, scoreMode));
   }
 
   /**
@@ -56,13 +51,13 @@ abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<
    */
   protected abstract T doMatch(String queryId, int doc, Scorable scorer) throws IOException;
 
-  protected class MatchCollector extends SimpleCollector {
+  private class MatchCollector extends SimpleCollector {
 
     private final String queryId;
     private final ScoreMode scoreMode;
     private Scorable scorer;
 
-    public MatchCollector(String queryId, ScoreMode scoreMode) {
+    MatchCollector(String queryId, ScoreMode scoreMode) {
       this.queryId = queryId;
       this.scoreMode = scoreMode;
     }

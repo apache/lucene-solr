@@ -52,8 +52,6 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
 
   private final List<Future<CandidateMatcher<T>>> futures = new ArrayList<>();
 
-  private final List<MatcherWorker> workers = new ArrayList<>();
-
   private final CandidateMatcher<T> collectorMatcher;
 
   /**
@@ -69,14 +67,13 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
     super(searcher);
     for (int i = 0; i < threads; i++) {
       MatcherWorker mw = new MatcherWorker(matcherFactory);
-      workers.add(mw);
       futures.add(executor.submit(mw));
     }
     collectorMatcher = matcherFactory.createMatcher(searcher);
   }
 
   @Override
-  protected void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+  protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
     try {
       queue.put(new MatcherTask(queryId, matchQuery, metadata));
     } catch (InterruptedException e) {
@@ -90,21 +87,14 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
   }
 
   @Override
-  public void setSlowLogLimit(long t) {
-    for (MatcherWorker mw : workers) {
-      mw.setSlowLogLimit(t);
-    }
-  }
-
-  @Override
-  public void finish(long buildTime, int queryCount) {
+  protected void doFinish() {
     try {
       for (int i = 0; i < futures.size(); i++) {
         queue.put(END);
       }
 
       for (Future<CandidateMatcher<T>> future : futures) {
-        MultiMatchingQueries<T> matches = future.get().getMatches();
+        MultiMatchingQueries<T> matches = future.get().finish(0, 0);
         for (int doc = 0; doc < matches.getBatchSize(); doc++) {
           for (T match : matches.getMatches(doc)) {
             this.addMatch(match, doc);
@@ -113,13 +103,11 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
         for (Map.Entry<String, Exception> error : matches.getErrors().entrySet()) {
           this.reportError(error.getKey(), error.getValue());
         }
-        this.slowlog.addAll(matches.getSlowLog());
       }
 
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException("Interrupted during match", e);
     }
-    super.finish(buildTime, queryCount);
   }
 
   private class MatcherWorker implements Callable<CandidateMatcher<T>> {
@@ -128,7 +116,6 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
 
     private MatcherWorker(MatcherFactory<T> matcherFactory) {
       this.matcher = matcherFactory.createMatcher(searcher);
-      this.matcher.setSlowLogLimit(slowlog.getLimit());
     }
 
     @Override
@@ -146,10 +133,6 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
         throw new RuntimeException("Interrupted during match", e);
       }
       return matcher;
-    }
-
-    void setSlowLogLimit(long t) {
-      matcher.setSlowLogLimit(t);
     }
 
   }

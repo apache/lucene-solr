@@ -98,39 +98,4 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
     }
   }
 
-  public void testParallelSlowLog() throws IOException {
-
-    ExecutorService executor = Executors.newCachedThreadPool(new NamedThreadFactory("matchers"));
-
-    try (Monitor monitor = new Monitor(ANALYZER)) {
-      monitor.register(
-          new MonitorQuery("1", TestSlowLog.slowQuery(250)),
-          new MonitorQuery("2", new MatchAllDocsQuery()),
-          new MonitorQuery("3", TestSlowLog.slowQuery(250)));
-
-      Document doc = new Document();
-
-      MatcherFactory<QueryMatch> factory = matcherFactory(executor, QueryMatch.SIMPLE_MATCHER, 10);
-
-      MatchingQueries<QueryMatch> matches = monitor.match(doc, factory);
-      assertEquals(3, matches.getMatchCount());
-      assertThat(matches.getSlowLog().toString(), containsString("1 ["));
-      assertThat(matches.getSlowLog().toString(), containsString("3 ["));
-      assertThat(matches.getSlowLog().toString(), not(containsString("2 [")));
-
-      monitor.setSlowLogLimit(1);
-      String slowlog = monitor.match(doc, factory).getSlowLog().toString();
-      assertThat(slowlog, containsString("1 ["));
-      assertThat(slowlog, containsString("2 ["));
-      assertThat(slowlog, containsString("3 ["));
-
-      monitor.setSlowLogLimit(2000000000000L);
-      assertFalse(monitor.match(doc, factory).getSlowLog().iterator().hasNext());
-    }
-    finally {
-      executor.shutdown();
-    }
-
-  }
-
 }

@@ -39,7 +39,7 @@ public class HighlightsMatch extends QueryMatch {
   public static final MatcherFactory<HighlightsMatch> MATCHER = searcher -> new CandidateMatcher<HighlightsMatch>(searcher) {
 
     @Override
-    protected void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+    protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
       Weight w = searcher.createWeight(searcher.rewrite(matchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
       for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
         for (int i = 0; i < ctx.reader().maxDoc(); i++) {

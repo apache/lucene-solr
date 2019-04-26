@@ -17,8 +17,11 @@
 
 package org.apache.lucene.monitor;
 
+import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 

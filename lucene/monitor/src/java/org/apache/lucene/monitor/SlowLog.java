@@ -26,24 +26,7 @@ import java.util.List;
  */
 public class SlowLog implements Iterable<SlowLog.Entry> {
 
-  private long limit;
   private final List<Entry> slowQueries = new ArrayList<>();
-
-  /**
-   * Record all queries that take longer than this limit (in ns)
-   *
-   * @param limit the limit
-   */
-  public void setLimit(long limit) {
-    this.limit = limit;
-  }
-
-  /**
-   * @return the current limit above which slow queries are recorded
-   */
-  public long getLimit() {
-    return limit;
-  }
 
   /**
    * Add a query and time taken to the slow log.
@@ -53,9 +36,7 @@ public class SlowLog implements Iterable<SlowLog.Entry> {
    * @param query the query id
    * @param time  the time taken by the query in ns
    */
-  public void addQuery(String query, long time) {
-    if (time < limit)
-      return;
+  void addQuery(String query, long time) {
     slowQueries.add(new Entry(query, time));
   }
 
@@ -64,10 +45,9 @@ public class SlowLog implements Iterable<SlowLog.Entry> {
    *
    * @param queries the entries to add
    */
-  public void addAll(Iterable<SlowLog.Entry> queries) {
+  void addAll(Iterable<SlowLog.Entry> queries) {
     for (SlowLog.Entry query : queries) {
-      if (query.time > limit)
-        slowQueries.add(query);
+      slowQueries.add(query);
     }
   }
 
@@ -99,9 +79,9 @@ public class SlowLog implements Iterable<SlowLog.Entry> {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("Limit: ").append(limit).append("\n");
+    StringBuilder sb = new StringBuilder();
     for (Entry entry : slowQueries) {
-      sb.append("\t").append(entry.queryId).append(" [").append(entry.time).append("ns]\n");
+      sb.append(entry.queryId).append(" [").append(entry.time).append("ns]\n");
     }
     return sb.toString();
   }

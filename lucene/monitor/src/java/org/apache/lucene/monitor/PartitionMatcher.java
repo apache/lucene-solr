@@ -78,7 +78,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
   }
 
   @Override
-  protected void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+  protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) {
     tasks.add(new MatchTask(queryId, matchQuery, metadata));
   }
 
@@ -88,12 +88,11 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
   }
 
   @Override
-  public void finish(long buildTime, int queryCount) {
+  protected void doFinish() {
 
     List<Callable<MultiMatchingQueries<T>>> workers = new ArrayList<>(threads);
     for (List<MatchTask> taskset : partition(tasks, threads)) {
       CandidateMatcher<T> matcher = matcherFactory.createMatcher(searcher);
-      matcher.setSlowLogLimit(this.slowlog.getLimit());
       workers.add(new MatcherWorker(taskset, matcher));
     }
 
@@ -105,14 +104,12 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
             addMatch(match, doc);
           }
         }
-        this.slowlog.addAll(matches.getSlowLog());
       }
 
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException("Interrupted during match", e);
     }
 
-    super.finish(buildTime, queryCount);
   }
 
   private class MatcherWorker implements Callable<MultiMatchingQueries<T>> {
@@ -134,7 +131,7 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
           PartitionMatcher.this.reportError(task.queryId, e);
         }
       }
-      return matcher.getMatches();
+      return matcher.finish(0, 0);
     }
   }
 

@@ -34,7 +34,7 @@ public class ExplainingMatch extends QueryMatch {
    */
   public static final MatcherFactory<ExplainingMatch> MATCHER = searcher -> new CandidateMatcher<ExplainingMatch>(searcher) {
     @Override
-    protected void doMatchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+    protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
       int maxDocs = searcher.getIndexReader().maxDoc();
       for (int i = 0; i < maxDocs; i++) {
         Explanation explanation = searcher.explain(matchQuery, i);

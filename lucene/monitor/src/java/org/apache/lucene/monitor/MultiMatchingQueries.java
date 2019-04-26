@@ -32,7 +32,6 @@ import java.util.Set;
 public class MultiMatchingQueries<T extends QueryMatch> {
 
   private final List<Map<String, T>> matches;
-  private final Set<String> presearcherHits;
   private final Map<String, Exception> errors;
 
   private final long queryBuildTime;
@@ -40,18 +39,14 @@ public class MultiMatchingQueries<T extends QueryMatch> {
   private final int queriesRun;
   private final int batchSize;
 
-  private final SlowLog slowlog;
-
-  MultiMatchingQueries(List<Map<String, T>> matches, Set<String> presearcherHits, Map<String, Exception> errors,
-                  long queryBuildTime, long searchTime, int queriesRun, int batchSize, SlowLog slowlog) {
+  MultiMatchingQueries(List<Map<String, T>> matches, Map<String, Exception> errors,
+                  long queryBuildTime, long searchTime, int queriesRun, int batchSize) {
     this.matches = Collections.unmodifiableList(matches);
     this.errors = Collections.unmodifiableMap(errors);
-    this.presearcherHits = Collections.unmodifiableSet(presearcherHits);
     this.queryBuildTime = queryBuildTime;
     this.searchTime = searchTime;
     this.queriesRun = queriesRun;
     this.batchSize = batchSize;
-    this.slowlog = slowlog;
   }
 
   /**
@@ -74,13 +69,6 @@ public class MultiMatchingQueries<T extends QueryMatch> {
    */
   public Collection<T> getMatches(int docId) {
     return matches.get(docId).values();
-  }
-
-  /**
-   * @return ids of all queries selected by the presearcher
-   */
-  public Set<String> getPresearcherHits() {
-    return presearcherHits;
   }
 
   /**
@@ -129,20 +117,8 @@ public class MultiMatchingQueries<T extends QueryMatch> {
     return errors;
   }
 
-  /**
-   * Return the slow log for this match run.
-   * <p>
-   * The slow log contains a list of all queries that took longer than the slow log
-   * limit to run.
-   *
-   * @return the slow log
-   */
-  public SlowLog getSlowLog() {
-    return slowlog;
-  }
-
   MatchingQueries<T> singleton() {
     assert matches.size() == 1;
-    return new MatchingQueries<>(matches.get(0), presearcherHits, errors, queryBuildTime, searchTime, queriesRun, slowlog);
+    return new MatchingQueries<>(matches.get(0), errors, queryBuildTime, searchTime, queriesRun);
   }
 }
