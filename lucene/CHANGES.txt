@@ -60,6 +60,10 @@ New Features
 
 Bug fixes
 
+* LUCENE-8775: Improve the election of diagonals when splitting the polygons
+  in the tessellator and the election of logical bridges between the outer
+  ring and the holes. (Ignacio)
+
 * LUCENE-8736: LatLonShapePolygonQuery returns incorrect WITHIN results
   with shared boundaries. Point in Polygon now correctly includes boundary
   points. Box and Polygon relations with triangles have also been improved to

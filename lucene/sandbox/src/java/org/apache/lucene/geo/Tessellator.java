@@ -167,15 +167,23 @@ final public class Tessellator {
       double diff = pNodeA.getX() - pNodeB.getX();
       if (diff == 0) {
         diff = pNodeA.getY() - pNodeB.getY();
+        if (diff == 0) {
+          //same hole node, put in the right order
+          double a = Math.min(pNodeA.previous.getY(), pNodeA.next.getY());
+          double b = Math.min(pNodeB.previous.getY(), pNodeB.next.getY());
+          diff = a - b;
+        }
       }
       return diff < 0 ? -1 : diff > 0 ? 1 : 0;
     });
 
+    Node prevNode = null;
     // Process holes from left to right.
     for(int i = 0; i < holeList.size(); ++i) {
       // Eliminate hole triangles from the result set
       final Node holeNode = holeList.get(i);
-      eliminateHole(holeNode, outerNode);
+      eliminateHole(holeNode, outerNode, prevNode);
+      prevNode = holeNode;
       // Filter the new polygon.
       outerNode = filterPoints(outerNode, outerNode.next);
     }
@@ -184,9 +192,15 @@ final public class Tessellator {
   }
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
-  private static final void eliminateHole(final Node holeNode, Node outerNode) {
-    // Attempt to find a logical bridge between the HoleNode and OuterNode.
-    outerNode = fetchHoleBridge(holeNode, outerNode);
+  private static final void eliminateHole(final Node holeNode, Node outerNode, Node prevHoleNode) {
+
+    if (prevHoleNode != null && isVertexEquals(prevHoleNode, holeNode)) {
+      // Connect to previous hole, we make sure they are in the right position
+      outerNode = prevHoleNode;
+    } else {
+      // Attempt to find a logical bridge between the HoleNode and OuterNode.
+      outerNode = fetchHoleBridge(holeNode, outerNode);
+    }
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
       // Split the resulting polygon.
@@ -256,7 +270,19 @@ final public class Tessellator {
     }
     //In case more than one hole uses this connection point,
     // make sure we choose the right one
-    return connection;
+    return getBestConnector(connection, holeNode);
+  }
+
+  private static Node getBestConnector(Node connection, Node holeNode) {
+    Node candidate = connection;
+    Node next = connection.next;
+    do {
+      if (isVertexEquals(next, connection) && isLocallyInside(next, holeNode)) {
+        candidate = next;
+      }
+      next = next.next;
+    } while (next.next != connection);
+    return candidate;
   }
 
   /** Finds the left-most hole of a polygon ring. **/
@@ -322,6 +348,10 @@ final public class Tessellator {
               state = State.SPLIT;
               continue earcut;
             case SPLIT:
+              currEar = filterPoints(currEar, null);
+              if (currEar == null || currEar.previous == currEar.next) {
+                return tessellation;
+              }
               // as a last resort, try splitting the remaining polygon into two
               if (splitEarcut(polygon, currEar, tessellation, mortonOptimized) == false) {
                 //we could not process all points. Tessellation failed
