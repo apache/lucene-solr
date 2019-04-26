@@ -98,6 +98,8 @@ Upgrade Notes
 * Custom TransientSolrCoreCache implementations no longer use the Observer/Observable pattern. To notify Solr that
   a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore). See SOLR-13400 for details.
 
+* SOLR-13394: The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any
+  other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
 
 New Features
 ----------------------
@@ -216,6 +218,8 @@ Bug Fixes
 
 * SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
 
+* SOLR-13081: In-Place Update doesn't work with route.field (Dr Oleg Savrasov via Mikhail Khludnev)
+
 Improvements
 ----------------------
 
@@ -239,6 +243,13 @@ Improvements
 
 * SOLR-13337: Only request the minimum required number of terms from each shard when using terms.sort=index and none
   are discarded due to terms.min/maxcount (Morten Bøgeskov,Munendra S N via Mikhail Khludnev)
+
+* SOLR-12167: Throw an exception, instead of just a warning, when unknown atomic update operation is
+  encountered (Munendra S N via Ishan Chattopadhyaya)
+
+* SOLR-13394: Switch default GC from CMS to G1 (Ishan Chattopadhyaya, Kesharee Nandan Vishwakarma, Shawn Heisey,
+  Uwe Schindler, Erick Ericsson)
+
 
 Other Changes
 ----------------------
@@ -295,6 +306,10 @@ Other Changes
 * SOLR-12461: Upgrade Dropwizard Metrics to 4.0.5 release. (ab)
 
 * SOLR-13400: Replace Observable pattern in TransientSolrCoreCache (Erick Erickson)
+
+* SOLR-13425: Ref-Guide: Wrong color of text in left column of horizontal definition list (janhoy)
+
+* SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
 
 ==================  8.0.0 ==================
 
