@@ -168,7 +168,7 @@ final public class Tessellator {
       if (diff == 0) {
         diff = pNodeA.getY() - pNodeB.getY();
         if (diff == 0) {
-          //same hole node, put in the right order
+          //same hole node
           double a = Math.min(pNodeA.previous.getY(), pNodeA.next.getY());
           double b = Math.min(pNodeB.previous.getY(), pNodeB.next.getY());
           diff = a - b;
@@ -177,13 +177,11 @@ final public class Tessellator {
       return diff < 0 ? -1 : diff > 0 ? 1 : 0;
     });
 
-    Node prevNode = null;
     // Process holes from left to right.
     for(int i = 0; i < holeList.size(); ++i) {
       // Eliminate hole triangles from the result set
       final Node holeNode = holeList.get(i);
-      eliminateHole(holeNode, outerNode, prevNode);
-      prevNode = holeNode;
+      eliminateHole(holeNode, outerNode);
       // Filter the new polygon.
       outerNode = filterPoints(outerNode, outerNode.next);
     }
@@ -192,15 +190,10 @@ final public class Tessellator {
   }
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
-  private static final void eliminateHole(final Node holeNode, Node outerNode, Node prevHoleNode) {
+  private static final void eliminateHole(final Node holeNode, Node outerNode) {
+    // Attempt to find a logical bridge between the HoleNode and OuterNode.
+    outerNode = fetchHoleBridge(holeNode, outerNode);
 
-    if (prevHoleNode != null && isVertexEquals(prevHoleNode, holeNode)) {
-      // Connect to previous hole, we make sure they are in the right position
-      outerNode = prevHoleNode;
-    } else {
-      // Attempt to find a logical bridge between the HoleNode and OuterNode.
-      outerNode = fetchHoleBridge(holeNode, outerNode);
-    }
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
       // Split the resulting polygon.
