@@ -188,6 +188,8 @@ Bug Fixes
 
 * SOLR-13081: In-Place Update doesn't work with route.field (Dr Oleg Savrasov via Mikhail Khludnev)
 
+* SOLR-13343: Fix spacing issue in browser log (Marcus Eagan via Jason Gerlowski)
+
 Improvements
 ----------------------
 
