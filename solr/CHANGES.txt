@@ -230,6 +230,9 @@ Bug Fixes
 * SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
   Jason Gerlowski, Kesharee Nandan Vishwakarma)
 
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
+  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+
 Improvements
 ----------------------
 
