@@ -61,6 +61,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -89,6 +90,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.matchers.JUnitMatchers.containsString;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -344,29 +346,26 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   
   @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
-    for (boolean withAuthorization: Arrays.asList(false, true)) {
-      String suffix;
-      if (withAuthorization) {
-        suffix = "-trusted";
-        protectConfigsHandler();
-        uploadConfigSetWithAssertions("with-script-processor", suffix, "solr", "SolrRocks");
-      } else {
-        suffix = "-untrusted";
-        uploadConfigSetWithAssertions("with-script-processor", suffix, null, null);
-      }
+      // Authorization off
+      final String untrustedSuffix = "-untrusted";
+      uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor"+suffix,
-          1, 1, solrCluster.getSolrClient());
-      
-      if (withAuthorization) {
-        scriptRequest("newcollection2");
-      } else {
-        log.info("Client saw errors: "+resp.getErrorMessages());
-        assertTrue(resp.getErrorMessages() != null && resp.getErrorMessages().size() > 0);
-        assertTrue(resp.getErrorMessages().getVal(0).
-            contains("The configset for this collection was uploaded without any authentication"));
-      }
-    }
+      Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
+      1, 1, solrCluster.getSolrClient());
+      });
+
+    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+
+    // Authorization on
+    final String trustedSuffix = "-trusted";
+    protectConfigsHandler();
+    uploadConfigSetWithAssertions("with-script-processor", trustedSuffix, "solr", "SolrRocks");
+    // try to create a collection with the uploaded configset
+    CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor" + trustedSuffix,
+    1, 1, solrCluster.getSolrClient());
+    scriptRequest("newcollection2");
+
   }
 
   protected SolrZkClient zkClient() {

@@ -225,6 +225,9 @@ Bug Fixes
 * SOLR-12248, SOLR-4647: Grouping is broken on docValues-only fields (non-stored, non-indexed)
   (Erick Ericsson, Adrien Grand, Munendra S N, Scott Stults, Ishan Chattopadhyaya)
 
+* SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
+  Jason Gerlowski, Kesharee Nandan Vishwakarma)
+
 Improvements
 ----------------------
 

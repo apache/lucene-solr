@@ -301,7 +301,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         // element, which may be interpreted by the user as a positive ack
         ocmh.cleanupCollection(collectionName, new NamedList<Object>());
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
-        return;
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
         log.debug("Finished create command on all shards for collection: {}", collectionName);
 
