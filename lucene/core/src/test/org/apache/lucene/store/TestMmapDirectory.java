@@ -58,12 +58,11 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
       final byte accum[] = new byte[32 * 1024 * 1024];
       final CountDownLatch shotgun = new CountDownLatch(1);
       Thread t1 = new Thread(() -> {
-        final Random rnd = random();
         try {
           shotgun.await();
-          for (int i = 0; i < 15000; i++) {
+          for (int i = 0; i < 10; i++) {
             clone.seek(0);
-            clone.readBytes(accum, 0, rnd.nextInt(accum.length) + 1);
+            clone.readBytes(accum, 0, accum.length);
           }
         } catch (IOException | AlreadyClosedException ok) {
           // OK
