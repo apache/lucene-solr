@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -188,10 +189,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         return;
       }
 
-      // For tracking async calls.
-      Map<String, String> requestMap = new HashMap<>();
-
-
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async);
       log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , message : {2}",
           collectionName, shardNames, message));
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
@@ -253,7 +251,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());
           params.add(ASYNC, coreAdminAsyncId);
-          requestMap.put(nodeName, coreAdminAsyncId);
+          shardRequestTracker.track(nodeName, coreAdminAsyncId);
         }
         ocmh.addPropertyParams(message, params);
 
@@ -282,8 +280,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
 
-      ocmh.processResponses(results, shardHandler, false, null, async, requestMap, Collections.emptySet());
-      if(results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0) {
+      shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+      boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
+      if (failure) {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
         // element, which may be interpreted by the user as a positive ack
