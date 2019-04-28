@@ -50,7 +50,7 @@ public class Test2BFST extends LuceneTestCase {
 
     for(int iter=0;iter<1;iter++) {
       // Build FST w/ NoOutputs and stop when nodeCount > 2.2B
-        if (false) {
+      {
         System.out.println("\nTEST: 3B nodes; doPack=false output=NO_OUTPUTS");
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
@@ -150,13 +150,13 @@ public class Test2BFST extends LuceneTestCase {
           b.add(input, BytesRef.deepCopyOf(output));
           count++;
           if (count % 10000 == 0) {
-              long size = b.fstRamBytesUsed();
-              if (count % 1000000 == 0) {
-                  System.out.println(count + "...: " + size + " bytes");
-              }
-              if (size > LIMIT) {
-                  break;
-              }
+            long size = b.fstRamBytesUsed();
+            if (count % 1000000 == 0) {
+              System.out.println(count + "...: " + size + " bytes");
+            }
+            if (size > LIMIT) {
+              break;
+            }
           }
           nextInput(r, ints);
         }
@@ -230,13 +230,13 @@ public class Test2BFST extends LuceneTestCase {
           output += 1+r.nextInt(10);
           count++;
           if (count % 10000 == 0) {
-              long size = b.fstRamBytesUsed();
-              if (count % 1000000 == 0) {
-                  System.out.println(count + "...: " + size + " bytes");
-              }
-              if (size > LIMIT) {
-                  break;
-              }
+            long size = b.fstRamBytesUsed();
+            if (count % 1000000 == 0) {
+              System.out.println(count + "...: " + size + " bytes");
+            }
+            if (size > LIMIT) {
+              break;
+            }
           }
           nextInput(r, ints);
         }

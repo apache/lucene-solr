@@ -49,6 +49,10 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
  */
 
 public class Builder<T> {
+
+  // The amount of Arc array oversizing used to enable direct addressing of Arcs by their labels
+  static final int DIRECT_ARC_LOAD_FACTOR = 4;
+
   private final NodeHash<T> dedupHash;
   final FST<T> fst;
   private final T NO_OUTPUT;

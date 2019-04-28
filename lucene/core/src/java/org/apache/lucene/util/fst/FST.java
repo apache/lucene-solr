@@ -83,13 +83,13 @@ public final class FST<T> implements Accountable {
 
   // We use this as a marker (because this one flag is
   // illegal by itself ...):
-  private static final byte ARCS_AS_FIXED_ARRAY = BIT_ARC_HAS_FINAL_OUTPUT;
+  private static final byte ARCS_AS_ARRAY_PACKED = BIT_ARC_HAS_FINAL_OUTPUT;
 
   // this means either of these things in different contexts
   // in the midst of a direct array:
   private static final byte BIT_MISSING_ARC = 1 << 6;
   // at the start of a direct array:
-  private static final byte ARCS_AS_DIRECT_ARRAY = BIT_MISSING_ARC;
+  private static final byte ARCS_AS_ARRAY_WITH_GAPS = BIT_MISSING_ARC;
 
   /**
    * @see #shouldExpand(Builder, Builder.UnCompiledNode)
@@ -643,13 +643,12 @@ public final class FST<T> implements Accountable {
       assert maxBytesPerArc > 0;
       // 2nd pass just "expands" all arcs to take up a fixed byte size
 
-      // If more than 1/2 of the "slots" would be occupied, write an arc array that may have holes in it
-      // so that we can address the arcs directly by label without binary search
-      // TODO: There's no need to write the labels in this case; we can just store the first label in the header
-      // TODO: tune this heuristic?
-      // TODO: write multiple direct blocks with gaps between?
+      // If more than (1 / DIRECT_ARC_LOAD_FACTOR) of the "slots" would be occupied, write an arc
+      // array that may have holes in it so that we can address the arcs directly by label without
+      // binary search
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
-      boolean writeDirectly = builder.useDirectArcAddressing && labelRange > 0 && labelRange < 4 * nodeIn.numArcs;
+      boolean writeDirectly = builder.useDirectArcAddressing && labelRange > 0
+          && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
 
       //System.out.println("write int @pos=" + (fixedArrayStart-4) + " numArcs=" + nodeIn.numArcs);
       // create the header
@@ -658,10 +657,10 @@ public final class FST<T> implements Accountable {
       ByteArrayDataOutput bad = new ByteArrayDataOutput(header);
       // write a "false" first arc:
       if (writeDirectly) {
-        bad.writeByte(ARCS_AS_DIRECT_ARRAY);
+        bad.writeByte(ARCS_AS_ARRAY_WITH_GAPS);
         bad.writeVInt(labelRange);
       } else {
-        bad.writeByte(ARCS_AS_FIXED_ARRAY);
+        bad.writeByte(ARCS_AS_ARRAY_PACKED);
         bad.writeVInt(nodeIn.numArcs);
       }
       bad.writeVInt(maxBytesPerArc);
@@ -670,58 +669,9 @@ public final class FST<T> implements Accountable {
       final long fixedArrayStart = startAddress + headerLen;
 
       if (writeDirectly) {
-        // expand the arcs in place, backwards
-        long srcPos = builder.bytes.getPosition();
-        long destPos = fixedArrayStart + labelRange * maxBytesPerArc;
-        // if destPos == srcPos it means all the arcs were the same length, and the array of them is *already* direct
-        assert destPos >= srcPos;
-        if (destPos > srcPos) {
-          builder.bytes.skipBytes((int) (destPos - srcPos));
-          int arcIdx = nodeIn.numArcs - 1;
-          int firstLabel = nodeIn.arcs[0].label;
-          int nextLabel = nodeIn.arcs[arcIdx].label;
-          for (int directArcIdx = labelRange - 1; directArcIdx >= 0; directArcIdx--) {
-            destPos -= maxBytesPerArc;
-            if (directArcIdx == nextLabel - firstLabel) {
-              int arcLen = builder.reusedBytesPerArc[arcIdx];
-              srcPos -= arcLen;
-              //System.out.println("  direct pack idx=" + directArcIdx + " arcIdx=" + arcIdx + " srcPos=" + srcPos + " destPos=" + destPos + " label=" + nextLabel);
-              if (srcPos != destPos) {
-                //System.out.println("  copy len=" + builder.reusedBytesPerArc[arcIdx]);
-                assert destPos > srcPos: "destPos=" + destPos + " srcPos=" + srcPos + " arcIdx=" + arcIdx + " maxBytesPerArc=" + maxBytesPerArc + " reusedBytesPerArc[arcIdx]=" + builder.reusedBytesPerArc[arcIdx] + " nodeIn.numArcs=" + nodeIn.numArcs;
-                builder.bytes.copyBytes(srcPos, destPos, arcLen);
-                if (arcIdx == 0) {
-                  break;
-                }
-              }
-              --arcIdx;
-              nextLabel = nodeIn.arcs[arcIdx].label;
-            } else {
-              assert directArcIdx > arcIdx;
-              // mark this as a missing arc
-              //System.out.println("  direct pack idx=" + directArcIdx + " no arc");
-              builder.bytes.writeByte(destPos, BIT_MISSING_ARC);
-            }
-          }
-        }
+        writeArrayWithGaps(builder, nodeIn, fixedArrayStart, maxBytesPerArc, labelRange);
       } else {
-        // expand the arcs in place, backwards
-        long srcPos = builder.bytes.getPosition();
-        long destPos = fixedArrayStart + nodeIn.numArcs * maxBytesPerArc;
-        assert destPos >= srcPos;
-        if (destPos > srcPos) {
-          builder.bytes.skipBytes((int) (destPos - srcPos));
-          for(int arcIdx = nodeIn.numArcs - 1; arcIdx >= 0; arcIdx--) {
-            destPos -= maxBytesPerArc;
-            srcPos -= builder.reusedBytesPerArc[arcIdx];
-            //System.out.println("  repack arcIdx=" + arcIdx + " srcPos=" + srcPos + " destPos=" + destPos);
-            if (srcPos != destPos) {
-              //System.out.println("  copy len=" + builder.reusedBytesPerArc[arcIdx]);
-              assert destPos > srcPos: "destPos=" + destPos + " srcPos=" + srcPos + " arcIdx=" + arcIdx + " maxBytesPerArc=" + maxBytesPerArc + " reusedBytesPerArc[arcIdx]=" + builder.reusedBytesPerArc[arcIdx] + " nodeIn.numArcs=" + nodeIn.numArcs;
-              builder.bytes.copyBytes(srcPos, destPos, builder.reusedBytesPerArc[arcIdx]);
-            }
-          }
-        }
+        writeArrayPacked(builder, nodeIn, fixedArrayStart, maxBytesPerArc);
       }
       
       // now write the header
@@ -734,6 +684,63 @@ public final class FST<T> implements Accountable {
 
     builder.nodeCount++;
     return thisNodeAddress;
+  }
+
+  private void writeArrayPacked(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long fixedArrayStart, int maxBytesPerArc) {
+    // expand the arcs in place, backwards
+    long srcPos = builder.bytes.getPosition();
+    long destPos = fixedArrayStart + nodeIn.numArcs * maxBytesPerArc;
+    assert destPos >= srcPos;
+    if (destPos > srcPos) {
+      builder.bytes.skipBytes((int) (destPos - srcPos));
+      for(int arcIdx = nodeIn.numArcs - 1; arcIdx >= 0; arcIdx--) {
+        destPos -= maxBytesPerArc;
+        srcPos -= builder.reusedBytesPerArc[arcIdx];
+        //System.out.println("  repack arcIdx=" + arcIdx + " srcPos=" + srcPos + " destPos=" + destPos);
+        if (srcPos != destPos) {
+          //System.out.println("  copy len=" + builder.reusedBytesPerArc[arcIdx]);
+          assert destPos > srcPos: "destPos=" + destPos + " srcPos=" + srcPos + " arcIdx=" + arcIdx + " maxBytesPerArc=" + maxBytesPerArc + " reusedBytesPerArc[arcIdx]=" + builder.reusedBytesPerArc[arcIdx] + " nodeIn.numArcs=" + nodeIn.numArcs;
+          builder.bytes.copyBytes(srcPos, destPos, builder.reusedBytesPerArc[arcIdx]);
+        }
+      }
+    }
+  }
+
+  private void writeArrayWithGaps(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long fixedArrayStart, int maxBytesPerArc, int labelRange) {
+    // expand the arcs in place, backwards
+    long srcPos = builder.bytes.getPosition();
+    long destPos = fixedArrayStart + labelRange * maxBytesPerArc;
+    // if destPos == srcPos it means all the arcs were the same length, and the array of them is *already* direct
+    assert destPos >= srcPos;
+    if (destPos > srcPos) {
+      builder.bytes.skipBytes((int) (destPos - srcPos));
+      int arcIdx = nodeIn.numArcs - 1;
+      int firstLabel = nodeIn.arcs[0].label;
+      int nextLabel = nodeIn.arcs[arcIdx].label;
+      for (int directArcIdx = labelRange - 1; directArcIdx >= 0; directArcIdx--) {
+        destPos -= maxBytesPerArc;
+        if (directArcIdx == nextLabel - firstLabel) {
+          int arcLen = builder.reusedBytesPerArc[arcIdx];
+          srcPos -= arcLen;
+          //System.out.println("  direct pack idx=" + directArcIdx + " arcIdx=" + arcIdx + " srcPos=" + srcPos + " destPos=" + destPos + " label=" + nextLabel);
+          if (srcPos != destPos) {
+            //System.out.println("  copy len=" + builder.reusedBytesPerArc[arcIdx]);
+            assert destPos > srcPos: "destPos=" + destPos + " srcPos=" + srcPos + " arcIdx=" + arcIdx + " maxBytesPerArc=" + maxBytesPerArc + " reusedBytesPerArc[arcIdx]=" + builder.reusedBytesPerArc[arcIdx] + " nodeIn.numArcs=" + nodeIn.numArcs;
+            builder.bytes.copyBytes(srcPos, destPos, arcLen);
+            if (arcIdx == 0) {
+              break;
+            }
+          }
+          --arcIdx;
+          nextLabel = nodeIn.arcs[arcIdx].label;
+        } else {
+          assert directArcIdx > arcIdx;
+          // mark this as a missing arc
+          //System.out.println("  direct pack idx=" + directArcIdx + " no arc");
+          builder.bytes.writeByte(destPos, BIT_MISSING_ARC);
+        }
+      }
+    }
   }
 
   /** Fills virtual 'start' arc, ie, an empty incoming arc to
@@ -778,14 +785,13 @@ public final class FST<T> implements Accountable {
     } else {
       in.setPosition(follow.target);
       final byte b = in.readByte();
-      // TODO: unroll this and the embedded conditional?
-      if (b == ARCS_AS_FIXED_ARRAY || b == ARCS_AS_DIRECT_ARRAY) {
+      if (b == ARCS_AS_ARRAY_PACKED || b == ARCS_AS_ARRAY_WITH_GAPS) {
         // array: jump straight to end
         arc.numArcs = in.readVInt();
         arc.bytesPerArc = in.readVInt();
         //System.out.println("  array numArcs=" + arc.numArcs + " bpa=" + arc.bytesPerArc);
         arc.posArcsStart = in.getPosition();
-        if (b == ARCS_AS_DIRECT_ARRAY) {
+        if (b == ARCS_AS_ARRAY_WITH_GAPS) {
           arc.arcIdx = Integer.MIN_VALUE;
           arc.nextArc = arc.posArcsStart - (arc.numArcs - 1) * arc.bytesPerArc;
         } else {
@@ -861,13 +867,12 @@ public final class FST<T> implements Accountable {
     //System.out.println("   flags=" + arc.flags);
 
     byte flags = in.readByte();
-    // TODO: unroll conditional?
-    if (flags == ARCS_AS_FIXED_ARRAY || flags == ARCS_AS_DIRECT_ARRAY) {
+    if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS) {
       //System.out.println("  fixedArray");
       // this is first arc in a fixed-array
       arc.numArcs = in.readVInt();
       arc.bytesPerArc = in.readVInt();
-      if (flags == ARCS_AS_FIXED_ARRAY) {
+      if (flags == ARCS_AS_ARRAY_PACKED) {
         arc.arcIdx = -1;
       } else {
         arc.arcIdx = Integer.MIN_VALUE;
@@ -895,7 +900,7 @@ public final class FST<T> implements Accountable {
     } else {
       in.setPosition(follow.target);
       byte flags = in.readByte();
-      return flags == ARCS_AS_FIXED_ARRAY || flags == ARCS_AS_DIRECT_ARRAY;
+      return flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS;
     }
   }
 
@@ -925,7 +930,7 @@ public final class FST<T> implements Accountable {
       in.setPosition(pos);
 
       final byte flags = in.readByte();
-      if (flags == ARCS_AS_FIXED_ARRAY || flags == ARCS_AS_DIRECT_ARRAY) {
+      if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS) {
         //System.out.println("    nextArc fixed array");
         in.readVInt();
 
@@ -1134,7 +1139,7 @@ public final class FST<T> implements Accountable {
     // System.out.println("fta label=" + (char) labelToMatch);
 
     byte flags = in.readByte();
-    if (flags == ARCS_AS_DIRECT_ARRAY) {
+    if (flags == ARCS_AS_ARRAY_WITH_GAPS) {
       arc.numArcs = in.readVInt();
       arc.bytesPerArc = in.readVInt();
       arc.posArcsStart = in.getPosition();
@@ -1161,7 +1166,7 @@ public final class FST<T> implements Accountable {
       }
       arc.arcIdx = Integer.MIN_VALUE;
       return readNextRealArc(arc, in);
-    } else if (flags == ARCS_AS_FIXED_ARRAY) {
+    } else if (flags == ARCS_AS_ARRAY_PACKED) {
       arc.numArcs = in.readVInt();
       arc.bytesPerArc = in.readVInt();
       arc.posArcsStart = in.getPosition();
