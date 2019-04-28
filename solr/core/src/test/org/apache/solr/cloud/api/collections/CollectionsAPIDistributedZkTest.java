@@ -286,19 +286,11 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     String nn1 = cluster.getJettySolrRunner(0).getNodeName();
     String nn2 = cluster.getJettySolrRunner(1).getNodeName();
 
-    CollectionAdminResponse resp = CollectionAdminRequest.createCollection("halfcollection", "conf", 2, 1)
-        .setCreateNodeSet(nn1 + "," + nn2)
-        .process(cluster.getSolrClient());
-    
-    SimpleOrderedMap success = (SimpleOrderedMap) resp.getResponse().get("success");
-    SimpleOrderedMap failure = (SimpleOrderedMap) resp.getResponse().get("failure");
-
-    assertNotNull(resp.toString(), success);
-    assertNotNull(resp.toString(), failure);
-    
-    String val1 = success.getVal(0).toString();
-    String val2 = failure.getVal(0).toString();
-    assertTrue(val1.contains("SolrException") || val2.contains("SolrException"));
+    expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      CollectionAdminResponse resp = CollectionAdminRequest.createCollection("halfcollection", "conf", 2, 1)
+          .setCreateNodeSet(nn1 + "," + nn2)
+          .process(cluster.getSolrClient());
+    });
   }
 
   @Test
