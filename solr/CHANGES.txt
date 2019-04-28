@@ -222,6 +222,9 @@ Bug Fixes
 
 * SOLR-13343: Fix spacing issue in browser log (Marcus Eagan via Jason Gerlowski)
 
+* SOLR-12248, SOLR-4647: Grouping is broken on docValues-only fields (non-stored, non-indexed)
+  (Erick Ericsson, Adrien Grand, Munendra S N, Scott Stults, Ishan Chattopadhyaya)
+
 Improvements
 ----------------------
 

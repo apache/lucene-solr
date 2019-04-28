@@ -1611,7 +1611,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public Comparable get() {
       return getFloat();
     }
-  }  
+  }
+
+  public static class BVal extends Vals {
+
+    @Override
+    public Comparable get() {
+      return random().nextBoolean();
+    }
+  }
 
   public static class SVal extends Vals {
     char start;
