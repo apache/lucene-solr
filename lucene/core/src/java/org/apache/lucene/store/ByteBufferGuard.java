@@ -17,8 +17,9 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A guard that is created for every {@link ByteBufferIndexInput} that tries on best effort
@@ -26,8 +27,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * of this is used for the original and all clones, so once the original is closed and unmapped
  * all clones also throw {@link AlreadyClosedException}, triggered by a {@link NullPointerException}.
  * <p>
- * This code tries to hopefully flush any CPU caches using a store-store barrier. It also yields the
- * current thread to give other threads a chance to finish in-flight requests...
+ * This code tries to hopefully flush any CPU caches using a full fence (volatile write) and
+ * <em>eventually</em> see the state change using opaque reads. It also yields the current thread
+ * to give other threads a chance to finish in-flight requests...
+ * 
+ * @see <a href="http://gee.cs.oswego.edu/dl/html/j9mm.html">Doug Lea: Using JDK 9 Memory Order Modes</a>
  */
 final class ByteBufferGuard {
   
@@ -43,11 +47,19 @@ final class ByteBufferGuard {
   private final String resourceDescription;
   private final BufferCleaner cleaner;
   
-  /** Not volatile; see comments on visibility below! */
-  private boolean invalidated = false;
+  @SuppressWarnings("unused")
+  private volatile boolean invalidated = false;
   
-  /** Used as a store-store barrier; see comments below! */
-  private final AtomicInteger barrier = new AtomicInteger();
+  /** Used to access the volatile variable with different memory semantics
+   * (volatile write for barrier with memory_order_seq_cst semantics, opaque reads with memory_order_relaxed semantics): */
+  private static final VarHandle VH_INVALIDATED;
+  static {
+    try {
+      VH_INVALIDATED = MethodHandles.lookup().findVarHandle(ByteBufferGuard.class, "invalidated", boolean.class);
+    } catch (ReflectiveOperationException e) {
+      throw new ExceptionInInitializerError(e);
+    }
+  }
   
   /**
    * Creates an instance to be used for a single {@link ByteBufferIndexInput} which
@@ -63,15 +75,9 @@ final class ByteBufferGuard {
    */
   public void invalidateAndUnmap(ByteBuffer... bufs) throws IOException {
     if (cleaner != null) {
-      invalidated = true;
-      // This call should hopefully flush any CPU caches and as a result make
-      // the "invalidated" field update visible to other threads. We specifically
-      // don't make "invalidated" field volatile for performance reasons, hoping the
-      // JVM won't optimize away reads of that field and hardware should ensure
-      // caches are in sync after this call. This isn't entirely "fool-proof" 
-      // (see LUCENE-7409 discussion), but it has been shown to work in practice
-      // and we count on this behavior.
-      barrier.lazySet(0);
+      // This call should flush any CPU caches and as a result make
+      // the "invalidated" field update visible to other threads:
+      VH_INVALIDATED.setVolatile(this, true); 
       // we give other threads a bit of time to finish reads on their ByteBuffer...:
       Thread.yield();
       // finally unmap the ByteBuffers:
@@ -82,7 +88,7 @@ final class ByteBufferGuard {
   }
   
   private void ensureValid() {
-    if (invalidated) {
+    if (cleaner != null && (boolean) VH_INVALIDATED.getOpaque(this)) {
       // this triggers an AlreadyClosedException in ByteBufferIndexInput:
       throw new NullPointerException();
     }
