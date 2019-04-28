@@ -14,32 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
 
+  private static boolean oldResponseEntries;
+
+  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setupCluster() throws Exception {
+    oldResponseEntries = OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE;
+    OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE = random().nextBoolean();
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
+  
+  @SuppressWarnings("deprecation")
+  @AfterClass
+  public static void restoreFlag() throws Exception {
+    OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE = oldResponseEntries; 
+  }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testAsyncCallStatusResponse() throws Exception {
-
+    int numShards = 4;
+    int numReplicas = 1;
+    Create createCollection = CollectionAdminRequest.createCollection("asynccall", "conf", numShards, numReplicas);
+    createCollection.setMaxShardsPerNode(100);
     String asyncId =
-        CollectionAdminRequest.createCollection("asynccall", "conf", 2, 1).processAsync(cluster.getSolrClient());
+        createCollection.processAsync(cluster.getSolrClient());
 
-    waitForState("Expected collection 'asynccall' to have 2 shards and 1 replica", "asynccall", clusterShape(2, 2));
+    waitForState("Expected collection 'asynccall' to have "+numShards+" shards and "+
+        numShards*numReplicas+" replica", "asynccall", clusterShape(numShards, numShards*numReplicas));
 
     RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 30, cluster.getSolrClient());
     assertEquals("Unexpected request status: " + state, "completed", state.getKey());
@@ -48,13 +67,25 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     CollectionAdminResponse rsp = requestStatus.process(cluster.getSolrClient());
     NamedList<?> r = rsp.getResponse();
     if (OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE) {
-      assertEquals("Expected 5 elements in the response" + r, 5, r.size());
+      final int actualNumOfElems = 3+(numShards*numReplicas);
+      // responseHeader, success, status, + old responses per every replica  
+      assertEquals("Expected "+actualNumOfElems+" elements in the response" + r.jsonStr(),
+               actualNumOfElems, r.size());
     } else {
-      assertEquals("Expected 3 elements in the response" + r, 3, r.size());
+      // responseHeader, success, status
+      assertEquals("Expected 3 elements in the response" + r.jsonStr(), 3, r.size());
     }
     assertNotNull("Expected 'responseHeader' response" + r, r.get("responseHeader"));
-    assertNotNull("Expected 'success' response" + r, r.get("success"));
     assertNotNull("Expected 'status' response" + r, r.get("status"));
-    assertEquals("Expected 4 elements in the success element" + r.get("success"), 4, ((NamedList<?>)r.get("success")).size());
+    {
+      final NamedList<?> success = (NamedList<?>)r.get("success");
+      assertNotNull("Expected 'success' response" + r, success);
+    
+      final int actualSuccessElems = 2*(numShards*numReplicas);
+      // every replica responds once on submit and once on complete
+      assertEquals("Expected "+actualSuccessElems+
+        " elements in the success element" + success.jsonStr(), 
+          actualSuccessElems, success.size());
+    }
   }
 }
