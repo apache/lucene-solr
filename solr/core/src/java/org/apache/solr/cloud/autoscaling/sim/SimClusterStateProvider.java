@@ -61,7 +61,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.ActionThrottle;
-import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.AddReplicaCmd;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -94,7 +94,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.zookeeper.CreateMode;
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,6 +183,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   // ============== SIMULATOR SETUP METHODS ====================
+
+  public void copyFrom(ClusterStateProvider other) throws Exception {
+    ClusterState state = other.getClusterState();
+    simSetClusterState(state);
+    clusterProperties.clear();
+    clusterProperties.putAll(other.getClusterProperties());
+  }
 
   /**
    * Initialize from an existing cluster state
@@ -561,11 +567,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         cores = 0;
       }
       cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores + 1);
-      Integer disk = (Integer)values.get(ImplicitSnitch.DISK);
+      Number disk = (Number)values.get(ImplicitSnitch.DISK);
       if (disk == null) {
         disk = SimCloudManager.DEFAULT_FREE_DISK;
       }
-      cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk - 1);
+      long replicaSize = ((Number)replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute)).longValue();
+      Number replicaSizeGB = (Number)Type.CORE_IDX.convertVal(replicaSize);
+      cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk.doubleValue() - replicaSizeGB.doubleValue());
       // fake metrics
       String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, replicaInfo.getCollection(),
           replicaInfo.getShard(),
@@ -573,8 +581,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       cloudManager.getMetricManager().registry(registry).counter("UPDATE./update.requests");
       cloudManager.getMetricManager().registry(registry).counter("QUERY./select.requests");
       cloudManager.getMetricManager().registerGauge(null, registry,
-          () -> ((Number)replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute)).longValue(),
-          "", true, "INDEX.sizeInBytes");
+          () -> replicaSize, "", true, Type.CORE_IDX.metricsAttribute);
       // at this point nuke our cached DocCollection state
       collectionsStatesRef.set(null);
       log.trace("-- simAddReplica {}", replicaInfo);
@@ -616,11 +623,16 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 throw new Exception("Unexpected value of 'cores' (" + cores + ") on node: " + nodeId);
               }
               cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores - 1);
-              Integer disk = (Integer)cloudManager.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.DISK);
-              if (disk == null || disk == 0) {
+              Number disk = (Number)cloudManager.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.DISK);
+              if (disk == null || disk.doubleValue() == 0.0) {
                 throw new Exception("Unexpected value of 'freedisk' (" + disk + ") on node: " + nodeId);
               }
-              cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk + 1);
+              if (ri.getVariable(Type.CORE_IDX.metricsAttribute) == null) {
+                throw new RuntimeException("Missing replica size: " + ri);
+              }
+              long replicaSize = ((Number)ri.getVariable(Type.CORE_IDX.metricsAttribute)).longValue();
+              Number replicaSizeGB = (Number)Type.CORE_IDX.convertVal(replicaSize);
+              cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.DISK, disk.doubleValue() + replicaSizeGB.doubleValue());
             }
             log.trace("-- simRemoveReplica {}", ri);
             simRunLeaderElection(ri.getCollection(), ri.getShard(), true);
@@ -645,7 +657,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     try {
       VersionedData oldData = stateManager.getData(ZkStateReader.CLUSTER_STATE);
       int version = oldData != null ? oldData.getVersion() : 0;
-      Assert.assertEquals(clusterStateVersion, version);
+      assert clusterStateVersion == version : "local clusterStateVersion out of sync";
       stateManager.setData(ZkStateReader.CLUSTER_STATE, data, version);
       log.debug("** saved cluster state version " + (version));
       clusterStateVersion++;
@@ -919,7 +931,9 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     int numNrtReplicas = props.getInt(NRT_REPLICAS, props.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
     int numPullReplicas = props.getInt(PULL_REPLICAS, 0);
     int totalReplicas = shardNames.size() * (numNrtReplicas + numPullReplicas + numTlogReplicas);
-    Assert.assertEquals("unexpected number of replica positions", totalReplicas, replicaPositions.size());
+    if (totalReplicas != replicaPositions.size()) {
+      throw new RuntimeException("unexpected number of replica positions: expected " + totalReplicas + " but got " + replicaPositions.size());
+    }
     final CountDownLatch finalStateLatch = new CountDownLatch(replicaPositions.size());
     AtomicInteger replicaNum = new AtomicInteger(1);
     replicaPositions.forEach(pos -> {
@@ -1076,7 +1090,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
   }
 
   /**
-   * Move replica. This uses a similar algorithm as {@link org.apache.solr.cloud.api.collections.MoveReplicaCmd#moveNormalReplica(ClusterState, NamedList, String, String, DocCollection, Replica, Slice, int, boolean)}.
+   * Move replica. This uses a similar algorithm as {@link org.apache.solr.cloud.api.collections.MoveReplicaCmd} <code>moveNormalReplica(...)</code> method.
    * @param message operation details
    * @param results operation results.
    */
@@ -1305,7 +1319,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     boolean success = false;
     try {
-      CloudTestUtils.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state) -> {
+      CloudUtil.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state) -> {
         for (String subSlice : subSlices) {
           Slice s = state.getSlice(subSlice);
           if (s.getLeader() == null) {
@@ -1436,8 +1450,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           OverseerCollectionMessageHandler.NUM_SLICES, "1",
           CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       simCreateCollection(props, new NamedList());
-      CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(1, Integer.parseInt(repFactor), false, true));
+      CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL, 120, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(1, Integer.parseInt(repFactor), false, true));
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -1980,6 +1994,30 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
   }
 
+  public void simSetReplicaValues(String node, Map<String, Map<String, List<ReplicaInfo>>> source, boolean overwrite) {
+    List<ReplicaInfo> infos = nodeReplicaMap.get(node);
+    Map<String, ReplicaInfo> infoMap = new HashMap<>();
+    infos.forEach(ri -> infoMap.put(ri.getName(), ri));
+    if (infos == null) {
+      throw new RuntimeException("Node not present: " + node);
+    }
+    source.forEach((coll, shards) -> shards.forEach((shard, replicas) -> replicas.forEach(r -> {
+      ReplicaInfo target = infoMap.get(r.getName());
+      if (target == null) {
+        throw new RuntimeException("Unable to find simulated replica of " + r);
+      }
+      r.getVariables().forEach((k, v) -> {
+        if (target.getVariables().containsKey(k)) {
+          if (overwrite) {
+            target.getVariables().put(k, v);
+          }
+        } else {
+          target.getVariables().put(k, v);
+        }
+      });
+    })));
+  }
+
   /**
    * Return all replica infos for a node.
    * @param node node id
@@ -2043,7 +2081,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               ReplicaInfo ri = getReplicaInfo(s.getReplicas().iterator().next());
               if (ri != null) {
                 Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
-                Number numBytes = (Number)ri.getVariable("INDEX.sizeInBytes");
+                Number numBytes = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
                 if (numDocs != null) {
                   inactiveDocs.addValue(numDocs.doubleValue());
                 }
@@ -2081,7 +2119,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           if (ri != null) {
             Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
             Number delDocs = (Number)ri.getVariable("SEARCHER.searcher.deleteDocs");
-            Number numBytes = (Number)ri.getVariable("INDEX.sizeInBytes");
+            Number numBytes = (Number)ri.getVariable(Type.CORE_IDX.metricsAttribute);
             if (numDocs != null) {
               docs.addValue(numDocs.doubleValue());
             }

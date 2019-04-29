@@ -139,6 +139,8 @@ New Features
 
 * SOLR-13391: Add variance and standard deviation stream evaluators (Nazerke Seidan, Joel Bernstein)
 
+* SOLR-13427: Support simulating the execution of autoscaling suggestions. (ab)
+
 Bug Fixes
 ----------------------
 

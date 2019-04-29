@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,7 +33,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Assert;
 
 /**
  * Simple mock client that collects added documents and supports simple search by id
@@ -62,7 +62,7 @@ public class MockSearchableSolrClient extends SolrClient {
       if (docList != null) {
         docList.forEach(doc -> {
           String id = (String) doc.getFieldValue("id");
-          Assert.assertNotNull(doc.toString(), id);
+          Objects.requireNonNull(id, doc.toString());
           docs.computeIfAbsent(collection, c -> new LinkedHashMap<>()).put(id, doc);
         });
       }

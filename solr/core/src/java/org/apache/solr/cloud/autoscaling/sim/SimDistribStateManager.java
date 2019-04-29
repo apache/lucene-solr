@@ -136,7 +136,7 @@ public class SimDistribStateManager implements DistribStateManager {
     public VersionedData getData(Watcher w) {
       dataLock.lock();
       try {
-        VersionedData res = new VersionedData(version, data, clientId);
+        VersionedData res = new VersionedData(version, data, mode, clientId);
         if (w != null && !dataWatches.contains(w)) {
           dataWatches.add(w);
         }
@@ -234,6 +234,32 @@ public class SimDistribStateManager implements DistribStateManager {
     watchersPool = ExecutorUtil.newMDCAwareFixedThreadPool(10, new DefaultSolrThreadFactory("sim-watchers"));
     String bufferSize = System.getProperty("jute.maxbuffer", Integer.toString(0xffffff));
     juteMaxbuffer = Integer.parseInt(bufferSize);
+  }
+
+  /**
+   * Copy all content from another DistribStateManager.
+   * @param other another state manager.
+   * @param failOnExists abort copy when one or more paths already exist (the state of this manager remains unchanged).
+   */
+  public void copyFrom(DistribStateManager other, boolean failOnExists) throws InterruptedException, IOException, KeeperException, AlreadyExistsException, BadVersionException {
+    List<String> tree = other.listTree("/");
+    // check if any node exists
+    for (String path : tree) {
+      if (hasData(path) && failOnExists) {
+        throw new AlreadyExistsException(path);
+      }
+    }
+    for (String path : tree) {
+      VersionedData data = other.getData(path);
+      if (hasData(path)) {
+        setData(path, data.getData(), -1);
+      } else {
+        makePath(path, data.getData(), data.getMode(), failOnExists);
+      }
+      // hack: set the version to be the same as the source
+      Node n = traverse(path, false, CreateMode.PERSISTENT);
+      n.version = data.getVersion();
+    }
   }
 
   public SimDistribStateManager(ActionThrottle actionThrottle, ActionError actionError) {
@@ -520,7 +546,7 @@ public class SimDistribStateManager implements DistribStateManager {
 
   @Override
   public void setData(String path, byte[] data, int version) throws NoSuchElementException, BadVersionException, IOException {
-    if (data.length > juteMaxbuffer) {
+    if (data != null && data.length > juteMaxbuffer) {
       throw new IOException("Len error " + data.length);
     }
     multiLock.lock();

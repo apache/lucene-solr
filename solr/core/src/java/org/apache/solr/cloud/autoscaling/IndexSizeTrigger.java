@@ -51,6 +51,8 @@ import org.apache.solr.update.SolrIndexSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
+
 /**
  *
  */
@@ -284,7 +286,7 @@ public class IndexSizeTrigger extends TriggerBase {
               replicaName = info.getName(); // which is actually coreNode name...
             }
             String registry = SolrCoreMetricManager.createRegistryName(true, coll, sh, replicaName, null);
-            String tag = "metrics:" + registry + ":INDEX.sizeInBytes";
+            String tag = "metrics:" + registry + ":" + CORE_IDX.metricsAttribute;
             metricTags.put(tag, info);
             tag = "metrics:" + registry + ":SEARCHER.searcher.numDocs";
             metricTags.put(tag, info);
