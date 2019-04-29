@@ -698,7 +698,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         Map<String,Map<String,String>> meta = new LinkedHashMap<>();
         for (String alias : aliases.getCollectionAliasListMap().keySet()) {
           Map<String, String> collectionAliasProperties = aliases.getCollectionAliasProperties(alias);
-          if (collectionAliasProperties != null) {
+          if (!collectionAliasProperties.isEmpty()) {
             meta.put(alias, collectionAliasProperties);
           }
         }
