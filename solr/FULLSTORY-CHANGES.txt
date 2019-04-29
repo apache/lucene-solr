@@ -1,7 +1,7 @@
 ================= FullStory ================
-
+(Some of these changes are available in public Solr, if we update to the specified version )
 * fs.ignoreconflicts (Scott Blum)
 * FullStory: special OOMKILLER handling for spaces (Scott Blum)
-* Remove pathological error reporting. Don't serialize the entire clusterstate to log (Scott Blum)
-* Expose DocValuesTermsCollector and TermsQuery (Jaime Yap)
-* LUCENE-8725: Make TermsQuery.SeekingTermSetTermsEnum a top level class and public
+* Remove pathological error reporting. Don't serialize the entire clusterstate to log (Generally available from SOLR 8.1)(Scott Blum)
+* Expose DocValuesTermsCollector and TermsQuery (Generally available from SOLR 8.1) (Jaime Yap) 
+* LUCENE-8725: Make TermsQuery.SeekingTermSetTermsEnum a top level class and public (Generally available from SOLR 8.1)
