@@ -101,11 +101,13 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -116,6 +118,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -197,6 +200,9 @@ public class SolrCLI {
         String excMsg = exc.getMessage();
         if (excMsg != null) {
           System.err.println("\nERROR: " + excMsg + "\n");
+          if (verbose) {
+            exc.printStackTrace(System.err);
+          }
           toolExitStatus = 1;
         } else {
           throw exc;
@@ -856,6 +862,8 @@ public class SolrCLI {
     static final String NODE_REDACTION_PREFIX = "N_";
     static final String COLL_REDACTION_PREFIX = "COLL_";
 
+    private boolean verbose;
+
     public AutoscalingTool() {
       this(System.out);
     }
@@ -904,6 +912,15 @@ public class SolrCLI {
               .withDescription("Show summarized collection & node statistics.")
               .create("stats"),
           OptionBuilder
+              .withDescription("Simulate execution of all suggestions.")
+              .create("simulate"),
+          OptionBuilder
+              .withDescription("Max number of simulation iterations.")
+              .withArgName("NUMBER")
+              .hasArg()
+              .withLongOpt("iterations")
+              .create("i"),
+          OptionBuilder
               .withDescription("Turn on all options to get all available information.")
               .create("all")
 
@@ -928,34 +945,24 @@ public class SolrCLI {
           throw new UnsupportedOperationException("removeQueue");
         }
       };
-      try (SolrClientCloudManager clientCloudManager = new SolrClientCloudManager(dummmyFactory, cloudSolrClient)) {
+      try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(dummmyFactory, cloudSolrClient)) {
         AutoScalingConfig config = null;
         HashSet<String> liveNodes = new HashSet<>();
         String configFile = cli.getOptionValue("a");
         if (configFile != null) {
-          log.info("- reading autoscaling config from " + configFile);
+          if (verbose) {
+            log.info("- reading autoscaling config from " + configFile);
+          }
           config = new AutoScalingConfig(IOUtils.toByteArray(new FileInputStream(configFile)));
         } else {
-          log.info("- reading autoscaling config from the cluster.");
-          config = clientCloudManager.getDistribStateManager().getAutoScalingConfig();
+          if (verbose) {
+            log.info("- reading autoscaling config from the cluster.");
+          }
+          config = realCloudManager.getDistribStateManager().getAutoScalingConfig();
         }
-        log.info("- calculating suggestions...");
-        long start = TimeSource.NANO_TIME.getTimeNs();
-        // collect live node names for optional redaction
-        liveNodes.addAll(clientCloudManager.getClusterStateProvider().getLiveNodes());
-        List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(config, clientCloudManager);
-        long end = TimeSource.NANO_TIME.getTimeNs();
-        log.info("  (took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms)");
-        log.info("- calculating diagnostics...");
-        start = TimeSource.NANO_TIME.getTimeNs();
-        // update the live nodes
-        liveNodes.addAll(clientCloudManager.getClusterStateProvider().getLiveNodes());
-        Policy.Session session = config.getPolicy().createSession(clientCloudManager);
-        MapWriter mw = PolicyHelper.getDiagnostics(session);
-        Map<String, Object> diagnostics = new LinkedHashMap<>();
-        mw.toMap(diagnostics);
-        end = TimeSource.NANO_TIME.getTimeNs();
-        log.info("  (took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms)");
+        // freeze the cluster state
+        SimCloudManager cloudManager = SimCloudManager.createCluster(realCloudManager, TimeSource.get("simTime:50"));
+        liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
         boolean withSuggestions = cli.hasOption("s");
         boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
         boolean withSortedNodes = cli.hasOption("n");
@@ -987,141 +994,26 @@ public class SolrCLI {
         }
         // redact collection names too
         Set<String> redactCollections = new HashSet<>();
-        ClusterState clusterState = clientCloudManager.getClusterStateProvider().getClusterState();
+        ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
         clusterState.forEachCollection(coll -> redactCollections.add(coll.getName()));
         if (!withSuggestions && !withDiagnostics) {
           withSuggestions = true;
         }
-        Map<String, Object> results = new LinkedHashMap<>();
-        if (withClusterState) {
-          Map<String, Object> map = new LinkedHashMap<>();
-          map.put("znodeVersion", clusterState.getZNodeVersion());
-          map.put("liveNodes", new TreeSet<>(clusterState.getLiveNodes()));
-          map.put("collections", clusterState.getCollectionsMap());
-          results.put("CLUSTERSTATE", map);
-        }
-        if (withStats) {
-          Map<String, Map<String, Number>> collStats = new TreeMap<>();
-          clusterState.forEachCollection(coll -> {
-            Map<String, Number> perColl = collStats.computeIfAbsent(coll.getName(), n -> new LinkedHashMap<>());
-            AtomicInteger numCores = new AtomicInteger();
-            HashMap<String, Map<String, AtomicInteger>> nodes = new HashMap<>();
-            coll.getSlices().forEach(s -> {
-              numCores.addAndGet(s.getReplicas().size());
-              s.getReplicas().forEach(r -> {
-                nodes.computeIfAbsent(r.getNodeName(), n -> new HashMap<>())
-                    .computeIfAbsent(s.getName(), slice -> new AtomicInteger()).incrementAndGet();
-              });
-            });
-            int maxCoresPerNode = 0;
-            int minCoresPerNode = 0;
-            int maxActualShardsPerNode = 0;
-            int minActualShardsPerNode = 0;
-            int maxShardReplicasPerNode = 0;
-            int minShardReplicasPerNode = 0;
-            if (!nodes.isEmpty()) {
-              minCoresPerNode = Integer.MAX_VALUE;
-              minActualShardsPerNode = Integer.MAX_VALUE;
-              minShardReplicasPerNode = Integer.MAX_VALUE;
-              for (Map<String, AtomicInteger> counts : nodes.values()) {
-                int total = counts.values().stream().mapToInt(c -> c.get()).sum();
-                for (AtomicInteger count : counts.values()) {
-                  if (count.get() > maxShardReplicasPerNode) {
-                    maxShardReplicasPerNode = count.get();
-                  }
-                  if (count.get() < minShardReplicasPerNode) {
-                    minShardReplicasPerNode = count.get();
-                  }
-                }
-                if (total > maxCoresPerNode) {
-                  maxCoresPerNode = total;
-                }
-                if (total < minCoresPerNode) {
-                  minCoresPerNode = total;
-                }
-                if (counts.size() > maxActualShardsPerNode) {
-                  maxActualShardsPerNode = counts.size();
-                }
-                if (counts.size() < minActualShardsPerNode) {
-                  minActualShardsPerNode = counts.size();
-                }
-              }
-            }
-            perColl.put("activeShards", coll.getActiveSlices().size());
-            perColl.put("inactiveShards", coll.getSlices().size() - coll.getActiveSlices().size());
-            perColl.put("rf", coll.getReplicationFactor());
-            perColl.put("maxShardsPerNode", coll.getMaxShardsPerNode());
-            perColl.put("maxActualShardsPerNode", maxActualShardsPerNode);
-            perColl.put("minActualShardsPerNode", minActualShardsPerNode);
-            perColl.put("maxShardReplicasPerNode", maxShardReplicasPerNode);
-            perColl.put("minShardReplicasPerNode", minShardReplicasPerNode);
-            perColl.put("numCores", numCores.get());
-            perColl.put("numNodes", nodes.size());
-            perColl.put("maxCoresPerNode", maxCoresPerNode);
-            perColl.put("minCoresPerNode", minCoresPerNode);
-          });
-          Map<String, Map<String, Object>> nodeStats = new TreeMap<>();
-          Map<Integer, AtomicInteger> coreStats = new TreeMap<>();
-          for (Row row : session.getSortedNodes()) {
-            Map<String, Object> nodeStat = nodeStats.computeIfAbsent(row.node, n -> new LinkedHashMap<>());
-            nodeStat.put("isLive", row.isLive());
-            nodeStat.put("freedisk", row.getVal("freedisk", 0));
-            nodeStat.put("totaldisk", row.getVal("totaldisk", 0));
-            int cores = ((Number)row.getVal("cores", 0)).intValue();
-            nodeStat.put("cores", cores);
-            coreStats.computeIfAbsent(cores, num -> new AtomicInteger()).incrementAndGet();
-            Map<String, Map<String, Map<String, Object>>> collReplicas = new TreeMap<>();
-            row.forEachReplica(ri -> {
-              Map<String, Object> perReplica = collReplicas.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
-                  .computeIfAbsent(ri.getCore().substring(ri.getCollection().length() + 1), core -> new LinkedHashMap<>());
-              perReplica.put("INDEX.sizeInGB", ri.getVariable("INDEX.sizeInGB"));
-              perReplica.put("coreNode", ri.getName());
-              if (ri.getBool("leader", false)) {
-                perReplica.put("leader", true);
-                Double totalSize = (Double)collStats.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
-                    .computeIfAbsent("avgShardSize", size -> 0.0);
-                Number riSize = (Number)ri.getVariable("INDEX.sizeInGB");
-                if (riSize != null) {
-                  totalSize += riSize.doubleValue();
-                  collStats.get(ri.getCollection()).put("avgShardSize", totalSize);
-                  Double max = (Double)collStats.get(ri.getCollection()).get("maxShardSize");
-                  if (max == null) max = 0.0;
-                  if (riSize.doubleValue() > max) {
-                    collStats.get(ri.getCollection()).put("maxShardSize", riSize.doubleValue());
-                  }
-                  Double min = (Double)collStats.get(ri.getCollection()).get("minShardSize");
-                  if (min == null) min = Double.MAX_VALUE;
-                  if (riSize.doubleValue() < min) {
-                    collStats.get(ri.getCollection()).put("minShardSize", riSize.doubleValue());
-                  }
-                }
-              }
-              nodeStat.put("replicas", collReplicas);
-            });
+        Map<String, Object> results = prepareResults(cloudManager, config, withClusterState,
+            withStats, withSuggestions, withSortedNodes, withDiagnostics);
+        if (cli.hasOption("simulate")) {
+          String iterStr = cli.getOptionValue("i", "10");
+          int iterations;
+          try {
+            iterations = Integer.parseInt(iterStr);
+          } catch (Exception e) {
+            log.warn("Invalid option 'i' value, using default 10:" + e);
+            iterations = 10;
           }
-
-          // calculate average per shard
-          for (Map<String, Number> perColl : collStats.values()) {
-            Double avg = (Double)perColl.get("avgShardSize");
-            if (avg != null) {
-              avg = avg / ((Number)perColl.get("activeShards")).doubleValue();
-              perColl.put("avgShardSize", avg);
-            }
-          }
-          Map<String, Object> stats = new LinkedHashMap<>();
-          results.put("STATISTICS", stats);
-          stats.put("coresPerNodes", coreStats);
-          stats.put("nodeStats", nodeStats);
-          stats.put("collectionStats", collStats);
-        }
-        if (withSuggestions) {
-          results.put("SUGGESTIONS", suggestions);
-        }
-        if (!withSortedNodes) {
-          diagnostics.remove("sortedNodes");
-        }
-        if (withDiagnostics) {
-          results.put("DIAGNOSTICS", diagnostics);
+          Map<String, Object> simulationResults = new HashMap<>();
+          simulate(cloudManager, config, simulationResults, withClusterState,
+              withStats, withSuggestions, withSortedNodes, withDiagnostics, iterations);
+          results.put("simulation", simulationResults);
         }
         String data = Utils.toJSONString(results);
         if (redact) {
@@ -1130,6 +1022,223 @@ public class SolrCLI {
         }
         stdout.println(data);
       }
+    }
+
+    private Map<String, Object> prepareResults(SolrCloudManager clientCloudManager,
+                                               AutoScalingConfig config,
+                                               boolean withClusterState,
+                                               boolean withStats,
+                                               boolean withSuggestions,
+                                               boolean withSortedNodes,
+                                               boolean withDiagnostics) throws Exception {
+      Policy.Session session = config.getPolicy().createSession(clientCloudManager);
+      ClusterState clusterState = clientCloudManager.getClusterStateProvider().getClusterState();
+      if (verbose) {
+        log.info("- calculating suggestions...");
+      }
+      long start = TimeSource.NANO_TIME.getTimeNs();
+      List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(config, clientCloudManager);
+      long end = TimeSource.NANO_TIME.getTimeNs();
+      if (verbose) {
+        log.info("  (took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms)");
+        log.info("- calculating diagnostics...");
+      }
+      start = TimeSource.NANO_TIME.getTimeNs();
+      MapWriter mw = PolicyHelper.getDiagnostics(session);
+      Map<String, Object> diagnostics = new LinkedHashMap<>();
+      mw.toMap(diagnostics);
+      end = TimeSource.NANO_TIME.getTimeNs();
+      if (verbose) {
+        log.info("  (took " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms)");
+      }
+      Map<String, Object> results = new LinkedHashMap<>();
+      if (withClusterState) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("znodeVersion", clusterState.getZNodeVersion());
+        map.put("liveNodes", new TreeSet<>(clusterState.getLiveNodes()));
+        map.put("collections", clusterState.getCollectionsMap());
+        results.put("CLUSTERSTATE", map);
+      }
+      if (withStats) {
+        Map<String, Map<String, Number>> collStats = new TreeMap<>();
+        clusterState.forEachCollection(coll -> {
+          Map<String, Number> perColl = collStats.computeIfAbsent(coll.getName(), n -> new LinkedHashMap<>());
+          AtomicInteger numCores = new AtomicInteger();
+          HashMap<String, Map<String, AtomicInteger>> nodes = new HashMap<>();
+          coll.getSlices().forEach(s -> {
+            numCores.addAndGet(s.getReplicas().size());
+            s.getReplicas().forEach(r -> {
+              nodes.computeIfAbsent(r.getNodeName(), n -> new HashMap<>())
+                  .computeIfAbsent(s.getName(), slice -> new AtomicInteger()).incrementAndGet();
+            });
+          });
+          int maxCoresPerNode = 0;
+          int minCoresPerNode = 0;
+          int maxActualShardsPerNode = 0;
+          int minActualShardsPerNode = 0;
+          int maxShardReplicasPerNode = 0;
+          int minShardReplicasPerNode = 0;
+          if (!nodes.isEmpty()) {
+            minCoresPerNode = Integer.MAX_VALUE;
+            minActualShardsPerNode = Integer.MAX_VALUE;
+            minShardReplicasPerNode = Integer.MAX_VALUE;
+            for (Map<String, AtomicInteger> counts : nodes.values()) {
+              int total = counts.values().stream().mapToInt(c -> c.get()).sum();
+              for (AtomicInteger count : counts.values()) {
+                if (count.get() > maxShardReplicasPerNode) {
+                  maxShardReplicasPerNode = count.get();
+                }
+                if (count.get() < minShardReplicasPerNode) {
+                  minShardReplicasPerNode = count.get();
+                }
+              }
+              if (total > maxCoresPerNode) {
+                maxCoresPerNode = total;
+              }
+              if (total < minCoresPerNode) {
+                minCoresPerNode = total;
+              }
+              if (counts.size() > maxActualShardsPerNode) {
+                maxActualShardsPerNode = counts.size();
+              }
+              if (counts.size() < minActualShardsPerNode) {
+                minActualShardsPerNode = counts.size();
+              }
+            }
+          }
+          perColl.put("activeShards", coll.getActiveSlices().size());
+          perColl.put("inactiveShards", coll.getSlices().size() - coll.getActiveSlices().size());
+          perColl.put("rf", coll.getReplicationFactor());
+          perColl.put("maxShardsPerNode", coll.getMaxShardsPerNode());
+          perColl.put("maxActualShardsPerNode", maxActualShardsPerNode);
+          perColl.put("minActualShardsPerNode", minActualShardsPerNode);
+          perColl.put("maxShardReplicasPerNode", maxShardReplicasPerNode);
+          perColl.put("minShardReplicasPerNode", minShardReplicasPerNode);
+          perColl.put("numCores", numCores.get());
+          perColl.put("numNodes", nodes.size());
+          perColl.put("maxCoresPerNode", maxCoresPerNode);
+          perColl.put("minCoresPerNode", minCoresPerNode);
+        });
+        Map<String, Map<String, Object>> nodeStats = new TreeMap<>();
+        Map<Integer, AtomicInteger> coreStats = new TreeMap<>();
+        for (Row row : session.getSortedNodes()) {
+          Map<String, Object> nodeStat = nodeStats.computeIfAbsent(row.node, n -> new LinkedHashMap<>());
+          nodeStat.put("isLive", row.isLive());
+          nodeStat.put("freedisk", row.getVal("freedisk", 0));
+          nodeStat.put("totaldisk", row.getVal("totaldisk", 0));
+          int cores = ((Number)row.getVal("cores", 0)).intValue();
+          nodeStat.put("cores", cores);
+          coreStats.computeIfAbsent(cores, num -> new AtomicInteger()).incrementAndGet();
+          Map<String, Map<String, Map<String, Object>>> collReplicas = new TreeMap<>();
+          row.forEachReplica(ri -> {
+            Map<String, Object> perReplica = collReplicas.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
+                .computeIfAbsent(ri.getCore().substring(ri.getCollection().length() + 1), core -> new LinkedHashMap<>());
+//            if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
+//              perReplica.put(Variable.Type.CORE_IDX.tagName, ri.getVariable(Variable.Type.CORE_IDX.tagName));
+//            }
+            if (ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute) != null) {
+              perReplica.put(Variable.Type.CORE_IDX.metricsAttribute, ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute));
+            }
+            perReplica.put("coreNode", ri.getName());
+            if (ri.getBool("leader", false)) {
+              perReplica.put("leader", true);
+              Double totalSize = (Double)collStats.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
+                  .computeIfAbsent("avgShardSize", size -> 0.0);
+              Number riSize = (Number)ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute);
+              if (riSize != null) {
+                totalSize += riSize.doubleValue();
+                collStats.get(ri.getCollection()).put("avgShardSize", totalSize);
+                Double max = (Double)collStats.get(ri.getCollection()).get("maxShardSize");
+                if (max == null) max = 0.0;
+                if (riSize.doubleValue() > max) {
+                  collStats.get(ri.getCollection()).put("maxShardSize", riSize.doubleValue());
+                }
+                Double min = (Double)collStats.get(ri.getCollection()).get("minShardSize");
+                if (min == null) min = Double.MAX_VALUE;
+                if (riSize.doubleValue() < min) {
+                  collStats.get(ri.getCollection()).put("minShardSize", riSize.doubleValue());
+                }
+              }
+            }
+            nodeStat.put("replicas", collReplicas);
+          });
+        }
+
+        // calculate average per shard and convert the units
+        for (Map<String, Number> perColl : collStats.values()) {
+          Number avg = perColl.get("avgShardSize");
+          if (avg != null) {
+            avg = avg.doubleValue() / perColl.get("activeShards").doubleValue();
+            perColl.put("avgShardSize", (Number)Variable.Type.CORE_IDX.convertVal(avg));
+          }
+          Number num = perColl.get("maxShardSize");
+          if (num != null) {
+            perColl.put("maxShardSize", (Number)Variable.Type.CORE_IDX.convertVal(num));
+          }
+          num = perColl.get("minShardSize");
+          if (num != null) {
+            perColl.put("minShardSize", (Number)Variable.Type.CORE_IDX.convertVal(num));
+          }
+        }
+        Map<String, Object> stats = new LinkedHashMap<>();
+        results.put("STATISTICS", stats);
+        stats.put("coresPerNodes", coreStats);
+        stats.put("nodeStats", nodeStats);
+        stats.put("collectionStats", collStats);
+      }
+      if (withSuggestions) {
+        results.put("SUGGESTIONS", suggestions);
+      }
+      if (!withSortedNodes) {
+        diagnostics.remove("sortedNodes");
+      }
+      if (withDiagnostics) {
+        results.put("DIAGNOSTICS", diagnostics);
+      }
+      return results;
+    }
+
+    private void simulate(SimCloudManager simCloudManager,
+                          AutoScalingConfig config,
+                          Map<String, Object> results,
+                          boolean withClusterState,
+                          boolean withStats,
+                          boolean withSuggestions,
+                          boolean withSortedNodes,
+                          boolean withDiagnostics, int iterations) throws Exception {
+      int loop = iterations;
+      List<Suggester.SuggestionInfo> suggestions = Collections.emptyList();
+      Map<String, Object> intermediate = new LinkedHashMap<>();
+      results.put("intermediateSuggestions", intermediate);
+      while (loop-- > 0) {
+        suggestions = PolicyHelper.getSuggestions(config, simCloudManager);
+        log.info("-- step " + (iterations - loop) + ", " + suggestions.size() + " suggestions.");
+        if (suggestions.isEmpty()) {
+          break;
+        }
+        intermediate.put("step" + (iterations - loop), suggestions);
+        int unresolvedCount = 0;
+        for (Suggester.SuggestionInfo suggestion : suggestions) {
+          SolrRequest operation = suggestion.getOperation();
+          if (operation == null) {
+            unresolvedCount++;
+            if (suggestion.getViolation() == null) {
+              log.info("   - ignoring suggestion without violation and without operation: " + suggestion);
+            }
+            continue;
+          }
+          simCloudManager.request(operation);
+        }
+        if (unresolvedCount == suggestions.size()) {
+          log.info("--- aborting simulation, only unresolved violations remain");
+          break;
+        }
+      }
+      if (loop == 0 && !suggestions.isEmpty()) {
+        System.err.println("### Failed to apply all suggestions in " + iterations + " steps. Remaining suggestions: " + suggestions);
+      }
+      results.put("finalState", prepareResults(simCloudManager, config, withClusterState, withStats,
+          withSuggestions, withSortedNodes, withDiagnostics));
     }
   }
 
@@ -3793,6 +3902,9 @@ public class SolrCLI {
         String excMsg = exc.getMessage();
         if (excMsg != null) {
           System.err.println("\nERROR: " + excMsg + "\n");
+          if (verbose) {
+            exc.printStackTrace(System.err);
+          }
           toolExitStatus = 100; // Exit >= 100 means error, else means number of tests that failed
         } else {
           throw exc;

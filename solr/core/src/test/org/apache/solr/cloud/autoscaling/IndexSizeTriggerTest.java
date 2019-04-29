@@ -40,8 +40,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.SolrInputDocument;
@@ -152,8 +152,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     if (SPEED == 1) {
       cluster.waitForActiveCollection(collectionName, 2, 4);
     } else {
-      CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-          CloudTestUtils.clusterShape(2, 2, false, true));
+      CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+          CloudUtil.clusterShape(2, 2, false, true));
     }
 
     long waitForSeconds = 3 + random().nextInt(5);
@@ -258,8 +258,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     if (SPEED == 1) {
       cluster.waitForActiveCollection(collectionName, 2, 4);
     } else {
-      CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-          CloudTestUtils.clusterShape(2, 2, false, true));
+      CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+          CloudUtil.clusterShape(2, 2, false, true));
     }
 
     long waitForSeconds = 6 + random().nextInt(5);
@@ -328,7 +328,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     boolean await = finished.await(60000, TimeUnit.MILLISECONDS);
     assertTrue("did not finish processing in time", await);
-    CloudTestUtils.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudTestUtils.clusterShape(6, 2, true, true));
+    CloudUtil.waitForState(cloudManager, collectionName, 20, TimeUnit.SECONDS, CloudUtil.clusterShape(6, 2, true, true));
     assertEquals(1, listenerEvents.size());
     List<CapturedEvent> events = listenerEvents.get("capturing2");
     assertNotNull("'capturing2' events not found", events);
@@ -382,8 +382,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     if (SPEED == 1) {
       cluster.waitForActiveCollection(collectionName, 2, 4);
     } else {
-      CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-          CloudTestUtils.clusterShape(2, 2, false, true));
+      CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+          CloudUtil.clusterShape(2, 2, false, true));
     }
 
     for (int i = 0; i < 20; i++) {
@@ -495,8 +495,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(2, 2, false, true));
+    CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+        CloudUtil.clusterShape(2, 2, false, true));
 
     for (int j = 0; j < 10; j++) {
       UpdateRequest ureq = new UpdateRequest();
@@ -621,8 +621,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals(TriggerEventProcessorStage.SUCCEEDED, events.get(5).stage);
 
     // collection should have 2 inactive and 4 active shards
-    CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(6, 2, true, true));
+    CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+        CloudUtil.clusterShape(6, 2, true, true));
 
     // check ops
     List<TriggerEvent.Op> ops = (List<TriggerEvent.Op>) events.get(4).event.getProperty(TriggerEvent.REQUESTED_OPS);
@@ -759,8 +759,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     if (SPEED == 1) {
       cluster.waitForActiveCollection(collectionName, 5, 10);
     } else {
-      CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-          CloudTestUtils.clusterShape(5, 2, false, true));
+      CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+          CloudUtil.clusterShape(5, 2, false, true));
     }
     
     long waitForSeconds = 3 + random().nextInt(5);
@@ -901,8 +901,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
-        CloudTestUtils.clusterShape(2, 2, false, true));
+    CloudUtil.waitForState(cloudManager, "failed to create " + collectionName, collectionName,
+        CloudUtil.clusterShape(2, 2, false, true));
 
     long waitForSeconds = 3 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import org.apache.zookeeper.CreateMode;
+
 /**
  * Immutable representation of binary data with version.
  */
@@ -23,16 +25,19 @@ public class VersionedData {
   private final int version;
   private final byte[] data;
   private final String owner;
+  private final CreateMode mode;
 
   /**
    * Constructor.
    * @param version version of the data, or -1 if unknown
    * @param data binary data, or null.
+   * @param mode create mode
    * @param owner symbolic identifier of data owner / creator, or null.
    */
-  public VersionedData(int version, byte[] data, String owner) {
+  public VersionedData(int version, byte[] data, CreateMode mode, String owner) {
     this.version = version;
     this.data = data;
+    this.mode = mode;
     this.owner = owner;
   }
 
@@ -42,6 +47,10 @@ public class VersionedData {
 
   public byte[] getData() {
     return data;
+  }
+
+  public CreateMode getMode() {
+    return mode;
   }
 
   public String getOwner() {

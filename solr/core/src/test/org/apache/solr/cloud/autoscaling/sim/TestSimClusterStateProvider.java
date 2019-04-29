@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
@@ -72,6 +73,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     simulated = random().nextBoolean();
+    simulated = true;
     log.info("####### Using simulated components? " + simulated);
 
     configureCluster(NODE_COUNT)
@@ -105,17 +107,17 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 
     if (simulated) {
       // initialize simulated provider
-      SimCloudManager simCloudManager = new SimCloudManager(TimeSource.get("simTime:10"));
-      simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
-      simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
-      nodeValues.forEach((n, values) -> {
-        try {
-          simCloudManager.getSimNodeStateProvider().simSetNodeValues(n, values);
-        } catch (InterruptedException e) {
-          fail("Interrupted:" + e);
-        }
-      });
-      simCloudManager.getSimClusterStateProvider().simSetClusterState(realState);
+      SimCloudManager simCloudManager = SimCloudManager.createCluster(realManager, TimeSource.get("simTime:10"));
+//      simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
+//      simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
+//      nodeValues.forEach((n, values) -> {
+//        try {
+//          simCloudManager.getSimNodeStateProvider().simSetNodeValues(n, values);
+//        } catch (InterruptedException e) {
+//          fail("Interrupted:" + e);
+//        }
+//      });
+//      simCloudManager.getSimClusterStateProvider().simSetClusterState(realState);
       ClusterState simState = simCloudManager.getClusterStateProvider().getClusterState();
       assertClusterStateEquals(realState, simState);
       cloudManager = simCloudManager;
@@ -137,10 +139,24 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
         for (Replica oneReplica : slice.getReplicas()) {
           Replica twoReplica = sTwo.getReplica(oneReplica.getName());
           assertNotNull(twoReplica);
-          assertEquals(oneReplica, twoReplica);
+          assertReplicaEquals(oneReplica, twoReplica);
         }
       });
     });
+  }
+
+  private static void assertReplicaEquals(Replica one, Replica two) {
+    assertEquals(one.getName(), two.getName());
+    assertEquals(one.getNodeName(), two.getNodeName());
+    assertEquals(one.getState(), two.getState());
+    assertEquals(one.getType(), two.getType());
+    Map<String, Object> filteredPropsOne = one.getProperties().entrySet().stream()
+        .filter(e -> !(e.getKey().startsWith("INDEX") || e.getKey().startsWith("QUERY") || e.getKey().startsWith("UPDATE")))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<String, Object> filteredPropsTwo = two.getProperties().entrySet().stream()
+        .filter(e -> !(e.getKey().startsWith("INDEX") || e.getKey().startsWith("QUERY") || e.getKey().startsWith("UPDATE")))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    assertEquals(filteredPropsOne, filteredPropsTwo);
   }
 
   private String addNode() throws Exception {

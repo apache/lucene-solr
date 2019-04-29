@@ -67,6 +67,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
@@ -398,7 +399,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (data == null || data.length == 0) {
         return null;
       }
-      return new VersionedData(-1, data, "");
+      return new VersionedData(-1, data, CreateMode.PERSISTENT, "");
         
     });
     
@@ -478,7 +479,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (data == null || data.length == 0) {
         return null;
       }
-      return new VersionedData(-1, data, "");
+      return new VersionedData(-1, data, CreateMode.PERSISTENT, "");
         
     });
     
