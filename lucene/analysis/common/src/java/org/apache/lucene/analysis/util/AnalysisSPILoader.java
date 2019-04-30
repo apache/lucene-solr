@@ -17,8 +17,9 @@
 package org.apache.lucene.analysis.util;
 
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -37,23 +38,13 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private volatile Map<String,Class<? extends S>> services = Collections.emptyMap();
   private final Class<S> clazz;
-  private final String[] suffixes;
-  
+
   public AnalysisSPILoader(Class<S> clazz) {
-    this(clazz, new String[] { clazz.getSimpleName() });
+    this(clazz, null);
   }
 
-  public AnalysisSPILoader(Class<S> clazz, ClassLoader loader) {
-    this(clazz, new String[] { clazz.getSimpleName() }, loader);
-  }
-
-  public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
-    this(clazz, suffixes, null);
-  }
-  
-  public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {
+  public AnalysisSPILoader(Class<S> clazz, ClassLoader classloader) {
     this.clazz = clazz;
-    this.suffixes = suffixes;
     // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
     final ClassLoader clazzClassloader = clazz.getClassLoader();
     if (classloader == null) {
@@ -64,7 +55,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     }
     reload(classloader);
   }
-  
+
   /** 
    * Reloads the internal SPI list from the given {@link ClassLoader}.
    * Changes to the service list are visible after the method ends, all
@@ -83,17 +74,22 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
-      final String clazzName = service.getSimpleName();
       String name = null;
-      for (String suffix : suffixes) {
-        if (clazzName.endsWith(suffix)) {
-          name = clazzName.substring(0, clazzName.length() - suffix.length()).toLowerCase(Locale.ROOT);
-          break;
+      Throwable cause = null;
+      try {
+        // Lookup "NAME" field with appropriate modifiers. Also it must be a String field.
+        final Field field = service.getField("NAME");
+        int modifier = field.getModifiers();
+        if (Modifier.isPublic(modifier) && Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
+            field.getType().equals(String.class)) {
+          name = ((String)field.get(null)).toLowerCase(Locale.ROOT);
         }
+      } catch (Throwable e) {
+        cause = e;
       }
       if (name == null) {
         throw new ServiceConfigurationError("The class name " + service.getName() +
-          " has wrong suffix, allowed are: " + Arrays.toString(suffixes));
+            " has no service name field: [public static final String NAME]", cause);
       }
       // only add the first one for each name, later services will be ignored
       // this allows to place services before others in classpath to make 
