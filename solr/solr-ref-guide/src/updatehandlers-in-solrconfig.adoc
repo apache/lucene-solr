@@ -131,3 +131,27 @@ An example, to be included under `<config><updateHandler>` in `solrconfig.xml`, 
   <int name="numVersionBuckets">65536</int>
 </updateLog>
 ----
+
+== Other options
+In some cases complex updates (such as spatial/shape) may take very long time to complete. In the default
+configuration other updates that fall into the same internal version bucket will wait indefinitely and
+eventually these outstanding requests may pile up and lead to thread exhaustion and eventually to
+OutOfMemory errors.
+
+The option `versionBucketLockTimeoutMs` in the `updateHandler` section helps to prevent that by
+specifying a limited timeout for such extremely long running update requests. If this limit
+is reached this update will fail but it won't block forever all other updates. See SOLR-12833 for more details.
+
+There's a memory cost associated with this setting. Values greater than the default 0 (meaning unlimited timeout)
+cause Solr to use a different internal implementation of the version bucket, which increases memory consumption
+from ~1.5MB to ~6.8MB per Solr core.
+
+An example of specifying this option under `<config>` section of `solrconfig.xml`:
+
+[source,xml]
+----
+<updateHandler class="solr.DirectUpdateHandler2">
+  ...
+  <int name="versionBucketLockTimeoutMs">10000</int>
+</updateHandler>
+----
