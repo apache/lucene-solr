@@ -241,6 +241,9 @@ Improvements
 * SOLR-13432: Add .toString methods to BitDocSet and SortedIntDocSet so that enabling "showItems" on the filter caches
   shows some useful information about the values in the cache. (shalin)
 
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used.
+  (jefferyyuan, ab)
+
 
 Other Changes
 ----------------------
