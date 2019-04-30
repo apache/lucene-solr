@@ -136,6 +136,9 @@ Changes in Runtime Behavior
   trigger changes in the produced scores due to changes to the order in which
   scores of sub clauses are summed up. (Adrien Grand)
 
+* LUCENE-8756: MoreLikeThisQuery now respects custom term frequencies
+  (TermFrequencyAttribute) at search time (Olli Kuonanoja)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
