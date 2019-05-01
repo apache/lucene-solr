@@ -27,6 +27,9 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
+======================= Lucene 8.2.0 =======================
+(No Changes)
+
 ======================= Lucene 8.1.0 =======================
 
 API Changes
