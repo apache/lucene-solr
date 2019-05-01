@@ -33,8 +33,21 @@ public final class Line2D extends EdgeTree {
     super(line.minLat, line.maxLat, line.minLon, line.maxLon, line.getLats(), line.getLons());
   }
 
+  private Line2D(XYLine line) {
+    super(line.minY, line.maxY, line.minX, line.maxX, line.getY(), line.getX());
+  }
+
   /** create a Line2D edge tree from provided array of Linestrings */
   public static Line2D create(Line... lines) {
+    Line2D components[] = new Line2D[lines.length];
+    for (int i = 0; i < components.length; ++i) {
+      components[i] = new Line2D(lines[i]);
+    }
+    return (Line2D)createTree(components, 0, components.length - 1, false);
+  }
+
+  /** create a Line2D edge tree from provided array of Linestrings */
+  public static Line2D create(XYLine... lines) {
     Line2D components[] = new Line2D[lines.length];
     for (int i = 0; i < components.length; ++i) {
       components[i] = new Line2D(lines[i]);

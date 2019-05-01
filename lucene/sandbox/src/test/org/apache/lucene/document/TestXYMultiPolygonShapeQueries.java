@@ -20,33 +20,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYPolygon;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@link Line} types */
-public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
-
+public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
-    return ShapeType.LINE;
+    return ShapeType.POLYGON;
   }
 
   @Override
-  protected Line[] nextShape() {
+  protected XYPolygon[] nextShape() {
+
     int n = random().nextInt(4) + 1;
-    Line[] lines = new Line[n];
+    XYPolygon[] polygons = new XYPolygon[n];
     for (int i =0; i < n; i++) {
-      lines[i] = nextLine();
+      while (true) {
+        // if we can't tessellate; then random polygon generator created a malformed shape
+        XYPolygon p = (XYPolygon) getShapeType().nextShape();
+        try {
+          Tessellator.tessellate(p);
+          polygons[i] = p;
+          break;
+        } catch (IllegalArgumentException e) {
+          continue;
+        }
+      }
     }
-    return lines;
+    return polygons;
   }
 
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
-    Line[] lines = (Line[]) o;
+    XYPolygon[] polygons = (XYPolygon[]) o;
     List<Field> allFields = new ArrayList<>();
-    for (Line line : lines) {
-      Field[] fields = LatLonShape.createIndexableFields(name, line);
+    for (XYPolygon polygon : polygons) {
+      Field[] fields = XYShape.createIndexableFields(name, polygon);
       for (Field field : fields) {
         allFields.add(field);
       }
@@ -55,29 +65,29 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  public Validator getValidator() {
-    return new MultiLineValidator(ENCODER);
+  protected Validator getValidator() {
+    return new MultiPolygonValidator(ENCODER);
   }
 
-  protected class MultiLineValidator extends Validator {
-    TestLatLonLineShapeQueries.LineValidator LINEVALIDATOR;
-    MultiLineValidator(Encoder encoder) {
+  protected class MultiPolygonValidator extends Validator {
+    TestXYPolygonShapeQueries.PolygonValidator POLYGONVALIDATOR;
+    MultiPolygonValidator(Encoder encoder) {
       super(encoder);
-      LINEVALIDATOR = new TestLatLonLineShapeQueries.LineValidator(encoder);
+      POLYGONVALIDATOR = new TestXYPolygonShapeQueries.PolygonValidator(encoder);
     }
 
     @Override
     public Validator setRelation(QueryRelation relation) {
       super.setRelation(relation);
-      LINEVALIDATOR.queryRelation = relation;
+      POLYGONVALIDATOR.queryRelation = relation;
       return this;
     }
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
+      XYPolygon[] polygons = (XYPolygon[])shape;
+      for (XYPolygon p : polygons) {
+        boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
@@ -91,9 +101,9 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testLineQuery(Line2D query, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testLineQuery(query, l);
+      XYPolygon[] polygons = (XYPolygon[])shape;
+      for (XYPolygon p : polygons) {
+        boolean b = POLYGONVALIDATOR.testLineQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
@@ -107,9 +117,9 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testPolygonQuery(Object query, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
+      XYPolygon[] polygons = (XYPolygon[])shape;
+      for (XYPolygon p : polygons) {
+        boolean b = POLYGONVALIDATOR.testPolygonQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

@@ -17,7 +17,7 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -263,8 +263,8 @@ public class TestLatLonShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
-    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
-    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat, p.lon);
+    BaseShapeTestCase.Point p = (BaseShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.y, p.x);
     for (Field f : fields) {
       document.add(f);
     }
@@ -276,7 +276,7 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // search by same point
-    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
+    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.y, p.x, p.y, p.x);
     assertEquals(1, s.count(q));
     IOUtils.close(r, dir);
   }

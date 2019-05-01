@@ -18,8 +18,6 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.XYShape.XYShapeType;
-
 public class XYPolygon {
   private final double[] x;
   private final double[] y;
@@ -35,16 +33,11 @@ public class XYPolygon {
   public final double maxY;
   /** winding order of the vertices */
   private final GeoUtils.WindingOrder windingOrder;
-  /** which size encoding and field type to use */
-  private final XYShapeType encodingType;
 
   /**
    * Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes.
    */
-  public XYPolygon(double[] x, double[] y, XYShapeType encodingType, XYPolygon... holes) {
-    if (encodingType == null) {
-      throw new IllegalArgumentException("encoding type must not be null");
-    }
+  public XYPolygon(double[] x, double[] y, XYPolygon... holes) {
     if (x == null) {
       throw new IllegalArgumentException("x must not be null");
     }
@@ -72,7 +65,6 @@ public class XYPolygon {
         throw new IllegalArgumentException("holes may not contain holes: polygons may not nest.");
       }
     }
-    this.encodingType = encodingType;
     this.x = x.clone();
     this.y = y.clone();
     this.holes = holes.clone();
@@ -143,10 +135,6 @@ public class XYPolygon {
   /** returns the number of holes for the polygon */
   public int numHoles() {
     return holes.length;
-  }
-
-  public XYShapeType getEncodingType() {
-    return this.encodingType;
   }
 
   @Override

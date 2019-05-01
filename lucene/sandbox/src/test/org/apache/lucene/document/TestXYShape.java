@@ -1,27 +1,23 @@
 /*
- * Licensed to Elasticsearch under one or more contributor
- * license agreements. See the NOTICE file distributed with
- * this work for additional information regarding copyright
- * ownership. Elasticsearch licenses this file to you under
- * the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.lucene.document;
 
-import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -30,7 +26,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestXYShape extends LuceneTestCase {
 
@@ -43,7 +38,7 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   protected Query newRectQuery(String field, double minX, double maxX, double minY, double maxY) {
-    return XYShape.newBoxQuery(field, XYShape.QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
+    return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
   }
 
   /** test we can search for a point with a standard number of vertices*/
@@ -57,7 +52,7 @@ public class TestXYShape extends LuceneTestCase {
 //    XYPolygon xyp = new XYPolygon(p.getPolyLons(), p.getPolyLats(), XYShape.XYShapeType.INTEGER);
 
     XYPolygon xyp = new XYPolygon(new double[] {-150000.2343233d, -43234323.23432d, -73453345.23432d, -150000.2343233d},
-        new double[] {-10000.23432d, -5000.234323d, 1000000.023432d, -10000.23432d}, XYShape.XYShapeType.INTEGER);
+        new double[] {-10000.23432d, -5000.234323d, 1000000.023432d, -10000.23432d});
 
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, xyp);
@@ -73,7 +68,19 @@ public class TestXYShape extends LuceneTestCase {
     assertEquals(1, searcher.count(q));
 
     // search a disjoint bbox
-    q = XYShape.newBoxQuery(FIELDNAME, XYShape.QueryRelation.DISJOINT, -73453355, -73453350, -20000, -10001);
+    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.DISJOINT, -73453355, -73453350, -20000, -10001);
+    assertEquals(1, searcher.count(q));
+
+    q = XYShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYPolygon(
+        new double[] {-150010.2343233d, -150000.2343233d, -150000.2343233d, -150010.2343233d, -150010.2343233d},
+        new double[] {-10100d, -10100d, -10000.23432d, -10000.23432d, -10100d}
+    ));
+    assertEquals(1, searcher.count(q));
+
+    q = XYShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYLine(
+        new double[] {-150010.2343233d, -150000.2343233d, -150000.2343233d, -150010.2343233d},
+        new double[] {-10100d, -10100d, -10000.23432d, -10000.23432d}
+    ));
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);

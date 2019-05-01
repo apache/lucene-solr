@@ -19,14 +19,13 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYLine;
+import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box and polygon query tests for random generated {@code latitude, longitude} points */
-public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
+public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected ShapeType getShapeType() {
@@ -34,26 +33,26 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Line randomQueryLine(Object... shapes) {
+  protected XYLine randomQueryLine(Object... shapes) {
     if (random().nextInt(100) == 42) {
       // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
       int maxBound = (int)Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
-      double[] lats = new double[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
-      double[] lons = new double[lats.length];
-      for (int i = 0, j = 0; j < lats.length && i < shapes.length; ++i, ++j) {
+      double[] x = new double[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
+      double[] y = new double[x.length];
+      for (int i = 0, j = 0; j < x.length && i < shapes.length; ++i, ++j) {
         Point p = (Point) (shapes[i]);
         if (random().nextBoolean() && p != null) {
-          lats[j] = p.y;
-          lons[j] = p.x;
+          x[j] = p.x;
+          y[j] = p.y;
         } else {
-          lats[j] = GeoTestUtil.nextLatitude();
-          lons[j] = GeoTestUtil.nextLongitude();
+          x[j] = ShapeTestUtil.nextDouble();
+          y[j] = ShapeTestUtil.nextDouble();
         }
       }
-      return new Line(lats, lons);
+      return new XYLine(x, y);
     }
     return nextLine();
   }
@@ -61,19 +60,13 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected Field[] createIndexableFields(String field, Object point) {
     Point p = (Point)point;
-    return LatLonShape.createIndexableFields(field, p.y, p.x);
+    return XYShape.createIndexableFields(field, p.x, p.y);
   }
 
   @Override
   protected Validator getValidator() {
     return new PointValidator(this.ENCODER);
   }
-
-//  @Override
-//  protected Validator getValidator(QueryRelation relation) {
-//    VALIDATOR.setRelation(relation);
-//    return VALIDATOR;
-//  }
 
   protected static class PointValidator extends Validator {
     protected PointValidator(Encoder encoder) {
@@ -103,7 +96,7 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testPolygonQuery(Object poly2d, Object shape) {
-      return testPoint((Polygon2D)poly2d, (Point) shape);
+      return testPoint((XYPolygon2D)poly2d, (Point) shape);
     }
 
     private boolean testPoint(EdgeTree tree, Point p) {

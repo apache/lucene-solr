@@ -28,7 +28,7 @@ import org.apache.lucene.index.PointValues.Relation;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
+final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   final Rectangle rectangle;
   final Rectangle2D rectangle2D;
 

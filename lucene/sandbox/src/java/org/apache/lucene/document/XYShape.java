@@ -20,37 +20,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.geo.Tessellator.Triangle;
+import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.BytesRef;
 
-public class XYShape {
-  static final int INT_BYTES = Integer.BYTES;
-  static final int LONG_BYTES = Long.BYTES;
+import static org.apache.lucene.geo.XYEncodingUtils.encode;
 
-  protected static final FieldType INT_TYPE = new FieldType();
-  protected static final FieldType LONG_TYPE = new FieldType();
-  static {
-    INT_TYPE.setDimensions(7, 4, INT_BYTES);
-    LONG_TYPE.setDimensions(7, 4, LONG_BYTES);
-    INT_TYPE.freeze();
-    LONG_TYPE.freeze();
-  }
+public class XYShape extends ShapeField {
 
+  // no instance:
   private XYShape() {
   }
 
+  /** create indexable fields for polygon geometry */
   public static Field[] createIndexableFields(String fieldName, XYPolygon polygon) {
-    if (polygon.getEncodingType() == XYShapeType.LONG) {
-      throw new IllegalArgumentException("LONG type not yet supported");
-    }
-    List<Triangle> tessellation = Tessellator.tessellate(polygon);
-    List<XYTriangle> fields = new ArrayList<>(tessellation.size());
-    for (Triangle t : tessellation) {
-      fields.add(new XYTriangle(fieldName, t));
+
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    List<Triangle> fields = new ArrayList<>(tessellation.size());
+    for (Tessellator.Triangle t : tessellation) {
+      fields.add(new Triangle(fieldName, t));
     }
     return fields.toArray(new Field[fields.size()]);
+  }
+
+  /** create indexable fields for line geometry */
+  public static Field[] createIndexableFields(String fieldName, XYLine line) {
+    int numPoints = line.numPoints();
+    Field[] fields = new Field[numPoints - 1];
+    // create "flat" triangles
+    for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
+      fields[i] = new Triangle(fieldName,
+          encode(line.getX(i)), encode(line.getY(i)),
+          encode(line.getX(j)), encode(line.getY(j)),
+          encode(line.getX(i)), encode(line.getY(i)));
+    }
+    return fields;
+  }
+
+  /** create indexable fields for point geometry */
+  public static Field[] createIndexableFields(String fieldName, double x, double y) {
+    return new Field[] {new Triangle(fieldName,
+        encode(x), encode(y), encode(x), encode(y), encode(x), encode(y))};
   }
 
   /** create a query to find all polygons that intersect a defined bounding box
@@ -59,50 +69,15 @@ public class XYShape {
     return new XYShapeBoundingBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
   }
 
-  private static class XYTriangle extends Field {
-    XYTriangle(String name, int ax, int ay, int bx, int by, int cx, int cy) {
-      super(name, INT_TYPE);
-      setTriangleValue(ax, ay, bx, by, cx, cy);
-    }
-
-    XYTriangle(String name, Triangle t) {
-      super(name, INT_TYPE);
-      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.getEncodedX(1),
-          t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2));
-    }
-
-    public void setTriangleValue(int ax, int ay, int bx, int by, int cx, int cy) {
-      final byte[] bytes;
-
-      if (fieldsData == null) {
-        bytes = new byte[7 * INT_BYTES];
-        fieldsData = new BytesRef(bytes);
-      } else {
-        bytes = ((BytesRef)fieldsData).bytes;
-      }
-      LatLonShape.encodeTriangle(bytes, ay, ax, by, bx, cy, cx);
-    }
+  /** create a query to find all polygons that intersect a provided linestring (or array of linestrings)
+   **/
+  public static Query newLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
+    return new XYShapeLineQuery(field, queryRelation, lines);
   }
 
-  /** Query Relation Types **/
-  public enum QueryRelation {
-    INTERSECTS, WITHIN, DISJOINT
-  }
-
-  public enum XYShapeType {
-    INTEGER {
-      @Override
-      public FieldType fieldType() {
-        return INT_TYPE;
-      }
-    },
-    LONG {
-      @Override
-      public FieldType fieldType() {
-        return LONG_TYPE;
-      }
-    };
-
-    abstract public FieldType fieldType();
+  /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
+   **/
+  public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
+    return new XYShapePolygonQuery(field, queryRelation, polygons);
   }
 }

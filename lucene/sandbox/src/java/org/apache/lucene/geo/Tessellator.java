@@ -16,10 +16,16 @@
  */
 package org.apache.lucene.geo;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.apache.lucene.geo.GeoUtils.WindingOrder;
 import org.apache.lucene.util.BitUtil;
@@ -159,12 +165,12 @@ final public class Tessellator {
 
   private static final Node createDoublyLinkedList(XYPolygon polygon, int startIndex, final WindingOrder windingOrder) {
     return createDoublyLinkedList(polygon.getPolyX(), polygon.getPolyY(), polygon.getWindingOrder(), false,
-        0, WindingOrder.CW);
+        startIndex, windingOrder);
   }
 
   private static final Node createDoublyLinkedList(Polygon polygon, int startIndex, final WindingOrder windingOrder) {
     return createDoublyLinkedList(polygon.getPolyLons(), polygon.getPolyLats(),polygon.getWindingOrder(), true,
-        0, WindingOrder.CW);
+        startIndex, windingOrder);
   }
 
   /** Creates a circular doubly linked list using polygon points. The order is governed by the specified winding order */

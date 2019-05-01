@@ -20,33 +20,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@link Line} types */
-public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
-
+public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
-    return ShapeType.LINE;
+    return ShapeType.POINT;
   }
 
   @Override
-  protected Line[] nextShape() {
+  protected Point[] nextShape() {
     int n = random().nextInt(4) + 1;
-    Line[] lines = new Line[n];
+    Point[] points = new Point[n];
     for (int i =0; i < n; i++) {
-      lines[i] = nextLine();
+      points[i] = (Point)ShapeType.POINT.nextShape();
     }
-    return lines;
+    return points;
   }
 
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
-    Line[] lines = (Line[]) o;
+    Point[] points = (Point[]) o;
     List<Field> allFields = new ArrayList<>();
-    for (Line line : lines) {
-      Field[] fields = LatLonShape.createIndexableFields(name, line);
+    for (Point point : points) {
+      Field[] fields = XYShape.createIndexableFields(name, point.x, point.y);
       for (Field field : fields) {
         allFields.add(field);
       }
@@ -56,28 +53,28 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   public Validator getValidator() {
-    return new MultiLineValidator(ENCODER);
+    return new MultiPointValidator(ENCODER);
   }
 
-  protected class MultiLineValidator extends Validator {
-    TestLatLonLineShapeQueries.LineValidator LINEVALIDATOR;
-    MultiLineValidator(Encoder encoder) {
+  protected class MultiPointValidator extends Validator {
+    TestXYPointShapeQueries.PointValidator POINTVALIDATOR;
+    MultiPointValidator(Encoder encoder) {
       super(encoder);
-      LINEVALIDATOR = new TestLatLonLineShapeQueries.LineValidator(encoder);
+      POINTVALIDATOR = new TestXYPointShapeQueries.PointValidator(encoder);
     }
 
     @Override
     public Validator setRelation(QueryRelation relation) {
       super.setRelation(relation);
-      LINEVALIDATOR.queryRelation = relation;
+      POINTVALIDATOR.queryRelation = relation;
       return this;
     }
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
+      Point[] points = (Point[]) shape;
+      for (Point p : points) {
+        boolean b = POINTVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
@@ -91,9 +88,9 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testLineQuery(Line2D query, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testLineQuery(query, l);
+      Point[] points = (Point[]) shape;
+      for (Point p : points) {
+        boolean b = POINTVALIDATOR.testLineQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
@@ -107,9 +104,9 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testPolygonQuery(Object query, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
+      Point[] points = (Point[]) shape;
+      for (Point p : points) {
+        boolean b = POINTVALIDATOR.testPolygonQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

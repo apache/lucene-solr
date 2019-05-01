@@ -19,16 +19,11 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
 
 /** random bounding box and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
 public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
-
-  protected final MultiPointValidator VALIDATOR = new MultiPointValidator();
-  protected final TestLatLonPointShapeQueries.PointValidator POINTVALIDATOR = new TestLatLonPointShapeQueries.PointValidator();
 
   @Override
   protected ShapeType getShapeType() {
@@ -40,7 +35,7 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     int n = random().nextInt(4) + 1;
     Point[] points = new Point[n];
     for (int i =0; i < n; i++) {
-      points[i] = new Point(GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude());
+      points[i] = (Point)ShapeType.POINT.nextShape();
     }
     return points;
   }
@@ -50,7 +45,7 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     Point[] points = (Point[]) o;
     List<Field> allFields = new ArrayList<>();
     for (Point point : points) {
-      Field[] fields = LatLonShape.createIndexableFields(name, point.lat, point.lon);
+      Field[] fields = LatLonShape.createIndexableFields(name, point.y, point.x);
       for (Field field : fields) {
         allFields.add(field);
       }
@@ -59,13 +54,24 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator(QueryRelation relation) {
-    VALIDATOR.setRelation(relation);
-    POINTVALIDATOR.setRelation(relation);
-    return VALIDATOR;
+  public Validator getValidator() {
+    return new MultiPointValidator(ENCODER);
   }
 
   protected class MultiPointValidator extends Validator {
+    TestLatLonPointShapeQueries.PointValidator POINTVALIDATOR;
+    MultiPointValidator(Encoder encoder) {
+      super(encoder);
+      POINTVALIDATOR = new TestLatLonPointShapeQueries.PointValidator(encoder);
+    }
+
+    @Override
+    public Validator setRelation(QueryRelation relation) {
+      super.setRelation(relation);
+      POINTVALIDATOR.queryRelation = relation;
+      return this;
+    }
+
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point[] points = (Point[]) shape;
@@ -99,7 +105,7 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testPolygonQuery(Polygon2D query, Object shape) {
+    public boolean testPolygonQuery(Object query, Object shape) {
       Point[] points = (Point[]) shape;
       for (Point p : points) {
         boolean b = POINTVALIDATOR.testPolygonQuery(query, p);
