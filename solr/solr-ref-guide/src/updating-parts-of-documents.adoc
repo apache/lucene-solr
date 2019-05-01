@@ -107,7 +107,7 @@ The resulting document in our collection will be:
 
 Solr supports modifying, adding and removing child documents as part of atomic updates. +
 Schema and configuration requirements are detailed in
-<<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
+<<updating-parts-of-documents#field-storage, Field Storage>> and <<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
 Under the hood, Solr retrieves the whole nested structure, deletes the old documents,
 and re-indexes the structure after applying the atomic update. +
 Syntactically, nested/partial updates are very similar to a regular atomic update,
@@ -172,7 +172,8 @@ The resulting document in our collection will be:
 }
 ----
 
-Documents inside nested structures can also be updated, provided `\_route_` is set to the root document's ID
+Documents inside nested structures can also be updated.
+These type of updates require setting the `\_route_` set to the root document's ID
 
 If we send this update, setting `\_route_`=mydoc
 
