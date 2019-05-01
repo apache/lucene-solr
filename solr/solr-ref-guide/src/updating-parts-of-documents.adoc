@@ -103,6 +103,110 @@ The resulting document in our collection will be:
 }
 ----
 
+=== Updating Child Documents
+
+Solr supports modifying, adding and removing child documents as part of atomic updates. +
+Schema and configuration requirements are detailed in
+<<updating-parts-of-documents#field-storage, Field Storage>> and <<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
+Under the hood, Solr retrieves the whole nested structure, deletes the old documents,
+and re-indexes the structure after applying the atomic update. +
+Syntactically, nested/partial updates are very similar to a regular atomic update,
+as demonstrated by the examples below.
+
+[NOTE]
+====
+.\_route_ Param
+To ensure each nested update is routed to its respective shard,
+`\_route_` param must be set to the root document's ID when the
+update does not have that root document.
+====
+
+If the following document exists in our collection:
+
+[source,json]
+----
+{
+ "id":"mydoc",
+ "product":"T-Shirt",
+ "stock": {
+           "id":"mydoc2",
+           "color":"red",
+           "size": ["L"]
+           }
+}
+----
+
+And we apply the following update command:
+
+[source,json]
+----
+{
+ "id":"mydoc",
+ "stock": {
+           "add":
+                 {
+                  "id":"mydoc3",
+                  "color":"blue",
+                  "size": ["M"]
+                 }
+          }
+}
+----
+
+The resulting document in our collection will be:
+
+[source,json]
+----
+{
+ "id":"mydoc",
+ "product":"T-Shirt",
+ "stock": [{
+            "id":"mydoc2",
+            "color":"red",
+            "size": ["L"]
+           },
+           {
+            "id":"mydoc3",
+            "color":"blue",
+            "size": ["M"]
+           }]
+}
+----
+
+Documents inside nested structures can also be updated.
+These type of updates require setting the `\_route_` set to the root document's ID
+
+If we send this update, setting `\_route_`=mydoc
+
+[source,json]
+----
+{
+ "id":"mydoc2",
+ "size": {"add": ["S"]}
+}
+----
+
+The resulting document in our collection will be:
+
+[source,json]
+----
+{
+ "id":"mydoc",
+ "product":"T-Shirt",
+ "stock": [{
+            "id":"mydoc2",
+            "color":"red",
+            "size": ["L", "S"]
+           },
+           {
+            "id":"mydoc3",
+            "color":"blue",
+            "size": ["M"]
+           }]
+}
+----
+
+
 == In-Place Updates
 
 In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences, there is no functional difference between atomic updates and in-place updates.
