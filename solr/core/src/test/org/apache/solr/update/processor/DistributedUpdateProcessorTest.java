@@ -17,10 +17,6 @@
 
 package org.apache.solr.update.processor;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doReturn;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,6 +45,10 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doReturn;
+
 public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Rule 
@@ -57,10 +57,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
     executor = Executors.newCachedThreadPool();
     initCore("solr/collection1/conf/solrconfig.xml","solr/collection1/conf/schema-minimal-with-another-uniqkey.xml");
   }
-  
+
   @AfterClass
   public static void AfterClass() {
     executor.shutdown();
