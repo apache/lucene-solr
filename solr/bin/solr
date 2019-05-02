@@ -2021,10 +2021,9 @@ function start_solr() {
       GC_TUNE=('-XX:+UseG1GC' \
         '-XX:+PerfDisableSharedMem' \
         '-XX:+ParallelRefProcEnabled' \
-        '-XX:G1HeapRegionSize=16m' \
         '-XX:MaxGCPauseMillis=250' \
-        '-XX:InitiatingHeapOccupancyPercent=45' \
-        '-XX:+UseLargePages')
+        '-XX:+UseLargePages' \
+        '-XX:+AlwaysPreTouch')
   else
     GC_TUNE=($GC_TUNE)
   fi
