@@ -244,6 +244,8 @@ Improvements
 * SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used.
   (jefferyyuan, ab)
 
+* SOLR-13348: Speed up collapsing by avoiding scoring of ineligible documents (Andrzej Wislowski via
+  Ishan Chattopadhyaya)
 
 Other Changes
 ----------------------
