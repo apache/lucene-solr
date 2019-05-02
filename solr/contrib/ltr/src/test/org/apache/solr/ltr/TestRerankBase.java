@@ -18,7 +18,6 @@ package org.apache.solr.ltr;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
@@ -35,6 +34,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -51,7 +51,6 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.SolrSchemaRestApi;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.noggit.ObjectBuilder;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,8 +331,8 @@ public class TestRerankBase extends RestTestBase {
 
     Object parsedFeatureJson = null;
     try {
-      parsedFeatureJson = ObjectBuilder.fromJSON(featureJson);
-    } catch (final IOException ioExc) {
+      parsedFeatureJson = Utils.fromJSONString(featureJson);
+    } catch (final Exception ioExc) {
       throw new ModelException("ObjectBuilder failed parsing json", ioExc);
     }
 
@@ -356,8 +355,8 @@ public class TestRerankBase extends RestTestBase {
   static private Map<String,Object> mapFromJson(String json) throws ModelException {
     Object parsedJson = null;
     try {
-      parsedJson = ObjectBuilder.fromJSON(json);
-    } catch (final IOException ioExc) {
+      parsedJson = Utils.fromJSONString(json);
+    } catch (final Exception ioExc) {
       throw new ModelException("ObjectBuilder failed parsing json", ioExc);
     }
     return (Map<String,Object>) parsedJson;

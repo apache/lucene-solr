@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema.analysis;
+
 import java.io.File;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -31,8 +32,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noggit.JSONUtil;
 import org.restlet.ext.servlet.ServerServlet;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 public class TestManagedSynonymFilterFactory extends RestTestBase {
   
@@ -87,8 +89,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     // put a new mapping into the synonyms
     Map<String,List<String>> syns = new HashMap<>();
     syns.put("happy", Arrays.asList("glad","cheerful","joyful"));    
-    assertJPut(endpoint, 
-               JSONUtil.toJSON(syns),
+    assertJPut(endpoint,
+        toJSONString(syns),
                "/responseHeader/status==0");
     
     assertJQ(endpoint,
@@ -113,8 +115,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     syns = new HashMap<>();
     syns.put("sad", Arrays.asList("unhappy"));    
     syns.put("SAD", Arrays.asList("bummed"));    
-    assertJPut(endpoint, 
-               JSONUtil.toJSON(syns),
+    assertJPut(endpoint,
+        toJSONString(syns),
                "/responseHeader/status==0");
     
     assertJQ(endpoint, 
@@ -183,8 +185,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     // add a mapping that will expand a query for "mad" to match docs with "angry"
     syns = new HashMap<>();
     syns.put("mad", Arrays.asList("angry"));    
-    assertJPut(endpoint, 
-               JSONUtil.toJSON(syns),
+    assertJPut(endpoint,
+        toJSONString(syns),
                "/responseHeader/status==0");
     
     assertJQ(endpoint, 
@@ -194,7 +196,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     syns = new HashMap<>();
     syns.put(multiTermSynonym, Arrays.asList(multiTermOrigin));
     assertJPut(endpoint,
-               JSONUtil.toJSON(syns),
+        toJSONString(syns),
                "/responseHeader/status==0");
 
     assertJQ(endpoint+"/"+URLEncoder.encode(multiTermSynonym, "UTF-8"),
@@ -230,12 +232,12 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     syns = new HashMap<>();
     syns.put("mb", Arrays.asList("megabyte"));    
     assertJPut(endpoint,
-        JSONUtil.toJSON(syns),
+        toJSONString(syns),
         "/responseHeader/status==0");
 
     syns.put("MB", Arrays.asList("MiB", "Megabyte"));    
     assertJPut(endpoint,
-        JSONUtil.toJSON(syns),
+        toJSONString(syns),
         "/responseHeader/status==0");
     
     assertJQ(endpoint + "/MB",
@@ -244,7 +246,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     // test for SOLR-6878 - by default, expand is true, but only applies when sending in a list
     List<String> m2mSyns = new ArrayList<>();
     m2mSyns.addAll(Arrays.asList("funny", "entertaining", "whimiscal", "jocular"));
-    assertJPut(endpoint, JSONUtil.toJSON(m2mSyns), "/responseHeader/status==0");
+    assertJPut(endpoint, toJSONString(m2mSyns), "/responseHeader/status==0");
 
     assertJQ(endpoint + "/funny",
         "/funny==['entertaining','funny','jocular','whimiscal']");
@@ -276,7 +278,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     // now put a synonym
     syns.put("fröhlich", Arrays.asList("glücklick"));
     assertJPut(endpoint,
-        JSONUtil.toJSON(syns),
+        toJSONString(syns),
         "/responseHeader/status==0");
 
     // and check if it exists

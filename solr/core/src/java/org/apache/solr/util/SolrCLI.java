@@ -142,7 +142,6 @@ import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,6 +150,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * Command-line utility for working with Solr.
@@ -699,7 +699,7 @@ public class SolrCLI implements CLIO {
         String respBody = EntityUtils.toString(entity);
         Object resp = null;
         try {
-          resp = ObjectBuilder.getVal(new JSONParser(respBody));
+          resp = fromJSONString(respBody);
         } catch (JSONParser.ParseException pe) {
           throw new ClientProtocolException("Expected JSON response from server but received: "+respBody+
               "\nTypically, this indicates a problem with the Solr server; check the Solr server logs for more information.");
