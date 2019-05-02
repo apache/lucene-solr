@@ -37,7 +37,7 @@ import org.junit.Test;
 public class TestLang extends SolrTestCase {
 
   private static final String[] allFunctions = {
-      "search", "facet", "update", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
+      "search", "facet", "facet2D", "update", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
       "unique", "top", "group", "reduce", "parallel", "rollup", "stats", "innerJoin",
       "leftOuterJoin", "hashJoin", "outerHashJoin", "intersect", "complement", "sort",
       "train", "features", "daemon", "shortestPath", "gatherNodes", "nodes",

@@ -838,6 +838,38 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFacet2DStream() throws Exception {
+    new UpdateRequest()
+         .add(id, "0", "diseases_s", "stroke", "symptoms_s", "confusion")
+         .add(id, "1", "diseases_s", "cancer", "symptoms_s", "indigestion")
+         .add(id, "2", "diseases_s", "diabetes", "symptoms_s", "thirsty")
+         .add(id, "3", "diseases_s", "stroke", "symptoms_s", "confusion")
+         .add(id, "4", "diseases_s", "bronchus", "symptoms_s", "nausea")
+         .add(id, "5", "diseases_s", "bronchus", "symptoms_s", "cough")
+         .add(id, "6", "diseases_s", "bronchus", "symptoms_s", "cough")
+         .add(id, "7", "diseases_s", "heart attack", "symptoms_s", "indigestion")
+         .add(id, "8", "diseases_s", "diabetes", "symptoms_s", "urination")
+         .add(id, "9", "diseases_s", "diabetes", "symptoms_s", "thirsty")
+         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    String clause;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1_collection", cluster.getZkServer().getZkAddress())
+        .withFunctionName("facet2D", Facet2DStream.class)
+        .withFunctionName("count", CountMetric.class);
+
+    //Basic test
+    clause = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size()== 3);
+  }
+
+
+  @Test
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
