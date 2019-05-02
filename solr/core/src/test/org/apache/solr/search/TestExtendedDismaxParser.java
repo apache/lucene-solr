@@ -36,12 +36,12 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
@@ -1716,7 +1716,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
-    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 

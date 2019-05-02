@@ -39,7 +39,6 @@ import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestExportWriter extends SolrTestCaseJ4 {
   
@@ -731,7 +730,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     SolrQueryRequest selectReq = req("q", "*:*", "qt", "/select", "fl", "id," + fieldsStr, "sort", sortStr, "rows", Integer.toString(numDocs), "wt", "json");
     String response = h.query(selectReq);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    Map rsp = (Map)Utils.fromJSONString(response);
     List doclist = (List)(((Map)rsp.get("response")).get("docs"));
 
     assert docs.size() == numDocs;

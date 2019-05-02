@@ -33,6 +33,7 @@ import java.util.TreeMap;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -44,8 +45,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -863,13 +862,13 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         String strResponse = h.query(req);
 
-        Object realResponse = ObjectBuilder.fromJSON(strResponse);
+        Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/grouped/" + groupField, realResponse, modelResponse);
         if (err != null) {
           log.error("GROUPING MISMATCH (" + queryIter + "): " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
+           + "\n\texpected="+ Utils.toJSONString(modelResponse)
            + "\n\tsorted_model="+ sortedGroups
           );
 
@@ -885,7 +884,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           log.error("GROUPING MISMATCH (" + queryIter + "): " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(expectedFacetResponse)
+           + "\n\texpected="+ Utils.toJSONString(expectedFacetResponse)
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging

@@ -35,9 +35,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
@@ -45,7 +46,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -963,7 +963,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
-    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
