@@ -1170,10 +1170,9 @@ IF "%GC_TUNE%"=="" (
   set GC_TUNE=-XX:+UseG1GC ^
     -XX:+PerfDisableSharedMem ^
     -XX:+ParallelRefProcEnabled ^
-    -XX:G1HeapRegionSize=16m ^
     -XX:MaxGCPauseMillis=250 ^
-    -XX:InitiatingHeapOccupancyPercent=45 ^
-    -XX:+UseLargePages
+    -XX:+UseLargePages ^
+    -XX:+AlwaysPreTouch
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9  (
