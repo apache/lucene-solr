@@ -63,7 +63,10 @@ public class VersionBucket {
 
   public void awaitNanos(long nanosTimeout) {
     try {
-      wait(TimeUnit.NANOSECONDS.toMillis(nanosTimeout));
+      long millis = TimeUnit.NANOSECONDS.toMillis(nanosTimeout);
+      if (millis > 0) {
+        wait(millis);
+      }
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
