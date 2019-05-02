@@ -856,12 +856,18 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples;
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1_collection", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("count", CountMetric.class);
 
     //Basic test
-    clause = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
+    clause = "facet2D(collection1, " +
+        "q=\"*:*\", " +
+        "x=\"diseases_s\", " +
+        "y=\"symptoms_s\", " +
+        "dimensions=\"3,1\", " +
+        "count(*)" +
+        ")";
     stream = factory.constructStream(clause);
     tuples = getTuples(stream);
 
