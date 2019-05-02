@@ -58,7 +58,9 @@ public class TimedVersionBucket extends VersionBucket {
 
   public void awaitNanos(long nanosTimeout) {
     try {
-      condition.awaitNanos(nanosTimeout);
+      if (nanosTimeout > 0) {
+        condition.awaitNanos(nanosTimeout);
+      }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
