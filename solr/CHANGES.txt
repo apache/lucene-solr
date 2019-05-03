@@ -86,6 +86,9 @@ Bug fixes
 
 * SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
 
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue at head upon restart (Ishan Chattopadhyaya,
+  Kesharee Nandan Vishwakarma)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
