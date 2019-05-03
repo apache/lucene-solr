@@ -17,6 +17,7 @@ import argparse
 import re
 import subprocess
 import sys
+import os
 from enum import Enum
 
 class Version(object):
@@ -98,6 +99,33 @@ def update_file(filename, line_re, edit):
   with open(filename, 'w') as f:
     f.write(''.join(buffer))
   return True
+
+def check_ant():
+  antVersion = os.popen('ant -version').read().strip()
+  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
+    return
+  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
+    return
+  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
+    return
+  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
+
+def getGitRev():
+  status = os.popen('git status').read().strip()
+  if 'nothing to commit, working directory clean' not in status and 'nothing to commit, working tree clean' not in status:
+    raise RuntimeError('git clone is dirty:\n\n%s' % status)
+  branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
+  command = 'git log origin/%s..' % branch
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if len(stdout.strip()) > 0:
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, stdout.decode('utf-8')))
+  if len(stderr.strip()) > 0:
+    raise RuntimeError('Command "%s" failed:\n\n%s' % (command, stderr.decode('utf-8')))
+
+  print('  git clone is clean')
+  return os.popen('git rev-parse HEAD').read().strip()
+
 
 # branch types are "release", "stable" and "unstable"
 class BranchType(Enum):
