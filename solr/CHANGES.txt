@@ -63,6 +63,8 @@ Bug Fixes
 
 * SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
 
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used. (ab)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

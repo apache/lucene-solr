@@ -16,26 +16,19 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 // TODO: make inner?
 // TODO: store the highest possible in the index on a commit (but how to not block adds?)
 // TODO: could also store highest possible in the transaction log after a commit.
 // Or on a new index, just scan "version" for the max?
 /** @lucene.internal */
+/**
+ * The default implementation which uses the intrinsic object monitor.
+ * It uses less memory but ignores the <code>lockTimeoutMs</code>.
+ */
 public class VersionBucket {
-  private int lockTimeoutMs;
-
-  public VersionBucket(int lockTimeoutMs) {
-    this.lockTimeoutMs = lockTimeoutMs;
-  }
-
-  private final Lock lock = new ReentrantLock(true);
-  private final Condition condition = lock.newCondition();
-
   public long highest;
 
   public void updateHighest(long val) {
@@ -44,32 +37,37 @@ public class VersionBucket {
     }
   }
   
-  public int getLockTimeoutMs() {
-    return lockTimeoutMs;
+  @FunctionalInterface
+  public interface CheckedFunction<T, R> {
+     R apply() throws IOException;
   }
   
-  public boolean tryLock() {
-    try {
-      return lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
+  /**
+   * This will run the function with the intrinsic object monitor.
+   */
+  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T, R> function) throws IOException {
+    synchronized (this) {
+      return function.apply();
     }
   }
 
+  /**
+   * Nothing to do for the intrinsic object monitor.
+   */
   public void unlock() {
-    lock.unlock();
   }
 
   public void signalAll() {
-    condition.signalAll();
+    notifyAll();
   }
 
   public void awaitNanos(long nanosTimeout) {
     try {
-      condition.awaitNanos(nanosTimeout);
+      long millis = TimeUnit.NANOSECONDS.toMillis(nanosTimeout);
+      if (millis > 0) {
+        wait(millis);
+      }
     } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
   }
