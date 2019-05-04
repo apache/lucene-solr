@@ -77,14 +77,16 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       String name = null;
       Throwable cause = null;
       try {
-        // Lookup "NAME" field with appropriate modifiers. Also it must be a String field.
+        // Lookup "NAME" field with appropriate modifiers.
+        // Also it must be a String class and declared in the service class.
         final Field field = service.getField("NAME");
         int modifier = field.getModifiers();
-        if (Modifier.isPublic(modifier) && Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
-            field.getType().equals(String.class)) {
+        if (Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
+            field.getType().equals(String.class) &&
+            Objects.equals(field.getDeclaringClass(), service)) {
           name = ((String)field.get(null)).toLowerCase(Locale.ROOT);
         }
-      } catch (Throwable e) {
+      } catch (NoSuchFieldException | IllegalAccessException e) {
         cause = e;
       }
       if (name == null) {
