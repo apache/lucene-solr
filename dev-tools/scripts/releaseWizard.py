@@ -110,7 +110,7 @@ def check_prerequisites():
     check_ant()
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
         sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
-    #getGitRev()
+    # getGitRev()
 
 
 class TodoGroup:
@@ -142,8 +142,8 @@ class TodoGroup:
         for todo in self.checklist:
             if todo.applies(release_type):
                 menu.append_item(todo.get_menu_item())
-            else:
-                print("Todo %s does not apply" % todo.id)
+            # else:
+            #     print("Todo %s does not apply" % todo.id)
         return menu
 
     def get_menu_item(self):
@@ -346,7 +346,7 @@ def get_subtitle():
 
 def validate_release_version(branch_type, branch, release_version):
     ver = Version.parse(release_version)
-    print("release_version=%s, ver=%s" % (release_version, ver))
+    # print("release_version=%s, ver=%s" % (release_version, ver))
     if branch_type == BranchType.release:
         if not branch.startswith('branch_'):
             sys.exit("Incompatible branch and branch_type")
@@ -363,7 +363,7 @@ def validate_release_version(branch_type, branch, release_version):
         if not ver.is_major_release():
             sys.exit("You can only release a new major version from master branch")
     if not getScriptVersion() == release_version:
-        sys.exit("Expected version %s, but got %s", (getScriptVersion(), release_version))
+        sys.exit("Expected version %s, but got %s" % (getScriptVersion(), release_version))
 
 def main():
     global title
@@ -380,7 +380,6 @@ def main():
     write_db()
 
     release_type = ReleaseType.bugfix
-    print ("Rendering main menu")
     main_menu = make_main_menu("Releasing Lucene/Solr %s" % release_version,
                                get_subtitle,
                                None,
@@ -389,36 +388,17 @@ def main():
     main_menu.show()
 
 
-
-    # if BranchType.unstable == branch_type:
-    #     print ("Branch master")
-    # elif BranchType.stable == branch_type:
-    #     print ("Branch master")
-    # elif BranchType.release == branch_type:
-    #     print ("Branch master")
-
-
-    # release_version = getScriptVersion()
-    # if release_version.endswith(".0.0"):
-    #     release_type = 'major'
-    # elif release_version.endswith(".0"):
-    #     release_type = 'minor'
-    # else:
-    #     release_type = 'bugfix'
-
-    # if not version.startswith(scriptVersion + '.'):
-    #   raise RuntimeError('releaseWizard.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
-
-    # mainMenu()
-
-
 sys.path.append(os.path.dirname(__file__))
 
 print ("Lucene/Solr releaseWizard v%s\n" % getScriptVersion())
 # Find some generic environment stats
-branch_type = scriptutil.find_branch_type()
+try:
+    branch_type = scriptutil.find_branch_type()
+except:
+    print("WARNING: A release cannot happen from a feature branch")
+    branch_type = 'feature'
 branch = run("git rev-parse --abbrev-ref HEAD").strip()
-db = pickledb.load("releaseWizard.json", False)
+db = pickledb.load(os.path.expanduser("~/.lucene-release.json"), False)
 release_version = None
 
 if __name__ == '__main__':
