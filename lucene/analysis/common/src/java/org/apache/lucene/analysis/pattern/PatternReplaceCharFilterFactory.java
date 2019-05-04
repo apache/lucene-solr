@@ -39,7 +39,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  */
 public class PatternReplaceCharFilterFactory extends CharFilterFactory {
 
-  public static final String NAME = "patternreplace";
+  public static final String NAME = "patternReplace";
 
   private final Pattern pattern;
   private final String replacement;

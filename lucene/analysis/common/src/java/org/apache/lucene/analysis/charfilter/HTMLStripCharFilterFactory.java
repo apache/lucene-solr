@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  */
 public class HTMLStripCharFilterFactory extends CharFilterFactory {
 
-  public static final String NAME = "htmlstrip";
+  public static final String NAME = "htmlStrip";
 
   final Set<String> escapedTags;
   static final Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");

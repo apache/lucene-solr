@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  */
 public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory {
 
-  public static final String NAME = "japaneseiterationmark";
+  public static final String NAME = "japaneseIterationMark";
 
   private static final String NORMALIZE_KANJI_PARAM = "normalizeKanji";
   private static final String NORMALIZE_KANA_PARAM = "normalizeKana";
