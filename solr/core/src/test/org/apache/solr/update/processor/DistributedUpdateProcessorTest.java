@@ -86,6 +86,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   
   @Test
   public void testVersionAdd() throws IOException {
+    if(h.getCore().getUpdateHandler().getUpdateLog() ==null) {
+      // this test checks the behavior of VersionBucket or TimedVersionBucket,
+      // it doesn't makes sense if there is no updateLog, thus no VersionBucket
+      return;
+    }
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
     int threads = 5;
     Function<DistributedUpdateProcessor,Boolean> versionAddFunc = (DistributedUpdateProcessor process) -> {
@@ -109,6 +114,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testVersionDelete() throws IOException {
+    if(h.getCore().getUpdateHandler().getUpdateLog() ==null) {
+      // this test checks the behavior of VersionBucket or TimedVersionBucket,
+      // it doesn't makes sense if there is no updateLog, thus no VersionBucket
+      return;
+    }
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
 
     int threads = 5;
