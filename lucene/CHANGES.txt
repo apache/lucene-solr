@@ -18,10 +18,16 @@ API Changes
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
   removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
 
-Bug fixes:
+Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
+
+Improvements
+
+* LUCENE-8781: FST lookup performance has been improved in many cases by
+  encoding Arcs using full-sized arrays with gaps. The new encoding is
+  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
 
 Other
 
