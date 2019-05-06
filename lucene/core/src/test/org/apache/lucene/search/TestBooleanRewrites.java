@@ -544,4 +544,58 @@ public class TestBooleanRewrites extends LuceneTestCase {
         .build();
     assertSame(query, searcher.rewrite(query));
   }
+
+  public void testDiscardShouldClauses() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    BooleanQuery.Builder query1 = new BooleanQuery.Builder();
+    query1.add(new TermQuery(new Term("field", "a")), Occur.MUST);
+    query1.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
+
+    query1.setMinimumNumberShouldMatch(0);
+
+    Weight weight = searcher.createWeight(searcher.rewrite(query1.build()), ScoreMode.COMPLETE_NO_SCORES, 1);
+
+    Query rewrittenQuery1 = weight.getQuery();
+
+    assertTrue(rewrittenQuery1 instanceof BooleanQuery);
+
+    BooleanQuery booleanRewrittenQuery1 = (BooleanQuery) rewrittenQuery1;
+
+    for (BooleanClause clause : booleanRewrittenQuery1.clauses()) {
+      assertNotEquals(clause.getOccur(), Occur.SHOULD);
+    }
+
+    BooleanQuery.Builder query2 = new BooleanQuery.Builder();
+    query2.add(new TermQuery(new Term("field", "a")), Occur.MUST);
+    query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
+    query2.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
+
+    query2.setMinimumNumberShouldMatch(0);
+
+    weight = searcher.createWeight(searcher.rewrite(query2.build()), ScoreMode.COMPLETE_NO_SCORES, 1);
+
+    Query rewrittenQuery2 = weight.getQuery();
+
+    assertTrue(rewrittenQuery2 instanceof BooleanQuery);
+
+    BooleanQuery booleanRewrittenQuery2 = (BooleanQuery) rewrittenQuery1;
+
+    for (BooleanClause clause : booleanRewrittenQuery2.clauses()) {
+      assertNotEquals(clause.getOccur(), Occur.SHOULD);
+    }
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
 }
