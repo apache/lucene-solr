@@ -220,6 +220,8 @@ Bug Fixes
 * SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,
   Kesharee Nandan Vishwakarma)
 
+* SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
+
 Improvements
 ----------------------
 
