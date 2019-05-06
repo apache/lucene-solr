@@ -43,11 +43,11 @@ import org.apache.solr.common.util.NamedList;
 public class BucketBasedJsonFacet {
   public static final int UNSET_FLAG = -1;
   private List<BucketJsonFacet> buckets;
-  private int numBuckets = UNSET_FLAG;
+  private long numBuckets = UNSET_FLAG;
   private long allBuckets = UNSET_FLAG;
-  private int beforeFirstBucketCount = UNSET_FLAG;
-  private int afterLastBucketCount = UNSET_FLAG;
-  private int betweenAllBucketsCount = UNSET_FLAG;
+  private long beforeFirstBucketCount = UNSET_FLAG;
+  private long afterLastBucketCount = UNSET_FLAG;
+  private long betweenAllBucketsCount = UNSET_FLAG;
 
   public BucketBasedJsonFacet(NamedList<Object> bucketBasedFacet) {
     for (Map.Entry<String, Object> entry : bucketBasedFacet) {
@@ -60,15 +60,15 @@ public class BucketBasedJsonFacet {
           buckets.add(new BucketJsonFacet(bucket));
         }
       } else if ("numBuckets".equals(key)) {
-        numBuckets = (int) value;
+        numBuckets = ((Number) value).longValue();
       } else if ("allBuckets".equals(key)) {
-        allBuckets = (long) ((NamedList)value).get("count");
+        allBuckets = ((Number) ((NamedList)value).get("count")).longValue();
       } else if ("before".equals(key)) {
-        beforeFirstBucketCount = (int) ((NamedList)value).get("count");
+        beforeFirstBucketCount = ((Number) ((NamedList)value).get("count")).longValue();
       } else if ("after".equals(key)) {
-        afterLastBucketCount = (int) ((NamedList)value).get("count");
+        afterLastBucketCount = ((Number) ((NamedList)value).get("count")).longValue();
       } else if ("between".equals(key)) {
-        betweenAllBucketsCount = (int) ((NamedList)value).get("count");
+        betweenAllBucketsCount = ((Number) ((NamedList)value).get("count")).longValue();
       } else {
         // We don't recognize the key.  Possible JSON faceting schema has changed without updating client.
         // Silently ignore for now, though we may want to consider throwing an error if this proves problematic.
@@ -89,8 +89,22 @@ public class BucketBasedJsonFacet {
    * This value can only be computed on "terms" facets where the user has specifically requested it with the
    * {@code numBuckets} option.  {@link #UNSET_FLAG} is returned if this is a "range" facet or {@code numBuckets}
    * computation was not requested in the intiial request.
+   *
+   * @deprecated this method can trigger ClassCastException's if the returned value is a long.  In the future it will
+   * return a 'long' instead to avoid this problem.  Until then, use {@link #getNumBucketsCount()} instead.
    */
   public int getNumBuckets() {
+    return (int) numBuckets;
+  }
+
+  /**
+   * The total number of buckets found in the domain (of which the returned buckets are only a part).
+   *
+   * This value can only be computed on "terms" facets where the user has specifically requested it with the
+   * {@code numBuckets} option.  {@link #UNSET_FLAG} is returned if this is a "range" facet or {@code numBuckets}
+   * computation was not requested in the intiial request.
+   */
+  public long getNumBucketsCount() {
     return numBuckets;
   }
 
@@ -112,9 +126,33 @@ public class BucketBasedJsonFacet {
    *
    * This value is only present if the user has specifically requested it with the {@code other} option.
    * {@link #UNSET_FLAG} is returned if this is not the case.
+   *
+   * @deprecated this method can trigger ClassCastException's if the returned value is a long.  In the future it will
+   * return a 'long' instead to avoid this problem.  Until then, use {@link #getBeforeCount()} instead.
    */
   public int getBefore() {
-    return beforeFirstBucketCount;
+    return (int) beforeFirstBucketCount;
+  }
+
+  /**
+   * The count of all records whose field value precedes the {@code start} of this "range" facet
+   *
+   * This value is only present if the user has specifically requested it with the {@code other} option.
+   * {@link #UNSET_FLAG} is returned if this is not the case.
+   */
+  public long getBeforeCount() { return beforeFirstBucketCount; }
+
+  /**
+   * The count of all records whose field value follows the {@code end} of this "range" facet
+   *
+   * This value is only present if the user has specifically requested it with the {@code other} option.
+   * {@link #UNSET_FLAG} is returned if this is not the case.
+   *
+   * @deprecated this method can trigger ClassCastException's if the returned value is a long.  In the future it will
+   * return a 'long' instead to avoid this problem.  Until then, use {@link #getAfterCount()} instead.
+   */
+  public int getAfter() {
+    return (int) afterLastBucketCount;
   }
 
   /**
@@ -123,7 +161,7 @@ public class BucketBasedJsonFacet {
    * This value is only present if the user has specifically requested it with the {@code other} option.
    * {@link #UNSET_FLAG} is returned if this is not the case.
    */
-  public int getAfter() {
+  public long getAfterCount() {
     return afterLastBucketCount;
   }
 
@@ -132,8 +170,21 @@ public class BucketBasedJsonFacet {
    *
    * This value is only present if the user has specifically requested it with the {@code other} option.
    * {@link #UNSET_FLAG} is returned if this is not the case.
+   *
+   * @deprecated this method can trigger ClassCastException's if the returned value is a long.  In the future it will
+   * return a 'long' instead to avoid this problem.  Until then, use {@link #getBetweenCount()} instead.
    */
   public int getBetween() {
+    return (int) betweenAllBucketsCount;
+  }
+
+  /**
+   * The count of all records whose field value falls between {@code start} and {@code end}.
+   *
+   * This value is only present if the user has specifically requested it with the {@code other} option.
+   * {@link #UNSET_FLAG} is returned if this is not the case.
+   */
+  public long getBetweenCount() {
     return betweenAllBucketsCount;
   }
 }
