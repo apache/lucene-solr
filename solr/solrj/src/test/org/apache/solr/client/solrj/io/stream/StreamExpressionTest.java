@@ -851,7 +851,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
          .add(id, "8", "diseases_s", "diabetes", "symptoms_s", "urination")
          .add(id, "9", "diseases_s", "diabetes", "symptoms_s", "thirsty")
          .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-    String clause;
+    StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
 
@@ -861,17 +861,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withFunctionName("count", CountMetric.class);
 
     //Basic test
-    clause = "facet2D(collection1, " +
-        "q=\"*:*\", " +
-        "x=\"diseases_s\", " +
-        "y=\"symptoms_s\", " +
-        "dimensions=\"3,1\", " +
-        "count(*)" +
-        ")";
-    stream = factory.constructStream(clause);
+    expression = StreamExpressionParser.parse("facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", count(*))");
+    stream = factory.constructStream(expression);
     tuples = getTuples(stream);
 
-    assert(tuples.size()== 3);
+
+    System.out.println(tuples.size() + " HHHHHHHHFHFHFHHFH");
+    assert(false==false);
   }
 
 

@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
@@ -38,6 +55,8 @@ import org.apache.solr.common.util.NamedList;
 
 public class Facet2DStream extends TupleStream implements Expressible {
 
+  private static final long serialVersionUID = 1;
+
   private String collection;
   private ModifiableSolrParams params;
   private Bucket x;
@@ -50,13 +69,26 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private int dimensionX;
   private int dimensionY;
   private FieldComparator bucketSort;
-  private boolean resortNeeded;
-  private boolean refine;
   private int index;
 
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
 
+  public Facet2DStream(String zkHost, String collection, ModifiableSolrParams params, Bucket x, Bucket y, String dimensions, Metric metric) throws IOException {
+    if (dimensions != null) {
+      String[] strDimensions = dimensions.split(",");
+      if (strDimensions.length != 2) {
+        throw new IOException(String.format(Locale.ROOT, "invalid expression %s - two dimension values expected"));
+      }
+      this.dimensionX = Integer.parseInt(strDimensions[0]);
+      this.dimensionY = Integer.parseInt(strDimensions[1]);
+
+    }
+    String bucketSortString = metric.getIdentifier() + " desc";
+    this.bucketSort = parseBucketSort(bucketSortString, x, y);
+
+    init(collection, params, x, y, bucketSort, dimensionX, dimensionY, metric, zkHost);
+  }
 
   public Facet2DStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
@@ -72,7 +104,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     StreamExpressionNamedParameter dimensionsExpression = factory.getNamedOperand(expression, "dimensions");
     List <StreamExpression> metricExpression = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    StreamExpressionNamedParameter refineExpression = factory.getNamedOperand(expression, "refine");
 
     if (collectionName == null) {
       throw new IOException(String.format(Locale.ROOT, "invalid expression %s - collectionName expected as first operand", expression));
@@ -81,8 +112,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (StreamExpressionNamedParameter namedParam : namedParams) {
       if (!namedParam.getName().equals("x") && !namedParam.getName().equals("y") &&
-          !namedParam.getName().equals("dimensions") && !namedParam.getName().equals("zkHost") &&
-          !namedParam.getName().equals("refine")) {
+          !namedParam.getName().equals("dimensions") && !namedParam.getName().equals("zkHost")){
         params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
@@ -90,23 +120,25 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketXExpression != null) {
       if (bucketXExpression.getParameter() instanceof StreamExpressionValue) {
         String keyX = ((StreamExpressionValue) bucketXExpression.getParameter()).getValue();
-        x = new Bucket(keyX.trim());
+        if(keyX != null && !keyX.equals("")){
+          x = new Bucket(keyX.trim());
+        }
       }
     }
     Bucket y = null;
     if (bucketYExpression != null) {
       if (bucketYExpression.getParameter() instanceof StreamExpressionValue) {
         String keyY = ((StreamExpressionValue) bucketYExpression.getParameter()).getValue();
-        y = new Bucket(keyY.trim());
+        if(keyY != null && !keyY.equals("")){
+          y = new Bucket(keyY.trim());
+        }
       }
     }
 
     if (x == null || y == null) {
       throw new IOException(String.format(Locale.ROOT, "invalid expression %s - x and y buckets expected. eg. 'x=\"name\"'", expression, collectionName));
     }
-    String bucketSortString =  "count(*) desc";
 
-    FieldComparator bucketSort = parseBucketSort(bucketSortString, x, y);
     if(metricExpression == null || metricExpression.size() == 0){
       throw new IOException(String.format(Locale.ROOT, "invalid expression %s - one metric expected", expression, collectionName));
     }
@@ -115,15 +147,11 @@ public class Facet2DStream extends TupleStream implements Expressible {
       throw new IOException(String.format(Locale.ROOT, "invalid expression %s - one metric expected", expression, collectionName));
     }
 
-    boolean refine = false;
+    String bucketSortString = metric.getIdentifier() + " desc";
+    FieldComparator bucketSort = parseBucketSort(bucketSortString, x, y);
 
-    if (refineExpression != null) {
-      String refineStr = ((StreamExpressionValue) dimensionsExpression.getParameter()).getValue();
-      if (refineStr != null) {
-        refine = Boolean.parseBoolean(refineStr);
-      }
-    }
-
+    int dimensionX = 0;
+    int dimensionY = 0;
     if (dimensionsExpression != null) {
       if (dimensionsExpression.getParameter() instanceof StreamExpressionValue) {
         String[] strDimensions = ((StreamExpressionValue) dimensionsExpression.getParameter()).getValue().split(",");
@@ -154,8 +182,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   private FieldComparator parseBucketSort(String bucketSortString, Bucket x, Bucket y) throws IOException {
     String[] spec = bucketSortString.trim().split("\\s+");
+
     String fieldName = spec[0].trim();
-    String order = spec[1].trim();
     return new FieldComparator(fieldName, ComparatorOrder.DESCENDING);
 
   }
@@ -195,50 +223,47 @@ public class Facet2DStream extends TupleStream implements Expressible {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
+    //collection
     if (collection.indexOf(',') > -1) {
       expression.addParameter("\"" + collection + "\"");
     } else {
       expression.addParameter(collection);
     }
 
+    //parameters for q,fl etc
     for (Entry<String, String[]> param : params.getMap().entrySet()) {
       for (String val : param.getValue()) {
         expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), val));
       }
     }
+
+    //bucket x
     {
       StringBuilder builder = new StringBuilder();
+
       builder.append(x.toString());
       expression.addParameter(new StreamExpressionNamedParameter("x", builder.toString()));
     }
+
+    //bucket y
     {
       StringBuilder builder = new StringBuilder();
+
       builder.append(y.toString());
       expression.addParameter(new StreamExpressionNamedParameter("y", builder.toString()));
     }
 
-    expression.addParameter(metric.toExpression(factory));
+    //dimensions
     expression.addParameter(new StreamExpressionNamedParameter("dimensions", Integer.toString(dimensionX) + "," + Integer.toString(dimensionY)));
+
+    //metric
+    expression.addParameter(metric.toExpression(factory));
+
+    //zkHost
+    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
 
     return expression;
   }
-
-  public Facet2DStream(String zkHost, String collection, ModifiableSolrParams params, Bucket x, Bucket y, String dimensions, Metric metric) throws IOException {
-    if (dimensions != null) {
-        String[] strDimensions = dimensions.split(",");
-        if (strDimensions.length != 2) {
-          throw new IOException(String.format(Locale.ROOT, "invalid expression %s - two dimension values expected"));
-        }
-        dimensionX = Integer.parseInt(strDimensions[0]);
-        dimensionY = Integer.parseInt(strDimensions[1]);
-
-    }
-    String bucketSortString = metric.getValue() + " desc";
-    FieldComparator bucketSort = parseBucketSort(bucketSortString, x, y);
-
-    init(collection, params, x, y, bucketSort, dimensionX, dimensionY, metric, zkHost);
-  }
-
 
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
@@ -257,10 +282,9 @@ public class Facet2DStream extends TupleStream implements Expressible {
       cloudSolrClient = new Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
     }
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);
-    this.resortNeeded = resortNeeded(adjustedSorts);
 
     String json = getJsonFacetString(x, y, metric, adjustedSorts, dimensionX, dimensionY);
-    assert expectedJson(json);
+    //assert expectedJson(json);
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams(params);
     paramsLoc.set("json.facet", json);
@@ -271,9 +295,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, x, y, metric);
 
-      if (resortNeeded) {
-        Collections.sort(tuples, getStreamSort());
-      }
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -305,24 +326,20 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   private boolean expectedJson(String json) {
-    if (this.refine) {
-      if (!json.contains("\"refine\":true")) {
-        return false;
-      } else {
-        if (!json.contains("\"limit\":" + (this.dimensionX)) || !json.contains("\"limit\":" + (this.dimensionY))) {
+    if (!json.contains("\"limit\":" + (this.dimensionX)) || !json.contains("\"limit\":" + (this.dimensionY))) {
           return false;
-        }
-      }
-      if (!json.contains("\"" + x.toString() + "\":") || !json.contains("\"" + y.toString() + "\":")) {
+    }
+
+    if (!json.contains("\"" + x.toString() + "\":") || !json.contains("\"" + y.toString() + "\":")) {
         return false;
-      }
-      String function = metric.getFunctionName();
-      if (!function.equals("count")) {
-        if (!json.contains(metric.getIdentifier())) {
-          return false;
-        }
+    }
+    String function = metric.getFunctionName();
+    if (!function.equals("count(*)")) {
+      if (!json.contains(metric.getIdentifier())) {
+        return false;
       }
     }
+
     return true;
   }
 
@@ -348,31 +365,22 @@ public class Facet2DStream extends TupleStream implements Expressible {
     return adjustSorts;
   }
 
-  private boolean resortNeeded(FieldComparator[] fieldComparators) {
-    for (FieldComparator fieldComparator : fieldComparators) {
-      if (fieldComparator.getLeftFieldName().contains("(")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   private void appendJson(StringBuilder buf, Bucket x, Bucket y, Metric metric, FieldComparator[] adjustedSorts, int dimensionX, int dimensionY) {
-    buf.append("{");
+
     buf.append('"');
     buf.append("x");
     buf.append('"');
     buf.append(":{");
     buf.append("\"type\":\"terms\"");
     buf.append(",\"field\":\"" + x.toString() + "\"");
-    buf.append(",\"limit\":" + dimensionX);
+    buf.append(",\"limit\":" + dimensionX );
     String fsort = getFacetSort(adjustedSorts[0].getLeftFieldName(), metric);
-    buf.append(",\"sort\":{\"" + fsort + "\":\"" + adjustedSorts[0].getOrder() + "\"}");
+    buf.append(",\"sort\":\""+ fsort + " desc\"");
     buf.append(",\"facet\":{");
 
     String identifier = metric.getIdentifier();
     if (identifier.startsWith("count(")) {
-      buf.append("\"agg" + "\":\"" + identifier + "\"");
+      buf.append("\"agg\":\"" + identifier + "\"");
     }
     buf.append(",");
     buf.append('"');
@@ -381,12 +389,12 @@ public class Facet2DStream extends TupleStream implements Expressible {
     buf.append(":{");
     buf.append("\"type\":\"terms\"");
     buf.append(",\"field\":\"" + y.toString() + "\"");
-    buf.append(",\"limit\":" + dimensionY);
-    fsort = getFacetSort(adjustedSorts[1].getLeftFieldName(), metric);
-    buf.append(",\"sort\":{\"" + fsort + "\":\"" + adjustedSorts[1].getOrder() + "\"}");
+    buf.append(",\"limit\":" + dimensionY );
+    String fsortY = getFacetSort(adjustedSorts[1].getLeftFieldName(), metric);
+    buf.append(",\"sort\":\""+ fsortY + " desc\"");
     buf.append(",\"facet\":{");
     if (identifier.startsWith("count(")) {
-      buf.append("\"agg" + "\":\"" + identifier + "\"");
+      buf.append("\"agg\":\"" + identifier + "\"");
     }
     buf.append("}}}}");
   }
@@ -446,13 +454,13 @@ public class Facet2DStream extends TupleStream implements Expressible {
         t.put(bucketYName, valY);
       }
       int nextLevel = level + 1;
-      if (nextLevel < 2) {
+      if (nextLevel <= 2) {
         fillTuples(nextLevel, tuples, t.clone(), bucket, x, y, metric);
       } else {
         int m = 0;
         String identifier = metric.getIdentifier();
         if (!identifier.startsWith("count(")) {
-          Number d = (Number) bucket.get("agg:" + m);
+          Number d = (Number) bucket.get("agg:" + identifier);
           if (metric.outputLong) {
             if (d instanceof Long || d instanceof Integer) {
               t.put(identifier, d.longValue());
@@ -464,7 +472,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
           }
           ++m;
         } else {
-          long l = ((Number) bucket.get("count")).longValue();
+          long l = ((Number) bucket.get("count(*)")).longValue();
           t.put("count(*)", l);
         }
       }
