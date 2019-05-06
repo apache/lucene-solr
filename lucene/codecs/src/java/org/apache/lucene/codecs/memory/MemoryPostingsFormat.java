@@ -111,7 +111,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public TermsWriter(IndexOutput out, FieldInfo field) {
       this.out = out;
       this.field = field;
-      builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+      builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, false);
     }
 
     private class PostingsWriter {
