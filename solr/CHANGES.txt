@@ -82,6 +82,8 @@ Bug fixes
 
 * SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used. (ab)
 
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
