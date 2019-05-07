@@ -199,7 +199,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       while (cnt++ < 3) {
         try {
           rsp = ctx.invoke(solrNode, CommonParams.METRICS_PATH, params);
-          break;
         } catch (SolrException | SolrServerException | IOException e) {
           boolean hasCauseIOException = false;
           Throwable cause = e;
@@ -306,7 +305,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         while (cnt++ < retries) {
           try {
             rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
-            break;
           } catch (SolrException | SolrServerException | IOException e) {
             if (e instanceof SolrServerException) {
               
