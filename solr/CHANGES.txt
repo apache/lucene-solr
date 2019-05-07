@@ -73,7 +73,7 @@ Jetty 9.4.14.v20181114
 New Features
 ----------------------
 
-: SOLR-13320 : add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+* SOLR-13320 : add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
 
 
 ==================  8.1.0 ==================
