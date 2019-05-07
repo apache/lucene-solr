@@ -152,6 +152,13 @@
       </Version>
     </release>
     <release>
+       <Version>
+         <name>lucene-6.6.6</name>
+         <created>2019-04-05</created>
+         <revision>6.6.6</revision>
+       </Version>
+    </release>
+    <release>
       <Version>
         <name>lucene-6.6.5</name>
         <created>2018-06-03</created>
