@@ -49,8 +49,8 @@ import com.tdunning.math.stats.AVLTreeDigest;
 //   TestCloudJSONFacetJoinDomain for random field faceting tests with domain modifications
 //   TestJsonFacetRefinement for refinement tests
 
-@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
-public class TestJsonFacets extends SolrTestCaseHS {
+@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","FST50","Direct","Lucene42","Lucene45","Appending","BlockTreeOrds","FSTOrd50"})
+public class  TestJsonFacets extends SolrTestCaseHS {
   
   private static SolrInstances servers;  // for distributed testing
   private static int origTableSize;
@@ -313,7 +313,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
                );
     }
   }
-  
   /**
    * whitebox sanity checks that a shard request range facet that returns "between" or "after"
    * will cause the correct "actual_end" to be returned
@@ -3223,6 +3222,58 @@ public class TestJsonFacets extends SolrTestCaseHS {
         req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:{blockParent:{}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
 
+  }
+
+  @Test
+  public void testIntervalFacets() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+    final SolrParams p = params("q", "*:*", "rows", "0");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,intervals:[{key:\"0-200\",range:\"[0,200]\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"0-200\",count:3}]}}");
+  }
+
+  @Test
+  public void testIntervalFacetsNewFormat() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "200"),null);
+    client.commit();
+    SolrParams p = params("q", "*:*", "rows", "0");
+    //case without inclusive params
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,intervals:[{key:\"0-200\",from:0, to:200}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"0-200\",count:3}]}}");
+    p = params("q", "*:*", "rows", "0");
+    //case without key param
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,intervals:[{from:0, to:200,inclusive_from:true ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[0,200]\",count:4}]}}");
+    p = params("q", "*:*", "rows", "0");
+    //case with all params
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,intervals:[{key:\"0-200\",from:0, to:200,inclusive_from:true ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"0-200\",count:4}]}}");
+  }
+
+  @Test
+  public void testIntervalFacetsBadCases() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "200"),null);
+    client.commit();
+    assertQEx("Should fail if from not present",
+        "from and to params are mandatory",
+        req("q", "*:*", "rows", "0", "json.facet", "{price:{type : range,field : num_i,intervals:[{key:\"0-200\", to:200}]}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx("Should fail if to not present",
+        "from and to params are mandatory",
+        req("q", "*:*", "rows", "0", "json.facet", "{price:{type : range,field : num_i,intervals:[{key:\"0-200\", from:0}]}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
