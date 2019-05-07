@@ -1,6 +1,6 @@
 ================= FullStory ================
 (Some of these changes are available in public Solr, if we update to the specified version )
-* fs.ignoreconflicts (Scott Blum)
+* SOLR-13320: add a param failOnVersionConflicts=false to updates not fail when there is a version conflict (Noble Paul, Scott Blum) (SOLR 8.2)
 * FullStory: special OOMKILLER handling for spaces (Scott Blum)
 * Remove pathological error reporting. Don't serialize the entire clusterstate to log (Generally available from SOLR 8.1)(Scott Blum)
 * Expose DocValuesTermsCollector and TermsQuery (Generally available from SOLR 8.1) (Jaime Yap) 

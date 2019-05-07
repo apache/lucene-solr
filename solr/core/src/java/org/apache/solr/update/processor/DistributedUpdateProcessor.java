@@ -1123,7 +1123,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
                 // specified it must exist (versionOnUpdate==1) and it does.
               } else {
-                if (cmd.getReq().getParams().getBool("fs.ignoreconflicts", false)) {
+                if(cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
                   return true;
                 }
                 throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId()
