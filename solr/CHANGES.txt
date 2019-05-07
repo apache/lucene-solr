@@ -290,7 +290,7 @@ Improvements
   encountered (Munendra S N via Ishan Chattopadhyaya)
 
 * SOLR-13394: Switch default GC from CMS to G1 (Ishan Chattopadhyaya, Kesharee Nandan Vishwakarma, Shawn Heisey,
-  Uwe Schindler, Erick Ericsson)
+  Uwe Schindler, Erick Ericsson, shalin)
 
 * SOLR-13432: Add .toString methods to BitDocSet and SortedIntDocSet so that enabling "showItems" on the filter caches
   shows some useful information about the values in the cache. (shalin)
