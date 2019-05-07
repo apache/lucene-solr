@@ -100,6 +100,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -119,6 +120,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
@@ -1758,7 +1760,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   }
 
-
+  public static void assertResponseValues(SolrResponseBase rsp, Object... assertions) {
+    Map<String, Object> values = Utils.makeMap(assertions);
+    values.forEach((s, o) -> {
+      if (o instanceof String) {
+        assertEquals(o, rsp.getResponse()._getStr(s, null));
+      } else {
+        assertEquals(o, rsp.getResponse()._get(s, null));
+      }
+    });
+  }
   public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
     if (model == null) {
       model = new LinkedHashMap<>();
