@@ -85,6 +85,9 @@ Upgrade Notes
 * SOLR-13394: The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any
   other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
 
+* SOLR-5970: Until now, the CREATE command of Collections API returned status 0 even in case of failure. Now, the status
+  code will be non-zero in case of failures (e.g. 4xx, 5xx).
+
 New Features
 ----------------------
 * SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
