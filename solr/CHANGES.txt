@@ -260,6 +260,8 @@ Bug Fixes
 
 * SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
 
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
+
 Improvements
 ----------------------
 
