@@ -32,13 +32,15 @@ from enum import Enum
 import scriptutil
 from scriptutil import BranchType, Version, check_ant, getGitRev, run
 import re
-import datetime
+from datetime import datetime
+from datetime import timedelta
 from consolemenu import ConsoleMenu
 from consolemenu.screen import Screen
 from consolemenu.items import FunctionItem, SubmenuItem
 
 global state
 global root_folder
+global todo_methods
 
 # Solr:Java version mapping
 java_versions = { 6: 8, 7: 8, 8: 8, 9: 11 }
@@ -83,7 +85,7 @@ def check_prerequisites():
     # except Exception as e:
     #     sys.exit(e.__str__())
 
-epoch = datetime.datetime.utcfromtimestamp(0)
+epoch = datetime.utcfromtimestamp(0)
 
 def unix_time_millis(dt):
     return int((dt - epoch).total_seconds() * 1000.0)
@@ -308,11 +310,11 @@ class Todo:
         self.set_done(done)
 
     def set_done(self, is_done):
-        self.state['done'] = is_done
         if is_done:
-            self.state['done_date'] = unix_time_millis(datetime.datetime.now())
+            self.state['done_date'] = unix_time_millis(datetime.now())
         else:
-            self.state.pop('done_date', None)
+            self.state.clear()
+        self.state['done'] = is_done
 
     def applies(self, type):
         # print("applies type=%s, types=%s" % (type, self.types))
@@ -337,7 +339,12 @@ class Todo:
             for link in self.links:
                 print("- %s" % link)
             print()
+        attr = getattr(todo_methods, self.id)
+        if callable(attr) and not self.is_done():
+            print("Calling %s by reclection" % self.id)
+            attr(self)
         if self.fun and not self.is_done():
+            print("Calling defined fun %s" % self.fun)
             self.fun(self)
         if self.user_input and not self.is_done():
             ui_list = self.user_input
@@ -431,6 +438,9 @@ def reset_state():
 
 def main():
     global state
+    global todo_methods
+
+    todo_methods = TodoMethods()
 
     print ("Lucene/Solr releaseWizard v%s\n" % getScriptVersion())
 
@@ -701,47 +711,98 @@ def create_minor_branch(todo):
              logs_folder=todo.id).run()
 
 
-def vote_template(todo):
-    print("Vote template")
-
-
-def end_vote(todo):
-    p = UserInput("plusone", "Number of binding +1 votes")
-    z = UserInput("zero", "Number of binding 0 votes")
-    m = UserInput("minusone", "Number of binding -1 votes")
-    plus = p.run(todo.state)
-    zero = z.run(todo.state)
-    minus = m.run(todo.state)
-    todo.state['totalvotes'] = plus + zero + minus
-
-    if plus >= 3 and plus > minus:
-        print("The vote has succeeded")
-
+class TodoMethods:
+    # These are called with reflection based on method matching to_do ID
+    def initiate_vote(self, todo):
+        vote_close = (datetime.utcnow() + timedelta(hours=73)).strftime("%Y-%m-%d %H:00 UTC")
+        todo.state['vote_close'] = vote_close
         print("""
-Mail template:
-Subject: [RESULT][VOTE] Release Lucene/Solr %s RC%s
+---- Mail template ----
+To: dev@lucene.apache.org
+Subject: [VOTE] Release Lucene/Solr %s RC%s
+
+Please vote for release candidate %s for Lucene/Solr %s
+
+The artifacts can be downloaded from:
+https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-8.1.0-RC1-reve5839fb416083fcdaeedfb1e329a9fdaa29fdc50
+
+You can run the smoke tester directly with this command:
+
+python3 -u dev-tools/scripts/smokeTestRelease.py \
+https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-8.1.0-RC1-reve5839fb416083fcdaeedfb1e329a9fdaa29fdc50
+
+Vote will be open for 72 hours, i.e. until %s.
+
+[ ] +1  approve
+[ ] +0  no opinion
+[ ] -1  disapprove (and reason why)
+
+Here is my +1
+---- end template ----
+""" % (state.release_version, state.rc_number, state.rc_number, state.release_version, vote_close))
+
+
+    def end_vote(self, todo):
+        initiate_vote_dict = state.get_todo_by_id("initiate_vote").state
+        if not initiate_vote_dict['done'] is True:
+            print("A vote has not been initiated, cannot close.")
+            return
+        else:
+            elapsed = unix_time_millis(datetime.now()) - initiate_vote_dict['done_date']
+            elapsed_h = elapsed / 1000 / 60 / 60
+            if elapsed_h < 72:
+                if not ask_yes_no("Number of hours since vote started is %d which is less than required 72. Continue?" % elapsed_h):
+                    return
+        print()
+        plus_binding = int(UserInput("plus_binding", "Number of binding +1 votes (PMC members)").run(todo.state))
+        plus_other = int(UserInput("plus_other", "Number of other +1 votes").run(todo.state))
+        zero = int(UserInput("zero", "Number of 0 votes").run(todo.state))
+        minus = int(UserInput("minus", "Number of -1 votes").run(todo.state))
+
+        if plus_binding >= 3 and plus_binding > minus:
+            print("The vote has succeeded")
+            todo.state['pass'] = True
+            if minus > 0:
+                print("""
+However, there were negative votes. A release cannot be vetoed, and as long as
+there are more positive than negative votes you can techically release
+the software. However, please review the negative votes and consider
+a re-spin.""")
+
+            print("""            
+---- Mail template ----
+To: dev@lucene.apache.org
+Subject: [RESULT] [VOTE] Release Lucene/Solr %s RC%s
 
 It's been >72h since the vote was initiated and the result is:
 
-+1  %s
- 0  %s
--1  %s
++1 : %s  (%s binding)
+ 0 : %s
+-1 : %s
 
-This vote has passed.
-""" % (state.release_version, state.rc_number, plus, zero, minus))
-    else:
-        print("""
-Mail template:
-Subject: [RESULT][VOTE] Release Lucene/Solr %s RC%s
+This vote has PASSED.
+---- end template ----
+    """ % (state.release_version, state.rc_number, plus_binding + plus_other, plus_binding, zero, minus))
+        else:
+            if plus_binding < 3:
+                reason = "less than three binding +1 votes"
+            else:
+                reason = "too many -1 votes"
+            print("""
+---- Mail template ----
+To: dev@lucene.apache.org
+Subject: [RESULT] [VOTE] Release Lucene/Solr %s RC%s
 
-It's been >72h since the vote was initiated and the result is:
+This vote has FAILED due to %s.
+The vote result was:
 
-+1  %s
- 0  %s
--1  %s
++1 : %s  (%s binding)
+ 0 : %s
+-1 : %s
+---- end template ----
+    """ % (state.release_version, state.rc_number, reason, plus_binding + plus_other, plus_binding, zero, minus))
+            todo.state['pass'] = False
 
-The vote has NOT passed.
-""" % (state.release_version, state.rc_number, plus, zero, minus))
 
 todo_templates = [
     TodoGroup('prerequisites',
@@ -911,12 +972,10 @@ so we emulate a user that never used the Lucene build system before.""",
                   Todo('initiate_vote',
                        'Initiate the vote',
                        description="Initiate the vote on the mailing list",
-                       fun=vote_template,
                        links=["https://www.apache.org/foundation/voting.html"]),
                   Todo('end_vote',
                        'End vote',
-                       description="At the end of the voting deadline, sum up the counts",
-                       fun=end_vote,
+                       description="At the end of the voting deadline, count the votes and send RESULT message to mailing list.",
                        links=["https://www.apache.org/foundation/voting.html"])
               ],
               in_rc_loop=True),
