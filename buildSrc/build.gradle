@@ -1,0 +1,19 @@
+
+apply plugin: 'groovy'
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'java-library'
+
+group = 'org.apache.lucene.gradle'
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	implementation gradleApi()
+	implementation localGroovy()
+
+	implementation 'org.eclipse.jgit:org.eclipse.jgit:4.6.0.201612231935-r'
+	implementation 'de.thetaphi:forbiddenapis:2.6'
+	implementation 'org.apache.rat:apache-rat:0.11'
+}

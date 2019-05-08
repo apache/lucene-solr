@@ -1,0 +1,22 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:lucene-core')
+  api project(':lucene:facet')
+  
+  runtimeOnly 'org.slf4j:jcl-over-slf4j'
+  
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.httpcomponents:httpcore'
+  implementation 'org.eclipse.jetty:jetty-server'
+  implementation 'org.eclipse.jetty:jetty-servlet'
+  implementation 'org.eclipse.jetty:jetty-util'
+  implementation 'org.eclipse.jetty:jetty-io'
+  implementation 'org.eclipse.jetty:jetty-continuation'
+  implementation 'org.eclipse.jetty:jetty-http'
+  implementation 'javax.servlet:javax.servlet-api'
+  implementation 'org.slf4j:slf4j-api'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

@@ -1,0 +1,40 @@
+apply plugin: 'java'
+
+dependencies {
+  
+  
+  implementation "org.apache.logging.log4j:log4j-1.2-api"
+  implementation "org.apache.logging.log4j:log4j-api"
+  implementation "org.apache.logging.log4j:log4j-core"
+  implementation "org.apache.logging.log4j:log4j-slf4j-impl"
+  
+  implementation "com.lmax:disruptor"
+  implementation "org.slf4j:jcl-over-slf4j"
+  implementation "org.slf4j:jul-to-slf4j"
+  implementation "org.slf4j:slf4j-api"
+  
+  implementation 'io.dropwizard.metrics:metrics-core'
+  //implementation 'io.dropwizard.metrics:metrics-ganglia'
+  implementation 'io.dropwizard.metrics:metrics-graphite'
+  implementation 'io.dropwizard.metrics:metrics-jetty9'
+  implementation 'io.dropwizard.metrics:metrics-jvm'
+  //implementation 'info.ganglia.gmetric4j:gmetric4j'
+  
+  implementation 'org.eclipse.jetty:jetty-continuation'
+  implementation 'org.eclipse.jetty:jetty-deploy'
+  implementation 'org.eclipse.jetty:jetty-http'
+  //jetty_io: "org.eclipse.jetty:jetty-io:$jetty_version",
+  implementation 'org.eclipse.jetty:jetty-jmx'
+  implementation 'org.eclipse.jetty:jetty-rewrite'
+  implementation 'org.eclipse.jetty:jetty-security'
+  implementation 'org.eclipse.jetty:jetty-server'
+  implementation 'org.eclipse.jetty:jetty-servlet'
+  implementation 'org.eclipse.jetty:jetty-servlets'
+  //jetty_start: "org.eclipse.jetty:jetty-start:$jetty_version",
+  implementation 'org.eclipse.jetty:jetty-util'
+  implementation 'org.eclipse.jetty:jetty-webapp'
+  implementation 'org.eclipse.jetty:jetty-xml'
+  
+  implementation 'javax.servlet:javax.servlet-api'
+  
+}
