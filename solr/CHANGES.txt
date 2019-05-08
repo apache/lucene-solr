@@ -34,6 +34,7 @@ New Features
 
 * SOLR-13320 : add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
 
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
 ==================  8.1.0 ==================
 

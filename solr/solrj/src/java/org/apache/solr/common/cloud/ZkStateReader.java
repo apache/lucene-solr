@@ -117,6 +117,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String SOLR_AUTOSCALING_NODE_ADDED_PATH = "/autoscaling/nodeAdded";
   public static final String SOLR_AUTOSCALING_NODE_LOST_PATH = "/autoscaling/nodeLost";
 
+  public static final String DEFAULT_SHARD_PREFERENCES = "defaultShardPreferences";
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
@@ -189,6 +190,8 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
 
+  private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
+
   /** Used to submit notifications to Collection Properties watchers in order **/
   private final ExecutorService collectionPropsNotifications = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("collectionPropsNotifications"));
 
@@ -241,6 +244,7 @@ public class ZkStateReader implements SolrCloseable {
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
       CoreAdminParams.BACKUP_LOCATION,
+      DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
       CollectionAdminParams.DEFAULTS)));
 
@@ -813,6 +817,19 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  public void registerClusterPropertiesListener(ClusterPropertiesListener listener) {
+    // fire it once with current properties
+    if (listener.onChange(getClusterProperties())) {
+      removeClusterPropertiesListener(listener);
+    } else {
+      clusterPropertiesListeners.add(listener);
+    }
+  }
+
+  public void removeClusterPropertiesListener(ClusterPropertiesListener listener) {
+    clusterPropertiesListeners.remove(listener);
+  }
+
   public void registerLiveNodesListener(LiveNodesListener listener) {
     // fire it once with current live nodes
     if (listener.onChange(new TreeSet<>(getClusterState().getLiveNodes()), new TreeSet<>(getClusterState().getLiveNodes()))) {
@@ -1054,6 +1071,10 @@ public class ZkStateReader implements SolrCloseable {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
           this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
+
+          for (ClusterPropertiesListener listener: clusterPropertiesListeners) {
+            listener.onChange(getClusterProperties());
+          }
           return;
         } catch (KeeperException.NoNodeException e) {
           this.clusterProperties = Collections.emptyMap();
