@@ -1,0 +1,20 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:memory')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  
+  implementation 'org.carrot2:carrot2-mini'
+  implementation 'org.carrot2.shaded:carrot2-guava'
+  implementation 'org.carrot2.attributes:attributes-binder'
+  implementation 'org.simpleframework:simple-xml'
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+}

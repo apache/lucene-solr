@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'analyzers-icu'
+
+dependencies {
+  
+  api project(':lucene:lucene-core')
+  api project(':lucene:analysis:analyzers-common')
+  
+  implementation 'com.ibm.icu:icu4j'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

@@ -1,5 +1,6 @@
 # .
 /eclipse-build
+build-eclipse
 /maven-build
 /classes
 build
@@ -15,12 +16,13 @@ lucene/**/*.iml
 parent.iml
 *.ipr
 *.iws
-/.project
-/.classpath
-/.settings
-/.caches
+.project
+.classpath
+.settings
+.caches
+.out
 /prj.el
-/bin
+bin
 /bin.*
 pom.xml
 /nbproject
@@ -29,4 +31,5 @@ pom.xml
 __pycache__
 /dev-tools/scripts/scripts.iml
 .DS_Store
-
+.gradle
+derby.log

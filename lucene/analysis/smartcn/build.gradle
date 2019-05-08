@@ -1,0 +1,12 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'analyzers-smartcn'
+
+dependencies {
+  
+	implementationTran project(':lucene:lucene-core')
+	implementationTran project(':lucene:analysis:analyzers-common')
+  
+
+	testImplementationTran project(':lucene:lucene-test-framework')
+}
