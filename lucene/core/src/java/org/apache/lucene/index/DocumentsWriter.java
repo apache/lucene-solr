@@ -287,8 +287,8 @@ final class DocumentsWriter implements Closeable, Accountable {
     };
     try {
       deleteQueue.clear();
-      perThreadPool.lockNewThreadStates();
       final int limit = perThreadPool.getMaxThreadStates();
+      perThreadPool.lockNewThreadStates();
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();
