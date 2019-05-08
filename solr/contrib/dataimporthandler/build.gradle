@@ -1,0 +1,40 @@
+apply plugin: 'java-library'
+
+task jarTest (type: Jar) {
+  from sourceSets.test.output
+  classifier = 'test'
+}
+
+configurations {
+  testOutput
+}
+
+artifacts {
+  testOutput jarTest
+}
+
+dependencies {
+  
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  implementationTran project(':lucene:join')
+  
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'com.google.guava:guava'
+  implementation 'commons-io:commons-io'
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.zookeeper:zookeeper'
+  implementation 'io.dropwizard.metrics:metrics-core'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+  
+  testImplementation 'org.hsqldb:hsqldb'
+  testImplementation 'org.apache.derby:derby'
+  testImplementation 'org.mockito:mockito-core'
+  testImplementation 'net.bytebuddy:byte-buddy'
+  testImplementation 'org.objenesis:objenesis'
+  
+}

@@ -1,0 +1,17 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:spatial')
+  implementationTran project(':lucene:spatial3d')
+  
+  implementation 'org.locationtech.spatial4j:spatial4j'
+  implementation 'io.sgr:s2-geometry-library-java'
+  
+  testImplementation 'org.locationtech.jts:jts-core'
+  testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(path: ':lucene:spatial3d', configuration: 'testOutput')
+}

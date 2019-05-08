@@ -1,0 +1,25 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':solr:solrj')
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:codecs')
+  implementationTran project(':lucene:analysis:analyzers-icu')
+  implementationTran project(':lucene:analysis:analyzers-smartcn')
+  implementationTran project(':lucene:analysis:analyzers-stempel')
+  implementationTran project(':lucene:analysis:analyzers-morfologik')
+  implementationTran project(':lucene:analysis:analyzers-opennlp')
+  
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'commons-io:commons-io'
+  implementation 'com.google.guava:guava'
+  implementation 'commons-codec:commons-codec'
+  
+  testImplementationTran project(path: ':lucene:analysis:analyzers-common', configuration: 'testOutput')
+  testImplementationTran project(path: ':solr:contrib:dataimporthandler', configuration: 'testOutput')
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+  
+}

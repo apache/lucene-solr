@@ -1,0 +1,17 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':solr:contrib:dataimporthandler')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  implementationTran project(':solr:contrib:extraction')
+  
+  implementation 'javax.activation:activation'
+  implementation 'com.sun.mail:javax.mail'
+  implementation 'com.sun.mail:gimap'
+  
+  testImplementationTran project(path: ':solr:contrib:dataimporthandler', configuration: 'testOutput')
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+}

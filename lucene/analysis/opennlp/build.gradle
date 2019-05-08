@@ -1,0 +1,9 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  implementation 'org.apache.opennlp:opennlp-tools'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}
