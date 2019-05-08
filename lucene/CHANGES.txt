@@ -19,6 +19,10 @@ Bug fixes
   cheapest merges that allow the index to go down to `maxSegmentCount` segments
   or less. (Armin Braun via Adrien Grand)
 
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+
 ======================= Lucene 7.7.1 =======================
 (No changes)
 
