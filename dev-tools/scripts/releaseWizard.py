@@ -108,7 +108,6 @@ class ReleaseState:
             print("WARNING: A release cannot happen from a feature branch (%s)" % self.branch)
             self.branch_type = 'feature'
 
-
     def set_release_version(self, version):
         self.release_version = version
         v = Version.parse(version)
@@ -120,16 +119,16 @@ class ReleaseState:
             self.release_type = ReleaseType.bugfix
 
     def new_rc(self):
-        rc_id = str(self.rc_number)
-        dict = OrderedDict()
-        for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
-            for t in g.get_todos():
-                if t.applies(self.release_type):
-                    dict[t.id] = copy.deepcopy(t.state)
-                    t.clear()
-        self.previous_rcs[rc_id] = dict
-        self.rc_number += 1
-        self.save()
+        if ask_yes_no("Are you sure? This will abort current RC"):
+            dict = OrderedDict()
+            for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
+                for t in g.get_todos():
+                    if t.applies(self.release_type):
+                        dict[t.id] = copy.deepcopy(t.state)
+                        t.clear()
+            self.previous_rcs["RC%d" % self.rc_number] = dict
+            self.rc_number += 1
+            self.save()
 
     def to_dict(self):
         tmp_todos = {}
@@ -139,6 +138,7 @@ class ReleaseState:
         return OrderedDict({
             'script_version': self.script_version,
             'release_version': self.release_version,
+            'start_date': self.start_date,
             'rc_number': self.rc_number,
             'script_branch': self.branch,
             'todos': tmp_todos,
@@ -148,6 +148,8 @@ class ReleaseState:
     def restore_from_dict(self, dict):
         self.script_version = dict['script_version']
         self.set_release_version(dict['release_version'])
+        if 'start_date' in dict:
+            self.start_date = dict['start_date']
         self.rc_number = dict['rc_number']
         self.branch = dict['script_branch']
         self.previous_rcs = copy.deepcopy(dict['previous_rcs'])
@@ -157,7 +159,6 @@ class ReleaseState:
                 t.state[k] = dict['todos'][todo_id][k]
 
     def load(self):
-        print("Loading")
         latest = None
 
         if not os.path.exists(self.config_path):
@@ -176,7 +177,7 @@ class ReleaseState:
                         self.restore_from_dict(dict)
                     except:
                         print("Failed to load state from %s" % os.path.join(self.config_path, latest, 'state.json'))
-        print("Loaded")
+        print("Loaded state from disk")
 
     def save(self):
         print("Saving")
@@ -214,7 +215,7 @@ class ReleaseState:
         if not os.path.exists(folder):
             print("Creating folder %s" % folder)
             os.makedirs(folder)
-        return os.path.join(folder, 'build')
+        return folder
 
     def get_minor_branch_name(self):
         v = Version.parse(self.release_version)
@@ -223,6 +224,13 @@ class ReleaseState:
     def get_stable_branch_name(self):
         v = Version.parse(self.release_version)
         return "branch_%sx" % v.major
+
+    def get_java_cmd(self):
+        v = Version.parse(self.release_version)
+        java_ver = java_versions[v.major]
+        java_home = os.environ.get("JAVA%s_HOME" % java_ver)
+        return os.path.join(java_home, "bin", "java")
+
 
 class TodoGroup:
     def __init__(self, id, title, description, checklist, pre_fun=None, in_rc_loop=False, depends=None):
@@ -281,7 +289,9 @@ class TodoGroup:
 
 
 class Todo:
-    def __init__(self, id, title, description='N/A', done=False, type=None, fun=None, fun_args=None, links=None):
+    def __init__(self, id, title, description=None, done=False, type=None, fun=None, fun_args=None, links=None, commands=None, user_input=None):
+        self.user_input = user_input
+        self.commands = commands
         self.links = links
         self.done_initial_value = done
         self.fun = fun
@@ -320,7 +330,8 @@ class Todo:
         return "%s%s" % (prefix, self.title)
 
     def display_and_confirm(self):
-        print("\n%s" % self.description)
+        if self.description:
+            print("%s" % self.description)
         if self.links:
             print("\nLinks:\n")
             for link in self.links:
@@ -328,6 +339,16 @@ class Todo:
             print()
         if self.fun and not self.is_done():
             self.fun(self)
+        if self.user_input and not self.is_done():
+            ui_list = self.user_input
+            if not isinstance(ui_list, list):
+                ui_list = [ui_list]
+            for ui in ui_list:
+                ui.run(self.state)
+        if self.commands and not self.is_done():
+            if not self.commands.logs_folder:
+                self.commands.logs_folder = os.path.join(state.get_release_folder(), self.id)
+            self.commands.run()
         completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
         self.set_done(completed)
         state.save()
@@ -341,18 +362,11 @@ class Todo:
         return clone
 
     def clear(self):
-        self.state = {}
+        self.state.clear()
         self.set_done(self.done_initial_value)
 
     def get_state(self):
         return self.state
-
-def get_gpg_key(todo):
-    key_id = str(input("Please enter your gpg key ID, e.g. 0D8D0B93: "))
-    todo.state['key_id'] = key_id
-
-def ant_precommit(todo):
-    print("Running ant precommit...")
 
 def get_release_version():
     v = str(input("Which version are you releasing? (x.y.z) "))
@@ -411,8 +425,9 @@ def start_new_rc():
 
 def reset_state():
     global state
-    shutil.rmtree(os.path.join(state.config_path, state.release_version))
-    state.clear()
+    if ask_yes_no("Are you sure? This will erase all current progress"):
+        shutil.rmtree(os.path.join(state.config_path, state.release_version))
+        state.clear()
 
 def main():
     global state
@@ -428,6 +443,8 @@ def main():
         validate_release_version(state.branch_type, state.branch, input_version)
         state.set_release_version(input_version)
         state.save()
+
+    os.environ['JAVACMD'] = state.get_java_cmd()
 
     main_menu = ConsoleMenu(title="Lucene/Solr ReleaseWizard (script-ver=v%s)" % getScriptVersion(),
                             subtitle=get_releasing_text,
@@ -455,8 +472,41 @@ def main():
 sys.path.append(os.path.dirname(__file__))
 root_folder = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), os.path.pardir, os.path.pardir))
 
-def run_tests(todo):
-    print("Running tests")
+
+def tail_file(file, lines):
+    print("Tailing last %d lines of file %s" % (lines, file))
+    bufsize = 8192
+    fsize = os.stat(file).st_size
+    iter = 0
+    with open(file) as f:
+        if bufsize >= fsize:
+            bufsize = fsize
+            while True:
+                iter +=1
+                seek_pos = fsize-bufsize*iter
+                if seek_pos < 0:
+                    seek_pos = 0
+                f.seek(seek_pos)
+                data = []
+                data.extend(f.readlines())
+                if len(data) >= lines or f.tell() == 0 or seek_pos == 0:
+                    print(''.join(data[-lines:]))
+                    break
+
+
+def run_with_log_tail(command, cwd, logfile=None, tail_lines=10):
+    fh = sys.stdout
+    if logfile:
+        logdir = os.path.dirname(logfile)
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+        fh = open(logfile, 'w')
+    rc = run_follow(command, cwd, fh=fh)
+    if logfile:
+        fh.close()
+        if tail_lines and tail_lines > 0:
+            tail_file(logfile, tail_lines)
+    return rc
 
 
 def ask_yes_no(text):
@@ -476,14 +526,22 @@ def clear_ivy_cache(todo):
     else:
         print("Not clearing")
 
-def run_follow(command):
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+def run_follow(command, cwd=None, fh=sys.stdout):
+    process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, bufsize=512)
     while True:
         output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
+        if output == b'' and process.poll() is not None:
             break
         if output:
-            print(output.strip().decode('utf-8'))
+            fh.write(output.strip().decode('utf-8') + "\n")
+            fh.flush()
+    while True:
+        output = process.stderr.readline()
+        if output == b'' and process.poll() is not None:
+            break
+        if output:
+            fh.write(output.strip().decode('utf-8') + "\n")
+            fh.flush()
     rc = process.poll()
     return rc
 
@@ -500,40 +558,10 @@ def build_rc(todo):
     print("You most likely want to copy/paste the command into another Terminal and run it interactively")
     print("Or you can let me run it for you (NOTE: this will take looong time)")
     if ask_yes_no("Do you want me to run this command now?"):
-        print("To follow the build/test log, run this command in another Terminal:\n\n%  tail -f %s\n" % logfile)
-        run_follow(cmdline.split(" "))
-
-def create_stable_branch(todo):
-    assert state.branch == 'master'
-    cmds = []
-    cmds.append("cd %s" % root_folder)
-    cmds.append("git checkout master")
-    cmds.append("git checkout -b %s" % state.get_stable_branch_name())
-    cmds.append("git push origin %s" % state.get_stable_branch_name())
-
-    print("You can run these commands to create and push the branch:\n\n")
-    for cmd in cmds:
-        print("  %s" % cmd)
-
-    if ask_yes_no("Do you want me to run these commands now?"):
-        for cmd in cmds:
-            run(cmd)
-
-def create_minor_branch(todo):
-    cmds = []
-    cmds.append("cd %s" % root_folder)
-    cmds.append("git checkout %s" % state.branch)
-    cmds.append("git checkout -b %s" % state.get_minor_branch_name())
-    cmds.append("git push origin %s" % state.get_minor_branch_name())
-
-    print("You can run these commands to create and push the branch:\n\n")
-    for cmd in cmds:
-        print("  %s" % cmd)
-
-    if ask_yes_no("Do you want me to run these commands now?"):
-        for cmd in cmds:
-            run(cmd)
-
+        print("To follow the build/test log, run this command in another Terminal:\n\n  tail -f %s\n" % logfile)
+        rc = run_follow(cmdline)
+        if not rc == 0:
+            print("WARN: Task seems to have failed")
 
 def add_version_bugfix(todo):
     cmds = []
@@ -573,6 +601,147 @@ def inform_devs_release_branch(todo):
     print("The e-mail must be sent to dev@lucene.apache.org\n\n")
     print(mail_body)
 
+class Commands:
+    def __init__(self, root_folder, commands_text, commands, logs_folder=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25, stdout=False):
+        self.stdout = stdout
+        self.tail_lines = tail_lines
+        self.ask_each = ask_each
+        self.ask_run = ask_run
+        self.logs_folder = logs_folder
+        self.commands = commands
+        self.run_text = run_text
+        self.commands_text = commands_text
+        self.commands_text = commands_text
+        self.root_folder = root_folder
+
+    def run(self):
+        print(self.commands_text)
+        print("\n  cd %s" % root_folder)
+        for cmd in self.commands:
+            pre = post = ''
+            if cmd.cwd:
+                pre = "pushd %s && " % cmd.cwd
+                post = " && popd"
+            print("  %s%s%s" % (pre, cmd, post))
+
+        if self.ask_run:
+            if self.run_text:
+                print("\n%s\n" % self.run_text)
+            print("\nI can execute these commands for you if you choose.")
+            if self.ask_each:
+                print("You will get prompted before running each individual command.")
+            success = True
+            if ask_yes_no("Do you want me to run these commands now?"):
+                index = 1
+                for cmd in self.commands:
+                    cwd = root_folder
+                    if cmd.cwd:
+                        cwd = os.path.join(root_folder, cmd.cwd)
+                    folder_prefix = ''
+                    if cmd.cwd:
+                        folder_prefix = cmd.cwd + "_"
+                    if not self.ask_each or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
+                        if not self.ask_each:
+                            print("\n------------\nRunning '%s' in folder '%s'" % (cmd, cwd))
+                        logfile = None
+                        if not cmd.stdout and not self.stdout:
+                            if not self.logs_folder:
+                                self.logs_folder = os.path.join(state.get_release_folder, "logs")
+                            logfile = os.path.join(state.get_release_folder(), self.logs_folder, "%02d_" % index + folder_prefix + re.sub(r"\W", "_", cmd.cmd)) + ".log"
+                            print("Wait until command completes... Full log in %s" % logfile)
+                        if not run_with_log_tail(cmd.cmd, cwd, logfile=logfile, tail_lines=self.tail_lines) == 0:
+                            print("WARN: Command %s returned with error" % cmd.cmd)
+                            success = False
+            if not success:
+                print("WARNING: One or more commands failed, you may want to check the logs in %s" % self.logs_folder)
+            return success
+
+class Command:
+    def __init__(self, cmd, cwd=None, stdout=False):
+        self.stdout = stdout
+        self.cwd = cwd
+        self.cmd = cmd
+
+    def __str__(self):
+        return self.cmd
+
+
+class UserInput():
+    def __init__(self, name, prompt):
+        self.prompt = prompt
+        self.name = name
+
+    def run(self, dict=None):
+        result = str(input("%s : " % self.prompt))
+        if dict:
+            dict[self.name] = result
+        return result
+
+def create_stable_branch(todo):
+    Commands(root_folder,
+             "Run these commands to create a stable branch",
+             [
+                 Command("echo git checkout %s" % state.branch),
+                 Command("echo git checkout -b %s" % state.get_stable_branch_name()),
+                 Command("echo git push origin %s" % state.get_stable_branch_name())
+             ],
+             ask_each=False,
+             logs_folder=todo.id).run()
+
+
+def create_minor_branch(todo):
+    Commands(root_folder,
+             "Run these commands to create a release branch",
+             [
+                 Command("echo git checkout %s" % state.branch),
+                 Command("echo git checkout -b %s" % state.get_minor_branch_name()),
+                 Command("echo git push origin %s" % state.get_minor_branch_name())
+             ],
+             ask_each=False,
+             logs_folder=todo.id).run()
+
+
+def vote_template(todo):
+    print("Vote template")
+
+
+def end_vote(todo):
+    p = UserInput("plusone", "Number of binding +1 votes")
+    z = UserInput("zero", "Number of binding 0 votes")
+    m = UserInput("minusone", "Number of binding -1 votes")
+    plus = p.run(todo.state)
+    zero = z.run(todo.state)
+    minus = m.run(todo.state)
+    todo.state['totalvotes'] = plus + zero + minus
+
+    if plus >= 3 and plus > minus:
+        print("The vote has succeeded")
+
+        print("""
+Mail template:
+Subject: [RESULT][VOTE] Release Lucene/Solr %s RC%s
+
+It's been >72h since the vote was initiated and the result is:
+
++1  %s
+ 0  %s
+-1  %s
+
+This vote has passed.
+""" % (state.release_version, state.rc_number, plus, zero, minus))
+    else:
+        print("""
+Mail template:
+Subject: [RESULT][VOTE] Release Lucene/Solr %s RC%s
+
+It's been >72h since the vote was initiated and the result is:
+
++1  %s
+ 0  %s
+-1  %s
+
+The vote has NOT passed.
+""" % (state.release_version, state.rc_number, plus, zero, minus))
 
 todo_templates = [
     TodoGroup('prerequisites',
@@ -585,16 +754,21 @@ todo_templates = [
                        done=True),
                   Todo('gpg',
                        'GPG key id is configured',
-                       description="To sign the release you need to provide your GPG key ID. This must be the same key ID " +
-                       "that you have registered in your Apache account. The ID is the key fingerprint, either full 40 bytes " +
-                       "or last 8 bytes, e.g. the key of janhoy is 0D8D0B93." +
-                       "\n- Make sure it is your 4096 bits key or larger" +
-                       "\n- Upload your key to the MIT key server, pgp.mit.edu" +
-                       "\n- Put you GPG key's fingerprint in the OpenPGP Public Key Primary Fingerprint field in your profile" +
-                       """\n- The tests will complain if your GPG key has not been signed by another Lucene committer - this makes you a part of the GPG "web of trust" (WoT). Ask a committer that you know personally to sign your key for you, providing them with the fingerprint for the key."""
-                       ,
+                       description=
+"""To sign the release you need to provide your GPG key ID. This must be the same key ID
+that you have registered in your Apache account. The ID is the key fingerprint, either full 40 bytes
+or last 8 bytes, e.g. 0D8D0B93.
+
+* Make sure it is your 4096 bits key or larger
+* Upload your key to the MIT key server, pgp.mit.edu
+* Put you GPG key's fingerprint in the OpenPGP Public Key Primary Fingerprint field in your profile
+* The tests will complain if your GPG key has not been signed by another Lucene committer
+  this makes you a part of the GPG "web of trust" (WoT). Ask a committer that you know personally 
+  to sign your key for you, providing them with the fingerprint for the key.""",
                        links=['http://www.apache.org/dev/release-signing.html', 'https://id.apache.org'],
-                       fun=get_gpg_key)
+                       user_input=[
+                           UserInput("gpg_key", "Please enter your gpg key ID, e.g. 0D8D0B93")
+                       ])
               ]),
     TodoGroup('preparation',
               'Work with the community to decide when and how etc',
@@ -602,12 +776,14 @@ todo_templates = [
               [
                   Todo('decide_jira_issues',
                        'Select JIRA issues to be included',
-                       'Set the appropriate "Fix Version" in JIRA for these issues'),
+                       description='Set the appropriate "Fix Version" in JIRA for these issues'),
                   Todo('decide_branch_date',
                        'Decide the date for branching',
+                       user_input=UserInput("date", "Enter date (YYYY-MM-DD)"),
                        type=major_minor),
                   Todo('decide_freeze_length',
                        'Decide the lenght of feature freeze',
+                       user_input=UserInput("date", "Enter end date of feature freeze (YYYY-MM-DD)"),
                        type=major_minor)
               ]),
     TodoGroup('branching_versions',
@@ -616,9 +792,14 @@ todo_templates = [
               [
                   Todo('ant_precommit',
                        'Run ant precommit to run a bunch of sanity & quality checks',
-                       'Fix any problems that are found.',
-                       fun=ant_precommit),
-                  Todo('create_major_release_branch',
+                       description='Fix any problems that are found.',
+                       commands=Commands(root_folder,
+                         "Run commands",
+                         [
+                             Command("ant clean")
+                         ])
+                       ),
+                  Todo('create_stable_branch',
                        'Create a new stable branch, i.e. branch_<major>x',
                        fun=create_stable_branch,
                        type=ReleaseType.major),
@@ -644,7 +825,6 @@ todo_templates = [
                   Todo('jenkins_builds',
                        'Add Jenkins task for the release branch',
                        description='...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.',
-                       fun=add_version_bugfix,
                        links=['https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds'],
                        type=major_minor),
                   Todo('inform_devs_release_branch',
@@ -653,12 +833,16 @@ todo_templates = [
                        fun=inform_devs_release_branch,
                        links=['https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds'],
                        type=major_minor),
-                  Todo('release_notes',
+                  Todo('draft_release_notes',
                        'Get a draft of the release notes in place',
-                       description="These are typically edited on the Wiki.\n"
-                       "Clone a page for a previous version as a starting point for your release notes. You will need two pages, one for Lucene and another for Solr, see links.\n"
-                       "Edit the contents of CHANGES.txt into a more concise format for public consumption.\n"
-                       "Ask on dev@ for input. Ideally the timing of this request mostly coincides with the release branch creation. It's a good idea to remind the devs of this later in the release too.",
+                       description=
+"""These are typically edited on the Wiki.
+                       
+Clone a page for a previous version as a starting point for your release notes. 
+You will need two pages, one for Lucene and another for Solr, see links.
+Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
+Ask on dev@ for input. Ideally the timing of this request mostly coincides with the 
+release branch creation. It's a good idea to remind the devs of this later in the release too.""",
                        links=['https://wiki.apache.org/lucene-java/ReleaseNote77', 'https://wiki.apache.org/solr/ReleaseNote77'],
                        )
               ]),
@@ -668,32 +852,50 @@ todo_templates = [
               [
                   Todo('new_jira_version_lucene',
                        'Add a new version in Lucene JIRA for the next release',
-                       description="""Go to the JIRA "Manage Versions" Administration pages and add a new (unreleased) version for the next release on the unstable branch (for a major release) or the stable branch (for a minor release).""",
+                       description=
+"""Go to the JIRA "Manage Versions" Administration pages
+and add a new (unreleased) version for the next release on the unstable branch (for a major release)
+or the stable branch (for a minor release).""",
                        links=['https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions'],
                        type=major_minor),
                   Todo('new_jira_version_solr',
                        'Add a new version in Solr JIRA for the next release',
-                       description="""Go to the JIRA "Manage Versions" Administration pages and add a new (unreleased) version for the next release on the unstable branch (for a major release) or the stable branch (for a minor release).""",
+                       description=
+"""Go to the JIRA "Manage Versions" Administration pages
+and add a new (unreleased) version for the next release on the unstable branch (for a major release)
+or the stable branch (for a minor release).""",
                        links=['https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions'],
                        type=major_minor)
               ]),
-    TodoGroup('tests',
-              'Make sure tests pass',
+    TodoGroup('test',
+              "Build artifacts and run the vote",
               'description',
               [
                   Todo('run_tests',
                        'Confirm that the tests pass within your release branch',
-                       fun=run_tests)
+                       commands=Commands(
+                             root_folder,
+                             "Copy/paste these commands in another terminal to execute all tests",
+                               [
+                                   Command('ant javadocs', 'lucene'),
+                                   Command('ant javadocs', 'solr'),
+                                   Command('ant clean test')
+                               ]),
+                       )
               ],
               in_rc_loop=True),
     TodoGroup('artifacts',
               'Build the release artifacts',
-              """If after the last day of the feature freeze phase no blocking issues are in JIRA with "Fix Version" X.Y then it's time to build the release artifacts """
-              """run the smoke tester and stage the RC in svn""",
+"""If after the last day of the feature freeze phase no blocking issues are in JIRA with "Fix Version" X.Y 
+then it's time to build the release artifacts
+run the smoke tester and stage the RC in svn""",
               [
                   Todo('clear_ivy_cache',
                        'Clear the ivy cache',
-                       description='It is recommended to clean your Ivy cache before building the artifacts. This ensures that all Ivy dependencies are freshly downloaded, so we emulate a user that never used the Lucene build system before.',
+                       description=
+"""It is recommended to clean your Ivy cache before building the artifacts.
+This ensures that all Ivy dependencies are freshly downloaded, 
+so we emulate a user that never used the Lucene build system before.""",
                        fun=clear_ivy_cache),
                   Todo('build_rc',
                        'Build the release candidate',
@@ -702,11 +904,20 @@ todo_templates = [
               ],
               depends='tests',
               in_rc_loop=True),
-    TodoGroup('vote',
-              'Hold the vote',
+    TodoGroup('voting',
+              'Hold the vote and sum up the results',
               'description',
               [
-                  Todo('id', 'title')
+                  Todo('initiate_vote',
+                       'Initiate the vote',
+                       description="Initiate the vote on the mailing list",
+                       fun=vote_template,
+                       links=["https://www.apache.org/foundation/voting.html"]),
+                  Todo('end_vote',
+                       'End vote',
+                       description="At the end of the voting deadline, sum up the counts",
+                       fun=end_vote,
+                       links=["https://www.apache.org/foundation/voting.html"])
               ],
               in_rc_loop=True),
     TodoGroup('publish',

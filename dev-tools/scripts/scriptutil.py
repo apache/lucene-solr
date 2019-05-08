@@ -72,9 +72,9 @@ class Version(object):
       raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
     return other.major + 1 >= self.major
 
-def run(cmd):
+def run(cmd, cwd=None):
   try:
-    output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+    output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
   except subprocess.CalledProcessError as e:
     print(e.output.decode('utf-8'))
     raise e

@@ -21,7 +21,6 @@ import shutil
 import os
 import sys
 import subprocess
-import scriptutil
 from scriptutil import getGitRev, check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
@@ -239,6 +238,8 @@ def parse_config():
                       help='Release Candidate number.  Default: 1')
   parser.add_argument('--root', metavar='PATH', default='.',
                       help='Root of Git working tree for lucene-solr.  Default: "." (the current directory)')
+  parser.add_argument('--logfile', metavar='PATH',
+                      help='Specify log file path (default /tmp/release.log)')
   config = parser.parse_args()
 
   if not config.prepare and config.sign:
@@ -257,6 +258,9 @@ def parse_config():
   if os.system('git rev-parse') or 3 != len([d for d in ('dev-tools','lucene','solr') if os.path.isdir(d)]):
     parser.error('Root path "%s" is not a valid lucene-solr checkout' % config.root)
   os.chdir(cwd)
+  global LOG
+  if config.logfile:
+    LOG = config.logfile
 
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
