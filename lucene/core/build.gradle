@@ -1,0 +1,73 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'lucene-core'
+
+
+dependencies {
+  testImplementationTran project(':lucene:codecs')
+  testImplementationTran project(':lucene:lucene-test-framework')
+}
+
+task createLevAutomaton {
+  
+  doLast {
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      commandLine "${python_exe} -B createLevAutomata.py 1 True"
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      commandLine "${python_exe} -B createLevAutomata.py 1 False"
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      commandLine "${python_exe} -B createLevAutomata.py 2 True"
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      commandLine "${python_exe} -B createLevAutomata.py 2 False"
+    }
+  }
+  
+  // fix fixcrlf?
+  // filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
+  // srcdir="src/java/org/apache/lucene/util/automaton" includes="*ParametricDescription.java" encoding="UTF-8"/>
+  
+}
+
+task createPackedIntSources {
+  
+  doLast {
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/packed'
+      commandLine "${python_exe} -B gen_BulkOperation.py"
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/packed'
+      commandLine "${python_exe} -B gen_Direct.py"
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/packed'
+      commandLine "${python_exe} -B gen_Packed64SingleBlock.py"
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/packed'
+      commandLine "${python_exe} -B gen_PackedThreeBlocks.py"
+    }
+  }
+  
+  // fix fixcrlf?
+  // filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
+  // <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py" encoding="UTF-8"/>
+}
+
+task regenerate {
+  doFirst {
+    println "regenerate core"
+  }
+}
+
+regenerate.dependsOn createLevAutomaton
+regenerate.dependsOn createPackedIntSources
+
+

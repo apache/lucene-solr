@@ -1,0 +1,32 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  
+  implementation 'io.prometheus:simpleclient'
+  implementation 'io.prometheus:simpleclient_common'
+  implementation 'io.prometheus:simpleclient_httpserver'
+  implementation 'com.fasterxml.jackson.core:jackson-core'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation 'net.thisptr:jackson-jq'
+  implementation 'net.sourceforge.argparse4j:argparse4j'
+  implementation 'org.slf4j:slf4j-api'
+  implementation'com.google.guava:guava'
+  implementation 'org.apache.zookeeper:zookeeper'
+  implementation 'org.noggit:noggit'
+  implementation 'commons-codec:commons-codec'
+  implementation 'commons-io:commons-io'
+  implementation 'org.apache.httpcomponents:httpclient'
+  
+  testImplementation 'org.apache.httpcomponents:httpcore'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
+  
+  
+  testImplementationTran project(':solr:solr-test-framework')
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

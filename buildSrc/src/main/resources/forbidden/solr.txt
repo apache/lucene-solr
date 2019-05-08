@@ -1,0 +1,57 @@
+#  Licensed to the Apache Software Foundation (ASF) under one or more
+#  contributor license agreements.  See the NOTICE file distributed with
+#  this work for additional information regarding copyright ownership.
+#  The ASF licenses this file to You under the Apache License, Version 2.0
+#  (the "License"); you may not use this file except in compliance with
+#  the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareFixedThreadPool instead
+java.util.concurrent.Executors#newFixedThreadPool(int,java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareSingleThreadExecutor instead
+java.util.concurrent.Executors#newSingleThreadExecutor(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareCachedThreadPool instead
+java.util.concurrent.Executors#newCachedThreadPool(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Use ExecutorUtil.MDCAwareThreadPoolExecutor instead of ThreadPoolExecutor
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory,java.util.concurrent.RejectedExecutionHandler)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.RejectedExecutionHandler)
+
+@defaultMessage Use slf4j classes instead
+org.apache.log4j.**
+org.apache.logging.log4j.**
+java.util.logging.**
+
+@defaultMessage Use RTimer/TimeOut/System.nanoTime for time comparisons, and `new Date()` output/debugging/stats of timestamps. If for some miscellaneous reason, you absolutely need to use this, use a SuppressForbidden.
+java.lang.System#currentTimeMillis()
+
+@defaultMessage Use corresponding Java 8 functional/streaming interfaces
+com.google.common.base.Function
+com.google.common.base.Joiner
+com.google.common.base.Predicate
+com.google.common.base.Supplier
+
+@defaultMessage Use java.nio.charset.StandardCharsets instead
+com.google.common.base.Charsets
+org.apache.commons.codec.Charsets
+
+@defaultMessage Use methods in java.util.Objects instead
+com.google.common.base.Objects#equal(java.lang.Object,java.lang.Object)
+com.google.common.base.Objects#hashCode(java.lang.Object[])
+com.google.common.base.Preconditions#checkNotNull(java.lang.Object)
+com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Object)
+
+@defaultMessage Use methods in java.util.Comparator instead
+com.google.common.collect.Ordering
+

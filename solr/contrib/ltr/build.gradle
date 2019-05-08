@@ -1,0 +1,20 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  
+  implementation 'org.slf4j:slf4j-api'
+  
+  testRuntimeOnly "org.slf4j:jcl-over-slf4j"
+  
+  testImplementation 'org.mockito:mockito-core'
+  testImplementation 'net.bytebuddy:byte-buddy'
+  testImplementation 'org.objenesis:objenesis'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+}

@@ -1,0 +1,8 @@
+import org.apache.lucene.gradle.LicenseCheckTask
+
+subprojects {
+  group = 'org.apache.lucene'
+}
+
+tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()
+    + System.properties['file.separator'] + "licenses"))
