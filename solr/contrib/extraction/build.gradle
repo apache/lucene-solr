@@ -1,0 +1,56 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  
+  implementation 'org.apache.tika:tika-core'
+  implementation 'org.apache.tika:tika-parsers'
+  implementation 'org.apache.tika:tika-xmp'
+  implementation 'org.apache.tika:tika-java7'
+  implementation 'com.healthmarketscience.jackcess:jackcess'
+  implementation 'com.healthmarketscience.jackcess:jackcess-encrypt'
+  implementation 'org.gagravarr:vorbis-java-tika'
+  implementation 'org.gagravarr:vorbis-java-core'
+  implementation 'org.apache.james:apache-mime4j-core'
+  implementation 'org.apache.james:apache-mime4j-dom'
+  implementation 'org.apache.commons:commons-compress'
+  implementation 'org.apache.pdfbox:pdfbox'
+  implementation 'org.apache.pdfbox:pdfbox-tools'
+  implementation 'org.apache.pdfbox:fontbox'
+  implementation 'org.apache.pdfbox:jempbox'
+  implementation 'org.bouncycastle:bcmail-jdk15on'
+  implementation 'org.bouncycastle:bcpkix-jdk15on'
+  implementation 'org.bouncycastle:bcprov-jdk15on'
+  implementation 'org.apache.poi:poi'
+  implementation 'org.apache.poi:poi-scratchpad'
+  implementation 'org.apache.poi:poi-ooxml'
+  implementation 'org.apache.poi:poi-ooxml-schemas'
+  implementation 'org.apache.xmlbeans:xmlbeans'
+  implementation 'org.apache.commons:commons-collections4'
+  implementation 'com.github.virtuald:curvesapi'
+  implementation 'org.ccil.cowan.tagsoup:tagsoup'
+  implementation 'com.googlecode.mp4parser:isoparser'
+  implementation 'org.aspectj:aspectjrt'
+  implementation 'com.drewnoakes:metadata-extractor'
+  implementation 'de.l3s.boilerpipe:boilerpipe'
+  implementation 'com.rometools:rome'
+  implementation 'com.rometools:rome-utils'
+  implementation 'org.jdom:jdom2'
+  implementation 'com.googlecode.juniversalchardet:juniversalchardet'
+  implementation 'org.tukaani:xz'
+  implementation 'com.adobe.xmp:xmpcore'
+  implementation 'com.pff:java-libpst'
+  implementation 'org.tallison:jmatio'
+  implementation 'com.epam:parso'
+  implementation 'org.brotli:dec'
+  implementation 'com.ibm.icu:icu4j'
+  implementation 'xerces:xercesImpl'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+  
+}

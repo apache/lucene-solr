@@ -1,0 +1,26 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'analyzers-kuromoji'
+
+// TODO we need download-dict, patch-dict, etc
+
+// def urlFile = { url, name ->
+//     File file = new File("$buildDir/download/${name}.jar")
+//     file.parentFile.mkdirs()
+//     if (!file.exists()) {
+//         new URL(url).withInputStream { downloadStream ->
+//             file.withOutputStream { fileOut ->
+//                 fileOut << downloadStream
+//             }
+//         }
+//     }
+//     files(file.absolutePath)
+// }
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

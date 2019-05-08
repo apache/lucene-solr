@@ -1,0 +1,9 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:queries')
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

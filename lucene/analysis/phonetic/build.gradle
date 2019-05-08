@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'analyzers-phonetic'
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  
+  implementation 'commons-codec:commons-codec'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+dependencies {
+	implementationTran project(':lucene:lucene-core')
+	implementationTran project(':lucene:codecs')
+	
+	runtimeOnly 'org.antlr:antlr4-runtime'
+	runtimeOnly 'org.ow2.asm:asm'
+	runtimeOnly 'org.ow2.asm:asm-commons'
+	
+	testImplementationTran project(':lucene:lucene-test-framework')
+	testImplementationTran project(':lucene:expressions')
+}    

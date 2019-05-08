@@ -1,0 +1,21 @@
+apply plugin: 'java-library'
+
+task jarTest (type: Jar) {
+  from sourceSets.test.output
+  classifier = 'test'
+}
+
+configurations {
+  testOutput
+}
+
+artifacts {
+  testOutput jarTest
+}
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}

@@ -1,0 +1,69 @@
+apply plugin: 'java'
+
+dependencies {
+	
+	implementation 'org.slf4j:slf4j-api'
+	implementation 'io.dropwizard.metrics:metrics-core'
+	implementation 'commons-io:commons-io'
+	
+	compile library.tika_core
+	compile library.tika_parsers
+	compile library.tika_xmp
+	compile library.tika_java7
+	// Tika dependencies - see http://tika.apache.org/1.3/gettingstarted.html#Using_Tika_as_a_Maven_dependency
+
+	//When upgrading Tika, upgrade dependencies versions and add any new ones
+	//   (except slf4j-api, commons-codec, commons-logging, commons-httpclient, geronimo-stax-api_1.0_spec, jcip-annotations, xml-apis, asm)
+	//   WARNING: Don't add netcdf / unidataCommon (partially LGPL code)
+	compile library.jackcess
+	compile library.jackcess_encrypt
+	compile library.vorbis_java_tika
+	compile library.vorbis_java_core
+	compile library.apache_mime4j_core
+	compile library.apache_mime4j_dom
+	compile library.commons_compress
+	compile library.pdfbox
+	compile library.pdfbox_tools
+	compile library.fontbox
+	compile library.jempbox
+	compile library.bcmail_jdk15on
+	compile library.bcpkix_jdk15on
+	compile library.bcprov_jdk15on
+	compile library.poi
+	compile library.poi_scratchpad
+	compile library.poi_ooxml
+	compile library.poi_ooxml_schemas
+	compile library.xmlbeans
+	compile library.commons_collections4
+	compile library.curvesapi
+	compile library.tagsoup
+	compile library.isoparser
+	compile library.aspectjrt
+	compile library.metadata_extractor
+	compile library.boilerpipe
+	compile library.rome
+	compile library.rome_utils
+	compile library.jdom2
+	compile library.juniversalchardet
+	compile library.xz
+	compile library.xmpcore
+	compile library.java_libpst
+	compile library.jmatio
+	compile library.parso
+	compile library.dec
+
+	// Other ExtractingRequestHandler dependencies
+	compile library.icu4j
+	compile library.xercesImpl
+	
+	// if we try to make this compileOnly or testImplementation forbidden apis fails?
+	implementation 'javax.servlet:javax.servlet-api'
+
+	compile project(':lucene:core')
+	compile project(':solr:core')
+	compile project(':solr:solrj')
+	compile project(':lucene:analysis:common')
+
+	testProject project(':lucene:test-framework')
+	testProject project(':solr:test-framework')
+}
