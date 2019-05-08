@@ -73,7 +73,9 @@ Jetty 9.4.14.v20181114
 New Features
 ----------------------
 
-* SOLR-13320 : add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+* SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
 
 
 ==================  8.1.0 ==================
@@ -252,7 +254,7 @@ Bug Fixes
 * SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
   Jason Gerlowski, Kesharee Nandan Vishwakarma)
 
-* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
   when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
 
 * SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,

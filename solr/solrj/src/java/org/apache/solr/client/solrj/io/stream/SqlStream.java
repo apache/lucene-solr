@@ -200,6 +200,9 @@ public class SqlStream extends TupleStream implements Expressible {
       this.tupleStream = new SolrStream(url, mParams);
       if(streamContext != null) {
         tupleStream.setStreamContext(streamContext);
+        if(streamContext.isLocal()) {
+          mParams.add("distrib", "false");
+        }
       }
     } catch (Exception e) {
       throw new IOException(e);

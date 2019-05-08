@@ -114,6 +114,15 @@ unless the jvm has been started with `-DStreamingExpressionMacros=true` (usually
 
 Because streaming expressions relies on the `/export` handler, many of the field and field type requirements to use `/export` are also requirements for `/stream`, particularly for `sort` and `fl` parameters. Please see the section <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>> for details.
 
+=== Local Execution
+
+In certain special cases such as joining documents on a value that is 1:1 with the portion of the id used in
+composite routing, the relevant data is always co-located on the same node. When this happens, fanning out requests
+among many nodes and waiting for a response from all nodes is inefficient. In cases where data co-location holds true
+for the entire expression, it may be faster for the client to send the expression to each slice with
+`&streamLocalOnly=true` and handle merging of the results (if required) locally. This is an advanced option, relying
+on a convenient organization of the index, and should only be considered if normal usage poses a performance issue.
+
 == Types of Streaming Expressions
 
 === About Stream Sources
