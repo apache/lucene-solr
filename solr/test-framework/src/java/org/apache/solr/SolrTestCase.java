@@ -25,6 +25,8 @@ import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
 /**
  * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
  * SOLR-12055 and associated. To enable async logging, we must gracefully shut down logging. Many Solr tests subclass
@@ -36,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Other changes that should affect every Solr test case may go here if they don't require the added capabilities in
  * SolrTestCaseJ4.
  */
-
+@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class })
 public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

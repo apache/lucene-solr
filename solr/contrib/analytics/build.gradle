@@ -1,0 +1,80 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:lucene-core')
+  
+  implementation 'com.fasterxml.jackson.core:jackson-core'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation'com.google.guava:guava'
+  implementation 'org.noggit:noggit'
+  implementation 'commons-codec:commons-codec'
+  implementation 'org.apache.commons:commons-lang3'
+  implementation 'io.dropwizard.metrics:metrics-core'
+  
+  implementation 'org.slf4j:slf4j-api'
+  
+  // if we try to make this compileOnly or testImplementation forbidden apis fails?
+  implementation 'javax.servlet:javax.servlet-api'
+  
+  testRuntimeOnly 'org.noggit:noggit'
+  
+  testRuntimeOnly 'javax.servlet:javax.servlet-api'
+  testRuntimeOnly 'commons-fileupload:commons-fileupload'
+  testRuntimeOnly 'org.apache.httpcomponents:httpclient'
+  testRuntimeOnly 'org.apache.httpcomponents:httpcore'
+  testRuntimeOnly 'org.apache.zookeeper:zookeeper'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-server'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-util'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-client'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-http'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-io'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-alpn-client'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-security'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-servlet'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-client'
+  testRuntimeOnly 'org.apache.commons:commons-lang3'
+  testRuntimeOnly 'org.rrd4j:rrd4j'
+  
+  testRuntimeOnly 'io.dropwizard.metrics:metrics-jvm'
+  testRuntimeOnly 'io.dropwizard.metrics:metrics-jmx'
+  
+  testRuntimeOnly 'org.eclipse.jetty:jetty-alpn-server'
+  testRuntimeOnly 'org.eclipse.jetty.http2:http2-server'
+  testRuntimeOnly 'org.eclipse.jetty.http2:http2-client'
+  testRuntimeOnly 'org.eclipse.jetty.http2:http2-http-client-transport'
+  testRuntimeOnly 'org.eclipse.jetty.http2:http2-common'
+  testRuntimeOnly 'org.eclipse.jetty.http2:http2-hpack'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-http'
+  testRuntimeOnly 'org.eclipse.jetty:jetty-client'
+  
+  testRuntimeOnly 'io.dropwizard.metrics:metrics-core'
+  testRuntimeOnly 'io.dropwizard.metrics:metrics-jvm'
+  testRuntimeOnly 'io.dropwizard.metrics:metrics-jmx'
+  
+  testRuntimeOnly 'org.apache.httpcomponents:httpmime'
+  
+  testRuntimeOnly 'org.restlet.jee:org.restlet'
+  testRuntimeOnly 'org.restlet.jee:org.restlet.ext.servlet'
+  
+  testRuntimeOnly 'commons-collections:commons-collections'
+  
+  testRuntimeOnly 'commons-io:commons-io'
+  testRuntimeOnly project(':lucene:analysis:analyzers-common')
+  testRuntimeOnly project(':lucene:codecs')
+  testRuntimeOnly project(':lucene:join')
+  testRuntimeOnly project(':lucene:highlighter')
+  testRuntimeOnly project(':lucene:suggest')
+  testRuntimeOnly project(':lucene:grouping')
+  testRuntimeOnly project(':lucene:sandbox')
+  testRuntimeOnly project(':lucene:queries')
+  testRuntimeOnly project(':lucene:misc')
+  
+  testRuntimeOnly "org.slf4j:jcl-over-slf4j"
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+}

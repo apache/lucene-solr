@@ -1,0 +1,254 @@
+import org.apache.lucene.gradle.CheckWorkingCopy
+import org.apache.lucene.gradle.BuildPlugin
+
+// TODO: look into circuler dependency issues - for IDE's we turn off protection,
+// but I've seen it creep up with gw clean build on solr/core recently
+
+plugins {
+  id "com.palantir.consistent-versions" version "1.4.0"
+  id 'eclipse'
+}
+
+
+allprojects {
+  
+  repositories {
+    mavenCentral()
+    maven {
+      url "https://oss.sonatype.org/content/repositories/releases"
+    }
+    maven {
+      url "http://maven.restlet.org"
+    }
+    maven {
+      url "http://repository.cloudera.com/content/repositories/releases"
+    }
+    // chinese mirror
+    maven {
+      url "http://uk.maven.org/maven2"
+    }
+    jcenter()
+  }
+  
+  buildDir = new File("build")
+  
+  apply plugin: 'idea'
+  apply plugin: 'eclipse'
+
+}
+
+task('regenerate') {
+  doLast {
+    println "regenerate"
+  }
+}
+
+configure(subprojects - project(":buildSrc")) {  pj ->
+  
+  plugins.withType(JavaPlugin) {
+    
+    test {
+      
+      systemProperty 'java.security.egd', 'file:/dev/./urandom'
+      
+      filter {
+        includeTestsMatching "*.Test*"
+        includeTestsMatching "*.*Test"
+      }
+      
+      maxHeapSize = "512m"
+      // Enable assertions
+      jvmArgs += "-ea"
+      // Enable assertions in system classes
+      jvmArgs += "-esa"
+      
+      systemProperty 'tests.multiplier', '1'
+      systemProperty 'tests.codec', 'random'
+      systemProperty 'tests.postingsformat', 'random'
+      systemProperty 'tests.docvaluesformat', 'random'
+      systemProperty 'tests.locale', 'random'
+      systemProperty 'tests.timezone', 'random'
+      systemProperty 'tests.directory', 'random'
+      systemProperty 'tests.linedocsfile', 'europarl.lines.txt.gz'
+      systemProperty 'tests.loggingfile', './lucene/tools/junit4/logging.properties'
+      systemProperty 'tests.nightly', 'false'
+      systemProperty 'tests.weekly', 'false'
+      systemProperty 'tests.monster', 'false'
+      systemProperty 'tests.slow', 'false'
+      systemProperty 'tests.cleanthreads.sysprop', 'perMethod'
+      systemProperty 'tests.verbose', 'false'
+      systemProperty 'tests.filterstacks', 'true'
+      systemProperty 'tests.asserts', 'true'
+      systemProperty 'tempDir', '.out/tests-temp'
+      systemProperty 'java.io.tmpdir', '.out/tests-temp'
+    }
+    
+    // forbidden apis ...need to exclude hadoop and ...
+    // pj.plugins.apply(BuildPlugin)
+    
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+    
+    sourceSets {
+      main.java.srcDirs = ['src/java']
+      main.resources.srcDirs = ['src/resources']
+      test.java.srcDirs = ['src/test']
+      test.resources.srcDirs = ['src/test-files']
+    }
+    
+    dependencies {
+      // move to solr testframework
+      testRuntimeOnly 'org.apache.logging.log4j:log4j-api'
+      testRuntimeOnly 'org.apache.logging.log4j:log4j-core'
+      testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+      testRuntimeOnly 'com.lmax:disruptor'
+    }
+    
+    
+    // we create new *Tran configurations that are transitive
+    // and can be used between modules
+    configurations {
+
+      implementationTran
+      testImplementationTran
+      
+      implementationTran2
+      testImplementationTran2
+      
+      implementationTran.transitive = true
+      testImplementationTran.transitive = true
+      
+      implementationTran2.transitive = false
+      testImplementationTran2.transitive = false
+      
+      testImplementationTran2.extendsFrom testImplementationTran
+      implementationTran2.extendsFrom implementationTran
+      
+      testImplementation.extendsFrom testImplementationTran2
+      implementation.extendsFrom implementationTran2
+    }
+    
+    // make everything else not transitive
+    configure(configurations.all.findAll { c -> c.getName() != "implementationTran" && c.getName() != "testImplementationTran" }) {
+      transitive = false
+    }
+    
+    project.sourceSets.test.setCompileClasspath( project.sourceSets.test.getCompileClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran));
+    project.sourceSets.test.setRuntimeClasspath( project.sourceSets.test.getRuntimeClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran));
+    
+    project.sourceSets.main.setCompileClasspath( project.sourceSets.main.getCompileClasspath().plus(project.configurations.implementationTran));
+    project.sourceSets.main.setRuntimeClasspath( project.sourceSets.main.getRuntimeClasspath().plus(project.configurations.implementationTran));
+    
+    
+    configurations.all {
+      // TODO: does not belong here
+      exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    
+    // Custom javac options
+    tasks.withType(JavaCompile) {
+      // Don't output ALL errors in a file, stop after a few
+      options.compilerArgs << "-Xmaxerrs" << "5"
+    }
+    
+    // Some test resources and files are stored along the test sources
+    // and are expected to exist next to classes during tests
+    task copyTestResources(type: Copy) {
+      from('src/test') {
+        exclude '**/*.java'
+      }
+      into sourceSets.test.java.outputDir
+    }
+    processTestResources.dependsOn copyTestResources
+    
+  }
+  
+  apply plugin: 'eclipse'
+  plugins.withType(JavaPlugin) {
+    eclipse {
+      
+      classpath {
+        defaultOutputDir = file('build-eclipse')
+
+        plusConfigurations += [ configurations.implementationTran, configurations.testImplementationTran ]
+        
+        file.whenMerged {
+          classpath ->
+          if (project.name == 'buildSrc') {
+            project.tasks.pluginUnderTestMetadata
+          }
+         
+          classpath.entries.each { entry ->
+
+            if ( entry.kind == 'src' && entry.hasProperty('output') ) {
+              // use default Output for all source-folders
+              entry.output = null
+            }
+          }
+          
+          classpath.entries.each { entry ->
+            if ( entry.kind == 'lib') {
+              entry.exported = true
+            }
+          }
+          
+          // add JRE_CONTAINER
+          classpath.entries.removeAll { entry -> entry.kind == 'con' }
+          classpath.entries.add(new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11'))
+          
+          // Jetty mod files make eclipse sad
+          new File("${projectDir}/.settings/org.eclipse.wst.validation.prefs").text = """
+eclipse.preferences.version=1
+override=true
+suspend=true
+vf.version=3
+"""
+        }
+        
+      }
+    }
+  }
+
+  tasks.withType(Test) {
+    filter {
+      // so we can run with --tests wildcards
+      setFailOnNoMatchingTests(false)
+    }
+    
+    def testsJvms = project.ext.properties.tests_jvms
+    if (testsJvms) {
+      maxParallelForks = testsJvms
+    } else {
+      maxParallelForks = Runtime.runtime.availableProcessors() / 2
+    }
+
+    def testsFailFast = project.ext.properties.tests_failfast
+    if (testsFailFast)    {
+      failFast = true
+    }
+  }
+  
+  // TODO: Where to do this ... and config
+  // apply plugin: 'maven-publish'
+}
+
+tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
+
+
+// turn off idea cycle checking - how to do for eclipse?
+idea.project.ipr {
+  // Edit the output *.ipr file before it's written out
+  withXml { root ->
+    root.asNode().depthFirst().iterator().forEachRemaining { n ->
+      if (n.name().equals("annotationProcessing")) {
+        n.attributes().remove("enabled")
+        n.attributes().remove("useClasspath")
+      }
+      if (n.name().equals("profile") && n.parent().name().equals("annotationProcessing")) {
+        n.attributes().put("enabled", "false")
+      }
+    }
+  }
+  
+}
+

@@ -1,0 +1,14 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'lucene-test-framework'
+
+dependencies {
+  
+	implementationTran project(':lucene:lucene-core')
+	implementationTran project(':lucene:codecs')
+  
+	implementation "junit:junit"
+	implementation "com.carrotsearch.randomizedtesting:randomizedtesting-runner"
+	implementation 'org.hamcrest:hamcrest-all'
+  
+}    

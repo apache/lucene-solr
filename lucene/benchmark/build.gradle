@@ -1,0 +1,29 @@
+apply plugin: 'java-library'
+
+dependencies {
+  
+  implementationTran project(':lucene:lucene-core')
+  implementationTran project(':lucene:analysis:analyzers-common')
+  implementationTran project(':lucene:facet')
+  implementationTran project(':lucene:highlighter')
+  implementationTran project(':lucene:queries')
+  implementationTran project(':lucene:spatial-extras')
+  implementationTran project(':lucene:queryparser')
+  
+  implementation "org.apache.commons:commons-compress"
+  implementation "xerces:xercesImpl"
+  implementation "net.sourceforge.nekohtml:nekohtml"
+  implementation "com.ibm.icu:icu4j"
+  implementation "org.locationtech.spatial4j:spatial4j"
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+}
+
+// copy .alg files as resources for testing
+task copyConfResources(type: Copy) {
+  from('conf')
+  into new File(sourceSets.test.java.outputDir, "conf")
+}
+processTestResources.dependsOn copyConfResources
+
+
