@@ -34,6 +34,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -60,6 +61,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * </p>
  */
 @SolrTestCaseJ4.SuppressSSL
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13453")
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
