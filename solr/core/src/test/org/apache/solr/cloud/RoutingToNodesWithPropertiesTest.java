@@ -44,7 +44,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.handler.component.TestTrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
