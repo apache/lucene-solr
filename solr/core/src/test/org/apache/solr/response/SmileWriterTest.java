@@ -40,6 +40,10 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.json.CharArr;
+import org.apache.solr.common.json.JSONParser;
+import org.apache.solr.common.json.JSONWriter;
+import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -50,15 +54,11 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 
 public class SmileWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   @Test
@@ -70,21 +70,21 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     rsp.add("data3", Float.POSITIVE_INFINITY);
     SmileResponseWriter smileResponseWriter = new SmileResponseWriter();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    smileResponseWriter.write(baos,req,rsp);
+    smileResponseWriter.write(baos, req, rsp);
     Map m = (Map) decodeSmile(new ByteArrayInputStream(baos.toByteArray()));
     CharArr out = new CharArr();
     JSONWriter jsonWriter = new JSONWriter(out, 2);
     jsonWriter.setIndentSize(-1); // indentation by default
     jsonWriter.write(m);
     String s = new String(Utils.toUTF8(out), StandardCharsets.UTF_8);
-    assertEquals(s , "{\"data1\":NaN,\"data2\":-Infinity,\"data3\":Infinity}");
+    assertEquals(s, "{\"data1\":NaN,\"data2\":-Infinity,\"data3\":Infinity}");
 
     req.close();
   }
 
   @Test
   public void testJSON() throws IOException {
-    SolrQueryRequest req = req("wt","json","json.nl","arrarr");
+    SolrQueryRequest req = req("wt", "json", "json.nl", "arrarr");
     SolrQueryResponse rsp = new SolrQueryResponse();
     SmileResponseWriter w = new SmileResponseWriter();
 
@@ -94,8 +94,8 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     nl.add(null, 42);
     rsp.add("nl", nl);
 
-    rsp.add("byte", Byte.valueOf((byte)-3));
-    rsp.add("short", Short.valueOf((short)-4));
+    rsp.add("byte", Byte.valueOf((byte) -3));
+    rsp.add("short", Short.valueOf((short) -4));
     String expected = "{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],byte:-3,short:-4}";
     w.write(buf, req, rsp);
     Map m = (Map) decodeSmile(new ByteArrayInputStream(buf.toByteArray()));
@@ -106,8 +106,8 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testJSONSolrDocument() throws IOException {
-    SolrQueryRequest req = req(CommonParams.WT,"json",
-        CommonParams.FL,"id,score");
+    SolrQueryRequest req = req(CommonParams.WT, "json",
+        CommonParams.FL, "id,score");
     SolrQueryResponse rsp = new SolrQueryResponse();
     SmileResponseWriter w = new SmileResponseWriter();
 
@@ -156,7 +156,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     Map m = (Map) decodeSmile(new ByteArrayInputStream(bytes, 0, bytes.length));
     m = (Map) m.get("results");
     List lst = (List) m.get("docs");
-    assertEquals(lst.size(),10);
+    assertEquals(lst.size(), 10);
     for (int i = 0; i < lst.size(); i++) {
       m = (Map) lst.get(i);
       SolrDocument d = new SolrDocument();
@@ -168,7 +168,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
   public static SolrDocumentList constructSolrDocList(SolrQueryResponse response) {
     SolrDocumentList l = new SolrDocumentList();
-    for(int i=0;i<10; i++){
+    for (int i = 0; i < 10; i++) {
       l.add(sampleDoc(random(), i));
     }
 
@@ -195,25 +195,26 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     sdoc.put("level", r.nextInt(101));
     sdoc.put("education_level", r.nextInt(10));
     // higher level of reuse for string values
-    sdoc.put("state", "S"+r.nextInt(50));
-    sdoc.put("country", "Country"+r.nextInt(20));
-    sdoc.put("some_boolean", ""+r.nextBoolean());
-    sdoc.put("another_boolean", ""+r.nextBoolean());
+    sdoc.put("state", "S" + r.nextInt(50));
+    sdoc.put("country", "Country" + r.nextInt(20));
+    sdoc.put("some_boolean", "" + r.nextBoolean());
+    sdoc.put("another_boolean", "" + r.nextBoolean());
     return sdoc;
   }
+
   // common-case ascii
   static String str(Random r, int sz) {
     StringBuffer sb = new StringBuffer(sz);
-    for (int i=0; i<sz; i++) {
-      sb.append('\n' + r.nextInt(128-'\n'));
+    for (int i = 0; i < sz; i++) {
+      sb.append('\n' + r.nextInt(128 - '\n'));
     }
     return sb.toString();
   }
 
 
-  public static Object decodeSmile( InputStream is) throws IOException {
+  public static Object decodeSmile(InputStream is) throws IOException {
     final SmileFactory smileFactory = new SmileFactory();
-    com.fasterxml.jackson.databind.ObjectMapper mapper = new  com.fasterxml.jackson.databind.ObjectMapper(smileFactory);
+    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper(smileFactory);
     JsonNode jsonNode = mapper.readTree(is);
     return getVal(jsonNode);
   }
@@ -229,17 +230,17 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     if (value instanceof BooleanNode) {
       ((BooleanNode) value).booleanValue();
     }
-    if(value instanceof ObjectNode){
-      Iterator<Map.Entry<String, JsonNode>> it = ((ObjectNode)value).fields();
+    if (value instanceof ObjectNode) {
+      Iterator<Map.Entry<String, JsonNode>> it = ((ObjectNode) value).fields();
       Map result = new LinkedHashMap<>();
-      while(it.hasNext()){
+      while (it.hasNext()) {
         Map.Entry<String, JsonNode> e = it.next();
-        result.put(e.getKey(),getVal(e.getValue()));
+        result.put(e.getKey(), getVal(e.getValue()));
       }
       return result;
     }
     if (value instanceof ArrayNode) {
-      ArrayList result =  new ArrayList();
+      ArrayList result = new ArrayList();
       Iterator<JsonNode> it = ((ArrayNode) value).elements();
       while (it.hasNext()) {
         result.add(getVal(it.next()));
@@ -247,7 +248,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
       return result;
 
     }
-    if(value instanceof BinaryNode) {
+    if (value instanceof BinaryNode) {
       return ((BinaryNode) value).binaryValue();
     }
 

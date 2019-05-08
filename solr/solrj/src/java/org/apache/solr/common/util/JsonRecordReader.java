@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
 
-import org.noggit.JSONParser;
+import org.apache.solr.common.json.JSONParser;
+import static org.apache.solr.common.json.JSONParser.*;
 
-import static org.noggit.JSONParser.*;
 
 /**
  * A Streaming parser for json to emit one record at a time.

@@ -25,7 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.noggit.CharArr;
+import org.apache.solr.common.json.CharArr;
+
 
 /**A mutable byte[] backed Utf8CharSequence. This is quite similar to the BytesRef of Lucene
  * Do not alter the contents of the byte[] . it may be inconsistent with the cached String

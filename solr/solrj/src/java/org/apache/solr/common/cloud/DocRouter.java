@@ -18,9 +18,9 @@ package org.apache.solr.common.cloud;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.json.JSONWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
-import org.noggit.JSONWriter;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.json.JSONParser;
+import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -32,8 +34,6 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;

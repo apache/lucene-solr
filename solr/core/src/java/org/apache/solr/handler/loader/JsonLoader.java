@@ -35,6 +35,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.json.JSONParser;
+import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -51,9 +53,6 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.RecordingJSONParser;
-import org.noggit.JSONParser;
-import org.noggit.JSONParser.ParseException;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +118,7 @@ public class JsonLoader extends ContentStreamLoader {
         }
 
         this.processUpdate(reader);
-      } catch (ParseException e) {
+      } catch (JSONParser.ParseException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
       }
       finally {

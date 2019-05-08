@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.json.CharArr;
+import org.apache.solr.common.json.JSONWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -38,8 +40,6 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryContext;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 

@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
+import org.apache.solr.common.json.JSONParser;
+import org.apache.solr.common.json.ObjectBuilder;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;

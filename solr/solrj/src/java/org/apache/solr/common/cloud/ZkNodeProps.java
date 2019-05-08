@@ -22,9 +22,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.json.JSONWriter;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 

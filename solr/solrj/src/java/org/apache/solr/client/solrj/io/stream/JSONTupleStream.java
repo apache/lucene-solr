@@ -28,11 +28,11 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.json.JSONParser;
+import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 
 /*

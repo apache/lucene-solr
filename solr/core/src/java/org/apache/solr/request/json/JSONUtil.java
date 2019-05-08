@@ -17,7 +17,8 @@
 package org.apache.solr.request.json;
 
 import java.io.IOException;
-import org.noggit.JSONParser;
+
+import org.apache.solr.common.json.JSONParser;
 
 public class JSONUtil {
 
