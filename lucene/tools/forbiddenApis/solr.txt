@@ -56,7 +56,4 @@ com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Obj
 com.google.common.collect.Ordering
 
 @defaultMessage Use corresponding classes in package org.apache.solr.common.json instead
-org.noggit.CharArr
-org.noggit.JSONParser
-org.noggit.JSONUtil
-org.noggit.ObjectBuilder
+org.noggit.**
