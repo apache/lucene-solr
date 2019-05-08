@@ -4,7 +4,11 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 8.2.0 =======================
-(No Changes)
+
+Bug Fixes:
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
 
 ======================= Lucene 8.1.0 =======================
 
@@ -422,11 +426,7 @@ Optimizations
   (Toke Eskildsen, Adrien Grand)
 
 ======================= Lucene 7.7.1 =======================
-Bug fixes:
-
-* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
-  This causes assertion errors and potentially broken field attributes in the IndexWriter when
-  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+(No Changes)
 
 ======================= Lucene 7.7.0 =======================
 
