@@ -73,6 +73,10 @@ Bug fixes
 * LUCENE-8765: Fixed validation of the number of added points in KD trees.
   (Zhao Yang via Adrien Grand)
 
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
