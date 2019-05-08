@@ -77,6 +77,7 @@ New Features
 
 * SOLR-13306: Add a request parameter to execute a streaming expression locally
 
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
 ==================  8.1.0 ==================
 
