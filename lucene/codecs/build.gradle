@@ -1,0 +1,10 @@
+apply plugin: 'java-library'
+
+archivesBaseName = 'codecs'
+
+dependencies {
+  
+    implementationTran project(':lucene:lucene-core')
+    
+    testImplementationTran project(':lucene:lucene-test-framework')
+}

@@ -1,0 +1,19 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementationTran project(':solr:solr-core')
+  implementationTran project(':solr:solrj')
+  implementationTran project(':lucene:lucene-core')
+  
+  implementation 'com.cybozu.labs:langdetect'
+  implementation 'net.arnx:jsonic'
+  implementation 'org.apache.opennlp:opennlp-tools'
+  implementation 'org.apache.tika:tika-core'
+  implementation 'commons-io:commons-io'
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'commons-codec:commons-codec'
+  implementation'com.google.guava:guava'
+  
+  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementationTran project(':solr:solr-test-framework')
+}
