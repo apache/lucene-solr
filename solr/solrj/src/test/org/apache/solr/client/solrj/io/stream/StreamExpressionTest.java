@@ -850,6 +850,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .add(id, "7", "diseases_s", "heart attack", "symptoms_s", "indigestion")
         .add(id, "8", "diseases_s", "diabetes", "symptoms_s", "urination")
         .add(id, "9", "diseases_s", "diabetes", "symptoms_s", "thirsty")
+        .add(id, "10", "diseases_s", "diabetes", "symptoms_s", "thirsty")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
     StreamExpression expression;
     TupleStream stream;
@@ -869,6 +870,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
 
     assert (tuples.size() > 0);
+    assert(false);
   }
 
 

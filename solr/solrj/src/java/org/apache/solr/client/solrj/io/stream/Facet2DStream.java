@@ -374,6 +374,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     buf.append("\"type\":\"terms\"");
     buf.append(",\"field\":\"" + x.toString() + "\"");
     buf.append(",\"limit\":" + dimensionX );
+    buf.append(",\"overrequest\":1000");
     String fsort = getFacetSort(adjustedSorts[0].getLeftFieldName(), metric);
     buf.append(",\"sort\":\""+ fsort + " desc\"");
     buf.append(",\"facet\":{");
@@ -390,6 +391,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     buf.append("\"type\":\"terms\"");
     buf.append(",\"field\":\"" + y.toString() + "\"");
     buf.append(",\"limit\":" + dimensionY );
+    buf.append(",\"overrequest\":1000");
     String fsortY = getFacetSort(adjustedSorts[1].getLeftFieldName(), metric);
     buf.append(",\"sort\":\""+ fsortY + " desc\"");
     buf.append(",\"facet\":{");
@@ -427,8 +429,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String bucketXName = x.toString();
     String bucketYName = y.toString();
 
-
-
     NamedList allXBuckets = (NamedList) facets.get("x");
     for (int b = 0; b < allXBuckets.size(); b++) {
       List buckets = (List) allXBuckets.get("buckets");
@@ -457,7 +457,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
           int m = 0;
           String identifier = metric.getIdentifier();
           if (!identifier.startsWith("count(")) {
-            Number d1 = (Number) buckets.get(0);
+            Number d1 = (Number) bucketY.get("agg");
             if (metric.outputLong) {
               if (d1 instanceof Long || d1 instanceof Integer) {
                 yt.put(identifier, d1.longValue());
@@ -469,8 +469,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
             }
             ++m;
           } else {
-            //long l = ((Number) bucket.get(0).longValue();
-            yt.put("count(*)", 1);
+            long l = ((Number)bucketY.get("count")).longValue();
+            yt.put("count(*)", l);
           }
           tuples.add(yt);
         }
