@@ -201,7 +201,7 @@ Bug Fixes
 * SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
   Jason Gerlowski, Kesharee Nandan Vishwakarma)
 
-* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
   when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
 
 * SOLR-13410: Designated overseer wasn't able to rejoin election queue at head upon restart (Ishan Chattopadhyaya,
@@ -318,6 +318,8 @@ Other Changes
 * SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
 
 * SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
+
+* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
 
 ==================  8.0.0 ==================
 
