@@ -38,6 +38,11 @@ New Features
 
 * SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
 
+Other Changes
+----------------------
+
+* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

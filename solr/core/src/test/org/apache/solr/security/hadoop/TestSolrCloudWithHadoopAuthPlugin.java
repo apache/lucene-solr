@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -34,7 +33,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13453")
 public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
@@ -138,6 +136,6 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
         solrClient.getZkStateReader(), true, true, 330);
-    assertAuthMetricsMinimums(16, 8, 0, 8, 0, 0);
+    assertAuthMetricsMinimums(14, 8, 0, 6, 0, 0);
   }
 }
