@@ -79,6 +79,11 @@ New Features
 
 * SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
+Other Changes
+----------------------
+
+* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -264,8 +269,6 @@ Bug Fixes
 * SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
 
 * SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
-
-* SOLR-13453: Adjust auth metrics asserts in tests after SOLR-13449 (janhoy)
 
 Improvements
 ----------------------
