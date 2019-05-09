@@ -79,6 +79,8 @@ New Features
 
 * SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
+* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
