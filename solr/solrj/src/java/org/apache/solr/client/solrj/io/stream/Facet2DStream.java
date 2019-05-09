@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -61,10 +62,9 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private ModifiableSolrParams params;
   private Bucket x;
   private Bucket y;
-  private String dimensions;
   private Metric metric;
   private String zkHost;
-
+  private Iterator<Tuple> out;
   private List<Tuple> tuples = new ArrayList<Tuple>();
   private int dimensionX;
   private int dimensionY;
@@ -284,6 +284,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);
 
     String json = getJsonFacetString(x, y, metric, adjustedSorts, dimensionX, dimensionY);
+    System.out.println("#######JSON:"+json);
     //assert expectedJson(json);
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams(params);
@@ -293,7 +294,9 @@ public class Facet2DStream extends TupleStream implements Expressible {
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
+      System.out.println("###### Response:"+response.toString());
       getTuples(response, x, y, metric);
+      this.out = tuples.iterator();
 
     } catch (Exception e) {
       throw new IOException(e);
@@ -301,11 +304,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    this.index = 0;
-    if (index < tuples.size() && index < dimensionX * dimensionY) {
-      Tuple tuple = tuples.get(index);
-      ++index;
-      return tuple;
+    if (out.hasNext()) {
+      return out.next();
     } else {
       Map fields = new HashMap();
       fields.put("rows", tuples.size());
@@ -379,10 +379,10 @@ public class Facet2DStream extends TupleStream implements Expressible {
     buf.append(",\"facet\":{");
 
     String identifier = metric.getIdentifier();
-    if (identifier.startsWith("count(")) {
+    if (!identifier.startsWith("count(")) {
       buf.append("\"agg\":\"" + identifier + "\"");
+      buf.append(",");
     }
-    buf.append(",");
     buf.append('"');
     buf.append("y");
     buf.append('"');
@@ -393,7 +393,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String fsortY = getFacetSort(adjustedSorts[1].getLeftFieldName(), metric);
     buf.append(",\"sort\":\""+ fsortY + " desc\"");
     buf.append(",\"facet\":{");
-    if (identifier.startsWith("count(")) {
+    if (!identifier.startsWith("count(")) {
       buf.append("\"agg\":\"" + identifier + "\"");
     }
     buf.append("}}}}");
@@ -425,61 +425,57 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   private void fillTuples(int level, List<Tuple> tuples, Tuple currentTuple, NamedList facets, Bucket x, Bucket y, Metric metric) {
     String bucketXName = x.toString();
-    NamedList nlX = (NamedList) facets.get(bucketXName);
-
     String bucketYName = y.toString();
-    NamedList nlY = (NamedList) facets.get(bucketYName);
 
-    if (nlX == null || nlY == null) {
-      return;
-    }
-    List allXBuckets = (List) nlX.get("x");
+
+
+    NamedList allXBuckets = (NamedList) facets.get("x");
     for (int b = 0; b < allXBuckets.size(); b++) {
-      NamedList bucket = (NamedList) allXBuckets.get(b);
-      Object val = bucket.get("val");
-      if (val instanceof Integer) {
-        val = ((Integer) val).longValue();
-      }
-      Tuple t = currentTuple.clone();
-      t.put(bucketXName, val);
+      List buckets = (List) allXBuckets.get("buckets");
+      for(int s=0; s<buckets.size(); s++) {
 
-      List allYBuckets = (List) nlY.get("y");
-      for (int d = 0; d < allYBuckets.size(); d++) {
-        NamedList bucketY = (NamedList) allYBuckets.get(d);
-        Object valY = bucketY.get("val");
-        if (valY instanceof Integer) {
-          valY = ((Integer) valY).longValue();
+        NamedList bucket = (NamedList)buckets.get(s);
+        Object val = bucket.get("val");
+        if (val instanceof Integer) {
+          val = ((Integer) val).longValue();
         }
-        t = currentTuple.clone();
-        t.put(bucketYName, valY);
-      }
-      int nextLevel = level + 1;
-      if (nextLevel <= 2) {
-        fillTuples(nextLevel, tuples, t.clone(), bucket, x, y, metric);
-      } else {
-        int m = 0;
-        String identifier = metric.getIdentifier();
-        if (!identifier.startsWith("count(")) {
-          Number d = (Number) bucket.get("agg:" + identifier);
-          if (metric.outputLong) {
-            if (d instanceof Long || d instanceof Integer) {
-              t.put(identifier, d.longValue());
-            } else {
-              t.put(identifier, Math.round(d.doubleValue()));
-            }
-          } else {
-            t.put(identifier, d.doubleValue());
+        Tuple tx = currentTuple.clone();
+        tx.put(bucketXName, val);
+
+        NamedList allYBuckets = (NamedList) bucket.get("y");
+        List ybuckets = (List)allYBuckets.get("buckets");
+
+        for (int d = 0; d < ybuckets.size(); d++) {
+          NamedList bucketY = (NamedList) ybuckets.get(d);
+          Object valY = bucketY.get("val");
+          if (valY instanceof Integer) {
+            valY = ((Integer) valY).longValue();
           }
-          ++m;
-        } else {
-          long l = ((Number) bucket.get("count(*)")).longValue();
-          t.put("count(*)", l);
+          Tuple yt = tx.clone();
+          yt.put(bucketYName, valY);
+
+          int m = 0;
+          String identifier = metric.getIdentifier();
+          if (!identifier.startsWith("count(")) {
+            Number d1 = (Number) buckets.get(0);
+            if (metric.outputLong) {
+              if (d1 instanceof Long || d1 instanceof Integer) {
+                yt.put(identifier, d1.longValue());
+              } else {
+                yt.put(identifier, Math.round(d1.doubleValue()));
+              }
+            } else {
+              yt.put(identifier, d1.doubleValue());
+            }
+            ++m;
+          } else {
+            //long l = ((Number) bucket.get(0).longValue();
+            yt.put("count(*)", 1);
+          }
+          tuples.add(yt);
         }
       }
-      tuples.add(t);
     }
-
-
   }
 
   public int getCost() {
