@@ -265,6 +265,8 @@ Bug Fixes
 
 * SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
 
+* SOLR-13453: Adjust auth metrics asserts in tests after SOLR-13449 (janhoy)
+
 Improvements
 ----------------------
 
