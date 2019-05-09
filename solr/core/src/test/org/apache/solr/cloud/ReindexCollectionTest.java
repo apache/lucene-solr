@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -139,6 +140,10 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     });
     // verify the target docs exist
     QueryResponse queryResponse = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
+
+    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", NUM_DOCS, "*:*",
+        "ReindexCollectionTest.testBasicReindexing", true);
+
     assertEquals("copied num docs", NUM_DOCS, queryResponse.getResults().getNumFound());
   }
 
@@ -177,6 +182,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     });
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
+    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", NUM_DOCS, "*:*",
+        "ReindexCollectionTest.testSameTargetReindex", true);
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
   }
 
@@ -205,6 +212,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     });
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
+    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", NUM_DOCS, "*:*",
+        "ReindexCollectionTest.testLossyScherma", true);
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
     for (SolrDocument doc : rsp.getResults()) {
       String id = (String)doc.getFieldValue("id");
@@ -240,6 +249,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     });
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
+
+    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", 11, "*:*",
+        "ReindexCollectionTest.testReshapeReindexTarget", true);
     // 10 and 100-109
     assertEquals("copied num docs", 11, rsp.getResults().getNumFound());
     // verify the correct fields exist
