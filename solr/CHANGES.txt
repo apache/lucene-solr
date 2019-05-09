@@ -204,7 +204,7 @@ Bug Fixes
 * SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
   when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
 
-* SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue at head upon restart (Ishan Chattopadhyaya,
   Kesharee Nandan Vishwakarma)
 
 * SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
