@@ -49,7 +49,7 @@ public class OriginalScoreFeature extends Feature {
 
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
-    return null;
+    return defaultParamsToMap();
   }
 
   @Override
