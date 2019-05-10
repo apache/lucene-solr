@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -139,12 +140,11 @@ public class Facet2DStream extends TupleStream implements Expressible {
       throw new IOException(String.format(Locale.ROOT, "invalid expression %s - x and y buckets expected. eg. 'x=\"name\"'", expression, collectionName));
     }
 
+    Metric metric = null;
     if(metricExpression == null || metricExpression.size() == 0){
-      throw new IOException(String.format(Locale.ROOT, "invalid expression %s - one metric expected", expression, collectionName));
-    }
-    Metric metric = factory.constructMetric(metricExpression.get(0));
-    if (metric == null) {
-      throw new IOException(String.format(Locale.ROOT, "invalid expression %s - one metric expected", expression, collectionName));
+      metric = new CountMetric();
+    } else {
+      metric = factory.constructMetric(metricExpression.get(0));
     }
 
     String bucketSortString = metric.getIdentifier() + " desc";
@@ -402,21 +402,13 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   private String getFacetSort(String id, Metric metric) {
-    int index = 0;
-    int metricCount = 0;
-    if (metric.getIdentifier().startsWith("count(")) {
-      if (id.startsWith("count(")) {
+    if (id.startsWith("count(")) {
         return "count";
-      }
-      ++index;
-    } else {
-      if (id.equals(metric.getIdentifier())) {
-        return "agg:" + metricCount;
-      }
-      ++index;
-      ++metricCount;
+    } else if (id.equals(metric.getIdentifier())) {
+        return "agg";
     }
-    return "index";
+
+    return null;
   }
 
   private void getTuples(NamedList response, Bucket x, Bucket y, Metric metric) {
