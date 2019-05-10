@@ -37,6 +37,9 @@ New Features
   in an efficient manner, for use as a monitoring or classification tool.
   (Alan Woodward)
 
+* LUCENE-7714: Add a numeric range query in sandbox that takes advantage of index sorting.
+  (Julie Tibshirani via Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
@@ -414,7 +417,7 @@ Changes in Runtime Behavior
 
 * LUCENE-8535: Highlighter and FVH doesn't support ToParent and ToChildBlockJoinQuery out of the
   box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
-  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
+  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshirani)
 
 * LUCENE-8563: BM25 scores don't include the (k1+1) factor in their numerator
   anymore. This doesn't affect ordering as this is a constant factor which is
