@@ -154,6 +154,12 @@ Solr supports a broad range of SQL syntax.
 The SQL parser being used by Solr to translate the SQL statements is case insensitive. However, for ease of reading, all examples on this page use capitalized keywords.
 ====
 
+.SELECT * is not supported
+[IMPORTANT]
+====
+The SQL parser being used by Solr does not support the SELECT * syntax, you must specify each field you wish to return.
+====
+
 === Escaping Reserved Words
 
 The SQL parser will return an error if a reserved word is used in the SQL query. Reserved words can be escaped and included in the query using the back tick. For example:
