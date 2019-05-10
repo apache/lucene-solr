@@ -38,6 +38,7 @@ public class Lang {
         // source streams
         .withFunctionName("search", SearchFacadeStream.class)
         .withFunctionName("facet", FacetStream.class)
+        .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
