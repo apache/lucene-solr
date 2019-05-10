@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -70,7 +69,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private int dimensionX;
   private int dimensionY;
   private FieldComparator bucketSort;
-  private int index;
 
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
@@ -158,8 +156,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
         if (strDimensions.length != 2) {
           throw new IOException(String.format(Locale.ROOT, "invalid expression %s - two dimension values expected"));
         }
-        dimensionX = Integer.parseInt(strDimensions[0]);
-        dimensionY = Integer.parseInt(strDimensions[1]);
+        dimensionX = Integer.parseInt(strDimensions[0].trim());
+        dimensionY = Integer.parseInt(strDimensions[1].trim());
       }
     }
 
@@ -284,7 +282,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);
 
     String json = getJsonFacetString(x, y, metric, adjustedSorts, dimensionX, dimensionY);
-    System.out.println("#######JSON:"+json);
     //assert expectedJson(json);
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams(params);
@@ -294,7 +291,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
-      System.out.println("###### Response:"+response.toString());
       getTuples(response, x, y, metric);
       this.out = tuples.iterator();
 
@@ -323,24 +319,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
         cloudSolrClient.close();
       }
     }
-  }
-
-  private boolean expectedJson(String json) {
-    if (!json.contains("\"limit\":" + (this.dimensionX)) || !json.contains("\"limit\":" + (this.dimensionY))) {
-          return false;
-    }
-
-    if (!json.contains("\"" + x.toString() + "\":") || !json.contains("\"" + y.toString() + "\":")) {
-        return false;
-    }
-    String function = metric.getFunctionName();
-    if (!function.equals("count(*)")) {
-      if (!json.contains(metric.getIdentifier())) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   private String getJsonFacetString(Bucket x, Bucket y, Metric metric, FieldComparator[] adjustedSorts, int dimensionX, int dimensionY) {
@@ -483,13 +461,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     return collection;
   }
 
-  public int getDimensionX() {
-    return dimensionX;
-  }
-
-  public int getDimensionY() {
-    return dimensionY;
-  }
 
   public Bucket getX() {
     return x;
