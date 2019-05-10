@@ -3083,7 +3083,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       log.error("Dumping response" + rsp.toString());
       assertEquals("Solr11035BandAid failed, counts differ after updates:", found, expectedDocCount);
     } else if (failAnyway) {
-      fail("failAnyway == true, would have successfully repaired the collection: '" + collection
+      fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
           + "' extra info: '" + tag + "'");
     }
   }
