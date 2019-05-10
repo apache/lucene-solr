@@ -290,6 +290,8 @@ When the client resubmits a changed document to Solr, the `\_version_` can be in
 * If the content in the `\_version_` field is less than '0' (i.e., '-1'), then the document must *not* exist. In this case, no version matching occurs, but if the document exists, the updates will be rejected.
 * If the content in the `\_version_` field is equal to '0', then it doesn't matter if the versions match or if the document exists or not. If it exists, it will be overwritten; if it does not exist, it will be added.
 
+When documents are added/updated in batches even a single version conflict may lead to rejecting the entire batch. Use the parameter `failOnVersionConflicts=false` to avoid failure of the entire batch when version  constraints fail for one or more documents in a batch.
+
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
 When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
@@ -298,30 +300,35 @@ Following are some examples using `versions=true` in queries:
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true' --data-binary '
+$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' --data-binary '
 [ { "id" : "aaa" },
   { "id" : "bbb" } ]'
 ----
 [source,json]
 ----
-{"responseHeader":{"status":0,"QTime":6},
- "adds":["aaa",1498562471222312960,
-         "bbb",1498562471225458688]}
+{
+  "adds":[
+    "aaa",1632740120218042368,
+    "bbb",1632740120250548224]}
 ----
 
 In this example, we have added 2 documents "aaa" and "bbb". Because we added `versions=true` to the request, the response shows the document version for each document.
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true' --data-binary '
-[{ "id" : "aaa",
-   "foo_s" : "update attempt with wrong existing version" }]'
+$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' --data-binary '
+  [{ "id" : "aaa",
+     "foo_s" : "update attempt with wrong existing version" }]'
 ----
 [source,json]
 ----
-{"responseHeader":{"status":409,"QTime":3},
- "error":{"msg":"version conflict for aaa expected=999999 actual=1498562471222312960",
-          "code":409}}
+{
+  "error":{
+    "metadata":[
+      "error-class","org.apache.solr.common.SolrException",
+      "root-error-class","org.apache.solr.common.SolrException"],
+    "msg":"version conflict for aaa expected=999999 actual=1632740120218042368",
+    "code":409}}
 ----
 
 
@@ -329,43 +336,87 @@ In this example, we've attempted to update document "aaa" but specified the wron
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=1498562471222312960&versions=true&commit=true' --data-binary '
+$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' --data-binary '
 [{ "id" : "aaa",
    "foo_s" : "update attempt with correct existing version" }]'
 ----
 [source,json]
 ----
-{"responseHeader":{"status":0,"QTime":5},
- "adds":["aaa",1498562624496861184]}
+{
+  "adds":[
+    "aaa",1632740462042284032]}
 ----
 
 Now we've sent an update with a value for `\_version_` that matches the value in the index, and it succeeds. Because we included `versions=true` to the update request, the response includes a different value for the `\_version_` field.
+[source,bash]
+----
+$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
+[{ "id" : "aaa", _version_ : 100,
+   "foo_s" : "update attempt with wrong existing version embedded in document" }]'
+----
+[source,json]
+----
+{
+  "error":{
+    "metadata":[
+      "error-class","org.apache.solr.common.SolrException",
+      "root-error-class","org.apache.solr.common.SolrException"],
+    "msg":"version conflict for aaa expected=100 actual=1632740462042284032",
+    "code":409}}
+----
+
+Now we've sent an update with a value for `\_version_` embedded in the document itself. this request fails because we have specified the wrong version. This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
 
 [source,bash]
 ----
-$ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_'
+$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
+[{ "id" : "aaa", _version_ : 1632740462042284032,
+   "foo_s" : "update attempt with correct version embedded in document" }]'
+----
+[source,json]
+----
+{
+  "adds":[
+    "aaa",1632741942747987968]}
+----
+
+Now we've sent an update with a value for `\_version_` embedded in the document itself. this request fails because we have specified the wrong version. This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
+
+
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_&omitHeader=true'
 ----
 
 [source,json]
 ----
 {
-  "responseHeader":{
-    "status":0,
-    "QTime":5,
-    "params":{
-      "fl":"id,_version_",
-      "q":"*:*"}},
-  "response":{"numFound":2,"start":0,"docs":[
-      {
-        "id":"bbb",
-        "_version_":1498562471225458688},
-      {
-        "id":"aaa",
-        "_version_":1498562624496861184}]
+  "response":{"numFound":3,"start":0,"docs":[
+      { "_version_":1632740120250548224,
+        "id":"bbb"},
+      { "_version_":1632741942747987968,
+        "id":"aaa"}]
   }}
+
 ----
 
 Finally, we can issue a query that requests the `\_version_` field be included in the response, and we can see that for the two documents in our example index.
+
+[source,bash]
+----
+$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' --data-binary '
+[ { "id" : "aaa" },
+  { "id" : "ccc" } ]'
+----
+[source,json]
+----
+{
+  "adds":[
+    "ccc",1632740949182382080]}
+----
+
+In this example, we have added 2 documents "aaa" and "ccc". As we have specified the parameter `\_version_=-1` , this request should not add the document with the id `aaa` because it already exists. The request succeeds & does not throw any error because the `failOnVersionConflicts=false` parameter is specified. The response shows that only document `ccc` is added and `aaa` is silently ignored.
+
 
 For more information, please also see Yonik Seeley's presentation on https://www.youtube.com/watch?v=WYVM6Wz-XTw[NoSQL features in Solr 4] from Apache Lucene EuroCon 2012.
 

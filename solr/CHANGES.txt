@@ -70,8 +70,14 @@ Apache ZooKeeper 3.4.14
 Jetty 9.4.14.v20181114
 
 
-(No Changes)
+New Features
+----------------------
 
+* SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
+
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
 ==================  8.1.0 ==================
 
@@ -116,6 +122,9 @@ Upgrade Notes
 
 * SOLR-13394: The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any
   other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
+
+* SOLR-5970: Until now, the CREATE command of Collections API returned status 0 even in case of failure. Now, the status
+  code will be non-zero in case of failures (e.g. 4xx, 5xx).
 
 New Features
 ----------------------
@@ -246,8 +255,15 @@ Bug Fixes
 * SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
   Jason Gerlowski, Kesharee Nandan Vishwakarma)
 
-* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
   when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,
+  Kesharee Nandan Vishwakarma)
+
+* SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
+
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
 
 Improvements
 ----------------------
@@ -277,7 +293,7 @@ Improvements
   encountered (Munendra S N via Ishan Chattopadhyaya)
 
 * SOLR-13394: Switch default GC from CMS to G1 (Ishan Chattopadhyaya, Kesharee Nandan Vishwakarma, Shawn Heisey,
-  Uwe Schindler, Erick Ericsson)
+  Uwe Schindler, Erick Ericsson, shalin)
 
 * SOLR-13432: Add .toString methods to BitDocSet and SortedIntDocSet so that enabling "showItems" on the filter caches
   shows some useful information about the values in the cache. (shalin)

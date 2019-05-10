@@ -59,12 +59,16 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
     executor = ExecutorUtil.newMDCAwareCachedThreadPool(getClassName());
+    System.setProperty("enable.update.log", "true");
     initCore("solr/collection1/conf/solrconfig.xml","solr/collection1/conf/schema-minimal-with-another-uniqkey.xml");
   }
 
   @AfterClass
   public static void AfterClass() {
-    executor.shutdown();
+    if (null != executor) { // may not have inited due to lack of mockito 
+      executor.shutdown();
+    }
+    System.clearProperty("enable.update.log");
   }
 
   @Test

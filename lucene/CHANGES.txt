@@ -18,17 +18,33 @@ API Changes
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
   removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
 
-Bug fixes:
+Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
+
+Improvements
+
+* LUCENE-8781: FST lookup performance has been improved in many cases by
+  encoding Arcs using full-sized arrays with gaps. The new encoding is
+  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
 
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
 ======================= Lucene 8.2.0 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
+
+Improvements
+
+* LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
+  as opposed to eliminating them during scoring construction. (Atri Sharma via Jim Ferenczi)
 
 ======================= Lucene 8.1.0 =======================
 

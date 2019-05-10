@@ -32,13 +32,13 @@ import java.util.List;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.PreferenceRule;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
 import org.junit.AfterClass;
@@ -153,11 +153,8 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     );
 
     // Simple replica type rule
-    List<String> rules = StrUtils.splitSmart(
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", 
-      ','
-    );
+    List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
+        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG");
     HttpShardHandlerFactory.NodePreferenceRulesComparator comparator = 
       new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
     replicas.sort(comparator);
@@ -165,18 +162,15 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     assertEquals("node2", replicas.get(1).getNodeName());
 
     // Another simple replica type rule
-    rules = StrUtils.splitSmart(
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT", 
-      ','
-    );
+    rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
+        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT");
     comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
     replicas.sort(comparator);
     assertEquals("node2", replicas.get(0).getNodeName());
     assertEquals("node1", replicas.get(1).getNodeName());
 
     // replicaLocation rule
-    rules = StrUtils.splitSmart(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983", ',');
+    rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983");
     comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
     replicas.sort(comparator);
     assertEquals("node2", replicas.get(0).getNodeName());
@@ -196,12 +190,10 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     );
 
     // replicaType and replicaLocation combined rule
-    rules = StrUtils.splitSmart(
+    rules = PreferenceRule.from(
       ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
       ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2_2", 
-      ','
-    );
+      ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2_2");
     comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
     replicas.sort(comparator);
     assertEquals("node1", replicas.get(0).getNodeName());
@@ -210,17 +202,16 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     assertEquals("node3", replicas.get(3).getNodeName());
 
     // Bad rule
-    rules = StrUtils.splitSmart(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE, ',');
+
     try {
-      comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
-      replicas.sort(comparator);
+      rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE);
       fail();
     } catch (IllegalArgumentException e) {
       assertEquals("Invalid shards.preference rule: " + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE, e.getMessage());
     }
 
     // Unknown rule
-    rules = StrUtils.splitSmart("badRule:test", ',');
+    rules = PreferenceRule.from("badRule:test");
     try {
       comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
       replicas.sort(comparator);
