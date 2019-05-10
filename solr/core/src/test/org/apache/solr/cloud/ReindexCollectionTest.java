@@ -385,6 +385,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     solrClient.commit(collection);
     // verify the docs exist
     QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
+    SolrTestCaseJ4.Solr11035BandAid(solrClient, collection, "id", NUM_DOCS, "*:*",
+        "ReindexCollectionTest.indexDocs", true);
+
     assertEquals("num docs", NUM_DOCS, rsp.getResults().getNumFound());
 
   }
