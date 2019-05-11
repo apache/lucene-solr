@@ -22,7 +22,8 @@ import math
 import os
 import sys
 # sys.path.insert(0, 'moman/finenight/python')
-sys.path.insert(0, '../../../../../../../../build/core/moman/finenight/python')
+sys.path.insert(0, '../../../../../../../../build/core/moman/finenight/python') # gradle
+sys.path.insert(0, '../../../../../../../../core/build/moman/finenight/python') # ant
 try:
   from possibleStates import genTransitions
 except ImportError:
@@ -98,9 +99,9 @@ def main():
 
   if len(sys.argv) != 3:
     print
-    print 'Usage: python -u %s N <True/False>' % sys.argv[0]
+    print ('Usage: python -u %s N <True/False>' % sys.argv[0])
     print
-    print 'NOTE: the resulting .java file is created in the current working dir!'
+    print ('NOTE: the resulting .java file is created in the current working dir!')
     print
     sys.exit(1)
 
@@ -415,8 +416,8 @@ def main():
 
   open(fileOut, 'wb').write(s)
 
-  print 'Wrote %s [%d lines; %.1f KB]' % \
-        (fileOut, len(w.l), os.path.getsize(fileOut) / 1024.)
+  print ('Wrote %s [%d lines; %.1f KB]' % \
+        (fileOut, len(w.l), os.path.getsize(fileOut) / 1024.))
 
 def renderList(l):
   lx = ['    ']
@@ -493,7 +494,7 @@ def unpack(data, index, bitsPerValue):
 if __name__ == '__main__':
   if not __debug__:
     print
-    print 'ERROR: please run without -O'
+    print ('ERROR: please run without -O')
     print
     sys.exit(1)
   main()
