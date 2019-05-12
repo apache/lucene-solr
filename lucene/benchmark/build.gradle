@@ -1,5 +1,7 @@
 apply plugin: 'java-library'
 
+def workingDir = "${projectDir}/work"
+
 dependencies {
   
   implementationTran project(':lucene:lucene-core')
@@ -25,5 +27,65 @@ task copyConfResources(type: Copy) {
   into new File(sourceSets.test.java.outputDir, "conf")
 }
 processTestResources.dependsOn copyConfResources
+
+// Enwiki
+
+task getEnwiki(type: org.apache.lucene.gradle.Get) {
+  sourceUrl = "http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
+  target = new File("${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2")
+}
+
+task expandEnwiki(){
+  doLast {
+    ant.bunzip2(src: "${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2", dest:"${projectDir}/temp/")
+  }
+}
+
+expandEnwiki.dependsOn getEnwiki
+
+// GeoNames
+
+task getGeoNames(type: org.apache.lucene.gradle.Get) {
+  sourceUrl = "http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
+  target = new File("${projectDir}/temp/allCountries.txt.bz2")
+}
+
+task expandGeoNames(){
+  doLast {
+    new File("${workingDir}/geonames").mkdirs()
+    ant.bunzip2(src: "${projectDir}/temp/allCountries.txt.bz2", dest:"${workingDir}/geonames")
+  }
+}
+
+expandGeoNames.dependsOn getGeoNames
+
+// Reuters
+
+task getReuters(type: org.apache.lucene.gradle.Get) {
+  sourceUrl = "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
+  target = new File("${projectDir}/temp/reuters21578.tar.gz")
+}
+
+task expandReuters(){
+  doLast {
+    new File("${workingDir}/reuters").mkdirs()
+    ant.gunzip(src: "${projectDir}/temp/reuters21578.tar.gz", dest:"${projectDir}/temp/")
+    ant.untar(src: "${projectDir}/temp/reuters21578.tar", dest: "${workingDir}/reuters")
+    def tree = fileTree("${workingDir}/reuters")
+    tree.include '**/*.txt'
+    tree.each { it.delete() }
+  }
+}
+
+expandReuters.dependsOn getReuters
+
+task extractReuters(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+
+  main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
+
+  args "${workingDir}/reuters"
+  args "${workingDir}/reuters-out"
+}
 
 
