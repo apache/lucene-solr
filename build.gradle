@@ -44,7 +44,7 @@ task('regenerate') {
   }
 }
 
-configure(subprojects - project(":buildSrc")) {  pj ->
+configure(subprojects) {  pj ->
   
   configurations {
     jflex
@@ -184,6 +184,9 @@ configure(subprojects - project(":buildSrc")) {  pj ->
       classpath {
         defaultOutputDir = file('build-eclipse')
         
+        downloadSources=true
+        downloadJavadoc = true
+        
         plusConfigurations += [
           configurations.implementationTran,
           configurations.testImplementationTran
@@ -204,7 +207,10 @@ configure(subprojects - project(":buildSrc")) {  pj ->
           
           // add JRE_CONTAINER
           classpath.entries.removeAll { entry -> entry.kind == 'con' && entry.toString().startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }
-          classpath.entries.add(new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11'))
+          def jreContainer = new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11')
+          jreContainer.getEntryAttributes().put("module", "false");
+         
+          classpath.entries.add(jreContainer)
           
           classpath.entries.each { entry ->
             if ( entry.kind == 'lib' || entry.kind == 'con') {
