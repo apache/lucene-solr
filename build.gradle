@@ -265,6 +265,9 @@ vf.version=3
 
 tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
 
+task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
+  baseDir = rootProject.projectDir
+}
 
 // turn off idea cycle checking - how to do for eclipse?
 idea.project.ipr {
