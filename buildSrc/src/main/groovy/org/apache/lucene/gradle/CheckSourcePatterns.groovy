@@ -30,6 +30,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.TaskExecutionException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -114,7 +115,7 @@ class CheckSourcePatterns extends DefaultTask {
     }
     
     if (found) {
-      throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
+      throw new TaskExecutionException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
       found, violations.join(', ')))
     }
   }
