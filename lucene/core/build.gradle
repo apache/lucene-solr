@@ -1,5 +1,4 @@
 apply plugin: 'java-library'
-apply plugin: "org.xbib.gradle.plugin.jflex"
 
 archivesBaseName = 'lucene-core'
 
@@ -109,6 +108,8 @@ regenerate.dependsOn fixCRLFPacked
 
 fixCRLFAutomaton.dependsOn unzipMoman
 unzipMoman.dependsOn downloadMoman
+
+createLevAutomaton.mustRunAfter unzipMoman
 
 regenerate.dependsOn runjflex
 
