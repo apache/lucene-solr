@@ -195,15 +195,15 @@ configure(subprojects - project(":buildSrc")) {  pj ->
             }
           }
           
+          // add JRE_CONTAINER
+          classpath.entries.removeAll { entry -> entry.kind == 'con' && entry.toString().startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }
+          classpath.entries.add(new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11'))
+          
           classpath.entries.each { entry ->
-            if ( entry.kind == 'lib') {
+            if ( entry.kind == 'lib' || entry.kind == 'con') {
               entry.exported = true
             }
           }
-          
-          // add JRE_CONTAINER
-          classpath.entries.removeAll { entry -> entry.kind == 'con' }
-          classpath.entries.add(new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11'))
           
           // Jetty mod files make eclipse sad
           new File("${projectDir}/.settings/org.eclipse.wst.validation.prefs").text = """
