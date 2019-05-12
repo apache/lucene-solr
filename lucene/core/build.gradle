@@ -1,4 +1,5 @@
 apply plugin: 'java-library'
+apply plugin: "org.xbib.gradle.plugin.jflex"
 
 archivesBaseName = 'lucene-core'
 
@@ -42,7 +43,7 @@ task fixCRLFAutomaton(type: org.apache.lucene.gradle.FixCRLF) {
   encoding="UTF-8"
 }
 
-fixCRLFAutomaton.mustRunAfter createLevAutomaton
+fixCRLFAutomaton.dependsOn createLevAutomaton
 
 task createPackedIntSources {
   
@@ -72,21 +73,29 @@ task createPackedIntSources {
 
 task fixCRLFPacked(type: org.apache.lucene.gradle.FixCRLF) {
   sourceDir = "src/java/org/apache/lucene/util/packed"
-  includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py"
-  encoding="UTF-8"
+  includes = "BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py"
+  encoding = "UTF-8"
 }
 
-fixCRLFPacked.mustRunAfter createPackedIntSources
+fixCRLFPacked.dependsOn createPackedIntSources
 
 task unzipMoman(){
-  ant.unzip(src: "${buildDir}/moman.zip", dest:"${buildDir}/moman", overwrite:"true") {
-    ant.cutdirsmapper(dirs: "1")
+  doLast {
+    ant.unzip(src: "${buildDir}/moman.zip", dest:"${buildDir}/moman", overwrite:"true") {
+      ant.cutdirsmapper(dirs: "1")
+    }
   }
 }
 
+// TODO: only download if we have not already
 task downloadMoman(type: org.apache.lucene.gradle.Get) {
   sourceUrl = "${momanUrl}"
   target = new File("${buildDir}", 'moman.zip')
+}
+
+task runjflex(type: org.apache.lucene.gradle.JFlex) {
+  source = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex")
+  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
 }
 
 task regenerate {
@@ -95,9 +104,12 @@ task regenerate {
   }
 }
 
-regenerate.dependsOn createLevAutomaton
-createLevAutomaton.dependsOn createPackedIntSources
+regenerate.dependsOn fixCRLFAutomaton
+regenerate.dependsOn fixCRLFPacked
 
-createPackedIntSources.dependsOn unzipMoman
+fixCRLFAutomaton.dependsOn unzipMoman
 unzipMoman.dependsOn downloadMoman
+
+regenerate.dependsOn runjflex
+
 
