@@ -34,7 +34,8 @@ allprojects {
   
   apply plugin: 'idea'
   apply plugin: 'eclipse'
-
+  apply plugin: 'maven-publish'
+  
 }
 
 task('regenerate') {
@@ -116,7 +117,7 @@ configure(subprojects - project(":buildSrc")) {  pj ->
     // we create new *Tran configurations that are transitive
     // and can be used between modules
     configurations {
-
+      
       implementationTran
       testImplementationTran
       
@@ -141,11 +142,11 @@ configure(subprojects - project(":buildSrc")) {  pj ->
       transitive = false
     }
     
-    project.sourceSets.test.setCompileClasspath( project.sourceSets.test.getCompileClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran));
-    project.sourceSets.test.setRuntimeClasspath( project.sourceSets.test.getRuntimeClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran));
+    project.sourceSets.test.setCompileClasspath( project.sourceSets.test.getCompileClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran))
+    project.sourceSets.test.setRuntimeClasspath( project.sourceSets.test.getRuntimeClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran))
     
-    project.sourceSets.main.setCompileClasspath( project.sourceSets.main.getCompileClasspath().plus(project.configurations.implementationTran));
-    project.sourceSets.main.setRuntimeClasspath( project.sourceSets.main.getRuntimeClasspath().plus(project.configurations.implementationTran));
+    project.sourceSets.main.setCompileClasspath( project.sourceSets.main.getCompileClasspath().plus(project.configurations.implementationTran))
+    project.sourceSets.main.setRuntimeClasspath( project.sourceSets.main.getRuntimeClasspath().plus(project.configurations.implementationTran))
     
     
     configurations.all {
@@ -177,17 +178,19 @@ configure(subprojects - project(":buildSrc")) {  pj ->
       
       classpath {
         defaultOutputDir = file('build-eclipse')
-
-        plusConfigurations += [ configurations.implementationTran, configurations.testImplementationTran ]
         
-        file.whenMerged {
-          classpath ->
+        plusConfigurations += [
+          configurations.implementationTran,
+          configurations.testImplementationTran
+        ]
+        
+        file.whenMerged { classpath ->
           if (project.name == 'buildSrc') {
             project.tasks.pluginUnderTestMetadata
           }
-         
+          
           classpath.entries.each { entry ->
-
+            
             if ( entry.kind == 'src' && entry.hasProperty('output') ) {
               // use default Output for all source-folders
               entry.output = null
@@ -216,7 +219,7 @@ vf.version=3
       }
     }
   }
-
+  
   tasks.withType(Test) {
     filter {
       // so we can run with --tests wildcards
@@ -229,15 +232,23 @@ vf.version=3
     } else {
       maxParallelForks = Runtime.runtime.availableProcessors() / 2
     }
-
+    
     def testsFailFast = project.ext.properties.tests_failfast
     if (testsFailFast)    {
       failFast = true
     }
   }
-  
-  // TODO: Where to do this ... and config
-  // apply plugin: 'maven-publish'
+
+  plugins.withType(JavaPlugin) {
+    // configure maven
+    publishing {
+      publications {
+        mavenJava(MavenPublication) {
+          from components.java
+        }
+      }
+    }
+  }
 }
 
 tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
