@@ -21,6 +21,8 @@ package org.apache.lucene.gradle
  * svn keywords, javadoc-style licenses, or nocommits.
  */
 
+import java.lang.invoke.MethodHandles
+
 import org.apache.rat.Defaults
 import org.apache.rat.api.MetaData
 import org.apache.rat.document.impl.FileDocument
@@ -28,9 +30,12 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class CheckSourcePatterns extends DefaultTask {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @InputDirectory
   String baseDir
   
@@ -54,6 +59,8 @@ class CheckSourcePatterns extends DefaultTask {
         // excludes:
         exclude(name: '**/build/**')
         exclude(name: '**/dist/**')
+        exclude(name: '**/.out/**')
+        exclude(name: '**/.settings/**')
         exclude(name: 'lucene/benchmark/work/**')
         exclude(name: 'lucene/benchmark/temp/**')
         exclude(name: '**/CheckLoggingConfiguration.java')
@@ -61,7 +68,7 @@ class CheckSourcePatterns extends DefaultTask {
         exclude(name: 'solr/core/src/test/org/apache/hadoop/**')
       }
     }.each{ f ->
-      println ('Scanning file: ' + f)
+      log.info ('Scanning file: ' + f)
       def text = f.getText('UTF-8')
       invalidPatterns.each{ pattern,name ->
         if (pattern.matcher(text).find()) {
@@ -156,7 +163,7 @@ class CheckSourcePatterns extends DefaultTask {
   def found = 0
   def violations = new TreeSet()
   def reportViolation = { f, name ->
-    println (name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
+    log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
     violations.add(name)
     found++
   }
