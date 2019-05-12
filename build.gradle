@@ -6,7 +6,6 @@ import org.apache.lucene.gradle.BuildPlugin
 
 plugins {
   id "com.palantir.consistent-versions" version "1.4.0"
-  id "org.xbib.gradle.plugin.jflex" version "1.2.0" apply false
   id 'eclipse'
 }
 
