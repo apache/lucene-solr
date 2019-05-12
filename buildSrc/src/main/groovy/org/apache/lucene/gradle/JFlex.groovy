@@ -20,30 +20,29 @@ package org.apache.lucene.gradle
  * Checks GIT working copy for unversioned or modified files.
  */
 
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.api.Status
-import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
-import org.eclipse.jgit.errors.*
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
-import javax.inject.Inject
-
-class Get extends DefaultTask {
+class JFlex extends DefaultTask {
   
-  @Input
-  String sourceUrl
+  @InputFile
+  File source
   
-  @OutputFile
+  @OutputDirectory
   File target
   
   @TaskAction
-  void download() {
-    ant.get(src: sourceUrl, dest: target)
+  void jflex() {
+    
+    ant.taskdef(classname: 'jflex.anttask.JFlexTask',
+    name: 'jflex',
+    classpath: project.configurations.jflex.asPath)
+    
+    
+    ant.jflex(file: source.getAbsolutePath(), outdir: target.getAbsolutePath(), nobak: 'on', skeleton: "src/data/jflex/skeleton.default")
+    
   }
 }
 
