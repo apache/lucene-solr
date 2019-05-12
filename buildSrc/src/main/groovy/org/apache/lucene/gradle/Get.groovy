@@ -38,12 +38,18 @@ class Get extends DefaultTask {
   @Input
   String sourceUrl
   
+  @Input 
+  boolean overwrite = false;
+  
   @OutputFile
   File target
   
   @TaskAction
   void download() {
-    ant.get(src: sourceUrl, dest: target)
+    if (target.isDirectory()) throw IllegalArgumentException("Must specify target output file.");
+    if (overwrite || !target.exists()) {
+      ant.get(src: sourceUrl, dest: target)
+    }
   }
 }
 
