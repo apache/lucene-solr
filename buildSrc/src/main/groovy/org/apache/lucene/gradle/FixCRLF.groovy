@@ -28,6 +28,8 @@ import org.eclipse.jgit.errors.*;
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
@@ -35,10 +37,16 @@ import javax.inject.Inject
 
 class FixCRLF extends DefaultTask {
   
+  @InputFile
+  @Optional
+  File file
+  
   @Input
+  @Optional
   String sourceDir
 
   @Input
+  @Optional
   String includes
   
   @Input
@@ -46,8 +54,11 @@ class FixCRLF extends DefaultTask {
 
   @TaskAction
   void fixCRLF() {
-    //ant.get(src: sourceUrl, dest: target)
-    ant.fixcrlf(srcdir: sourceDir, includes: includes, encoding: encoding)
+    if (file != null) {
+      ant.fixcrlf(file: file.getAbsolutePath(), encoding: encoding)
+    } else {
+      ant.fixcrlf(srcdir: sourceDir, includes: includes, encoding: encoding)
+    }
   }
 }
 
