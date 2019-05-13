@@ -19,3 +19,4 @@ org.apache.lucene.codecs.memory.DirectPostingsFormat
 org.apache.lucene.codecs.memory.FSTOrdPostingsFormat
 org.apache.lucene.codecs.memory.FSTPostingsFormat
 org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat
+org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat

@@ -152,18 +152,13 @@ public class DeltaBaseTermStateSerializer implements Accountable {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
     boolean hasFreqs = indexOptions != IndexOptions.DOCS;
     boolean hasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    boolean hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    boolean hasPayloads = fieldInfo.hasPayloads();
 
-    final IntBlockTermState intTermState = reuse != null ? (IntBlockTermState) reuse : new IntBlockTermState();
+    IntBlockTermState intTermState = reuse != null ? reset((IntBlockTermState) reuse) : new IntBlockTermState();
 
     intTermState.docFreq = termStatesInput.readVInt();
-    if (hasFreqs) {
-      intTermState.totalTermFreq = intTermState.docFreq + termStatesInput.readVLong();
-      assert intTermState.totalTermFreq >= intTermState.docFreq;
-    } else {
-      intTermState.totalTermFreq = intTermState.docFreq;
-    }
+    intTermState.totalTermFreq = hasFreqs ?
+        intTermState.docFreq + termStatesInput.readVLong() : intTermState.docFreq;
+    assert intTermState.totalTermFreq >= intTermState.docFreq;
 
     if (intTermState.docFreq == 1) {
       intTermState.singletonDocID = termStatesInput.readVInt();
@@ -173,21 +168,39 @@ public class DeltaBaseTermStateSerializer implements Accountable {
 
     if (hasPositions) {
       intTermState.posStartFP = basePosStartFP + termStatesInput.readVLong();
-      if (hasOffsets || hasPayloads) {
+      boolean hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      if (hasOffsets || fieldInfo.hasPayloads()) {
         intTermState.payStartFP = basePayStartFP + termStatesInput.readVLong();
       }
       if (intTermState.totalTermFreq > BLOCK_SIZE) {
         intTermState.lastPosBlockOffset = termStatesInput.readVLong();
-      } else {
-        intTermState.lastPosBlockOffset = -1;
       }
     }
     if (intTermState.docFreq > BLOCK_SIZE) {
       intTermState.skipOffset = termStatesInput.readVLong();
-    } else {
-      intTermState.skipOffset = -1;
     }
     return intTermState;
+  }
+
+  private static IntBlockTermState reset(IntBlockTermState termState) {
+    // OrdTermState.
+    termState.ord = 0;
+
+    // BlockTermState.
+    termState.docFreq = 0;
+    termState.totalTermFreq = 0;
+    termState.termBlockOrd = 0;
+    termState.blockFilePointer = 0;
+
+    // IntBlockTermState.
+    termState.docStartFP = 0;
+    termState.posStartFP = 0;
+    termState.payStartFP = 0;
+    termState.skipOffset = -1;
+    termState.lastPosBlockOffset = -1;
+    termState.singletonDocID = -1;
+
+    return termState;
   }
 
   @Override
