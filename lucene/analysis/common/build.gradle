@@ -21,3 +21,16 @@ dependencies {
   
   testImplementationTran project(':lucene:lucene-test-framework')
 }
+
+
+task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
+  unicodePropsFile = new File("${projectDir}/src/java/org/apache/lucene/analysis/util/UnicodeProps.java")
+}
+
+task fixCRLFUnicodeData(type: org.apache.lucene.gradle.FixCRLF) {
+  file = new File("${projectDir}/src/java/org/apache/lucene/analysis/util/UnicodeProps.java")
+  encoding = "UTF-8"
+}
+
+unicodeData.dependsOn fixCRLFUnicodeData
+
