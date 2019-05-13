@@ -217,7 +217,7 @@ configure(subprojects) {  pj ->
           classpath.entries.add(jreContainer)
           
           classpath.entries.each { entry ->
-            if ( entry.kind == 'lib' || entry.kind == 'con') {
+            if ( entry.kind == 'lib') {
               entry.exported = true
             }
           }
