@@ -22,9 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,12 +52,12 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -173,19 +173,27 @@ public class SimCloudManager implements SolrCloudManager {
    * @param timeSource time source to use.
    */
   public SimCloudManager(TimeSource timeSource) throws Exception {
-    this.stateManager = new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
+    this(timeSource, null);
+  }
+
+  SimCloudManager(TimeSource timeSource, SimDistribStateManager distribStateManager) throws Exception {
     this.loader = new SolrResourceLoader();
-    // init common paths
-    stateManager.makePath(ZkStateReader.CLUSTER_STATE);
-    stateManager.makePath(ZkStateReader.CLUSTER_PROPS);
-    stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
-    stateManager.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
-    stateManager.makePath(ZkStateReader.ROLES);
-    stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
-    stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
-    stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-    stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-    stateManager.makePath(Overseer.OVERSEER_ELECT);
+    if (distribStateManager == null) {
+      this.stateManager =  new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
+      // init common paths
+      stateManager.makePath(ZkStateReader.CLUSTER_STATE);
+      stateManager.makePath(ZkStateReader.CLUSTER_PROPS);
+      stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
+      stateManager.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
+      stateManager.makePath(ZkStateReader.ROLES);
+      stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
+      stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
+      stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+      stateManager.makePath(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+      stateManager.makePath(Overseer.OVERSEER_ELECT);
+    } else {
+      this.stateManager = distribStateManager;
+    }
 
     // register common metrics
     metricTag = Integer.toHexString(hashCode());
@@ -296,22 +304,27 @@ public class SimCloudManager implements SolrCloudManager {
     return cloudManager;
   }
 
-  public static SimCloudManager createCluster(SolrCloudManager other, TimeSource timeSource) throws Exception {
-    SimCloudManager cloudManager = new SimCloudManager(timeSource);
+  public static SimCloudManager createCluster(SolrCloudManager other, AutoScalingConfig config, TimeSource timeSource) throws Exception {
+    SimDistribStateManager distribStateManager = new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
+    distribStateManager.copyFrom(other.getDistribStateManager(), false);
+    SimCloudManager cloudManager = new SimCloudManager(timeSource, distribStateManager);
+    if (config != null) {
+      cloudManager.getSimDistribStateManager().simSetAutoScalingConfig(config);
+    } else {
+      config = cloudManager.getDistribStateManager().getAutoScalingConfig();
+    }
+    Set<String> nodeTags = new HashSet<>(SimUtils.COMMON_NODE_TAGS);
+    nodeTags.addAll(config.getPolicy().getParams());
+    Set<String> replicaTags = new HashSet<>(SimUtils.COMMON_REPLICA_TAGS);
+    replicaTags.addAll(config.getPolicy().getPerReplicaAttributes());
     cloudManager.getSimClusterStateProvider().copyFrom(other.getClusterStateProvider());
-    List<String> replicaTags = Arrays.asList(
-        Variable.Type.CORE_IDX.metricsAttribute,
-        "QUERY./select.requests",
-        "UPDATE./update.requests"
-    );
-    Set<String> nodeTags = createNodeValues("unused:1234_solr").keySet();
     for (String node : other.getClusterStateProvider().getLiveNodes()) {
       SimClusterStateProvider simClusterStateProvider = cloudManager.getSimClusterStateProvider();
       cloudManager.getSimNodeStateProvider().simSetNodeValues(node, other.getNodeStateProvider().getNodeValues(node, nodeTags));
       Map<String, Map<String, List<ReplicaInfo>>> infos = other.getNodeStateProvider().getReplicaInfo(node, replicaTags);
       simClusterStateProvider.simSetReplicaValues(node, infos, true);
     }
-    cloudManager.getSimDistribStateManager().copyFrom(other.getDistribStateManager(), false);
+    SimUtils.checkConsistency(cloudManager, config);
     return cloudManager;
   }
 
@@ -721,13 +734,6 @@ public class SimCloudManager implements SolrCloudManager {
     count.incrementAndGet();
   }
 
-  private static final Map<String, String> v2v1Mapping = new HashMap<>();
-  static {
-    for (CollectionApiMapping.Meta meta : CollectionApiMapping.Meta.values()) {
-      if (meta.action != null) v2v1Mapping.put(meta.commandName, meta.action.toLower());
-    }
-  }
-
   /**
    * Handler method for autoscaling requests. NOTE: only a specific subset of autoscaling requests is
    * supported!
@@ -835,31 +841,8 @@ public class SimCloudManager implements SolrCloudManager {
     if (!(req instanceof CollectionAdminRequest)) {
       // maybe a V2Request?
       if (req instanceof V2Request) {
-        Map<String, Object> reqMap = new HashMap<>();
-        ((V2Request)req).toMap(reqMap);
-        String path = (String)reqMap.get("path");
-        if (!path.startsWith("/c/") || path.length() < 4) {
-          throw new UnsupportedOperationException("Unsupported V2 request path: " + reqMap);
-        }
-        Map<String, Object> cmd = (Map<String, Object>)reqMap.get("command");
-        if (cmd.size() != 1) {
-          throw new UnsupportedOperationException("Unsupported multi-command V2 request: " + reqMap);
-        }
-        a = cmd.keySet().iterator().next();
-        params = new ModifiableSolrParams();
-        ((ModifiableSolrParams)params).add(CollectionAdminParams.COLLECTION, path.substring(3));
-        if (req.getParams() != null) {
-          ((ModifiableSolrParams)params).add(req.getParams());
-        }
-        Map<String, Object> reqParams = (Map<String, Object>)cmd.get(a);
-        for (Map.Entry<String, Object> e : reqParams.entrySet()) {
-          ((ModifiableSolrParams)params).add(e.getKey(), e.getValue().toString());
-        }
-        // re-map from v2 to v1 action
-        a = v2v1Mapping.get(a);
-        if (a == null) {
-          throw new UnsupportedOperationException("Unsupported V2 request: " + reqMap);
-        }
+        params = SimUtils.v2AdminRequestToV1Params((V2Request)req);
+        a = params.get(CoreAdminParams.ACTION);
       } else {
         throw new UnsupportedOperationException("Only some CollectionAdminRequest-s are supported: " + req.getClass().getName() + ": " + req.getPath() + " " + req.getParams());
       }

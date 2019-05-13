@@ -466,6 +466,10 @@ public class Policy implements MapWriter {
     return params.stream().map(Pair::first).collect(toList());
   }
 
+  public List<String> getPerReplicaAttributes() {
+    return Collections.unmodifiableList(perReplicaAttributes);
+  }
+
   /**
    * Compares two {@link Row} loads according to a policy.
    *

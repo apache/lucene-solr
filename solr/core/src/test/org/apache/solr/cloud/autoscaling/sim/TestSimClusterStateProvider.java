@@ -107,7 +107,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 
     if (simulated) {
       // initialize simulated provider
-      SimCloudManager simCloudManager = SimCloudManager.createCluster(realManager, TimeSource.get("simTime:10"));
+      SimCloudManager simCloudManager = SimCloudManager.createCluster(realManager, null, TimeSource.get("simTime:10"));
 //      simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
 //      simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
 //      nodeValues.forEach((n, values) -> {

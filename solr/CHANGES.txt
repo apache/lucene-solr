@@ -40,6 +40,8 @@ New Features
 
 * SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
 
+* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
+
 Other Changes
 ----------------------
 
