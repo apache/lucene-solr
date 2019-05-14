@@ -25,10 +25,16 @@ dependencies {
 }
 
 task regenerate {
-
+  doFirst {
+    println "--> regenerate"
+  }
 }
 
 task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
+  doFirst {
+    println "--> Generate Unicode data ..."
+  }
+  
   unicodePropsFile = new File("${projectDir}" + unicodePropsJavaFile)
 }
 
