@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -113,7 +114,6 @@ import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,6 +176,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricManager metricManager;
   private String registryName;
+
+  private final ExecutorService collectorExecutor;
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
@@ -255,20 +257,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
-      boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
+      boolean enableCache, DirectoryFactory directoryFactory, ExecutorService collectorExecutor) throws IOException {
     // We don't need to reserve the directory because we get it from the factory
     this(core, path, schema, name, getReader(core, config, directoryFactory, path), true, enableCache, false,
-        directoryFactory);
+        directoryFactory, collectorExecutor);
     // Release the directory at close.
     this.releaseDirectory = true;
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, String name, DirectoryReader r,
-      boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory)
-          throws IOException {
-    super(wrapReader(core, r),  ExecutorUtil.newMDCAwareCachedThreadPool(1024,
-        new DefaultSolrThreadFactory("searcherCollectorExecutor")));
-
+      boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory,
+      ExecutorService collectorExecutor) throws IOException {
+    super(wrapReader(core, r), collectorExecutor);
     this.path = path;
     this.directoryFactory = directoryFactory;
     this.reader = (DirectoryReader) super.readerContext.reader();
@@ -276,6 +276,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
+    this.collectorExecutor = collectorExecutor;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
     log.info("Opening [{}]", this.name);
@@ -517,7 +518,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
     
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
+      if (this.collectorExecutor != null) {
+        ExecutorUtil.shutdownAndAwaitTermination(this.collectorExecutor);
+      }
     } catch (Throwable e) {
       SolrException.log(log, e);
       if (e instanceof Error) {

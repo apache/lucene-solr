@@ -252,7 +252,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 //    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
 //    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
 //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
-
+    collectorPoolSize = getInt("query/collectorPoolSize", 4096);
     useFilterForSortedQuery = getBool("query/useFilterForSortedQuery", false);
     queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
@@ -557,7 +557,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
-  
+  public final int collectorPoolSize;
+
   public final boolean useRangeVersionsForPeerSync;
   
   // DocSet
