@@ -75,7 +75,8 @@ public class SimDistribStateManager implements DistribStateManager {
     private int version = 0;
     private int seq = 0;
     private final CreateMode mode;
-    private final String clientId;
+    // copyFrom needs to modify this
+    private String owner;
     private final String path;
     private final String name;
     private final Node parent;
@@ -84,16 +85,16 @@ public class SimDistribStateManager implements DistribStateManager {
     Set<Watcher> dataWatches = ConcurrentHashMap.newKeySet();
     Set<Watcher> childrenWatches = ConcurrentHashMap.newKeySet();
 
-    Node(Node parent, String name, String path, CreateMode mode, String clientId) {
+    Node(Node parent, String name, String path, CreateMode mode, String owner) {
       this.parent = parent;
       this.name = name;
       this.path = path;
       this.mode = mode;
-      this.clientId = clientId;
+      this.owner = owner;
     }
 
-    Node(Node parent, String name, String path, byte[] data, CreateMode mode, String clientId) {
-      this(parent, name, path, mode, clientId);
+    Node(Node parent, String name, String path, byte[] data, CreateMode mode, String owner) {
+      this(parent, name, path, mode, owner);
       this.data = data;
     }
 
@@ -136,7 +137,7 @@ public class SimDistribStateManager implements DistribStateManager {
     public VersionedData getData(Watcher w) {
       dataLock.lock();
       try {
-        VersionedData res = new VersionedData(version, data, mode, clientId);
+        VersionedData res = new VersionedData(version, data, mode, owner);
         if (w != null && !dataWatches.contains(w)) {
           dataWatches.add(w);
         }
@@ -195,7 +196,7 @@ public class SimDistribStateManager implements DistribStateManager {
           continue;
         }
         if ((CreateMode.EPHEMERAL == n.mode || CreateMode.EPHEMERAL_SEQUENTIAL == n.mode) &&
-            id.equals(n.clientId)) {
+            id.equals(n.owner)) {
           removeChild(n.name, -1);
         } else {
           n.removeEphemeralChildren(id);
@@ -208,7 +209,7 @@ public class SimDistribStateManager implements DistribStateManager {
   private final ReentrantLock multiLock = new ReentrantLock();
 
   public static Node createNewRootNode() {
-    return new Node(null, "", "/", CreateMode.PERSISTENT, "__root__");
+    return new Node(null, "", "/", CreateMode.PERSISTENT, "0");
   }
 
   private final ExecutorService watchersPool;
@@ -243,6 +244,7 @@ public class SimDistribStateManager implements DistribStateManager {
    */
   public void copyFrom(DistribStateManager other, boolean failOnExists) throws InterruptedException, IOException, KeeperException, AlreadyExistsException, BadVersionException {
     List<String> tree = other.listTree("/");
+    log.info("- copying " + tree.size() + " resources...");
     // check if any node exists
     for (String path : tree) {
       if (hasData(path) && failOnExists) {
@@ -256,9 +258,10 @@ public class SimDistribStateManager implements DistribStateManager {
       } else {
         makePath(path, data.getData(), data.getMode(), failOnExists);
       }
-      // hack: set the version to be the same as the source
+      // hack: set the version and owner to be the same as the source
       Node n = traverse(path, false, CreateMode.PERSISTENT);
       n.version = data.getVersion();
+      n.owner = data.getOwner();
     }
   }
 
@@ -328,6 +331,9 @@ public class SimDistribStateManager implements DistribStateManager {
       return null;
     }
     throttleOrError(path);
+    if (path.equals("/")) {
+      return root;
+    }
     if (path.charAt(0) == '/') {
       path = path.substring(1);
     }
@@ -365,7 +371,8 @@ public class SimDistribStateManager implements DistribStateManager {
     }
 
     fullChildPath.append(nodeName);
-    Node child = new Node(parentNode, nodeName, fullChildPath.toString(), data, mode, id);
+    String owner = mode == CreateMode.EPHEMERAL || mode == CreateMode.EPHEMERAL_SEQUENTIAL ? id : "0";
+    Node child = new Node(parentNode, nodeName, fullChildPath.toString(), data, mode, owner);
 
     if (attachToParent) {
       parentNode.setChild(nodeName, child);

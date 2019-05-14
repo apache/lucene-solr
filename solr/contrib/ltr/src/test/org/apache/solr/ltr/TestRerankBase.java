@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -473,6 +474,61 @@ public class TestRerankBase extends RestTestBase {
     }
     assertU(commit());
     scn.close();
+  }
+
+  protected static void doTestParamsToMap(String featureClassName,
+      LinkedHashMap<String,Object> featureParams) throws Exception {
+
+    // start with default parameters
+    final LinkedHashMap<String,Object> paramsA = new LinkedHashMap<String,Object>();
+    final Object defaultValue;
+    switch (random().nextInt(6)) {
+      case 0:
+        defaultValue = null;
+        break;
+      case 1:
+        defaultValue = "1.2";
+        break;
+      case 2:
+        defaultValue = Double.valueOf(3.4d);
+        break;
+      case 3:
+        defaultValue = Float.valueOf(0.5f);
+        break;
+      case 4:
+        defaultValue = Integer.valueOf(67);
+        break;
+      case 5:
+        defaultValue = Long.valueOf(89);
+        break;
+      default:
+        defaultValue = null;
+        fail("unexpected defaultValue choice");
+        break;
+    }
+    if (defaultValue != null) {
+      paramsA.put("defaultValue", defaultValue);
+    }
+
+    // then add specific parameters
+    paramsA.putAll(featureParams);
+
+    // next choose a random feature name
+    final String featureName = "randomFeatureName"+random().nextInt(10);
+
+    // create a feature from the parameters
+    final Feature featureA = Feature.getInstance(solrResourceLoader,
+        featureClassName, featureName, paramsA);
+
+    // turn the feature back into parameters
+    final LinkedHashMap<String,Object> paramsB = featureA.paramsToMap();
+
+    // create feature B from feature A's parameters
+    final Feature featureB = Feature.getInstance(solrResourceLoader,
+        featureClassName, featureName, paramsB);
+
+    // check that feature A and feature B are identical
+    assertEquals(featureA, featureB);
   }
 
 }

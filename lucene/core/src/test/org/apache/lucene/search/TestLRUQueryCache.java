@@ -826,18 +826,15 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    TermQuery should = new TermQuery(new Term("foo", "baz"));
     TermQuery must = new TermQuery(new Term("foo", "bar"));
     TermQuery filter = new TermQuery(new Term("foo", "quux"));
     TermQuery mustNot = new TermQuery(new Term("foo", "foo"));
-    bq.add(should, Occur.SHOULD);
     bq.add(must, Occur.MUST);
     bq.add(filter, Occur.FILTER);
     bq.add(mustNot, Occur.MUST_NOT);
 
     // same bq but with FILTER instead of MUST
     BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
-    bq2.add(should, Occur.SHOULD);
     bq2.add(must, Occur.FILTER);
     bq2.add(filter, Occur.FILTER);
     bq2.add(mustNot, Occur.MUST_NOT);
@@ -849,7 +846,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     queryCache.clear();
     assertEquals(Collections.emptySet(), new HashSet<>(queryCache.cachedQueries()));
     searcher.search(new ConstantScoreQuery(bq.build()), 1);
-    assertEquals(new HashSet<>(Arrays.asList(bq2.build(), should, must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
+    assertEquals(new HashSet<>(Arrays.asList(bq2.build(), must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
 
     reader.close();
     dir.close();

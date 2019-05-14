@@ -34,7 +34,17 @@ Other
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
 ======================= Lucene 8.2.0 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
+
+Improvements
+
+* LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
+  as opposed to eliminating them during scoring construction. (Atri Sharma via Jim Ferenczi)
 
 ======================= Lucene 8.1.0 =======================
 

@@ -192,18 +192,33 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private BooleanQuery rewriteNoScoring() {
-    if (clauseSets.get(Occur.MUST).size() == 0) {
+    boolean keepShould = getMinimumNumberShouldMatch() > 0
+        || (clauseSets.get(Occur.MUST).size() + clauseSets.get(Occur.FILTER).size() == 0);
+
+    if (clauseSets.get(Occur.MUST).size() == 0 && keepShould) {
       return this;
     }
     BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
+
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {
-      if (clause.getOccur() == Occur.MUST) {
-        newQuery.add(clause.getQuery(), Occur.FILTER);
-      } else {
-        newQuery.add(clause);
+      switch (clause.getOccur()) {
+        case MUST: {
+          newQuery.add(clause.getQuery(), Occur.FILTER);
+          break;
+        }
+        case SHOULD: {
+          if (keepShould) {
+            newQuery.add(clause);
+          }
+          break;
+        }
+        default: {
+          newQuery.add(clause);
+        }
       }
     }
+
     return newQuery.build();
   }
 

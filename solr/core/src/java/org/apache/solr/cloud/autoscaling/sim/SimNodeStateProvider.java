@@ -317,6 +317,7 @@ public class SimNodeStateProvider implements NodeStateProvider {
     for (ReplicaInfo r : replicas) {
       Map<String, List<ReplicaInfo>> perCollection = res.computeIfAbsent(r.getCollection(), Utils.NEW_HASHMAP_FUN);
       List<ReplicaInfo> perShard = perCollection.computeIfAbsent(r.getShard(), Utils.NEW_ARRAYLIST_FUN);
+      // XXX filter out some properties?
       perShard.add(r);
     }
     return res;
