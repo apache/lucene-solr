@@ -90,7 +90,7 @@ Other Changes
 
 * SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
 
-* SOLR-13437: nogit json parser is forked into solrj under org.apache.solr.common.json package. Directly
+* SOLR-13437: noggit json parser is forked into solrj under org.apache.solr.common.json package. Directly
   using noggit is forbidden (noble)
 
 ==================  8.1.0 ==================
