@@ -2,6 +2,8 @@ apply plugin: 'java-library'
 
 archivesBaseName = 'analyzers-common'
 
+def unicodePropsJavaFile = "/src/java/org/apache/lucene/analysis/util/UnicodeProps.java"
+
 task jarTest (type: Jar) {
   from sourceSets.test.output
   classifier = 'test'
@@ -22,15 +24,20 @@ dependencies {
   testImplementationTran project(':lucene:lucene-test-framework')
 }
 
+task regenerate {
+
+}
 
 task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
-  unicodePropsFile = new File("${projectDir}/src/java/org/apache/lucene/analysis/util/UnicodeProps.java")
+  unicodePropsFile = new File("${projectDir}" + unicodePropsJavaFile)
 }
 
 task fixCRLFUnicodeData(type: org.apache.lucene.gradle.FixCRLF) {
-  file = new File("${projectDir}/src/java/org/apache/lucene/analysis/util/UnicodeProps.java")
+  file = new File("${projectDir}" + unicodePropsJavaFile)
   encoding = "UTF-8"
 }
 
-unicodeData.dependsOn fixCRLFUnicodeData
+unicodeData.finalizedBy fixCRLFUnicodeData
+
+regenerate.dependsOn unicodeData
 
