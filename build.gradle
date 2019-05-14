@@ -64,7 +64,11 @@ configure(subprojects) {  pj ->
         includeTestsMatching "*.Test*"
         includeTestsMatching "*.*Test"
       }
-      
+
+      // Use UTF-8, don't rely on local platform encoding.      
+      compileJava.options.encoding = "UTF-8"
+      compileTestJava.options.encoding = "UTF-8"
+
       maxHeapSize = "512m"
       // Enable assertions
       jvmArgs += "-ea"
