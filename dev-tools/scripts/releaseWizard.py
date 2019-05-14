@@ -29,6 +29,7 @@ import json
 import copy
 import subprocess
 import shutil
+import shlex
 import time
 import fcntl
 from collections import OrderedDict
@@ -731,7 +732,9 @@ def ask_yes_no(text):
 
 
 def run_follow(command, cwd=None, fh=sys.stdout):
-    process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
+    if not isinstance(command, list):
+        command = shlex.split(command)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
     lines_written = 0
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
@@ -993,7 +996,7 @@ One way is to rename the ivy cache folder before building.
         cmdline = "python3 -u %s --root %s --push-local %s --rc-num %s --sign %s --logfile %s" \
                   % (os.path.join(current_git_root, 'dev-tools', 'scripts', 'buildAndPushRelease.py'),
                      state.get_git_checkout_folder(),
-                     os.path.join(state.get_release_folder(), "build"),
+                     os.path.join(state.get_release_folder(), "dist"),
                      state.rc_number,
                      key_id,
                      logfile)
