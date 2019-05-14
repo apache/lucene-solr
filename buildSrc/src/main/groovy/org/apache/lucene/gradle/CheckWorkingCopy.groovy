@@ -27,11 +27,14 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.errors.*;
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 
 import javax.inject.Inject
 
 class CheckWorkingCopy extends DefaultTask {
+
+  @Input
   boolean failonmodifications
 
   @Inject
