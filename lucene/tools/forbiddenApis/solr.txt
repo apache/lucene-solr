@@ -55,5 +55,3 @@ com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Obj
 @defaultMessage Use methods in java.util.Comparator instead
 com.google.common.collect.Ordering
 
-@defaultMessage Use corresponding classes in package org.apache.solr.common.json instead
-org.noggit.**

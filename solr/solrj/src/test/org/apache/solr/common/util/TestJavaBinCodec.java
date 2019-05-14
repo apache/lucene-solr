@@ -39,10 +39,10 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.json.CharArr;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.RTimer;
 import org.junit.Test;
+import org.noggit.CharArr;
 
 public class TestJavaBinCodec extends SolrTestCaseJ4 {
 

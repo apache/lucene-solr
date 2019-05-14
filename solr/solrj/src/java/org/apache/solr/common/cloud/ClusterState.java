@@ -29,10 +29,10 @@ import java.util.function.Consumer;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.json.JSONWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
+import org.noggit.JSONWriter;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using

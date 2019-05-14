@@ -40,11 +40,11 @@ import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.json.JSONUtil;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.schema.PreAnalyzedField.ParseResult;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

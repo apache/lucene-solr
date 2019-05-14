@@ -27,10 +27,10 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
 import org.apache.solr.common.SolrException;
 
-import org.apache.solr.common.json.CharArr;
-import org.apache.solr.common.json.JSONWriter;
 import org.junit.Test;
 
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 
 public class TestDelegationTokenResponse extends SolrTestCase {
 

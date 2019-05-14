@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.json.JSONWriter;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.noggit.JSONWriter;
 
 /**
  * This class defines the meta-data about a collection level snapshot

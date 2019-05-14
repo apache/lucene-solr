@@ -19,7 +19,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.apache.solr.common.json.CharArr;
+import org.noggit.CharArr;
 
 
 public class ByteUtils {

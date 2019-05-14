@@ -71,6 +71,7 @@ import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
@@ -108,9 +109,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.json.CharArr;
-import org.apache.solr.common.json.JSONUtil;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -162,6 +160,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.noggit.CharArr;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -1499,7 +1500,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       params = mparams;
     }
     String response = updateJ(jsonAdd(sdoc), params);
-    Map rsp = (Map) ObjectBuilder.fromJSON(response);
+    Map rsp = (Map)ObjectBuilder.fromJSON(response);
     List lst = (List)rsp.get("adds");
     if (lst == null || lst.size() == 0) return null;
     return (Long) lst.get(1);

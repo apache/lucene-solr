@@ -40,10 +40,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.json.CharArr;
-import org.apache.solr.common.json.JSONParser;
-import org.apache.solr.common.json.JSONWriter;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -54,6 +50,10 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 
 public class SmileWriterTest extends SolrTestCaseJ4 {
   @BeforeClass

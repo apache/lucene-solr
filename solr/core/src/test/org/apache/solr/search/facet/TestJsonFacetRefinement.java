@@ -22,11 +22,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.util.TestUtil;
+
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.json.JSONParser;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -34,6 +33,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 

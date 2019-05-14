@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj.response;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.json.JSONParser;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.util.NamedList;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

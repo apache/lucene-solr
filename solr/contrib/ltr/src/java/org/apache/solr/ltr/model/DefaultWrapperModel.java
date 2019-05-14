@@ -26,11 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.json.JSONParser;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 
 /**
  * A scoring model that fetches the wrapped model from {@link SolrResourceLoader}.

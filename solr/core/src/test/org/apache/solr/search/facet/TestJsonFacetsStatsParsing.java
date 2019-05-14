@@ -20,15 +20,15 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
+
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.json.ObjectBuilder;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
-
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
+import org.noggit.ObjectBuilder;
 
 /** Whitebox test of the various syntaxes for specifying stats in JSON Facets */
 public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {

@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.json.JSONWriter;
+import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 

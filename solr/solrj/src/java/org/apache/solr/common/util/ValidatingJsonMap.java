@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.json.JSONParser;
-import org.apache.solr.common.json.ObjectBuilder;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
