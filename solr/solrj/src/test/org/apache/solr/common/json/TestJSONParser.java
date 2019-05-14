@@ -19,14 +19,11 @@ package org.apache.solr.common.json;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Random;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 public class TestJSONParser extends SolrTestCaseJ4 {
-
-  public static Random r = random();
 
   // these are to aid in debugging if an unexpected error occurs
   static int parserType;
@@ -43,7 +40,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
   }
 
   public static JSONParser getParser(String s) {
-    return getParser(s, r.nextInt(2), -1);
+    return getParser(s, random().nextInt(2), -1);
   }
 
   public static JSONParser getParser(String s, int type, int bufSize) {
@@ -60,7 +57,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
         // test using Reader...
         // small input buffers can help find bugs on boundary conditions
 
-        if (bufSize < 1) bufSize = r.nextInt(25) + 1;
+        if (bufSize < 1) bufSize = random().nextInt(25) + 1;
         bufferSize = bufSize;// record in case there is an error
         parser = new JSONParser(new StringReader(s), new char[bufSize]);
         break;
@@ -122,7 +119,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
 
   public static void parse(String input, String expected) throws IOException {
     String in = input;
-    if ((flags & JSONParser.ALLOW_SINGLE_QUOTES)==0 || r.nextBoolean()) {
+    if ((flags & JSONParser.ALLOW_SINGLE_QUOTES)==0 || random().nextBoolean()) {
       in = in.replace('\'', '"');
     }
 
@@ -141,10 +138,10 @@ public class TestJSONParser extends SolrTestCaseJ4 {
 
     for (int i=0; i<iter; i++) {
       input.getChars(0, arr.length, arr, 0);
-      int changes = r.nextInt(arr.length>>1) + 1;
+      int changes = random().nextInt(arr.length>>1) + 1;
       for (int j=0; j<changes; j++) {
         char ch;
-        switch (r.nextInt(31)) {
+        switch (random().nextInt(31)) {
           case 0: ch = 0; break;
           case 1: ch = '['; break;
           case 2: ch = ']'; break;
@@ -172,21 +169,21 @@ public class TestJSONParser extends SolrTestCaseJ4 {
           case 24:ch = '\\'; break;
           case 25:ch = 'u'; break;
           case 26:ch = '\u00a0'; break;
-          default:ch = (char)r.nextInt(256);
+          default:ch = (char) random().nextInt(256);
         }
 
-        arr[r.nextInt(arr.length)] = ch;
+        arr[random().nextInt(arr.length)] = ch;
       }
 
 
       JSONParser parser = getParser(new String(arr));
-      parser.setFlags( r.nextInt() );  // set random parser flags
+      parser.setFlags( random().nextInt() );  // set random parser flags
 
       int ret = 0;
       try {
         for (;;) {
           int ev = parser.nextEvent();
-          if (r.nextBoolean()) {
+          if (random().nextBoolean()) {
             // see if we can read the event
             switch (ev) {
               case JSONParser.STRING: ret += parser.getString().length(); break;
@@ -296,7 +293,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
 
 
   public static void parse(String input, Object[] expected) throws IOException {
-    parse(input, (flags & JSONParser.ALLOW_SINGLE_QUOTES)==0 || r.nextBoolean(), expected);
+    parse(input, (flags & JSONParser.ALLOW_SINGLE_QUOTES)==0 || random().nextBoolean(), expected);
   }
 
   public static void parse(String input, boolean changeSingleQuote, Object[] expected) throws IOException {
@@ -509,12 +506,12 @@ public class TestJSONParser extends SolrTestCaseJ4 {
     parse("["+t+","+"-"+t+"]", new Object[]{a,bn(t),bn("-"+t),A,e});
 
     for (int i=0; i<1000000; i++) {
-      long val = r.nextLong();
+      long val = random().nextLong();
       String sval = Long.toString(val);
       JSONParser parser = getParser("["+val+"]");
       parser.nextEvent();
       assertTrue(parser.nextEvent() == JSONParser.LONG);
-      if (r.nextBoolean()) {
+      if (random().nextBoolean()) {
         assertEquals(val, parser.getLong());
       } else {
         CharArr chars = parser.getNumberChars();
