@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.LinkedHashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
@@ -204,5 +206,11 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   }
 
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    params.put("field", "field"+random().nextInt(10));
+    doTestParamsToMap(FieldValueFeature.class.getName(), params);
+  }
 
 }

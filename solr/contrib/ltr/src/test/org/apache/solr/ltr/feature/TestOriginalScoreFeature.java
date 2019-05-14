@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -150,6 +151,12 @@ public class TestOriginalScoreFeature extends TestRerankBase {
       assertJQ("/query" + query.toQueryString(),
           "/debug/explain/"+docId+"=='\n"+origScoreFeatureValue+" = LinearModel(name="+modelName+",featureWeights=["+origScoreFeatureName+"=1.0]) model applied to features, sum of:\n  "+origScoreFeatureValue+" = prod of:\n    1.0 = weight on feature\n    "+origScoreFeatureValue+" = OriginalScoreFeature [query:"+query.getQuery()+"]\n'");
     }
+  }
+
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    doTestParamsToMap(OriginalScoreFeature.class.getName(), params);
   }
 
 }

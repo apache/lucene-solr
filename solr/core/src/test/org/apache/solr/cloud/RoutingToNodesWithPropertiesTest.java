@@ -47,8 +47,8 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,26 +58,25 @@ import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
 public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PROP_NAME = SYSPROP + "zone";
-
-  final static List<String> ZONE1_NODES = new ArrayList<>();
-  final static List<String> ZONE2_NODES = new ArrayList<>();
-  final static LinkedList<TrackingShardHandlerFactory.ShardRequestAndParams> ZONE1_QUEUE = new LinkedList<>();
-  final static LinkedList<TrackingShardHandlerFactory.ShardRequestAndParams> ZONE2_QUEUE = new LinkedList<>();
-
   final static String COLLECTION = "coll";
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  private final List<String> zone1Nodes = new ArrayList<>();
+  private final List<String> zone2Nodes = new ArrayList<>();
+  private final LinkedList<TrackingShardHandlerFactory.ShardRequestAndParams> zone1Queue = new LinkedList<>();
+  private final LinkedList<TrackingShardHandlerFactory.ShardRequestAndParams> zone2Queue = new LinkedList<>();
+
+  @Before
+  public void setupCluster() throws Exception {
     TestInjection.additionalSystemProps = ImmutableMap.of("zone", "us-west1");
     configureCluster(2)
         .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    ZONE1_NODES.addAll(cluster.getJettySolrRunners().stream().map(JettySolrRunner::getNodeName).collect(Collectors.toSet()));
+    zone1Nodes.addAll(cluster.getJettySolrRunners().stream().map(JettySolrRunner::getNodeName).collect(Collectors.toSet()));
     TestInjection.additionalSystemProps = ImmutableMap.of("zone", "us-west2");
-    ZONE2_NODES.add(cluster.startJettySolrRunner().getNodeName());
-    ZONE2_NODES.add(cluster.startJettySolrRunner().getNodeName());
+    zone2Nodes.add(cluster.startJettySolrRunner().getNodeName());
+    zone2Nodes.add(cluster.startJettySolrRunner().getNodeName());
 
     String commands =  "{set-cluster-policy :[{" +
         "    'replica':'#EQUAL'," +
@@ -96,9 +95,9 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
       int numReplicaInZone1 = 0;
       int numReplicaInZone2 = 0;
       for (Replica replica : slice.getReplicas()) {
-        if (ZONE1_NODES.contains(replica.getNodeName()))
+        if (zone1Nodes.contains(replica.getNodeName()))
           numReplicaInZone1++;
-        if (ZONE2_NODES.contains(replica.getNodeName()))
+        if (zone2Nodes.contains(replica.getNodeName()))
           numReplicaInZone2++;
       }
 
@@ -109,23 +108,23 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
     // check inject props
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()),
         cluster.getSolrClient());
-    for (String zone1Node: ZONE1_NODES) {
+    for (String zone1Node: zone1Nodes) {
       NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
       Map<String, Object> map  = nodeStateProvider.getNodeValues(zone1Node, Collections.singletonList(PROP_NAME));
       assertEquals("us-west1", map.get(PROP_NAME));
     }
 
-    for (String zone1Node: ZONE2_NODES) {
+    for (String zone1Node: zone2Nodes) {
       NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
       Map<String, Object> map = nodeStateProvider.getNodeValues(zone1Node, Collections.singletonList(PROP_NAME));
       assertEquals("us-west2", map.get(PROP_NAME));
     }
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      if (ZONE1_NODES.contains(jetty.getNodeName())) {
-        ((TrackingShardHandlerFactory)jetty.getCoreContainer().getShardHandlerFactory()).setTrackingQueue(ZONE1_QUEUE);
+      if (zone1Nodes.contains(jetty.getNodeName())) {
+        ((TrackingShardHandlerFactory)jetty.getCoreContainer().getShardHandlerFactory()).setTrackingQueue(zone1Queue);
       } else {
-        ((TrackingShardHandlerFactory)jetty.getCoreContainer().getShardHandlerFactory()).setTrackingQueue(ZONE2_QUEUE);
+        ((TrackingShardHandlerFactory)jetty.getCoreContainer().getShardHandlerFactory()).setTrackingQueue(zone2Queue);
       }
     }
 
@@ -139,8 +138,8 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTION);
   }
 
-  @AfterClass
-  public static void afterSuperClass() {
+  @After
+  public void after() {
     TestInjection.reset();
   }
 
@@ -175,7 +174,7 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
       String secondReplicaAddr = ((SimpleOrderedMap) shardsInfoMap.getVal(1)).get("shardAddress").toString();
       boolean firstReplicaInZone1 = false;
       boolean secondReplicaInZone1 = false;
-      for (String zone1Node : ZONE1_NODES) {
+      for (String zone1Node : zone1Nodes) {
         zone1Node = zone1Node.replace("_solr", "");
         firstReplicaInZone1 = firstReplicaInZone1 || firstReplicaAddr.contains(zone1Node);
         secondReplicaInZone1 = secondReplicaInZone1 || secondReplicaAddr.contains(zone1Node);
@@ -226,41 +225,16 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
       });
     }
 
-    int totalTimeSameZoneGetHitted = 0;
-    for (int i = 0; i < NUM_TRY; i++) {
-      SolrQuery qRequest = new SolrQuery("*:*");
-      ModifiableSolrParams qParams = new ModifiableSolrParams();
-      qParams.add(ShardParams.SHARDS_INFO, "true");
-      qRequest.add(qParams);
-      QueryResponse qResponse = cluster.getSolrClient().query(COLLECTION, qRequest);
-
-      Object shardsInfo = qResponse.getResponse().get(ShardParams.SHARDS_INFO);
-      assertNotNull("Unable to obtain "+ShardParams.SHARDS_INFO, shardsInfo);
-      SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
-      String firstReplicaAddr = ((SimpleOrderedMap) shardsInfoMap.getVal(0)).get("shardAddress").toString();
-      String secondReplicaAddr = ((SimpleOrderedMap) shardsInfoMap.getVal(1)).get("shardAddress").toString();
-      boolean firstReplicaInZone1 = false;
-      boolean secondReplicaInZone1 = false;
-      for (String zone1Node : ZONE1_NODES) {
-        zone1Node = zone1Node.replace("_solr", "");
-        firstReplicaInZone1 = firstReplicaInZone1 || firstReplicaAddr.contains(zone1Node);
-        secondReplicaInZone1 = secondReplicaInZone1 || secondReplicaAddr.contains(zone1Node);
-      }
-      totalTimeSameZoneGetHitted += firstReplicaInZone1 == secondReplicaInZone1 ? 1 : 0;
-    }
-    assertTrue("Hitting same zone after " + NUM_TRY + " queries",
-        totalTimeSameZoneGetHitted < NUM_TRY);
-
   }
 
   private void assertRoutingToSameZone() {
-    for (TrackingShardHandlerFactory.ShardRequestAndParams sreq: ZONE1_QUEUE) {
+    for (TrackingShardHandlerFactory.ShardRequestAndParams sreq: zone1Queue) {
       String firstNode = sreq.shard.split("\\|")[0];
-      assertTrue(ZONE1_NODES.stream().anyMatch(s -> firstNode.contains(s.replace('_','/'))));
+      assertTrue(zone1Nodes.stream().anyMatch(s -> firstNode.contains(s.replace('_','/'))));
     }
-    for (TrackingShardHandlerFactory.ShardRequestAndParams sreq: ZONE2_QUEUE) {
+    for (TrackingShardHandlerFactory.ShardRequestAndParams sreq: zone2Queue) {
       String firstNode = sreq.shard.split("\\|")[0];
-      assertTrue(ZONE2_NODES.stream().anyMatch(s -> firstNode.contains(s.replace('_','/'))));
+      assertTrue(zone2Nodes.stream().anyMatch(s -> firstNode.contains(s.replace('_','/'))));
     }
   }
 }

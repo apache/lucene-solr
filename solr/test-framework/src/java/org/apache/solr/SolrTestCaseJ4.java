@@ -3032,10 +3032,26 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param idField - the uniqueKey for this collection. This MUST be a string
    * @param expectedDocCount - numFound for the query
    * @param query - The Solr query to check for expectedDocCount.
+   * @param tag - additional information to display on a failure. Often class.method is useful.
    */
 
   public static void Solr11035BandAid(SolrClient client, String collection, String idField,
-                                      long expectedDocCount, String query) throws IOException, SolrServerException {
+                                      long expectedDocCount, String query,
+                                      String tag) throws IOException, SolrServerException {
+
+    Solr11035BandAid(client, collection, idField, expectedDocCount, query, tag, false);
+  }
+
+  // Pass true for failAnyway to have this bandaid fail if
+  // 1> it had to attempt the repair
+  // 2> it would have successfully repaired it
+  //
+  // This is useful for verifying that SOLR-11035.
+  //
+  public static void Solr11035BandAid(SolrClient client, String collection, String idField,
+                                      long expectedDocCount, String query, String tag,
+                                      boolean failAnyway) throws IOException, SolrServerException {
+
     final SolrQuery solrQuery = new SolrQuery(query);
     QueryResponse rsp = client.query(collection, solrQuery);
     long found = rsp.getResults().getNumFound();
@@ -3066,7 +3082,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // so change the pattern in log4j2.xml if you need to see the whole thing.
       log.error("Dumping response" + rsp.toString());
       assertEquals("Solr11035BandAid failed, counts differ after updates:", found, expectedDocCount);
+    } else if (failAnyway) {
+      fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
+          + "' extra info: '" + tag + "'");
     }
-
   }
 }
