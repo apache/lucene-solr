@@ -21,6 +21,7 @@ import shutil
 import os
 import sys
 import subprocess
+from subprocess import TimeoutExpired
 from scriptutil import getGitRev, check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
