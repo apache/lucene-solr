@@ -402,7 +402,7 @@ class Todo:
             self.set_done(completed)
             state.save()
         except Exception as e:
-            print("ERROR while executing todo %s" % self.title)
+            print("ERROR while executing todo %s (%s)" % (self.title, e))
 
     def get_menu_item(self):
         return FunctionItem(self.get_title, self.display_and_confirm)
@@ -826,6 +826,7 @@ class Commands:
                         if not self.ask_each:
                             print("------------\nRunning '%s' in folder '%s'" % (cmd, cwd))
                         logfilename = cmd.logfile
+                        logfile = None
                         if not cmd.stdout and not self.stdout:
                             if not self.logs_folder:
                                 self.logs_folder = os.path.join(state.get_release_folder(), "logs")
@@ -967,7 +968,7 @@ Please observe the normal rules:
         return desc
 
     def clear_ivy_cache_commands(self, todo):
-        ivy_path = os.path.expanduser("~/ivy2/")
+        ivy_path = os.path.expanduser("~/.ivy2/")
         return Commands(
             ivy_path,
             """It is recommended to clean your Ivy cache before building the artifacts.
@@ -976,7 +977,7 @@ so we emulate a user that never used the Lucene build system before.
 One way is to rename the ivy cache folder before building.
 """,
             [
-                Command("mv cache cache_bak"),
+                Command("mv cache cache_bak", stdout=True),
             ],
             ask_each=False,
             logs_folder=todo.id)
@@ -1008,7 +1009,7 @@ run this command in another Terminal: `tail -f %s`
 """ % logfile,
             [
                 # Command("git checkout %s" % state.get_minor_branch_name()),
-                Command("git checkout %s" % "branch_7_7"),
+                Command("git checkout %s" % "branch_7_7", stdout=True),
                 Command(cmdline, logfile="build_rc.log"),
             ],
             ask_each=True,
