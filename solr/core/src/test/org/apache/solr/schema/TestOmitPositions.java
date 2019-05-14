@@ -51,7 +51,8 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
               "//*[@numFound='0']"
     );
     } catch (Exception expected) {
-      assertTrue(expected.getCause() instanceof IllegalStateException);
+      assertTrue(expected.getCause() instanceof IllegalStateException ||
+          expected.getCause().getCause().getCause() instanceof IllegalStateException);
       // in lucene 4.0, queries don't silently fail
     }
     resetExceptionIgnores();

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -46,6 +47,8 @@ public class SolrRequestInfo {
   protected TimeZone tz;
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
+  protected List<Callable> initHooks;
+  protected Object initData; // Any additional auxiliary data that needs to be stored
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -64,6 +67,20 @@ public class SolrRequestInfo {
 
     threadLocal.set(info);
   }
+
+  public static void init() {
+    SolrRequestInfo info = threadLocal.get();
+    if (info != null && info.initHooks != null) {
+      for (Callable hook : info.initHooks) {
+        try {
+          hook.call(null);
+        } catch (Exception e) {
+          SolrException.log(log, "Exception during init hook", e);
+        }
+      }
+    }
+  }
+
 
   public static void clearRequestInfo() {
     try {
@@ -139,6 +156,15 @@ public class SolrRequestInfo {
     this.rb = rb;
   }
 
+  public void addInitHook(Callable hook) {
+    // is this better here, or on SolrQueryRequest?
+    synchronized (this) {
+      if (initHooks == null) {
+        initHooks = new LinkedList<>();
+      }
+      initHooks.add(hook);
+    }
+  }
   public void addCloseHook(Closeable hook) {
     // is this better here, or on SolrQueryRequest?
     synchronized (this) {
@@ -164,6 +190,7 @@ public class SolrRequestInfo {
           ctx.set(null);
           SolrRequestInfo.setRequestInfo(me);
         }
+        SolrRequestInfo.init();
       }
 
       @Override
@@ -171,5 +198,15 @@ public class SolrRequestInfo {
         SolrRequestInfo.clearRequestInfo();
       }
     };
+  }
+
+  public Object getInitData() {
+    return initData;
+  }
+
+  public void setInitData(Object initData) {
+    synchronized (this) {
+      this.initData = initData;
+    }
   }
 }

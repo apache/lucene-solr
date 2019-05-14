@@ -110,7 +110,7 @@ public class IndexSearcher {
   private final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search
-  private final ExecutorService executor;
+  protected final ExecutorService executor;
 
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();

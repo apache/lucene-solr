@@ -77,7 +77,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
         if (live == null) {
           live = searcher.getLiveDocSet();
         }
-        assertTrue( set == live);
+        assertTrue( set.equals(live));
 
         QueryCommand cmd = new QueryCommand();
         cmd.setQuery( QParser.getParser(qstr, null, req).getQuery() );
@@ -86,14 +86,14 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set == live );
+        assertTrue( set.equals(live) );
 
         cmd.setQuery( QParser.getParser(qstr + " OR id:0", null, req).getQuery() );
         cmd.setFilterList( QParser.getParser(qstr + " OR id:1", null, req).getQuery() );
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set == live );
+        assertTrue( set.equals(live) );
       }
 
     } finally {
