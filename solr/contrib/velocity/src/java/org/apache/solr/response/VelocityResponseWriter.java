@@ -377,7 +377,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     return template;
   }
 
-  private String getJSONWrap(String xmlResult) {  // maybe json or Solr's JSON utilities can make this cleaner?
+  private String getJSONWrap(String xmlResult) {  // maybe noggit or Solr's JSON utilities can make this cleaner?
     // escape the double quotes and backslashes
     String replace1 = xmlResult.replaceAll("\\\\", "\\\\\\\\");
     replace1 = replace1.replaceAll("\\n", "\\\\n");
