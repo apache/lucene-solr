@@ -738,7 +738,6 @@ def run_follow(command, cwd=None, fh=sys.stdout):
     fcntl.fcntl(process.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
     endstdout = endstderr = False
-    exceptions = 0
     errlines = []
     while not (endstderr and endstdout):
         if not endstdout:
@@ -754,7 +753,7 @@ def run_follow(command, cwd=None, fh=sys.stdout):
                         print("[line %s] %s                                                                                "
                               % (lines_written, line.strip()[:80]), end='\r')
             except Exception as ioe:
-                exceptions += 1
+                pass
         if not endstderr:
             try:
                 line = process.stderr.readline()
@@ -766,7 +765,7 @@ def run_follow(command, cwd=None, fh=sys.stdout):
                         print("[line %s] %s                                                                                "
                               % (lines_written, line.strip()[:80]), end='\r')
             except Exception as e:
-                exceptions += 1
+                pass
 
         time.sleep(0.1)
 
@@ -1010,9 +1009,10 @@ run this command in another Terminal: `tail -f %s`
             [
                 # Command("git checkout %s" % state.get_minor_branch_name()),
                 Command("git checkout %s" % "branch_7_7", stdout=True),
+                Command("git pull", stdout=True),
                 Command(cmdline, logfile="build_rc.log"),
             ],
-            ask_each=True,
+            ask_each=False,
             logs_folder="logs")
 
 
