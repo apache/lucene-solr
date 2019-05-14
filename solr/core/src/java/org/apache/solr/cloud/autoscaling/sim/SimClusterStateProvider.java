@@ -1717,6 +1717,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             try {
               simSetShardValue(collection, sh, "SEARCHER.searcher.numDocs", count.get(), true, false);
               simSetShardValue(collection, sh, "SEARCHER.searcher.maxDoc", count.get(), true, false);
+              simSetShardValue(collection, sh, "UPDATE./update.requests", count.get(), true, false);
               // for each new document increase the size by DEFAULT_DOC_SIZE_BYTES
               simSetShardValue(collection, sh, Type.CORE_IDX.metricsAttribute,
                   DEFAULT_DOC_SIZE_BYTES * count.get(), true, false);
