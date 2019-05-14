@@ -12,6 +12,10 @@ dependencies {
 
 task createLevAutomaton {
   
+  doFirst {
+    println "--> Creating Lev Automaton ..."
+  }
+  
   doLast {
     exec {
       workingDir 'src/java/org/apache/lucene/util/automaton'
@@ -45,6 +49,9 @@ task fixCRLFAutomaton(type: org.apache.lucene.gradle.FixCRLF) {
 createLevAutomaton.finalizedBy fixCRLFAutomaton
 
 task createPackedIntSources {
+  doFirst {
+    println "--> Creating packed int sources ..."
+  }
   
   doLast {
     exec {
@@ -96,11 +103,15 @@ installMoman.dependsOn downloadMoman
 task runjflex(type: org.apache.lucene.gradle.JFlex) {
   source = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex")
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  
+  doFirst {
+    println "--> Running jflex ..."
+  }
 }
 
 task regenerate {
   doFirst {
-    println "regenerate core"
+    println "--> regenerate"
   }
 }
 
