@@ -42,7 +42,7 @@ task fixCRLFAutomaton(type: org.apache.lucene.gradle.FixCRLF) {
   encoding="UTF-8"
 }
 
-fixCRLFAutomaton.dependsOn createLevAutomaton
+createLevAutomaton.finalizedBy fixCRLFAutomaton
 
 task createPackedIntSources {
   
@@ -76,9 +76,9 @@ task fixCRLFPacked(type: org.apache.lucene.gradle.FixCRLF) {
   encoding = "UTF-8"
 }
 
-fixCRLFPacked.dependsOn createPackedIntSources
+createPackedIntSources.finalizedBy fixCRLFPacked
 
-task unzipMoman(){
+task installMoman(){
   doLast {
     ant.unzip(src: "${buildDir}/moman.zip", dest:"${buildDir}/moman", overwrite:"true") {
       ant.cutdirsmapper(dirs: "1")
@@ -91,6 +91,8 @@ task downloadMoman(type: org.apache.lucene.gradle.Get) {
   target = new File("${buildDir}", 'moman.zip')
 }
 
+installMoman.dependsOn downloadMoman
+
 task runjflex(type: org.apache.lucene.gradle.JFlex) {
   source = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex")
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
@@ -102,13 +104,10 @@ task regenerate {
   }
 }
 
-regenerate.dependsOn fixCRLFAutomaton
-regenerate.dependsOn fixCRLFPacked
+createLevAutomaton.dependsOn installMoman
 
-fixCRLFAutomaton.dependsOn unzipMoman
-unzipMoman.dependsOn downloadMoman
-
-createLevAutomaton.mustRunAfter unzipMoman
+regenerate.dependsOn createLevAutomaton
+regenerate.dependsOn createPackedIntSources
 
 regenerate.dependsOn runjflex
 
