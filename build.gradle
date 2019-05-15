@@ -113,25 +113,6 @@ configure(subprojects) {  pj ->
       }
     }
   }
-  
-  tasks.withType(Test) {
-    filter {
-      // so we can run with --tests wildcards
-      setFailOnNoMatchingTests(false)
-    }
-    
-    def testsJvms = project.ext.properties.tests_jvms
-    if (testsJvms) {
-      maxParallelForks = testsJvms
-    } else {
-      maxParallelForks = Runtime.runtime.availableProcessors() / 2
-    }
-    
-    def testsFailFast = project.ext.properties.tests_failfast
-    if (testsFailFast)    {
-      failFast = true
-    }
-  }
 }
 
 tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
