@@ -1,0 +1,55 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// we create new *Tran configurations that are transitive
+// and can be used between modules
+
+test {
+  systemProperty 'java.security.egd', 'file:/dev/./urandom'
+  
+  filter {
+    includeTestsMatching "*.Test*"
+    includeTestsMatching "*.*Test"
+  }
+  
+  maxHeapSize = "512m"
+  // Enable assertions
+  jvmArgs += "-ea"
+  // Enable assertions in system classes
+  jvmArgs += "-esa"
+  
+  systemProperty 'tests.multiplier', '1'
+  systemProperty 'tests.codec', 'random'
+  systemProperty 'tests.postingsformat', 'random'
+  systemProperty 'tests.docvaluesformat', 'random'
+  systemProperty 'tests.locale', 'random'
+  systemProperty 'tests.timezone', 'random'
+  systemProperty 'tests.directory', 'random'
+  systemProperty 'tests.linedocsfile', 'europarl.lines.txt.gz'
+  systemProperty 'tests.loggingfile', './lucene/tools/junit4/logging.properties'
+  systemProperty 'tests.nightly', 'false'
+  systemProperty 'tests.weekly', 'false'
+  systemProperty 'tests.monster', 'false'
+  systemProperty 'tests.slow', 'false'
+  systemProperty 'tests.cleanthreads.sysprop', 'perMethod'
+  systemProperty 'tests.verbose', 'false'
+  systemProperty 'tests.filterstacks', 'true'
+  systemProperty 'tests.asserts', 'true'
+  systemProperty 'tempDir', '.out/tests-temp'
+  systemProperty 'java.io.tmpdir', '.out/tests-temp'
+}
+
