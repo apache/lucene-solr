@@ -100,7 +100,8 @@ dependencies {
   jflex "de.jflex:jflex:1.7.0"
 }
 
-tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
+// TODO: enable the modified files checking only for jenkins runs! sysprop?
+tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
 
 task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
   baseDir = rootProject.projectDir
