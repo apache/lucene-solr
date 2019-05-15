@@ -85,6 +85,10 @@ New Features
 
 * SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
 
+* SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
+  information about the replicas of a collection (Erick Erickson)
+  
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
 Other Changes
 ----------------------
 

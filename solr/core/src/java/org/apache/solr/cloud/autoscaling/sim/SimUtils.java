@@ -50,6 +50,8 @@ public class SimUtils {
   public static final Set<String> COMMON_REPLICA_TAGS = new HashSet<>(Arrays.asList(
       Variable.Type.CORE_IDX.metricsAttribute,
       Variable.Type.CORE_IDX.tagName,
+      "SEARCHER.searcher.numDocs",
+      "SEARCHER.searcher.maxDoc",
       "QUERY./select.requests",
       "UPDATE./update.requests"
   ));
