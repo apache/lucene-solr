@@ -85,6 +85,8 @@ New Features
 
 * SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
 
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
+
 Other Changes
 ----------------------
 

@@ -45,7 +45,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -145,6 +144,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         String path = (String) req.getContext().get("path");
         if (path != null) {
           List<String> parts = StrUtils.splitSmart(path, '/');
+          if (parts.get(0).isEmpty()) parts.remove(0);
           if (parts.size() == 3 && SUGGESTIONS.equals(parts.get(2))) {
             Map map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
             AutoScalingConfig config = new AutoScalingConfig(map);
