@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -110,10 +111,10 @@ class ReleaseState:
         self.release_version_major = None
         self.release_version_minor = None
         self.release_version_bugfix = None
-
         self.rc_number = 1
         self.start_date = unix_time_millis(datetime.now())
         self.branch = run("git rev-parse --abbrev-ref HEAD").strip()
+        self.release_branch = self.branch
         try:
             self.branch_type = scriptutil.find_branch_type()
         except:
@@ -128,10 +129,13 @@ class ReleaseState:
         self.release_version_bugfix = v.bugfix
         if v.is_major_release():
             self.release_type = ReleaseType.major
+            self.release_branch = "master"
         elif v.is_minor_release():
             self.release_type = ReleaseType.minor
+            self.release_branch = self.get_stable_branch_name()
         else:
             self.release_type = ReleaseType.bugfix
+            self.release_branch = self.get_minor_branch_name()
 
     def new_rc(self):
         if ask_yes_no("Are you sure? This will abort current RC"):
@@ -234,7 +238,14 @@ class ReleaseState:
             return None
 
     def get_release_folder(self):
-        folder = os.path.join(self.config_path, self.release_version, "RC%d" % self.rc_number)
+        folder = os.path.join(self.config_path, self.release_version)
+        if not os.path.exists(folder):
+            print("Creating folder %s" % folder)
+            os.makedirs(folder)
+        return folder
+
+    def get_rc_folder(self):
+        folder = os.path.join(self.get_release_folder(), "RC%d" % self.rc_number)
         if not os.path.exists(folder):
             print("Creating folder %s" % folder)
             os.makedirs(folder)
@@ -245,17 +256,16 @@ class ReleaseState:
         return folder
 
     def get_minor_branch_name(self):
-        v = Version.parse(self.release_version)
-        return "branch_%s_%s" % (v.major, v.minor)
+        return "branch_%s_%s" % (self.release_version_major, self.release_version_minor)
 
     def get_stable_branch_name(self):
-        v = Version.parse(self.release_version)
-        return "branch_%sx" % v.major
+        return "branch_%sx" % self.release_version_major
 
     def get_java_cmd(self):
         v = Version.parse(self.release_version)
         java_ver = java_versions[v.major]
         java_home = os.environ.get("JAVA%s_HOME" % java_ver)
+        print("Using Java in %s for all 'ant' commands" % java_home)
         return os.path.join(java_home, "bin", "java")
 
 
@@ -397,7 +407,7 @@ class Todo:
             cmds = self.get_commands()
             if cmds and not self.is_done():
                 if not cmds.logs_folder:
-                    cmds.logs_folder = os.path.join(state.get_release_folder(), self.id)
+                    cmds.logs_folder = os.path.join(state.get_rc_folder(), self.id)
                 cmds.run()
             completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
             self.set_done(completed)
@@ -476,7 +486,7 @@ def validate_release_version(branch_type, branch, release_version):
         if not ver.is_major_release():
             sys.exit("You can only release a new major version from master branch")
     if not getScriptVersion() == release_version:
-        print("Expected version %s when on branch %s, but got %s" % (getScriptVersion(), branch, release_version))
+        print("WARNING: Expected release version %s when on branch %s, but got %s" % (getScriptVersion(), branch, release_version))
 
 
 def get_todo_menuitem_title():
@@ -667,7 +677,8 @@ def main():
                             screen=MyScreen())
 
     for todo_group in state.todo_groups:
-        todo_menu.append_item(todo_group.get_menu_item())
+        if todo_group.num_applies() >= 0:
+            todo_menu.append_item(todo_group.get_menu_item())
 
     main_menu.append_item(SubmenuItem(get_todo_menuitem_title, todo_menu))
     main_menu.append_item(FunctionItem(get_start_new_rc_menu_title, start_new_rc))
@@ -731,18 +742,31 @@ def ask_yes_no(text):
     return answer == 'y'
 
 
+def abbr_line_pad_80(line):
+    line = line.strip()
+    if len(line) > 80:
+        line = "%s.....%s" % (line[:35], line[-40:])
+    else:
+        line = "%s%s" % (line, " " * (80-len(line)))
+    return line
+
+
 def run_follow(command, cwd=None, fh=sys.stdout):
     if not isinstance(command, list):
         command = shlex.split(command)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
+    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
     lines_written = 0
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
     fcntl.fcntl(process.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
+    flerr = fcntl.fcntl(process.stderr, fcntl.F_GETFL)
+    fcntl.fcntl(process.stderr, fcntl.F_SETFL, flerr | os.O_NONBLOCK)
+
     endstdout = endstderr = False
     errlines = []
     while not (endstderr and endstdout):
+        lines_before = lines_written
         if not endstdout:
             try:
                 line = process.stdout.readline()
@@ -753,8 +777,7 @@ def run_follow(command, cwd=None, fh=sys.stdout):
                     fh.flush()
                     lines_written += 1
                     if not fh == sys.stdout:
-                        print("[line %s] %s                                                                                "
-                              % (lines_written, line.strip()[:80]), end='\r')
+                        print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
             except Exception as ioe:
                 pass
         if not endstderr:
@@ -764,13 +787,15 @@ def run_follow(command, cwd=None, fh=sys.stdout):
                     endstderr = True
                 else:
                     errlines.append("%s\n" % line.strip())
+                    lines_written += 1
                     if not fh == sys.stdout:
-                        print("[line %s] %s                                                                                "
-                              % (lines_written, line.strip()[:80]), end='\r')
+                        print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
             except Exception as e:
                 pass
 
-        time.sleep(0.1)
+        if not lines_written > lines_before:
+            # if no output then sleep a bit before checking again
+            time.sleep(0.1)
 
     print(" " * 80)
     rc = process.poll()
@@ -784,7 +809,8 @@ def run_follow(command, cwd=None, fh=sys.stdout):
 
 
 class Commands:
-    def __init__(self, root_folder, commands_text, commands, logs_folder=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25, stdout=False):
+    def __init__(self, root_folder, commands_text, commands, logs_folder=None, logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25, stdout=False):
+        self.logs_prefix = logs_prefix
         self.stdout = stdout
         self.tail_lines = tail_lines
         self.ask_each = ask_each
@@ -814,10 +840,18 @@ class Commands:
             print("\nI can execute these commands for you if you choose.")
             if self.ask_each:
                 print("You will get prompted before running each individual command.")
+            else:
+                print("You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
-                index = 1
+                index = 0
                 for cmd in commands:
+                    index += 1
+                    log_prefix = self.logs_prefix
+                    if not log_prefix[-1:] == '_':
+                        log_prefix += "_"
+                    if len(commands) > 1:
+                        log_prefix = "%02d_%s" % (index, log_prefix)
                     cwd = root
                     if cmd.cwd:
                         cwd = os.path.join(root, cmd.cwd)
@@ -831,12 +865,13 @@ class Commands:
                         logfile = None
                         if not cmd.stdout and not self.stdout:
                             if not self.logs_folder:
-                                self.logs_folder = os.path.join(state.get_release_folder(), "logs")
+                                self.logs_folder = os.path.join(state.get_rc_folder(), "logs")
+                            elif not os.path.isabs(self.logs_folder):
+                                self.logs_folder = os.path.join(state.get_rc_folder(), "logs", self.logs_folder)
                             if not logfilename:
                                 logfilename = "%s.log" % re.sub(r"\W", "_", cmd.cmd)
-                            logfile = os.path.join(state.get_release_folder(),
-                                                   self.logs_folder,
-                                                   "%02d_%s%s" % (index, folder_prefix, logfilename))
+                            logfile = os.path.join(self.logs_folder,
+                                                   "%s%s%s" % (log_prefix, folder_prefix, logfilename))
                             print("Wait until command completes... Full log in %s\n" % logfile)
                         if not run_with_log_tail(cmd.cmd, cwd, logfile=logfile, tail_lines=self.tail_lines) == 0:
                             print("WARN: Command %s returned with error" % cmd.cmd)
@@ -888,14 +923,30 @@ class TodoMethods:
     def clean_git_checkout_commands(self, todo):
         return Commands(state.get_release_folder(),
                  "Run these commands to make a fresh clone in the release folder",
-                 Command("git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr"),
-                 ask_each=False)
+                        [
+                            Command("git clone --branch %s --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr" % get_release_branch(), logfile="git_clone.log")
+                        ],
+                 ask_each=False,
+                 logs_folder=state.get_rc_folder())
+
+    def ant_precommit_commands(self, todo):
+        return Commands(git_checkout_folder,
+                        "Command is run in the current git checkout. Fix any problems that are found by pushing fixes to the release branch and then running this task again. This task will always do `git pull` before `ant precommit` so it will catch changes :)",
+                        [
+                            Command("git checkout %s" % get_release_branch(), stdout=True),
+                            Command("git pull", stdout=True),
+                            Command("ant clean precommit")
+                            # Command("ant -p")
+
+                        ],
+                        ask_each=False)
 
     def create_stable_branch_commands(self, todo):
         return Commands(state.get_git_checkout_folder(),
                  "Run these commands to create a stable branch",
                  [
-                     Command("git checkout %s" % 'master'),
+                     Command("git checkout %s" % 'master', stdout=True),
+                     Command("git update", stdout=True),
                      Command("git checkout -b %s" % state.get_stable_branch_name()),
                      Command("git push origin %s" % state.get_stable_branch_name())
                  ],
@@ -907,7 +958,8 @@ class TodoMethods:
         return Commands(state.get_git_checkout_folder(),
                  "Run these commands to create a release branch",
                  [
-                     Command("git checkout %s" % state.get_stable_branch_name()),
+                     Command("git checkout %s" % state.get_stable_branch_name(), stdout=True),
+                     Command("git update", stdout=True),
                      Command("git checkout -b %s" % state.get_minor_branch_name()),
                      Command("git push origin %s" % state.get_minor_branch_name())
                  ],
@@ -991,12 +1043,12 @@ One way is to rename the ivy cache folder before building.
         except Exception as e:
             raise Exception("Faild getting key: %s" % e)
 
-        logfile = os.path.join(state.get_release_folder(), 'buildAndPushRelease.log')
+        logfile = os.path.join(state.get_rc_folder(), 'buildAndPushRelease.log')
         # logfile = 'buildAndPushRelease.log'
         cmdline = "python3 -u %s --root %s --push-local %s --rc-num %s --sign %s --logfile %s" \
                   % (os.path.join(current_git_root, 'dev-tools', 'scripts', 'buildAndPushRelease.py'),
                      state.get_git_checkout_folder(),
-                     os.path.join(state.get_release_folder(), "dist"),
+                     os.path.join(state.get_rc_folder(), "dist"),
                      state.rc_number,
                      key_id,
                      logfile)
@@ -1111,6 +1163,11 @@ The vote result was:
     """ % (state.release_version, state.rc_number, reason, plus_binding + plus_other, plus_binding, zero, minus))
             todo.state['pass'] = False
 
+
+def get_release_branch():
+    return state.release_branch
+
+
 todo_templates = [
     TodoGroup('prerequisites',
               'Prerequisites',
@@ -1167,7 +1224,7 @@ The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B
               [
                   Todo('decide_jira_issues',
                        'Select JIRA issues to be included',
-                       description='Set the appropriate "Fix Version" in JIRA for these issues'),
+                       description='Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.'),
                   Todo('decide_branch_date',
                        'Decide the date for branching',
                        user_input=UserInput("date", "Enter date (YYYY-MM-DD)"),
@@ -1181,18 +1238,13 @@ The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B
               'Create branch (if needed) and update versions',
               "Here you'll do all the branching and version updates needed to prepare for the new release version",
               [
-                  Todo('ant_precommit',
-                       'Run ant precommit and fix issues',
-                       description='Command is run in the current git checkout. Fix any problems that are found.',
-                       commands=Commands(current_git_root,
-                         "Run commands",
-                                         [
-                             Command("ant clean precommit")
-                         ])
-                       ),
                   Todo('clean_git_checkout',
                        'Do a clean git clone to do the release from.',
                        description="This eliminates the risk of a dirty checkout"),
+                  Todo('ant_precommit',
+                       'Run ant precommit and fix issues',
+                       depends="clean_git_checkout"
+                       ),
                   Todo('create_stable_branch',
                        'Create a new stable branch, i.e. branch_<major>x',
                        type=ReleaseType.major,
@@ -1274,8 +1326,7 @@ or the stable branch (for a minor release).""",
     TodoGroup('artifacts',
               'Build the release artifacts',
 """If after the last day of the feature freeze phase no blocking issues are in JIRA with "Fix Version" X.Y 
-then it's time to build the release artifacts
-run the smoke tester and stage the RC in svn""",
+then it's time to build the release artifacts, run the smoke tester and stage the RC in svn""",
               [
                   Todo('clear_ivy_cache',
                        'Clear the ivy cache'),
