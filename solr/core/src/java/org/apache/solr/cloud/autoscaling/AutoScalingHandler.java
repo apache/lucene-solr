@@ -71,6 +71,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.AutoScalingParams.*;
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.util.Utils.fromJSON;
 
 /**
  * Handler for /cluster/autoscaling
@@ -120,7 +121,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         }
 
         AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
-        if (parts.size() == 2)  {
+        if (parts.size() == 2) {
           autoScalingConf.writeMap(new MapWriter.EntryWriter() {
 
             @Override
@@ -140,6 +141,18 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         if (req.getContentStreams() == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands specified for autoscaling");
         }
+        String path = (String) req.getContext().get("path");
+        if (path != null) {
+          List<String> parts = StrUtils.splitSmart(path, '/');
+          if (parts.get(0).isEmpty()) parts.remove(0);
+          if (parts.size() == 3 && SUGGESTIONS.equals(parts.get(2))) {
+            Map map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
+            AutoScalingConfig config = new AutoScalingConfig(map);
+            handleSuggestions(rsp, config);
+            return;
+          }
+        }
+
         List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues(), singletonCommands);
         if (ops == null) {
           // errors have already been added to the response so there's nothing left to do
