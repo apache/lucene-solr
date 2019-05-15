@@ -48,6 +48,9 @@ task regenerate {
 }
 
 task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
+  group = 'Build Regenerate'
+  description = "Regenerates Unicode data src files."
+  
   doFirst {
     println "--> Generate Unicode data ..."
   }
