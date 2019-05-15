@@ -39,8 +39,8 @@ allprojects {
 }
 
 task('regenerate') {
-  doLast {
-    println "regenerate"
+  doFirst {
+    println "--> regenerate"
   }
 }
 
@@ -56,51 +56,15 @@ configure(subprojects) {  pj ->
   
   plugins.withType(JavaPlugin) {
     
-    test {
-      
-      systemProperty 'java.security.egd', 'file:/dev/./urandom'
-      
-      filter {
-        includeTestsMatching "*.Test*"
-        includeTestsMatching "*.*Test"
-      }
-
-      // Use UTF-8, don't rely on local platform encoding.      
-      compileJava.options.encoding = "UTF-8"
-      compileTestJava.options.encoding = "UTF-8"
-
-      maxHeapSize = "512m"
-      // Enable assertions
-      jvmArgs += "-ea"
-      // Enable assertions in system classes
-      jvmArgs += "-esa"
-      
-      systemProperty 'tests.multiplier', '1'
-      systemProperty 'tests.codec', 'random'
-      systemProperty 'tests.postingsformat', 'random'
-      systemProperty 'tests.docvaluesformat', 'random'
-      systemProperty 'tests.locale', 'random'
-      systemProperty 'tests.timezone', 'random'
-      systemProperty 'tests.directory', 'random'
-      systemProperty 'tests.linedocsfile', 'europarl.lines.txt.gz'
-      systemProperty 'tests.loggingfile', './lucene/tools/junit4/logging.properties'
-      systemProperty 'tests.nightly', 'false'
-      systemProperty 'tests.weekly', 'false'
-      systemProperty 'tests.monster', 'false'
-      systemProperty 'tests.slow', 'false'
-      systemProperty 'tests.cleanthreads.sysprop', 'perMethod'
-      systemProperty 'tests.verbose', 'false'
-      systemProperty 'tests.filterstacks', 'true'
-      systemProperty 'tests.asserts', 'true'
-      systemProperty 'tempDir', '.out/tests-temp'
-      systemProperty 'java.io.tmpdir', '.out/tests-temp'
-    }
-    
     // forbidden apis ...need to exclude hadoop and ...
     // pj.plugins.apply(BuildPlugin)
     
     sourceCompatibility = "11"
     targetCompatibility = "11"
+    
+    // Use UTF-8, don't rely on local platform encoding.
+    compileJava.options.encoding = "UTF-8"
+    compileTestJava.options.encoding = "UTF-8"
     
     sourceSets {
       main.java.srcDirs = ['src/java']
@@ -109,54 +73,13 @@ configure(subprojects) {  pj ->
       test.resources.srcDirs = ['src/test-files']
     }
     
-    dependencies {
-      // move to solr testframework
-      testRuntimeOnly 'org.apache.logging.log4j:log4j-api'
-      testRuntimeOnly 'org.apache.logging.log4j:log4j-core'
-      testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
-      testRuntimeOnly 'com.lmax:disruptor'
-    }
+    // configure tests
+    project.apply from: new File(buildSrcDir, "buildSrc/common/configure-test.gradle")
+     
+    // we create new implementationTran and testImplementationTran configurations that are
+    // transitive and can be used between modules
+    project.apply from: new File(buildSrcDir, "buildSrc/common/configure-impltran.gradle")
     
-    
-    // we create new *Tran configurations that are transitive
-    // and can be used between modules
-    configurations {
-      
-      implementationTran
-      testImplementationTran
-      
-      implementationTran2
-      testImplementationTran2
-      
-      implementationTran.transitive = true
-      testImplementationTran.transitive = true
-      
-      implementationTran2.transitive = false
-      testImplementationTran2.transitive = false
-      
-      testImplementationTran2.extendsFrom testImplementationTran
-      implementationTran2.extendsFrom implementationTran
-      
-      testImplementation.extendsFrom testImplementationTran2
-      implementation.extendsFrom implementationTran2
-    }
-    
-    // make everything else not transitive
-    configure(configurations.all.findAll { c -> c.getName() != "implementationTran" && c.getName() != "testImplementationTran" }) {
-      transitive = false
-    }
-    
-    project.sourceSets.test.setCompileClasspath( project.sourceSets.test.getCompileClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran))
-    project.sourceSets.test.setRuntimeClasspath( project.sourceSets.test.getRuntimeClasspath().plus(project.configurations.testImplementationTran).plus(project.configurations.implementationTran))
-    
-    project.sourceSets.main.setCompileClasspath( project.sourceSets.main.getCompileClasspath().plus(project.configurations.implementationTran))
-    project.sourceSets.main.setRuntimeClasspath( project.sourceSets.main.getRuntimeClasspath().plus(project.configurations.implementationTran))
-    
-    
-    configurations.all {
-      // TODO: does not belong here
-      exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
     
     // Custom javac options
     tasks.withType(JavaCompile) {
@@ -179,6 +102,16 @@ configure(subprojects) {  pj ->
       classifier 'sources'
       from sourceSets.main.allJava
     }
+    
+    // configure maven
+    publishing {
+      publications {
+        mavenJava(MavenPublication) {
+          from components.java
+          artifact tasks.sourceJar
+        }
+      }
+    }
   }
   
   tasks.withType(Test) {
@@ -199,18 +132,6 @@ configure(subprojects) {  pj ->
       failFast = true
     }
   }
-
-  plugins.withType(JavaPlugin) {
-    // configure maven
-    publishing {
-      publications {
-        mavenJava(MavenPublication) {
-          from components.java
-          artifact tasks.sourceJar
-        }
-      }
-    }
-  }
 }
 
 tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
@@ -219,27 +140,13 @@ task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
   baseDir = rootProject.projectDir
 }
 
-// setup eclipse
+// setup eclipse and idea
 allprojects {
   plugins.withType(JavaPlugin) {
-    project.apply from: new File(buildSrcDir, "buildSrc/eclipse.gradle")
+    project.apply from: new File(buildSrcDir, "buildSrc/ide/eclipse.gradle")
+    project.apply from: new File(buildSrcDir, "buildSrc/ide/idea.gradle")
   }
 }
 
-// turn off idea cycle checking - how to do for eclipse?
-idea.project.ipr {
-  // Edit the output *.ipr file before it's written out
-  withXml { root ->
-    root.asNode().depthFirst().iterator().forEachRemaining { n ->
-      if (n.name().equals("annotationProcessing")) {
-        n.attributes().remove("enabled")
-        n.attributes().remove("useClasspath")
-      }
-      if (n.name().equals("profile") && n.parent().name().equals("annotationProcessing")) {
-        n.attributes().put("enabled", "false")
-      }
-    }
-  }
-  
-}
+
 
