@@ -48,11 +48,15 @@ processTestResources.dependsOn copyConfResources
 // Enwiki
 
 task getEnwiki(type: org.apache.lucene.gradle.Get) {
+  group = 'Benchmark Data'
+  description = "Downloads Enwiki data files."
   sourceUrl = "http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
   target = new File("${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2")
 }
 
 task expandEnwiki(){
+  group = 'Benchmark Data'
+  description = "Expands Enwiki data files."
   doLast {
     ant.bunzip2(src: "${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2", dest:"${projectDir}/temp/")
   }
@@ -63,11 +67,15 @@ expandEnwiki.dependsOn getEnwiki
 // GeoNames
 
 task getGeoNames(type: org.apache.lucene.gradle.Get) {
+  group = 'Benchmark Data'
+  description = "Downloads GeoNames data files."
   sourceUrl = "http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
   target = new File("${projectDir}/temp/allCountries.txt.bz2")
 }
 
 task expandGeoNames(){
+  group = 'Benchmark Data'
+  description = "Expands GeoNames data files."
   doLast {
     new File("${workingDir}/geonames").mkdirs()
     ant.bunzip2(src: "${projectDir}/temp/allCountries.txt.bz2", dest:"${workingDir}/geonames")
@@ -79,11 +87,15 @@ expandGeoNames.dependsOn getGeoNames
 // Reuters
 
 task getReuters(type: org.apache.lucene.gradle.Get) {
+  group = 'Benchmark Data'
+  description = "Downloads Reuters data files."
   sourceUrl = "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
   target = new File("${projectDir}/temp/reuters21578.tar.gz")
 }
 
 task expandReuters(){
+  group = 'Benchmark Data'
+  description = "Expands Reuters data files."
   doLast {
     new File("${workingDir}/reuters").mkdirs()
     ant.gunzip(src: "${projectDir}/temp/reuters21578.tar.gz", dest:"${projectDir}/temp/")
@@ -97,6 +109,9 @@ task expandReuters(){
 expandReuters.dependsOn getReuters
 
 task extractReuters(type: JavaExec) {
+  group = 'Benchmark Data'
+  description = "Extracs Reuters data files."
+  
   classpath = sourceSets.main.runtimeClasspath
 
   main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
