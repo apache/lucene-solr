@@ -45,7 +45,7 @@ class CheckWorkingCopy extends DefaultTask {
   @TaskAction
   void check() {
     try {
-      println 'Initializing working copy...' + failonmodifications
+      println 'Initializing working copy...'
       final Repository repository = new FileRepositoryBuilder()
         .setWorkTree(project.getRootDir())
         .setMustExist(true)
@@ -69,10 +69,10 @@ class CheckWorkingCopy extends DefaultTask {
                   "Source checkout is dirty (unversioned/missing files) after running tests!!! Offending files:\n" +
                   '* ' + unversioned.join('\n* '))
         }
-        if (failonmodifications) {
+        if (failonmodifications && modified) {
           throw new GradleException(
                   "Source checkout is modified!!! Offending files:\n"+
-                          '* ' + unversioned.join('\n* '))
+                          '* ' + modified.join('\n* '))
         }
       }
     } catch (RepositoryNotFoundException | NoWorkTreeException | NotSupportedException e) {
