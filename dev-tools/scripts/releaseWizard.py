@@ -406,8 +406,8 @@ class Todo:
                     ui.run(self.state)
             cmds = self.get_commands()
             if cmds and not self.is_done():
-                if not cmds.logs_folder:
-                    cmds.logs_folder = os.path.join(state.get_rc_folder(), self.id)
+                if not cmds.logs_prefix:
+                    cmds.logs_prefix = self.id
                 cmds.run()
             completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
             self.set_done(completed)
@@ -574,13 +574,10 @@ def generate_asciidoc():
     fh.write("(_releaseWizard.py v%s ALPHA_)\n\n" % getScriptVersion())
     fh.write(":numbered:\n\n")
     for group in state.todo_groups:
+        if group.num_applies() == 0:
+            continue
         fh.write("== %s\n\n" % group.title)
         fh.write("%s\n\n" % group.description)
-        # if group.depends:
-        #     fh.write("Depends upon:\n\n")
-        #     for d in ensure_list(group.depends):
-        #         fh.write("* %s\n" % d)
-        #         fh.write("\n")
         for todo in group.get_todos():
             if not todo.applies(state.release_type):
                 continue
@@ -747,14 +744,14 @@ def abbr_line_pad_80(line):
     if len(line) > 80:
         line = "%s.....%s" % (line[:35], line[-40:])
     else:
-        line = "%s%s" % (line, " " * (80-len(line)))
+        line = "%s%s" % (line, " " * (80-len(line)+2))
     return line
 
 
 def run_follow(command, cwd=None, fh=sys.stdout):
     if not isinstance(command, list):
         command = shlex.split(command)
-    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
     lines_written = 0
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
@@ -809,13 +806,12 @@ def run_follow(command, cwd=None, fh=sys.stdout):
 
 
 class Commands:
-    def __init__(self, root_folder, commands_text, commands, logs_folder=None, logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25, stdout=False):
+    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25, stdout=False):
         self.logs_prefix = logs_prefix
         self.stdout = stdout
         self.tail_lines = tail_lines
         self.ask_each = ask_each
         self.ask_run = ask_run
-        self.logs_folder = logs_folder
         self.commands = commands
         self.run_text = run_text
         self.commands_text = commands_text
@@ -845,13 +841,15 @@ class Commands:
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 index = 0
+                log_folder = self.logs_prefix if len(commands) > 1 else None
                 for cmd in commands:
                     index += 1
-                    log_prefix = self.logs_prefix
+                    if len(commands) > 1:
+                        log_prefix = "%02d_" % index
+                    else:
+                        log_prefix = self.logs_prefix if self.logs_prefix else ''
                     if not log_prefix[-1:] == '_':
                         log_prefix += "_"
-                    if len(commands) > 1:
-                        log_prefix = "%02d_%s" % (index, log_prefix)
                     cwd = root
                     if cmd.cwd:
                         cwd = os.path.join(root, cmd.cwd)
@@ -864,14 +862,13 @@ class Commands:
                         logfilename = cmd.logfile
                         logfile = None
                         if not cmd.stdout and not self.stdout:
-                            if not self.logs_folder:
-                                self.logs_folder = os.path.join(state.get_rc_folder(), "logs")
-                            elif not os.path.isabs(self.logs_folder):
-                                self.logs_folder = os.path.join(state.get_rc_folder(), "logs", self.logs_folder)
+                            if not log_folder:
+                                log_folder = os.path.join(state.get_rc_folder(), "logs")
+                            elif not os.path.isabs(log_folder):
+                                log_folder = os.path.join(state.get_rc_folder(), "logs", log_folder)
                             if not logfilename:
                                 logfilename = "%s.log" % re.sub(r"\W", "_", cmd.cmd)
-                            logfile = os.path.join(self.logs_folder,
-                                                   "%s%s%s" % (log_prefix, folder_prefix, logfilename))
+                            logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
                             print("Wait until command completes... Full log in %s\n" % logfile)
                         if not run_with_log_tail(cmd.cmd, cwd, logfile=logfile, tail_lines=self.tail_lines) == 0:
                             print("WARN: Command %s returned with error" % cmd.cmd)
@@ -880,7 +877,7 @@ class Commands:
                                 print("Aborting")
                                 break
             if not success:
-                print("WARNING: One or more commands failed, you may want to check the logs in %s" % self.logs_folder)
+                print("WARNING: One or more commands failed, you may want to check the logs in %s" % log_folder)
             return success
 
     def get_root_folder(self):
@@ -926,8 +923,8 @@ class TodoMethods:
                         [
                             Command("git clone --branch %s --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr" % get_release_branch(), logfile="git_clone.log")
                         ],
-                 ask_each=False,
-                 logs_folder=state.get_rc_folder())
+                 ask_each=False
+                        )
 
     def ant_precommit_commands(self, todo):
         return Commands(git_checkout_folder,
@@ -950,8 +947,7 @@ class TodoMethods:
                      Command("git checkout -b %s" % state.get_stable_branch_name()),
                      Command("git push origin %s" % state.get_stable_branch_name())
                  ],
-                 ask_each=True,
-                 logs_folder=todo.id)
+                 ask_each=True)
 
 
     def create_minor_branch_commands(self, todo):
@@ -963,8 +959,7 @@ class TodoMethods:
                      Command("git checkout -b %s" % state.get_minor_branch_name()),
                      Command("git push origin %s" % state.get_minor_branch_name())
                  ],
-                 ask_each=True,
-                 logs_folder=todo.id)
+                 ask_each=True)
 
     def add_version_bugfix_commands(self, todo):
         return Commands(state.get_git_checkout_folder(),
@@ -973,8 +968,7 @@ class TodoMethods:
                 Command("git checkout %s" % state.get_minor_branch_name()),
                 Command("python3 -u %s %s" % (os.path.join(current_git_root, 'dev-tools/scripts/addVersion.py'), state.release_version)),
             ],
-            ask_each=False,
-            logs_folder=todo.id)
+            ask_each=False)
 
     def add_version_minor(self, todo):
         print("TODO")
@@ -984,9 +978,8 @@ class TodoMethods:
 
 
     def inform_devs_desc(self, todo):
-        v = Version.parse(state.release_version)
-        release_version = "%d.%d" % (v.major, v.minor)
-        next_version = "%d.%d" % (v.major, v.minor+1)
+        release_version = "%d.%d" % (state.release_version_major, state.release_version_minor)
+        next_version = "%d.%d" % (state.release_version_major, state.release_version_minor+1)
         desc = """This is an e-mail template you can use as a basis for 
 announcing the new branch and feature freeze.
 
@@ -1021,6 +1014,34 @@ Please observe the normal rules:
 """ % (release_version, state.get_minor_branch_name(), next_version, release_version)
         return desc
 
+    def inform_devs_bugfix_desc(self, todo):
+        desc = """This is an e-mail template you can use as a basis for 
+announcing the rules for committing to the releaes branch
+
+.Mail template
+----
+To: dev@lucene.apache.org
+Subject: Bugfix release Lucene/Solr %s
+
+NOTICE:
+
+I am now preparing for a bugfix release from branch %s
+
+Please observe the normal rules for committing to this branch:
+        
+* Before committing to the branch, reply to this thread and argue
+  why the fix needs backporting and how long it will take.
+* All issues accepted for backporting should be marked with %s
+  in JIRA and issues that should delay the release must be marked as Blocker
+* All patches that are intended for the branch should first be committed 
+  to the unstable branch, merged into the stable branch, and then into 
+  the current release branch.
+* Only Jira issues with Fix version %s and priority "Blocker" will delay 
+  a release candidate build.
+----
+""" % (state.release_version, state.get_minor_branch_name(), state.release_version, state.release_version)
+        return desc
+
     def clear_ivy_cache_commands(self, todo):
         ivy_path = os.path.expanduser("~/.ivy2/")
         return Commands(
@@ -1033,9 +1054,19 @@ One way is to rename the ivy cache folder before building.
             [
                 Command("mv cache cache_bak", stdout=True),
             ],
-            ask_each=False,
-            logs_folder=todo.id)
+            ask_each=False)
 
+    def run_tests_commands(self, todo):
+        return Commands(
+            git_checkout_folder,
+            "Copy/paste these commands in another terminal to execute all tests",
+            [
+                Command("git checkout %s" % get_release_branch(), stdout=True),
+                Command('ant javadocs', 'lucene'),
+                Command('ant javadocs', 'solr'),
+                Command('ant clean test')
+            ],
+            ask_each=True)
 
     def build_rc_commands(self, todo):
         try:
@@ -1043,8 +1074,7 @@ One way is to rename the ivy cache folder before building.
         except Exception as e:
             raise Exception("Faild getting key: %s" % e)
 
-        logfile = os.path.join(state.get_rc_folder(), 'buildAndPushRelease.log')
-        # logfile = 'buildAndPushRelease.log'
+        logfile = os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log')
         cmdline = "python3 -u %s --root %s --push-local %s --rc-num %s --sign %s --logfile %s" \
                   % (os.path.join(current_git_root, 'dev-tools', 'scripts', 'buildAndPushRelease.py'),
                      state.get_git_checkout_folder(),
@@ -1054,7 +1084,7 @@ One way is to rename the ivy cache folder before building.
                      logfile)
 
         return Commands(
-            state.get_git_checkout_folder,
+            state.get_git_checkout_folder(),
             """In this step we will build the RC using python script 'buildAndPushRelease.py'
 We have tried to compile the correct command below, but please check
 it manually before executing, or run it manually in another Terminal.
@@ -1062,13 +1092,11 @@ Note that the script will take a long time. To follow the build log,
 run this command in another Terminal: `tail -f %s`
 """ % logfile,
             [
-                # Command("git checkout %s" % state.get_minor_branch_name()),
-                Command("git checkout %s" % "branch_7_7", stdout=True),
-                Command("git pull", stdout=True),
+                Command("git checkout %s" % get_release_branch(), stdout=True),
+                Command("git pull"),
                 Command(cmdline, logfile="build_rc.log"),
             ],
-            ask_each=False,
-            logs_folder="logs")
+            ask_each=False)
 
 
     def initiate_vote(self, todo):
@@ -1261,7 +1289,10 @@ The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B
                        type=ReleaseType.minor),
                   Todo('sanity_check_doap',
                        'Sanity check the DOAP files',
-                       description='Sanity check the DOAP files under dev-tools/doap/: do they contain all releases less than the one in progress?'),
+                       description="""
+Sanity check the DOAP files under dev-tools/doap/
+Do they contain all releases less than the one in progress?
+PS: The buildAndPushRelease script run later will check this automatically"""),
                   Todo('jenkins_builds',
                        'Add Jenkins task for the release branch',
                        description='...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.',
@@ -1270,7 +1301,10 @@ The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B
                   Todo('inform_devs',
                        'Inform Devs of the Release Branch',
                        description="Send a note to dev@ to inform the committers that the branch has been created and the feature freeze phase has started",
-                       links=['https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds'],
+                       type=major_minor),
+                  Todo('inform_devs_bugfix',
+                       'Inform Devs about the release',
+                       description="Send a note to dev@ to inform the committers about the rules for committing to the branch",
                        type=major_minor),
                   Todo('draft_release_notes',
                        'Get a draft of the release notes in place',
@@ -1295,39 +1329,23 @@ release branch creation. It's a good idea to remind the devs of this later in th
 """Go to the JIRA "Manage Versions" Administration pages
 and add a new (unreleased) version for the next release on the unstable branch (for a major release)
 or the stable branch (for a minor release).""",
-                       links=['https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions'],
-                       type=major_minor),
+                       links=['https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions']),
                   Todo('new_jira_version_solr',
                        'Add a new version in Solr JIRA for the next release',
                        description=
 """Go to the JIRA "Manage Versions" Administration pages
 and add a new (unreleased) version for the next release on the unstable branch (for a major release)
 or the stable branch (for a minor release).""",
-                       links=['https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions'],
-                       type=major_minor)
+                       links=['https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions'])
               ]),
-    TodoGroup('build_and_vote',
-              "Build artifacts and run the vote",
-              'description',
-              [
-                  Todo('run_tests',
-                       'Confirm that the tests pass within your release branch',
-                       commands=Commands(
-                             git_checkout_folder,
-                             "Copy/paste these commands in another terminal to execute all tests",
-                               [
-                                   Command('ant javadocs', 'lucene'),
-                                   Command('ant javadocs', 'solr'),
-                                   Command('ant clean test')
-                               ]),
-                       )
-              ],
-              in_rc_loop=True),
     TodoGroup('artifacts',
               'Build the release artifacts',
 """If after the last day of the feature freeze phase no blocking issues are in JIRA with "Fix Version" X.Y 
 then it's time to build the release artifacts, run the smoke tester and stage the RC in svn""",
               [
+                  Todo('run_tests',
+                       'Confirm that the tests pass within your release branch'
+                       ),
                   Todo('clear_ivy_cache',
                        'Clear the ivy cache'),
                   Todo('build_rc',
