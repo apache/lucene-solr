@@ -178,8 +178,6 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Compare two ClusterState-s, filtering out simulation framework artifacts.
-   * @param one
-   * @param two
    */
   public static void assertClusterStateEquals(ClusterState one, ClusterState two) {
     assertEquals(one.getLiveNodes(), two.getLiveNodes());
