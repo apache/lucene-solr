@@ -9,6 +9,7 @@ plugins {
   id 'eclipse'
 }
 
+def buildSrcDir = project.rootProject.projectDir;
 
 allprojects {
   
@@ -35,7 +36,6 @@ allprojects {
   apply plugin: 'idea'
   apply plugin: 'eclipse'
   apply plugin: 'maven-publish'
-  
 }
 
 task('regenerate') {
@@ -181,60 +181,6 @@ configure(subprojects) {  pj ->
     }
   }
   
-  apply plugin: 'eclipse'
-  plugins.withType(JavaPlugin) {
-    eclipse {
-      
-      classpath {
-        defaultOutputDir = file('build-eclipse')
-        
-        downloadSources=true
-        downloadJavadoc = true
-        
-        plusConfigurations += [
-          configurations.implementationTran,
-          configurations.testImplementationTran
-        ]
-        
-        file.whenMerged { classpath ->
-          if (project.name == 'buildSrc') {
-            project.tasks.pluginUnderTestMetadata
-          }
-          
-          classpath.entries.each { entry ->
-            
-            if ( entry.kind == 'src' && entry.hasProperty('output') ) {
-              // use default Output for all source-folders
-              entry.output = null
-            }
-          }
-          
-          // add JRE_CONTAINER
-          classpath.entries.removeAll { entry -> entry.kind == 'con' && entry.toString().startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }
-          def jreContainer = new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11')
-          jreContainer.getEntryAttributes().put("module", "false");
-         
-          classpath.entries.add(jreContainer)
-          
-          classpath.entries.each { entry ->
-            if ( entry.kind == 'lib') {
-              entry.exported = true
-            }
-          }
-          
-          // Jetty mod files make eclipse sad
-          new File("${projectDir}/.settings/org.eclipse.wst.validation.prefs").text = """
-eclipse.preferences.version=1
-override=true
-suspend=true
-vf.version=3
-"""
-        }
-        
-      }
-    }
-  }
-  
   tasks.withType(Test) {
     filter {
       // so we can run with --tests wildcards
@@ -271,6 +217,13 @@ tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
 
 task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
   baseDir = rootProject.projectDir
+}
+
+// setup eclipse
+allprojects {
+  plugins.withType(JavaPlugin) {
+    project.apply from: new File(buildSrcDir, "buildSrc/eclipse.gradle")
+  }
 }
 
 // turn off idea cycle checking - how to do for eclipse?

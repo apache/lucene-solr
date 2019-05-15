@@ -1,0 +1,81 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+eclipse {
+  project {
+    if (project.name == 'benchmark') {
+      resourceFilter {
+        appliesTo = 'FOLDERS'
+        type = 'EXCLUDE_ALL'
+        matcher {
+          id = 'org.eclipse.ui.ide.multiFilter'
+          arguments = '1.0-projectRelativePath-matches-true-true-work|temp'
+        }
+      }
+    }
+  }
+  
+  classpath {
+
+    defaultOutputDir = file('build-eclipse')
+    
+    downloadSources=true
+    downloadJavadoc = true
+
+    if (configurations.hasProperty('implementationTran')) {
+      plusConfigurations += [
+        configurations.implementationTran,
+        configurations.testImplementationTran
+      ]
+    }
+    
+    file.whenMerged { classpath ->
+      if (project.name == 'buildSrc') {
+        project.tasks.pluginUnderTestMetadata
+      }
+      
+      classpath.entries.each { entry ->
+        
+        if ( entry.kind == 'src' && entry.hasProperty('output') ) {
+          // use default Output for all source-folders
+          entry.output = null
+        }
+      }
+      
+      // add JRE_CONTAINER
+      classpath.entries.removeAll { entry -> entry.kind == 'con' && entry.path.startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }
+      def jreContainer = new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11')
+      jreContainer.getEntryAttributes().put("module", "false")
+      
+      classpath.entries.add(jreContainer)
+      
+      classpath.entries.each { entry ->
+        if ( entry.kind == 'lib') {
+          entry.exported = true
+        }
+      }
+      
+      // Jetty mod files make eclipse sad
+      new File("${projectDir}/.settings/org.eclipse.wst.validation.prefs").text = """
+eclipse.preferences.version=1
+override=true
+suspend=true
+vf.version=3
+"""
+    }
+  }
+}
