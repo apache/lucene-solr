@@ -1,8 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import org.apache.lucene.gradle.CheckWorkingCopy
 import org.apache.lucene.gradle.BuildPlugin
-
-// TODO: look into circuler dependency issues - for IDE's we turn off protection,
-// but I've seen it creep up with gw clean build on solr/core recently
 
 plugins {
   id "com.palantir.consistent-versions" version "1.4.0"
@@ -13,23 +27,8 @@ def buildSrcDir = project.rootProject.projectDir;
 
 allprojects {
   
-  repositories {
-    mavenCentral()
-    maven {
-      url "https://oss.sonatype.org/content/repositories/releases"
-    }
-    maven {
-      url "http://maven.restlet.org"
-    }
-    maven {
-      url "http://repository.cloudera.com/content/repositories/releases"
-    }
-    // chinese mirror
-    maven {
-      url "http://uk.maven.org/maven2"
-    }
-    jcenter()
-  }
+  // setup repositories
+  project.apply from: new File(buildSrcDir, "buildSrc/common/configure-repositories.gradle")
   
   buildDir = new File("build")
   
@@ -37,6 +36,8 @@ allprojects {
   apply plugin: 'eclipse'
   apply plugin: 'maven-publish'
 }
+
+// per module config
 
 configure(subprojects) {  pj ->
   
@@ -71,16 +72,6 @@ configure(subprojects) {  pj ->
       // Don't output ALL errors in a file, stop after a few
       options.compilerArgs << "-Xmaxerrs" << "5"
     }
-    
-    // Some test resources and files are stored along the test sources
-    // and are expected to exist next to classes during tests
-    task copyTestResources(type: Copy) {
-      from('src/test') {
-        exclude '**/*.java'
-      }
-      into sourceSets.test.java.outputDir
-    }
-    processTestResources.dependsOn copyTestResources
 
     task sourceJar(type: Jar) {
       classifier 'sources'
@@ -128,6 +119,4 @@ allprojects {
     project.apply from: new File(buildSrcDir, "buildSrc/ide/idea.gradle")
   }
 }
-
-
 
