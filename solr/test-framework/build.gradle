@@ -57,5 +57,10 @@ dependencies {
   
   testImplementation 'commons-fileupload:commons-fileupload'
   testImplementation 'org.apache.commons:commons-lang3'
+
+  testRuntimeOnly 'org.apache.logging.log4j:log4j-api'
+  testRuntimeOnly 'org.apache.logging.log4j:log4j-core'
+  testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+  testRuntimeOnly 'com.lmax:disruptor'
   
 }
