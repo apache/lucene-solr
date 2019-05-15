@@ -24,6 +24,8 @@ test {
   filter {
     includeTestsMatching "*.Test*"
     includeTestsMatching "*.*Test"
+    // so we can run with --tests wildcards
+    setFailOnNoMatchingTests(false)
   }
   
   maxHeapSize = "512m"
@@ -51,5 +53,18 @@ test {
   systemProperty 'tests.asserts', 'true'
   systemProperty 'tempDir', '.out/tests-temp'
   systemProperty 'java.io.tmpdir', '.out/tests-temp'
+  
+  def testsJvms = project.ext.properties.tests_jvms
+  if (testsJvms) {
+    maxParallelForks = testsJvms
+  } else {
+    maxParallelForks = Runtime.runtime.availableProcessors() / 2
+  }
+  
+  def testsFailFast = project.ext.properties.tests_failfast
+  if (testsFailFast)    {
+    failFast = true
+  }
+
 }
 
