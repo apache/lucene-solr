@@ -4,12 +4,12 @@ import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
+import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
 
-import search.blobstore.client.CoreStorageClient;
-import searchserver.blobstore.provider.BlobStorageProvider;
-import searchserver.logging.LoggingUtils;
-import searchserver.logging.SearchLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Task in charge of deleting Blobs (files) from blob store.
@@ -19,7 +19,7 @@ import searchserver.logging.SearchLogger;
  */
 class BlobDeleterTask implements Runnable {
 
-    private static final SearchLogger logger = new SearchLogger(BlobDeleterTask.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /**
      * Note we sleep() after each failed attempt, so multiply this value by {@link #SLEEP_MS_FAILED_ATTEMPT} to find
@@ -63,7 +63,7 @@ class BlobDeleterTask implements Runnable {
             isSuccess = false;
             int attempts = attempt.incrementAndGet();
 
-            logger.log(Level.WARNING, null, "Blob file delete task failed."
+            logger.warn("Blob file delete task failed."
                     +" attempt=" + attempts +  " core=" + this.coreName + " numOfBlobs=" + this.blobNames.size(), e);
 
             if (attempts < MAX_DELETE_ATTEMPTS) {
@@ -86,9 +86,16 @@ class BlobDeleterTask implements Runnable {
             long now = System.currentTimeMillis();
             long runTime = now - startTimeMs;
             long startLatency = now - this.queuedTimeMs;
-            LoggingUtils.logBlobAction(logger.getLogger(), coreName, "DELETE", blobClient.getStorageProvider().name(), blobClient.getBucketRegion(),
-                     blobClient.getBucketName(), runTime, startLatency, /* bytesTransferred */ 0L, attempt.get(), -1L, -1L, -1L, -1L, 
-                    this.blobNames.size(), isSuccess);
+            String message = String.format("coreName=%s action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
+                            + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s localGenerationNumber=%s "
+                            + "blobGenerationNumber=%s filesAffected=%s isSuccess=%s",
+                    coreName, "DELETE", blobClient.getStorageProvider().name(), blobClient.getBucketRegion(),
+                    blobClient.getBucketName(), runTime, startLatency, 0L, attempt.get(), -1L,
+                    -1L, this.blobNames.size(), isSuccess);
+            logger.info(message);
+//            LoggingUtils.logBlobAction(logger.getLogger(), coreName, "DELETE", blobClient.getStorageProvider().name(), blobClient.getBucketRegion(),
+//                     blobClient.getBucketName(), runTime, startLatency, /* bytesTransferred */ 0L, attempt.get(), -1L, -1L, -1L, -1L,
+//                    this.blobNames.size(), isSuccess);
         }
     }
 }

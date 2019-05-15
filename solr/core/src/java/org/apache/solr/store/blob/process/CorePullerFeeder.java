@@ -1,17 +1,14 @@
 package org.apache.solr.store.blob.process;
 
-import java.util.logging.Level;
-
 import org.apache.solr.core.CoreContainer;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import search.blobstore.solr.BlobCoreMetadata;
-import searchserver.SfdcConfig;
-import searchserver.SfdcConfigProperty;
-import searchserver.blobstore.metadata.BlobCoreSyncer;
-import searchserver.blobstore.util.DeduplicatingList;
-import searchserver.logging.SearchLogger;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
+import org.apache.solr.store.blob.util.DeduplicatingList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * A pull version of {@link CoreSyncFeeder} then will continually ({@link #feedTheMonsters()}) to load up a work queue (
@@ -26,7 +23,7 @@ import searchserver.logging.SearchLogger;
  */
 public class CorePullerFeeder extends CoreSyncFeeder {
 
-    private static final SearchLogger logger = new SearchLogger(CorePullerFeeder.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /**
      * This is the registry for the (single) instance of {@link CorePullerFeeder} being created, so it can be destroyed.
@@ -38,8 +35,8 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     protected final DeduplicatingList<String, CorePullTask> pullTaskQueue;
     protected static final String PULLER_THREAD_PREFIX = "puller";
 
-    private static final int numPullerThreads = Integer
-            .parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobStorePullThreads));
+    private static final int numPullerThreads = 5; // Integer
+            // .parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobStorePullThreads));
 
     private CorePullerFeeder(CoreContainer cores) {
         super(cores, numPullerThreads);
@@ -57,7 +54,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
 
             runningFeeder = cpf;
 
-            logger.log(Level.INFO, null, "Started CorePullerFeeder");
+            logger.info("Started CorePullerFeeder");
     }
 
     @Override
@@ -89,7 +86,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
             final long now = System.currentTimeMillis();
             final long msSinceLastLog = now - lastLoggedTimestamp;
             if (msSinceLastLog > minMsBetweenLogs) {
-                logger.log(Level.INFO, null, "Since last pull log " + msSinceLastLog + " ms ago, added "
+                logger.info("Since last pull log " + msSinceLastLog + " ms ago, added "
                         + syncsEnqueuedSinceLastLog + " cores to pull from blob. Last one is " + pci.coreName);
                 lastLoggedTimestamp = now;
                 syncsEnqueuedSinceLastLog = 0;
@@ -112,11 +109,13 @@ public class CorePullerFeeder extends CoreSyncFeeder {
      */
     static class PullCoreInfo implements DeduplicatingList.Deduplicatable<String> {
         final String coreName;
+        final String collectionName;
         final boolean waitForSearcher;
         final boolean createCoreIfAbsent;
 
-        PullCoreInfo(String coreName, boolean createCoreIfAbsent, boolean waitForSearcher) {
+        PullCoreInfo(String coreName, String collectionName, boolean createCoreIfAbsent, boolean waitForSearcher) {
             this.coreName = coreName;
+            this.collectionName = collectionName;
             this.waitForSearcher = waitForSearcher;
             this.createCoreIfAbsent = createCoreIfAbsent;
         }
@@ -125,6 +124,10 @@ public class CorePullerFeeder extends CoreSyncFeeder {
         public String getDedupeKey() {
             return coreName;
         }
+        
+        public String getCollectionName() {
+          return collectionName;
+      }
     }
 
     /**
@@ -145,7 +148,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
             // if one wants to create core if absent then merged will have to create as well 
             final boolean createCoreIfAbsent = v1.createCoreIfAbsent || v2.createCoreIfAbsent;
 
-            return new PullCoreInfo(v1.coreName, createCoreIfAbsent, waitForSearcher);
+            return new PullCoreInfo(v1.coreName, v1.collectionName, createCoreIfAbsent, waitForSearcher);
         }
     }
 
@@ -155,7 +158,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     private class CorePullResult implements CorePullTask.PullCoreCallback {
 
         @Override
-        public void finishedPull(@NonNull CorePullTask pullTask, @Nullable BlobCoreMetadata blobMetadata, CoreSyncStatus status, @Nullable String message)
+        public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status, String message)
                 throws InterruptedException {
             try {
                 // TODO given for now we consider environment issues as blob/corruption issues, not sure retrying currently makes sense. See comment in CorePushPull.pullUpdateFromBlob() regarding thrown exception
@@ -167,12 +170,10 @@ public class CorePullerFeeder extends CoreSyncFeeder {
                 }
                 PullCoreInfo pullCoreInfo = pullTask.getPullCoreInfo();
                 if (status.isSuccess()) {
-                    logger.log(Level.INFO, null,
-                            String.format("Pulling core %s succeeded. Last status=%s attempts=%s . %s",
-                                    pullCoreInfo.coreName, status, pullTask.getAttempts(), message == null ? "" : message));
+                    logger.info(String.format("Pulling core %s succeeded. Last status=%s attempts=%s . %s",
+                            pullCoreInfo.coreName, status, pullTask.getAttempts(), message == null ? "" : message));
                 } else {
-                    logger.log(Level.WARNING, null,
-                            String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
+                    logger.warn(String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
                                     pullCoreInfo.coreName, status, pullTask.getAttempts(), message == null ? "" : message));
                 }
                 BlobCoreSyncer.finishedPull(pullCoreInfo.coreName, status, blobMetadata, message);

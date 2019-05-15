@@ -1,9 +1,10 @@
 package org.apache.solr.store.blob.process;
 
-import searchserver.blobstore.util.DeduplicatingList;
-import searchserver.logging.SearchLogger;
+import org.apache.solr.store.blob.util.DeduplicatingList;
 
-import java.util.logging.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * A thread (there are a few of these created in {@link CorePusherFeeder#run}) that dequeues {@link CorePushTask} from
@@ -14,7 +15,7 @@ import java.util.logging.Level;
  * @since 214/solr.6
  */
 public class CorePusherThread implements Runnable {
-    private static final SearchLogger logger = new SearchLogger(CorePusherThread.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final DeduplicatingList<String, CorePushTask> workQueue;
     private final CorePusherFeeder pusherFeeder;
@@ -35,7 +36,7 @@ public class CorePusherThread implements Runnable {
 
                     task.pushCoreToBlob();
                 } catch (InterruptedException ie) {
-                    logger.log(Level.INFO, null, "Pusher thread " + Thread.currentThread().getName()
+                    logger.info("Pusher thread " + Thread.currentThread().getName()
                             + " got interrupted. Shutting down Blob CorePusherFeeder.");
 
                     // Stop the pusher feeder that will close the other threads and reinterrupt ourselves
@@ -45,7 +46,7 @@ public class CorePusherThread implements Runnable {
                 } catch (Exception e) {
                     // Exceptions other than InterruptedException should not stop the business
                     String taskInfo = task == null ? "" : String.format("Attempt=%s to push core %s ", task.getAttempts(), task.getCoreName()) ;
-                    logger.log(Level.WARNING, null, "CorePusherThread encountered a failure. " + taskInfo, e);
+                    logger.warn("CorePusherThread encountered a failure. " + taskInfo, e);
                 }
             }
     }

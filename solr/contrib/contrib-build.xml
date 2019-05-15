@@ -54,4 +54,11 @@
                     pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
     </sequential>
   </target>
+
+  <!-- SFDC: support for war file -->
+  <target name="add-to-war" if="contrib.has.webapp">
+    <copy todir="${dest}/web" failonerror="false">
+      <fileset dir="${antfile.dir}/src/webapp"/>
+    </copy>
+  </target>	
 </project>

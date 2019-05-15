@@ -1,4 +1,4 @@
-package org.apache.solr.store.blob.util;
+package org.apache.solr.store.blob;
 
 /**
  * Exception thrown when a core is not present locally because it was deleted due to a corruption and we haven't yet pulled

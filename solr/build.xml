@@ -59,7 +59,15 @@
     </jar>
     <echo>See ${common-solr.dir}/README.txt for how to run the Solr server.</echo>
   </target>
-  
+
+  <!-- SFDC: support for war file -->
+  <target name="server-war"
+          description="Creates the Solr WAR Distribution file.">
+    <ant dir="webapp" target="server-war" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <target name="run-example" depends="server"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="${server.dir}/solr"/>
@@ -188,12 +196,7 @@
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
           depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
   <target name="documentation" description="Generate all documentation"
-          depends="javadocs,changes-to-html,process-webpages">
-    <ant dir="solr-ref-guide" target="bare-bones-html-validation" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-      <property name="local.javadocs" value="true" />
-    </ant>
-  </target>
+    depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
 
   <target name="documentation-online" description="Generate a link to the online documentation"
@@ -443,6 +446,10 @@
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
   <!-- ========================================================================= -->
  
+  <target name="copy-to-stage">
+    <copy-to-stage-macro artifacts.dir="${package.dir}"/>
+  </target>
+  
   <target name="dist"
           description="Creates the Solr distribution files."
           depends="dist-solrj, dist-core, dist-test-framework, dist-contrib" />
@@ -463,7 +470,7 @@
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
-  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes"/>
+  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes,-dist-keys"/>
 
   <!-- copy changes/ to the release folder -->
   <target name="-dist-changes">
@@ -472,6 +479,12 @@
    </copy>
   </target>
 
+  <!-- copy KEYS to the release folder -->
+  <target name="-dist-keys">
+   <get src="http://home.apache.org/keys/group/lucene.asc" 
+        dest="${package.dir}/KEYS"/>
+  </target>
+ 
   <!-- Makes a tarball of the source.    -->
   <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
   <target name="package-src-tgz" depends="init-dist"
@@ -483,6 +496,8 @@
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
     <delete dir="${src.export.dir}/lucene/tools/javadoc/java8"/>
+    <!-- Exclude clover license files incompatible with the ASL -->
+    <delete dir="${src.export.dir}/lucene/tools/clover"/>
 
     <build-changes changes.src.file="${src.export.dir}/solr/CHANGES.txt"
                    changes.target.dir="${src.export.dir}/solr/docs/changes"
@@ -516,11 +531,14 @@
     <property name="dist.rel" location="${dist}" relative="yes"/>
     <property name="package.dir.rel" location="${package.dir}" relative="yes"/>
 
+    <!-- SFDC: exclude war file and solr ref guide from src tar file generation -->
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir=".." prefix="${fullnamever}" includes="*.txt *.xml dev-tools/" />
       <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="." prefix="${fullnamever}/solr"
                   excludes="build/** ${package.dir.rel}/** ${dist.rel}/**
+                            server/webapps/*.war
+                            solr-ref-guide/**
                             example/lib/**
                             **/*.jar 
                             lib/README.committers.txt **/data/ **/logs/*
@@ -566,26 +584,26 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            bin/** server/** example/** contrib/**/lib/** contrib/**/conf/** contrib/**/README.txt
+                            bin/** server/** example/** contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
                   excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
-                            **/*pom.xml.template server/etc/test/ contrib/**/src/" />
+                            **/*pom.xml.template server/etc/test/" />
       <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
                   prefix="${fullnamever}"
                   includes="**" />
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"
-                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/ contrib/**/bin/**"
+                  includes="bin/** server/**/*.sh example/**/*.sh example/**/bin/"
                   excludes="server/etc/test/**" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="dist/*.jar
                             dist/solrj-lib/*
                             dist/test-framework/**"
-                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1 **/*.sha512" />
+                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
       <tarfileset dir="${javadoc-online.dir}"
                   prefix="${fullnamever}/docs" />
     </tar>
@@ -636,20 +654,17 @@
   <target name="resolve" depends="resolve-example,resolve-server">
      <sequential>
      <ant dir="core" target="resolve" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
      <ant dir="solrj" target="resolve" inheritall="false">
-        <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
      <ant dir="test-framework" target="resolve" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
-     <ant dir="server" target="resolve" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
      <ant dir="solr-ref-guide" target="resolve" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
      <contrib-crawl target="resolve"/>
     </sequential>
   </target>

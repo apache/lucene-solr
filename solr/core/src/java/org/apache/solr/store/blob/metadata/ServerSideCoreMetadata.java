@@ -1,20 +1,13 @@
 package org.apache.solr.store.blob.metadata;
 
 import com.google.common.collect.*;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import search.blobstore.BlobException;
-import search.blobstore.solr.BlobCoreMetadata;
+import org.apache.solr.store.blob.client.BlobException;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.*;
-import org.apache.solr.handler.*;
-import searchserver.SfdcUserData;
-import searchserver.handler.SearchPromotionRuleDataHandler;
-import searchserver.util.SynonymUtil;
-
 import java.io.*;
 import java.security.*;
 import java.util.*;
@@ -66,7 +59,7 @@ public class ServerSideCoreMetadata {
      * Given a core name, builds the local metadata
      * @throws Exception if core corresponding to <code>coreName</code> can't be found.
      */
-    public ServerSideCoreMetadata(@NonNull String coreName, CoreContainer container) throws Exception {
+    public ServerSideCoreMetadata(String coreName, CoreContainer container) throws Exception {
         this.coreName = coreName;
         this.container = container;
 
@@ -85,8 +78,9 @@ public class ServerSideCoreMetadata {
             }
 
             // Sequence number was once called replay count. data structures (and DB column names) haven't been renamed everywhere.
-            SfdcUserData coreUserData = SfdcUserData.getMetadataFromIndexCommit(core, commit);
-            sequenceNumber = coreUserData.replayCount;
+            // SfdcUserData coreUserData = SfdcUserData.getMetadataFromIndexCommit(core, commit);
+            // sequenceNumber = coreUserData.replayCount;
+            sequenceNumber = 0; // TODO
             generation = commit.getGeneration();
 
             // Work around possible bug returning same file multiple times by using a set here
@@ -183,23 +177,19 @@ public class ServerSideCoreMetadata {
 
     /**
      * Returns all the config files that are meant to be persisted/synchronized with blob store.
-     * Current non-blob replication does not replicate everything under config folder, rather it only
-     * replicates synonym files (included by {@link ReplicationHandlerWithSynonyms#getConfFileInfoFromCache(NamedList, Map)})
-     * and elevate.xml (included by {@link ReplicationHandler#inform(SolrCore)} when reading 
-     * "config/requestHandler[@name='/replication']/lst[@name='master']/str[@name='confFiles']")
      * 
      * If you add a new set of config files make sure that once created they only become empty and do not get deleted(unless they are corrupt)
      * because in blob syncing presence of config file on one side(local or blob) means it is fresher.
      */
     private Set<File> getConfigFiles(SolrCore core) {
-        Set<File> configFiles = Sets.newHashSet(SynonymUtil.getSynonymFilesForCore(core)); // all synonym files
-        configFiles.add(SearchPromotionRuleDataHandler.getSearchPromotionRuleConfigFile(core)); // elevate.xml carrying promotion rules
-        return configFiles;
+        // Set<File> configFiles = Sets.newHashSet(SynonymUtil.getSynonymFilesForCore(core)); // all synonym files
+        // configFiles.add(SearchPromotionRuleDataHandler.getSearchPromotionRuleConfigFile(core)); // elevate.xml carrying promotion rules
+        // return configFiles;
+        return Sets.newHashSet();
     }
 
     /**
-     * Function "inspired" by the SFDC provided method {@link org.apache.solr.handler.SnapPuller#getDirHash} computing a hash
-     * of a Solr Directory in order to make sure the directory doesn't change as we pull content into it (if we need to
+     * Computes a hash of a Solr Directory in order to make sure the directory doesn't change as we pull content into it (if we need to
      * pull content into it)
      */
     private String getSolrDirectoryHash(Directory coreDir) throws NoSuchAlgorithmException, IOException {
@@ -237,7 +227,7 @@ public class ServerSideCoreMetadata {
         /** Size in bytes */
         public final long fileSize;
 
-        CoreFileData(@NonNull String fileName, long fileSize) {
+        CoreFileData(String fileName, long fileSize) {
             this.fileName = fileName;
             this.fileSize = fileSize;
         }
@@ -272,7 +262,7 @@ public class ServerSideCoreMetadata {
         /** Last updated time of the file */
         public final long updatedAt;
 
-        CoreConfigFileData(@NonNull String fileName, long fileSize, long updatedAt) {
+        CoreConfigFileData(String fileName, long fileSize, long updatedAt) {
             super(fileName, fileSize);
             this.updatedAt = updatedAt;
         }

@@ -148,6 +148,9 @@
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
     <dependency org="com.google.code.gson" name="gson" rev="${/com.google/gson}" conf="compile"/>
 
+	<!-- Junit -->
+	<dependency org="junit" name="junit" rev="4.13-beta-1"/>
+
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
 </ivy-module>

@@ -1,13 +1,12 @@
 package org.apache.solr.store.blob.process;
 
 import org.apache.lucene.util.NamedThreadFactory;
-import searchserver.SfdcConfig;
-import searchserver.SfdcConfigProperty;
-import searchserver.logging.SearchLogger;
 
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.logging.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Manager of blobs (files) to delete, putting them in a queue (if space left on the queue) then consumed and processed
@@ -18,7 +17,7 @@ import java.util.logging.Level;
  */
 public class BlobDeleteManager {
 
-    private static final SearchLogger logger = new SearchLogger(BlobDeleteManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /**
      * This is the registry for the (single) instance of {@link BlobDeleteManager} being created, so it can be destroyed.
@@ -72,19 +71,27 @@ public class BlobDeleteManager {
         // but then (if asserts are enabled on your system...) should be destroyed (call to shutdown()) before being initialized again.
         assert runningDeleter == null;
 
+        int numDeleterThreads = 5;
+        //Integer.parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleterThreads));
+        long deleteDelayMs = 8000;
+        //Long.parseLong(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleteDelay));
+
+        runningDeleter = new BlobDeleteManager(ALMOST_MAX_DELETER_QUEUE_SIZE, numDeleterThreads, deleteDelayMs);
+        logger.info("EnableBlobFileDeleter is true, BlobDeleteManager will accept deletes");
+
         // Only enable the blob file deleter (and create its thread and the thread its thread creates) if configured to
         // do so.
-        if (Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobFileDeleter))) {
-
-            int numDeleterThreads = Integer.parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleterThreads));
-            long deleteDelayMs = Long.parseLong(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleteDelay));
-
-            runningDeleter = new BlobDeleteManager(ALMOST_MAX_DELETER_QUEUE_SIZE, numDeleterThreads, deleteDelayMs);
-
-            logger.log(Level.INFO, null, "EnableBlobFileDeleter is true, BlobDeleteManager will accept deletes");
-        } else {
-            logger.log(Level.INFO, null, "EnableBlobFileDeleter is false, BlobDeleteManager will reject all deletes");
-        }
+//        if (Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobFileDeleter))) {
+//
+//            int numDeleterThreads = Integer.parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleterThreads));
+//            long deleteDelayMs = Long.parseLong(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleteDelay));
+//
+//            runningDeleter = new BlobDeleteManager(ALMOST_MAX_DELETER_QUEUE_SIZE, numDeleterThreads, deleteDelayMs);
+//
+//            logger.log(Level.INFO, null, "EnableBlobFileDeleter is true, BlobDeleteManager will accept deletes");
+//        } else {
+//            logger.log(Level.INFO, null, "EnableBlobFileDeleter is false, BlobDeleteManager will reject all deletes");
+//        }
     }
 
     public static void shutdown() {

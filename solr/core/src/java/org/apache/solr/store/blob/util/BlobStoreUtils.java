@@ -1,6 +1,4 @@
-package searchserver.blobstore.util;
-
-import java.util.logging.Level;
+package org.apache.solr.store.blob.util;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -8,13 +6,14 @@ import org.apache.solr.core.SolrCore;
 
 import com.google.common.base.Throwables;
 
-import search.blobstore.client.CoreStorageClient;
-import search.blobstore.solr.BlobCoreMetadata;
-import searchserver.SfdcConfig;
-import searchserver.SfdcConfigProperty;
-import searchserver.blobstore.metadata.CorePushPull;
-import searchserver.blobstore.provider.BlobStorageProvider;
-import searchserver.logging.SearchLogger;
+import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.metadata.CorePushPull;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Utility class for BlobStore components
@@ -24,7 +23,7 @@ import searchserver.logging.SearchLogger;
  */
 public class BlobStoreUtils {
     
-    private static final SearchLogger logger = new SearchLogger(BlobStoreUtils.class);
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     
     /**
      * Refresh local core with updates in blob
@@ -37,7 +36,7 @@ public class BlobStoreUtils {
             CoreStorageClient blobClient = BlobStorageProvider.get().getBlobStorageClient();
             BlobCoreMetadata blobMetadata = blobClient.pullCoreMetadata(core.getName());
             if(blobMetadata == null) {
-                logger.log(Level.INFO, /*sensitiveInfo*/ null, "No blob metadata found for " + core.getName());
+                logger.info("No blob metadata found for " + core.getName());
                 return false;
             }
             
@@ -68,8 +67,9 @@ public class BlobStoreUtils {
      * @return true if EnableBlob is true and EnableBlobBackgroundPulling is true
      */
     public static boolean isPullingEnabled() {
-        return Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlob)) && Boolean
-                .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPulling));
+        return true;
+        // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlob)) && Boolean
+        // .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPulling));
     }
 
     /**
@@ -78,7 +78,8 @@ public class BlobStoreUtils {
      * @return true if EnableBlob is true and EnableBlobBackgroundPushing is true
      */
     public static boolean isPushingEnabled() {
-        return Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlob)) && Boolean
-                .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing));
+        return true;
+        // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlob)) && Boolean
+        // .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing));
     }
 }

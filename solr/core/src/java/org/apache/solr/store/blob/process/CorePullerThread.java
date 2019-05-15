@@ -1,9 +1,10 @@
 package org.apache.solr.store.blob.process;
 
-import java.util.logging.Level;
+import org.apache.solr.store.blob.util.DeduplicatingList;
 
-import searchserver.blobstore.util.DeduplicatingList;
-import searchserver.logging.SearchLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * A thread (there are a few of these created in {@link CorePullerFeeder#run}) that dequeues {@link CorePullTask} from a
@@ -15,7 +16,7 @@ import searchserver.logging.SearchLogger;
  * @since 214/solr.6
  */
 public class CorePullerThread implements Runnable {
-    private static final SearchLogger logger = new SearchLogger(CorePullerThread.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final DeduplicatingList<String, CorePullTask> workQueue;
     private final CorePullerFeeder pullerFeeder;
@@ -37,7 +38,7 @@ public class CorePullerThread implements Runnable {
                     task.pullCoreFromBlob();
 
                 } catch (InterruptedException ie) {
-                    logger.log(Level.INFO, null, "Puller thread " + Thread.currentThread().getName()
+                    logger.info("Puller thread " + Thread.currentThread().getName()
                             + " got interrupted. Shutting down Blob CorePullerFeeder.");
 
                     // Stop the puller feeder that will close the other threads and reinterrupt ourselves
@@ -47,7 +48,7 @@ public class CorePullerThread implements Runnable {
                 } catch (Exception e) {
                     // Exceptions other than InterruptedException should not stop the business
                     String taskInfo = task == null ? "" : String.format("Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().coreName) ;
-                    logger.log(Level.WARNING, null, "CorePullerThread encountered a failure. " + taskInfo, e);
+                    logger.warn("CorePullerThread encountered a failure. " + taskInfo, e);
                 }
         }
     }

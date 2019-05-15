@@ -1,15 +1,12 @@
 package org.apache.solr.store.blob.process;
 
-import java.util.logging.Level;
-
 import org.apache.solr.core.CoreContainer;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import searchserver.SfdcConfig;
-import searchserver.SfdcConfigProperty;
-import searchserver.blobstore.util.DeduplicatingList;
-import searchserver.logging.SearchLogger;
+import org.apache.solr.store.blob.util.DeduplicatingList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * A push version of {@link CoreSyncFeeder} then will continually ({@link #feedTheMonsters()}) to load up a work queue (
@@ -26,15 +23,15 @@ import searchserver.logging.SearchLogger;
  */
 public class CorePusherFeeder extends CoreSyncFeeder {
 
-    private static final SearchLogger logger = new SearchLogger(CorePusherFeeder.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /**
      * This is the registry for the (single) instance of {@link CorePusherFeeder} being created, so it can be destroyed.
      */
     private volatile static CorePusherFeeder runningFeeder = null;
 
-    private static final int numPusherThreads = Integer
-            .parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobStorePushThreads));
+    private static final int numPusherThreads = 5; // Integer
+            // .parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobStorePushThreads));
 
     private final CorePushTask.PushCoreCallback callback;
 
@@ -49,22 +46,22 @@ public class CorePusherFeeder extends CoreSyncFeeder {
     public static void init(CoreContainer cores) {
         // Only enable the core pusher feeder (and create its thread and the thread its thread creates) if configured to
         // do so. Note that if this property is disabled, we also not enqueue core changes in CoreUpdateTracker
-        if (Boolean
-                .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing))) {
+//        if (Boolean
+//                .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing))) {
             // Assuming this can only be initialized once, so would like to know if assumption is wrong
-            assert runningFeeder == null;
+        assert runningFeeder == null;
 
-            CorePusherFeeder cpf = new CorePusherFeeder(cores);
-            Thread t = new Thread(cpf);
-            t.setName("blobPusherFeeder-" + t.getName());
-            t.start();
+        CorePusherFeeder cpf = new CorePusherFeeder(cores);
+        Thread t = new Thread(cpf);
+        t.setName("blobPusherFeeder-" + t.getName());
+        t.start();
 
-            runningFeeder = cpf;
+        runningFeeder = cpf;
 
-            logger.log(Level.INFO, null, "EnableBlobBackgroundPushing is true, started CorePusherFeeder");
-        } else {
-            logger.log(Level.INFO, null, "EnableBlobBackgroundPushing is false, not starting CorePusherFeeder");
-        }
+        logger.info("EnableBlobBackgroundPushing is true, started CorePusherFeeder");
+//        } else {
+//            logger.log(Level.INFO, null, "EnableBlobBackgroundPushing is false, not starting CorePusherFeeder");
+//        }
     }
 
     @Override
@@ -96,7 +93,7 @@ public class CorePusherFeeder extends CoreSyncFeeder {
             final long now = System.currentTimeMillis();
             final long msSinceLastLog = now - lastLoggedTimestamp;
             if (msSinceLastLog > minMsBetweenLogs) {
-                logger.log(Level.INFO, null, "Since last push log " + msSinceLastLog + " ms ago, added "
+                logger.info("Since last push log " + msSinceLastLog + " ms ago, added "
                         + pushesSinceLastLog + " cores to push to blob. Last one is " + pci.coreName);
                 lastLoggedTimestamp = now;
                 pushesSinceLastLog = 0;
@@ -148,7 +145,7 @@ public class CorePusherFeeder extends CoreSyncFeeder {
     private class CorePushResult implements CorePushTask.PushCoreCallback {
 
         @Override
-        public void finishedPush(@NonNull CorePushTask pushTask, CoreSyncStatus status, @Nullable String message)
+        public void finishedPush(CorePushTask pushTask, CoreSyncStatus status, String message)
                 throws InterruptedException {
             try {
                 if (status.isTransientError() && pushTask.getAttempts() < MAX_ATTEMPTS) {
@@ -159,12 +156,10 @@ public class CorePusherFeeder extends CoreSyncFeeder {
                 }
 
                 if (status.isSuccess()) {
-                    logger.log(Level.INFO, null, 
-                            String.format("Pushing core %s succeeded. Last status=%s attempts=%s . %s", 
+                    logger.info(String.format("Pushing core %s succeeded. Last status=%s attempts=%s . %s", 
                                     pushTask.getCoreName(), status, pushTask.getAttempts(), message == null ? "" : message));
                 } else {
-                    logger.log(Level.WARNING, null, 
-                            String.format("Pushing core %s failed. Giving up. Last status=%s attempts=%s . %s", 
+                    logger.warn(String.format("Pushing core %s failed. Giving up. Last status=%s attempts=%s . %s", 
                                     pushTask.getCoreName(), status, pushTask.getAttempts(), message == null ? "" : message));
                 }
             } catch (InterruptedException ie) {

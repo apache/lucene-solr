@@ -1,22 +1,22 @@
 package org.apache.solr.store.blob.process;
 
 import java.util.HashMap;
-import java.util.logging.Level;
 
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.solr.core.CoreContainer;
 
 import com.google.common.collect.Maps;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import search.blobstore.client.CoreStorageClient;
-import search.blobstore.solr.BlobCoreMetadata;
-import search.blobstore.solr.BlobCoreMetadataBuilder;
-import searchserver.blobstore.metadata.*;
-import searchserver.blobstore.provider.BlobStorageProvider;
-import searchserver.blobstore.util.DeduplicatingList;
-import searchserver.logging.SearchLogger;
+import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
+import org.apache.solr.store.blob.metadata.*;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
+import org.apache.solr.store.blob.util.DeduplicatingList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Code for pushing updates on a specific core to the Blob store. This class does not implement {@link Runnable} because
@@ -25,13 +25,11 @@ import searchserver.logging.SearchLogger;
  * A callback is used (by {@link CorePusherFeeder}) to handle the corresponding work item (consider done, reenqueue,
  * accept a permanent failure).<p>
  *
- * This class is the Blob store equivalent of Replication's {@link searchserver.replication.ReplicateCoreTask}.
- *
  * @author iginzburg
  * @since 214/solr.6
  */
 public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
-    private static final SearchLogger logger = new SearchLogger(CorePushTask.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /**
      * Minimum delay between to push retries for a given core.<p>
@@ -50,7 +48,7 @@ public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
     private long lastAttemptTimestamp;
     private final PushCoreCallback callback;
 
-    CorePushTask(@NonNull CoreContainer coreContainer, @NonNull String coreName, @NonNull PushCoreCallback callback) {
+    CorePushTask(CoreContainer coreContainer, String coreName, PushCoreCallback callback) {
         this(coreContainer, coreName, System.currentTimeMillis(), 0, 0L, callback);
     }
 
@@ -157,7 +155,7 @@ public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
                 // Another push is in progress, we'll retry later.
                 // Note we can't just cancel this push, because the other push might be working on a previous commit point.
                 long prevPushMs = System.currentTimeMillis() - pushInFlightTimestamp;
-                logger.log(Level.WARNING, null, "Skipping core push for " + getCoreName() + " because another thread is currently pushing it (started " + prevPushMs + " ms ago). Will retry.");
+                logger.warn("Skipping core push for " + getCoreName() + " because another thread is currently pushing it (started " + prevPushMs + " ms ago). Will retry.");
                 this.callback.finishedPush(this, CoreSyncStatus.CONCURRENT_SYNC, null);
                 return;
             } else {
@@ -206,7 +204,7 @@ public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
                 BlobCoreMetadata blobMetadata = blobClient.pullCoreMetadata(serverMetadata.getCoreName());
                 if (blobMetadata == null) {
                     blobMetadata = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(serverMetadata.getCoreName());
-                    logger.log(Level.INFO, null, "BlobCoreMetadata does not exist on the BlobStore. Pushing a new Metadata object.");
+                    logger.info("BlobCoreMetadata does not exist on the BlobStore. Pushing a new Metadata object.");
                 }
                 
                 MetadataResolver resolver = new MetadataResolver(serverMetadata, blobMetadata);
@@ -254,7 +252,7 @@ public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
                         return;
                     default:
                         // Somebody added a value to the enum without saying?
-                        logger.log(Level.SEVERE, null, "Unexpected enum value " + resolver.getAction() + ", please update the code");
+                        logger.warn("Unexpected enum value " + resolver.getAction() + ", please update the code");
                         this.callback.finishedPush(this, CoreSyncStatus.FAILURE, message);
                         return;
                 }
@@ -274,11 +272,11 @@ public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
             throw e;
         } catch (IndexNotFoundException infe) {
             this.callback.finishedPush(this, CoreSyncStatus.LOCAL_MISSING_FOR_PUSH, null);
-            logger.log(Level.INFO, null, "Failed (attempt=" + attemptsCopy + ") to push core " + getCoreName()
+            logger.info("Failed (attempt=" + attemptsCopy + ") to push core " + getCoreName()
                     + " because no longer exists", infe);
         } catch (Exception e) {
             this.callback.finishedPush(this, CoreSyncStatus.FAILURE, e.getMessage());
-            logger.log(Level.WARNING, null, "Failed (attempt=" + attemptsCopy + ") to push core " + getCoreName(), e);
+            logger.warn("Failed (attempt=" + attemptsCopy + ") to push core " + getCoreName(), e);
         }
     }
 
@@ -295,7 +293,7 @@ public class CorePushTask implements DeduplicatingList.Deduplicatable<String> {
          * @param message Human readable message explaining a failure, or <code>null</code> if no message available.
          *
          */
-        void finishedPush(@NonNull CorePushTask pushTask, CoreSyncStatus status, @Nullable String message)
+        void finishedPush(CorePushTask pushTask, CoreSyncStatus status, String message)
                 throws InterruptedException;
     }
 }

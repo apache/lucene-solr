@@ -1,9 +1,7 @@
-package searchserver.blobstore.util;
+package org.apache.solr.store.blob.util;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A kind of FIFO list that deduplicates entries based on a key associated with each entry and a merging function.
@@ -79,7 +77,7 @@ public class DeduplicatingList<K, V extends DeduplicatingList.Deduplicatable<K>>
      *                    we'll exceed at most by a few units.</li>
      *                    <li>when <code>false</code>, if the list is too full, the call blocks waiting until the insert can be done</li></ul>
      */
-    public void addDeduplicated(@NonNull final V value, boolean isReenqueue) throws InterruptedException {
+    public void addDeduplicated(final V value, boolean isReenqueue) throws InterruptedException {
         synchronized (lock) {
             TaskListNode<V> existingEntry = keyToListNode.get(value.getDedupeKey());
 

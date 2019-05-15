@@ -1,7 +1,5 @@
 package org.apache.solr.store.blob.process;
 
-import searchserver.replication.OrphanedCoreDeleter;
-
 /**
  * Enumerates all possible results of core sync tasks
  * 
@@ -33,7 +31,7 @@ public enum CoreSyncStatus {
     BLOB_CONFLICT(false, false),
     /** Core was not pushed/pulled because core corrupted on Blob */
     BLOB_CORRUPT(false, false),
-    /** Core was not pushed because Blob is deleted, likely local copy will be eventually cleaned up by {@link OrphanedCoreDeleter} */
+    /** Core was not pushed because Blob is deleted, likely local copy will be eventually cleaned up by OrphanedCoreDeleter */
     BLOB_DELETED_FOR_PUSH(true, false),
     /** Core was not pulled because Blob is deleted */
     BLOB_DELETED_FOR_PULL(false, false),

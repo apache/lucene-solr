@@ -155,6 +155,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected UpdateCommand updateCommand;  // the current command this processor is working on.
 
   protected final Replica.Type replicaType;
+  
+  private boolean leaderPushToBlob;
 
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
     UpdateRequestProcessor next) {

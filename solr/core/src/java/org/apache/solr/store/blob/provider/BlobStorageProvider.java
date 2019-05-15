@@ -1,9 +1,8 @@
 package org.apache.solr.store.blob.provider;
 
-import search.blobstore.client.BlobStorageClientBuilder;
-import search.blobstore.client.CoreStorageClient;
-import searchserver.SfdcConfig;
-import searchserver.SfdcConfigProperty;
+import org.apache.solr.store.blob.client.BlobStorageClientBuilder;
+import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.util.BlobStoreBootstrapper;
 
 /**
  * Provides SearchServer access to an external blob storage for Solr Cores by retrieving and bootstrapping storage clients with 
@@ -23,13 +22,13 @@ public class BlobStorageProvider {
     
     private CoreStorageClient client;
     
-    public static void init(SfdcConfig config) throws Exception {
-        String localBlobDir = config.getSfdcConfigProperty(SfdcConfigProperty.LocalBlobStoreHome);
-        String blobBucketName = config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceBucket);
-        String blobstoreEndpoint = config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceEndpoint);
-        String blobstoreAccessKey = config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceAccessToken);
-        String blobstoreSecretKey = config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceSecretToken);
-        String blobStorageProvider = config.getSfdcConfigProperty(SfdcConfigProperty.BlobStorageProvider);
+    public static void init() throws Exception {
+        String localBlobDir = BlobStoreBootstrapper.getLocalBlobDir();
+        String blobBucketName = BlobStoreBootstrapper.getBlobBucketName();
+        String blobstoreEndpoint = BlobStoreBootstrapper.getBlobstoreEndpoint();
+        String blobstoreAccessKey = BlobStoreBootstrapper.getBlobstoreAccessKey();
+        String blobstoreSecretKey = BlobStoreBootstrapper.getBlobstoreSecretKey();
+        String blobStorageProvider = BlobStoreBootstrapper.getBlobStorageProvider();
         
         BlobStorageClientBuilder clientBuilder = new BlobStorageClientBuilder(localBlobDir,
                 blobStorageProvider, blobBucketName, blobstoreEndpoint, blobstoreAccessKey, blobstoreSecretKey,
@@ -39,9 +38,9 @@ public class BlobStorageProvider {
         // if we can't connect to the blob store for any reason, we'll throw an exception here
         boolean bucketExists = client.doesBucketExist();
         if (!bucketExists) {
-        throw new Exception(
-                String.format("The bucket %s does not exist! The CoreStorageClient will not connect to endpoint %s!",
-             blobBucketName, blobstoreEndpoint));
+          throw new Exception(
+                  String.format("The bucket %s does not exist! The CoreStorageClient will not connect to endpoint %s!",
+               blobBucketName, blobstoreEndpoint));
         }
         provider = new BlobStorageProvider(client);
     }

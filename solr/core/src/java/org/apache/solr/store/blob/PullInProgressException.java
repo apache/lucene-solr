@@ -1,4 +1,4 @@
-package org.apache.solr.store.blob.util;
+package org.apache.solr.store.blob;
 
 /**
  * Exception thrown when a new pull of a core cannot be initiated because a pull is in progress but the core is not yet

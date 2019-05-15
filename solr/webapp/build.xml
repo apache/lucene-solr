@@ -23,8 +23,8 @@
 
   <import file="../common-build.xml"/>
 
-  <property name="exclude.from.webapp" value="*slf4j*,log4j-*,*javax.servlet*" />
-  
+  <property name="exclude.from.webapp" value="*slf4j*,log4j-*,*javax.servlet*"/>
+
   <!-- this module has no javadocs -->
   <target name="javadocs"/>
 
@@ -50,10 +50,10 @@
     <copy todir="${server.dir}/solr-webapp/webapp/WEB-INF/lib">
       <fileset dir="${common-solr.dir}/core/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
       <fileset dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
-      <fileset dir="${lucene-libs}" excludes="${exclude.from.webapp},${common.classpath.excludes}" />
+      <fileset dir="${lucene-libs}" excludes="${exclude.from.webapp},${common.classpath.excludes}"/>
       <fileset dir="${dist}" excludes="${exclude.from.webapp},${common.classpath.excludes}">
-        <include name="solr-solrj-${version}.jar" />
-        <include name="solr-core-${version}.jar" />
+        <include name="solr-solrj-${version}.jar"/>
+        <include name="solr-core-${version}.jar"/>
       </fileset>
     </copy>
   </target>
@@ -66,4 +66,41 @@
 
   <!-- nothing to do -->
   <target name="-validate-maven-dependencies"/>
+
+  <!-- SFDC: support for war file -->
+  <target name="server-war"
+          description="Creates the Solr WAR Distribution file."
+          depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
+    <build-manifest title="Apache Solr Search Server"
+                    implementation.title="org.apache.solr"/>
+    <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
+    <war destfile="${server.dir}/webapps/solr-${version}.war"
+         webxml="web/WEB-INF/web.xml"
+         manifest="${manifest.file}">
+      <lib dir="${common-solr.dir}/server/lib" includes="metrics*jar" excludes="${exclude.from.war},${common.classpath.excludes}"/>
+      <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
+      <lib dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
+      <lib dir="${common-solr.dir}/build/contrib/solr-analysis-extras/lucene-libs" includes="lucene-analyzers-icu*" excludes="${exclude.from.war},${common.classpath.excludes}"/>
+      <lib dir="${lucene-libs}" excludes="${exclude.from.war},${common.classpath.excludes}" />
+      <lib dir="${dist}" excludes="${exclude.from.war},${common.classpath.excludes}">
+        <include name="solr-solrj-${version}.jar"/>
+        <include name="solr-core-${version}.jar"/>
+      </lib>
+      <!-- START SFDC ADD -->
+      <!-- include the solr analysis extras jar and its dependencies -->
+      <lib dir="${common-solr.dir}/build/contrib/solr-analysis-extras">
+        <include name="solr-analysis-extras-${version}.jar"/>
+      </lib>
+      <lib dir="${common-solr.dir}/build/contrib/solr-analysis-extras/lucene-libs">
+        <include name="*.jar"/>
+      </lib>
+      <lib dir="${common-solr.dir}/contrib/analysis-extras/lib">
+        <include name="icu4j-59.1.jar"/>
+      </lib>
+      <!-- END SFDC ADD -->
+      <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
+      <fileset dir="web" excludes="${exclude.from.war}"/>
+      <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt" excludes="${exclude.from.war}"/>
+    </war>
+  </target>
 </project>

@@ -2,30 +2,29 @@ package org.apache.solr.store.blob.metadata;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import search.blobstore.client.CoreStorageClient;
-import search.blobstore.solr.BlobCoreMetadata;
-import search.blobstore.solr.BlobCoreMetadata.BlobConfigFile;
-import search.blobstore.solr.BlobCoreMetadata.BlobFile;
-import search.blobstore.solr.BlobCoreMetadataBuilder;
+import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobConfigFile;
+import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobFile;
+import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.*;
-import searchserver.blobstore.core.CorruptCoreHandler;
-import searchserver.blobstore.metadata.MetadataResolver.Action;
-import searchserver.blobstore.metadata.ServerSideCoreMetadata.*;
-import searchserver.blobstore.process.BlobDeleteManager;
-import searchserver.blobstore.provider.BlobStorageProvider;
-import searchserver.logging.*;
-import searchserver.util.CoreUtil;
+import org.apache.solr.store.blob.metadata.MetadataResolver.Action;
+import org.apache.solr.store.blob.metadata.ServerSideCoreMetadata.*;
+import org.apache.solr.store.blob.process.BlobDeleteManager;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
 import java.util.stream.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Class pushing updates from the local core to the Blob Store and pulling updates from Blob store to local core.
@@ -37,7 +36,7 @@ import java.util.stream.*;
  */
 public class CorePushPull {
 
-    private static final SearchLogger logger = new SearchLogger(CorePushPull.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final String coreName;
     private final MetadataResolver resolver;
@@ -90,7 +89,7 @@ public class CorePushPull {
         this.coreName = core.getName();
         this.blobDeleteManager = BlobDeleteManager.get();
 
-        logger.log(Level.INFO, /* sensitiveInfo */ null, "Server metadata=" + solrServerMetadata + " Blob metadata="
+        logger.info("Server metadata=" + solrServerMetadata + " Blob metadata="
                 + blobMetadata + " Resolver action=" + resolver.getAction());
     }
 
@@ -204,7 +203,7 @@ public class CorePushPull {
                 }
                 // so far we have decided not to pull config changes if we are pushing changes
                 if(!resolver.getConfigFilesToPull().isEmpty()) {
-                    logger.log(Level.INFO, null, String.format(
+                    logger.info(String.format(
                             "Lost opportunity: we could have pulled config changes when pushing core=%s", coreName));
                 }
 
@@ -251,8 +250,10 @@ public class CorePushPull {
      *     TODO: check changes in Solr.7's IndexFetcher. Core reloading needed?
      *
      * This method will work in 2 cases:
-     * <nl><li>Local core needs to fetch an update from Blob</li>
-     * <li>Local core did not exist (was created empty before calling this method) and is fetched from Blob</li></nl>
+     * <ol>
+     * <li>Local core needs to fetch an update from Blob</li>
+     * <li>Local core did not exist (was created empty before calling this method) and is fetched from Blob</li>
+     * </ol>
      * 
      * @param requestQueuedTimeMs epoch time in milliseconds when the pull request was queued(meaningful in case of async pushing)
      *                            only used for logging purposes
@@ -337,7 +338,7 @@ public class CorePushPull {
                                 // TODO this has been observed to throw org.apache.lucene.index.CorruptIndexException on certain types of corruptions in Blob Store. We need to handle this correctly (maybe we already do).
                                 solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
                             } catch (IOException ioe) {
-                                CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
+                                // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
                                 if (!thrownException) {
                                     // Do not mask a previous exception with a more recent one so only throw the new one if none was thrown previously
                                     throw ioe;
@@ -363,7 +364,7 @@ public class CorePushPull {
                     } catch (Exception ex){
                         // TODO: W-5433771 handle corrupt config files. Today, if loading of core SynonymDataHandler#inform(SolrCore) 
                         // runs into exception we remove all the synonym files. Make sure we do not run into cycles with that.
-                        logger.log(Level.SEVERE, null, String.format(
+                        logger.warn(String.format(
                                 "Core reloading failed after pulling new config files from blob core=%s", coreName), ex);
                         throw ex;
                     }
@@ -371,8 +372,7 @@ public class CorePushPull {
 
                 // so far we have decided not to push config changes if we are pulling changes
                 if(!resolver.getConfigFilesToPush().isEmpty()) {
-                    logger.log(Level.INFO, null, String.format(
-                            "Lost opportunity: we could have pushed config changes when pulling core=%s", coreName));
+                    logger.info(String.format("Lost opportunity: we could have pushed config changes when pulling core=%s", coreName));
                 }
 
                 try {
@@ -391,7 +391,7 @@ public class CorePushPull {
                         solrCore.getSearcher(true, false, null, true);
                     }
                 } catch (SolrException se) {
-                    CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
+                    // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
                     throw se;
                 }
                 isSuccess = true;
@@ -410,11 +410,12 @@ public class CorePushPull {
         // Since we use configsets in Solr 7, the core.getResourceLoader().getConfigDir()
         // points to the config directory under the configset dir that is shared by _all_ cores.
         // We override this to a core specific directory instead to load our core specific file.
-        return CoreUtil.getCoreConfigDirectory(core.getResourceLoader()).getAbsolutePath();
+        // return CoreUtil.getCoreConfigDirectory(core.getResourceLoader()).getAbsolutePath();
+        return null;
     }
 
     /**
-     * Acquires lock on config directory, copy {@link MetadataResolver#getConfigFilesToPush() to a temp directory, 
+     * Acquires lock on config directory, copy {@link MetadataResolver#getConfigFilesToPush()} to a temp directory, 
      * releases lock on config directory and then pushes files from temp directory to blob store
      * The reason to acquire lock is avoid reading a corrupt config file that can manifest from a concurrent update from core app
      * The reason to involve temp directory is avoid lock over config dir for network operation
@@ -489,9 +490,9 @@ public class CorePushPull {
                         moveFileToDirectory(solrCore, tempConfigDir, bcf.getSolrFileName(), configDir);
                         new File(getConfigDir(solrCore), bcf.getSolrFileName()).setLastModified(bcf.getUpdatedAt());
                     } else {
-                        logger.log(Level.INFO, null, String.format(
-                                "Skipping pull of config file because blob copy is not fresher anymore, configFileName=%s core=%s",
-                                bcf.getSolrFileName(), coreName));
+                        logger.info(
+                        	String.format("Skipping pull of config file because blob copy is not fresher anymore, configFileName=%s core=%s",
+                            bcf.getSolrFileName(), coreName));
                     }
                 }
             } finally {
@@ -509,7 +510,7 @@ public class CorePushPull {
             solrCore.getDirectoryFactory().doneWithDirectory(tempDir);
             solrCore.getDirectoryFactory().remove(tempDir);
         } catch (Exception e) {
-            logger.log(Level.WARNING, "", "Cannot remove temp directory " + tempDirName, e);
+            logger.warn("Cannot remove temp directory " + tempDirName, e);
         } finally {
             solrCore.getDirectoryFactory().release(tempDir);
         }
@@ -601,10 +602,16 @@ public class CorePushPull {
         long startLatency = now - requestQueuedTimeMs;
 
         CoreStorageClient blobClient = BlobStorageProvider.get().getBlobStorageClient();
-
-        LoggingUtils.logBlobAction(logger.getLogger(), coreName, action.name(), blobClient.getStorageProvider().name(),
-                blobClient.getBucketRegion(), blobClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt,
-                localSequenceNumber, localGenerationNumber, blobSequenceNumber, blobGenerationNumber, filesAffected, isSuccess);
+        String message = String.format("coreName=%s action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
+                + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s localGenerationNumber=%s "
+                + "blobGenerationNumber=%s filesAffected=%s isSuccess=%s",
+                coreName, action.name(), blobClient.getStorageProvider().name(), blobClient.getBucketRegion(), 
+                blobClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, localGenerationNumber,
+                blobGenerationNumber, filesAffected, isSuccess);
+        logger.info(message);
+//        LoggingUtils.logBlobAction(logger, coreName, action.name(), blobClient.getStorageProvider().name(),
+//                blobClient.getBucketRegion(), blobClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt,
+//                localSequenceNumber, localGenerationNumber, blobSequenceNumber, blobGenerationNumber, filesAffected, isSuccess);
     }
 
     /**
@@ -618,7 +625,7 @@ public class CorePushPull {
         // Synchronously download all Blob blobs (remember we're running on an async thread, so no need to be async twice unless
         // we eventually want to parallelize downloads of multiple blobs, but for the PoC we don't :)
         for (BlobFile bf: filesToDownload) {
-            logger.log(Level.INFO, "", "About to create " + bf.getSolrFileName() + " for core " + coreName);
+            logger.info("About to create " + bf.getSolrFileName() + " for core " + coreName);
             IndexOutput io = destDir.createOutput(bf.getSolrFileName(), DirectoryFactory.IOCONTEXT_NO_CACHE);
 
             try (OutputStream outStream = new IndexOutputStream(io);

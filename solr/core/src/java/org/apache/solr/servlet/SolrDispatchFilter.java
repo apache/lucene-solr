@@ -76,6 +76,7 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
+import org.apache.solr.store.blob.util.BlobStoreBootstrapper;
 import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -174,6 +175,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
+      
+      // sfdc blob change - this shouldn't happen here when writing blob replica type
+      BlobStoreBootstrapper.init(coresInit);
+      
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));

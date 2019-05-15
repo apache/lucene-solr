@@ -2,29 +2,17 @@ package org.apache.solr.store.blob.process;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.logging.Level;
-
 import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.eclipse.jetty.http.HttpMethods;
+import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfo;
+import org.apache.solr.store.blob.util.DeduplicatingList;
 
-import com.google.common.base.Strings;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-
-import searchserver.SfdcConfig;
-import searchserver.SfdcConfigProperty;
-import searchserver.blobstore.process.CorePullerFeeder.PullCoreInfo;
-import searchserver.blobstore.util.DeduplicatingList;
-import searchserver.core.CoreEpoch;
-import searchserver.core.SfdcCoreName;
-import searchserver.handler.SynonymDataHandler;
-import searchserver.logging.SearchLogger;
-import searchserver.update.processor.SfdcMetadataProcessorFactory;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Tracks cores that are being queried and if necessary enqueues them for pull from blob store
@@ -33,7 +21,7 @@ import searchserver.update.processor.SfdcMetadataProcessorFactory;
  * @since 214/solr.6
  */
 public class CorePullTracker {
-    private static final SearchLogger logger = new SearchLogger(CorePullTracker.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     static private final int TRACKING_LIST_MAX_SIZE = 500000;
 
@@ -41,8 +29,8 @@ public class CorePullTracker {
 
     /* Config value that enables core pulls */
     @VisibleForTesting
-    public static boolean isBackgroundPullEnabled = Boolean
-            .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPulling));
+    public static boolean isBackgroundPullEnabled = true; // TODO
+    // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPulling));
 
     private static CorePullTracker INSTANCE = null;
 
@@ -72,15 +60,17 @@ public class CorePullTracker {
      * If the local core is stale, enqueues it to be pulled in from blob Note : If there is no coreName available in the
      * requestPath we simply ignore the request.
      */
-    public void enqueueForPullIfNecessary(HttpServletRequest request, CoreContainer cores) throws IOException {
-        String servletPath = request.getServletPath();
+    public void enqueueForPullIfNecessary(HttpServletRequest request, String coreName, String collectionName, 
+            CoreContainer cores) throws IOException {
+    	String servletPath = request.getServletPath();
 
-        String coreName = SfdcCoreName.getCorenameFromRequestPath(servletPath);
-        Map<String, String[]> params = getRequestParams(request);
+//        String coreName = SfdcCoreName.getCorenameFromRequestPath(servletPath);
+//        Map<String, String[]> params = getRequestParams(request);
         // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
-        if (isBackgroundPullEnabled && coreName != null && shouldPullStale(servletPath)
-                && !isLocalCoreUpToDate(params, coreName, cores)) {
-            enqueueForPull(coreName, false, false);
+        // TODO: always pull for this hack
+        if (isBackgroundPullEnabled && coreName != null && shouldPullStale(servletPath)) {
+                // && !isLocalCoreUpToDate(params, coreName, cores)) {
+            enqueueForPull(coreName, collectionName, false, false);
         }
     }
 
@@ -90,12 +80,12 @@ public class CorePullTracker {
      * @param createCoreIfAbsent whether to create core before pulling if absent
      * @param waitForSearcher whether to wait for newly pulled contents be reflected through searcher 
      */
-    public void enqueueForPull(String coreName, boolean createCoreIfAbsent, boolean waitForSearcher) {
-        PullCoreInfo pci = new PullCoreInfo(coreName, waitForSearcher, createCoreIfAbsent);
+    public void enqueueForPull(String coreName, String collectionName, boolean createCoreIfAbsent, boolean waitForSearcher) {
+        PullCoreInfo pci = new PullCoreInfo(coreName, collectionName, waitForSearcher, createCoreIfAbsent);
         try {
             coresToPull.addDeduplicated(pci, false);
         } catch (InterruptedException ie) {
-            logger.log(Level.WARNING, null, "Core " + coreName + " not added to Blob pull list. System shutting down?");
+            logger.warn("Core " + coreName + " not added to Blob pull list. System shutting down?");
             Thread.currentThread().interrupt();
         }
     }
@@ -114,7 +104,7 @@ public class CorePullTracker {
         // search of that parameter. Any subsequent calls to read the request body will fail, as the stream is then
         // empty.
         String method = request.getMethod();
-        if (HttpMethods.POST.equals(method)) {
+        if ("POST".equals(method)) {
             params = SolrRequestParsers.parseQueryString(request.getQueryString()).getMap();
         } else {
             params = request.getParameterMap();
@@ -123,23 +113,23 @@ public class CorePullTracker {
         return params;
     }
 
-    /**
-     * Determines if our local core is up to date
-     */
-    private boolean isLocalCoreUpToDate(Map<String, String[]> params, @CheckForNull String coreName,
-                                        CoreContainer cores) throws IOException {
-
-        CoreEpoch localCoreEpoch = new CoreEpoch(coreName, cores);
-        // For local core freshness checks, we should compare our local replay count against what the app expects
-        // our last acknowledged sequence number (replay) to be (see W-2864356).
-        String requestedCoreReplay = getParameterValue(params, SfdcMetadataProcessorFactory.LAST_ACKNOWLEDGED, null);
-        String requestedCoreGeneration = getParameterValue(params, SfdcMetadataProcessorFactory.GENERATION, null);
-        CoreEpoch requestedCoreEpoch = (Strings.isNullOrEmpty(requestedCoreReplay)
-                || Strings.isNullOrEmpty(requestedCoreGeneration)) ? new CoreEpoch(0, 0)
-                : new CoreEpoch(requestedCoreReplay, requestedCoreGeneration);
-
-        return localCoreEpoch.isFreshEnough(requestedCoreEpoch);
-    }
+//    /**
+//     * Determines if our local core is up to date
+//     */
+//    private boolean isLocalCoreUpToDate(Map<String, String[]> params, String coreName,
+//                                        CoreContainer cores) throws IOException {
+//
+//        CoreEpoch localCoreEpoch = new CoreEpoch(coreName, cores);
+//        // For local core freshness checks, we should compare our local replay count against what the app expects
+//        // our last acknowledged sequence number (replay) to be (see W-2864356).
+//        String requestedCoreReplay = getParameterValue(params, SfdcMetadataProcessorFactory.LAST_ACKNOWLEDGED, null);
+//        String requestedCoreGeneration = getParameterValue(params, SfdcMetadataProcessorFactory.GENERATION, null);
+//        CoreEpoch requestedCoreEpoch = (Strings.isNullOrEmpty(requestedCoreReplay)
+//                || Strings.isNullOrEmpty(requestedCoreGeneration)) ? new CoreEpoch(0, 0)
+//                : new CoreEpoch(requestedCoreReplay, requestedCoreGeneration);
+//
+//        return localCoreEpoch.isFreshEnough(requestedCoreEpoch);
+//    }
 
     /** @return the *first* value for the specified parameter or {@code defaultValue}, if not present. */
     private String getParameterValue(Map<String, String[]> params, String parameterName, String defaultValue) {
@@ -153,7 +143,6 @@ public class CorePullTracker {
 
     /**
      * Determine if our request should trigger a pull from Blob when local core is stale.<p>
-     * /update path is handled in {@link searchserver.update.processor.SfdcMetadataProcessor}
      */
     private boolean shouldPullStale(String servletPath) {
         // get the request handler from the path (taken from SolrDispatchFilter)
@@ -164,7 +153,7 @@ public class CorePullTracker {
             // a pull of a stale core below might have to be updated.
             return action.startsWith(QUERY_PATH_PREFIX)
                     || action.startsWith(SPELLCHECK_PATH_PREFIX)
-                    || action.startsWith(SynonymDataHandler.SYNONYM_DATA_HANDLER_PATH)
+                    // TODO || action.startsWith(SynonymDataHandler.SYNONYM_DATA_HANDLER_PATH)
                     || action.startsWith(RESULTPROMOTION_PATH_PREFIX)
                     || action.startsWith(INDEXLOOKUP_PATH_PREFIX)
                     || action.startsWith(HIGHLIGHT_PATH_PREFIX)

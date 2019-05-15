@@ -1,12 +1,11 @@
 package org.apache.solr.store.blob.metadata;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import search.blobstore.solr.BlobCoreMetadata;
-import search.blobstore.solr.BlobCoreMetadata.BlobConfigFile;
-import search.blobstore.solr.BlobCoreMetadata.BlobFile;
-import search.blobstore.solr.BlobCoreMetadataBuilder;
-import searchserver.blobstore.metadata.ServerSideCoreMetadata.CoreConfigFileData;
-import searchserver.blobstore.metadata.ServerSideCoreMetadata.CoreFileData;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobConfigFile;
+import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobFile;
+import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
+import org.apache.solr.store.blob.metadata.ServerSideCoreMetadata.CoreConfigFileData;
+import org.apache.solr.store.blob.metadata.ServerSideCoreMetadata.CoreFileData;
 
 import java.util.*;
 
@@ -136,7 +135,7 @@ public class MetadataResolver {
     }
 
     /** Identify the segments_N file in Blob files. */
-    boolean isSegmentsNFilename(@NonNull BlobFile bf) {
+    boolean isSegmentsNFilename(BlobFile bf) {
         return bf.getSolrFileName().startsWith(SEGMENTS_N_PREFIX);
     }
 
