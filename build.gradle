@@ -87,30 +87,48 @@ configure(subprojects) {  pj ->
         }
       }
     }
+    
+    // TODO: figure out how to have this in buildSrc
+    configurations {
+      jflex
+    }
+    
+    dependencies {
+      jflex "de.jflex:jflex:1.7.0"
+    }
   }
 }
 
 // root project config
 
-configurations {
-  jflex
-}
-
-dependencies {
-  jflex "de.jflex:jflex:1.7.0"
-}
-
 // TODO: enable the modified files checking only for jenkins runs! sysprop?
 tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
 
 task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
+  group = 'Build'
+  description = "Checks source files for project violations."
   baseDir = rootProject.projectDir
 }
 
 task('regenerate') {
+  group = 'Build Regenerate'
+  description = "Regenerates various generated src files, for example: jflex generated java classes."
   doFirst {
     println "--> regenerate"
   }
+}
+
+task('runjflex') {
+  group = 'Build Regenerate'
+  description = "Regenerates various jflex generated java classes."
+  doFirst {
+    println "--> runjflex"
+  }
+}
+
+task('test') {
+  group = 'Tests'
+  description = "Runs project tests."
 }
 
 // setup eclipse and idea
