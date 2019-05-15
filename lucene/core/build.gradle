@@ -28,9 +28,11 @@ dependencies {
 }
 
 task createLevAutomaton {
+  group = 'Build Regenerate'
+  description = "Regenerates LevAutomaton src files."
   
   doFirst {
-    println "--> Creating Lev Automaton ..."
+    println "--> Creating LevAutomaton ..."
   }
   
   doLast {
@@ -66,6 +68,9 @@ task fixCRLFAutomaton(type: org.apache.lucene.gradle.FixCRLF) {
 createLevAutomaton.finalizedBy fixCRLFAutomaton
 
 task createPackedIntSources {
+  group = 'Build Regenerate'
+  description = "Regenerates PackedInt src files."
+  
   doFirst {
     println "--> Creating packed int sources ..."
   }
@@ -118,6 +123,9 @@ task downloadMoman(type: org.apache.lucene.gradle.Get) {
 installMoman.dependsOn downloadMoman
 
 task runjflex(type: org.apache.lucene.gradle.JFlex) {
+  group = 'Build Regenerate'
+  description = "Regenerates StandardTokenizerImpl jflex src files."
+  
   source = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex")
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
   
@@ -127,6 +135,8 @@ task runjflex(type: org.apache.lucene.gradle.JFlex) {
 }
 
 task regenerate {
+  group = 'Build Regenerate'
+  description = "Regenerates various generated src files, automoton, packedints, jflex, etc"
   doFirst {
     println "--> regenerate"
   }
