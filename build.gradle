@@ -38,25 +38,11 @@ allprojects {
   apply plugin: 'maven-publish'
 }
 
-task('regenerate') {
-  doFirst {
-    println "--> regenerate"
-  }
-}
-
 configure(subprojects) {  pj ->
-  
-  configurations {
-    jflex
-  }
-  
-  dependencies {
-    jflex "de.jflex:jflex:1.7.0"
-  }
   
   plugins.withType(JavaPlugin) {
     
-    // forbidden apis ...need to exclude hadoop and ...
+    // FORBIDDEN APIS ...need to exclude hadoop etc and enable ...
     // pj.plugins.apply(BuildPlugin)
     
     sourceCompatibility = "11"
@@ -80,7 +66,6 @@ configure(subprojects) {  pj ->
     // transitive and can be used between modules
     project.apply from: new File(buildSrcDir, "buildSrc/common/configure-impltran.gradle")
     
-    
     // Custom javac options
     tasks.withType(JavaCompile) {
       // Don't output ALL errors in a file, stop after a few
@@ -96,7 +81,6 @@ configure(subprojects) {  pj ->
       into sourceSets.test.java.outputDir
     }
     processTestResources.dependsOn copyTestResources
-
 
     task sourceJar(type: Jar) {
       classifier 'sources'
@@ -115,10 +99,26 @@ configure(subprojects) {  pj ->
   }
 }
 
+// root project config
+
+configurations {
+  jflex
+}
+
+dependencies {
+  jflex "de.jflex:jflex:1.7.0"
+}
+
 tasks.create('checkWorkingCopy', CheckWorkingCopy, true)
 
 task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
   baseDir = rootProject.projectDir
+}
+
+task('regenerate') {
+  doFirst {
+    println "--> regenerate"
+  }
 }
 
 // setup eclipse and idea
