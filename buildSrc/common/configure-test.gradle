@@ -68,3 +68,13 @@ test {
 
 }
 
+// Some test resources and files are stored along the test sources
+// and are expected to exist next to classes during tests
+task copyTestResources(type: Copy) {
+  from('src/test') {
+    exclude '**/*.java'
+  }
+  into sourceSets.test.java.outputDir
+}
+processTestResources.dependsOn copyTestResources
+
