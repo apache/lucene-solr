@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
@@ -107,7 +106,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 
     if (simulated) {
       // initialize simulated provider
-      SimCloudManager simCloudManager = SimCloudManager.createCluster(realManager, TimeSource.get("simTime:10"));
+      cloudManager = SimCloudManager.createCluster(realManager, null, TimeSource.get("simTime:10"));
 //      simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
 //      simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
 //      nodeValues.forEach((n, values) -> {
@@ -118,9 +117,8 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 //        }
 //      });
 //      simCloudManager.getSimClusterStateProvider().simSetClusterState(realState);
-      ClusterState simState = simCloudManager.getClusterStateProvider().getClusterState();
+      ClusterState simState = cloudManager.getClusterStateProvider().getClusterState();
       assertClusterStateEquals(realState, simState);
-      cloudManager = simCloudManager;
     } else {
       cloudManager = realManager;
     }
@@ -139,24 +137,10 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
         for (Replica oneReplica : slice.getReplicas()) {
           Replica twoReplica = sTwo.getReplica(oneReplica.getName());
           assertNotNull(twoReplica);
-          assertReplicaEquals(oneReplica, twoReplica);
+          SimSolrCloudTestCase.assertReplicaEquals(oneReplica, twoReplica);
         }
       });
     });
-  }
-
-  private static void assertReplicaEquals(Replica one, Replica two) {
-    assertEquals(one.getName(), two.getName());
-    assertEquals(one.getNodeName(), two.getNodeName());
-    assertEquals(one.getState(), two.getState());
-    assertEquals(one.getType(), two.getType());
-    Map<String, Object> filteredPropsOne = one.getProperties().entrySet().stream()
-        .filter(e -> !(e.getKey().startsWith("INDEX") || e.getKey().startsWith("QUERY") || e.getKey().startsWith("UPDATE")))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    Map<String, Object> filteredPropsTwo = two.getProperties().entrySet().stream()
-        .filter(e -> !(e.getKey().startsWith("INDEX") || e.getKey().startsWith("QUERY") || e.getKey().startsWith("UPDATE")))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    assertEquals(filteredPropsOne, filteredPropsTwo);
   }
 
   private String addNode() throws Exception {

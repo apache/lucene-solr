@@ -704,6 +704,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  public static MoveReplica moveReplica(String collection, String replica, String targetNode) {
+    return new MoveReplica(collection, replica, targetNode);
+  }
+
   public static class MoveReplica extends AsyncCollectionAdminRequest {
     protected String collection, replica, targetNode;
     protected String shard, sourceNode;

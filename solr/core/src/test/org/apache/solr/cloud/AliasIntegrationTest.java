@@ -282,6 +282,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.process(cluster.getSolrClient());
     checkFooAndBarMeta(aliasName, zkStateReader);
     SolrCloudManager cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    // make sure we have the latest version in cache
+    zkStateReader.aliasesManager.update();
     ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
     List<String> collections = stateProvider.resolveAlias(aliasName);
     assertEquals(collections.toString(), 2, collections.size());
@@ -298,6 +300,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.addProperty(CollectionAdminParams.ROUTER_PREFIX + "foo","baz");
     setAliasProperty.process(cluster.getSolrClient());
     // refresh
+    zkStateReader.aliasesManager.update();
     stateProvider = cloudManager.getClusterStateProvider();
     assertTrue("should be a routed alias", stateProvider.isRoutedAlias(aliasName));
 
