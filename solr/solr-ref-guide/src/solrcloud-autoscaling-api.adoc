@@ -196,15 +196,9 @@ The API is available at `/admin/autoscaling/suggestions`. Here is an example out
 
 The suggested `operation` is an API call that can be invoked to remedy the current violation.
 
-=== Inline config
+=== Inline Policy Configuration
 
-If there is no autoscaling is configured or if you wish to use a configuration other than the standard one, it is possible to send the autoscaling config json as an inline payload as follows
-
-[.dynamic-tabs]
---
-[example.tab-pane#v1getcomponent]
-====
-[.tab-label]*V1 API*
+If there is no autoscaling policy configured or if you wish to use a configuration other than the default, it is possible to send the autoscaling policy JSON as an inline payload as follows:
 
 [source,bash]
 ----
@@ -214,25 +208,10 @@ curl -X POST -H 'Content-type:application/json'  -d '{
    ]
 }' http://localhost:8983/solr/admin/autoscaling/suggestions?omitHeader=true
 ----
-====
-
-[example.tab-pane#v2getcomponent]
-====
-[.tab-label]*V2 API*
-
-[source,bash]
-----
-curl -X POST -H 'Content-type:application/json'  -d '{
-"cluster-policy": [
-  {"replica": 0,  "port" : "7574"}
-  ]
-}' http://localhost:8983/api/cluster/autoscaling/suggestions?omitHeader=true
-----
-====
---
 
 *Output*
 [source,json]
+----
 {
   "suggestions":[{
       "type":"violation",
@@ -277,11 +256,7 @@ curl -X POST -H 'Content-type:application/json'  -d '{
             "inPlaceMove":"true",
             "replica":"core_node5"}}}}],
   "WARNING":"This response format is experimental.  It is likely to change in the future."}
-
 ----
-
-
-
 
 == History API
 
