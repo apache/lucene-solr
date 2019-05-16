@@ -626,6 +626,13 @@ def generate_asciidoc():
             if cmds:
                 fh.write("%s\n\n" % cmds.commands_text)
                 fh.write("[source,sh]\n----\n")
+                if cmds.env:
+                    for key in cmds.env:
+                        val = cmds.env[key]
+                        if is_windows():
+                            fh.write("SET %s=%s\n" % (key, val))
+                        else:
+                            fh.write("export %s=%s\n" % (key, val))
                 fh.write("cd %s\n" % cmds.get_root_folder())
                 cmds2 = ensure_list(cmds.commands)
                 for c in cmds2:
@@ -633,6 +640,11 @@ def generate_asciidoc():
                     if c.cwd:
                         pre = "pushd %s && " % c.cwd
                         post = " && popd"
+                    if c.comment:
+                        if is_windows():
+                            fh.write("REM %s\n" % c.comment)
+                        else:
+                            fh.write("# %s\n" % c.comment)
                     fh.write("%s%s%s\n" % (pre, c, post))
                 fh.write("----\n\n")
     fh.close()
@@ -751,13 +763,25 @@ def ask_yes_no(text):
     return answer == 'y'
 
 
-def abbr_line_pad_80(line):
+def abbreviate_line(line, width):
     line = line.strip()
-    if len(line) > 80:
-        line = "%s.....%s" % (line[:35], line[-40:])
+    if len(line) > width:
+        line = "%s.....%s" % (line[:(width/2-5)], line[-(width/2):])
     else:
-        line = "%s%s" % (line, " " * (80-len(line)+2))
+        line = "%s%s" % (line, " " * (width-len(line)+2))
     return line
+
+
+def print_line_cr(line, linenum, stdout=True, tee=False):
+    if not tee:
+        if not stdout:
+            print("[line %s] %s" % (linenum, abbreviate_line(line, 80)), end='\r')
+    else:
+        if line.endswith("\r"):
+            print(line.strip(), end='\r')
+        else:
+            print(line.strip())
+
 
 
 def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
@@ -785,11 +809,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
                     fh.write("%s\n" % line.strip())
                     fh.flush()
                     lines_written += 1
-                    if not tee:
-                        if not fh == sys.stdout:
-                            print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
-                    else:
-                        print(line)
+                    print_line_cr(line, lines_written, stdout=fh == sys.stdout, tee=tee)
 
             except Exception as ioe:
                 pass
@@ -801,11 +821,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
                 else:
                     errlines.append("%s\n" % line.strip())
                     lines_written += 1
-                    if not tee:
-                        if not fh == sys.stdout:
-                            print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
-                    else:
-                        print(line)
+                    print_line_cr(line, lines_written, stdout=fh == sys.stdout, tee=tee)
             except Exception as e:
                 pass
 
@@ -823,9 +839,15 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
     return rc
 
 
+def is_windows():
+    return platform.system().startswith("Win")
+
 
 class Commands:
-    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25, stdout=False):
+    def __init__(self, root_folder, commands_text, commands,
+                 logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25,
+                 stdout=False, env=None):
+        self.env = env
         self.logs_prefix = logs_prefix
         self.stdout = stdout
         self.tail_lines = tail_lines
@@ -840,10 +862,23 @@ class Commands:
         root = self.get_root_folder()
 
         print(self.commands_text)
+        if self.env:
+            for key in self.env:
+                val = self.env[key]
+                os.environ[key] = val
+                if is_windows():
+                    print("\n  SET %s=%s" % (key, val))
+                else:
+                    print("\n  export %s=%s" % (key, val))
         print("\n  cd %s" % root)
         commands = ensure_list(self.commands)
         for cmd in commands:
             pre = post = ''
+            if cmd.comment:
+                if is_windows():
+                    print("  REM %s" % cmd.comment)
+                else:
+                    print("  # %s" % cmd.comment)
             if cmd.cwd:
                 pre = "pushd %s && " % cmd.cwd
                 post = " && popd"
@@ -907,7 +942,8 @@ class Commands:
 
 
 class Command:
-    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False):
+    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None):
+        self.comment = comment
         self.tee = tee
         self.logfile = logfile
         self.stdout = stdout
@@ -955,6 +991,7 @@ This task will always do `git pull` before `ant precommit` so it will catch chan
                             Command("git pull", stdout=True),
                             Command("ant clean precommit")
                         ],
+                        env={'JAVACMD': state.get_java_cmd()},
                         ask_each=False)
 
     def create_stable_branch_commands(self, todo):
@@ -1092,28 +1129,34 @@ One way is to rename the ivy cache folder before building.
         except Exception as e:
             raise Exception("Faild getting key: %s" % e)
 
-        logfile = os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log')
-        cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s --logfile %s" \
+        # logfile = os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log')
+        logfile = "/tmp/release.log"
+        cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s" \
                   % (os.path.join('dev-tools', 'scripts', 'buildAndPushRelease.py'),
                      os.path.join(state.get_rc_folder(), "dist"),
                      state.rc_number,
-                     key_id,
-                     logfile)
+                     key_id)
+        # Add --logfile %s"
 
         return Commands(
             state.get_git_checkout_folder(),
             """In this step we will build the RC using python script `buildAndPushRelease.py`
-We have tried to compile the correct command below, but please check
-it manually before executing, or run it manually in another Terminal.
+We have tried to compile the correct command below, and you need to execute
+it in another Terminal window yourself.
+
 Note that the script will take a long time. To follow the detailed build 
-log, run this command in another Terminal:
+log, tail the log in another Terminal:
 `tail -f %s`
 """ % logfile,
             [
                 Command("git checkout %s" % get_release_branch(), stdout=True),
+                Command("git clean -df", stdout=True, comment="Make sure checkout is clean and up to date"),
+                Command("git checkout -- .", stdout=True),
                 Command("git pull"),
                 Command(cmdline, logfile="build_rc.log", tee=True),
             ],
+            env={'JAVACMD': state.get_java_cmd()},
+            ask_run=False,
             ask_each=False)
 
 
@@ -1351,7 +1394,8 @@ The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B
                        description="""
 Sanity check the DOAP files under dev-tools/doap/
 Do they contain all releases less than the one in progress?
-PS: The buildAndPushRelease script run later will check this automatically"""),
+
+TIP: The buildAndPushRelease script run later will check this automatically"""),
                   Todo('jenkins_builds',
                        'Add Jenkins task for the release branch',
                        description='...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.',
