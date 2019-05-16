@@ -94,6 +94,8 @@ Other Changes
 
 * SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
 
+* SOLR-13437: noggit json parser is forked into solrj (noble)
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
