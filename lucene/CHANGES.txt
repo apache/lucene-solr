@@ -23,6 +23,9 @@ Bug fixes
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
   IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
 
+* LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
+  overflow bug that disabled cleaning of the cache (Russell A Brown)
+
 ======================= Lucene 7.7.1 =======================
 (No changes)
 

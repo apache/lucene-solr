@@ -109,13 +109,13 @@ class NameIntCacheLRU {
    * if anything was removed, false otherwise.
    * 
    * See comment in DirectoryTaxonomyWriter.addToCache(CategoryPath, int) for an
-   * explanation why we clean 2/3rds of the cache, and not just one entry.
+   * explanation why we clean 1/3rd of the cache, and not just one entry.
    */ 
   boolean makeRoomLRU() {
     if (!isCacheFull()) {
       return false;
     }
-    int n = cache.size() - (2*maxCacheSize)/3;
+    int n = cache.size() - (int)((2L*maxCacheSize)/3);
     if (n<=0) {
       return false;
     }
