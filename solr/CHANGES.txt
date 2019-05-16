@@ -92,6 +92,8 @@ Bug fixes
 * SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
   occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
 
+* SOLR-13252: Fix an NPE when setting a "policy" property for an existing collection (ab)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
