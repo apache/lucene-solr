@@ -450,6 +450,15 @@ class Todo:
             pass
         return cmds
 
+    def get_asciidoc(self):
+        try:
+            attr = getattr(todo_methods, "%s_asciidoc" % self.id)
+            if callable(attr):
+                return attr(self)
+        except:
+            pass
+        return None
+
 
 def get_release_version():
     v = str(input("Which version are you releasing? (x.y.z) "))
@@ -463,8 +472,9 @@ def get_release_version():
 
 
 def get_subtitle():
-    done_groups = sum(1 for x in todo_templates if x.is_done())
-    return "Please complete the below checklist (Complete: %s/%s)" % (done_groups, len(todo_templates))
+    applying_groups = list(filter(lambda x: x.num_applies() > 0, state.todo_groups))
+    done_groups = sum(1 for x in applying_groups if x.is_done())
+    return "Please complete the below checklist (Complete: %s/%s)" % (done_groups, len(applying_groups))
 
 
 def validate_release_version(branch_type, branch, release_version):
@@ -546,7 +556,7 @@ DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
 
 def ensure_list(o):
     if o is None:
-        return None
+        return []
     if not isinstance(o, list):
         return [o]
     else:
@@ -587,6 +597,8 @@ def generate_asciidoc():
             desc = todo.get_description()
             if desc:
                 fh.write("%s\n\n" % desc)
+            if todo.get_asciidoc():
+                fh.write("%s\n\n" % todo.get_asciidoc())
             state_copy = copy.deepcopy(todo.state)
             state_copy.pop('done', None)
             state_copy.pop('done_date', None)
@@ -716,17 +728,17 @@ def tail_file(file, lines):
                 break
 
 
-def run_with_log_tail(command, cwd, logfile=None, tail_lines=10):
+def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False):
     fh = sys.stdout
     if logfile:
         logdir = os.path.dirname(logfile)
         if not os.path.exists(logdir):
             os.makedirs(logdir)
         fh = open(logfile, 'w')
-    rc = run_follow(command, cwd, fh=fh)
+    rc = run_follow(command, cwd, fh=fh, tee=tee)
     if logfile:
         fh.close()
-        if tail_lines and tail_lines > 0:
+        if not tee and tail_lines and tail_lines > 0:
             tail_file(logfile, tail_lines)
     return rc
 
@@ -748,7 +760,7 @@ def abbr_line_pad_80(line):
     return line
 
 
-def run_follow(command, cwd=None, fh=sys.stdout):
+def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
     if not isinstance(command, list):
         command = shlex.split(command)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, universal_newlines=True, bufsize=0, close_fds=True)
@@ -773,8 +785,12 @@ def run_follow(command, cwd=None, fh=sys.stdout):
                     fh.write("%s\n" % line.strip())
                     fh.flush()
                     lines_written += 1
-                    if not fh == sys.stdout:
-                        print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
+                    if not tee:
+                        if not fh == sys.stdout:
+                            print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
+                    else:
+                        print(line)
+
             except Exception as ioe:
                 pass
         if not endstderr:
@@ -785,8 +801,11 @@ def run_follow(command, cwd=None, fh=sys.stdout):
                 else:
                     errlines.append("%s\n" % line.strip())
                     lines_written += 1
-                    if not fh == sys.stdout:
-                        print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
+                    if not tee:
+                        if not fh == sys.stdout:
+                            print("[line %s] %s" % (lines_written, abbr_line_pad_80(line)), end='\r')
+                    else:
+                        print(line)
             except Exception as e:
                 pass
 
@@ -870,7 +889,7 @@ class Commands:
                                 logfilename = "%s.log" % re.sub(r"\W", "_", cmd.cmd)
                             logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
                             print("Wait until command completes... Full log in %s\n" % logfile)
-                        if not run_with_log_tail(cmd.cmd, cwd, logfile=logfile, tail_lines=self.tail_lines) == 0:
+                        if not run_with_log_tail(cmd.cmd, cwd, logfile=logfile, tee=cmd.tee, tail_lines=self.tail_lines) == 0:
                             print("WARN: Command %s returned with error" % cmd.cmd)
                             success = False
                             if not self.ask_each:
@@ -888,7 +907,8 @@ class Commands:
 
 
 class Command:
-    def __init__(self, cmd, cwd=None, stdout=False, logfile=None):
+    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False):
+        self.tee = tee
         self.logfile = logfile
         self.stdout = stdout
         self.cwd = cwd
@@ -928,13 +948,12 @@ class TodoMethods:
 
     def ant_precommit_commands(self, todo):
         return Commands(git_checkout_folder,
-                        "Command is run in the current git checkout. Fix any problems that are found by pushing fixes to the release branch and then running this task again. This task will always do `git pull` before `ant precommit` so it will catch changes :)",
+"""Fix any problems that are found by pushing fixes to the release branch and then running this task again. 
+This task will always do `git pull` before `ant precommit` so it will catch changes to your branch :)""",
                         [
                             Command("git checkout %s" % get_release_branch(), stdout=True),
                             Command("git pull", stdout=True),
                             Command("ant clean precommit")
-                            # Command("ant -p")
-
                         ],
                         ask_each=False)
 
@@ -1059,12 +1078,11 @@ One way is to rename the ivy cache folder before building.
     def run_tests_commands(self, todo):
         return Commands(
             git_checkout_folder,
-            "Copy/paste these commands in another terminal to execute all tests",
+            "Run some tests not ran by `buildAndPublishRelease.py`",
             [
                 Command("git checkout %s" % get_release_branch(), stdout=True),
                 Command('ant javadocs', 'lucene'),
-                Command('ant javadocs', 'solr'),
-                Command('ant clean test')
+                Command('ant javadocs', 'solr')
             ],
             ask_each=True)
 
@@ -1075,9 +1093,8 @@ One way is to rename the ivy cache folder before building.
             raise Exception("Faild getting key: %s" % e)
 
         logfile = os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log')
-        cmdline = "python3 -u %s --root %s --push-local %s --rc-num %s --sign %s --logfile %s" \
-                  % (os.path.join(current_git_root, 'dev-tools', 'scripts', 'buildAndPushRelease.py'),
-                     state.get_git_checkout_folder(),
+        cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s --logfile %s" \
+                  % (os.path.join('dev-tools', 'scripts', 'buildAndPushRelease.py'),
                      os.path.join(state.get_rc_folder(), "dist"),
                      state.rc_number,
                      key_id,
@@ -1085,24 +1102,35 @@ One way is to rename the ivy cache folder before building.
 
         return Commands(
             state.get_git_checkout_folder(),
-            """In this step we will build the RC using python script 'buildAndPushRelease.py'
+            """In this step we will build the RC using python script `buildAndPushRelease.py`
 We have tried to compile the correct command below, but please check
 it manually before executing, or run it manually in another Terminal.
-Note that the script will take a long time. To follow the build log, 
-run this command in another Terminal: `tail -f %s`
+Note that the script will take a long time. To follow the detailed build 
+log, run this command in another Terminal:
+`tail -f %s`
 """ % logfile,
             [
                 Command("git checkout %s" % get_release_branch(), stdout=True),
                 Command("git pull"),
-                Command(cmdline, logfile="build_rc.log"),
+                Command(cmdline, logfile="build_rc.log", tee=True),
             ],
             ask_each=False)
 
 
-    def initiate_vote(self, todo):
-        vote_close = (datetime.utcnow() + timedelta(hours=73)).strftime("%Y-%m-%d %H:00 UTC")
+    def initiate_vote_desc(self, todo):
+        dow = datetime.utcnow().weekday()
+        if dow == 6:            # Sun
+            days_to_add = 1
+        elif dow in [2, 3, 4, 5]: # Wed, Thu, Fri, Sat
+            days_to_add = 2
+        else:
+            days_to_add = 0
+        vote_close_date = (datetime.utcnow() + timedelta(hours=73) + timedelta(days=days_to_add))
+        vote_close = vote_close_date.strftime("%Y-%m-%d %H:00 UTC")
         todo.state['vote_close'] = vote_close
-        print("""
+        todo.state['vote_close_epoch'] = unix_time_millis(vote_close_date)
+        return """Initiate the vote on the dev mailing list
+        
 .Mail template
 ----
 To: dev@lucene.apache.org
@@ -1118,7 +1146,7 @@ You can run the smoke tester directly with this command:
 python3 -u dev-tools/scripts/smokeTestRelease.py \
 https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-8.1.0-RC1-reve5839fb416083fcdaeedfb1e329a9fdaa29fdc50
 
-Vote will be open for 72 hours, i.e. until %s.
+Vote will be open for at least 72 hours excluding weekends, i.e. until %s.
 
 [ ] +1  approve
 [ ] +0  no opinion
@@ -1126,7 +1154,7 @@ Vote will be open for 72 hours, i.e. until %s.
 
 Here is my +1
 ----
-""" % (state.release_version, state.rc_number, state.rc_number, state.release_version, vote_close))
+""" % (state.release_version, state.rc_number, state.rc_number, state.release_version, vote_close)
 
 
     def end_vote(self, todo):
@@ -1135,61 +1163,92 @@ Here is my +1
             print("A vote has not been initiated, cannot close.")
             return
         else:
-            elapsed = unix_time_millis(datetime.now()) - initiate_vote_dict['done_date']
-            elapsed_h = elapsed / 1000 / 60 / 60
-            if elapsed_h < 72:
-                if not ask_yes_no("Number of hours since vote started is %d which is less than required 72. Continue?" % elapsed_h):
+            if initiate_vote_dict['vote_close_epoch'] > unix_time_millis(datetime.now()):
+                print("Cannot close vote until 72h vote time plus weekends have passed, which is %s" % initiate_vote_dict['vote_close'])
+                if not ask_yes_no("Continue with closing the vote anyway?"):
                     return
-        print()
+
+        print("Please sum up the ")
         plus_binding = int(UserInput("plus_binding", "Number of binding +1 votes (PMC members)").run(todo.state))
         plus_other = int(UserInput("plus_other", "Number of other +1 votes").run(todo.state))
         zero = int(UserInput("zero", "Number of 0 votes").run(todo.state))
         minus = int(UserInput("minus", "Number of -1 votes").run(todo.state))
 
+        success, desc, template = self.end_vote_result(plus_binding, plus_other, zero, minus)
+
+        print("%s\n\n%s" % desc, template)
+
+    def end_vote_asciidoc(self, todo):
+        return """Note down how many votes were cast, summing as:
+
+* Binding PMC-member +1 votes
+* Non-binding +1 votes
+* Neutral +/-0 votes
+* Negative -1 votes
+
+You need 3 binding +1 votes and more +1 than -1 votes for the release to happen.
+A release cannot be vetoed, see more in provided links.
+
+Here are some mail templates for successful and failed vote results with sample numbers:
+
+%s
+
+%s
+
+%s
+""" % (self.end_vote_result(5, 1, 0, 2)[2],
+       self.end_vote_result(2, 3, 0, 0)[2],
+       self.end_vote_result(3, 0, 1, 4)[2])
+
+    def end_vote_result(self, plus_binding, plus_other, zero, minus):
+        desc = ""
+        mail_template = ""
         if plus_binding >= 3 and plus_binding > minus:
-            print("The vote has succeeded")
-            todo.state['pass'] = True
+            success = True
+            desc += "The vote has succeeded\n\n"
             if minus > 0:
-                print("""
+                desc += """
 However, there were negative votes. A release cannot be vetoed, and as long as
 there are more positive than negative votes you can techically release
 the software. However, please review the negative votes and consider
-a re-spin.""")
+a re-spin."""
 
-            print("""            
-.Mail template
+            mail_template += """            
+.Mail template successful vote
 ----
 To: dev@lucene.apache.org
 Subject: [RESULT] [VOTE] Release Lucene/Solr %s RC%s
 
 It's been >72h since the vote was initiated and the result is:
 
-+1 : %s  (%s binding)
- 0 : %s
--1 : %s
++1  %s  (%s binding)
+ 0  %s
+-1  %s
 
 This vote has PASSED.
-----""" % (state.release_version, state.rc_number, plus_binding + plus_other, plus_binding, zero, minus))
+----""" % (state.release_version, state.rc_number, plus_binding + plus_other, plus_binding, zero, minus)
         else:
+            success = False
             if plus_binding < 3:
                 reason = "less than three binding +1 votes"
             else:
                 reason = "too many -1 votes"
-            print("""
-.Mail template
+            desc += "The vote was not successful"
+            mail_template += """
+.Mail template failed vote
 ----
 To: dev@lucene.apache.org
-Subject: [RESULT] [VOTE] Release Lucene/Solr %s RC%s
+Subject: [FAILED] [VOTE] Release Lucene/Solr %s RC%s
 
 This vote has FAILED due to %s.
 The vote result was:
 
-+1 : %s  (%s binding)
- 0 : %s
--1 : %s
++1  %s  (%s binding)
+ 0  %s
+-1  %s
 ----
-    """ % (state.release_version, state.rc_number, reason, plus_binding + plus_other, plus_binding, zero, minus))
-            todo.state['pass'] = False
+    """ % (state.release_version, state.rc_number, reason, plus_binding + plus_other, plus_binding, zero, minus)
+        return success, desc, mail_template
 
 
 def get_release_branch():
@@ -1344,7 +1403,7 @@ or the stable branch (for a minor release).""",
 then it's time to build the release artifacts, run the smoke tester and stage the RC in svn""",
               [
                   Todo('run_tests',
-                       'Confirm that the tests pass within your release branch'
+                       'Run javadoc tests'
                        ),
                   Todo('clear_ivy_cache',
                        'Clear the ivy cache'),
@@ -1360,7 +1419,6 @@ then it's time to build the release artifacts, run the smoke tester and stage th
               [
                   Todo('initiate_vote',
                        'Initiate the vote',
-                       description="Initiate the vote on the mailing list",
                        links=["https://www.apache.org/foundation/voting.html"]),
                   Todo('end_vote',
                        'End vote',
