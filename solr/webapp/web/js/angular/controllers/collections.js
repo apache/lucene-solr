@@ -79,6 +79,7 @@ solrAdminApp.controller('CollectionsController',
         $scope.showAdd = true;
         $scope.newCollection = {
           name: "",
+          sharedIndex: 'false',
           routerName: "compositeId",
           numShards: 1,
           configName: "",
@@ -139,7 +140,8 @@ solrAdminApp.controller('CollectionsController',
                 "collection.configName": coll.configName,
                 replicationFactor: coll.replicationFactor,
                 maxShardsPerNode: coll.maxShardsPerNode,
-                autoAddReplicas: coll.autoAddReplicas
+                autoAddReplicas: coll.autoAddReplicas,
+                sharedIndex: coll.sharedIndex
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;

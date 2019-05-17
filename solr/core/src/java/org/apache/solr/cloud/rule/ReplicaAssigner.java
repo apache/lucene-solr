@@ -62,6 +62,7 @@ public class ReplicaAssigner {
   List<String> participatingLiveNodes;
   Set<String> tagNames = new HashSet<>();
   private Map<String, AtomicInteger> nodeVsCores = new HashMap<>();
+  private final Replica.Type replicaType;
 
 
   /**
@@ -75,13 +76,15 @@ public class ReplicaAssigner {
                          List snitches,
                          Map<String, Map<String, Integer>> shardVsNodes,
                          List<String> participatingLiveNodes,
-                         SolrCloudManager cloudManager, ClusterState clusterState) {
+                         SolrCloudManager cloudManager, ClusterState clusterState,
+                         Replica.Type replicaType) {
     this.rules = rules;
     for (Rule rule : rules) tagNames.add(rule.tag.name);
     this.shardVsReplicaCount = shardVsReplicaCount;
     this.participatingLiveNodes = new ArrayList<>(participatingLiveNodes);
     this.nodeVsTags = getTagsForNodes(cloudManager, snitches);
     this.shardVsNodes = getDeepCopy(shardVsNodes, 2);
+    this.replicaType = replicaType;
 
     if (clusterState != null) {
       Map<String, DocCollection> collections = clusterState.getCollectionsMap();
@@ -170,7 +173,7 @@ public class ReplicaAssigner {
       List<ReplicaPosition> replicaPositions = new ArrayList<>();
       for (int pos : p) {
         for (int j = 0; j < shardVsReplicaCount.get(shardNames.get(pos)); j++) {
-          replicaPositions.add(new ReplicaPosition(shardNames.get(pos), j, Replica.Type.NRT));
+          replicaPositions.add(new ReplicaPosition(shardNames.get(pos), j, this.replicaType));
         }
       }
       Collections.sort(replicaPositions);

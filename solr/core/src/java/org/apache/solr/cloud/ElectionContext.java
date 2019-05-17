@@ -610,8 +610,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               "Error checking for the number of election participants", e);
         }
         
-        // on startup and after connection timeout, wait for all known shards
-        if (found >= slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size()) {
+        // on startup and after connection timeout, wait for all known shards.
+        // We do wait for Replica.Type.SHARED because one has to be elected master
+        if (found >= slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT, Replica.Type.SHARED)).size()) {
           log.info("Enough replicas found to continue.");
           return true;
         } else {
@@ -619,7 +620,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             log.info("Waiting until we see more replicas up for shard {}: total={}"
               + " found={}"
               + " timeoutin={}ms",
-                shardId, slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size(), found,
+                shardId, slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT, Replica.Type.SHARED)).size(), found,
                 TimeUnit.MILLISECONDS.convert(timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS));
           }
         }

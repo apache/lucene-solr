@@ -192,7 +192,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   /**
-   *
+   * This (superclass) method is only called in tests or when Solr is not zk aware.
+   * {@link Replica.Type#SHARED} will not work without ZK so no changes required here for shared storage backed collections.
    * @return the replica type of the collection.
    */
   protected Replica.Type computeReplicaType() {

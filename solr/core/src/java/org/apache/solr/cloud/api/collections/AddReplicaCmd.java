@@ -24,6 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
@@ -123,11 +124,13 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 
-    Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
+    // Default replica type is NRT in SolrCloud, but if collection is shared storage based, default (and only acceptable type) is Replica.Type.SHARED
+    Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, (coll.getSharedIndex() ? Replica.Type.SHARED : Replica.Type.NRT).name()).toUpperCase(Locale.ROOT));
     EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
     replicaTypesVsCount.put(Replica.Type.NRT, message.getInt(NRT_REPLICAS, replicaType == Replica.Type.NRT ? 1 : 0));
     replicaTypesVsCount.put(Replica.Type.TLOG, message.getInt(TLOG_REPLICAS, replicaType == Replica.Type.TLOG ? 1 : 0));
     replicaTypesVsCount.put(Replica.Type.PULL, message.getInt(PULL_REPLICAS, replicaType == Replica.Type.PULL ? 1 : 0));
+    replicaTypesVsCount.put(Replica.Type.SHARED, message.getInt(SHARED_REPLICAS, replicaType == Replica.Type.SHARED ? 1 : 0));
 
     int totalReplicas = 0;
     for (Map.Entry<Replica.Type, Integer> entry : replicaTypesVsCount.entrySet()) {
@@ -205,6 +208,14 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException {
+    // Fail fast if adding wrong replicas to a collection
+    if (!coll.getSharedIndex() && createReplica.replicaType == Replica.Type.SHARED) {
+      throw new RuntimeException("Can't add a Replica.Type.SHARED to a collection not backed by shared storage");
+    }
+    if (coll.getSharedIndex() && createReplica.replicaType != Replica.Type.SHARED) {
+      throw new RuntimeException("Can't add a " + createReplica.replicaType + " replica to a collection backed by shared storage");
+    }
+
     if (coll.getStr(WITH_COLLECTION) != null) {
       String withCollectionName = coll.getStr(WITH_COLLECTION);
       DocCollection withCollection = clusterState.getCollection(withCollectionName);
@@ -345,7 +356,14 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     int numNrtReplicas = replicaTypeVsCount.get(Replica.Type.NRT);
     int numPullReplicas = replicaTypeVsCount.get(Replica.Type.PULL);
     int numTlogReplicas = replicaTypeVsCount.get(Replica.Type.TLOG);
-    int totalReplicas = numNrtReplicas + numPullReplicas + numTlogReplicas;
+    int numSharedReplicas = replicaTypeVsCount.get(Replica.Type.SHARED);
+    boolean isSharedIndex = collection.getSharedIndex();
+    int totalReplicas = numNrtReplicas + numPullReplicas + numTlogReplicas + numSharedReplicas;
+
+    if (numSharedReplicas != 0 && numNrtReplicas + numPullReplicas + numTlogReplicas != 0) {
+      throw new RuntimeException("SHARED and non SHARED replica types specified for collection " + collectionName
+          + ". SHARED:" + numSharedReplicas + " NRT:" + numNrtReplicas + " PULL:" + numPullReplicas + " TLOG:" + numTlogReplicas);
+    }
 
     String node = message.getStr(CoreAdminParams.NODE);
     Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
@@ -360,7 +378,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (!skipCreateReplicaInClusterState && !skipNodeAssignment) {
 
       positions = Assign.getNodesForNewReplicas(clusterState, collection.getName(), sliceName, numNrtReplicas,
-                    numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager);
+                    numTlogReplicas, numPullReplicas, numSharedReplicas, isSharedIndex, createNodeSetStr, cloudManager);
       sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
 

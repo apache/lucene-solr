@@ -95,10 +95,13 @@ public class ClusterStateMutator {
 
     Map<String, Object> collectionProps = new HashMap<>();
 
-    for (Map.Entry<String, Object> e : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
+    Map<String, Object> collectionDefaults = message.getBool(ZkStateReader.SHARED_INDEX, false)
+        ? OverseerCollectionMessageHandler.SHARED_INDEX_COLLECTION_PROPS_AND_DEFAULTS
+        : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS;
+    for (Map.Entry<String, Object> e : collectionDefaults.entrySet()) {
       Object val = message.get(e.getKey());
       if (val == null) {
-        val = OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(e.getKey());
+        val = collectionDefaults.get(e.getKey());
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }

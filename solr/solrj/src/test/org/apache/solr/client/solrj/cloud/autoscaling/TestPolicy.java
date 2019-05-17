@@ -1527,7 +1527,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
 
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations("c", config, solrCloudManager, null,
-        Arrays.asList("s1", "s2"), 1, 0, 0,
+        Arrays.asList("s1", "s2"), 1, 0, 0, 0,
         null);
 
     PolicyHelper.SessionRef sessionRef = (PolicyHelper.SessionRef) solrCloudManager.getObjectCache().get(PolicyHelper.SessionRef.class.getName());
@@ -1905,7 +1905,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
-        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
+        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, 0, 0, 0, null);
 
     assertTrue(locations.stream().allMatch(it -> it.node.equals("127.0.0.1:50096_solr")));
   }
@@ -1967,7 +1967,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
-        cloudManager, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3, 0, 0, null);
+        cloudManager, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3, 0, 0, 0, null);
     assertTrue(locations.stream().allMatch(it -> ImmutableList.of("node2", "node1", "node3").contains(it.node)));
   }
 
@@ -2368,7 +2368,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     };
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
-        cloudManager, null, Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
+        cloudManager, null, Arrays.asList("shard1", "shard2"), 1, 0, 0, 0, null);
     assertTrue(locations.stream().allMatch(it -> "node3".equals(it.node)));
   }
 

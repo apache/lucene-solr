@@ -126,6 +126,7 @@ import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_INDEX;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -137,6 +138,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
@@ -475,11 +477,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           SHARDS_PROP,
           STATE_FORMAT,
           AUTO_ADD_REPLICAS,
+          SHARED_INDEX, // At collection creation (only) we can decide if shared storage based
           RULE,
           SNITCH,
           PULL_REPLICAS,
           TLOG_REPLICAS,
           NRT_REPLICAS,
+          SHARED_REPLICAS,
           POLICY,
           WAIT_FOR_FINAL_STATE,
           WITH_COLLECTION,
@@ -487,19 +491,22 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       props.putIfAbsent(STATE_FORMAT, "2");
 
-      if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
-        //TODO: Remove this in 8.0 . Keep this for SolrJ client back-compat. See SOLR-11676 for more details
-        int replicationFactor = Integer.parseInt((String) props.get(REPLICATION_FACTOR));
-        int nrtReplicas = Integer.parseInt((String) props.get(NRT_REPLICAS));
-        if (replicationFactor != nrtReplicas) {
-          throw new SolrException(ErrorCode.BAD_REQUEST,
-              "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+      // Don't mess with unrelated replica counts for shared storage based collections.
+      if (!Boolean.parseBoolean((String) props.get(SHARED_INDEX))) {
+        if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
+          //TODO: Remove this in 8.0 . Keep this for SolrJ client back-compat. See SOLR-11676 for more details
+          int replicationFactor = Integer.parseInt((String) props.get(REPLICATION_FACTOR));
+          int nrtReplicas = Integer.parseInt((String) props.get(NRT_REPLICAS));
+          if (replicationFactor != nrtReplicas) {
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+          }
         }
-      }
-      if (props.get(REPLICATION_FACTOR) != null) {
-        props.put(NRT_REPLICAS, props.get(REPLICATION_FACTOR));
-      } else if (props.get(NRT_REPLICAS) != null) {
-        props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
+        if (props.get(REPLICATION_FACTOR) != null) {
+          props.put(NRT_REPLICAS, props.get(REPLICATION_FACTOR));
+        } else if (props.get(NRT_REPLICAS) != null) {
+          props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
+        }
       }
 
       addMapObject(props, RULE);
@@ -518,7 +525,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       }
       if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
-      for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
+      for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS, SHARED_REPLICAS))
         h.copyFromClusterProp(props, prop);
       copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
@@ -1024,6 +1031,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DocCollection.verifyProp(m, prop);
       }
       verifyRuleParams(h.coreContainer, m);
+      // FIXME IG: this is broken for shared storage backed collections since it will set NRT replicas when they should stay 0.
+      // It should instead set SHARED_REPLICAS from REPLICATION_FACTOR, but for this we need to know if Collection is shared storage backed...
+      // See CollectionMutator.modifyCollection() for similar code.
       if (m.get(REPLICATION_FACTOR) != null) {
         m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
       }
@@ -1131,7 +1141,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
-          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+          PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, SHARED_INDEX, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),

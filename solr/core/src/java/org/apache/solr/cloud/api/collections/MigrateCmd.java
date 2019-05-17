@@ -61,6 +61,8 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
+/** Migration is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
+    If/once we make it work, delete this comment. */
 public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;

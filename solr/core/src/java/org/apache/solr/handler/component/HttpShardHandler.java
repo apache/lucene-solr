@@ -71,8 +71,9 @@ public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value,
    * {@link #prepDistributed(ResponseBuilder)} will only include {@link org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible
-   * destination of the distributed request (or a leader replica of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG}). This is used 
-   * by the RealtimeGet handler, since other types of replicas shouldn't respond to RTG requests
+   * destination of the distributed request (or a leader replica of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG} or
+   * {@link org.apache.solr.common.cloud.Replica.Type#SHARED}). This constant has a bad a name (the text string is correct)
+   * This is used by the RealtimeGet handler, since other types of replicas shouldn't respond to RTG requests
    */
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
@@ -386,6 +387,7 @@ public class HttpShardHandler extends ShardHandler {
       String ourSlice = cloudDescriptor.getShardId();
       String ourCollection = cloudDescriptor.getCollectionName();
       // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
+      // == comparison below works because org.apache.solr.handler.RealTimeGetHandler explicitly sets Boolean.TRUE :(
       boolean onlyNrtReplicas = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
       if (rb.slices.length == 1 && rb.slices[0] != null
           && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
@@ -512,7 +514,7 @@ public class HttpShardHandler extends ShardHandler {
         continue;
       }
 
-      if (onlyNrtReplicas && replica.getType() == Replica.Type.TLOG) {
+      if (onlyNrtReplicas && (replica.getType() == Replica.Type.TLOG || replica.getType() == Replica.Type.SHARED)) {
         if (!isShardLeader.test(replica)) {
           continue;
         }

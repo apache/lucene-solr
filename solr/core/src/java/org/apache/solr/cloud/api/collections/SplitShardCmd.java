@@ -157,9 +157,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     List<String> subShardNames = new ArrayList<>();
 
     // reproduce the currently existing number of replicas per type
+    // Using atomic integers is counter productive here, the stream is processed sequentially by forEach().
+    // (processing it in parallel by adding .parallelStream() before .forEach() would make it slower).
     AtomicInteger numNrt = new AtomicInteger();
     AtomicInteger numTlog = new AtomicInteger();
     AtomicInteger numPull = new AtomicInteger();
+    AtomicInteger numShared = new AtomicInteger();
     parentSlice.getReplicas().forEach(r -> {
       switch (r.getType()) {
         case NRT:
@@ -170,19 +173,27 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           break;
         case PULL:
           numPull.incrementAndGet();
+          break;
+        case SHARED:
+          numShared.incrementAndGet();
       }
     });
-    int repFactor = numNrt.get() + numTlog.get() + numPull.get();
+    int repFactor = numNrt.get() + numTlog.get() + numPull.get() + numShared.get();
 
     boolean success = false;
     try {
-      // type of the first subreplica will be the same as leader
-      boolean firstNrtReplica = parentShardLeader.getType() == Replica.Type.NRT;
+      // type of the first subreplica will be the same as leader, unless leader is PULL (sticking to what code did before adding Replica.Type.SHARED)
+      final Replica.Type leaderReplicaType = parentShardLeader.getType();
+      final Replica.Type subReplicaType = leaderReplicaType == Replica.Type.PULL ? Replica.Type.TLOG : leaderReplicaType;
+
       // verify that we indeed have the right number of correct replica types
-      if ((firstNrtReplica && numNrt.get() < 1) || (!firstNrtReplica && numTlog.get() < 1)) {
+      // If leader is Replica.Type.PULL we default to considering the TLOG replica count... Was the case before introducing Replica.Type.SHARED.
+      final int numReplicas = leaderReplicaType == Replica.Type.NRT ? numNrt.get() : leaderReplicaType == Replica.Type.SHARED ? numShared.get() : numTlog.get();
+
+      if (numReplicas < 1) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "aborting split - inconsistent replica types in collection " + collectionName +
-            ": nrt=" + numNrt.get() + ", tlog=" + numTlog.get() + ", pull=" + numPull.get() + ", shard leader type is " +
-            parentShardLeader.getType());
+            ": nrt=" + numNrt.get() + ", tlog=" + numTlog.get() + ", pull=" + numPull.get() + ", shared=" + numShared.get() + ", shard leader type is " +
+            leaderReplicaType);
       }
 
       // check for the lock
@@ -196,7 +207,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
       t = timings.sub("fillRanges");
-      String rangesStr = fillRanges(ocmh.cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, firstNrtReplica);
+      String rangesStr = fillRanges(ocmh.cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, subReplicaType);
       t.stop();
 
       boolean oldShardsDeleted = false;
@@ -269,7 +280,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, subSlice);
-        propMap.put(REPLICA_TYPE, firstNrtReplica ? Replica.Type.NRT.toString() : Replica.Type.TLOG.toString());
+        propMap.put(REPLICA_TYPE, subReplicaType.toString());
         propMap.put("node", nodeName);
         propMap.put(CoreAdminParams.NAME, subShardName);
         propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
@@ -384,8 +395,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       // we have already created one subReplica for each subShard on the parent node.
       // identify locations for the remaining replicas
-      if (firstNrtReplica) {
+      if (subReplicaType == Replica.Type.NRT) {
         numNrt.decrementAndGet();
+      } else if (subReplicaType == Replica.Type.SHARED) {
+        numShared.decrementAndGet();
       } else {
         numTlog.decrementAndGet();
       }
@@ -397,6 +410,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           .assignNrtReplicas(numNrt.get())
           .assignTlogReplicas(numTlog.get())
           .assignPullReplicas(numPull.get())
+          .assignSharedReplicas(numShared.get())
           .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
           .build();
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
@@ -698,7 +712,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   public static String fillRanges(SolrCloudManager cloudManager, ZkNodeProps message, DocCollection collection, Slice parentSlice,
                                 List<DocRouter.Range> subRanges, List<String> subSlices, List<String> subShardNames,
-                                  boolean firstReplicaNrt) {
+                                  Replica.Type replicaType) {
     String splitKey = message.getStr("split.key");
     String rangesStr = message.getStr(CoreAdminParams.RANGES);
     String fuzzStr = message.getStr(CommonAdminParams.SPLIT_FUZZ, "0");
@@ -781,7 +795,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       String subSlice = parentSlice.getName() + "_" + i;
       subSlices.add(subSlice);
       String subShardName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), collection, subSlice,
-          firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG);
+          replicaType);
       subShardNames.add(subShardName);
     }
     return rangesStr;

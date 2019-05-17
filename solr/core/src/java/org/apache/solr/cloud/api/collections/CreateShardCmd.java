@@ -38,7 +38,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_INDEX;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
@@ -62,12 +64,21 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     DocCollection collection = clusterState.getCollection(collectionName);
 
-    int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
+    boolean isSharedIndex = message.getBool(SHARED_INDEX, false);
+
+    // We evaluate all the default values each time, even when they're not needed (performance impact?).
+    int numNrtReplicas = message.getInt(NRT_REPLICAS, isSharedIndex ? 0 : message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
     int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0));
+    int numSharedReplicas = message.getInt(SHARED_REPLICAS, isSharedIndex ? message.getInt(REPLICATION_FACTOR, collection.getInt(SHARED_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))) : 0);
 
-    if (numNrtReplicas + numTlogReplicas <= 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
+    if (numNrtReplicas + numTlogReplicas + numSharedReplicas <= 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " + " + SHARED_REPLICAS + " must be greater than 0");
+    }
+
+    if (numSharedReplicas > 0 && numNrtReplicas + numTlogReplicas > 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't have both non 0 " + SHARED_REPLICAS + " (" + numSharedReplicas
+          + ") and non 0 " + NRT_REPLICAS + "+" + TLOG_REPLICAS + " (" + numNrtReplicas + "+" + numTlogReplicas + ")");
     }
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -81,6 +92,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkStateReader.NRT_REPLICAS, String.valueOf(numNrtReplicas),
         ZkStateReader.TLOG_REPLICAS, String.valueOf(numTlogReplicas),
         ZkStateReader.PULL_REPLICAS, String.valueOf(numPullReplicas),
+        ZkStateReader.SHARED_REPLICAS, String.valueOf(numSharedReplicas),
         OverseerCollectionMessageHandler.CREATE_NODE_SET, message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET),
         CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
 

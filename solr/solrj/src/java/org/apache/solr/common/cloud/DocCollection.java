@@ -35,9 +35,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_INDEX;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
@@ -69,8 +71,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numNrtReplicas;
   private final Integer numTlogReplicas;
   private final Integer numPullReplicas;
+  private final Integer numSharedReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
+  private final Boolean sharedIndex;
   private final String policy;
   private final Boolean readOnly;
 
@@ -97,10 +101,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
     this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
     this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
+    this.numSharedReplicas = (Integer) verifyProp(props, SHARED_REPLICAS, 0);
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
     this.policy = (String) props.get(Policy.POLICY);
     this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
+    Boolean sharedIndex = (Boolean) verifyProp(props, SHARED_INDEX);
+    this.sharedIndex = Boolean.TRUE.equals(sharedIndex);
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
     
@@ -124,6 +131,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   private void addNodeNameReplica(Replica replica) {
+    // Fail fast: make sure collections are consistent wrt the replicas they contain (shared storage backed or not)
+    if (!sharedIndex && replica.getType() == Replica.Type.SHARED) {
+      throw new RuntimeException("Can't add a Replica.Type.SHARED to a collection not backed by shared storage");
+    }
+    if (sharedIndex && replica.getType() != Replica.Type.SHARED) {
+      throw new RuntimeException("Can't add a " + replica.getType() + " replica to a collection backed by shared storage");
+    }
+
     List<Replica> replicas = nodeNameReplicas.get(replica.getNodeName());
     if (replicas == null) {
       replicas = new ArrayList<>();
@@ -154,8 +169,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case NRT_REPLICAS:
       case PULL_REPLICAS:
       case TLOG_REPLICAS:
+      case SHARED_REPLICAS:
         return Integer.parseInt(o.toString());
       case AUTO_ADD_REPLICAS:
+      case SHARED_INDEX:
       case READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
@@ -261,7 +278,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public boolean getAutoAddReplicas() {
     return autoAddReplicas;
   }
-  
+
+  public boolean getSharedIndex() {
+    return sharedIndex;
+  }
+
   public int getMaxShardsPerNode() {
     if (maxShardsPerNode == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, MAX_SHARDS_PER_NODE + " is not in the cluster state.");
@@ -414,6 +435,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#SHARED} this collection was created with
+   */
+  public Integer getNumSharedReplicas() {
+    return numSharedReplicas;
+  }
+
+  /**
    * @return the policy associated with this collection if any
    */
   public String getPolicyName() {
@@ -425,6 +453,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (type == Replica.Type.NRT) result = numNrtReplicas;
     if (type == Replica.Type.PULL) result = numPullReplicas;
     if (type == Replica.Type.TLOG) result = numTlogReplicas;
+    if (type == Replica.Type.SHARED) result = numSharedReplicas;
     return result == null ? def : result;
 
   }

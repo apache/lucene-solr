@@ -72,6 +72,8 @@ public class WithCollectionVariable extends VariableBase {
       if (uniqueColls.contains(e.getKey()) && !uniqueColls.contains(e.getValue())) {
         String withCollection = e.getValue();
 
+        // IG: we pass in a Replica.Type in Row.addReplica (in ri) but it is ignored. Autoscaling only works with NRT?
+        // Possibly an issue here when we try to use it with Replica.Type.SHARED
         opCollector.accept(new Row.OperationInfo(withCollection, "shard1", row.node, cell.name, true, Replica.Type.NRT));
       }
     }

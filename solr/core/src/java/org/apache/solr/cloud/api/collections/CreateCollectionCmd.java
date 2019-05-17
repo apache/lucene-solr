@@ -79,7 +79,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_INDEX;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
@@ -347,11 +349,19 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                                                             List<String> shardNames,
                                                             AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
+
+    // true if the collection is backed by shared storage.
+    // In which case only org.apache.solr.common.cloud.Replica.Type#SHARED replicas matter and no other replicas should be defined.
+    final boolean sharedIndex = message.getBool(SHARED_INDEX, false);
+
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
-    int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
+    // Lack of TLOG replicas does not mean we need NRT when collection is shared storage based
+    int numNrtReplicas = message.getInt(NRT_REPLICAS, sharedIndex ? 0 : message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
+    // REPLICATION_FACTOR drives SHARED_REPLICAS when collection is backed by shared storage
+    final int numSharedReplicas = message.getInt(SHARED_REPLICAS, sharedIndex ? message.getInt(REPLICATION_FACTOR, 0) : 0);
 
     int numSlices = shardNames.size();
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
@@ -368,7 +378,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       replicaPositions = new ArrayList<>();
     } else {
-      int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
+      int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas + numSharedReplicas;
       if (totalNumReplicas > nodeList.size()) {
         log.warn("Specified number of replicas of "
             + totalNumReplicas
@@ -391,16 +401,20 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             + " to be created. Value of " + OverseerCollectionMessageHandler.NUM_SLICES + " is " + numSlices
             + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
             + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
-            + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
+            + ", value of " + PULL_REPLICAS + " is " + numPullReplicas
+            + " and value of " + SHARED_REPLICAS + " is " + numSharedReplicas
+            + ". sharedIndex is " + sharedIndex
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
       }
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+          .setSharedIndex(sharedIndex)
           .forCollection(collectionName)
           .forShard(shardNames)
           .assignNrtReplicas(numNrtReplicas)
           .assignTlogReplicas(numTlogReplicas)
           .assignPullReplicas(numPullReplicas)
+          .assignSharedReplicas(numSharedReplicas)
           .onNodes(nodeList)
           .build();
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
@@ -413,10 +427,19 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   public static void checkReplicaTypes(ZkNodeProps message) {
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
-    int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas > 0 ? 0 : 1));
+    boolean isSharedIndex = message.getBool(SHARED_INDEX, false);
+    // Collections backed by shared storage can derive their number of SHARED_REPLICAS from the REPLICATION_FACTOR
+    int numSharedReplicas = message.getInt(SHARED_REPLICAS, isSharedIndex ? message.getInt(REPLICATION_FACTOR, 1) : 0);
+    // NRT replicas get potentitally non zero default only when collection not backed by shared storage
+    int numNrtReplicas = message.getInt(NRT_REPLICAS, isSharedIndex ? 0 : message.getInt(REPLICATION_FACTOR, numTlogReplicas > 0 ? 0 : 1));
 
-    if (numNrtReplicas + numTlogReplicas <= 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
+    if (numNrtReplicas + numTlogReplicas + numSharedReplicas <= 0) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " + " + SHARED_REPLICAS + " must be greater than 0");
+    }
+
+    if (numSharedReplicas > 0 && numNrtReplicas + numTlogReplicas > 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SHARED_REPLICAS + " (" + numSharedReplicas
+          + ") and " + NRT_REPLICAS + "+" + TLOG_REPLICAS + " (" + numNrtReplicas + "+" + numTlogReplicas + ") can't both be greater than 0");
     }
   }
 

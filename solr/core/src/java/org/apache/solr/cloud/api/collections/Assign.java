@@ -324,9 +324,9 @@ public class Assign {
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
   // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
-                                                          String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
+                                                          String shard, int nrtReplicas, int tlogReplicas, int pullReplicas, int sharedReplicas, boolean isSharedIndex,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
-    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}", shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet );
+    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , sharedReplicas: {} , createNodeSet {}", shard, nrtReplicas, tlogReplicas, pullReplicas, sharedReplicas, createNodeSet );
     DocCollection coll = clusterState.getCollection(collectionName);
     Integer maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     List<String> createNodeList = null;
@@ -348,7 +348,7 @@ public class Assign {
           availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
         }
       }
-      if (availableSlots < nrtReplicas + tlogReplicas + pullReplicas) {
+      if (availableSlots < nrtReplicas + tlogReplicas + pullReplicas + sharedReplicas) {
         throw new AssignmentException(
             String.format(Locale.ROOT, "Cannot create %d new replicas for collection %s given the current number of eligible live nodes %d and a maxShardsPerNode of %d",
                 nrtReplicas, collectionName, nodeNameVsShardCount.size(), maxShardsPerNode));
@@ -361,6 +361,8 @@ public class Assign {
         .assignNrtReplicas(nrtReplicas)
         .assignTlogReplicas(tlogReplicas)
         .assignPullReplicas(pullReplicas)
+        .assignSharedReplicas(sharedReplicas)
+        .setSharedIndex(isSharedIndex)
         .onNodes(createNodeList)
         .build();
     AssignStrategyFactory assignStrategyFactory = new AssignStrategyFactory(cloudManager);
@@ -372,9 +374,10 @@ public class Assign {
                                                               int nrtReplicas,
                                                               int tlogReplicas,
                                                               int pullReplicas,
+                                                              int sharedReplicas,
                                                               String policyName, SolrCloudManager cloudManager,
                                                               List<String> nodesList) throws IOException, InterruptedException, AssignmentException {
-    log.debug("shardnames {} NRT {} TLOG {} PULL {} , policy {}, nodeList {}", shardNames, nrtReplicas, tlogReplicas, pullReplicas, policyName, nodesList);
+    log.debug("shardnames {} NRT {} TLOG {} PULL {} SHARED {}, policy {}, nodeList {}", shardNames, nrtReplicas, tlogReplicas, pullReplicas, sharedReplicas, policyName, nodesList);
     List<ReplicaPosition> replicaPositions = null;
     AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
     try {
@@ -388,6 +391,7 @@ public class Assign {
           nrtReplicas,
           tlogReplicas,
           pullReplicas,
+          sharedReplicas,
           nodesList);
       return replicaPositions;
     } catch (Exception e) {
@@ -481,14 +485,25 @@ public class Assign {
     public int numNrtReplicas;
     public int numTlogReplicas;
     public int numPullReplicas;
+    public final int numSharedReplicas;
+    public final boolean sharedIndex;
 
-    public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
+    public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes, int numNrtReplicas, int numTlogReplicas, int numPullReplicas, int numSharedReplicas, boolean sharedIndex) {
+      if (numSharedReplicas != 0 && numNrtReplicas + numTlogReplicas + numPullReplicas != 0) {
+        throw new RuntimeException("Illegal combination of SHARED and non SHARED replicas for collection " + collectionName);
+      }
+      if (!sharedIndex && numSharedReplicas != 0) {
+        throw new RuntimeException("Can't specify SHARED replicas for collection " + collectionName + " non backed by shared storage");
+      }
+
       this.collectionName = collectionName;
       this.shardNames = shardNames;
       this.nodes = nodes;
       this.numNrtReplicas = numNrtReplicas;
       this.numTlogReplicas = numTlogReplicas;
       this.numPullReplicas = numPullReplicas;
+      this.numSharedReplicas = numSharedReplicas;
+      this.sharedIndex = sharedIndex;
     }
   }
 
@@ -499,6 +514,8 @@ public class Assign {
     private int numNrtReplicas;
     private int numTlogReplicas;
     private int numPullReplicas;
+    private int numSharedReplicas;
+    private boolean sharedIndex;
 
     public AssignRequestBuilder forCollection(String collectionName) {
       this.collectionName = collectionName;
@@ -520,6 +537,11 @@ public class Assign {
       return this;
     }
 
+    public AssignRequestBuilder assignSharedReplicas(int numSharedReplicas) {
+      this.numSharedReplicas = numSharedReplicas;
+      return this;
+    }
+
     public AssignRequestBuilder assignTlogReplicas(int numTlogReplicas) {
       this.numTlogReplicas = numTlogReplicas;
       return this;
@@ -530,11 +552,16 @@ public class Assign {
       return this;
     }
 
+    public AssignRequestBuilder setSharedIndex(boolean sharedIndex) {
+      this.sharedIndex = sharedIndex;
+      return this;
+    }
+
     public AssignRequest build() {
       Objects.requireNonNull(collectionName, "The collectionName cannot be null");
       Objects.requireNonNull(shardNames, "The shard names cannot be null");
       return new AssignRequest(collectionName, shardNames, nodes, numNrtReplicas,
-          numTlogReplicas, numPullReplicas);
+          numTlogReplicas, numPullReplicas, numSharedReplicas, sharedIndex);
     }
   }
 
@@ -554,9 +581,11 @@ public class Assign {
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
       for (String aShard : assignRequest.shardNames)
-        for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, assignRequest.numNrtReplicas,
+        for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(
+            Replica.Type.NRT, assignRequest.numNrtReplicas,
             Replica.Type.TLOG, assignRequest.numTlogReplicas,
-            Replica.Type.PULL, assignRequest.numPullReplicas
+            Replica.Type.PULL, assignRequest.numPullReplicas,
+            Replica.Type.SHARED, assignRequest.numSharedReplicas
         ).entrySet()) {
           for (int j = 0; j < e.getValue(); j++) {
             result.add(new ReplicaPosition(aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
@@ -585,8 +614,19 @@ public class Assign {
             Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
       }
 
+      if (assignRequest.numNrtReplicas != 0 && assignRequest.numSharedReplicas != 0) {
+        throw new Assign.AssignmentException(
+            "Expected either 0 " + Replica.Type.NRT+ " (is " + assignRequest.numNrtReplicas +") or 0 " + Replica.Type.SHARED +
+                " (is " + assignRequest.numSharedReplicas + "). This is a bug.");
+      }
+
+      // Rule based replica placement applies only to NRT or SHARED type replicas. We never have both in a given collection.
+      final int numReplicas = assignRequest.sharedIndex ? assignRequest.numSharedReplicas : assignRequest.numNrtReplicas;
+      final Replica.Type replicaType = assignRequest.sharedIndex ? Replica.Type.SHARED : Replica.Type.NRT;
+
       Map<String, Integer> shardVsReplicaCount = new HashMap<>();
-      for (String shard : assignRequest.shardNames) shardVsReplicaCount.put(shard, assignRequest.numNrtReplicas);
+      for (String shard : assignRequest.shardNames)
+        shardVsReplicaCount.put(shard, numReplicas);
 
       Map<String, Map<String, Integer>> shardVsNodes = new LinkedHashMap<>();
       DocCollection docCollection = solrCloudManager.getClusterStateProvider().getClusterState().getCollectionOrNull(assignRequest.collectionName);
@@ -609,7 +649,8 @@ public class Assign {
           snitches,
           shardVsNodes,
           nodesList,
-          solrCloudManager, clusterState);
+          solrCloudManager, clusterState,
+          replicaType);
 
       Map<ReplicaPosition, String> nodeMappings = replicaAssigner.getNodeMappings();
       return nodeMappings.entrySet().stream()
@@ -629,7 +670,7 @@ public class Assign {
     public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
       return Assign.getPositionsUsingPolicy(assignRequest.collectionName,
           assignRequest.shardNames, assignRequest.numNrtReplicas,
-          assignRequest.numTlogReplicas, assignRequest.numPullReplicas,
+          assignRequest.numTlogReplicas, assignRequest.numPullReplicas, assignRequest.numSharedReplicas,
           policyName, solrCloudManager, assignRequest.nodes);
     }
   }

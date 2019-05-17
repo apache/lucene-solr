@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
@@ -107,6 +108,8 @@ public class CollectionMutator {
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      // Because of how REPLICATION_FACTOR is coupled with NRT_REPLICAS below (SOLR-11676), it is not supported to change
+      // that value in collections backed by shared storage (Replica.Type.SHARED) as this will add NRT replicas which doesn't make sense.
       if (message.containsKey(prop)) {
         hasAnyOps = true;
         if (message.get(prop) == null)  {
@@ -115,7 +118,8 @@ public class CollectionMutator {
           m.put(prop, message.get(prop));
         }
         if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
-          m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+          // When Collection is shared storage backed, replication factor impacts shared replicas, not nrt.
+          m.put(coll.getSharedIndex() ? SHARED_REPLICAS : NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
     }

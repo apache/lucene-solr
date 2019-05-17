@@ -410,7 +410,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     AutoScalingConfig autoScalingConfig = new AutoScalingConfig(new HashMap());
     //POSITIONS : [shard1:1[NRT] @127.0.0.1:49469_solr, shard1:2[NRT] @127.0.0.1:49469_solr]
     List<ReplicaPosition> positions = PolicyHelper.getReplicaLocations("coll_new", autoScalingConfig, cloudManagerFromDiagnostics,
-        EMPTY_MAP, Collections.singletonList("shard1"), 2, 0, 0, null);
+        EMPTY_MAP, Collections.singletonList("shard1"), 2, 0, 0, 0, null);
 
     List<String> nodes = positions.stream().map(count -> count.node).collect(Collectors.toList());
     assertTrue(nodes.contains("127.0.0.1:49469_solr"));

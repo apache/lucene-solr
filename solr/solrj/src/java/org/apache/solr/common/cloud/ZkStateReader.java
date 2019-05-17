@@ -121,10 +121,12 @@ public class ZkStateReader implements SolrCloseable {
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
+  public static final String SHARED_INDEX = "sharedIndex"; // When true, means single _shard_ reference copy on shared (Blob) storage. SHARED_STORAGE_PROP means _replica_ specific hdfs mount.
   public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
   public static final String PULL_REPLICAS = "pullReplicas";
   public static final String NRT_REPLICAS = "nrtReplicas";
   public static final String TLOG_REPLICAS = "tlogReplicas";
+  public static final String SHARED_REPLICAS = "sharedReplicas";
   public static final String READ_ONLY = "readOnly";
 
   public static final String ROLES = "/roles.json";

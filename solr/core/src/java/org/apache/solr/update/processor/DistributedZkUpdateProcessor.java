@@ -158,11 +158,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
     isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
-    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
+    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT, Replica.Type.SHARED), true);
     if (nodes == null) {
       // This could happen if there are only pull replicas
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
+          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + ", " + Replica.Type.NRT
+            + " or " + Replica.Type.SHARED);
     }
 
     nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
@@ -173,6 +174,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else if (replicaType == Replica.Type.NRT) {
         doLocalCommit(cmd);
+      } else if (replicaType == Replica.Type.SHARED) {
+        // If a replica is Replica.Type.SHARED then all are for the shard. These do not forward, data flows though shared storage.
+        // We really want to know if this happens, as it most likely means something went wrong elsewhere.
+        String message = "Unexpected indexing forwarding from leader to replicas for type " + Replica.Type.SHARED
+            + " collection " + collection + " leader " + leaderReplica.getCoreUrl() + " on " + leaderReplica.getNodeName();
+        log.error(message); // Remove if exception below ends up being logged.
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     } else {
       // zk
@@ -464,7 +472,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String myShardId = cloudDesc.getShardId();
         Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
             collection, myShardId);
-        // DBQ forwarded to NRT and TLOG replicas
+        // DBQ forwarded to NRT and TLOG replicas. Nothing (ever) forwarded to Replica.Type.SHARED.
         List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
             .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
         if (replicaProps != null) {
@@ -519,6 +527,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
+      // We never forward to Replica.Type.SHARED. They pull updates (including deletes) from shared storage.
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
           .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
       if (replicaProps != null) {
@@ -654,6 +663,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String leaderCoreNodeName = leaderReplica.getName();
         List<Replica> replicas = clusterState.getCollection(collection)
             .getSlice(shardId)
+            // Reminder: not forwarding to Replica.Type.SHARED
             .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
         replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
         if (replicas.isEmpty()) {
@@ -808,6 +818,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
+        // In purpose we DO NOT forward to Replica.Type.SHARED. These get their data from shared storage.
         .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
     replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
     if (replicas.isEmpty()) {

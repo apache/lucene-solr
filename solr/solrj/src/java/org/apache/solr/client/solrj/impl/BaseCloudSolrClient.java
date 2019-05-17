@@ -565,6 +565,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       List<String> urls = new ArrayList<>();
       Replica leader = slice.getLeader();
       if (directUpdatesToLeadersOnly && leader == null) {
+        // IG: why can't we have a TLOG leader here and we only consider NRT?
         for (Replica replica : slice.getReplicas(
             replica -> replica.isActive(getClusterStateProvider().getLiveNodes())
                 && replica.getType() == Replica.Type.NRT)) {

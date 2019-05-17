@@ -102,6 +102,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_INDEX;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -479,6 +481,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     replicaTypesVsCount.put(Replica.Type.NRT, message.getInt(NRT_REPLICAS, replicaType == Replica.Type.NRT ? 1 : 0));
     replicaTypesVsCount.put(Replica.Type.TLOG, message.getInt(TLOG_REPLICAS, replicaType == Replica.Type.TLOG ? 1 : 0));
     replicaTypesVsCount.put(Replica.Type.PULL, message.getInt(PULL_REPLICAS, replicaType == Replica.Type.PULL ? 1 : 0));
+    replicaTypesVsCount.put(Replica.Type.SHARED, message.getInt(SHARED_REPLICAS, replicaType == Replica.Type.SHARED ? 1 : 0));
 
     int totalReplicas = 0;
     for (Map.Entry<Replica.Type, Integer> entry : replicaTypesVsCount.entrySet()) {
@@ -946,9 +949,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     // calculate expected number of positions
     int numTlogReplicas = props.getInt(TLOG_REPLICAS, 0);
-    int numNrtReplicas = props.getInt(NRT_REPLICAS, props.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
+    boolean isSharedIndex = props.getBool(SHARED_INDEX, false);
+    int numNrtReplicas = props.getInt(NRT_REPLICAS, isSharedIndex ? 0 : props.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
+    int numSharedReplicas = props.getInt(SHARED_REPLICAS, isSharedIndex ? props.getInt(REPLICATION_FACTOR, 1) : 0);
     int numPullReplicas = props.getInt(PULL_REPLICAS, 0);
-    int totalReplicas = shardNames.size() * (numNrtReplicas + numPullReplicas + numTlogReplicas);
+    if (numSharedReplicas != 0 && numNrtReplicas + numTlogReplicas + numPullReplicas != 0) {
+      throw new RuntimeException("can't have SHARED_REPLICAS and other types of replicas. Collection: " + collectionName);
+    }
+    int totalReplicas = shardNames.size() * (numNrtReplicas + numSharedReplicas + numPullReplicas + numTlogReplicas);
     if (totalReplicas != replicaPositions.size()) {
       throw new RuntimeException("unexpected number of replica positions: expected " + totalReplicas + " but got " + replicaPositions.size());
     }
@@ -1215,11 +1223,16 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           .forEach(e -> props.put(e.getKey(), e.getValue()));
       // 2. create new replicas
       EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
-      int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
+      // REPLICATION_FACTOR impacts SHARED_REPLICAS rather than NRT_REPLICAS for shared storage backed collections
+      boolean isSharedIndex = message.getBool(SHARED_INDEX, false);
+      int numNrtReplicas = message.getInt(NRT_REPLICAS, isSharedIndex ? 0 : message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
       int numTlogReplicas = message.getInt(TLOG_REPLICAS, message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0)));
+      int numSharedReplicas = message.getInt(SHARED_REPLICAS, isSharedIndex ? message.getInt(REPLICATION_FACTOR, collection.getInt(SHARED_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))) : 0);
       int numPullReplicas = message.getInt(PULL_REPLICAS, message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0)));
+      assert numSharedReplicas == 0 || numNrtReplicas + numTlogReplicas + numPullReplicas == 0;
       replicaTypesVsCount.put(Replica.Type.NRT, numNrtReplicas);
       replicaTypesVsCount.put(Replica.Type.TLOG, numTlogReplicas);
+      replicaTypesVsCount.put(Replica.Type.SHARED, numSharedReplicas);
       replicaTypesVsCount.put(Replica.Type.PULL, numPullReplicas);
 
       ZkNodeProps addReplicasProps = new ZkNodeProps(
@@ -1227,6 +1240,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           SHARD_ID_PROP, sliceName,
           ZkStateReader.NRT_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.NRT)),
           ZkStateReader.TLOG_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.TLOG)),
+          ZkStateReader.SHARED_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.SHARED)),
           ZkStateReader.PULL_REPLICAS, String.valueOf(replicaTypesVsCount.get(Replica.Type.PULL)),
           OverseerCollectionMessageHandler.CREATE_NODE_SET, message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET)
           );
@@ -1286,7 +1300,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     opDelay(collectionName, CollectionParams.CollectionAction.SPLITSHARD.name());
 
-    SplitShardCmd.fillRanges(cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, true);
+    SplitShardCmd.fillRanges(cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, Replica.Type.NRT);
     // add replicas for new subShards
     int repFactor = parentSlice.getReplicas().size();
     Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()

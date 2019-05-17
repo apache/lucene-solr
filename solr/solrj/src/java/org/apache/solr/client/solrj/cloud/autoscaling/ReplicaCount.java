@@ -25,20 +25,21 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 
 class ReplicaCount  implements MapWriter {
-  long nrt, tlog, pull;
+  private long nrt, tlog, pull, shared;
 
   public ReplicaCount() {
-    nrt = tlog = pull = 0;
+    nrt = tlog = pull = shared = 0;
   }
 
-  public ReplicaCount(long nrt, long tlog, long pull) {
+  public ReplicaCount(long nrt, long tlog, long pull, long shared) {
     this.nrt = nrt;
     this.tlog = tlog;
     this.pull = pull;
+    this.shared = shared;
   }
 
   public long total() {
-    return nrt + tlog + pull;
+    return nrt + tlog + pull + shared;
   }
 
   @Override
@@ -46,6 +47,7 @@ class ReplicaCount  implements MapWriter {
     if (nrt > 0) ew.put(Replica.Type.NRT.name(), nrt);
     if (pull > 0) ew.put(Replica.Type.PULL.name(), pull);
     if (tlog > 0) ew.put(Replica.Type.TLOG.name(), tlog);
+    if (shared > 0) ew.put(Replica.Type.SHARED.name(), shared);
     ew.put("count", total());
   }
 
@@ -58,6 +60,8 @@ class ReplicaCount  implements MapWriter {
         return pull;
       case TLOG:
         return tlog;
+      case SHARED:
+        return shared;
     }
     return total();
   }
@@ -77,6 +81,7 @@ class ReplicaCount  implements MapWriter {
     nrt += count.nrt;
     pull += count.pull;
     tlog += count.tlog;
+    shared += count.shared;
   }
 
 
@@ -91,6 +96,9 @@ class ReplicaCount  implements MapWriter {
       case TLOG:
         tlog++;
         break;
+      case SHARED:
+        shared++;
+        break;
       default:
         nrt++;
     }
@@ -100,7 +108,7 @@ class ReplicaCount  implements MapWriter {
   public boolean equals(Object obj) {
     if (obj instanceof ReplicaCount) {
       ReplicaCount that = (ReplicaCount) obj;
-      return that.nrt == this.nrt && that.tlog == this.tlog && that.pull == this.pull;
+      return that.nrt == this.nrt && that.tlog == this.tlog && that.pull == this.pull && that.shared == this.shared;
 
     }
     return false;
@@ -112,17 +120,18 @@ class ReplicaCount  implements MapWriter {
   }
 
   public ReplicaCount copy() {
-    return new ReplicaCount(nrt, tlog, pull);
+    return new ReplicaCount(nrt, tlog, pull, shared);
   }
 
   public void reset() {
-    nrt = tlog = pull = 0;
+    nrt = tlog = pull = shared = 0;
   }
 
   public int delta(int expectedReplicaCount, Replica.Type type) {
     if (type == Replica.Type.NRT) return (int) (nrt - expectedReplicaCount);
     if (type == Replica.Type.PULL) return (int) (pull - expectedReplicaCount);
     if (type == Replica.Type.TLOG) return (int) (tlog - expectedReplicaCount);
+    if (type == Replica.Type.SHARED) return (int) (shared - expectedReplicaCount);
     throw new RuntimeException("NO type");
   }
 }

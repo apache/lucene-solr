@@ -37,6 +37,13 @@ limitations under the License.
           <p class="clearfix"><label for="add_name">name:</label>
           <input type="text" name="name" id="add_name" ng-model="newCollection.name" placeholder="new collection"></p>
 
+          <p class="clearfix"><label for="add_sharedIndex">shared storage based:</label>
+            <select name="sharedIndex" id="add_sharedIndex" ng-model="newCollection.sharedIndex">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </p>
+
           <p class="clearfix"><label for="add_config">config set:</label>&nbsp;
           <select chosen ng-options="config.name as config.name for config in configs" name="config_name" id="add_config" ng-model="newCollection.configName">
           </select>
@@ -184,6 +191,11 @@ limitations under the License.
           <div class="content">
 
           <ul>
+
+            <li><dl class="clearfix">
+              <dt><span>shared storage based:</span></dt>
+              <dd>{{collection.sharedIndex}}</dd>
+            </dl></li>
 
             <li>
                 <dl class="clearfix">
