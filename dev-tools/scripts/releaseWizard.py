@@ -931,7 +931,7 @@ class Commands:
                                 print("Aborting")
                                 break
             if not success:
-                print("WARNING: One or more commands failed, you may want to check the logs in %s" % log_folder)
+                print("WARNING: One or more commands failed, you may want to check the logs")
             return success
 
     def get_root_folder(self):
@@ -970,14 +970,14 @@ class TodoMethods:
     # These are called with reflection based on method matching to_do ID
     def clean_git_checkout(self, todo):
         if os.path.exists(state.get_git_checkout_folder()):
-            print("Deleting existing git clone at %s" % state.get_git_checkout_folder())
-            shutil.rmtree(state.get_git_checkout_folder())
+            if ask_yes_no("Found existing folder %s. Delete it now?" % state.get_git_checkout_folder()):
+                shutil.rmtree(state.get_git_checkout_folder())
 
     def clean_git_checkout_commands(self, todo):
         return Commands(state.get_release_folder(),
                  "Run these commands to make a fresh clone in the release folder",
                         [
-                            Command("git clone --branch %s --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr" % get_release_branch(), logfile="git_clone.log")
+                            Command("git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr", logfile="git_clone.log")
                         ],
                  ask_each=False
                         )
@@ -1123,6 +1123,24 @@ One way is to rename the ivy cache folder before building.
             ],
             ask_each=True)
 
+    def smoke_tester_commands(self, todo):
+        cmdline = "python3 -u %s --tmp-dir %s %s" \
+                  % (os.path.join('dev-tools', 'scripts', 'smokeTestRelease.py'),
+                     os.path.join(state.get_rc_folder(), "smoketest"),
+                     "file://%s" % dir)
+                     # --revision $REV --version $VER $NOTSIGNED file://$DIR
+                     # --revision %s --version %s
+
+        return Commands(
+            state.get_git_checkout_folder(),
+            """Here we'll test the release""",
+            [
+                Command(cmdline, logfile="smoketest.log", tee=True),
+            ],
+            env={'JAVACMD': state.get_java_cmd()},
+            ask_run=False,
+            ask_each=False)
+
     def build_rc_commands(self, todo):
         try:
             key_id = state.get_todo_by_id('gpg').get_state()['gpg_key']
@@ -1219,7 +1237,7 @@ Here is my +1
 
         success, desc, template = self.end_vote_result(plus_binding, plus_other, zero, minus)
 
-        print("%s\n\n%s" % desc, template)
+        print("%s\n\n%s" % (desc, template))
 
     def end_vote_asciidoc(self, todo):
         return """Note down how many votes were cast, summing as:
@@ -1449,11 +1467,20 @@ then it's time to build the release artifacts, run the smoke tester and stage th
                   Todo('run_tests',
                        'Run javadoc tests'
                        ),
+                  # TODO: Examine the results. Did it build without errors? Were there Javadoc warnings? Did the tests succeed? Does the demo application work correctly? Does Test2BTerms pass (this takes a lot of memory)?
+                  # Remove lucene/benchmark/{work,temp}/ if present
                   Todo('clear_ivy_cache',
                        'Clear the ivy cache'),
                   Todo('build_rc',
                        'Build the release candidate',
-                       depends="gpg")
+                       depends="gpg"),
+                  Todo('smoke_tester',
+                       'Build the release candidate',
+                       depends="build_rc")
+                  # Run the smoke test script against the local release candidate: python3 -u dev-tools/scripts/smokeTestRelease.py /tmp/releases/6.0.1/lucene-solr-6.0.1-RC1-rev...
+                  # Import the artifacts into SVN: svn -m "Lucene/Solr 6.0.1 RC1" import /tmp/releases/6.0.1/lucene-solr-6.0.1-RC1-rev... https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
+                  # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
+                  # Don't delete these artifacts from your local workstation as you'll need to publish the maven subdirectories once the RC passes (see below).
               ],
               depends=['test', 'prerequisites'],
               in_rc_loop=True),
