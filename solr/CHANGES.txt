@@ -90,6 +90,9 @@ New Features
   
 * SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
 
+* SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
+  unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
+
 Other Changes
 ----------------------
 
