@@ -80,8 +80,7 @@ Bug fixes
 
 * SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
 
-* SOLR-12833: prevent NPE in DistributedUpdateProcessorTest AfterClass when mockito assumption fails in BeforeClass
-  (hossman)
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used. (ab)
 
 * SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
 
