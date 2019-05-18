@@ -17,7 +17,6 @@
 
 apply plugin: 'groovy'
 apply plugin: 'java-gradle-plugin'
-apply plugin: 'java-library'
 
 group = 'org.apache.lucene.gradle'
 
@@ -35,4 +34,5 @@ dependencies {
   implementation 'org.apache.rat:apache-rat:0.11'
   implementation 'com.ibm.icu:icu4j:62.1'
 }
+
 
