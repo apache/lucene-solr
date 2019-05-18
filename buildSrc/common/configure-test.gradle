@@ -19,6 +19,9 @@
 // and can be used between modules
 
 test {
+  group = 'Tests'
+  description = "Runs project tests."
+  
   systemProperty 'java.security.egd', 'file:/dev/./urandom'
   
   filter {
