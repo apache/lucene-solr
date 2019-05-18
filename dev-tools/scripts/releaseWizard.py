@@ -1124,6 +1124,8 @@ One way is to rename the ivy cache folder before building.
             ask_each=True)
 
     def smoke_tester_commands(self, todo):
+        os.chdir(state.get_git_checkout_folder)
+        git_rev = open('rev.txt', encoding='UTF-8').read()
         cmdline = "python3 -u %s --tmp-dir %s %s" \
                   % (os.path.join('dev-tools', 'scripts', 'smokeTestRelease.py'),
                      os.path.join(state.get_rc_folder(), "smoketest"),
