@@ -25,8 +25,9 @@ plugins {
 
 def buildSrcDir = project.rootProject.projectDir;
 
-allprojects {
-  
+
+configure(allprojects.findAll { project -> project.name != 'buildSrc'}) {
+
   // setup repositories
   project.apply from: new File(buildSrcDir, "buildSrc/common/configure-repositories.gradle")
   
@@ -39,12 +40,12 @@ allprojects {
 
 // per module config
 
-configure(subprojects) {  pj ->
+configure(subprojects.findAll { project -> project.name != 'buildSrc'}) {  pj ->
   
   plugins.withType(JavaPlugin) {
     
-    // FORBIDDEN APIS ...need to exclude hadoop etc and enable ...
-    // pj.plugins.apply(BuildPlugin)
+    // FORBIDDEN APIS, ETC
+    pj.plugins.apply(BuildPlugin)
     
     sourceCompatibility = "11"
     targetCompatibility = "11"
@@ -99,39 +100,23 @@ configure(subprojects) {  pj ->
   }
 }
 
-// root project config
-
-// TODO: enable the modified files checking only for jenkins runs! sysprop?
-tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
-
-task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
-  group = 'Build'
-  description = "Checks source files for project violations."
-  baseDir = rootProject.projectDir
-}
-
-task('regenerate') {
-  group = 'Build Regenerate'
-  description = "Regenerates various generated src files, for example: jflex generated java classes."
-  doFirst {
-    println "--> regenerate"
-  }
-}
-
-task('runjflex') {
-  group = 'Build Regenerate'
-  description = "Regenerates various jflex generated java classes."
-  doFirst {
-    println "--> runjflex"
-  }
-}
-
-task('test') {
-  group = 'Tests'
-  description = "Runs project tests."
-}
 
 // setup eclipse and idea
+configure(rootProject) {
+  
+  // root project config
+  
+  // TODO: enable the modified files checking only for jenkins runs! sysprop?
+  tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
+  
+  task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
+    group = 'Build'
+    description = "Checks source files for project violations."
+    baseDir = rootProject.projectDir
+  }
+
+}
+
 allprojects {
   plugins.withType(JavaPlugin) {
     project.apply from: new File(buildSrcDir, "buildSrc/ide/eclipse.gradle")
