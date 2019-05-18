@@ -67,6 +67,9 @@ eclipse {
         if ( entry.kind == 'lib') {
           entry.exported = true
         }
+        if ( entry.kind == 'con') {
+          entry.exported = true
+        }
       }
       
       // Jetty mod files make eclipse sad
