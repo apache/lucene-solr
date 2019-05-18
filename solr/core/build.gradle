@@ -19,6 +19,11 @@ apply plugin: 'java-library'
 
 archivesBaseName = 'solr-core'
 
+
+forbiddenApisTest {
+  excludes = ['org/apache/solr/internal/**', 'org/apache/hadoop/**']
+}
+
 dependencies {
   
   implementationTran project(':solr:solrj')
@@ -41,7 +46,8 @@ dependencies {
   implementationTran project(':lucene:misc')
   implementationTran project(':lucene:join')
   
-  compileOnly 'javax.servlet:javax.servlet-api'
+  // if we try to make this compileOnly or testImplementation forbidden apis fails?
+  implementation 'javax.servlet:javax.servlet-api'
   
   implementation 'org.eclipse.jetty:jetty-servlet'
   implementation 'org.eclipse.jetty:jetty-server'
