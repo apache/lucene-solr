@@ -23,10 +23,21 @@ plugins {
   id 'eclipse'
 }
 
+// define lucene-solr project lists that exclude buildSrc
+def luceneSolrProjects = allprojects.findAll { project -> project.name != 'buildSrc'};
+def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'buildSrc'}
+
 def buildSrcDir = project.rootProject.projectDir;
 
+// TOC
+// -> lucene-solr all project config
+// -> lucene-solr sub module config
+// -> lucene-solr root project config
+// -> lucene-solr IDE config
 
-configure(allprojects.findAll { project -> project.name != 'buildSrc'}) {
+
+// -> lucene-solr all module config - configure all lucene-solr projects, including root project
+configure(luceneSolrProjects) {
 
   // setup repositories
   project.apply from: new File(buildSrcDir, "buildSrc/common/configure-repositories.gradle")
@@ -38,9 +49,8 @@ configure(allprojects.findAll { project -> project.name != 'buildSrc'}) {
   apply plugin: 'maven-publish'
 }
 
-// per module config
-
-configure(subprojects.findAll { project -> project.name != 'buildSrc'}) {  pj ->
+// -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
+configure(luceneSolrSubProjects) {  pj ->
   
   plugins.withType(JavaPlugin) {
     
@@ -100,8 +110,7 @@ configure(subprojects.findAll { project -> project.name != 'buildSrc'}) {  pj ->
   }
 }
 
-
-// setup eclipse and idea
+// -> lucene-solr root project config - configure the root project
 configure(rootProject) {
   
   // root project config
@@ -114,9 +123,9 @@ configure(rootProject) {
     description = "Checks source files for project violations."
     baseDir = rootProject.projectDir
   }
-
 }
 
+// -> lucene-solr IDE config - setup eclipse and idea
 allprojects {
   plugins.withType(JavaPlugin) {
     project.apply from: new File(buildSrcDir, "buildSrc/ide/eclipse.gradle")
