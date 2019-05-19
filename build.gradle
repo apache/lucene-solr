@@ -16,7 +16,7 @@
  */
 
 import org.apache.lucene.gradle.CheckWorkingCopy
-import org.apache.lucene.gradle.BuildPlugin
+import org.apache.lucene.gradle.LuceneSolrForbiddenApisPlugin
 
 plugins {
   id "com.palantir.consistent-versions" version "1.4.0"
@@ -53,9 +53,8 @@ configure(luceneSolrProjects) {
 configure(luceneSolrSubProjects) {  pj ->
   
   plugins.withType(JavaPlugin) {
-    
-    // FORBIDDEN APIS, ETC
-    pj.plugins.apply(BuildPlugin)
+
+    pj.plugins.apply(LuceneSolrForbiddenApisPlugin)
     
     sourceCompatibility = "11"
     targetCompatibility = "11"
