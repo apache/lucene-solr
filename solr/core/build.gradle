@@ -175,3 +175,9 @@ dependencies {
   testImplementationTran project(':solr:contrib:analysis-extras')
   
 }
+
+ratSources {
+  excludes = ['**/htmlStripReaderTest.html', '**/*.iml']
+}
+
+
