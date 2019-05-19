@@ -40,6 +40,8 @@ class CheckWorkingCopy extends DefaultTask {
   @Inject
   CheckWorkingCopy(boolean failonmodifications) {
     this.failonmodifications = failonmodifications
+    this.group = 'Verification'
+    this.description = "Checks the local project working copy."
   }
 
   @TaskAction
