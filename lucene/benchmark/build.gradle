@@ -120,4 +120,7 @@ task extractReuters(type: JavaExec) {
   args "${workingDir}/reuters-out"
 }
 
+forbiddenApisMain {
+  bundledSignatures -= 'jdk-system-out'
+}
 
