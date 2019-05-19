@@ -26,7 +26,7 @@ class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
                 signaturesURLs = project.forbiddenApis.signaturesURLs +
                         [getClass().getResource('/forbidden/lucene.txt')]
             }
-            if (project.group.endsWith(".*?\\.solr(?:\\.\\w+)?")) {
+            if (project.group.matches(".*?\\.solr(?:\\.\\w+)?")) {
                  signaturesURLs = project.forbiddenApis.signaturesURLs +
                         [getClass().getResource('/forbidden/solr.txt'), getClass().getResource('/forbidden/servlet-api.txt')]
             }
