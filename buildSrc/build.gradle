@@ -25,24 +25,23 @@ repositories {
   mavenCentral()
 }
 
-// we create new implementationTran and testImplementationTran configurations that are transitive
-project.apply from: new File(projectDir, "common/configure-impltran.gradle")
-
 dependencies {
-  implementationTran gradleApi()
-  implementationTran localGroovy()
+  implementation gradleApi()
+  implementation localGroovy()
   
-  implementationTran 'org.eclipse.jgit:org.eclipse.jgit:4.6.0.201612231935-r'
-  implementationTran 'de.thetaphi:forbiddenapis:2.6'
-  implementationTran 'org.apache.rat:apache-rat:0.11'
-  implementationTran 'com.ibm.icu:icu4j:62.1'
+  implementation 'org.eclipse.jgit:org.eclipse.jgit:4.6.0.201612231935-r'
+  implementation 'de.thetaphi:forbiddenapis:2.6'
+  implementation 'com.ibm.icu:icu4j:62.1'
+  implementation "org.apache.rat:apache-rat:0.11"
 }
 
 configurations {
   jflex
+  rat
 }
 
 dependencies {
   jflex "de.jflex:jflex:1.7.0"
+  rat "org.apache.rat:apache-rat:0.11"
 }
 
