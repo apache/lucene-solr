@@ -47,6 +47,14 @@ configure(luceneSolrProjects) {
   apply plugin: 'idea'
   apply plugin: 'eclipse'
   apply plugin: 'maven-publish'
+  
+  task ratSources(type: org.apache.lucene.gradle.RatSources) {
+    group = 'Verification'
+    description = "Checks source files for proper license headers."
+    excludes = ['**/TODO', '**/*.txt,', '**/*.iml']
+  }
+  
+  check.dependsOn ratSources
 }
 
 // -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)

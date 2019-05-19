@@ -11,7 +11,6 @@ class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.pluginManager.apply(ForbiddenApisPlugin.class)
         project.forbiddenApis {
-            
             failOnUnsupportedJava = false
             bundledSignatures = ['jdk-unsafe', 'jdk-deprecated', 'jdk-non-portable', 'jdk-reflection']
             signaturesURLs = [getClass().getResource('/forbidden/base.txt')]
@@ -23,19 +22,20 @@ class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
                 signaturesURLs = project.forbiddenApis.signaturesURLs +
                         [getClass().getResource('/forbidden/tests.txt')]
             }
-            if (project.group.equals("org.apache.lucene")) {
+            if (project.group.matches(".*?\\.lucene(?:\\.\\w+)?")) {
                 signaturesURLs = project.forbiddenApis.signaturesURLs +
                         [getClass().getResource('/forbidden/lucene.txt')]
             }
-            if (project.group.equals("org.apache.solr") ) {
-                if (project.name.equals("solrj")) {
-                    signaturesURLs = project.forbiddenApis.signaturesURLs +
-                            [getClass().getResource('/forbidden/solrj.txt')]
-                } else {
-                    signaturesURLs = project.forbiddenApis.signaturesURLs +
-                            [getClass().getResource('/forbidden/solr.txt'), getClass().getResource('/forbidden/servlet-api.txt')]
-                }
+            if (project.group.endsWith(".*?\\.solr(?:\\.\\w+)?")) {
+                 signaturesURLs = project.forbiddenApis.signaturesURLs +
+                        [getClass().getResource('/forbidden/solr.txt'), getClass().getResource('/forbidden/servlet-api.txt')]
             }
+            
+            if (project.name.equals("solrj")) {
+              signaturesURLs = project.forbiddenApis.signaturesURLs +
+                      [getClass().getResource('/forbidden/solrj.txt')]
+            }
+            //println "group " + project.group + " name:" + project.name + " sigs: " + signaturesURLs
         }
     }
 }

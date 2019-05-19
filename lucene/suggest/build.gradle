@@ -23,3 +23,7 @@ dependencies {
   
   testImplementationTran project(':lucene:lucene-test-framework')
 }
+
+ratSources {
+  excludes = ['**/Top50KWiki.utf8', '**/stop-snowball.txt']
+}
