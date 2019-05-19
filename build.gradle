@@ -97,15 +97,6 @@ configure(luceneSolrSubProjects) {  pj ->
         }
       }
     }
-    
-    // TODO: figure out how to have this in buildSrc
-    configurations {
-      jflex
-    }
-    
-    dependencies {
-      jflex "de.jflex:jflex:1.7.0"
-    }
   }
 }
 
