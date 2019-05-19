@@ -33,7 +33,7 @@ dependencies {
   implementation 'net.thisptr:jackson-jq'
   implementation 'net.sourceforge.argparse4j:argparse4j'
   implementation 'org.slf4j:slf4j-api'
-  implementation'com.google.guava:guava'
+  implementation 'com.google.guava:guava'
   implementation 'org.apache.zookeeper:zookeeper'
   implementation 'org.noggit:noggit'
   implementation 'commons-codec:commons-codec'
