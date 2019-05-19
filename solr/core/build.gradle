@@ -19,11 +19,6 @@ apply plugin: 'java-library'
 
 archivesBaseName = 'solr-core'
 
-
-forbiddenApisTest {
-  excludes = ['org/apache/solr/internal/**', 'org/apache/hadoop/**']
-}
-
 dependencies {
   
   implementationTran project(':solr:solrj')
@@ -180,4 +175,7 @@ ratSources {
   excludes = ['**/htmlStripReaderTest.html', '**/*.iml']
 }
 
-
+forbiddenApisTest {
+  exclude 'org/apache/solr/internal/**'
+  exclude 'org/apache/hadoop/**'
+}
