@@ -124,7 +124,7 @@ installMoman.dependsOn downloadMoman
 
 task runjflex(type: org.apache.lucene.gradle.JFlex) {
   group = 'Build Regenerate'
-  description = "Regenerates StandardTokenizerImpl jflex src files."
+  description = "Runs jflex for StandardTokenizerImpl."
   
   source = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex")
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
