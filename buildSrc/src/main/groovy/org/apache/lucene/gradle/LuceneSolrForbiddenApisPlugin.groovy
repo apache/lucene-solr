@@ -7,35 +7,35 @@ import org.gradle.api.Project
 
 class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
 
-    @Override
-    void apply(Project project) {
-        project.pluginManager.apply(ForbiddenApisPlugin.class)
-        project.forbiddenApis {
-          failOnUnsupportedJava = false
-          suppressAnnotations = ['**.SuppressForbidden']
-        }
+  // TODO: somehow determine this from versions.props
+  static final String COMMONS_IO_VERSION = '2.5'
 
-        project.tasks.withType(CheckForbiddenApis) { task ->
-            bundledSignatures = ['jdk-unsafe', 'jdk-deprecated', 'jdk-non-portable', 'jdk-reflection']
-            signaturesURLs = [ getClass().getResource('/forbidden/base.txt') ]
-            if (task.name.endsWith('Test')) {
-              task.signaturesURLs += getClass().getResource('/forbidden/tests.txt')
-            }
-            if (project.group.matches(".*?\\.lucene(?:\\.\\w+)?")) {
-              task.signaturesURLs += getClass().getResource('/forbidden/lucene.txt')
-            } else if (project.name.equals("solrj")) {
-              signaturesURLs += getClass().getResource('/forbidden/solrj.txt')
-            } else if (project.group.matches(".*?\\.solr(?:\\.\\w+)?")) {
-              task.signaturesURLs += getClass().getResource('/forbidden/solr.txt')
-              // TODO:
-              task.signaturesURLs += getClass().getResource('/forbidden/servlet-api.txt')
-              /* something like this would also work for commons-io - does not yet fully work
-              project.configurations.compileOnly.allDependencies.matching { it.name == 'javax.servlet-api' }.all {
-                  task.signaturesURLs += getClass().getResource('/forbidden/servlet-api.txt')
-              }
-              */
-            }
-            println "group " + project.group + " name:" + project.name + " sigs: " + task.signaturesURLs
-        }
+  @Override
+  void apply(Project project) {
+    project.pluginManager.apply(ForbiddenApisPlugin.class)
+    project.forbiddenApis {
+      failOnUnsupportedJava = false
+      suppressAnnotations = ['**.SuppressForbidden']
     }
+
+    project.tasks.withType(CheckForbiddenApis) { task ->
+      task.bundledSignatures = ['jdk-unsafe', 'jdk-deprecated', 'jdk-non-portable', 'jdk-reflection']
+      task.signaturesURLs = [ getClass().getResource('/forbidden/base.txt') ]
+      if (task.name.endsWith('Test') || project.name ==~ /.*?\btest-framework/) {
+        task.signaturesURLs += getClass().getResource('/forbidden/tests.txt')
+      } else {
+        task.bundledSignatures += 'jdk-system-out'
+      }
+      if (project.group ==~ /.*?\.lucene(?:\.\w+)?/) {
+        task.signaturesURLs += getClass().getResource('/forbidden/lucene.txt')
+      } else if (project.group ==~ /.*?\.solr(?:\.\w+)?/) {
+        task.failOnUnresolvableSignatures = false;
+        task.signaturesURLs += getClass().getResource((project.name == 'solrj') ? '/forbidden/solrj.txt' : '/forbidden/solr.txt')
+        task.signaturesURLs += getClass().getResource('/forbidden/servlet-api.txt')
+        task.bundledSignatures += [ 'commons-io-unsafe-' + COMMONS_IO_VERSION ]
+      }
+      //println "forbidden config of " + task.name + " group " + project.group + " name:" + project.name + " sigs: " + task.signaturesURLs
+    }
+  }
+  
 }
