@@ -32,3 +32,7 @@ dependencies {
   
   testImplementationTran project(':lucene:lucene-test-framework')
 }
+
+forbiddenApisMain {
+  bundledSignatures -= 'jdk-system-out'
+}
