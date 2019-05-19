@@ -38,3 +38,11 @@ dependencies {
   implementationTran 'com.ibm.icu:icu4j:62.1'
 }
 
+configurations {
+  jflex
+}
+
+dependencies {
+  jflex "de.jflex:jflex:1.7.0"
+}
+
