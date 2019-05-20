@@ -71,7 +71,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.AutoScalingParams.*;
 import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.common.util.Utils.fromJSON;
 
 /**
  * Handler for /cluster/autoscaling
