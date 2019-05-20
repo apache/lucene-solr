@@ -25,6 +25,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +76,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
     }
 
-    String aliasReference = checkAliasReference(zkStateReader, extCollection);
+    List<String> aliasReferences = checkAliasReference(zkStateReader, extCollection);
 
     Aliases aliases = zkStateReader.getAliases();
     String collection = aliases.resolveSimpleAlias(extCollection);
@@ -135,9 +136,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       // wait for a while until we don't see the collection
       zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null);
 
-      // we can delete any remaining unique alias
-      if (aliasReference != null) {
-        ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasReference, null));
+      // we can delete any remaining unique aliases
+      if (!aliasReferences.isEmpty()) {
+        ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> {
+          for (String alias : aliasReferences) {
+            a = a.cloneWithCollectionAlias(alias, null);
+          }
+          return a;
+        });
       }
 
 //      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);
@@ -178,23 +184,29 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  // it's ok if a collection is referenced either by none or exactly by a single alias.
-  // This method returns the single alias to delete, if present, or null
-  private String checkAliasReference(ZkStateReader zkStateReader, String extCollection) throws Exception {
-    List<String> aliases = referencedByAlias(extCollection, zkStateReader.getAliases());
-    if (aliases.size() > 1) {
+  // This method returns the single collection aliases to delete, if present, or null
+  private List<String> checkAliasReference(ZkStateReader zkStateReader, String extCollection) throws Exception {
+    Aliases aliases = zkStateReader.getAliases();
+    List<String> aliasesRefs = referencedByAlias(extCollection, aliases);
+    List<String> aliasesToDelete = new ArrayList<>();
+    if (aliasesRefs.size() > 0) {
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
-      aliases = referencedByAlias(extCollection, zkStateReader.getAliases());
-      if (aliases.size() > 1) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Collection : " + extCollection + " is part of aliases: " + aliases + ", remove or modify the aliases before removing this collection.");
+      aliases = zkStateReader.getAliases();
+      aliasesRefs = referencedByAlias(extCollection, aliases);
+      if (aliasesRefs.size() > 0) {
+        for (String alias : aliasesRefs) {
+          // for back-compat in 8.x we don't automatically remove other
+          // aliases that point only to this collection
+          if (!extCollection.equals(alias)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Collection : " + extCollection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
+          } else {
+            aliasesToDelete.add(alias);
+          }
+        }
       }
     }
-    if (!aliases.isEmpty()) {
-      return aliases.get(0);
-    } else {
-      return null;
-    }
+    return aliasesToDelete;
   }
 
   public static List<String> referencedByAlias(String extCollection, Aliases aliases) throws IllegalArgumentException {
