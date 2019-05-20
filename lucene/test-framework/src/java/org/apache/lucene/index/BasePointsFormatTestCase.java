@@ -39,7 +39,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Rethrow;
@@ -609,10 +608,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
         } else {
           // TODO: it's cheating that we use StringHelper.compare for "truth": what if it's buggy?
-          if (FutureArrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMinValues[dim], 0, numBytesPerDim) < 0) {
+          if (Arrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMinValues[dim], 0, numBytesPerDim) < 0) {
             System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
           }
-          if (FutureArrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMaxValues[dim], 0, numBytesPerDim) > 0) {
+          if (Arrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMaxValues[dim], 0, numBytesPerDim) > 0) {
             System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
           }
         }
@@ -773,10 +772,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         byte[] leafMinValues = dimValues.getMinPackedValue();
         byte[] leafMaxValues = dimValues.getMaxPackedValue();
         for(int dim=0;dim<numIndexDims;dim++) {
-          if (FutureArrays.compareUnsigned(leafMinValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, minValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) < 0) {
+          if (Arrays.compareUnsigned(leafMinValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, minValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) < 0) {
             System.arraycopy(leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim, numBytesPerDim);
           }
-          if (FutureArrays.compareUnsigned(leafMaxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, maxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) > 0) {
+          if (Arrays.compareUnsigned(leafMaxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, maxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) > 0) {
             System.arraycopy(leafMaxValues, dim*numBytesPerDim, maxValues, dim*numBytesPerDim, numBytesPerDim);
           }
         }
@@ -806,7 +805,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           random().nextBytes(queryMin[dim]);
           queryMax[dim] = new byte[numBytesPerDim];
           random().nextBytes(queryMax[dim]);
-          if (FutureArrays.compareUnsigned(queryMin[dim], 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+          if (Arrays.compareUnsigned(queryMin[dim], 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
             byte[] x = queryMin[dim];
             queryMin[dim] = queryMax[dim];
             queryMax[dim] = x;
@@ -846,8 +845,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
                 for(int dim=0;dim<numIndexDims;dim++) {
                   //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
-                  if (FutureArrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                      FutureArrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+                  if (Arrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                      Arrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
                     //System.out.println("  no");
                     return;
                   }
@@ -862,12 +861,12 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                 boolean crosses = false;
                 //System.out.println("compare");
                 for(int dim=0;dim<numIndexDims;dim++) {
-                  if (FutureArrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                      FutureArrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+                  if (Arrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                      Arrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
                     //System.out.println("  query_outside_cell");
                     return Relation.CELL_OUTSIDE_QUERY;
-                  } else if (FutureArrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                             FutureArrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+                  } else if (Arrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                             Arrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
                     crosses = true;
                   }
                 }
@@ -888,8 +887,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           boolean matches = true;
           for(int dim=0;dim<numIndexDims;dim++) {
             byte[] x = docValues[ord][dim];
-            if (FutureArrays.compareUnsigned(x, 0, numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                FutureArrays.compareUnsigned(x, 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+            if (Arrays.compareUnsigned(x, 0, numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
+                Arrays.compareUnsigned(x, 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
               matches = false;
               break;
             }

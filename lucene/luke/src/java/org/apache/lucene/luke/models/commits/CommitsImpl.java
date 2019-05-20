@@ -200,7 +200,7 @@ public final class CommitsImpl extends LukeModel implements Commits {
     if (dir == null) {
       return Collections.emptyMap();
     }
-    return Collections.unmodifiableMap(commitMap);
+    return new TreeMap<>(commitMap);
   }
 
   private SegmentInfos findSegmentInfos(long commitGen) throws LukeException, IOException {
@@ -214,11 +214,11 @@ public final class CommitsImpl extends LukeModel implements Commits {
 
   static String toDisplaySize(long size) {
     if (size < 1024) {
-      return String.valueOf(size) + " B";
+      return size + " B";
     } else if (size < 1048576) {
-      return String.valueOf(size / 1024) + " KB";
+      return (size / 1024) + " KB";
     } else {
-      return String.valueOf(size / 1048576) + " MB";
+      return (size / 1048576) + " MB";
     }
   }
 }

@@ -160,11 +160,10 @@ public class Aliases {
   }
 
   /**
-   * Returns an unmodifiable Map of properties for a given alias. If an alias by the given name
-   * exists, this method will never return null.
+   * Returns an unmodifiable Map of properties for a given alias. This method will never return null.
    *
    * @param alias the name of an alias also found as a key in {@link #getCollectionAliasListMap()}
-   * @return The properties for the alias (possibly empty) or null if the alias does not exist.
+   * @return The properties for the alias (possibly empty).
    */
   public Map<String,String> getCollectionAliasProperties(String alias) {
     // Note: map is already unmodifiable; it can be shared safely
@@ -187,6 +186,20 @@ public class Aliases {
    */
   public boolean hasAlias(String aliasName) {
     return collectionAliases.containsKey(aliasName);
+  }
+
+  /**
+   * Returns true if an alias exists and is a routed alias, false otherwise.
+   */
+  public boolean isRoutedAlias(String aliasName) {
+    if (!collectionAliases.containsKey(aliasName)) {
+      return false;
+    }
+    Map<String, String> props = collectionAliasProperties.get(aliasName);
+    if (props == null) {
+      return false;
+    }
+    return props.entrySet().stream().anyMatch(e -> e.getKey().startsWith(CollectionAdminParams.ROUTER_PREFIX));
   }
 
   /**

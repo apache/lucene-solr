@@ -166,24 +166,21 @@
 
   <!-- Display at most this many failures as a summary at the end of junit4 run. -->
   <property name="tests.showNumFailures" value="10" />
-  
-  <!-- If we detect Java 9+, should we test the patched classes of the
-   multi-release JAR or still run with our own classes? -->
-  <property name="tests.withJava9Patches" value="true" />
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
-  <property name="javac.release" value="8"/>
+  <property name="javac.release" value="11"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
-  <property name="javac.profile.args" value="-profile compact2"/>
-  <property name="javadoc.link" value="https://docs.oracle.com/javase/8/docs/api/"/>
+  <property name="javadoc.link" value="https://docs.oracle.com/en/java/javase/11/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
-  <available file="${javadoc.packagelist.dir}/java8/package-list" property="javadoc.java8.packagelist.exists"/>
+  <available file="${javadoc.packagelist.dir}/java11/package-list" property="javadoc.java11.packagelist.exists"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" location="${common.dir}/build/docs"/>
   <property name="javadoc.maxmemory" value="512m" />
+  
+  <!-- We must have the index disabled for releases, as Java 11 includes a javascript search engine with GPL license: -->
   <property name="javadoc.noindex" value="true"/>
 
   <!---TODO: Fix accessibility (order of H1/H2/H3 headings), see https://issues.apache.org/jira/browse/LUCENE-8729 -->
@@ -267,7 +264,7 @@
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
-              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java8/**"
+              excludes="**/pom.xml,**/*.iml,**/*.jar,build/**,dist/**,benchmark/work/**,benchmark/temp/**,tools/javadoc/java11/**"
   />
 
   <!-- Default exclude sources and javadoc jars from Ivy fetch to save time and bandwidth -->
@@ -297,48 +294,12 @@
     </condition>
   </fail>
 
-  <fail message="Minimum supported Java version is 1.8.">
+  <fail message="Minimum supported Java version is 11.">
     <condition>
-      <not><hasmethod classname="java.util.Arrays" method="parallelSort"/></not>
+      <not><hasmethod classname="java.lang.String" method="repeat"/></not>
     </condition>
   </fail>
 
-  <!-- temporary for cleanup of java.specification.version, to be in format "x.y" -->
-  <loadresource property="-cleaned.specification.version">
-    <propertyresource name="java.specification.version"/>
-    <filterchain>
-      <tokenfilter>
-        <filetokenizer/>
-        <replaceregex pattern="^(\d+\.\d+)(|\..*)$" replace="\1" flags="s"/>
-      </tokenfilter>
-    </filterchain>
-  </loadresource>
-
-  <!-- 
-    the propery "ant.java.version" is not always correct, depending on used ANT version.
-    E.g. Java 8 is only detected in ANT 1.8.3+.
-    
-    We want to detect here only a limited set of versions and placed in normalized form in ${build.java.runtime},
-    every other version is normalized to "unknown":
-    - To define a target to be only run on a specific version, add <equals/> condition to one of the supplied versions.
-    - To explicitely exclude specific versions (and unknown ones), add a condition to disallow "unknown" and some versions like "1.9"/"9"!
-    - For Java 9, be sure to exclude both in custom checks: "9" and "1.9"
-    
-    TODO: Find a better solution in Ant without scripting to check supported Java versions!
-   -->
-  <condition property="build.java.runtime" value="${-cleaned.specification.version}" else="unknown">
-    <or>
-      <equals arg1="${-cleaned.specification.version}" arg2="1.8"/>
-      <equals arg1="${-cleaned.specification.version}" arg2="1.9"/>
-      <equals arg1="${-cleaned.specification.version}" arg2="9"/>
-    </or>
-  </condition>
-  
-  <!--
-  <echo message="DEBUG: Cleaned java.specification.version=${-cleaned.specification.version}"/>
-  <echo message="DEBUG: Detected runtime: ${build.java.runtime}"/>
-  -->
-  
   <condition property="documentation-lint.supported">
     <and>
       <or>
@@ -346,9 +307,9 @@
         <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
         <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
       </or>
-      <equals arg1="${build.java.runtime}" arg2="1.8"/>
+      <equals arg1="${java.specification.version}" arg2="11"/>
       <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
-      <contains string="${os.arch}" substring="64"/>
+      <!--<contains string="${os.arch}" substring="64"/>-->
     </and>
   </condition>
 
@@ -361,12 +322,12 @@
   </condition>
 
   <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
-    <fail message="Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}).">
+    <fail message="Linting documentation HTML is not supported on this Java version (JVM (${java.vm.name}).">
       <condition>
         <not><isset property="is.jenkins.build"/></not>
       </condition>
     </fail>
-    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
+    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
   <!-- Import custom ANT tasks. -->
@@ -570,48 +531,10 @@
     <!-- convenience target to compile core -->
   </target>
 
-  <!-- Special targets to patch all class files by replacing some method calls with new Java 9 methods: -->
-  <target name="-mrjar-classes-uptodate">
-    <uptodate property="mrjar-classes-uptodate" targetfile="${build.dir}/patch-mrjar.stamp">
-      <srcfiles dir= "${build.dir}/classes/java" includes="**/*.class"/>
-    </uptodate>
-  </target>
-  
-  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="patch-mrjar-classes" depends="-mrjar-classes-uptodate,ivy-availability-check,ivy-configure,resolve-groovy,compile-core"
-    unless="mrjar-classes-uptodate" description="Patches compiled class files for usage with Java 9 in MR-JAR">
-    <loadproperties prefix="ivyversions" srcFile="${common.dir}/ivy-versions.properties"/>
-    <ivy:cachepath organisation="org.ow2.asm" module="asm-commons" revision="${ivyversions./org.ow2.asm/asm-commons}"
-      inline="true" conf="default" transitive="true" log="download-only" pathid="asm.classpath"/>
-    <groovy taskname="patch-cls" classpathref="asm.classpath" src="${common.dir}/tools/src/groovy/patch-mrjar-classes.groovy"/>
-    <touch file="${build.dir}/patch-mrjar.stamp"/>
-  </target>
-  
-  <target name="-mrjar-check" depends="patch-mrjar-classes">
-    <zipfileset id="mrjar-patched-files" prefix="META-INF/versions/9" dir="${build.dir}/classes/java9" erroronmissingdir="false"/>
-    <condition property="has-mrjar-patched-files">
-      <resourcecount refid="mrjar-patched-files" when="greater" count="0" />
-    </condition>
-  </target>
-  
-  <target name="-mrjar-core" depends="-mrjar-check" if="has-mrjar-patched-files">
-    <jarify>
-      <filesets>
-        <zipfileset refid="mrjar-patched-files"/>
-      </filesets>
-      <jarify-additional-manifest-attributes>
-        <attribute name="Multi-Release" value="true"/>
-      </jarify-additional-manifest-attributes>
-    </jarify>
-  </target>
-  
-  <target name="-jar-core" depends="-mrjar-check" unless="has-mrjar-patched-files">
+  <target name="jar-core" depends="compile-core">
     <jarify/>
   </target>
-  
-  <target name="jar-core" depends="-mrjar-core,-jar-core"/>
 
-  <!-- Packaging targets: -->
-  
   <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
   <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
   <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
@@ -1022,11 +945,8 @@
           <istrue value="${tests.useSecurityManager}"/>
         </condition>
         
-        <!-- additional arguments for Java 9+ -->
-        <local name="tests.runtimespecific.args"/>
-        <condition property="tests.runtimespecific.args" value="" else="--illegal-access=deny">
-          <equals arg1="${build.java.runtime}" arg2="1.8"/>
-        </condition>
+        <!-- additional arguments -->
+        <property name="tests.runtimespecific.args" value="--illegal-access=deny"/>
 
         <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
@@ -1513,15 +1433,15 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </taskdef>
   </target>
 
-  <target name="test" depends="clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
-  <target name="beast" depends="install-ant-contrib,clover,compile-test,patch-mrjar-classes,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests"/>
+  <target name="beast" depends="install-ant-contrib,clover,compile-test,install-junit4-taskdef,validate,-init-totals,-beast,-check-totals" description="Runs unit tests in a loop (-Dbeast.iters=n)"/>
 
   <target name="test-nocompile" depends="-clover.disable,install-junit4-taskdef,-init-totals,-test,-check-totals"
           description="Only runs unit tests.  Jars are not downloaded; compilation is not updated; and Clover is not enabled."/>
 
   <target name="-jacoco-install">
     <!-- download jacoco from ivy if needed -->
-    <ivy:cachepath organisation="org.jacoco" module="org.jacoco.ant" type="jar" inline="true" revision="0.7.4.201502262128"
+    <ivy:cachepath organisation="org.jacoco" module="org.jacoco.ant" type="jar" inline="true" revision="0.8.3"
                    log="download-only" pathid="jacoco.classpath" />
 
     <!-- install jacoco ant tasks -->
@@ -1626,6 +1546,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup"/>
   
   <target name="-clover.load" depends="ivy-availability-check,ivy-configure" if="run.clover" unless="clover.loaded">
+    <fail>TODO: Code coverage with OpenClover does not yet work with Java 11 - see https://issues.apache.org/jira/browse/LUCENE-8763</fail>
     <echo>Code coverage with OpenClover enabled.</echo>
     <ivy:cachepath organisation="org.openclover" module="clover" revision="4.2.1"
       inline="true" conf="master" pathid="clover.classpath"/>
@@ -2043,10 +1964,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
-      <local name="javac.release.args"/>
-      <condition property="javac.release.args" value="-source @{javac.release} -target @{javac.release}" else="--release @{javac.release}">
-        <equals arg1="${build.java.runtime}" arg2="1.8"/>
-      </condition>
       <mkdir dir="@{destdir}"/>
       <javac
         includeAntRuntime="@{includeantruntime}"
@@ -2059,8 +1976,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <compilerarg line="${javac.args}"/>
-        <compilerarg line="${javac.profile.args}"/>
-        <compilerarg line="${javac.release.args}"/>
+        <compilerarg line="--release @{javac.release}"/>
         <compilerarg line="${javac.doclint.args}"/>
       </javac>
     </sequential>
@@ -2069,7 +1985,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- ECJ Javadoc linting: -->
   
   <condition property="ecj-javadoc-lint.supported">
-    <equals arg1="${build.java.runtime}" arg2="1.8"/>
+    <equals arg1="${java.specification.version}" arg2="11"/>
   </condition>
 
   <condition property="ecj-javadoc-lint-tests.supported">
@@ -2080,12 +1996,12 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </condition>
 
   <target name="-ecj-javadoc-lint-unsupported" unless="ecj-javadoc-lint.supported">
-    <fail message="Linting documentation with ECJ is not supported on this Java version (${build.java.runtime}).">
+    <fail message="Linting documentation with ECJ is not supported on this Java version (${java.specification.version}).">
       <condition>
         <not><isset property="is.jenkins.build"/></not>
       </condition>
     </fail>
-    <echo level="warning" message="WARN: Linting documentation with ECJ is not supported on this Java version (${build.java.runtime}). NOTHING DONE!"/>
+    <echo level="warning" message="WARN: Linting documentation with ECJ is not supported on this Java version (${java.specification.version}). NOTHING DONE!"/>
   </target>
 
   <target name="-ecj-javadoc-lint" depends="-ecj-javadoc-lint-unsupported,-ecj-javadoc-lint-src,-ecj-javadoc-lint-tests"/>
@@ -2103,7 +2019,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
   
   <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure" if="ecj-javadoc-lint.supported">
-    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="4.6.1"
+    <ivy:cachepath organisation="org.eclipse.jdt" module="ecj" revision="3.17.0"
      inline="true" conf="master" type="jar" pathid="ecj.classpath" />
     <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
      classpathref="ecj.classpath" name="ecj-component"/>
@@ -2150,6 +2066,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <macrodef name="jtidy-macro">
     <element name="nested" implicit="yes" optional="yes"/>
     <sequential>
+      <!--
+      TODO: find a better replacement for jTIDY that can handle HTML5
       <ivy:cachepath organisation="net.sf.jtidy" module="jtidy" revision="r938"
           log="download-only" inline="true" conf="master" type="jar" pathid="jtidy.classpath" />
       <taskdef name="tidy" classname="org.w3c.tidy.ant.JTidyTask" classpathref="jtidy.classpath"/>
@@ -2162,6 +2080,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
          <parameter name="show-warnings" value="false" />
       </tidy>
       <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
+      -->
+      <echo message="FIXME: Broken HTML checks were disabled, as jtidy can't handle HTML5." taskname="jtidy"/>
     </sequential>
   </macrodef>
 
@@ -2173,11 +2093,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="overview" default="${src.dir}/overview.html"/>
     <attribute name="linksource" default="no"/>
     <sequential>
-      <local name="javadoc.release.args"/>
-      <condition property="javadoc.release.args" value="-source ${javac.release}" else="--release ${javac.release}">
-        <equals arg1="${build.java.runtime}" arg2="1.8"/>
-      </condition>
-      <antcall target="download-java8-javadoc-packagelist"/>
+      <antcall target="download-java11-javadoc-packagelist"/>
       <delete file="@{destdir}/stylesheet.css" failonerror="false"/>
       <delete file="@{destdir}/script.js" failonerror="false"/>
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
@@ -2205,7 +2121,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <tag name="lucene.internal"
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
         <link offline="true" packagelistLoc="${javadoc.dir}"/>
-        <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java8"/>
+        <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java11"/>
         <bottom><![CDATA[
           <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
         ]]></bottom>
@@ -2213,8 +2129,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <sources />
                 
         <classpath refid="javadoc.classpath"/>
-        <arg line="${javadoc.release.args}"/>
+        <arg line="--no-module-directories --release ${javac.release}"/>
         <arg line="${javadoc.doclint.args}"/>
+        <!-- force locale to be "en_US", as Javadoc tool ignores locale parameter (in some cases) -->
+        <arg line="-J-Duser.language=en -J-Duser.country=US"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       
@@ -2229,16 +2147,9 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
       <delete>
         <fileset file="@{destdir}/log_javadoc.txt">
-          <or>
-            <not>
-              <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*\s*warning"/>
-            </not>
-            <and>
-              <!-- allow 1 warning, if there is also a bootstrap warning generated by Java7 -->
-              <containsregexp expression="\[javadoc\]\s*warning.*bootstrap"/>
-              <containsregexp expression="\[javadoc\]\s*1\s*warning"/>
-            </and>
-          </or>
+          <not>
+            <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*\s*warning"/>
+          </not>
         </fileset>
       </delete>
 
@@ -2273,10 +2184,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </sequential>
   </macrodef>
 
-  <target name="download-java8-javadoc-packagelist" unless="javadoc.java8.packagelist.exists">
-    <mkdir dir="${javadoc.packagelist.dir}/java8"/>
-    <get src="${javadoc.link}/package-list"
-         dest="${javadoc.packagelist.dir}/java8/package-list" ignoreerrors="true"/>
+  <target name="download-java11-javadoc-packagelist" unless="javadoc.java11.packagelist.exists">
+    <mkdir dir="${javadoc.packagelist.dir}/java11"/>
+    <get src="${javadoc.link}/element-list"
+         dest="${javadoc.packagelist.dir}/java11/package-list" ignoreerrors="true"/>
   </target>
 
   <!-- VALIDATION work -->
@@ -2397,7 +2308,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.15"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.16"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2474,8 +2385,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
 
   <target name="resolve-markdown" unless="markdown.loaded" depends="resolve-groovy">
-    <property name="flexmark.version" value="0.16.1"/>
-    <ivy:cachepath transitive="true" pathid="markdown.classpath">
+    <property name="flexmark.version" value="0.42.6"/>
+    <ivy:cachepath transitive="true" resolveId="flexmark" pathid="markdown.classpath">
       <ivy:dependency org="com.vladsch.flexmark" name="flexmark" rev="${flexmark.version}" conf="default" />
       <ivy:dependency org="com.vladsch.flexmark" name="flexmark-ext-autolink" rev="${flexmark.version}" conf="default" />
       <ivy:dependency org="com.vladsch.flexmark" name="flexmark-ext-abbreviation" rev="${flexmark.version}" conf="default" />

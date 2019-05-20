@@ -41,7 +41,7 @@ public class AnalysisImplTest extends LuceneTestCase {
     Collection<Class<? extends Analyzer>> analyerTypes = analysis.getPresetAnalyzerTypes();
     assertNotNull(analyerTypes);
     for (Class<? extends Analyzer> clazz : analyerTypes) {
-      clazz.newInstance();
+      clazz.getConstructor().newInstance();
     }
   }
 

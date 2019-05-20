@@ -215,6 +215,7 @@ public class ZkController implements Closeable {
   private String baseURL;            // example: http://127.0.0.1:54065/solr
 
   private final CloudConfig cloudConfig;
+  private final NodesSysPropsCacher sysPropsCacher;
 
   private LeaderElector overseerElector;
 
@@ -462,6 +463,8 @@ public class ZkController implements Closeable {
     this.overseerJobQueue = overseer.getStateUpdateQueue();
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
+    this.sysPropsCacher = new NodesSysPropsCacher(getSolrCloudManager().getNodeStateProvider(),
+        getNodeName(), zkStateReader);
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -523,6 +526,10 @@ public class ZkController implements Closeable {
         }
       }
     }
+  }
+
+  public NodesSysPropsCacher getSysPropsCacher() {
+    return sysPropsCacher;
   }
 
   private void closeOutstandingElections(final CurrentCoreDescriptorProvider registerOnReconnect) {
@@ -614,6 +621,7 @@ public class ZkController implements Closeable {
 
     } finally {
 
+      sysPropsCacher.close();
       customThreadPool.submit(() -> Collections.singleton(cloudSolrClient).parallelStream().forEach(IOUtils::closeQuietly));
       customThreadPool.submit(() -> Collections.singleton(cloudManager).parallelStream().forEach(IOUtils::closeQuietly));
 
@@ -2138,13 +2146,9 @@ public class ZkController implements Closeable {
   public void rejoinOverseerElection(String electionNode, boolean joinAtHead) {
     try {
       if (electionNode != null) {
-        //this call is from inside the JVM  . not from CoreAdminHandler
-        if (overseerElector.getContext() == null || overseerElector.getContext().leaderSeqPath == null) {
-          overseerElector.retryElection(new OverseerElectionContext(zkClient,
-              overseer, getNodeName()), joinAtHead);
-          return;
-        }
-        if (!overseerElector.getContext().leaderSeqPath.endsWith(electionNode)) {
+        // Check whether we came to this node by mistake
+        if ( overseerElector.getContext() != null && overseerElector.getContext().leaderSeqPath == null 
+            && !overseerElector.getContext().leaderSeqPath.endsWith(electionNode)) {
           log.warn("Asked to rejoin with wrong election node : {}, current node is {}", electionNode, overseerElector.getContext().leaderSeqPath);
           //however delete it . This is possible when the last attempt at deleting the election node failed.
           if (electionNode.startsWith(getNodeName())) {
@@ -2158,6 +2162,10 @@ public class ZkController implements Closeable {
               log.warn("Old election node exists , could not be removed ", e);
             }
           }
+        } else { // We're in the right place, now attempt to rejoin
+          overseerElector.retryElection(new OverseerElectionContext(zkClient,
+              overseer, getNodeName()), joinAtHead);
+          return;
         }
       } else {
         overseerElector.retryElection(overseerElector.getContext(), joinAtHead);

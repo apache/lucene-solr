@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.models.analysis;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,7 +56,7 @@ public interface Analysis {
      * Returns attributes of this token.
      */
     public List<TokenAttribute> getAttributes() {
-      return Collections.unmodifiableList(attributes);
+      return List.copyOf(attributes);
     }
   }
 
@@ -84,7 +83,7 @@ public interface Analysis {
      * Returns value of this attribute.
      */
     public Map<String, String> getAttValues() {
-      return Collections.unmodifiableMap(attValues);
+      return Map.copyOf(attValues);
     }
   }
 

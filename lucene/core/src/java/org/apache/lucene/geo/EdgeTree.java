@@ -119,7 +119,7 @@ class EdgeTree {
     return crossesTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy);
   }
 
-  private boolean crossesTriangle( double minLat, double maxLat, double minLon, double maxLon, double ax, double ay, double bx, double by, double cx, double cy) {
+  private boolean crossesTriangle(double minLat, double maxLat, double minLon, double maxLon, double ax, double ay, double bx, double by, double cx, double cy) {
     if (minLat <= max) {
       double dy = lat1;
       double ey = lat2;

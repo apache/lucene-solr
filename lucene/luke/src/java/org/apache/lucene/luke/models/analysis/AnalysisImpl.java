@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -92,7 +91,7 @@ public final class AnalysisImpl implements Analysis {
         } catch (NoSuchMethodException e) {
         }
       }
-      presetAnalyzerTypes = Collections.unmodifiableList(types);
+      presetAnalyzerTypes = List.copyOf(types);
     }
     return presetAnalyzerTypes;
   }
@@ -169,7 +168,7 @@ public final class AnalysisImpl implements Analysis {
 
     try {
       Class<? extends Analyzer> clazz = Class.forName(analyzerType).asSubclass(Analyzer.class);
-      this.analyzer = clazz.newInstance();
+      this.analyzer = clazz.getConstructor().newInstance();
       return analyzer;
     } catch (ReflectiveOperationException e) {
       throw new LukeException(String.format(Locale.ENGLISH, "Failed to instantiate class: %s", analyzerType), e);

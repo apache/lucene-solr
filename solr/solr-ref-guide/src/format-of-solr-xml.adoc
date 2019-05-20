@@ -28,6 +28,8 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) i
 ----
 <solr>
 
+  <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
+  
   <solrcloud>
     <str name="host">${host:}</str>
     <int name="hostPort">${jetty.port:8983}</int>
@@ -92,6 +94,18 @@ Defines how many cores with `transient=true` that can be loaded before swapping 
 `configSetBaseDir`::
 The directory under which configSets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
 
+[[global-maxbooleanclauses]]
+`maxBooleanClauses`::
+Sets the maximum number of clauses allowed in any boolean query.
++
+This global limit provides a safety constraint on the number of clauses allowed in any boolean queries against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
++
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the default configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
++
+[source,xml]
+----
+<maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
+----
 
 === The <solrcloud> Element
 

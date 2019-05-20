@@ -23,11 +23,11 @@ package org.apache.lucene.util.automaton;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Sorter;
@@ -115,7 +115,7 @@ public class Automaton implements Accountable {
 
   /** Set or clear this state as an accept state. */
   public void setAccept(int state, boolean accept) {
-    FutureObjects.checkIndex(state, getNumStates());
+    Objects.checkIndex(state, getNumStates());
     isAccept.set(state, accept);
   }
 
@@ -157,8 +157,8 @@ public class Automaton implements Accountable {
     assert nextTransition%3 == 0;
 
     int bounds = nextState/2;
-    FutureObjects.checkIndex(source, bounds);
-    FutureObjects.checkIndex(dest, bounds);
+    Objects.checkIndex(source, bounds);
+    Objects.checkIndex(dest, bounds);
 
     growTransitions();
     if (curState != source) {
@@ -834,7 +834,7 @@ public class Automaton implements Accountable {
 
     /** Set or clear this state as an accept state. */
     public void setAccept(int state, boolean accept) {
-      FutureObjects.checkIndex(state, getNumStates());      
+      Objects.checkIndex(state, getNumStates());      
       this.isAccept.set(state, accept);
     }
 

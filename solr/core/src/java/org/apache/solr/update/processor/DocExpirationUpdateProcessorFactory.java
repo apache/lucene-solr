@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -384,6 +385,7 @@ public final class DocExpirationUpdateProcessorFactory
         (factory.core, Collections.<String,String[]>emptyMap());
       try {
         final SolrQueryResponse rsp = new SolrQueryResponse();
+        rsp.addResponseHeader(new SimpleOrderedMap<>(1));
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
         try {
           

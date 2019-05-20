@@ -274,8 +274,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       // The 4th element in the queue will end with a "3".
       return child.endsWith("3");
     }).size());
-    assertTrue(System.nanoTime() - start < TimeUnit.MILLISECONDS.toNanos(1000));
-    assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(250));
+    long timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+    assertTrue("Time was " + timeTaken + "ms, expected 250-1500ms", timeTaken > 250 && timeTaken < 1500);
   }
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {

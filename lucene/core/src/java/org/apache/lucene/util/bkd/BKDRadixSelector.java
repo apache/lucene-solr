@@ -21,7 +21,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IntroSelector;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.MSBRadixSorter;
@@ -158,12 +157,12 @@ public final class BKDRadixSelector {
           final int startIndex = (dimCommonPrefix > bytesPerDim) ? bytesPerDim : dimCommonPrefix;
           final int endIndex = (commonPrefixPosition > bytesPerDim) ? bytesPerDim : commonPrefixPosition;
           packedValue = pointValue.packedValue();
-          int j = FutureArrays.mismatch(scratch, startIndex, endIndex, packedValue.bytes, packedValue.offset + offset + startIndex, packedValue.offset + offset + endIndex);
+          int j = Arrays.mismatch(scratch, startIndex, endIndex, packedValue.bytes, packedValue.offset + offset + startIndex, packedValue.offset + offset + endIndex);
           if (j == -1) {
             if (commonPrefixPosition > bytesPerDim) {
               //tie-break on docID
               docIDBytes = pointValue.docIDBytes();
-              int k = FutureArrays.mismatch(scratch, bytesPerDim, commonPrefixPosition, docIDBytes.bytes, docIDBytes.offset, docIDBytes.offset + commonPrefixPosition - bytesPerDim);
+              int k = Arrays.mismatch(scratch, bytesPerDim, commonPrefixPosition, docIDBytes.bytes, docIDBytes.offset, docIDBytes.offset + commonPrefixPosition - bytesPerDim);
               if (k != -1) {
                 commonPrefixPosition = bytesPerDim + k;
                 Arrays.fill(histogram, 0);
@@ -360,7 +359,7 @@ public final class BKDRadixSelector {
             if (skypedBytes < bytesPerDim) {
               int iOffset = i * packedBytesLength;
               int jOffset = j * packedBytesLength;
-              int cmp = FutureArrays.compareUnsigned(points.block, iOffset + start, iOffset + end,
+              int cmp = Arrays.compareUnsigned(points.block, iOffset + start, iOffset + end,
                   points.block, jOffset + start, jOffset + end);
               if (cmp != 0) {
                 return cmp;
@@ -373,7 +372,7 @@ public final class BKDRadixSelector {
           protected int comparePivot(int j) {
             if (skypedBytes < bytesPerDim) {
               int jOffset = j * packedBytesLength;
-              int cmp = FutureArrays.compareUnsigned(scratch, skypedBytes, bytesPerDim,
+              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, bytesPerDim,
                   points.block, jOffset + start, jOffset + end);
               if (cmp != 0) {
                 return cmp;
@@ -443,7 +442,7 @@ public final class BKDRadixSelector {
             if (skypedBytes < bytesPerDim) {
               int iOffset = i * packedBytesLength;
               int jOffset = j * packedBytesLength;
-              int cmp = FutureArrays.compareUnsigned(points.block, iOffset + start, iOffset + end,
+              int cmp = Arrays.compareUnsigned(points.block, iOffset + start, iOffset + end,
                   points.block, jOffset + start, jOffset + end);
               if (cmp != 0) {
                 return cmp;
@@ -456,7 +455,7 @@ public final class BKDRadixSelector {
           protected int comparePivot(int j) {
             if (skypedBytes < bytesPerDim) {
               int jOffset = j * packedBytesLength;
-              int cmp = FutureArrays.compareUnsigned(scratch, skypedBytes, bytesPerDim,
+              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, bytesPerDim,
                   points.block, jOffset + start, jOffset + end);
               if (cmp != 0) {
                 return cmp;

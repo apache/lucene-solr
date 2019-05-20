@@ -124,19 +124,18 @@ If you want auto-warming of your cache, include a `regenerator` attribute with t
 
 === maxBooleanClauses
 
-This sets the maximum number of clauses allowed in a boolean query. This can affect range or prefix queries that expand to a query with a large number of boolean terms. If this limit is exceeded, an exception is thrown.
+Sets the maximum number of clauses allowed when parsing a boolean query string.
 
-In default configurations this property uses the value of the `solr.max.booleanClauses` system property where present.  This provides an easy way for users to change this value in all collections without needing to search through and update all of their configs.
+This limit only impacts boolean queries specified by a user as part of a query string, and provides per-collection controls on how complex user specified boolean queries can be.  Query strings that specify more clauses than this will result in an error.
+
+If this per-collection limit is greater than <<format-of-solr-xml#global-maxbooleanclauses,the global `maxBooleanClauses` limit specified in `solr.xml`>> it will have no effect, as that setting also limits the size of user specified boolean queries.
+
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the <<format-of-solr-xml#global-maxbooleanclauses,global `maxBooleanClauses` setting in the default `solr.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
 
 [source,xml]
 ----
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
-
-[WARNING]
-====
-This option modifies a global property that effects all Solr cores. If multiple `solrconfig.xml` files disagree on this property, the value at any point in time will be based on the last Solr core that was initialized.
-====
 
 === enableLazyFieldLoading
 

@@ -101,8 +101,8 @@ public final class Polygon2D implements Component {
         return Relation.CELL_OUTSIDE_QUERY;
       }
     }
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      // shortcut by checking contains
+    if (ax == bx && bx == cx && ay == by && by == cy)  {
+      // indexed "triangle" is a point: shortcut by checking contains
       return contains(ay, ax) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
     } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
       // indexed "triangle" is a line segment: shortcut by calling appropriate method

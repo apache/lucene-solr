@@ -788,11 +788,17 @@ public class ZkTestServer {
 
   public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
       throws Exception {
-    putConfig(confName, zkClient, solrhome, name, name);
+    putConfig(confName, zkClient, null, solrhome, name, name);
   }
 
-  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName, String destName)
-      throws Exception {
+
+  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName,
+                                 String destName) throws Exception {
+      putConfig(confName, zkClient, null, solrhome, srcName, destName);
+  }
+
+  public static void putConfig(String confName, SolrZkClient zkClient, String zkChroot, File solrhome,
+                               final String srcName, String destName) throws Exception {
     File file = new File(solrhome, "collection1"
         + File.separator + "conf" + File.separator + srcName);
     if (!file.exists()) {
@@ -801,6 +807,9 @@ public class ZkTestServer {
     }
 
     String destPath = "/configs/" + confName + "/" + destName;
+    if (zkChroot != null) {
+      destPath = zkChroot + destPath;
+    }
     log.info("put " + file.getAbsolutePath() + " to " + destPath);
     zkClient.makePath(destPath, file, false, true);
   }

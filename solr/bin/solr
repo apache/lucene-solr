@@ -706,7 +706,7 @@ function run_tool() {
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
-    -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*" \
+    -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.util.SolrCLI "$@"
 
   return $?
@@ -2018,20 +2018,12 @@ function start_solr() {
 
   # define default GC_TUNE
   if [ -z ${GC_TUNE+x} ]; then
-      GC_TUNE=('-XX:NewRatio=3' \
-        '-XX:SurvivorRatio=4' \
-        '-XX:TargetSurvivorRatio=90' \
-        '-XX:MaxTenuringThreshold=8' \
-        '-XX:+UseConcMarkSweepGC' \
-        '-XX:ConcGCThreads=4' '-XX:ParallelGCThreads=4' \
-        '-XX:+CMSScavengeBeforeRemark' \
-        '-XX:PretenureSizeThreshold=64m' \
-        '-XX:+UseCMSInitiatingOccupancyOnly' \
-        '-XX:CMSInitiatingOccupancyFraction=50' \
-        '-XX:CMSMaxAbortablePrecleanTime=6000' \
-        '-XX:+CMSParallelRemarkEnabled' \
+      GC_TUNE=('-XX:+UseG1GC' \
+        '-XX:+PerfDisableSharedMem' \
         '-XX:+ParallelRefProcEnabled' \
-        '-XX:-OmitStackTraceInFastThrow')
+        '-XX:MaxGCPauseMillis=250' \
+        '-XX:+UseLargePages' \
+        '-XX:+AlwaysPreTouch')
   else
     GC_TUNE=($GC_TUNE)
   fi

@@ -305,9 +305,52 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals( 1, rsp.getResults().getNumFound() );
 
   }
- 
+  @Test
+  public void testFailOnVersionConflicts() throws Exception {
+    SolrClient client = getSolrClient();
 
- /**
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+
+    client.request(new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v1"));
+    client.commit();
+
+    QueryResponse rsp = null;
+    assertResponseValues(client.query(new SolrQuery("id:id1")), "response[0]/name", "doc1.v1");
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v1"
+    );
+
+    client.request(
+        new UpdateRequest()
+            .add("id", "id1", "name", "doc1.v2")
+            .add("id", "id2", "name", "doc2.v1"));
+    client.commit();
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2",
+        "response[1]/name", "doc2.v1"
+    );
+
+    UpdateRequest add = new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v3")
+        .add("id", "id3", "name", "doc3.v1");
+    add.setParam(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    add.setParam(CommonParams.VERSION_FIELD, "-1");
+    client.request(add);
+    client.commit();
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2" ,
+        "response[1]/name", "doc2.v1" ,
+        "response[2]/name", "doc3.v1");
+
+  }
+
+
+  /**
   * Get empty results
   */
   @Test

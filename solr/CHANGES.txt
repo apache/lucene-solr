@@ -11,7 +11,7 @@ See http://lucene.apache.org/solr for more information.
 
 Getting Started
 ---------------
-You need a Java 1.8 VM or later installed.
+You need a Java 11 VM or later installed.
 In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Solr tutorial at https://lucene.apache.org/solr/guide/solr-tutorial.html
@@ -31,9 +31,12 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
+* LUCENE-8738: Move to Java 11 as minimum Java version.
+  (Adrien Grand, Uwe Schindler)
+
 * SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
-  see commeints in the log4j2 configuration files (log4j2.xml by default).
+  see comments in the log4j2 configuration files (log4j2.xml by default).
 
 * SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming
   expressions) Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming
@@ -54,6 +57,52 @@ New Features
   values of a field. The Ref Guide now has a page dedicated to explaining the different types of aliases. (Gus Heck,
   Moshe Bla)
 
+==================  8.2.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+
+New Features
+----------------------
+
+* SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
+
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
+
+* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
+
+* SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
+
+* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
+
+* SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
+  information about the replicas of a collection (Erick Erickson)
+  
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
+
+* SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
+  unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
+
+Other Changes
+----------------------
+
+* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
+
+* SOLR-13437: noggit json parser is forked into solrj (noble)
+
+* SOLR-13467: Include the S2 Geometry lib to make it simpler to use prefixTree="s2" on a Geo3D spatial field.
+  Improved documentation on Geo3D too.  (David Smiley)
+
 ==================  8.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -68,6 +117,14 @@ Jetty 9.4.14.v20181114
 
 Upgrade Notes
 ----------------------
+
+* Solr's default behavior when dealing with 'maxBooleanClauses' has changed to reduce the risk of exponential
+  query expansion when dealing with pathological query strings.  A default upper limit of 1024 clauses
+  (The same default prior to Solr 7.0) is now enforced at the node level, and can be overridden in solr.xml.
+  The identically named solrconfig.xml setting is still available for limiting the size of 'explicit' boolean
+  query strings, but this per-collection limit is still ristricted by the upper-bound of the global limit
+  in solr.xml.  See SOLR-13336 for more details.
+
 * When requesting the status of an async request via REQUESTSTATUS collections API, the response will
   include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
   to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
@@ -77,6 +134,21 @@ Upgrade Notes
   Please see https://velocity.apache.org/engine/2.0/upgrading.html about upgrading. Velocity Tools upgraded from 2.0 to
   3.0. For more details, please see https://velocity.apache.org/tools/3.0/upgrading.html for details about the upgrade.
 
+* SOLR-13407: Update requests sent to non-routed aliases that point to multiple collections are no longer accepted. Until
+  now Solr followed an obscure convention of updating only the first collection from the list, which usually was not what
+  the user intended. This change explicitly rejects such update requests.
+
+* SolrGangliaReporter has been removed from Solr because support for Ganglia has been removed from Dropwizard Metrics 4
+  due to a transitive dependency on LGPL.
+
+* Custom TransientSolrCoreCache implementations no longer use the Observer/Observable pattern. To notify Solr that
+  a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore). See SOLR-13400 for details.
+
+* SOLR-13394: The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any
+  other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
+
+* SOLR-5970: Until now, the CREATE command of Collections API returned status 0 even in case of failure. Now, the status
+  code will be non-zero in case of failures (e.g. 4xx, 5xx).
 
 New Features
 ----------------------
@@ -113,6 +185,10 @@ New Features
   with RealTimeGet.  (Moshe Bla, David Smiley)
 
 * SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
+
+* SOLR-13391: Add variance and standard deviation stream evaluators (Nazerke Seidan, Joel Bernstein)
+
+* SOLR-13427: Support simulating the execution of autoscaling suggestions. (ab)
 
 Bug Fixes
 ----------------------
@@ -172,7 +248,46 @@ Bug Fixes
 
 * SOLR-13388: Fix FileExchangeRateProvider to be a public class, as it appears in schema.xml (Uwe Schindler)
 
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
 * SOLR-13339: Prevent recovery, fetching index being kicked off after SolrCores already closed (Cao Manh Dat)
+
+* SOLR-13393: Fixed ZkClientClusterStateProvider to prevent risk of leaking ZkStateReader/threads when
+  processing concurrent requests during shutdown.  This primarily affected tests, but may have also caused
+  odd errors/delays when restart/shutting down solr nodes.  (hossman)
+
+* SOLR-13336: add maxBooleanClauses (default to 1024) setting to solr.xml, reverting previous effective
+  value of Integer.MAX_VALUE-1, to restrict risk of pathalogical query expansion.  (hossman)
+
+* SOLR-13386: OverseerTaskQueue#remove should not throw an exception when no node exists after an exists
+  check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
+  (Mark Miller, Fernandez-Lobbe, Mike Drob)
+
+* SOLR-12371: Editing authorization config via REST API now works in standalone mode (janhoy)
+
+* SOLR-13408: Cannot start/stop DaemonStream repeatedly, other API improvements (Erick Erickson)
+
+* SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
+
+* SOLR-13081: In-Place Update doesn't work with route.field (Dr Oleg Savrasov via Mikhail Khludnev)
+
+* SOLR-13343: Fix spacing issue in browser log (Marcus Eagan via Jason Gerlowski)
+
+* SOLR-12248, SOLR-4647: Grouping is broken on docValues-only fields (non-stored, non-indexed)
+  (Erick Ericsson, Adrien Grand, Munendra S N, Scott Stults, Ishan Chattopadhyaya)
+
+* SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
+  Jason Gerlowski, Kesharee Nandan Vishwakarma)
+
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
+  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,
+  Kesharee Nandan Vishwakarma)
+
+* SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
+
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
 
 Improvements
 ----------------------
@@ -187,6 +302,31 @@ Improvements
 * SOLR-11473: Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) (Kevin Risden)
 
 * SOLR-13359: Make UpdateHandler support other prefixes (besides hdfs:/) (Kevin Risden)
+
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
+
+* SOLR-13407: Reject update requests sent to non-routed multi collection aliases. (ab)
+
+* SOLR-11035: (at least) 2 distinct failures possible when clients attempt searches during SolrCore reload,
+  added test band-aid for DocValuesNotIndexedTest.
+
+* SOLR-13337: Only request the minimum required number of terms from each shard when using terms.sort=index and none
+  are discarded due to terms.min/maxcount (Morten Bøgeskov,Munendra S N via Mikhail Khludnev)
+
+* SOLR-12167: Throw an exception, instead of just a warning, when unknown atomic update operation is
+  encountered (Munendra S N via Ishan Chattopadhyaya)
+
+* SOLR-13394: Switch default GC from CMS to G1 (Ishan Chattopadhyaya, Kesharee Nandan Vishwakarma, Shawn Heisey,
+  Uwe Schindler, Erick Ericsson, shalin)
+
+* SOLR-13432: Add .toString methods to BitDocSet and SortedIntDocSet so that enabling "showItems" on the filter caches
+  shows some useful information about the values in the cache. (shalin)
+
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used.
+  (jefferyyuan, ab)
+
+* SOLR-13348: Speed up collapsing by avoiding scoring of ineligible documents (Andrzej Wislowski via
+  Ishan Chattopadhyaya)
 
 Other Changes
 ----------------------
@@ -235,6 +375,20 @@ Other Changes
 * SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
 
 * SOLR-12809: Document recommended Java/Solr combinations (Erick Erickson, Jan Høydahl et.al.)
+
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
+
+* SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
+
+* SOLR-12461: Upgrade Dropwizard Metrics to 4.0.5 release. (ab)
+
+* SOLR-13400: Replace Observable pattern in TransientSolrCoreCache (Erick Erickson)
+
+* SOLR-13425: Ref-Guide: Wrong color of text in left column of horizontal definition list (janhoy)
+
+* SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
+
+* SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
 
 ==================  8.0.0 ==================
 

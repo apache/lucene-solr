@@ -34,8 +34,10 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -46,6 +48,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
@@ -267,6 +270,46 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.process(cluster.getSolrClient());
 
 
+  }
+
+  @Test
+  public void testClusterStateProviderAPI() throws Exception {
+    final String aliasName = getSaferTestName();
+    ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
+    CollectionAdminRequest.SetAliasProperty setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    setAliasProperty.addProperty("foo","baz");
+    setAliasProperty.addProperty("bar","bam");
+    setAliasProperty.process(cluster.getSolrClient());
+    checkFooAndBarMeta(aliasName, zkStateReader);
+    SolrCloudManager cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    // make sure we have the latest version in cache
+    zkStateReader.aliasesManager.update();
+    ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
+    List<String> collections = stateProvider.resolveAlias(aliasName);
+    assertEquals(collections.toString(), 2, collections.size());
+    assertTrue(collections.toString(), collections.contains("collection1meta"));
+    assertTrue(collections.toString(), collections.contains("collection2meta"));
+    Map<String, String> props = stateProvider.getAliasProperties(aliasName);
+    assertEquals(props.toString(), 2, props.size());
+    assertEquals(props.toString(), "baz", props.get("foo"));
+    assertEquals(props.toString(), "bam", props.get("bar"));
+
+    assertFalse("should not be a routed alias", stateProvider.isRoutedAlias(aliasName));
+    // now make it a routed alias, according to the criteria in the API
+    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    setAliasProperty.addProperty(CollectionAdminParams.ROUTER_PREFIX + "foo","baz");
+    setAliasProperty.process(cluster.getSolrClient());
+    // refresh
+    zkStateReader.aliasesManager.update();
+    stateProvider = cloudManager.getClusterStateProvider();
+    assertTrue("should be a routed alias", stateProvider.isRoutedAlias(aliasName));
+
+    try {
+      String resolved = stateProvider.resolveSimpleAlias(aliasName);
+      fail("this is not a simple alias but it resolved to " + resolved);
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
   }
 
   private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
@@ -555,11 +598,16 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     searchSeveralWays("testalias6", new SolrQuery("*:*"), 6);
 
-    // add one document to testalias6, which will route to collection2 because it's the first
-    new UpdateRequest()
-        .add("id", "12", "a_t", "humpty dumpy5 sat on a walls")
-        .commit(cluster.getSolrClient(), "testalias6"); // thus gets added to collection2
-    searchSeveralWays("collection2", new SolrQuery("*:*"), 4);
+    // add one document to testalias6. this should fail because it's a multi-collection non-routed alias
+    try {
+      new UpdateRequest()
+          .add("id", "12", "a_t", "humpty dumpy5 sat on a walls")
+          .commit(cluster.getSolrClient(), "testalias6");
+      fail("Update to a multi-collection non-routed alias should fail");
+    } catch (SolrException e) {
+      // expected
+      assertEquals(e.toString(), SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    }
 
     ///////////////
     for (int i = 1; i <= 6 ; i++) {

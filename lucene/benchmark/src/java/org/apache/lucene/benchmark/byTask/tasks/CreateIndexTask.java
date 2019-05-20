@@ -80,7 +80,7 @@ public class CreateIndexTask extends PerfTask {
       return NoDeletionPolicy.INSTANCE;
     } else {
       try {
-        return Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).newInstance();
+        return Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).getConstructor().newInstance();
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy", e);
       }
@@ -96,7 +96,6 @@ public class CreateIndexTask extends PerfTask {
   }
   
   public static IndexWriterConfig createWriterConfig(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) {
-    @SuppressWarnings("deprecation")
     IndexWriterConfig iwConf = new IndexWriterConfig(runData.getAnalyzer());
     iwConf.setOpenMode(mode);
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
@@ -112,7 +111,7 @@ public class CreateIndexTask extends PerfTask {
       iwConf.setMergeScheduler(NoMergeScheduler.INSTANCE);
     } else {
       try {
-        iwConf.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
+        iwConf.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).getConstructor().newInstance());
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
       }
@@ -129,7 +128,7 @@ public class CreateIndexTask extends PerfTask {
     if (defaultCodec != null) {
       try {
         Class<? extends Codec> clazz = Class.forName(defaultCodec).asSubclass(Codec.class);
-        iwConf.setCodec(clazz.newInstance());
+        iwConf.setCodec(clazz.getConstructor().newInstance());
       } catch (Exception e) {
         throw new RuntimeException("Couldn't instantiate Codec: " + defaultCodec, e);
       }
@@ -158,7 +157,7 @@ public class CreateIndexTask extends PerfTask {
       iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
     } else {
       try {
-        iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
+        iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).getConstructor().newInstance());
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
       }

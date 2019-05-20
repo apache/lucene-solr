@@ -543,7 +543,7 @@
   </target>
 
   <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
-  <target name="jar-core" depends="resolve-groovy,check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
+  <target name="jar-core" depends="check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
     <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>

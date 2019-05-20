@@ -134,7 +134,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
     assertEquals(1, values.size());
-    assertEquals(11, ((NamedList)values.get("solr.node")).size());
+    assertEquals(13, ((NamedList)values.get("solr.node")).size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList) values.get("solr.node");
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
