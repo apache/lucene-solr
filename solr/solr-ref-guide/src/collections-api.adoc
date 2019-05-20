@@ -121,8 +121,8 @@ The name of the collection with which all replicas of this collection must be co
 See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
 `alias`::
-Starting with version 8.1 when a collection is created additionally an alias (by default with the same name) is created
-that points to this collection. This parameter allows changing the name of this alias, effectively combining
+Starting with version 8.1 when a collection is created additionally an alias can be created
+that points to this collection. This parameter allows specifying the name of this alias, effectively combining
 this operation with <<createalias, CREATEALIAS>>
 
 Collections are first created in read-write mode but can be put in `readOnly`

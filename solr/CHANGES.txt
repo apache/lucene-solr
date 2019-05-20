@@ -50,6 +50,11 @@ New Features
 * SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
   unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
 
+Bug Fixes
+----------------------
+
+* SOLR-13475: Null Pointer Exception when querying collection through collection alias. (Jörn Franke, ab)
+
 Other Changes
 ----------------------
 
