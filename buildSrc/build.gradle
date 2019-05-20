@@ -33,6 +33,7 @@ dependencies {
   implementation 'de.thetaphi:forbiddenapis:2.6'
   implementation 'com.ibm.icu:icu4j:62.1'
   implementation "org.apache.rat:apache-rat:0.11"
+  implementation "junit:junit:4.12"
 }
 
 configurations {
@@ -44,4 +45,46 @@ dependencies {
   jflex "de.jflex:jflex:1.7.0"
   rat "org.apache.rat:apache-rat:0.11"
 }
+
+sourceSets {
+  buildTest {
+    java {
+      compileClasspath += main.output + test.output
+      runtimeClasspath += main.output + test.output
+    }
+
+    java.srcDir 'src/buildTest/java'
+    resources.srcDir 'src/buildTest/resources'
+  }
+  all {
+    java {
+      sourceCompatibility = "11"
+      targetCompatibility = "11"
+      
+      // Use UTF-8, don't rely on local platform encoding.
+      compileJava.options.encoding = "UTF-8"
+      compileTestJava.options.encoding = "UTF-8"
+    }
+  }
+}
+
+configurations {
+  buildTestImplementation.extendsFrom testImplementation
+  buildTestRuntime.extendsFrom testRuntime
+  buildTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+task buildTest(type: Test) {
+  group = LifecycleBasePlugin.VERIFICATION_GROUP
+  description = 'Runs the build tests.'
+
+  maxHeapSize = '1024m'
+
+  testClassesDirs = sourceSets.buildTest.output.classesDirs
+  classpath = sourceSets.buildTest.runtimeClasspath
+
+  outputs.upToDateWhen { false }
+  mustRunAfter tasks.test
+}
+
 
