@@ -248,11 +248,15 @@ public class Aliases {
     for (int i = 0; i < level1.size(); i++) {
       String level1Alias = level1.get(i);
       List<String> level2 = collectionAliasListMap.get(level1Alias);
-      if (level2 == null && uniqueResult != null) {
-        uniqueResult.add(level1Alias);
+      if (level2 == null) {
+        // will copy all level1alias-es so far on lazy init
+        if (uniqueResult != null) {
+          uniqueResult.add(level1Alias);
+        }
       } else {
         if (uniqueResult == null) { // lazy init
           uniqueResult = new LinkedHashSet<>(level1.size());
+          // add all level1Alias-es so far
           uniqueResult.addAll(level1.subList(0, i));
         }
         uniqueResult.addAll(level2);
@@ -294,6 +298,7 @@ public class Aliases {
           entry.setValue(Collections.unmodifiableList(list));
         }
       }
+      newColAliases.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     } else {
       newColProperties = this.collectionAliasProperties;// no changes
       // java representation is a list, so split before adding to maintain consistency

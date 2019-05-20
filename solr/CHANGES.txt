@@ -28,9 +28,9 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.4.14
 Jetty 9.4.14.v20181114
 
-
-(No Changes)
-
+Bug Fixes
+----------------------
+* SOLR-13475: Null Pointer Exception when querying collection through collection alias. (Jörn Franke, ab)
 
 ==================  8.1.0 ==================
 
