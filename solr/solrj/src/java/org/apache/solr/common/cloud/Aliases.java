@@ -298,6 +298,7 @@ public class Aliases {
           entry.setValue(Collections.unmodifiableList(list));
         }
       }
+      newColAliases.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     } else {
       newColProperties = this.collectionAliasProperties;// no changes
       // java representation is a list, so split before adding to maintain consistency

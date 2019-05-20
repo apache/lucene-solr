@@ -543,9 +543,9 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), "collection2");
 
     ///////////////
-    CollectionAdminRequest.createAlias("testalias1", "collection1").process(cluster.getSolrClient());
     // make sure there's only one level of alias
     CollectionAdminRequest.deleteAlias("collection1").process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias("testalias1", "collection1").process(cluster.getSolrClient());
 
     // verify proper resolution on the server-side
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
