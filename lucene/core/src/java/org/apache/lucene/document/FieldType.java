@@ -361,6 +361,7 @@ public class FieldType implements IndexableFieldType  {
    * @lucene.experimental
    */
   public String putAttribute(String key, String value) {
+    checkIfFrozen();
     if (attributes == null) {
       attributes = new HashMap<>();
     }
