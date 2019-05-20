@@ -58,11 +58,11 @@ configure(luceneSolrProjects) {
 }
 
 // -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
-configure(luceneSolrSubProjects) {  pj ->
+configure(luceneSolrSubProjects) {
   
   plugins.withType(JavaPlugin) {
 
-    pj.plugins.apply(LuceneSolrForbiddenApisPlugin)
+    project.plugins.apply(LuceneSolrForbiddenApisPlugin)
     
     sourceCompatibility = "11"
     targetCompatibility = "11"
