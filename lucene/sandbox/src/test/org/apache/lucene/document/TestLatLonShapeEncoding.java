@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
@@ -528,7 +529,7 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
 
     for (int i =0; i < 100; i ++) {
       Polygon polygon = GeoTestUtil.nextPolygon();
-      ComponentTree polygon2D = Polygon2D.create(polygon);
+      Component polygon2D = Polygon2D.create(polygon);
       PointValues.Relation originalRelation = polygon2D.relateTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
       PointValues.Relation encodedRelation = polygon2D.relateTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
       assertTrue(originalRelation == encodedRelation);

@@ -22,42 +22,37 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * 2D geometry collection implementation represented as a balanced interval tree of {@link Component}.
+ * 2D geometry collection implementation represented as a r-tree of {@link Component}.
  *
  * @lucene.internal
  */
-public class ComponentTree {
+public class ComponentTree implements Component {
   /** root node of edge tree */
   protected final Component component;
-  /** maximum latitude of this component or any of its children */
-  protected double maxY;
-  /** maximum longitude of this component or any of its children */
-  protected double maxX;
-  /** which dimension was this node split on */
-  // TODO: its implicit based on level, but boolean keeps code simple
-  protected boolean splitX;
-
+  /** box of this component and its children or null if there is no children */
+  protected Rectangle box;
   // child components, or null
   protected ComponentTree left;
   protected ComponentTree right;
 
   protected ComponentTree(Component component) {
     this.component = component;
-    this.maxY = component.getBoundingBox().maxLat;
-    this.maxX = component.getBoundingBox().maxLon;
+    this.box = null;
   }
 
   public boolean contains(double latitude, double longitude) {
-    if (latitude <= maxY && longitude <= maxX) {
-      if (component.contains(latitude, longitude)) {
-        return true;
+    if (box == null || Rectangle.disjoint(box, latitude, latitude, longitude, longitude) == false) {
+      if (Rectangle.disjoint(component.getBoundingBox(), latitude, latitude, longitude, longitude) == false) {
+        if (component.contains(latitude, longitude)) {
+          return true;
+        }
       }
       if (left != null) {
         if (left.contains(latitude, longitude)) {
           return true;
         }
       }
-      if (right != null && ((splitX == false && latitude >= this.component.getBoundingBox().minLat) || (splitX && longitude >= this.component.getBoundingBox().minLon))) {
+      if (right != null) {
         if (right.contains(latitude, longitude)) {
           return true;
         }
@@ -67,7 +62,7 @@ public class ComponentTree {
   }
 
   public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
-    if (minLat <= maxY && minLon <= maxX) {
+    if (box == null || Rectangle.disjoint(box, minLat, maxLat, minLon, maxLon) == false) {
       // if the rectangle fully encloses us, we cross.
       if (Rectangle.within(component.getBoundingBox(), minLat, maxLat, minLon, maxLon)) {
         return Relation.CELL_CROSSES_QUERY;
@@ -84,7 +79,7 @@ public class ComponentTree {
           return relation;
         }
       }
-      if (right != null && ((splitX == false && maxLat >= this.component.getBoundingBox().minLat) || (splitX && maxLon >= this.component.getBoundingBox().minLon))) {
+      if (right != null) {
         Relation relation = right.relate(minLat, maxLat, minLon, maxLon);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
@@ -104,8 +99,13 @@ public class ComponentTree {
     return relateTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy);
   }
 
+  @Override
+  public Rectangle getBoundingBox() {
+    return box == null ? component.getBoundingBox() : box;
+  }
+
   private Relation relateTriangle(double minLat, double maxLat, double minLon, double maxLon, double ax, double ay, double bx, double by, double cx, double cy) {
-    if (minLat <= maxY && minLon <= maxX) {
+    if (box == null || Rectangle.disjoint(box, minLat, maxLat, minLon, maxLon) == false) {
       if (Rectangle.disjoint(component.getBoundingBox(), minLat, maxLat, minLon, maxLon) == false) {
         Relation relation = component.relateTriangle(ax, ay, bx, by, cx, cy);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
@@ -118,7 +118,7 @@ public class ComponentTree {
           return relation;
         }
       }
-      if (right != null && ((splitX == false && maxLat >= this.component.getBoundingBox().minLat) || (splitX && maxLon >= this.component.getBoundingBox().minLon))) {
+      if (right != null) {
         Relation relation = right.relateTriangle(minLat, maxLat, minLon, maxLon, ax, ay, bx, by, cx, cy);
         if (relation != Relation.CELL_OUTSIDE_QUERY) {
           return relation;
@@ -154,27 +154,51 @@ public class ComponentTree {
         };
       }
       ArrayUtil.select(components, low, high + 1, mid, comparator);
+    } else {
+      return new ComponentTree(components[mid]);
     }
     // add midpoint
     ComponentTree newNode = new ComponentTree(components[mid]);
-    newNode.splitX = splitX;
     // add children
     newNode.left = createTree(components, low, mid - 1, !splitX);
     newNode.right = createTree(components, mid + 1, high, !splitX);
-    // pull up max values to this node
-    if (newNode.left != null) {
-      newNode.maxX = Math.max(newNode.maxX, newNode.left.maxX);
-      newNode.maxY = Math.max(newNode.maxY, newNode.left.maxY);
+    if (newNode.left != null || newNode.right != null) {
+      // pull up bounding box values to this node
+      double minX = newNode.component.getBoundingBox().minLon;
+      double maxX = newNode.component.getBoundingBox().maxLon;
+      double minY = newNode.component.getBoundingBox().minLat;
+      double maxY = newNode.component.getBoundingBox().maxLat;
+
+      if (newNode.left != null) {
+        maxX = Math.max(maxX, newNode.left.getBoundingBox().maxLon);
+        maxY = Math.max(maxY, newNode.left.getBoundingBox().maxLat);
+        minX = splitX == true  ? newNode.left.getBoundingBox().minLon : Math.min(minX, newNode.left.getBoundingBox().minLon);
+        minY = splitX == false ? newNode.left.getBoundingBox().minLat : Math.min(minY, newNode.left.getBoundingBox().minLat);
+      }
+      if (newNode.right != null) {
+        maxX = Math.max(maxX, newNode.right.getBoundingBox().maxLon);
+        maxY = Math.max(maxY, newNode.right.getBoundingBox().maxLat);
+        minX = splitX == true  ? minX : Math.min(minX, newNode.right.getBoundingBox().minLon);
+        minY = splitX == false ? minY : Math.min(minY, newNode.right.getBoundingBox().minLat);
+      }
+      newNode.box = new Rectangle(minY, maxY, minX, maxX);
     }
-    if (newNode.right != null) {
-      newNode.maxX = Math.max(newNode.maxX, newNode.right.maxX);
-      newNode.maxY = Math.max(newNode.maxY, newNode.right.maxY);
-    }
+    assert newNode.left == null || (newNode.getBoundingBox().minLat <= newNode.left.getBoundingBox().minLat &&
+        newNode.getBoundingBox().maxLat >= newNode.left.getBoundingBox().maxLat &&
+        newNode.getBoundingBox(). minLon <= newNode.left.getBoundingBox().minLon &&
+        newNode.getBoundingBox().maxLon >= newNode.left.getBoundingBox().maxLon);
+    assert newNode.right == null || (newNode.getBoundingBox().minLat <= newNode.right.getBoundingBox().minLat &&
+        newNode.getBoundingBox().maxLat >= newNode.right.getBoundingBox().maxLat &&
+        newNode.getBoundingBox(). minLon <= newNode.right.getBoundingBox().minLon &&
+        newNode.getBoundingBox().maxLon >= newNode.right.getBoundingBox().maxLon);
     return newNode;
   }
 
   /** Builds a Component  from multiple components in a tree structure */
-  public static ComponentTree create(Component... components) {
+  public static Component create(Component... components) {
+    if (components.length == 1) {
+      return components[0];
+    }
     return ComponentTree.createTree(components, 0, components.length - 1, true);
   }
 }

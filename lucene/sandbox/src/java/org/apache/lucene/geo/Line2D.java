@@ -109,7 +109,7 @@ public final class Line2D implements Component {
   }
 
   /** create a Line2D edge tree from provided array of Linestrings */
-  public static ComponentTree create(Line... lines) {
+  public static Component create(Line... lines) {
     Component[] components = new Component[lines.length];
     for (int i = 0; i < components.length; ++i) {
       components[i] = createComponent(lines[i]);

@@ -181,18 +181,18 @@ public final class GeoEncodingUtils {
   /** Create a predicate that checks whether points are within a polygon.
    *  It works the same way as {@link #createDistancePredicate}.
    *  @lucene.internal */
-  public static PolygonPredicate createPolygonPredicate(Polygon[] polygons, ComponentTree tree) {
-    final Rectangle boundingBox = Rectangle.fromPolygon(polygons);
-    final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
+  public static ComponentPredicate createComponentPredicate(Component component) {
+    final Rectangle boundingBox = component.getBoundingBox();
+    final Function<Rectangle, Relation> boxToRelation = box -> component.relate(
         box.minLat, box.maxLat, box.minLon, box.maxLon);
     final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
 
-    return new PolygonPredicate(
+    return new ComponentPredicate(
         subBoxes.latShift, subBoxes.lonShift,
         subBoxes.latBase, subBoxes.lonBase,
         subBoxes.maxLatDelta, subBoxes.maxLonDelta,
         subBoxes.relations,
-        tree);
+        component);
   }
 
   private static Grid createSubBoxes(Rectangle boundingBox, Function<Rectangle, Relation> boxToRelation) {
@@ -342,18 +342,18 @@ public final class GeoEncodingUtils {
   }
 
   /** A predicate that checks whether a given point is within a polygon. */
-  public static class PolygonPredicate extends Grid {
+  public static class ComponentPredicate extends Grid {
 
-    private final ComponentTree tree;
+    private final Component component;
 
-    private PolygonPredicate(
+    private ComponentPredicate(
         int latShift, int lonShift,
         int latBase, int lonBase,
         int maxLatDelta, int maxLonDelta,
         byte[] relations,
-        ComponentTree tree) {
+        Component component) {
       super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
-      this.tree = tree;
+      this.component = component;
     }
 
     /** Check whether the given point is within the considered polygon.
@@ -375,7 +375,7 @@ public final class GeoEncodingUtils {
 
       final int relation = relations[(lat2 - latBase) * maxLonDelta + (lon2 - lonBase)];
       if (relation == Relation.CELL_CROSSES_QUERY.ordinal()) {
-        return tree.contains(decodeLatitude(lat), decodeLongitude(lon));
+        return component.contains(decodeLatitude(lat), decodeLongitude(lon));
       } else {
         return relation == Relation.CELL_INSIDE_QUERY.ordinal();
       }

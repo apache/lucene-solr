@@ -33,11 +33,11 @@ public final class Polygon2D implements Component {
   private final EdgeTree tree;
   private final Rectangle box;
   /** Holes component or null */
-  private final ComponentTree holes;
+  private final Component holes;
   /** keeps track if points lies on polygon boundary */
   private final AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
-  private Polygon2D(Polygon polygon, ComponentTree holes) {
+  private Polygon2D(Polygon polygon, Component holes) {
     this.polygon = polygon;
     this.holes = holes;
     this.tree = EdgeTree.createTree(polygon.getPolyLats(), polygon.getPolyLons());
@@ -225,7 +225,7 @@ public final class Polygon2D implements Component {
   /** Builds a Component from polygon */
   private static Component createComponent(Polygon polygon) {
     Polygon gonHoles[] = polygon.getHoles();
-    ComponentTree holes = null;
+    Component holes = null;
     if (gonHoles.length > 0) {
       holes = create(gonHoles);
     }
@@ -233,7 +233,7 @@ public final class Polygon2D implements Component {
   }
 
   /** Builds a Component tree from multipolygon */
-  public static ComponentTree create(Polygon... polygons) {
+  public static Component create(Polygon... polygons) {
     Component components[] = new Component[polygons.length];
     for (int i = 0; i < components.length; i++) {
       components[i] = createComponent(polygons[i]);

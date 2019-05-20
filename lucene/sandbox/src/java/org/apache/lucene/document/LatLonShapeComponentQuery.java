@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Objects;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.PointValues.Relation;
@@ -32,18 +33,18 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeComponentTreeQuery extends LatLonShapeQuery {
-  final private ComponentTree componentTree;
+final class LatLonShapeComponentQuery extends LatLonShapeQuery {
+  final private Component component;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
    */
-  public LatLonShapeComponentTreeQuery(String field, QueryRelation queryRelation, ComponentTree componentTree) {
+  public LatLonShapeComponentQuery(String field, QueryRelation queryRelation, Component component) {
     super(field, queryRelation);
-    if (componentTree == null) {
+    if (component == null) {
       throw new IllegalArgumentException("componentTree must not be null");
     }
-    this.componentTree = componentTree;
+    this.component = component;
   }
 
   @Override
@@ -56,7 +57,7 @@ final class LatLonShapeComponentTreeQuery extends LatLonShapeQuery {
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return componentTree.relate(minLat, maxLat, minLon, maxLon);
+    return component.relate(minLat, maxLat, minLon, maxLon);
   }
 
   @Override
@@ -71,10 +72,10 @@ final class LatLonShapeComponentTreeQuery extends LatLonShapeQuery {
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
 
     if (queryRelation == QueryRelation.WITHIN) {
-      return componentTree.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      return component.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
     // INTERSECTS
-    return componentTree.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+    return component.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
@@ -87,19 +88,19 @@ final class LatLonShapeComponentTreeQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(componentTree.toString());
+    sb.append(component.toString());
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) &&  Objects.equals(componentTree, ((LatLonShapeComponentTreeQuery)o).componentTree);
+    return super.equalsTo(o) &&  Objects.equals(component, ((LatLonShapeComponentQuery)o).component);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + Objects.hashCode(componentTree);
+    hash = 31 * hash + Objects.hashCode(component);
     return hash;
   }
 }

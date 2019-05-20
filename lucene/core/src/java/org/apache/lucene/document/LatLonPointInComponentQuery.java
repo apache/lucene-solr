@@ -18,8 +18,10 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.lucene.geo.Component;
+import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
@@ -48,32 +50,23 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /** Finds all previously indexed points that fall within the specified polygons.
  *
- *  <p>The field must be indexed with using {@link org.apache.lucene.document.LatLonPoint} added per document.
+ *  <p>The field must be indexed with using {@link LatLonPoint} added per document.
  *
  *  @lucene.experimental */
 
-final class LatLonPointInPolygonQuery extends Query {
+final class LatLonPointInComponentQuery extends Query {
   final String field;
-  final Polygon[] polygons;
+  final Component component;
 
-  LatLonPointInPolygonQuery(String field, Polygon[] polygons) {
+  LatLonPointInComponentQuery(String field, Component component) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
-    if (polygons == null) {
-      throw new IllegalArgumentException("polygons must not be null");
-    }
-    if (polygons.length == 0) {
-      throw new IllegalArgumentException("polygons must not be empty");
-    }
-    for (int i = 0; i < polygons.length; i++) {
-      if (polygons[i] == null) {
-        throw new IllegalArgumentException("polygon[" + i + "] must not be null");
-      }
+    if (component == null) {
+      throw new IllegalArgumentException("component must not be null");
     }
     this.field = field;
-    this.polygons = polygons.clone();
-    // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
+    this.component = component;
   }
 
   @Override
@@ -88,10 +81,10 @@ final class LatLonPointInPolygonQuery extends Query {
 
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
-    
+
     // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
     // these are pre-encoded with LatLonPoint's encoding
-    final Rectangle box = Rectangle.fromPolygon(polygons);
+    final Rectangle box = component.getBoundingBox();
     final byte minLat[] = new byte[Integer.BYTES];
     final byte maxLat[] = new byte[Integer.BYTES];
     final byte minLon[] = new byte[Integer.BYTES];
@@ -101,7 +94,6 @@ final class LatLonPointInPolygonQuery extends Query {
     NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
     NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
 
-    final Component component = Polygon2D.create(polygons);
     final GeoEncodingUtils.ComponentPredicate polygonPredicate = GeoEncodingUtils.createComponentPredicate(component);
 
     return new ConstantScoreWeight(this, boost) {
@@ -124,7 +116,7 @@ final class LatLonPointInPolygonQuery extends Query {
         // matching docids
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect( 
+        values.intersect(
                          new IntersectVisitor() {
 
                            DocIdSetBuilder.BulkAdder adder;
@@ -156,7 +148,7 @@ final class LatLonPointInPolygonQuery extends Query {
                                // outside of global bounding box range
                                return Relation.CELL_OUTSIDE_QUERY;
                              }
-                             
+
                              double cellMinLat = decodeLatitude(minPackedValue, 0);
                              double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
                              double cellMaxLat = decodeLatitude(maxPackedValue, 0);
@@ -181,17 +173,12 @@ final class LatLonPointInPolygonQuery extends Query {
     return field;
   }
 
-  /** Returns a copy of the internal polygon array */
-  public Polygon[] getPolygons() {
-    return polygons.clone();
-  }
-
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = classHash();
     result = prime * result + field.hashCode();
-    result = prime * result + Arrays.hashCode(polygons);
+    result = prime * result + component.hashCode();
     return result;
   }
 
@@ -201,9 +188,9 @@ final class LatLonPointInPolygonQuery extends Query {
            equalsTo(getClass().cast(other));
   }
 
-  private boolean equalsTo(LatLonPointInPolygonQuery other) {
+  private boolean equalsTo(LatLonPointInComponentQuery other) {
     return field.equals(other.field) &&
-           Arrays.equals(polygons, other.polygons);
+           Objects.equals(component, other.component);
   }
 
   @Override
@@ -216,7 +203,7 @@ final class LatLonPointInPolygonQuery extends Query {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(Arrays.toString(polygons));
+    sb.append(component.toString());
     return sb.toString();
   }
 }

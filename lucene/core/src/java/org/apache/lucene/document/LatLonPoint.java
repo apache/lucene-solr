@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.BooleanClause;
@@ -251,7 +253,8 @@ public class LatLonPoint extends Field {
    * @see Polygon
    */
   public static Query newPolygonQuery(String field, Polygon... polygons) {
-    return new LatLonPointInPolygonQuery(field, polygons);
+    Component component = Polygon2D.create(polygons);
+    return new LatLonPointInComponentQuery(field, component);
   }
 
   /**

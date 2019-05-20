@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.List;
 
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
@@ -84,7 +85,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testComponentTreeQuery(ComponentTree component, Object shape) {
+    public boolean testComponentQuery(Component component, Object shape) {
       Polygon polygon = (Polygon) shape;
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
       for (Tessellator.Triangle t : tessellation) {

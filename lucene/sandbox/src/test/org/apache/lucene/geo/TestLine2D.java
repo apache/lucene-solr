@@ -25,7 +25,7 @@ public class TestLine2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     Line line = new Line(new double[] {0, 1, 2, 3}, new double[] {0, 0, 2, 2});
-    ComponentTree line2D = Line2D.create(line);
+    Component line2D = Line2D.create(line);
     int ax = GeoEncodingUtils.encodeLongitude(4);
     int ay = GeoEncodingUtils.encodeLatitude(4);
     int bx = GeoEncodingUtils.encodeLongitude(5);
@@ -37,7 +37,7 @@ public class TestLine2D extends LuceneTestCase {
 
   public void testTriangleIntersects() {
     Line line = new Line(new double[] {0.5, 0, 1, 2, 3}, new double[] {0.5, 0, 0, 2, 2});
-    ComponentTree line2D = Line2D.create(line);
+    Component line2D = Line2D.create(line);
     int ax = GeoEncodingUtils.encodeLongitude(0.0);
     int ay = GeoEncodingUtils.encodeLatitude(0.0);
     int bx = GeoEncodingUtils.encodeLongitude(1);
@@ -49,7 +49,7 @@ public class TestLine2D extends LuceneTestCase {
 
   public void testTriangleContains() {
     Line line = new Line(new double[] {0.5, 0, 1, 2, 3}, new double[] {0.5, 0, 0, 2, 2});
-    ComponentTree line2D = Line2D.create(line);
+    Component line2D = Line2D.create(line);
     int ax = GeoEncodingUtils.encodeLongitude(-10);
     int ay = GeoEncodingUtils.encodeLatitude(-10);
     int bx = GeoEncodingUtils.encodeLongitude(4);
@@ -61,7 +61,7 @@ public class TestLine2D extends LuceneTestCase {
 
   public void testRandomTriangles() {
     Line line = TestLatLonLineShapeQueries.nextLine();
-    ComponentTree line2D = Line2D.create(line);
+    Component line2D = Line2D.create(line);
 
     for (int i =0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();

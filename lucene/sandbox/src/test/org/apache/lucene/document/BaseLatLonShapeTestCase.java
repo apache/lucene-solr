@@ -23,6 +23,7 @@ import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
@@ -396,7 +397,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
       // line
       Line queryLine = randomQueryLine(shapes);
-      ComponentTree queryLine2D = Line2D.create(new Line[] {queryLine});
+      Component queryLine2D = Line2D.create(new Line[] {queryLine});
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
       Query query = newLineQuery(FIELD_NAME, queryRelation, queryLine);
 
@@ -437,7 +438,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = getValidator(queryRelation).testComponentTreeQuery(queryLine2D, shapes[id]);
+          expected = getValidator(queryRelation).testComponentQuery(queryLine2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -487,7 +488,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
 
       // Polygon
       Polygon queryPolygon = GeoTestUtil.nextPolygon();
-      ComponentTree queryPoly2D = Polygon2D.create(queryPolygon);
+      Component queryPoly2D = Polygon2D.create(queryPolygon);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 
@@ -528,7 +529,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = getValidator(queryRelation).testComponentTreeQuery(queryPoly2D, shapes[id]);
+          expected = getValidator(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -638,7 +639,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   protected static abstract class Validator {
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
-    public abstract boolean testComponentTreeQuery(ComponentTree component, Object shape);
+    public abstract boolean testComponentQuery(Component component, Object shape);
 
     public void setRelation(QueryRelation relation) {
       this.queryRelation = relation;

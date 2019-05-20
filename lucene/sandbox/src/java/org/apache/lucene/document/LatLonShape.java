@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.geo.Component;
 import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
@@ -120,8 +121,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
       }
     }
-    ComponentTree tree = Line2D.create(lines.clone());
-    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
+    Component component = Line2D.create(lines.clone());
+    return new LatLonShapeComponentQuery(field, queryRelation, component);
   }
 
   /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
@@ -141,8 +142,8 @@ public class LatLonShape {
         throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
-    ComponentTree tree = Polygon2D.create(polygons.clone());
-    return new LatLonShapeComponentTreeQuery(field, queryRelation, tree);
+    Component component = Polygon2D.create(polygons.clone());
+    return new LatLonShapeComponentQuery(field, queryRelation, component);
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}

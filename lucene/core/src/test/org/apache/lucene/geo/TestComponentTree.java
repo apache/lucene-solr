@@ -28,8 +28,8 @@ public class TestComponentTree extends LuceneTestCase {
     for (int i =0; i < numComponents; i++) {
       polygon[i] = GeoTestUtil.nextPolygon();
     }
-    ComponentTree component = Polygon2D.create(polygon);
-    ComponentTree[] components = new ComponentTree[numComponents];
+    Component component = Polygon2D.create(polygon);
+    Component[] components = new Component[numComponents];
     for (int i =0; i < numComponents; i++) {
       components[i] = Polygon2D.create(polygon[i]);
     }
@@ -59,8 +59,8 @@ public class TestComponentTree extends LuceneTestCase {
     }
   }
 
-  private boolean contains(ComponentTree[] components, double lat, double lon) {
-    for (ComponentTree component : components) {
+  private boolean contains(Component[] components, double lat, double lon) {
+    for (Component component : components) {
       if (component.contains(lat, lon)) {
         return true;
       }
@@ -68,9 +68,9 @@ public class TestComponentTree extends LuceneTestCase {
     return false;
   }
 
-  private PointValues.Relation relate(ComponentTree[] components, Rectangle rectangle) {
+  private PointValues.Relation relate(Component[] components, Rectangle rectangle) {
     boolean inside = false;
-    for (ComponentTree component : components) {
+    for (Component component : components) {
 
       PointValues.Relation relation = component.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
       if (relation == PointValues.Relation.CELL_CROSSES_QUERY) {
@@ -82,9 +82,9 @@ public class TestComponentTree extends LuceneTestCase {
     return (inside) ? PointValues.Relation.CELL_INSIDE_QUERY : PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
-  private PointValues.Relation relateTriangle(ComponentTree[] components,double ax, double ay, double bx, double by, double cx, double cy) {
+  private PointValues.Relation relateTriangle(Component[] components,double ax, double ay, double bx, double by, double cx, double cy) {
     boolean inside = false;
-    for (ComponentTree component : components) {
+    for (Component component : components) {
       PointValues.Relation relation = component.relateTriangle(ax, ay, bx, by, cx, cy);
       if (relation == PointValues.Relation.CELL_CROSSES_QUERY) {
         return relation;
