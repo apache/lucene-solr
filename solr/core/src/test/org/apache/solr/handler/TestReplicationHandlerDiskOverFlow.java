@@ -156,9 +156,8 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                                                     .setRows(0));
               Thread.sleep(200);
             } catch (SolrException e) {
-              // TODO: SOLR-13469: why is this FORBIDDEN(403) and not SERVICE_UNAVAILABLE(503)
-              if (e.code() == SolrException.ErrorCode.FORBIDDEN.code
-                  // TODO: // && e.getMessage().contains(expectedErr) // why is this not always set?
+              if (e.code() == SolrException.ErrorCode.SERVICE_UNAVAILABLE.code
+                  && e.getMessage().contains(expectedErr)
                   ) { 
                 log.info("Got expected exception", e);
                 // now let the barrier complete & clear itself, and we're done

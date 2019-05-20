@@ -50,6 +50,14 @@ New Features
 * SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
   unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
 
+Bug Fixes
+----------------------
+
+* SOLR-13474: Fix "Search is temporarily disabled" logic to be consistent for entire request (hossman)
+
+* SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
+
+
 Other Changes
 ----------------------
 
