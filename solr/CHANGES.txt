@@ -98,6 +98,10 @@ Bug Fixes
 
 * SOLR-13475: Null Pointer Exception when querying collection through collection alias. (Jörn Franke, ab)
 
+* SOLR-13474: Fix "Search is temporarily disabled" logic to be consistent for entire request (hossman)
+
+* SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
+
 Other Changes
 ----------------------
 
