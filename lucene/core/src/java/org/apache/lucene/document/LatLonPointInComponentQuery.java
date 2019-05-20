@@ -21,10 +21,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.lucene.geo.Component;
-import org.apache.lucene.geo.ComponentTree;
 import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -48,7 +45,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
-/** Finds all previously indexed points that fall within the specified polygons.
+/** Finds all previously indexed points that fall within the specified {@link Component}.
  *
  *  <p>The field must be indexed with using {@link LatLonPoint} added per document.
  *
@@ -82,7 +79,7 @@ final class LatLonPointInComponentQuery extends Query {
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
 
-    // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
+    // bounding box of the component, this can speed up tree intersection/cheaply improve approximation for complex components
     // these are pre-encoded with LatLonPoint's encoding
     final Rectangle box = component.getBoundingBox();
     final byte minLat[] = new byte[Integer.BYTES];
@@ -94,7 +91,7 @@ final class LatLonPointInComponentQuery extends Query {
     NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
     NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
 
-    final GeoEncodingUtils.ComponentPredicate polygonPredicate = GeoEncodingUtils.createComponentPredicate(component);
+    final GeoEncodingUtils.ComponentPredicate componentPredicate = GeoEncodingUtils.createComponentPredicate(component);
 
     return new ConstantScoreWeight(this, boost) {
 
@@ -133,7 +130,7 @@ final class LatLonPointInComponentQuery extends Query {
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
-                             if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                             if (componentPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
                                                        NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
                                adder.add(docID);
                              }
