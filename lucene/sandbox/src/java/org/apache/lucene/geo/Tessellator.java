@@ -218,6 +218,10 @@ final public class Tessellator {
     // segment's endpoint with lesser x will be potential connection point
     {
       do {
+        //if hole node is a vertex of the polygon, just use that.
+        if (isVertexEquals(p, holeNode)) {
+          return p;
+        }
         if (hy <= p.getY() && hy >= p.next.getY() && p.next.getY() != p.getY()) {
           final double x = p.getX() + (hy - p.getY()) * (p.next.getX() - p.getX()) / (p.next.getY() - p.getY());
           if (x <= hx && x > qx) {
