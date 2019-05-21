@@ -14,59 +14,98 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.document;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.SimpleFieldComparator;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.carrot2.shaded.guava.common.base.Objects;
 
-/** Provides a comparator that parses a feature field's values as float and sorts by descending value */
-public class FeatureComparatorSource extends FieldComparatorSource {
+/**
+ * Sorts using the value of a specified feature name from a {@link FeatureField}.
+ */
+final class FeatureSortField extends SortField {
 
   private final BytesRef featureName;
-  private final Float missingValue;
 
   /**
-   * Creates a {@link FieldComparatorSource} that can be used to sort hits by
-   * the value of a particular feature in a {@link FeatureField}. Note that the
-   * field name to use for the sort will be specified by the {@link SortField}.
+   * Creates a {@link FeatureSortField} that can be used to sort hits by
+   * the value of a particular feature in a {@link FeatureField}.
    *
    * @param featureName The name of the feature to use for the sort value
-   * @param missingValue The value to use for documents that don't have a value
-   *   for the feature. If <code>null</code>, documents with no value for the
-   *   feature will be sorted as if their value is <code>0.0f</code>.
    */
-  public FeatureComparatorSource(BytesRef featureName, Float missingValue) {
+  public FeatureSortField(String field, BytesRef featureName) {
+    super(field, SortField.Type.CUSTOM);
+    if (field == null) {
+      throw new IllegalArgumentException("field must not be null");
+    }
+    if (featureName == null) {
+      throw new IllegalArgumentException("featureName must not be null");
+    }
     this.featureName = featureName;
-    this.missingValue = missingValue;
+  }
+  
+  @Override
+  public FieldComparator<?> getComparator(int numHits, int sortPos) {
+    return new FeatureComparator(numHits, getField(), featureName);
+  }
+  
+  @Override
+  public void setMissingValue(Object missingValue) {
+    throw new IllegalArgumentException("Missing value not supported for FeatureSortField");
+  }
+  
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + featureName.hashCode();
+    return result;
   }
 
   @Override
-  public FieldComparator<?> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
-    return new FeatureComparator(numHits, fieldname, featureName, missingValue);
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    FeatureSortField other = (FeatureSortField) obj;
+    return Objects.equal(featureName, other.featureName);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder builder = new StringBuilder();
+    builder.append("<feature:");
+    builder.append('"');
+    builder.append(getField());
+    builder.append('"');
+    builder.append(" featureName=");
+    builder.append(featureName);
+    builder.append('>');
+    return builder.toString();
   }
 
   /** Parses a feature field's values as float and sorts by descending value */
   class FeatureComparator extends SimpleFieldComparator<Float> {
     private final String field;
     private final BytesRef featureName;
-    private final float missingValue;
     private final float[] values;
     private float bottom;
     private float topValue;
     private PostingsEnum currentReaderPostingsValues;
 
     /** Creates a new comparator based on relevance for {@code numHits}. */
-    public FeatureComparator(int numHits, String field, BytesRef featureName, Float missingValue) {
+    public FeatureComparator(int numHits, String field, BytesRef featureName) {
       this.values = new float[numHits];
       this.field = field;
       this.featureName = featureName;
-      this.missingValue = missingValue != null ? missingValue : 0.0f;
     }
 
     @Override
@@ -85,11 +124,11 @@ public class FeatureComparatorSource extends FieldComparatorSource {
     }
 
     private float getValueForDoc(int doc) throws IOException {
-      if (currentReaderPostingsValues != null
+      if (currentReaderPostingsValues != null && doc >= currentReaderPostingsValues.docID()
           && (currentReaderPostingsValues.docID() == doc || currentReaderPostingsValues.advance(doc) == doc)) {
-        return currentReaderPostingsValues.freq();
+        return FeatureField.decodeFeatureValue(currentReaderPostingsValues.freq());
       } else {
-        return missingValue;
+        return 0.0f;
       }
     }
 

@@ -14,21 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.document;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FeatureField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
- * Very simple tests of sorting.
+ * Test for sorting using a feature from a FeatureField.
  *
  * THE RULES:
  * 1. keywords like 'abstract' and 'static' should not appear in this file.
@@ -44,7 +45,6 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestFeatureSort extends LuceneTestCase {
 
-  /** Tests sorting on type feature */
   public void testFeature() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -64,7 +64,7 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("field", new FeatureComparatorSource(new BytesRef("name"), null)));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
@@ -77,40 +77,6 @@ public class TestFeatureSort extends LuceneTestCase {
     dir.close();
   }
 
-  /** Tests sorting on type feature in reverse */
-  public void testFeatureReverse() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(new FeatureField("field", "name", 30.1F));
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FeatureField("field", "name", 1.3F));
-    doc.add(newStringField("value", "1.3", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(new FeatureField("field", "name", 4.2F));
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("field", new FeatureComparatorSource(new BytesRef("name"), null), true));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
-    // numeric order
-    assertEquals("1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-
-  /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
   public void testFeatureMissing() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -128,21 +94,19 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("field", new FeatureComparatorSource(new BytesRef("name"), Float.MAX_VALUE));
-    Sort sort = new Sort(sortField);
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
     // null is treated as 0
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("1.3", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
 
     ir.close();
     dir.close();
   }
 
-  /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
   public void testFeatureMissingFieldInSegment() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -161,21 +125,19 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("field", new FeatureComparatorSource(new BytesRef("name"), Float.MAX_VALUE));
-    Sort sort = new Sort(sortField);
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
     // null is treated as 0
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("1.3", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
 
     ir.close();
     dir.close();
   }
 
-  /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
   public void testFeatureMissingFeatureNameInSegment() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -195,25 +157,31 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("field", new FeatureComparatorSource(new BytesRef("name"), Float.MAX_VALUE));
-    Sort sort = new Sort(sortField);
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
     // null is treated as 0
-    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("1.3", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
 
     ir.close();
     dir.close();
   }
 
-  /** Tests sorting on type feature with a missing value */
-  public void testFeatureMissingLast() throws IOException {
+  public void testFeatureMultipleMissing() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
     doc.add(new FeatureField("field", "name", 1.3F));
@@ -227,14 +195,18 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("field", new FeatureComparatorSource(new BytesRef("name"), null)));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits.value);
+    assertEquals(7, td.totalHits.value);
     // null is treated as 0
     assertEquals("4.2", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("1.3", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[4].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[5].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[6].doc).get("value"));
 
     ir.close();
     dir.close();
