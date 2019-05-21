@@ -19,6 +19,9 @@ Improvements
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
   as opposed to eliminating them during scoring construction. (Atri Sharma via Jim Ferenczi)
 
+* LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
+  executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
