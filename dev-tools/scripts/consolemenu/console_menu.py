@@ -466,7 +466,7 @@ class ExitItem(MenuItem):
         """
         # If we have a parent menu, and no overriding exit text was specified,
         # change Exit text to "Return to {Parent Menu Title}"
-        if self.menu and self.menu.parent and self.text == 'Exit':
+        if self.menu and self.menu.parent and callable_wrapper(self.text) == 'Exit':
             self.text = "Return to %s" % callable_wrapper(self.menu.parent.title)
         return super(ExitItem, self).show(index)
 

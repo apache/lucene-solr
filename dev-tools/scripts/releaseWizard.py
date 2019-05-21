@@ -137,6 +137,17 @@ class ReleaseState:
             self.release_type = ReleaseType.bugfix
             self.release_branch = self.get_minor_branch_name()
 
+    def clear_rc(self):
+        if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
+            dict = OrderedDict()
+            for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
+                for t in g.get_todos():
+                    t.clear()
+            print("Cleared RC TODO state")
+            shutil.rmtree(self.get_rc_folder())
+            print("Cleared folder %s" % self.get_rc_folder())
+            self.save()
+
     def new_rc(self):
         if ask_yes_no("Are you sure? This will abort current RC"):
             dict = OrderedDict()
@@ -301,7 +312,7 @@ class TodoGroup:
         return "%s%s (%d/%d)" % (prefix, self.title, self.num_done(), self.num_applies())
 
     def get_submenu(self):
-        menu = ConsoleMenu(title=self.title, subtitle=self.get_subtitle, prologue_text=self.description, screen=MyScreen())
+        menu = ConsoleMenu(title=self.title, subtitle=self.get_subtitle, prologue_text=self.description, screen=MyScreen(), exit_option_text='Return')
         for todo in self.get_todos():
             if todo.applies(state.release_type):
                 menu.append_item(todo.get_menu_item())
@@ -695,6 +706,7 @@ def main():
                             subtitle=get_subtitle,
                             prologue_text=None,
                             epilogue_text=None,
+                            exit_option_text='Return',
                             screen=MyScreen())
 
     for todo_group in state.todo_groups:
@@ -703,7 +715,8 @@ def main():
 
     main_menu.append_item(SubmenuItem(get_todo_menuitem_title, todo_menu))
     main_menu.append_item(FunctionItem(get_start_new_rc_menu_title, start_new_rc))
-    main_menu.append_item(FunctionItem('Clear state, delete release-folder and restart from RC1', reset_state))
+    main_menu.append_item(FunctionItem('Clear and restart current RC', state.clear_rc))
+    main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
     main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
     main_menu.append_item(FunctionItem('Generate Asciidoc guide', generate_asciidoc))
     main_menu.append_item(FunctionItem('Help', help))
@@ -1123,25 +1136,6 @@ One way is to rename the ivy cache folder before building.
             ],
             ask_each=True)
 
-    def smoke_tester_commands(self, todo):
-        os.chdir(state.get_git_checkout_folder)
-        git_rev = open('rev.txt', encoding='UTF-8').read()
-        cmdline = "python3 -u %s --tmp-dir %s %s" \
-                  % (os.path.join('dev-tools', 'scripts', 'smokeTestRelease.py'),
-                     os.path.join(state.get_rc_folder(), "smoketest"),
-                     "file://%s" % dir)
-                     # --revision $REV --version $VER $NOTSIGNED file://$DIR
-                     # --revision %s --version %s
-
-        return Commands(
-            state.get_git_checkout_folder(),
-            """Here we'll test the release""",
-            [
-                Command(cmdline, logfile="smoketest.log", tee=True),
-            ],
-            env={'JAVACMD': state.get_java_cmd()},
-            ask_run=False,
-            ask_each=False)
 
     def build_rc_commands(self, todo):
         try:
@@ -1179,6 +1173,46 @@ log, tail the log in another Terminal:
             ask_run=False,
             ask_each=False)
 
+
+    def smoke_tester_commands(self, todo):
+        os.chdir(state.get_git_checkout_folder)
+        git_rev = open('rev.txt', encoding='UTF-8').read().strip()
+        dist_folder = os.path.join(state.get_rc_folder(), "dist", )
+        cmdline = "python3 -u %s --tmp-dir %s %s" \
+                  % (os.path.join('dev-tools', 'scripts', 'smokeTestRelease.py'),
+                     os.path.join(state.get_rc_folder(), "smoketest"),
+                     "file://%s" % dist_folder)
+        # --revision $REV --version $VER $NOTSIGNED file://$DIR
+        # --revision %s --version %s
+
+        return Commands(
+            state.get_git_checkout_folder(),
+            """Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.""",
+            [
+                Command(cmdline, logfile="smoketest.log", tee=True),
+            ],
+            env={'JAVACMD': state.get_java_cmd()},
+            ask_run=False,
+            ask_each=False)
+
+    def import_svn_commands(self, todo):
+        os.chdir(state.get_git_checkout_folder)
+        git_rev = open('rev.txt', encoding='UTF-8').read()
+        cmdline = """svn -m "Lucene/Solr %S RC%s" import %s https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...""" \
+                  % (state.release_version, state.rc_number, os.path.join(state.get_rc_folder(), "dist"),
+                     "file://%s" % dir)
+        # --revision $REV --version $VER $NOTSIGNED file://$DIR
+        # --revision %s --version %s
+
+        return Commands(
+            state.get_git_checkout_folder(),
+            """Here we'll test the release""",
+            [
+                Command(cmdline, logfile="smoketest.log", tee=True),
+            ],
+            env={'JAVACMD': state.get_java_cmd()},
+            ask_run=False,
+            ask_each=False)
 
     def initiate_vote_desc(self, todo):
         dow = datetime.utcnow().weekday()
@@ -1369,8 +1403,8 @@ The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B
                        ])
               ]),
     TodoGroup('preparation',
-              'Work with the community to decide when and how etc',
-              'description',
+              'Prepare for the release',
+              'Work with the community to decide when the release will happen and what work must be completed before it can happen',
               [
                   Todo('decide_jira_issues',
                        'Select JIRA issues to be included',
@@ -1477,9 +1511,12 @@ then it's time to build the release artifacts, run the smoke tester and stage th
                        'Build the release candidate',
                        depends="gpg"),
                   Todo('smoke_tester',
-                       'Build the release candidate',
-                       depends="build_rc")
+                       'Run the smoke tester',
+                       depends="build_rc"),
                   # Run the smoke test script against the local release candidate: python3 -u dev-tools/scripts/smokeTestRelease.py /tmp/releases/6.0.1/lucene-solr-6.0.1-RC1-rev...
+                  Todo('import_svn',
+                       'Import artifacts into SVN',
+                       depends="smoke_tester")
                   # Import the artifacts into SVN: svn -m "Lucene/Solr 6.0.1 RC1" import /tmp/releases/6.0.1/lucene-solr-6.0.1-RC1-rev... https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
                   # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
                   # Don't delete these artifacts from your local workstation as you'll need to publish the maven subdirectories once the RC passes (see below).
