@@ -27,10 +27,10 @@
 
   <dependencies>
     <dependency org="mecab" name="mecab-ipadic" rev="${/mecab/mecab-ipadic}" conf="ipadic"> 
-      <artifact name="ipadic" type=".tar.gz" url="http://jaist.dl.sourceforge.net/project/mecab/mecab-ipadic/2.7.0-20070801/mecab-ipadic-2.7.0-20070801.tar.gz"/>
+      <artifact name="ipadic" type=".tar.gz" url="https://jaist.dl.sourceforge.net/project/mecab/mecab-ipadic/2.7.0-20070801/mecab-ipadic-2.7.0-20070801.tar.gz"/>
     </dependency>
     <dependency org="mecab" name="mecab-naist-jdic" rev="${/mecab/mecab-naist-jdic}" conf="naist">
-      <artifact name="mecab-naist-jdic" type=".tar.gz" url="http://sourceforge.jp/frs/redir.php?m=iij&amp;f=/naist-jdic/53500/mecab-naist-jdic-0.6.3b-20111013.tar.gz"/>
+      <artifact name="mecab-naist-jdic" type=".tar.gz" url=" https://rwthaachen.dl.osdn.jp/naist-jdic/53500/mecab-naist-jdic-0.6.3b-20111013.tar.gz"/>
     </dependency>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
