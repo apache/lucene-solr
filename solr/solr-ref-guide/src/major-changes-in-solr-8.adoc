@@ -257,8 +257,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 ----
 
 * A new command-line option is available via `bin/solr autoscaling` to calculate autoscaling policy suggestions and diagnostic information outside of the running Solr cluster. This option can use the existing autoscaling policy, or test the impact of a new one from a file located on the server filesystem.
-+
-These options have been documented in the section <<solrcloud-autoscaling-policy-preferences.adoc#testing-the-autoscaling-configuration-and-suggestions,Testing the Autoscaling Configuration and Suggestions>>.
 
 === Dependency Updates in 8.0
 
