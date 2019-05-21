@@ -18,6 +18,10 @@ API Changes
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
   removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
 
+* LUCENE-8805: StoredFieldVisitor#stringField now takes a String rather than a
+  byte[] that stores the UTF-8 bytes of the stored string.
+  (Namgyu Kim via Adrien Grand)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
