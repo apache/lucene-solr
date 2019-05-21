@@ -177,7 +177,7 @@
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
   <property name="javac.profile.args" value="-profile compact2"/>
   <property name="javadoc.link" value="https://docs.oracle.com/javase/8/docs/api/"/>
-  <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
+  <property name="javadoc.link.junit" value="https://junit.org/junit4/javadoc/4.12/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
   <available file="${javadoc.packagelist.dir}/java8/package-list" property="javadoc.java8.packagelist.exists"/>
   <property name="javadoc.access" value="protected"/>
@@ -435,9 +435,8 @@
   </target>
 
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />
-  <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
-  <!-- you might need to tweak this from china so it works -->
-  <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
+  <property name="ivy_bootstrap_url1" value="https://repo1.maven.org/maven2"/>
+  <property name="ivy_bootstrap_url2" value="https://repo2.maven.org/maven2"/>
   <property name="ivy_checksum_sha1" value="5abe4c24bbe992a9ac07ca563d5bd3e8d569e9ed"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
