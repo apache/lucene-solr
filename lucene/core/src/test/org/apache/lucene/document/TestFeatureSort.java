@@ -25,7 +25,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -64,7 +63,7 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", "name"));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
@@ -94,7 +93,7 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", "name"));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
@@ -125,7 +124,7 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", "name"));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
@@ -157,7 +156,7 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", "name"));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
@@ -195,7 +194,7 @@ public class TestFeatureSort extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(FeatureField.newFeatureSort("field", new BytesRef("name")));
+    Sort sort = new Sort(FeatureField.newFeatureSort("field", "name"));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(7, td.totalHits.value);

@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -26,14 +27,13 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.carrot2.shaded.guava.common.base.Objects;
 
 /**
  * Sorts using the value of a specified feature name from a {@link FeatureField}.
  */
 final class FeatureSortField extends SortField {
 
-  private final BytesRef featureName;
+  private final String featureName;
 
   /**
    * Creates a {@link FeatureSortField} that can be used to sort hits by
@@ -41,15 +41,9 @@ final class FeatureSortField extends SortField {
    *
    * @param featureName The name of the feature to use for the sort value
    */
-  public FeatureSortField(String field, BytesRef featureName) {
-    super(field, SortField.Type.CUSTOM);
-    if (field == null) {
-      throw new IllegalArgumentException("field must not be null");
-    }
-    if (featureName == null) {
-      throw new IllegalArgumentException("featureName must not be null");
-    }
-    this.featureName = featureName;
+  public FeatureSortField(String field, String featureName) {
+    super(Objects.requireNonNull(field), SortField.Type.CUSTOM);
+    this.featureName = Objects.requireNonNull(featureName);
   }
   
   @Override
@@ -76,7 +70,7 @@ final class FeatureSortField extends SortField {
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
     FeatureSortField other = (FeatureSortField) obj;
-    return Objects.equal(featureName, other.featureName);
+    return Objects.equals(featureName, other.featureName);
   }
 
   @Override
@@ -102,10 +96,10 @@ final class FeatureSortField extends SortField {
     private PostingsEnum currentReaderPostingsValues;
 
     /** Creates a new comparator based on relevance for {@code numHits}. */
-    public FeatureComparator(int numHits, String field, BytesRef featureName) {
+    public FeatureComparator(int numHits, String field, String featureName) {
       this.values = new float[numHits];
       this.field = field;
-      this.featureName = featureName;
+      this.featureName = new BytesRef(featureName);
     }
 
     @Override

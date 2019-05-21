@@ -35,7 +35,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * {@link Field} that can be used to store static scoring factors into
@@ -534,9 +533,9 @@ public final class FeatureField extends Field {
    * @param field field name. Must not be null.
    * @param featureName feature name. Must not be null.
    * @return SortField ordering documents by the value of the feature
-   * @throws IllegalArgumentException if {@code field} or {@code featureName} is null.
+   * @throws NullPointerException if {@code field} or {@code featureName} is null.
    */
-  public static SortField newFeatureSort(String field, BytesRef featureName) {
+  public static SortField newFeatureSort(String field, String featureName) {
     return new FeatureSortField(field, featureName);
   }
 }
