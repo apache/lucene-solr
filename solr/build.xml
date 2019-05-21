@@ -32,7 +32,6 @@
     <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
-    <!--<echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />-->
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -93,41 +92,6 @@
     <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
   </target>
 
-  <!--LUCENE-3286: Luke is incompatible with new XML QP location and target is not flexible
-  when it comes to incompatible changes.  Update when Luke has updated.
-  <target name="compile-xml-query-parser">
-    <ant dir="${common.dir}/queryparser" target="compile-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <property  name="luke.version" value="1.0.1"/>
-  <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
-  <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup,compile-xml-query-parser">
-    <mkdir dir="luke"/>
-    <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
-         dest="luke/luke-${luke.version}.jar"/>
-  </target>
-  <path id="luke.classpath">
-    <pathelement location="${common.dir}/build/core/classes/java" />
-    <pathelement location="${common.dir}/queryparser/build/classes/java" />
-  </path>
-  <target name="luke" depends="luke-download">
-    <java fork="true"
-          classname="org.getopt.luke.Luke"
-          logError="true"
-          failonerror="true">
-      <classpath>
-        <fileset dir="luke">
-          <include name="luke-${luke.version}.jar"/>
-        </fileset>
-        <path refid="classpath"/>
-        <path refid="luke.classpath"/>
-        <path refid="test.classpath"/>
-      </classpath>
-    </java>
-  </target>-->
-  
   <!-- ========================================================================= -->
   <!-- ========================== BUILD/TEST TASKS ============================= -->
   <!-- ========================================================================= -->
