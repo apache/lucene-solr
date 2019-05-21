@@ -43,6 +43,7 @@ from datetime import timedelta
 from consolemenu import ConsoleMenu
 from consolemenu.screen import Screen
 from consolemenu.items import FunctionItem, SubmenuItem
+import urllib.parse
 
 global state
 global current_git_root
@@ -901,10 +902,11 @@ class Commands:
             if self.run_text:
                 print("\n%s\n" % self.run_text)
             print("\nI can execute these commands for you if you choose.")
-            if self.ask_each:
-                print("You will get prompted before running each individual command.")
-            else:
-                print("You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
+            if len(self.commands) > 1:
+                if self.ask_each:
+                    print("You will get prompted before running each individual command.")
+                else:
+                    print("You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 index = 0
@@ -934,11 +936,11 @@ class Commands:
                             elif not os.path.isabs(log_folder):
                                 log_folder = os.path.join(state.get_rc_folder(), "logs", log_folder)
                             if not logfilename:
-                                logfilename = "%s.log" % re.sub(r"\W", "_", cmd.cmd)
+                                logfilename = "%s.log" % re.sub(r"\W", "_", cmd.get_cmd())
                             logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
                             print("Wait until command completes... Full log in %s\n" % logfile)
-                        if not run_with_log_tail(cmd.cmd, cwd, logfile=logfile, tee=cmd.tee, tail_lines=self.tail_lines) == 0:
-                            print("WARN: Command %s returned with error" % cmd.cmd)
+                        if not run_with_log_tail(cmd.get_cmd(), cwd, logfile=logfile, tee=cmd.tee, tail_lines=self.tail_lines) == 0:
+                            print("WARN: Command %s returned with error" % cmd.get_cmd())
                             success = False
                             if not self.ask_each:
                                 print("Aborting")
@@ -963,8 +965,14 @@ class Command:
         self.cwd = cwd
         self.cmd = cmd
 
+    def get_cmd(self):
+        if isinstance(self.cmd, list):
+            return " ".join(self.cmd)
+        else:
+            return self.cmd
+
     def __str__(self):
-        return self.cmd
+        return self.get_cmd()
 
 
 class UserInput():
@@ -977,6 +985,13 @@ class UserInput():
         if dict:
             dict[self.name] = result
         return result
+
+
+def quote_spaces(path):
+    if " " in path:
+        return '"%s"' % path
+    else:
+        return path
 
 
 class TodoMethods:
@@ -1143,11 +1158,11 @@ One way is to rename the ivy cache folder before building.
         except Exception as e:
             raise Exception("Faild getting key: %s" % e)
 
-        # logfile = os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log')
+        # logfile = quote_spaces(os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log'))
         logfile = "/tmp/release.log"
         cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s" \
                   % (os.path.join('dev-tools', 'scripts', 'buildAndPushRelease.py'),
-                     os.path.join(state.get_rc_folder(), "dist"),
+                     quote_spaces(os.path.join(state.get_rc_folder(), "dist")),
                      state.rc_number,
                      key_id)
         # Add --logfile %s"
@@ -1173,17 +1188,14 @@ log, tail the log in another Terminal:
             ask_run=False,
             ask_each=False)
 
-
     def smoke_tester_commands(self, todo):
-        os.chdir(state.get_git_checkout_folder)
+        os.chdir(state.get_git_checkout_folder())
         git_rev = open('rev.txt', encoding='UTF-8').read().strip()
-        dist_folder = os.path.join(state.get_rc_folder(), "dist", )
+        dist_folder = os.path.join(state.get_rc_folder(), "dist", "lucene-solr-%s-RC%s-rev%s" % (state.release_version, state.rc_number, git_rev)).replace("\\", "/")
         cmdline = "python3 -u %s --tmp-dir %s %s" \
                   % (os.path.join('dev-tools', 'scripts', 'smokeTestRelease.py'),
-                     os.path.join(state.get_rc_folder(), "smoketest"),
-                     "file://%s" % dist_folder)
-        # --revision $REV --version $VER $NOTSIGNED file://$DIR
-        # --revision %s --version %s
+                     quote_spaces(os.path.join(state.get_rc_folder(), "smoketest")),
+                     "file://%s" % urllib.parse.quote(dist_folder))
 
         return Commands(
             state.get_git_checkout_folder(),
@@ -1192,7 +1204,7 @@ log, tail the log in another Terminal:
                 Command(cmdline, logfile="smoketest.log", tee=True),
             ],
             env={'JAVACMD': state.get_java_cmd()},
-            ask_run=False,
+            ask_run=True,
             ask_each=False)
 
     def import_svn_commands(self, todo):
