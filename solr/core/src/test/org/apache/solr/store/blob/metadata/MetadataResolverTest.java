@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.apache.solr.store.blob.metadata.MetadataResolver.Action;
 import org.apache.solr.store.blob.metadata.ServerSideCoreMetadata.CoreConfigFileData;
 import org.apache.solr.store.blob.metadata.ServerSideCoreMetadata.CoreFileData;
-import org.apache.solr.store.blob.util.BlobTestUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,7 +28,7 @@ import static org.mockito.Mockito.when;
  */
 public class MetadataResolverTest {
 
-    private static final String CORE_NAME = BlobTestUtil.getValidSolrCoreName();
+    private static final String CORE_NAME = "dummyCoreName";
     private static final Collection EXCEPTION_EXPECTED_INSTEAD_OF_COLLECTION = null;
 
     /**

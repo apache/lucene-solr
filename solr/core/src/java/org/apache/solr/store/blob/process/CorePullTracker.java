@@ -29,8 +29,7 @@ public class CorePullTracker {
 
     /* Config value that enables core pulls */
     @VisibleForTesting
-    public static boolean isBackgroundPullEnabled = true; // TODO
-    // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPulling));
+    public static boolean isBackgroundPullEnabled = true; // TODO : make configurable
 
     private static CorePullTracker INSTANCE = null;
 
@@ -64,12 +63,9 @@ public class CorePullTracker {
             CoreContainer cores) throws IOException {
     	String servletPath = request.getServletPath();
 
-//        String coreName = SfdcCoreName.getCorenameFromRequestPath(servletPath);
-//        Map<String, String[]> params = getRequestParams(request);
         // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
-        // TODO: always pull for this hack
+        // TODO: always pull for this hack - want to check if local core is up to date
         if (isBackgroundPullEnabled && coreName != null && shouldPullStale(servletPath)) {
-                // && !isLocalCoreUpToDate(params, coreName, cores)) {
             enqueueForPull(coreName, collectionName, false, false);
         }
     }
@@ -112,24 +108,6 @@ public class CorePullTracker {
 
         return params;
     }
-
-//    /**
-//     * Determines if our local core is up to date
-//     */
-//    private boolean isLocalCoreUpToDate(Map<String, String[]> params, String coreName,
-//                                        CoreContainer cores) throws IOException {
-//
-//        CoreEpoch localCoreEpoch = new CoreEpoch(coreName, cores);
-//        // For local core freshness checks, we should compare our local replay count against what the app expects
-//        // our last acknowledged sequence number (replay) to be (see W-2864356).
-//        String requestedCoreReplay = getParameterValue(params, SfdcMetadataProcessorFactory.LAST_ACKNOWLEDGED, null);
-//        String requestedCoreGeneration = getParameterValue(params, SfdcMetadataProcessorFactory.GENERATION, null);
-//        CoreEpoch requestedCoreEpoch = (Strings.isNullOrEmpty(requestedCoreReplay)
-//                || Strings.isNullOrEmpty(requestedCoreGeneration)) ? new CoreEpoch(0, 0)
-//                : new CoreEpoch(requestedCoreReplay, requestedCoreGeneration);
-//
-//        return localCoreEpoch.isFreshEnough(requestedCoreEpoch);
-//    }
 
     /** @return the *first* value for the specified parameter or {@code defaultValue}, if not present. */
     private String getParameterValue(Map<String, String[]> params, String parameterName, String defaultValue) {

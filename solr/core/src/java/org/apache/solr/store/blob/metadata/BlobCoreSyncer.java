@@ -2,6 +2,8 @@ package org.apache.solr.store.blob.metadata;
 
 import java.util.*;
 import java.util.concurrent.*;
+
+import com.amazonaws.annotation.GuardedBy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 //import net.jcip.annotations.GuardedBy;
@@ -50,10 +52,10 @@ public class BlobCoreSyncer {
     /** Core names currently being pulled from blob. Value is collection of objects used for synchronization by all waiting threads.
      * If both the locks on this map and on a specific SyncOnPullWait in the map are needed, the lock on the map must be acquired first.
      */
-    // @GuardedBy("itself")
+    @GuardedBy("itself")
     private static final Map<String, Collection<SyncOnPullWait>> coreSyncsInFlight = Maps.newHashMap();
 
-    // @GuardedBy("coreSyncsInFlight")
+    @GuardedBy("coreSyncsInFlight")
     private static int total_waiting_threads = 0;
 
     /**

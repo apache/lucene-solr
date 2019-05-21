@@ -30,8 +30,7 @@ public class CorePusherFeeder extends CoreSyncFeeder {
      */
     private volatile static CorePusherFeeder runningFeeder = null;
 
-    private static final int numPusherThreads = 5; // Integer
-            // .parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobStorePushThreads));
+    private static final int numPusherThreads = 5;
 
     private final CorePushTask.PushCoreCallback callback;
 
@@ -46,9 +45,6 @@ public class CorePusherFeeder extends CoreSyncFeeder {
     public static void init(CoreContainer cores) {
         // Only enable the core pusher feeder (and create its thread and the thread its thread creates) if configured to
         // do so. Note that if this property is disabled, we also not enqueue core changes in CoreUpdateTracker
-//        if (Boolean
-//                .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing))) {
-            // Assuming this can only be initialized once, so would like to know if assumption is wrong
         assert runningFeeder == null;
 
         CorePusherFeeder cpf = new CorePusherFeeder(cores);
@@ -59,9 +55,6 @@ public class CorePusherFeeder extends CoreSyncFeeder {
         runningFeeder = cpf;
 
         logger.info("EnableBlobBackgroundPushing is true, started CorePusherFeeder");
-//        } else {
-//            logger.log(Level.INFO, null, "EnableBlobBackgroundPushing is false, not starting CorePusherFeeder");
-//        }
     }
 
     @Override

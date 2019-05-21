@@ -27,12 +27,13 @@ import org.apache.solr.store.blob.provider.BlobStorageProvider;
  */
 public class BlobStoreBootstrapper {
   
-  private static String localBlobDir = System.getProperty("blob.local.dir", "/tmp/BlobStoreLocal/");//config.getSfdcConfigProperty(SfdcConfigProperty.LocalBlobStoreHome);
-  private static String blobBucketName =  System.getProperty("blob.service.bucket", "");//config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceBucket);
-  private static String blobstoreEndpoint = System.getProperty("blob.service.endpoint", "");//config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceEndpoint);
-  private static String blobStorageProvider = System.getProperty("blob.service.provider", "LOCAL_FILE_SYSTEM");//config.getSfdcConfigProperty(SfdcConfigProperty.BlobStorageProvider);
-  private static String blobstoreAccessKey = System.getProperty("blob.key.access", "");//config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceAccessToken);
-  private static String blobstoreSecretKey = System.getProperty("blob.key.secret", "");//config.getSfdcConfigProperty(SfdcConfigProperty.BlobServiceSecretToken);
+  // TODO : make configurable
+  private static String localBlobDir = System.getProperty("blob.local.dir", "/tmp/BlobStoreLocal/");
+  private static String blobBucketName =  System.getProperty("blob.service.bucket", "");
+  private static String blobstoreEndpoint = System.getProperty("blob.service.endpoint", "");
+  private static String blobStorageProvider = System.getProperty("blob.service.provider", "LOCAL_FILE_SYSTEM");
+  private static String blobstoreAccessKey = System.getProperty("blob.key.access", "");
+  private static String blobstoreSecretKey = System.getProperty("blob.key.secret", "");
   
   
   public static void init(CoreContainer cores) throws Exception {

@@ -29,7 +29,7 @@ public class CoreUpdateTracker {
     /**
      * Variable to quickly check if each update notification should trigger an enqueue for core push to Blob.
      */
-    private static volatile boolean enqueueForPush = true; // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing));
+    private static volatile boolean enqueueForPush = true; // TODO : make configurable
 
     /**
      * The max size (in number of entries) of {@link #updatedCores}. Because that list is deduplicated on core name,
@@ -61,7 +61,7 @@ public class CoreUpdateTracker {
         // 2. load from config each time the value is needed (performance impact?) and 3. try to be smart and reload when
         // it changes...
         // We attempt to be smart here and reload when needed yet caching the value for most accesses :)
-        enqueueForPush = true; //Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing));
+        enqueueForPush = true;
 
         return INSTANCE;
     }

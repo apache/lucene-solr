@@ -360,9 +360,6 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     private boolean coreExists(String coreName) {
 
         SolrCore core = null;
-        
-//      CoreMetadata.CoreLocation location = CoreMetadataProvider.get(coreContainer).getCoreLocation(coreName);
-//      File coreIndexDir = location.getIndexDir();
         File coreIndexDir = new File(coreContainer.getCoreRootDirectory() + "/" + coreName);
         if (coreIndexDir.exists()) {
           core = coreContainer.getCore(coreName);
@@ -427,26 +424,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         // code will go away with the move to Blob based Storage of cores).
         //CoreMetadata.CoreLocation location = CoreMetadataProvider.get(coreContainer).getCoreLocation(coreName);
 
-//        CoreMetadataProvider.get(coreContainer).executeExclusive(coreName, coreContainer, () -> {
-//            Map<String, String> params = CoreUtil.getCoreCreationParams(SfdcConfig.get(), location, null);
-//            params.put(CoreDescriptor.CORE_DATADIR, location.getDataDirectory().getPath());
-//            params.put(CoreDescriptor.CORE_CONFIGSET, "coreset");
-//            params.put(CoreDescriptor.CORE_TRANSIENT, "true");
-//            params.put(CoreDescriptor.CORE_LOADONSTARTUP, "false");
-//
-//            // In certain corrupt core scenarios, an index may not exist although we have a core descriptor for it.
-//            // In this case, we still wish to pull from our blob, so we'll remove the descriptor (after copying its
-//            // properties above, if any) in order to allow the create call to succeed (otherwise will fail with core
-//            // already exists error).
-//            if (null != coreContainer.getTransientCache().removeTransientDescriptor(coreName)) {
-//                logger.log(Level.FINE, null, "BlobCoreSyncer: removed an existing core descriptor for core=" + coreName +
-//                        ", inCache=" + location.getInCache() + ", location=" + location.getIndexDir() == null ? "null" : location.getIndexDir().getAbsolutePath());
-//            }
-//
-//            coreContainer.create(coreName, location.getInstanceDirectory().toPath(), params, false);
-//            // we do not call open() on the new core to not increase its ref count.
-//            return null;
-//        }, 3, TimeUnit.MINUTES, CoreMetadata.CoreStatus.Creating);
+        // TODO account for corrupt cores
     }
 
     /**

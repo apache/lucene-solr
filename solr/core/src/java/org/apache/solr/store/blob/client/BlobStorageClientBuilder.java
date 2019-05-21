@@ -38,15 +38,6 @@ public class BlobStorageClientBuilder {
                         + "Displaying non-secret values for debug: localStorageDir=%s blobCoreMetadataName=%s", localStorageRootDir, blobCoreMetadataName));
             }
             client = new LocalStorageClient(localStorageRootDir, blobCoreMetadataName);
-//        } else if (blobStorageProvider.equals(BlobstoreProviderType.GCS.name())) {
-//            if (isNullOrEmpty(blobBucketName, blobCoreMetadataName)) {
-//            throw new IllegalArgumentException(String.format(
-//                    "Could not build GCSStorageClient due to invalid fields! "
-//                            + "Displaying non-secret values for debug: blobBucketName=%s " + "blobCoreMetadataName=%s",
-//                    blobBucketName, blobCoreMetadataName)); }
-//            if (!isNullOrEmpty(endpoint)
-//                    && endpoint.equals(GCSStorageClient.LOCAL_STORAGE_ENDPOINT)) { return getGCSClientForTesting(); }
-//            client = new GCSStorageClient(blobBucketName, blobCoreMetadataName);
         } else if (blobStorageProvider.equals(BlobstoreProviderType.S3.name())) {
             if (isNullOrEmpty(blobBucketName, endpoint, accessKey, secretKey,
                     blobCoreMetadataName)) {
@@ -73,28 +64,4 @@ public class BlobStorageClientBuilder {
     private boolean isNullOrEmpty(String value) {
         return (value == null) || value.isEmpty();
     }
-//
-//    /**
-//     * Creates a GCS Storage Client to be used while testing. Google's LocalStorageHelper uses FakeStorageRpc which has
-//     * limited functionality, so we need to override certain methods.
-//     */
-//    private CoreStorageClient getGCSClientForTesting() throws BlobException {
-//        return new GCSStorageClient(blobBucketName, endpoint,
-//                BlobStorageProvider.CORE_METADATA_BLOB_FILENAME, LocalStorageHelper.getOptions().getService()) {
-//            // The local Storage service cannot delete in batches
-//            @Override
-//            public void deleteBlobs(Collection<String> paths) throws BlobException {
-//                for (String path : paths) {
-//                    BlobId blobId = BlobId.of(getBucketName(), path);
-//                    getStorage().delete(blobId);
-//                }
-//            }
-//
-//            // The local Storage service does not connect with an actual GCS bucket
-//            @Override
-//            public boolean doesBucketExist() throws BlobException {
-//                return true;
-//            }
-//        };
-//    }
 }

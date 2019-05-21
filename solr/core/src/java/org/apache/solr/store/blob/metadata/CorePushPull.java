@@ -609,9 +609,6 @@ public class CorePushPull {
                 blobClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, localGenerationNumber,
                 blobGenerationNumber, filesAffected, isSuccess);
         logger.info(message);
-//        LoggingUtils.logBlobAction(logger, coreName, action.name(), blobClient.getStorageProvider().name(),
-//                blobClient.getBucketRegion(), blobClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt,
-//                localSequenceNumber, localGenerationNumber, blobSequenceNumber, blobGenerationNumber, filesAffected, isSuccess);
     }
 
     /**

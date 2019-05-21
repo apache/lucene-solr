@@ -93,9 +93,6 @@ class BlobDeleterTask implements Runnable {
                     blobClient.getBucketName(), runTime, startLatency, 0L, attempt.get(), -1L,
                     -1L, this.blobNames.size(), isSuccess);
             logger.info(message);
-//            LoggingUtils.logBlobAction(logger.getLogger(), coreName, "DELETE", blobClient.getStorageProvider().name(), blobClient.getBucketRegion(),
-//                     blobClient.getBucketName(), runTime, startLatency, /* bytesTransferred */ 0L, attempt.get(), -1L, -1L, -1L, -1L,
-//                    this.blobNames.size(), isSuccess);
         }
     }
 }

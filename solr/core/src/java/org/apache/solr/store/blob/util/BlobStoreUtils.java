@@ -67,9 +67,8 @@ public class BlobStoreUtils {
      * @return true if EnableBlob is true and EnableBlobBackgroundPulling is true
      */
     public static boolean isPullingEnabled() {
-        return true;
-        // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlob)) && Boolean
-        // .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPulling));
+      // TODO : make configurable
+      return true;
     }
 
     /**
@@ -78,8 +77,7 @@ public class BlobStoreUtils {
      * @return true if EnableBlob is true and EnableBlobBackgroundPushing is true
      */
     public static boolean isPushingEnabled() {
-        return true;
-        // Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlob)) && Boolean
-        // .parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobBackgroundPushing));
+      // TODO : make configurable
+      return true;
     }
 }

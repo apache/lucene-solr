@@ -403,28 +403,6 @@
     <property name="analyzers-kuromoji-javadocs.uptodate" value="true"/>
   </target>
 
-  <property name="analyzers-uima.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}.jar"/>
-  <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
-    <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
-  </target>
-  <target name="jar-analyzers-uima" unless="analyzers-uima.uptodate" depends="check-analyzers-uima-uptodate">
-    <ant dir="${common.dir}/analysis/uima" target="jar-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="analyzers-uima.uptodate" value="true"/>
-  </target>
-
-  <property name="analyzers-uima-javadoc.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}-javadoc.jar"/>
-  <target name="check-analyzers-uima-javadocs-uptodate" unless="analyzers-uima-javadocs.uptodate">
-    <module-uptodate name="analysis/uima" jarfile="${analyzers-uima-javadoc.jar}" property="analyzers-uima-javadocs.uptodate"/>
-  </target>
-  <target name="javadocs-analyzers-uima" unless="analyzers-uima-javadocs.uptodate" depends="check-analyzers-uima-javadocs-uptodate">
-    <ant dir="${common.dir}/analysis/uima" target="javadocs" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="analyzers-uima-javadocs.uptodate" value="true"/>
-  </target>
-
   <property name="analyzers-morfologik.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
   <fileset id="analyzers-morfologik.fileset" dir="${common.dir}">
     <include name="build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar" />

@@ -7,10 +7,6 @@ import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.*;
-//import org.junit.runner.RunWith;
-//import org.junit.runners.Parameterized;
-//import org.junit.runners.Parameterized.Parameter;
-//import org.junit.runners.Parameterized.Parameters;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -23,7 +19,6 @@ import org.apache.solr.store.blob.provider.BlobStorageProvider;
  * @author iginzburg
  * @since 214/solr.6
  */
-//@RunWith(Parameterized.class)
 public class CoreStorageClientTest {
    
     static final String TEST_CORE_NAME_1 = "s_test_core_name1";
@@ -31,21 +26,8 @@ public class CoreStorageClientTest {
 
     File testDir;
     CoreStorageClient blobClient;
-//    @Parameter
-//    public BlobstoreProviderType provider;
     
     static final byte[] EMPTY_BYTES_ARR = {};
-    
-//    /**
-//     * Defines a list of blobstore implementations that this test will run against.
-//     */
-//    @Parameters(name = "provider={0}")
-//    public static Collection<Object[]> data() {
-//        return Arrays.asList(new Object[][] {
-//                { BlobstoreProviderType.LOCAL_FILE_SYSTEM },
-//                { BlobstoreProviderType.S3 }
-//        });
-//    }
 
     @Before
     public void setup() throws Exception {
@@ -114,7 +96,6 @@ public class CoreStorageClientTest {
             byte[] bytesPulled = Files.readAllBytes(pulled.toPath());
 
             Assert.assertArrayEquals("Content pulled from blob should be identical to value previously pushed", bytesLocal, bytesPulled);
-
             Assert.assertEquals("Pulled content expected same size as content initially written", bytesPulled.length, bytesWritten.length);
         } finally {
             local.delete();

@@ -35,8 +35,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     protected final DeduplicatingList<String, CorePullTask> pullTaskQueue;
     protected static final String PULLER_THREAD_PREFIX = "puller";
 
-    private static final int numPullerThreads = 5; // Integer
-            // .parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobStorePullThreads));
+    private static final int numPullerThreads = 5; // TODO : make configurable
 
     private CorePullerFeeder(CoreContainer cores) {
         super(cores, numPullerThreads);

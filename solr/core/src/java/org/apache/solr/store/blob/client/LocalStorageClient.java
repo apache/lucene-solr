@@ -235,7 +235,6 @@ public class LocalStorageClient implements CoreStorageClient {
                     .map(file -> BlobClientUtils.concatenatePaths(coreName, file.getName()))
                     .collect(Collectors.toList());
             return blobFiles;
-            //return blobFiles;
         } catch (Exception ex) {
             throw new BlobException(ex);
         }

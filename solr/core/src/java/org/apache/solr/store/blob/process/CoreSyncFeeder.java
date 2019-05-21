@@ -89,11 +89,7 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
                 feedTheMonsters();
             } catch (Throwable e) {
                 if (!closed) {
-                    // Only gack if the close was not "planned", i.e. the thread is stopping without close() being explicitly called.
-//                    new SearchServerGack(GackLevel.SEVERE,
-//                            SearchServerGack.SearchServerGackSubject.BLOB_SYNC_FEEDER_EXITING,
-//                            "No more core syncs will will be done with Blob store. This searchserver should likely be restarted.",
-//                            "", e).send();
+                  // TODO send warning message here
                 }
             } finally {
                 // If we stop, have our syncer "thread pool" stop as well since there's not much they can do anyway

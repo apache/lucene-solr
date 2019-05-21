@@ -1,4 +1,6 @@
 # .
+.DS_Store
+.metadata
 /eclipse-build
 /maven-build
 /classes
@@ -26,8 +28,5 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
-*.DS_Store
-/.metadata/
-*.classpath
-*.gitignore
-*.project
+*.class
+/solr/server/webapps

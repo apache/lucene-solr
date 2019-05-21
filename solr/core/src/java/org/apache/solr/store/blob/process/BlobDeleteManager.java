@@ -72,26 +72,11 @@ public class BlobDeleteManager {
         assert runningDeleter == null;
 
         int numDeleterThreads = 5;
-        //Integer.parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleterThreads));
         long deleteDelayMs = 8000;
-        //Long.parseLong(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleteDelay));
 
+        // TODO : make this configurable - might want delete manager to be disabled
         runningDeleter = new BlobDeleteManager(ALMOST_MAX_DELETER_QUEUE_SIZE, numDeleterThreads, deleteDelayMs);
         logger.info("EnableBlobFileDeleter is true, BlobDeleteManager will accept deletes");
-
-        // Only enable the blob file deleter (and create its thread and the thread its thread creates) if configured to
-        // do so.
-//        if (Boolean.parseBoolean(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.EnableBlobFileDeleter))) {
-//
-//            int numDeleterThreads = Integer.parseInt(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleterThreads));
-//            long deleteDelayMs = Long.parseLong(SfdcConfig.get().getSfdcConfigProperty(SfdcConfigProperty.BlobFileDeleteDelay));
-//
-//            runningDeleter = new BlobDeleteManager(ALMOST_MAX_DELETER_QUEUE_SIZE, numDeleterThreads, deleteDelayMs);
-//
-//            logger.log(Level.INFO, null, "EnableBlobFileDeleter is true, BlobDeleteManager will accept deletes");
-//        } else {
-//            logger.log(Level.INFO, null, "EnableBlobFileDeleter is false, BlobDeleteManager will reject all deletes");
-//        }
     }
 
     public static void shutdown() {
