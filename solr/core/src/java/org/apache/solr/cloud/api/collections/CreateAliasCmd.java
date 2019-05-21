@@ -85,6 +85,9 @@ public class CreateAliasCmd extends AliasCmd {
 
   private void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {
     final List<String> canonicalCollectionList = parseCollectionsParameter(message.get("collections"));
+    if (canonicalCollectionList.isEmpty()) {
+      throw new SolrException(BAD_REQUEST, "'collections' parameter doesn't contain any collection names.");
+    }
     final String canonicalCollectionsString = StrUtils.join(canonicalCollectionList, ',');
     validateAllCollectionsExistAndNoDuplicates(canonicalCollectionList, zkStateReader);
     zkStateReader.aliasesManager
@@ -101,6 +104,7 @@ public class CreateAliasCmd extends AliasCmd {
     if (colls instanceof List) return (List<String>) colls;
     return StrUtils.splitSmart(colls.toString(), ",", true).stream()
         .map(String::trim)
+        .filter(s -> !s.isEmpty())
         .collect(Collectors.toList());
   }
 

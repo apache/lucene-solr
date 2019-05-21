@@ -41,10 +41,16 @@ Bug Fixes
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
   IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
 
+* LUCENE-8804: Forbid calls to putAttribute on frozen FieldType instances.
+  (Vamshi Vijay Nakkirtha via Adrien Grand)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
   as opposed to eliminating them during scoring construction. (Atri Sharma via Jim Ferenczi)
+
+======================= Lucene 8.1.1 =======================
+(No Changes)
 
 ======================= Lucene 8.1.0 =======================
 
