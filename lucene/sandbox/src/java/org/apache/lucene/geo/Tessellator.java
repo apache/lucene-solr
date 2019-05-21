@@ -17,7 +17,9 @@
 package org.apache.lucene.geo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.geo.GeoUtils.WindingOrder;
 import org.apache.lucene.util.BitUtil;
@@ -144,19 +146,24 @@ final public class Tessellator {
   private static final Node eliminateHoles(final Polygon polygon, Node outerNode) {
     // Define a list to hole a reference to each filtered hole list.
     final List<Node> holeList = new ArrayList<>();
+    // keep a reference to the hole
+    final Map<Node, Polygon> holeListPolygons = new HashMap<>();
     // Iterate through each array of hole vertices.
     Polygon[] holes = polygon.getHoles();
     int nodeIndex = polygon.numPoints();
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
       Node list = createDoublyLinkedList(holes[i], nodeIndex, WindingOrder.CCW);
+
       if (list == list.next) {
         list.isSteiner = true;
       }
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.
-        holeList.add(fetchLeftmost(list));
+        Node leftMost = fetchLeftmost(list);
+        holeList.add(leftMost);
+        holeListPolygons.put(leftMost, holes[i]);
       }
       nodeIndex += holes[i].numPoints();
     }
@@ -181,7 +188,8 @@ final public class Tessellator {
     for(int i = 0; i < holeList.size(); ++i) {
       // Eliminate hole triangles from the result set
       final Node holeNode = holeList.get(i);
-      eliminateHole(holeNode, outerNode);
+      final Polygon hole = holeListPolygons.get(holeNode);
+      eliminateHole(holeNode, outerNode, hole);
       // Filter the new polygon.
       outerNode = filterPoints(outerNode, outerNode.next);
     }
@@ -190,9 +198,9 @@ final public class Tessellator {
   }
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
-  private static final void eliminateHole(final Node holeNode, Node outerNode) {
+  private static final void eliminateHole(final Node holeNode, Node outerNode, Polygon hole) {
     // Attempt to find a logical bridge between the HoleNode and OuterNode.
-    outerNode = fetchHoleBridge(holeNode, outerNode);
+    outerNode = fetchHoleBridge(holeNode, outerNode, hole);
 
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
@@ -208,7 +216,7 @@ final public class Tessellator {
    *
    * see: http://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
    **/
-  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode) {
+  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode, Polygon hole) {
     Node p = outerNode;
     double qx = Double.NEGATIVE_INFINITY;
     final double hx = holeNode.getX();
@@ -218,9 +226,12 @@ final public class Tessellator {
     // segment's endpoint with lesser x will be potential connection point
     {
       do {
-        //if hole node is a vertex of the polygon, just use that.
-        if (isVertexEquals(p, holeNode)) {
-          return p;
+        //if vertex of the polygon is a vertex of the hole, just use that point.
+        if (Rectangle.containsPoint(p.getLat(), p.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
+          Node sharedVertex = getSharedVertex(holeNode, p);
+          if (sharedVertex != null) {
+            return sharedVertex;
+          }
         }
         if (hy <= p.getY() && hy >= p.next.getY() && p.next.getY() != p.getY()) {
           final double x = p.getX() + (hy - p.getY()) * (p.next.getX() - p.getX()) / (p.next.getY() - p.getY());
@@ -265,21 +276,19 @@ final public class Tessellator {
         p = p.next;
       }
     }
-    //In case more than one hole uses this connection point,
-    // make sure we choose the right one
-    return getBestConnector(connection, holeNode);
+    return connection;
   }
 
-  private static Node getBestConnector(Node connection, Node holeNode) {
-    Node candidate = connection;
-    Node next = connection.next;
+  /** Check if the provided vertex is in the polygon and return it **/
+  private static Node getSharedVertex(Node polygon, Node vertex) {
+    Node next = polygon;
     do {
-      if (isVertexEquals(next, connection) && isLocallyInside(next, holeNode)) {
-        candidate = next;
+      if (isVertexEquals(next, vertex)) {
+        return next;
       }
       next = next.next;
-    } while (next.next != connection);
-    return candidate;
+    } while(next != polygon);
+    return null;
   }
 
   /** Finds the left-most hole of a polygon ring. **/
