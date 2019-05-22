@@ -470,7 +470,6 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                ask_run=False,
                                ask_each=False),
                            depends="smoke_tester")
-                      # Import the artifacts into SVN: svn -m "Lucene/Solr 6.0.1 RC1" import /tmp/releases/6.0.1/lucene-solr-6.0.1-RC1-rev... https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
                       # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
                       # Don't delete these artifacts from your local workstation as you'll need to publish the maven subdirectories once the RC passes (see below).
                   ],
@@ -613,6 +612,9 @@ class ReleaseState:
 
     def new_rc(self):
         if ask_yes_no("Are you sure? This will abort current RC"):
+            if state.get_todo_by_id('import_svn').is_done():
+                # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
+                pass # TODO: Remove old RC from svn
             dict = OrderedDict()
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
