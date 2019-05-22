@@ -40,13 +40,19 @@ if [ -z ${CONTAINER_NAME} ]; then
 fi
 
 exec() {
-  docker exec $2 -t ${CONTAINER_NAME} bash -c "$1"
+  docker exec --user ${UID} $2 -t ${CONTAINER_NAME} bash -c "$1"
 }
 
 set -x
 
-# clean and build without unit tests
-cmd="cd /home/lucene/project;./gradlew clean build -x test"
+# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host
+
+# hack to allows us to run gradle in the host and then in docker on the same project files
+cmd="rm -rf /home/lucene/project/.gradle"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+# build without unit tests
+cmd="cd /home/lucene/project;rm -rf /home/lucene/project/.gradle;./gradlew build -x test"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test regenerate task
@@ -58,9 +64,6 @@ cmd="cd /home/lucene/project;./gradlew forbiddenApis"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test eclipse tasks
-cmd="cd /home/lucene/project;./gradlew cleanEclipse eclipse"
+cmd="cd /home/lucene/project;./gradlew eclipse"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# clean up build folders
-cmd="cd /home/lucene/project;./gradlew clean"
-exec "${cmd}" "${exec_args}" || { exit 1; }

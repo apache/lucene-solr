@@ -16,14 +16,9 @@
 # Pull base image.
 FROM ubuntu:18.10
 
-# Define working directory.
-WORKDIR /home/lucene
-
 # Define default command.
 CMD ["bash"]
 
-# We actually pre install some stuff the script would install for you
-# We count on end-to-end-test-mode to test that
 RUN \
   apt-get update && \
   apt-get install -y openjdk-11-jdk && \
@@ -33,4 +28,12 @@ RUN \
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
 
 RUN export JAVA_HOME
-  
+
+RUN useradd -ms /bin/bash lucene
+
+# Define working directory.
+WORKDIR /home/lucene
+
+RUN chown -R lucene:lucene /home/lucene
+
+USER lucene
