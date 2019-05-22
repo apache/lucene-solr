@@ -37,8 +37,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class KeepWordFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "keepWord";
+
   private final boolean ignoreCase;
   private final String wordFiles;
   private CharArraySet words;

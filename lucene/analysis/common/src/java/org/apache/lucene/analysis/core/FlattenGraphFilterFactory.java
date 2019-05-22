@@ -27,8 +27,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  * @lucene.experimental
  * @since 6.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class FlattenGraphFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "flattenGraph";
 
   /** Creates a new FlattenGraphFilterFactory */
   public FlattenGraphFilterFactory(Map<String,String> args) {

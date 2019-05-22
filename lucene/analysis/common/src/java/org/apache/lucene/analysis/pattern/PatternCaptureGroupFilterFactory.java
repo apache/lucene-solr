@@ -35,8 +35,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  * @see PatternCaptureGroupTokenFilter
  * @since 4.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class PatternCaptureGroupFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "patternCaptureGroup";
+
   private Pattern pattern;
   private boolean preserveOriginal = true;
   

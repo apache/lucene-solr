@@ -37,8 +37,11 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 4.8.0
+ * @lucene.spi {@value #NAME}
  */
 public class TruncateTokenFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "truncate";
 
   public static final String PREFIX_LENGTH_KEY = "prefixLength";
   private final byte prefixLength;

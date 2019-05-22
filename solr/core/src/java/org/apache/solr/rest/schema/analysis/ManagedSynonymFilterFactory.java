@@ -55,9 +55,12 @@ import org.slf4j.LoggerFactory;
  * @deprecated Use {@link ManagedSynonymGraphFilterFactory} instead, but be sure to also
  * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
  * @since 4.8.0
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
+
+  public static final String NAME = "managedSynonym";
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   

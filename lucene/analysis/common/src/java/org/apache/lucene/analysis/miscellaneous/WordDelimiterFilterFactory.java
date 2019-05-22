@@ -54,9 +54,13 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
  * the search time analyzer.
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "wordDelimiter";
+
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
 

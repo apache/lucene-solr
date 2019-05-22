@@ -37,8 +37,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class KeywordMarkerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "keywordMarker";
+
   public static final String PROTECTED_TOKENS = "protected";
   public static final String PATTERN = "pattern";
   private final String wordFiles;

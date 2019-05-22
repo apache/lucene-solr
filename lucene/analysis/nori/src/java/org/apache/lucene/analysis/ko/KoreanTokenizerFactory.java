@@ -60,8 +60,12 @@ import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
  * @lucene.experimental
  *
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class KoreanTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "korean";
+
   private static final String USER_DICT_PATH = "userDictionary";
   private static final String USER_DICT_ENCODING = "userDictionaryEncoding";
   private static final String DECOMPOUND_MODE = "decompoundMode";

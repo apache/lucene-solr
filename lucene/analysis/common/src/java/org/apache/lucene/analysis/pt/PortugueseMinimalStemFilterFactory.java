@@ -33,8 +33,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class PortugueseMinimalStemFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "portugueseMinimalStem";
   
   /** Creates a new PortugueseMinimalStemFilterFactory */
   public PortugueseMinimalStemFilterFactory(Map<String,String> args) {

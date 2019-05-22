@@ -32,8 +32,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class IrishLowerCaseFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "irishLowerCase";
 
   /** Creates a new IrishLowerCaseFilterFactory */
   public IrishLowerCaseFilterFactory(Map<String,String> args) {

@@ -33,8 +33,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class HyphenatedWordsFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "hyphenationCompoundWord";
   
   /** Creates a new HyphenatedWordsFilterFactory */
   public HyphenatedWordsFilterFactory(Map<String,String> args) {

@@ -32,8 +32,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 4.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class ScandinavianNormalizationFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "scandinavianFolding";
 
   public ScandinavianNormalizationFilterFactory(Map<String, String> args) {
     super(args);

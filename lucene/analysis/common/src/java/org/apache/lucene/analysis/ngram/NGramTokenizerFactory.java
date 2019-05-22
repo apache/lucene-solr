@@ -35,8 +35,12 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class NGramTokenizerFactory extends TokenizerFactory {
+
+  public static final String NAME = "nGram";
+
   private final int maxGramSize;
   private final int minGramSize;
 

@@ -44,8 +44,11 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  * </ul>
  * @see ConcatenateGraphFilter
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "concatenateGraph";
 
   private boolean preserveSep;
   private boolean preservePositionIncrements;

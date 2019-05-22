@@ -30,7 +30,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @lucene.spi {@value #NAME}
+ */
 public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "wordLengthTagging";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

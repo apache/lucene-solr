@@ -35,8 +35,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  * @since 5.0.0
+ * @lucene.spi {@value #NAME}
  */
 public class SerbianNormalizationFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "serbianNormalization";
+
   final String haircut;
 
   /** Creates a new SerbianNormalizationFilterFactory */

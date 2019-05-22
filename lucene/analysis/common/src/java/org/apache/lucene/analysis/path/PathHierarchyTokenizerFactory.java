@@ -68,8 +68,12 @@ import org.apache.lucene.util.AttributeFactory;
  * </pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PathHierarchyTokenizerFactory extends TokenizerFactory {
+
+  public static final String NAME = "pathHierarchy";
+
   private final char delimiter;
   private final char replacement;
   private final boolean reverse;

@@ -33,8 +33,12 @@ import org.apache.lucene.util.AttributeFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class WikipediaTokenizerFactory extends TokenizerFactory {
+
+  public static final String NAME = "wikipedia";
+
   public static final String TOKEN_OUTPUT = "tokenOutput";
   public static final String UNTOKENIZED_TYPES = "untokenizedTypes";
 

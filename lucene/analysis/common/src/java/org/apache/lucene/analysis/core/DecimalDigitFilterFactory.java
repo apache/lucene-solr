@@ -32,8 +32,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 5.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class DecimalDigitFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "decimalDigit";
   
   /** Creates a new DecimalDigitFilterFactory */
   public DecimalDigitFilterFactory(Map<String,String> args) {

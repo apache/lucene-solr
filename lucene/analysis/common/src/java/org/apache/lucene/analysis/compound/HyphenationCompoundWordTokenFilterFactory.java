@@ -58,8 +58,12 @@ import org.xml.sax.InputSource;
  *
  * @see HyphenationCompoundWordTokenFilter
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "hyphenationCompoundWord";
+
   private CharArraySet dictionary;
   private HyphenationTree hyphenator;
   private final String dictFile;

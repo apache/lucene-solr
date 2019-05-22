@@ -38,8 +38,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+  public static final String NAME = "dictionaryCompoundWord";
+
   private CharArraySet dictionary;
   private final String dictFile;
   private final int minWordSize;

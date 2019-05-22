@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class NGramFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "nGram";
+
   private final int maxGramSize;
   private final int minGramSize;
   private final boolean preserveOriginal;

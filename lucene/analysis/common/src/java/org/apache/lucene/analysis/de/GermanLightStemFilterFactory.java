@@ -33,8 +33,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class GermanLightStemFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "germanLightStem";
   
   /** Creates a new GermanLightStemFilterFactory */
   public GermanLightStemFilterFactory(Map<String,String> args) {

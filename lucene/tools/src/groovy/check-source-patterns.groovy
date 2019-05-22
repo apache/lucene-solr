@@ -178,8 +178,12 @@ ant.fileScanner{
         reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
       }
     }
-    if (!f.name.contains("Test") && !f.name.contains("Mock") &&
-        f.name.contains("CharFilterFactory") && !f.name.equals("CharFilterFactory.java")) {
+    // make sure that SPI names of all tokenizers/charfilters/tokenfilters are documented
+    if (!f.name.contains("Test") && !f.name.contains("Mock") && !text.contains("abstract") &&
+        !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
+        (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
+            f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
+            f.name.contains("FilterFactory") && text.contains("extends TokenFilterFactory"))) {
       if (!validSPINameJavadocTag.matcher(text).find()) {
         reportViolation(f, 'invalid spi name documentation')
       }

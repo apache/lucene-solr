@@ -32,8 +32,12 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "numericPayload";
+
   private final float payload;
   private final String typeMatch;
   

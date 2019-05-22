@@ -33,8 +33,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since solr 1.4
+ * @lucene.spi {@value #NAME}
  */
 public class ReverseStringFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "reverseString";
   
   /** Creates a new ReverseStringFilterFactory */
   public ReverseStringFilterFactory(Map<String,String> args) {

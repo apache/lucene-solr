@@ -34,8 +34,12 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class ShingleFilterFactory extends TokenFilterFactory {
+
+  public static final String NAME = "shingle";
+
   private final int minShingleSize;
   private final int maxShingleSize;
   private final boolean outputUnigrams;
