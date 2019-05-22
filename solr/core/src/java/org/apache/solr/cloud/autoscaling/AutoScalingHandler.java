@@ -144,11 +144,15 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         if (path != null) {
           List<String> parts = StrUtils.splitSmart(path, '/');
           if (parts.get(0).isEmpty()) parts.remove(0);
-          if (parts.size() == 3 && SUGGESTIONS.equals(parts.get(2))) {
+          if(parts.size() == 3) {
             Map map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
-            AutoScalingConfig config = new AutoScalingConfig(map);
-            handleSuggestions(rsp, config);
-            return;
+            if (SUGGESTIONS.equals(parts.get(2))) {
+              handleSuggestions(rsp, new AutoScalingConfig(map));
+              return;
+            } else if (DIAGNOSTICS.equals(parts.get(2))) {
+              handleDiagnostics(rsp, new AutoScalingConfig(map));
+              return;
+            }
           }
         }
 
