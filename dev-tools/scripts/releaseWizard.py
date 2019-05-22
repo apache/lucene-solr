@@ -113,6 +113,15 @@ def quote_spaces(path):
         return path
 
 
+def read_file(file, cwd=None):
+    try:
+        if cwd:
+            file = os.path.join(cwd, file)
+        return open(file, encoding='UTF-8').read()
+    except:
+        return None
+
+
 def init_todos(state):
     return [
         TodoGroup('prerequisites',
@@ -360,8 +369,8 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
         TodoGroup('artifacts',
                   'Build the release artifacts',
                   textwrap.dedent("""\
-                      If after the last day of the feature freeze phase no blocking issues are 
-                      in JIRA with "Fix Version" {{ release_version }}, then it's time to build the 
+                      If after the last day of the feature freeze phase no blocking issues are
+                      in JIRA with "Fix Version" {{ release_version }}, then it's time to build the
                       release artifacts, run the smoke tester and stage the RC in svn"""),
                   [
                       Todo('run_tests',
@@ -393,15 +402,45 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                ask_each=False)),
                       Todo('build_rc',
                            'Build the release candidate',
+                           vars={'logfile': "/tmp/release.log",
+                                 'builder_path': "{{ ['dev-tools', 'scripts', 'buildAndPushRelease.py'] | path_join }}",
+                                 'dist_path': "{{ [rc_folder, 'dist'] | path_join }}",
+                                 'git_rev': read_file("rev.txt", cwd=state.get_git_checkout_folder()),
+                                 # 'logfile': "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}",
+                                 },
+                           commands=Commands(
+                               state.get_git_checkout_folder(),
+                               textwrap.dedent("""\
+                                           In this step we will build the RC using python script `buildAndPushRelease.py`
+                                           We have tried to compile the correct command below, and you need to execute
+                                           it in another Terminal window yourself.
+
+                                           Note that the script will take a long time. To follow the detailed build 
+                                           log, tail the log in another Terminal:
+                                           `tail -f {{ logfile }}`"""),
+                               [
+                                   Command("git checkout {{ release_branch }}", stdout=True),
+                                   Command("git clean -df", stdout=True, comment="Make sure checkout is clean and up to date"),
+                                   Command("git checkout -- .", stdout=True),
+                                   Command("git pull"),
+                                   Command("""python3 -u {{ builder_path }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}""", logfile="build_rc.log", tee=True),
+                               ],
+                               env={'JAVACMD': state.get_java_cmd()},
+                               ask_run=True,
+                               ask_each=False),
+                           # gpg.gpg_key
+                           # git_rev
+                           #         # Add --logfile %s"
+                           # 
                            depends="gpg"),
                       Todo('smoke_tester',
                            'Run the smoke tester',
                            vars={
-                               'dist_folder': "lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ git_rev }}",
+                               'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
                                'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
                                'tmp_dir': "{{ [rc_folder, 'smoketest'] | path_join }}",
                                'smoker_path': "{{ ['dev-tools', 'scripts', 'smokeTestRelease.py'] | path_join }}",
-                               'cmdline': """python3 -u {{ smoker_path }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path | urlencode }}"""
+                               'cmdline': """python3 -u {{ smoker_path }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}""" # | urlencode
                            },
                            commands=Commands(
                                state.get_git_checkout_folder(),
@@ -415,14 +454,17 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                            depends="build_rc"),
                       Todo('import_svn',
                            'Import artifacts into SVN',
+                           vars={
+                               'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                               'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
+                               'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}"
+                           },
                            commands=Commands(
                                state.get_git_checkout_folder(),
-                               """Here we'll test the release""",
+                               """Here we'll import the artifacts into Subversion""",
                                [
-                                   Command("""svn -m "Lucene/Solr %s RC%s" import %s https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-%s-RC%s-rev%s""" \
-                                           % (state.release_version, state.rc_number, os.path.join(state.get_rc_folder(), "dist"),
-                                              state.release_version, state.rc_number, state.get_git_rev())
-                                           , logfile="smoketest.log", tee=True),
+                                   Command("""svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}""",
+                                           logfile="import_svn.log", tee=True)
                                ],
                                env={'JAVACMD': state.get_java_cmd()},
                                ask_run=False,
@@ -454,12 +496,12 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                 Please vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version }}
                                 
                                 The artifacts can be downloaded from:
-                                https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ git_rev }}
+                                https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
                                 
                                 You can run the smoke tester directly with this command:
                                 
                                 python3 -u dev-tools/scripts/smokeTestRelease.py \\
-                                https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ git_rev }}
+                                https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ build_rc.git_rev | default("<git_rev>", True) }}
                                 
                                 Vote will be open for at least 72 hours plus weekends, i.e. until {{ vote_close }}.
                                 
@@ -834,7 +876,6 @@ def expand_jinja(text, vars=None):
         'release_version_major': state.release_version_major,
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
-        'git_rev': state.get_git_rev(),
         'state': state
     })
     global_vars.update(state.get_todo_states())
@@ -859,6 +900,10 @@ class Todo:
         self.depends = depends
         self.user_input = user_input
         self.commands = commands
+        if commands:
+            self.commands.todo_ref = self
+            for c in commands.commands:
+                c.todo_ref = self
         self.links = links
         self.done_initial_value = done
         self.fun = fun
@@ -873,8 +918,11 @@ class Todo:
         self.id = id
         self.state = {}
         self.set_done(done)
-        if self.commands and len(self.vars) > 0:
-            self.commands.vars.update(self.get_vars())
+        # if self.commands and len(self.vars) > 0:
+        #     self.commands.vars.update(self.get_vars())
+        #     print("Upated vars for command")
+        # if self.commands:
+        #     print("Updated vars for todo %s's commands to %s" % (self.id, self.commands.vars))
 
 
     def get_vars(self):
@@ -1403,7 +1451,8 @@ def is_windows():
 class Commands:
     def __init__(self, root_folder, commands_text, commands,
                  logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25,
-                 stdout=False, env=None, vars={}):
+                 stdout=False, env=None, vars={}, todo_ref=None):
+        self.todo_ref = todo_ref
         self.vars = vars
         self.env = env
         self.logs_prefix = logs_prefix
@@ -1416,7 +1465,7 @@ class Commands:
         self.commands_text = commands_text
         self.root_folder = root_folder
         for c in self.commands:
-            c.vars.update(self.vars)
+            c.todo_ref = todo_ref
 
     def run(self):
         root = self.get_root_folder()
@@ -1442,7 +1491,7 @@ class Commands:
             if cmd.cwd:
                 pre = "pushd %s && " % cmd.cwd
                 post = " && popd"
-            print("  %s%s%s" % (pre, cmd, post))
+            print("  %s%s%s" % (pre, cmd.get_cmd(), post))
 
         if self.ask_run:
             if self.run_text:
@@ -1505,7 +1554,8 @@ class Commands:
 
 
 class Command:
-    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None, vars={}):
+    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None, vars={}, todo_ref=None):
+        self.todo_ref = todo_ref
         self.vars = vars
         self.comment = comment
         self.tee = tee
@@ -1515,10 +1565,13 @@ class Command:
         self.cmd = cmd
 
     def get_cmd(self):
+        v = self.vars.copy()
+        if self.todo_ref:
+            v.update(self.todo_ref.get_vars())
         if isinstance(self.cmd, list):
-            return expand_jinja(" ".join(self.cmd), self.vars)
+            return expand_jinja(" ".join(self.cmd), v)
         else:
-            return expand_jinja(self.cmd, self.vars)
+            return expand_jinja(self.cmd, v)
 
     def __str__(self):
         return self.get_cmd()
@@ -1555,43 +1608,43 @@ class TodoMethods:
             if ask_yes_no("Found existing folder %s. Delete it now?" % state.get_git_checkout_folder()):
                 shutil.rmtree(state.get_git_checkout_folder())
 
-    def build_rc_commands(self, todo):
-        try:
-            key_id = state.get_todo_state_by_id('gpg')['gpg_key']
-        except Exception as e:
-            raise Exception("Faild getting key: %s" % e)
-
-        todo.state['git_rev'] = state.get_git_rev()
-
-        # logfile = quote_spaces(os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log'))
-        logfile = "/tmp/release.log"
-        cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s" \
-                  % (os.path.join('dev-tools', 'scripts', 'buildAndPushRelease.py'),
-                     quote_spaces(os.path.join(state.get_rc_folder(), "dist")),
-                     state.rc_number,
-                     key_id)
-        # Add --logfile %s"
-
-        return Commands(
-            state.get_git_checkout_folder(),
-            textwrap.dedent("""\
-                In this step we will build the RC using python script `buildAndPushRelease.py`
-                We have tried to compile the correct command below, and you need to execute
-                it in another Terminal window yourself.
-                
-                Note that the script will take a long time. To follow the detailed build 
-                log, tail the log in another Terminal:
-                `tail -f %s`""") % logfile,
-            [
-                Command("git checkout {{ release_branch }}", stdout=True),
-                Command("git clean -df", stdout=True, comment="Make sure checkout is clean and up to date"),
-                Command("git checkout -- .", stdout=True),
-                Command("git pull"),
-                Command(cmdline, logfile="build_rc.log", tee=True),
-            ],
-            env={'JAVACMD': state.get_java_cmd()},
-            ask_run=False,
-            ask_each=False)
+    # def _build_rc_commands(self, todo):
+    #     try:
+    #         key_id = state.get_todo_state_by_id('gpg')['gpg_key']
+    #     except Exception as e:
+    #         raise Exception("Faild getting key: %s" % e)
+    #
+    #     todo.state['git_rev'] = state.get_git_rev()
+    #
+    #     # logfile = quote_spaces(os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log'))
+    #     logfile = "/tmp/release.log"
+    #     cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s" \
+    #               % (os.path.join('dev-tools', 'scripts', 'buildAndPushRelease.py'),
+    #                  quote_spaces(os.path.join(state.get_rc_folder(), "dist")),
+    #                  state.rc_number,
+    #                  key_id)
+    #     # Add --logfile %s"
+    #
+    #     return Commands(
+    #         state.get_git_checkout_folder(),
+    #         textwrap.dedent("""\
+    #             In this step we will build the RC using python script `buildAndPushRelease.py`
+    #             We have tried to compile the correct command below, and you need to execute
+    #             it in another Terminal window yourself.
+    #
+    #             Note that the script will take a long time. To follow the detailed build
+    #             log, tail the log in another Terminal:
+    #             `tail -f %s`""") % logfile,
+    #         [
+    #             Command("git checkout {{ release_branch }}", stdout=True),
+    #             Command("git clean -df", stdout=True, comment="Make sure checkout is clean and up to date"),
+    #             Command("git checkout -- .", stdout=True),
+    #             Command("git pull"),
+    #             Command(cmdline, logfile="build_rc.log", tee=True),
+    #         ],
+    #         env={'JAVACMD': state.get_java_cmd()},
+    #         ask_run=False,
+    #         ask_each=False)
 
     def end_vote(self, todo):
         initiate_vote_dict = state.get_todo_by_id("initiate_vote").state
