@@ -354,10 +354,6 @@ final public class Tessellator {
               state = State.SPLIT;
               continue earcut;
             case SPLIT:
-              currEar = filterPoints(currEar, null);
-              if (currEar == null || currEar.previous == currEar.next) {
-                return tessellation;
-              }
               // as a last resort, try splitting the remaining polygon into two
               if (splitEarcut(polygon, currEar, tessellation, mortonOptimized) == false) {
                 //we could not process all points. Tessellation failed
