@@ -58,6 +58,4 @@ if [ ! "${skip_build_image}" = "true" ]; then
 fi
 
 
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:delegated -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
-
-
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
