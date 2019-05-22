@@ -127,6 +127,26 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection(COLLNAME)
         .process(cluster.getSolrClient());
   }
+  public void testDiagnosticsWithPayload() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String COLLNAME = "testDiagnosticsWithPayload.COLL";
+    CollectionAdminResponse adminResponse = CollectionAdminRequest.createCollection(COLLNAME, CONFIGSET_NAME, 1, 2)
+        .setMaxShardsPerNode(4)
+        .process(solrClient);
+    cluster.waitForActiveCollection(COLLNAME, 1, 2);
+    DocCollection collection = solrClient.getClusterStateProvider().getCollection(COLLNAME);
+    Replica aReplica = collection.getReplicas().get(0);
+
+    String configPayload = "{\n" +
+        "  'cluster-policy': [{'replica': 0, 'node': '_NODE'}]\n" +
+        "}";
+    configPayload = configPayload.replaceAll("_NODE", aReplica.getNodeName());
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, "/diagnostics", configPayload);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response._getStr("diagnostics/violations[0]/node",null),response._getStr("diagnostics/violations[0]/node",null));
+    CollectionAdminRequest.deleteCollection(COLLNAME)
+        .process(cluster.getSolrClient());
+  }
 
   @Test
   public void testSuspendTrigger() throws Exception {
