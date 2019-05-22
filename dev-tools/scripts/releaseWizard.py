@@ -440,7 +440,9 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                   [
                       Todo('initiate_vote',
                            'Initiate the vote',
-                           vars={'git_rev': state.get_git_rev},
+                           vars={'vote_close': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
+                                 'vote_close_epoch': unix_time_millis(vote_close_72h_date())
+                                 },
                            description=textwrap.dedent("""\
                                 Initiate the vote on the dev mailing list
 
@@ -459,7 +461,7 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                 python3 -u dev-tools/scripts/smokeTestRelease.py \\
                                 https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ git_rev }}
                                 
-                                Vote will be open for at least 72 hours excluding weekends, i.e. until {{ initiate_vote.vote_close }}.
+                                Vote will be open for at least 72 hours plus weekends, i.e. until {{ vote_close }}.
                                 
                                 [ ] +1  approve
                                 [ ] +0  no opinion
@@ -471,7 +473,8 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                       Todo('end_vote',
                            'End vote',
                            description="At the end of the voting deadline, count the votes and send RESULT message to mailing list.",
-                           links=["https://www.apache.org/foundation/voting.html"])
+                           links=["https://www.apache.org/foundation/voting.html"],
+                           depends='initiate_vote')
                   ],
                   in_rc_loop=True),
         TodoGroup('publish',
@@ -842,10 +845,10 @@ def expand_jinja(text, vars=None):
     try:
         env = Environment(lstrip_blocks=True, keep_trailing_newline=False)
         env.filters['path_join'] = lambda paths: os.path.join(*paths)
-        template = env.from_string(text, globals=global_vars)
+        template = env.from_string(str(text), globals=global_vars)
         filled = template.render()
     except Exception as e:
-        print("Exception while rendering jinja template %s: %s" % (text, e))
+        print("Exception while rendering jinja template %s: %s" % (str(text), e))
     return filled
 
 
@@ -1533,6 +1536,18 @@ class UserInput():
         return result
 
 
+def vote_close_72h_date():
+    dow = datetime.utcnow().weekday()
+    if dow == 6:  # Sun
+        days_to_add = 1
+    elif dow in [2, 3, 4, 5]:  # Wed, Thu, Fri, Sat
+        days_to_add = 2
+    else:
+        days_to_add = 0
+    return (datetime.utcnow() + timedelta(hours=73) + timedelta(days=days_to_add))
+
+
+
 class TodoMethods:
     # These are called with reflection based on method matching to_do ID
     def clean_git_checkout(self, todo):
@@ -1578,39 +1593,6 @@ class TodoMethods:
             ask_run=False,
             ask_each=False)
 
-    def _smoke_tester_commands(self, todo):
-        os.chdir(state.get_git_checkout_folder())
-        git_rev = open('rev.txt', encoding='UTF-8').read().strip()
-        dist_folder = os.path.join(state.get_rc_folder(), "dist", "lucene-solr-%s-RC%s-rev%s" % (
-        state.release_version, state.rc_number, git_rev)).replace("\\", "/")
-        cmdline = "python3 -u %s --tmp-dir %s %s" \
-                  % (os.path.join('dev-tools', 'scripts', 'smokeTestRelease.py'),
-                     quote_spaces(os.path.join(state.get_rc_folder(), "smoketest")),
-                     "file://%s" % urllib.parse.quote(dist_folder))
-
-        return Commands(
-            state.get_git_checkout_folder(),
-            """Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.""",
-            [
-                Command("", logfile="smoketest.log", tee=True),
-            ],
-            env={'JAVACMD': state.get_java_cmd()},
-            ask_run=True,
-            ask_each=False)
-
-    def initiate_vote(self, todo):
-        dow = datetime.utcnow().weekday()
-        if dow == 6:  # Sun
-            days_to_add = 1
-        elif dow in [2, 3, 4, 5]:  # Wed, Thu, Fri, Sat
-            days_to_add = 2
-        else:
-            days_to_add = 0
-        vote_close_date = (datetime.utcnow() + timedelta(hours=73) + timedelta(days=days_to_add))
-        vote_close = vote_close_date.strftime("%Y-%m-%d %H:00 UTC")
-        todo.state['vote_close'] = vote_close
-        todo.state['vote_close_epoch'] = unix_time_millis(vote_close_date)
-
     def end_vote(self, todo):
         initiate_vote_dict = state.get_todo_by_id("initiate_vote").state
         if not initiate_vote_dict['done'] is True:
@@ -1635,26 +1617,26 @@ class TodoMethods:
         print("%s\n\n%s" % (desc, template))
 
     def end_vote_asciidoc(self, todo):
-        return """Note down how many votes were cast, summing as:
-
-* Binding PMC-member +1 votes
-* Non-binding +1 votes
-* Neutral +/-0 votes
-* Negative -1 votes
-
-You need 3 binding +1 votes and more +1 than -1 votes for the release to happen.
-A release cannot be vetoed, see more in provided links.
-
-Here are some mail templates for successful and failed vote results with sample numbers:
-
-%s
-
-%s
-
-%s
-""" % (self.end_vote_result(5, 1, 0, 2)[2],
-       self.end_vote_result(2, 3, 0, 0)[2],
-       self.end_vote_result(3, 0, 1, 4)[2])
+        return textwrap.dedent("""\
+            Note down how many votes were cast, summing as:
+            
+            * Binding PMC-member +1 votes
+            * Non-binding +1 votes
+            * Neutral +/-0 votes
+            * Negative -1 votes
+            
+            You need 3 binding +1 votes and more +1 than -1 votes for the release to happen.
+            A release cannot be vetoed, see more in provided links.
+            
+            Here are some mail templates for successful and failed vote results with sample numbers:
+            
+            %s
+            
+            %s
+            
+            %s""") % (self.end_vote_result(5, 1, 0, 2)[2],
+                       self.end_vote_result(2, 3, 0, 0)[2],
+                       self.end_vote_result(3, 0, 1, 4)[2])
 
     def end_vote_result(self, plus_binding, plus_other, zero, minus):
         desc = ""
