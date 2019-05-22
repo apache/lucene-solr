@@ -255,7 +255,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     List<LeafReaderContext> leafReaderContexts = new ArrayList<>();
     int max = 500_000;
     int min = 10_000;
-    int numSegments = random().nextInt(50);
+    int numSegments = 1 + random().nextInt(50);
 
     for (int i = 0; i < numSegments; i++) {
       leafReaderContexts.add(new LeafReaderContext(dummyIndexReader(random().nextInt((max - min) + 1) + min)));
