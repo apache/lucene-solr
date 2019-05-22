@@ -25,7 +25,7 @@ Versions of Major Components
 Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
-Apache ZooKeeper 3.4.13
+Apache ZooKeeper 3.4.14
 Jetty 9.4.14.v20181114
 
 Upgrade Notes
@@ -36,7 +36,7 @@ Upgrade Notes
 
 * SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
-  see commeints in the log4j2 configuration files (log4j2.xml by default).
+  see comments in the log4j2 configuration files (log4j2.xml by default).
 
 * SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming
   expressions) Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming
@@ -56,6 +56,76 @@ New Features
 * SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
   values of a field. The Ref Guide now has a page dedicated to explaining the different types of aliases. (Gus Heck,
   Moshe Bla)
+
+==================  8.2.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+
+New Features
+----------------------
+
+* SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
+
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
+
+* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
+
+* SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
+
+* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
+
+* SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
+  information about the replicas of a collection (Erick Erickson)
+  
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
+
+* SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
+  unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
+
+Bug Fixes
+----------------------
+
+* SOLR-13474: Fix "Search is temporarily disabled" logic to be consistent for entire request (hossman)
+
+* SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
+
+Other Changes
+----------------------
+
+* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
+
+* SOLR-13437: noggit json parser is forked into solrj (noble)
+
+* SOLR-13467: Include the S2 Geometry lib to make it simpler to use prefixTree="s2" on a Geo3D spatial field.
+  Improved documentation on Geo3D too.  (David Smiley)
+
+==================  8.1.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+Bug Fixes
+----------------------
+
+* SOLR-13475: Null Pointer Exception when querying collection through collection alias. (Jörn Franke, ab)
 
 ==================  8.1.0 ==================
 
@@ -101,6 +171,9 @@ Upgrade Notes
 * SOLR-13394: The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any
   other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd.
 
+* SOLR-5970: Until now, the CREATE command of Collections API returned status 0 even in case of failure. Now, the status
+  code will be non-zero in case of failures (e.g. 4xx, 5xx).
+
 New Features
 ----------------------
 
@@ -138,6 +211,8 @@ New Features
 * SOLR-13262: Add collection RENAME command and support using aliases in most collection admin commands. (ab)
 
 * SOLR-13391: Add variance and standard deviation stream evaluators (Nazerke Seidan, Joel Bernstein)
+
+* SOLR-13427: Support simulating the execution of autoscaling suggestions. (ab)
 
 Bug Fixes
 ----------------------
@@ -220,6 +295,24 @@ Bug Fixes
 
 * SOLR-13081: In-Place Update doesn't work with route.field (Dr Oleg Savrasov via Mikhail Khludnev)
 
+* SOLR-13343: Fix spacing issue in browser log (Marcus Eagan via Jason Gerlowski)
+
+* SOLR-12248, SOLR-4647: Grouping is broken on docValues-only fields (non-stored, non-indexed)
+  (Erick Ericsson, Adrien Grand, Munendra S N, Scott Stults, Ishan Chattopadhyaya)
+
+* SOLR-5970: Return correct status upon collection creation failure (Abraham Elmahrek, Ishan Chattopadhyaya,
+  Jason Gerlowski, Kesharee Nandan Vishwakarma)
+
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
+  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue upon restart (Ishan Chattopadhyaya,
+  Kesharee Nandan Vishwakarma)
+
+* SOLR-13318: Fix ClassCastException in SolrJ JsonFaceting classes (Munendra S N via Jason Gerlowski)
+
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
+
 Improvements
 ----------------------
 
@@ -248,8 +341,16 @@ Improvements
   encountered (Munendra S N via Ishan Chattopadhyaya)
 
 * SOLR-13394: Switch default GC from CMS to G1 (Ishan Chattopadhyaya, Kesharee Nandan Vishwakarma, Shawn Heisey,
-  Uwe Schindler, Erick Ericsson)
+  Uwe Schindler, Erick Ericsson, shalin)
 
+* SOLR-13432: Add .toString methods to BitDocSet and SortedIntDocSet so that enabling "showItems" on the filter caches
+  shows some useful information about the values in the cache. (shalin)
+
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used.
+  (jefferyyuan, ab)
+
+* SOLR-13348: Speed up collapsing by avoiding scoring of ineligible documents (Andrzej Wislowski via
+  Ishan Chattopadhyaya)
 
 Other Changes
 ----------------------
@@ -310,6 +411,8 @@ Other Changes
 * SOLR-13425: Ref-Guide: Wrong color of text in left column of horizontal definition list (janhoy)
 
 * SOLR-13423: Upgrade RRD4j to version 3.5. (ab)
+
+* SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
 
 ==================  8.0.0 ==================
 

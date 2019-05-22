@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.not;
 
 import java.util.Properties;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -78,8 +79,9 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     Properties properties = new Properties();
     properties.put(CoreAdminParams.DATA_DIR, "/some_invalid_dir/foo");
     create.setProperties(properties);
-    CollectionAdminResponse rsp = create.process(cloudClient);
-    assertFalse(rsp.isSuccess());
+    expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      CollectionAdminResponse rsp = create.process(cloudClient);
+    });
 
     // Confirm using LIST that the collection does not exist
     assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName), 

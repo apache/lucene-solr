@@ -447,3 +447,30 @@ Since there is no node that can host a replica for `shard2` without causing a vi
 [ {"cores": "<3", "node": "#ANY"} ]
 
 After re-issuing the `SecondCollection` CREATE command, the replica for `shard1` will be placed on "nodeA": it's least loaded, so is tested first, and no policy violation will result from placement there.  The `shard2` replica could be placed on any of the 3 nodes, since they're all equally loaded, and the chosen node will remain below its maximum core count after placement.  The CREATE command succeeds.
+
+== Testing the autoscaling configuration and suggestions
+It's not always easy to predict the impact of autoscaling configuration changes on the
+cluster layout. Starting with release 8.1 Solr provides a tool for assessing the impact of
+such changes without affecting the state of the target cluster.
+
+This testing tool is a part of `bin/solr autoscaling` command. In addition to other
+options that provide detailed status of the current cluster layout the following options
+specifically allow users to test new autoscaling configurations and run "what if" scenarios:
+
+`-a <CONFIG>`::
+JSON file containing autoscaling configuration to test. This file needs to be in the same
+format as the result of the `/solr/admin/autoscaling` call. If this parameter is missing then the
+currently deployed autoscaling configuration is used.
+
+`-simulate`::
+Simulate the effects of applying all autoscaling suggestions on the cluster layout. NOTE: this does not
+affect in any way the actual cluster - this option uses the simulation framework to calculate the
+new layout without actually making the changes. Calculations are performed in the tool's JVM so they don't
+affect the performance of the running cluster either. This process is repeated several times until a limit
+is reached or there are no more suggestions left to apply (although unresolved violations may still remain!)
+
+`-i <NUMBER>`::
+Number of iterations of the simulation loop. Default is 10.
+
+Results of the simulation contain the initial suggestions, suggestions at each step of the
+simulation and the final simulated state of the cluster.

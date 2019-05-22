@@ -282,6 +282,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.process(cluster.getSolrClient());
     checkFooAndBarMeta(aliasName, zkStateReader);
     SolrCloudManager cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    // make sure we have the latest version in cache
+    zkStateReader.aliasesManager.update();
     ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
     List<String> collections = stateProvider.resolveAlias(aliasName);
     assertEquals(collections.toString(), 2, collections.size());
@@ -298,6 +300,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.addProperty(CollectionAdminParams.ROUTER_PREFIX + "foo","baz");
     setAliasProperty.process(cluster.getSolrClient());
     // refresh
+    zkStateReader.aliasesManager.update();
     stateProvider = cloudManager.getClusterStateProvider();
     assertTrue("should be a routed alias", stateProvider.isRoutedAlias(aliasName));
 
@@ -540,9 +543,19 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), "collection2");
 
     ///////////////
+    // make sure there's only one level of alias
+    CollectionAdminRequest.deleteAlias("collection1").process(cluster.getSolrClient());
     CollectionAdminRequest.createAlias("testalias1", "collection1").process(cluster.getSolrClient());
 
-    // ensure that the alias has been registered
+    // verify proper resolution on the server-side
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    zkStateReader.aliasesManager.update();
+    Aliases aliases = zkStateReader.getAliases();
+    List<String> collections = aliases.resolveAliases("testalias1");
+    assertEquals(collections.toString(), 1, collections.size());
+    assertTrue(collections.contains("collection1"));
+
+    // ensure that the alias is visible in the API
     assertEquals("collection1",
         new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases().get("testalias1"));
 

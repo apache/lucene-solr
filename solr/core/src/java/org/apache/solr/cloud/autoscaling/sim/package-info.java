@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 /**
- * <h1>Simulated environment for autoscaling tests.</h1>
+ * <h1>Simulated environment for autoscaling.</h1>
  *
  * <h2>Goals</h2>
  *  <ul>
@@ -87,10 +87,6 @@
  *    <li>Any component that uses ZkController (eg. CoreContainer)</li>
  *    <li>Any component that uses ShardHandler (eg. CollectionsHandler Cmd-s)</li>
  *  </ul>
- *
- *  <h2>Testing framework</h2>
- *  A base class {@link org.apache.solr.cloud.autoscaling.sim.SimSolrCloudTestCase} is provided, which
- *  provides similar helper methods to the ones in the {@link org.apache.solr.cloud.SolrCloudTestCase}.
  *
  */
 package org.apache.solr.cloud.autoscaling.sim;

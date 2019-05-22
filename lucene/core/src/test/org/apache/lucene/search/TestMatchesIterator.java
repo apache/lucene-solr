@@ -113,7 +113,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   };
 
   private void checkMatches(Query q, String field, int[][] expected) throws IOException {
-    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(expected[i][0], searcher.leafContexts));
       int doc = expected[i][0] - ctx.docBase;
@@ -133,7 +133,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   private void checkLabelCount(Query q, String field, int[] expected) throws IOException {
-    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;
@@ -172,7 +172,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   private void checkNoPositionsMatches(Query q, String field, boolean[] expected) throws IOException {
-    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;
@@ -188,7 +188,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   private void assertIsLeafMatch(Query q, String field) throws IOException {
-    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < searcher.reader.maxDoc(); i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;
@@ -207,7 +207,7 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   private void checkTermMatches(Query q, String field, TermMatch[][][] expected) throws IOException {
-    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < expected.length; i++) {
       LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
       int doc = i - ctx.docBase;

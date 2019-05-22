@@ -100,6 +100,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -119,6 +120,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
@@ -1611,7 +1613,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public Comparable get() {
       return getFloat();
     }
-  }  
+  }
+
+  public static class BVal extends Vals {
+
+    @Override
+    public Comparable get() {
+      return random().nextBoolean();
+    }
+  }
 
   public static class SVal extends Vals {
     char start;
@@ -1750,7 +1760,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   }
 
-
+  public static void assertResponseValues(SolrResponseBase rsp, Object... assertions) {
+    Map<String, Object> values = Utils.makeMap(assertions);
+    values.forEach((s, o) -> {
+      if (o instanceof String) {
+        assertEquals(o, rsp.getResponse()._getStr(s, null));
+      } else {
+        assertEquals(o, rsp.getResponse()._get(s, null));
+      }
+    });
+  }
   public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
     if (model == null) {
       model = new LinkedHashMap<>();
@@ -3013,10 +3032,26 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param idField - the uniqueKey for this collection. This MUST be a string
    * @param expectedDocCount - numFound for the query
    * @param query - The Solr query to check for expectedDocCount.
+   * @param tag - additional information to display on a failure. Often class.method is useful.
    */
 
   public static void Solr11035BandAid(SolrClient client, String collection, String idField,
-                                      long expectedDocCount, String query) throws IOException, SolrServerException {
+                                      long expectedDocCount, String query,
+                                      String tag) throws IOException, SolrServerException {
+
+    Solr11035BandAid(client, collection, idField, expectedDocCount, query, tag, false);
+  }
+
+  // Pass true for failAnyway to have this bandaid fail if
+  // 1> it had to attempt the repair
+  // 2> it would have successfully repaired it
+  //
+  // This is useful for verifying that SOLR-11035.
+  //
+  public static void Solr11035BandAid(SolrClient client, String collection, String idField,
+                                      long expectedDocCount, String query, String tag,
+                                      boolean failAnyway) throws IOException, SolrServerException {
+
     final SolrQuery solrQuery = new SolrQuery(query);
     QueryResponse rsp = client.query(collection, solrQuery);
     long found = rsp.getResults().getNumFound();
@@ -3047,7 +3082,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // so change the pattern in log4j2.xml if you need to see the whole thing.
       log.error("Dumping response" + rsp.toString());
       assertEquals("Solr11035BandAid failed, counts differ after updates:", found, expectedDocCount);
+    } else if (failAnyway) {
+      fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
+          + "' extra info: '" + tag + "'");
     }
-
   }
 }

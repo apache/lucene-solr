@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -41,14 +42,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.noggit.JSONParser;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * Abstract base class that provides most of the functionality needed
@@ -427,12 +428,12 @@ public abstract class ManagedResourceStorage {
       
     @Override
     protected Object parseText(Reader reader, String resourceId) throws IOException {
-      return ObjectBuilder.getVal(new JSONParser(reader));    
+      return Utils.fromJSON(reader);
     }
 
     @Override
     public void store(String resourceId, Object toStore) throws IOException {
-      String json = JSONUtil.toJSON(toStore);
+      String json = toJSONString(toStore);
       String storedResourceId = getStoredResourceId(resourceId);
       OutputStreamWriter writer = null;
       try {

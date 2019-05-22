@@ -275,12 +275,16 @@ public class Utils {
   }
 
   public static Object fromJSON(InputStream is){
+    return fromJSON(new InputStreamReader(is, UTF_8));
+  }
+  public static Object fromJSON(Reader is){
     try {
-      return STANDARDOBJBUILDER.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
+
 
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {
@@ -346,8 +350,8 @@ public class Utils {
   public static Object fromJSONString(String json)  {
     try {
       return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getVal();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : "+ json, e );
     }
   }
 

@@ -55,7 +55,7 @@ public class Test2BFST extends LuceneTestCase {
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
         final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                                true, 15);
+                                                true, 15, true);
 
         int count = 0;
         Random r = new Random(seed);
@@ -137,7 +137,7 @@ public class Test2BFST extends LuceneTestCase {
         System.out.println("\nTEST: 3 GB size; outputs=bytes");
         Outputs<BytesRef> outputs = ByteSequenceOutputs.getSingleton();
         final Builder<BytesRef> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                                  true, 15);
+                                                  true, 15, true);
 
         byte[] outputBytes = new byte[20];
         BytesRef output = new BytesRef(outputBytes);
@@ -149,11 +149,14 @@ public class Test2BFST extends LuceneTestCase {
           //System.out.println("add: " + input + " -> " + output);
           b.add(input, BytesRef.deepCopyOf(output));
           count++;
-          if (count % 1000000 == 0) {
-            System.out.println(count + "...: " + b.fstRamBytesUsed() + " bytes");
-          }
-          if (b.fstRamBytesUsed() > LIMIT) {
-            break;
+          if (count % 10000 == 0) {
+            long size = b.fstRamBytesUsed();
+            if (count % 1000000 == 0) {
+              System.out.println(count + "...: " + size + " bytes");
+            }
+            if (size > LIMIT) {
+              break;
+            }
           }
           nextInput(r, ints);
         }
@@ -214,7 +217,7 @@ public class Test2BFST extends LuceneTestCase {
         System.out.println("\nTEST: 3 GB size; outputs=long");
         Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
         final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                              true, 15);
+                                              true, 15, true);
 
         long output = 1;
 
@@ -226,11 +229,14 @@ public class Test2BFST extends LuceneTestCase {
           b.add(input, output);
           output += 1+r.nextInt(10);
           count++;
-          if (count % 1000000 == 0) {
-            System.out.println(count + "...: " + b.fstRamBytesUsed() + " bytes");
-          }
-          if (b.fstRamBytesUsed() > LIMIT) {
-            break;
+          if (count % 10000 == 0) {
+            long size = b.fstRamBytesUsed();
+            if (count % 1000000 == 0) {
+              System.out.println(count + "...: " + size + " bytes");
+            }
+            if (size > LIMIT) {
+              break;
+            }
           }
           nextInput(r, ints);
         }

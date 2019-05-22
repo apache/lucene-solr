@@ -136,6 +136,6 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
         solrClient.getZkStateReader(), true, true, 330);
-    assertAuthMetricsMinimums(16, 8, 0, 8, 0, 0);
+    assertAuthMetricsMinimums(14, 8, 0, 6, 0, 0);
   }
 }

@@ -196,6 +196,68 @@ The API is available at `/admin/autoscaling/suggestions`. Here is an example out
 
 The suggested `operation` is an API call that can be invoked to remedy the current violation.
 
+=== Inline Policy Configuration
+
+If there is no autoscaling policy configured or if you wish to use a configuration other than the default, it is possible to send the autoscaling policy JSON as an inline payload as follows:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json'  -d '{
+ "cluster-policy": [
+   {"replica": 0,  "port" : "7574"}
+   ]
+}' http://localhost:8983/solr/admin/autoscaling/suggestions?omitHeader=true
+----
+
+*Output*
+[source,json]
+----
+{
+  "suggestions":[{
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "tagKey":7574,
+        "violation":{
+          "replica":{
+            "NRT":2,
+            "count":2},
+          "delta":2.0},
+        "clause":{
+          "replica":0,
+          "port":"7574",
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"10.0.0.80:8983_solr",
+            "inPlaceMove":"true",
+            "replica":"core_node8"}}}},
+    {
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "tagKey":7574,
+        "violation":{
+          "replica":{
+            "NRT":2,
+            "count":2},
+          "delta":2.0},
+        "clause":{
+          "replica":0,
+          "port":"7574",
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"10.0.0.80:8983_solr",
+            "inPlaceMove":"true",
+            "replica":"core_node5"}}}}],
+  "WARNING":"This response format is experimental.  It is likely to change in the future."}
+----
+
 == History API
 
 The history of autoscaling events is available at `/admin/autoscaling/history`. It returns information
