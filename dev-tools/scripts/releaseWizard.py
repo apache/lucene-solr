@@ -36,25 +36,25 @@ import fcntl
 from collections import OrderedDict
 from enum import Enum
 import scriptutil
-from scriptutil import BranchType, Version, check_ant, getGitRev, run
+from scriptutil import BranchType, Version, check_ant, download, run
 import re
 from datetime import datetime
 from datetime import timedelta
 from consolemenu import ConsoleMenu
 from consolemenu.screen import Screen
 from consolemenu.items import FunctionItem, SubmenuItem
-import urllib.parse
 import textwrap
-from jinja2 import Template
 from jinja2 import Environment
 
 global state
 global current_git_root
 global todo_methods
+global dry_run
+
 
 # Solr:Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
-
+dry_run = False
 
 class ReleaseType(Enum):
     major = 'major'
@@ -91,13 +91,18 @@ def check_prerequisites():
         run("gpg --version")
     except:
         sys.exit("You will need gpg installed")
-    check_ant()
+    if not check_ant().startswith('1.8'):
+        print("WARNING: This script will work best with ant 1.8. The script buildAndPushRelease.py may have problems with PGP password input under ant 1.10")
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
         sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
-    # try:
-    #     getGitRev()
-    # except Exception as e:
-    #     sys.exit(e.__str__())
+    try:
+        run("asciidoctor -V")
+    except:
+        print("WARNING: In order to export asciidoc version to HTML, you will need asciidoctor installed")
+    try:
+        run("git --version")
+    except:
+        sys.exit("You will need git installed")
 
 
 epoch = datetime.utcfromtimestamp(0)
@@ -118,7 +123,8 @@ def read_file(file, cwd=None):
         if cwd:
             file = os.path.join(cwd, file)
         return open(file, encoding='UTF-8').read()
-    except:
+    except Exception as e:
+        print("Exception while attempting to read file %s: %s" % (file, e))
         return None
 
 
@@ -146,11 +152,15 @@ def init_todos(state):
                                
                                * Python v3.4 or later
                                * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
-                               * Apache Ant 1.8-1.10
+                               * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
                                * gpg
                                * git
-                               * asciidoc (to generate HTML version)
+                               * asciidoctor (to generate HTML version)
                                """),
+                           links=[
+                               "https://gnupg.org/download/index.html",
+                               "https://asciidoctor.org"
+                           ],
                            done=True),
                       Todo('gpg',
                            'GPG key id is configured',
@@ -203,51 +213,43 @@ def init_todos(state):
                                        "git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr",
                                        logfile="git_clone.log")
                                ],
-                               ask_each=False
-                           )),
+                               remove_files=["{{ git_checkout_folder }}"],
+                               ask_each=False)),
                       Todo('ant_precommit',
                            'Run ant precommit and fix issues',
                            depends="clean_git_checkout",
-                           commands=Commands(
-                               git_checkout_folder,
-                               textwrap.dedent("""\
+                           commands=Commands(git_checkout_folder, textwrap.dedent("""\
                                      Fix any problems that are found by pushing fixes to the release branch 
                                      and then running this task again. This task will always do `git pull` 
-                                     before `ant precommit` so it will catch changes to your branch :)"""),
-                               [
-                                   Command("git checkout {{ release_branch }}", stdout=True),
-                                   Command("git pull", stdout=True),
-                                   Command("ant clean precommit")
-                               ],
-                               env={'JAVACMD': state.get_java_cmd()},
-                               ask_each=False)
+                                     before `ant precommit` so it will catch changes to your branch :)"""), [
+                               Command("git checkout {{ release_branch }}", stdout=True),
+                               Command("git pull", stdout=True),
+                               Command("ant clean precommit")
+                           ], ask_each=False, env={'JAVACMD': state.get_java_cmd()})
                            ),
                       Todo('create_stable_branch',
                            'Create a new stable branch, i.e. branch_<major>x',
                            type=ReleaseType.major,
                            depends="clean_git_checkout",
                            commands=Commands(state.get_git_checkout_folder(),
-                                 "Run these commands to create a stable branch",
-                                 [
-                                     Command("git checkout %s" % 'master', stdout=True),
-                                     Command("git update", stdout=True),
-                                     Command("git checkout -b %s" % state.get_stable_branch_name()),
-                                     Command("git push origin %s" % state.get_stable_branch_name())
-                                 ],
-                                 ask_each=True)),
+                                             "Run these commands to create a stable branch", [
+                                                 Command("git checkout %s" % 'master', stdout=True),
+                                                 Command("git update", stdout=True),
+                                                 Command("git checkout -b %s" % state.get_stable_branch_name()),
+                                                 Command("git push origin %s" % state.get_stable_branch_name())
+                                             ], ask_each=True)),
                       Todo('create_minor_branch',
                            'Create a minor release branch off the current stable branch',
                            type=ReleaseType.minor,
                            depends="clean_git_checkout",
                            commands=Commands(state.get_git_checkout_folder(),
-                                 "Run these commands to create a release branch",
-                                 [
-                                     Command("git checkout %s" % state.get_stable_branch_name(), stdout=True),
-                                     Command("git update", stdout=True),
-                                     Command("git checkout -b %s" % state.get_minor_branch_name()),
-                                     Command("git push origin %s" % state.get_minor_branch_name())
-                                 ],
-                                 ask_each=True)),
+                                             "Run these commands to create a release branch", [
+                                                 Command("git checkout %s" % state.get_stable_branch_name(),
+                                                         stdout=True),
+                                                 Command("git update", stdout=True),
+                                                 Command("git checkout -b %s" % state.get_minor_branch_name()),
+                                                 Command("git push origin %s" % state.get_minor_branch_name())
+                                             ], ask_each=True)),
                       Todo('add_version_major',
                            'Add a new major version on master branch',
                            type=ReleaseType.major),
@@ -375,64 +377,67 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                   [
                       Todo('run_tests',
                            'Run javadoc tests',
-                           commands=Commands(
-                               git_checkout_folder,
-                               "Run some tests not ran by `buildAndPublishRelease.py`",
-                               [
-                                   Command("git checkout %s" % get_release_branch(), stdout=True),
-                                   Command('ant javadocs', 'lucene'),
-                                   Command('ant javadocs', 'solr')
-                               ],
-                               ask_each=True)
+                           commands=Commands(git_checkout_folder,
+                                             "Run some tests not ran by `buildAndPublishRelease.py`", [
+                                                 Command("git checkout %s" % get_release_branch(), stdout=True),
+                                                 Command('ant javadocs', 'lucene'),
+                                                 Command('ant javadocs', 'solr')
+                                             ], ask_each=True)
                            ),
                       # TODO: Examine the results. Did it build without errors? Were there Javadoc warnings? Did the tests succeed? Does the demo application work correctly? Does Test2BTerms pass (this takes a lot of memory)?
                       # Remove lucene/benchmark/{work,temp}/ if present
                       Todo('clear_ivy_cache',
                            'Clear the ivy cache',
-                           commands=Commands(
-                               os.path.expanduser("~/.ivy2/"),
-                               textwrap.dedent("""\
+                           commands=Commands(os.path.expanduser("~/.ivy2/"), textwrap.dedent("""\
                                 It is recommended to clean your Ivy cache before building the artifacts.
                                 This ensures that all Ivy dependencies are freshly downloaded, 
                                 so we emulate a user that never used the Lucene build system before.
-                                One way is to rename the ivy cache folder before building."""),
-                               [
-                                   Command("mv cache cache_bak", stdout=True),
-                               ],
-                               ask_each=False)),
+                                One way is to rename the ivy cache folder before building."""), [
+                               Command("mv cache cache_bak", stdout=True),
+                           ], ask_each=False)),
                       Todo('build_rc',
                            'Build the release candidate',
                            vars={'logfile': "/tmp/release.log",
                                  'builder_path': "{{ ['dev-tools', 'scripts', 'buildAndPushRelease.py'] | path_join }}",
                                  'dist_path': "{{ [rc_folder, 'dist'] | path_join }}",
                                  'git_rev': read_file("rev.txt", cwd=state.get_git_checkout_folder()),
+                                 'local_keys': """{% if keys_downloaded %}--local-keys "{{ [config_path, 'KEYS'] | path_join }}"{% endif %}"""
                                  # 'logfile': "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}",
                                  },
-                           commands=Commands(
-                               state.get_git_checkout_folder(),
-                               textwrap.dedent("""\
+                           commands=Commands(state.get_git_checkout_folder(), textwrap.dedent("""\
                                            In this step we will build the RC using python script `buildAndPushRelease.py`
                                            We have tried to compile the correct command below, and you need to execute
                                            it in another Terminal window yourself.
 
                                            Note that the script will take a long time. To follow the detailed build 
                                            log, tail the log in another Terminal:
-                                           `tail -f {{ logfile }}`"""),
-                               [
-                                   Command("git checkout {{ release_branch }}", stdout=True),
-                                   Command("git clean -df", stdout=True, comment="Make sure checkout is clean and up to date"),
-                                   Command("git checkout -- .", stdout=True),
-                                   Command("git pull"),
-                                   Command("""python3 -u {{ builder_path }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}""", logfile="build_rc.log", tee=True),
-                               ],
-                               env={'JAVACMD': state.get_java_cmd()},
-                               ask_run=True,
-                               ask_each=False),
-                           # gpg.gpg_key
-                           # git_rev
+                                           `tail -f {{ logfile }}`"""), [
+                               Command("git checkout {{ release_branch }}", tee=True),
+                               Command("git clean -df", tee=True, comment="Make sure checkout is clean and up to date"),
+                               Command("git checkout -- .", tee=True),
+                               Command("git pull", tee=True),
+                               Command(
+                                   """python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}""",
+                                   logfile="build_rc.log", tee=True),
+                           ], ask_run=True, ask_each=False, env={'JAVACMD': state.get_java_cmd()}),
                            #         # Add --logfile %s"
-                           # 
                            depends="gpg"),
+                      # Todo('foo',
+                      #      'FOO',
+                      #      vars={'logfile': "/tmp/release.log",
+                      #            'builder_path': "{{ ['dev-tools', 'scripts', 'buildAndPushRelease.py'] | path_join }}",
+                      #            'dist_path': "{{ [rc_folder, 'dist'] | path_join }}",
+                      #            'git_rev': read_file("rev.txt", cwd=state.get_git_checkout_folder()),
+                      #            'local_keys': "{% if keys_downloaded %}--foo {{ [config_path, 'KEYS'] | path_join }}{% endif %}"
+                      #            # 'logfile': "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}",
+                      #            },
+                      #      commands=Commands(state.get_git_checkout_folder(), "foo",
+                      #            [
+                      #                Command(
+                      #                    """abc {{ local_keys }} def""", tee=True),
+                      #            ], ask_run=True, ask_each=False, env={'JAVACMD': state.get_java_cmd()}),
+                      #      #         # Add --logfile %s"
+                      #      depends="gpg"),
                       Todo('smoke_tester',
                            'Run the smoke tester',
                            vars={
@@ -440,14 +445,16 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
                                'tmp_dir': "{{ [rc_folder, 'smoketest'] | path_join }}",
                                'smoker_path': "{{ ['dev-tools', 'scripts', 'smokeTestRelease.py'] | path_join }}",
-                               'cmdline': """python3 -u {{ smoker_path }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}""" # | urlencode
+                               'local_keys': """{% if keys_downloaded %}--local-keys "{{ [config_path, 'KEYS'] | path_join }}"{% endif %}"""
                            },
                            commands=Commands(
                                state.get_git_checkout_folder(),
                                """Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.""",
                                [
-                                   Command("{{ cmdline }}", logfile="smoketest.log", tee=True),
+                                   Command("""python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}""",
+                                           logfile="smoketest.log"),
                                ],
+                               remove_files=["{{ tmp_dir }}"],
                                env={'JAVACMD': state.get_java_cmd()},
                                ask_run=True,
                                ask_each=False),
@@ -459,18 +466,16 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
                                'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}"
                            },
-                           commands=Commands(
-                               state.get_git_checkout_folder(),
-                               """Here we'll import the artifacts into Subversion""",
-                               [
-                                   Command("""svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}""",
-                                           logfile="import_svn.log", tee=True)
-                               ],
-                               env={'JAVACMD': state.get_java_cmd()},
-                               ask_run=False,
-                               ask_each=False),
+                           commands=Commands(state.get_git_checkout_folder(),
+                                 """Here we'll import the artifacts into Subversion""", [
+                                     Command(
+                                         """svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}""",
+                                         logfile="import_svn.log", tee=True)
+                                 ],
+                                 ask_run=True,
+                                 ask_each=False
+                            ),
                            depends="smoke_tester")
-                      # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
                       # Don't delete these artifacts from your local workstation as you'll need to publish the maven subdirectories once the RC passes (see below).
                   ],
                   depends=['test', 'prerequisites'],
@@ -502,7 +507,7 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                                 python3 -u dev-tools/scripts/smokeTestRelease.py \\
                                 https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ build_rc.git_rev | default("<git_rev>", True) }}
                                 
-                                Vote will be open for at least 72 hours plus weekends, i.e. until {{ vote_close }}.
+                                Vote will be open for at least 3 working days, i.e. until {{ vote_close }}.
                                 
                                 [ ] +1  approve
                                 [ ] +0  no opinion
@@ -513,7 +518,13 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                            links=["https://www.apache.org/foundation/voting.html"]),
                       Todo('end_vote',
                            'End vote',
-                           description="At the end of the voting deadline, count the votes and send RESULT message to mailing list.",
+                           description="At the end of the voting deadline, count the votes and send RESULT message to the mailing list.",
+                           user_input=[
+                               UserInput("plus_binding", "Number of binding +1 votes (PMC members)"),
+                               UserInput("plus_other", "Number of other +1 votes"),
+                               UserInput("zero", "Number of 0 votes"),
+                               UserInput("minus", "Number of -1 votes")
+                           ],
                            links=["https://www.apache.org/foundation/voting.html"],
                            depends='initiate_vote')
                   ],
@@ -550,23 +561,34 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
                            'Add a new bugfix version on release branch',
                            type=ReleaseType.bugfix,
                            commands=Commands(state.get_git_checkout_folder(),
-                                 "Do the following on the release branch only:",
-                                 [
-                                     Command("git checkout %s" % state.get_minor_branch_name()),
-                                     Command("python3 -u %s %s" % (
-                                         os.path.join(current_git_root, 'dev-tools/scripts/addVersion.py'), state.release_version)),
-                                 ],
-                                 ask_each=False))
+                                             "Do the following on the release branch only:", [
+                                                 Command("git checkout %s" % state.get_minor_branch_name()),
+                                                 Command("python3 -u %s %s" % (
+                                                     os.path.join(current_git_root, 'dev-tools/scripts/addVersion.py'),
+                                                     state.release_version)),
+                                             ], ask_each=False))
                   ])
     ]
 
 
 def maybe_remove_rc_from_svn():
-    if state.get_todo_by_id('import_svn').is_done():
-        rev = state.get_todo_state_by_id('build_rc')['git_rev']
-        # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
-        print ("WARN: Need to remove RC with rev %s from svn" % rev)
-        pass # TODO: Remove old RC from svn
+    todo = state.get_todo_by_id('import_svn')
+    if todo and todo.is_done():
+        print("import_svn done")
+        Commands(state.get_git_checkout_folder(),
+             """Looks like you uploaded artifacts for {{ build_rc.git_rev | default("<git_rev>", True) }} to svn which needs to be removed.""",
+             [Command(
+                 """svn -m "Remove cancelled Lucene/Solr {{ release_version }} RC{{ rc_number }}" rm {{ dist_url }}""",
+                 logfile="svn_rm.log",
+                 tee=True,
+                 vars={
+                     'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                     'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder }}"
+                 }
+             )],
+             ask_run=True, ask_each=False).run()
+    else:
+        print("import_svn not done: %s" % todo)
 
 
 
@@ -589,7 +611,7 @@ class ReleaseState:
         try:
             self.branch_type = scriptutil.find_branch_type()
         except:
-            print("WARNING: A release cannot happen from a feature branch (%s)" % self.branch)
+            print("WARNING: This script shold (ideally) run from the release branch, not a feature branch (%s)" % self.branch)
             self.branch_type = 'feature'
 
     def set_release_version(self, version):
@@ -659,9 +681,12 @@ class ReleaseState:
         self.todo_groups = init_todos(self)
         self.init_todos()
         for todo_id in dict['todos']:
-            t = self.todos[todo_id]
-            for k in dict['todos'][todo_id]:
-                t.state[k] = dict['todos'][todo_id][k]
+            if todo_id in self.todos:
+                t = self.todos[todo_id]
+                for k in dict['todos'][todo_id]:
+                    t.state[k] = dict['todos'][todo_id][k]
+            else:
+                print("Warning: Could not restore state for %s, Todo definition not found" % todo_id)
 
     def load(self):
         latest = None
@@ -675,7 +700,7 @@ class ReleaseState:
             if os.path.exists(os.path.join(self.config_path, 'latest.json')):
                 with open(os.path.join(self.config_path, 'latest.json'), 'r') as fp:
                     latest = json.load(fp)['version']
-                    print("Found version %s in %s" % (latest, os.path.join(self.config_path, 'latest.json')))
+                    print("Found an already started release version %s in %s" % (latest, os.path.join(self.config_path, 'latest.json')))
 
             if latest and os.path.exists(os.path.join(self.config_path, latest, 'state.json')):
                 with open(os.path.join(self.config_path, latest, 'state.json'), 'r') as fp:
@@ -685,6 +710,7 @@ class ReleaseState:
                     except Exception as e:
                         print("Failed to load state from %s: %s" % (os.path.join(self.config_path, latest, 'state.json'), e))
         print("Loaded state from disk")
+        # print(" -- %s" % self.get_todo_states())
 
     def save(self):
         print("Saving")
@@ -876,6 +902,7 @@ def expand_jinja(text, vars=None):
     global_vars = OrderedDict({
         'script_version': state.script_version,
         'release_version': state.release_version,
+        'config_path': state.config_path,
         'rc_number': state.rc_number,
         'script_branch': state.branch,
         'release_folder': state.get_release_folder(),
@@ -886,7 +913,8 @@ def expand_jinja(text, vars=None):
         'release_version_major': state.release_version_major,
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
-        'state': state
+        'state': state,
+        'keys_downloaded': keys_downloaded()
     })
     global_vars.update(state.get_todo_states())
     if vars:
@@ -904,8 +932,10 @@ def expand_jinja(text, vars=None):
 
 
 class Todo:
-    def __init__(self, id, title, description=None, done=False, type=None, fun=None, fun_args=None, links=None,
-                 commands=None, user_input=None, depends=None, vars={}):
+    def __init__(self, id, title, description=None, post_description=None, done=False, type=None, fun=None, fun_args=None, links=None,
+                 commands=None, user_input=None, depends=None, vars={}, asciidoc=None):
+        self.asciidoc = asciidoc
+        self.post_description = post_description
         self.vars = vars
         self.depends = depends
         self.user_input = user_input
@@ -928,11 +958,6 @@ class Todo:
         self.id = id
         self.state = {}
         self.set_done(done)
-        # if self.commands and len(self.vars) > 0:
-        #     self.commands.vars.update(self.get_vars())
-        #     print("Upated vars for command")
-        # if self.commands:
-        #     print("Updated vars for todo %s's commands to %s" % (self.id, self.commands.vars))
 
 
     def get_vars(self):
@@ -1009,6 +1034,8 @@ class Todo:
                     cmds.run()
                 else:
                     print("This step is already completed. You have to first set it to 'not completed' in order to execute commands again.")
+            if self.post_description:
+                print("%s" % self.get_post_description())
             completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
             self.set_done(completed)
             state.save()
@@ -1043,6 +1070,12 @@ class Todo:
         else:
             return None
 
+    def get_post_description(self):
+        if self.post_description:
+            return expand_jinja(self.post_description, vars=self.get_vars_and_state())
+        else:
+            return None
+
     def get_commands(self):
         cmds = self.commands
         try:
@@ -1054,12 +1087,15 @@ class Todo:
         return cmds
 
     def get_asciidoc(self):
-        try:
-            attr = getattr(todo_methods, "%s_asciidoc" % self.id)
-            if callable(attr):
-                return attr(self)
-        except:
-            pass
+        if self.asciidoc:
+            return expand_jinja(self.asciidoc)
+        else:
+            try:
+                attr = getattr(todo_methods, "%s_asciidoc" % self.id)
+                if callable(attr):
+                    return expand_jinja(attr(self))
+            except:
+                pass
         return None
 
     def get_vars_and_state(self):
@@ -1205,11 +1241,12 @@ def generate_asciidoc():
             if todo.is_done():
                 fh.write("_Completed %s_\n\n" % datetime.utcfromtimestamp(todo.state['done_date'] / 1000).strftime(
                     "%Y-%m-%d %H:%M UTC"))
-            desc = todo.get_description()
-            if desc:
-                fh.write("%s\n\n" % desc)
             if todo.get_asciidoc():
                 fh.write("%s\n\n" % todo.get_asciidoc())
+            else:
+                desc = todo.get_description()
+                if desc:
+                    fh.write("%s\n\n" % desc)
             state_copy = copy.deepcopy(todo.state)
             state_copy.pop('done', None)
             state_copy.pop('done_date', None)
@@ -1258,6 +1295,9 @@ def generate_asciidoc():
                             fh.write("# %s\n" % c.comment)
                     fh.write("%s%s%s\n" % (pre, c, post))
                 fh.write("----\n\n")
+            if todo.post_description and not todo.get_asciidoc():
+                fh.write("%s\n\n" % todo.get_post_description())
+
     fh.close()
     print("Wrote file %s" % os.path.join(state.get_release_folder(), filename_adoc))
     print("Running command 'asciidoctor %s'" % filename_adoc)
@@ -1275,9 +1315,22 @@ def release_other_version():
     sys.exit(0)
 
 
+def download_keys():
+    download('KEYS', "https://archive.apache.org/dist/lucene/KEYS", state.config_path)
+
+
+def keys_downloaded():
+    return os.path.exists(os.path.join(state.config_path, "KEYS"))
+
+
 def main():
     global state
     global todo_methods
+    global dry_run
+
+    if len(sys.argv) > 1 and sys.argv[1] == '-d':
+        print("Entering dry-run mode where all commands will be echoed instead of executed")
+        dry_run = True
 
     todo_methods = TodoMethods()
 
@@ -1321,6 +1374,8 @@ def main():
     main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
     main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
     main_menu.append_item(FunctionItem('Generate Asciidoc guide', generate_asciidoc))
+    main_menu.append_item(FunctionItem('Download gpg KEYS file for offline use', download_keys))
+#    main_menu.append_item(FunctionItem('Maybe', maybe_remove_rc_from_svn))
     main_menu.append_item(FunctionItem('Help', help))
 
     main_menu.show()
@@ -1381,7 +1436,7 @@ def ask_yes_no(text):
 
 
 def abbreviate_line(line, width):
-    line = line.strip()
+    line = line.rstrip()
     if len(line) > width:
         line = "%s.....%s" % (line[:(width / 2 - 5)], line[-(width / 2):])
     else:
@@ -1395,9 +1450,9 @@ def print_line_cr(line, linenum, stdout=True, tee=False):
             print("[line %s] %s" % (linenum, abbreviate_line(line, 80)), end='\r')
     else:
         if line.endswith("\r"):
-            print(line.strip(), end='\r')
+            print(line.rstrip(), end='\r')
         else:
-            print(line.strip())
+            print(line.rstrip())
 
 
 def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
@@ -1423,7 +1478,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
                 if line == '' and process.poll() is not None:
                     endstdout = True
                 else:
-                    fh.write("%s\n" % line.strip())
+                    fh.write("%s\n" % line.rstrip())
                     fh.flush()
                     lines_written += 1
                     print_line_cr(line, lines_written, stdout=fh == sys.stdout, tee=tee)
@@ -1436,7 +1491,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
                 if line == '' and process.poll() is not None:
                     endstderr = True
                 else:
-                    errlines.append("%s\n" % line.strip())
+                    errlines.append("%s\n" % line.rstrip())
                     lines_written += 1
                     print_line_cr(line, lines_written, stdout=fh == sys.stdout, tee=tee)
             except Exception as e:
@@ -1449,9 +1504,8 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
     print(" " * 80)
     rc = process.poll()
     if len(errlines) > 0:
-        fh.write("--- STDERR ---\n")
         for line in errlines:
-            fh.write("%s\n" % line.strip())
+            fh.write("%s\n" % line.rstrip())
             fh.flush()
     return rc
 
@@ -1461,9 +1515,9 @@ def is_windows():
 
 
 class Commands:
-    def __init__(self, root_folder, commands_text, commands,
-                 logs_prefix=None, run_text=None, ask_run=True, ask_each=True, tail_lines=25,
-                 stdout=False, env=None, vars={}, todo_ref=None):
+    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, ask_run=True,
+                 ask_each=True, tail_lines=25, stdout=False, env=None, vars={}, todo_ref=None, remove_files=None):
+        self.remove_files = remove_files
         self.todo_ref = todo_ref
         self.vars = vars
         self.env = env
@@ -1508,7 +1562,6 @@ class Commands:
         if self.ask_run:
             if self.run_text:
                 print("\n%s\n" % expand_jinja(self.run_text))
-            print("\nI can execute these commands for you if you choose.")
             if len(self.commands) > 1:
                 if self.ask_each:
                     print("You will get prompted before running each individual command.")
@@ -1517,6 +1570,15 @@ class Commands:
                         "You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
+                if self.remove_files:
+                    for f in self.get_remove_files():
+                        if os.path.exists(f):
+                            filefolder = "File" if os.path.isfile(f) else "Folder"
+                            if ask_yes_no("%s %s already exists. Shall I remove it now?" % (filefolder, f)) and not dry_run:
+                                if os.path.isdir(f):
+                                    shutil.rmtree(f)
+                                else:
+                                    os.remove(f)
                 index = 0
                 log_folder = self.logs_prefix if len(commands) > 1 else None
                 for cmd in commands:
@@ -1547,7 +1609,8 @@ class Commands:
                                 logfilename = "%s.log" % re.sub(r"\W", "_", cmd.get_cmd())
                             logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
                             print("Wait until command completes... Full log in %s\n" % logfile)
-                        if not run_with_log_tail(cmd.get_cmd(), cwd, logfile=logfile, tee=cmd.tee,
+                        cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
+                        if not run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee,
                                                  tail_lines=self.tail_lines) == 0:
                             print("WARN: Command %s returned with error" % cmd.get_cmd())
                             success = False
@@ -1564,6 +1627,16 @@ class Commands:
             root = root()
         return root
 
+    def get_remove_files(self):
+        res = []
+        vars = {}
+        if self.todo_ref:
+            vars = self.todo_ref.get_vars()
+        if self.remove_files:
+            for rf in self.remove_files:
+                res.append(expand_jinja(rf, vars))
+        return res
+
 
 class Command:
     def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None, vars={}, todo_ref=None):
@@ -1577,13 +1650,23 @@ class Command:
         self.cmd = cmd
 
     def get_cmd(self):
-        v = self.vars.copy()
+        v = self.get_vars()
         if self.todo_ref:
             v.update(self.todo_ref.get_vars())
         if isinstance(self.cmd, list):
             return expand_jinja(" ".join(self.cmd), v)
         else:
             return expand_jinja(self.cmd, v)
+
+    def get_vars(self):
+        myvars = {}
+        for k in self.vars:
+            val = self.vars[k]
+            if callable(val):
+                myvars[k] = expand_jinja(val(), vars=myvars)
+            else:
+                myvars[k] = expand_jinja(val, vars=myvars)
+        return myvars
 
     def __str__(self):
         return self.get_cmd()
@@ -1615,49 +1698,6 @@ def vote_close_72h_date():
 
 class TodoMethods:
     # These are called with reflection based on method matching to_do ID
-    def clean_git_checkout(self, todo):
-        if os.path.exists(state.get_git_checkout_folder()):
-            if ask_yes_no("Found existing folder %s. Delete it now?" % state.get_git_checkout_folder()):
-                shutil.rmtree(state.get_git_checkout_folder())
-
-    # def _build_rc_commands(self, todo):
-    #     try:
-    #         key_id = state.get_todo_state_by_id('gpg')['gpg_key']
-    #     except Exception as e:
-    #         raise Exception("Faild getting key: %s" % e)
-    #
-    #     todo.state['git_rev'] = state.get_git_rev()
-    #
-    #     # logfile = quote_spaces(os.path.join(state.get_rc_folder(), 'logs', 'buildAndPushRelease.log'))
-    #     logfile = "/tmp/release.log"
-    #     cmdline = "python3 -u %s --push-local %s --rc-num %s --sign %s" \
-    #               % (os.path.join('dev-tools', 'scripts', 'buildAndPushRelease.py'),
-    #                  quote_spaces(os.path.join(state.get_rc_folder(), "dist")),
-    #                  state.rc_number,
-    #                  key_id)
-    #     # Add --logfile %s"
-    #
-    #     return Commands(
-    #         state.get_git_checkout_folder(),
-    #         textwrap.dedent("""\
-    #             In this step we will build the RC using python script `buildAndPushRelease.py`
-    #             We have tried to compile the correct command below, and you need to execute
-    #             it in another Terminal window yourself.
-    #
-    #             Note that the script will take a long time. To follow the detailed build
-    #             log, tail the log in another Terminal:
-    #             `tail -f %s`""") % logfile,
-    #         [
-    #             Command("git checkout {{ release_branch }}", stdout=True),
-    #             Command("git clean -df", stdout=True, comment="Make sure checkout is clean and up to date"),
-    #             Command("git checkout -- .", stdout=True),
-    #             Command("git pull"),
-    #             Command(cmdline, logfile="build_rc.log", tee=True),
-    #         ],
-    #         env={'JAVACMD': state.get_java_cmd()},
-    #         ask_run=False,
-    #         ask_each=False)
-
     def end_vote(self, todo):
         initiate_vote_dict = state.get_todo_by_id("initiate_vote").state
         if not initiate_vote_dict['done'] is True:
