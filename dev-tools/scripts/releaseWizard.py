@@ -561,6 +561,15 @@ TIP: The buildAndPushRelease script run later will check this automatically"""),
     ]
 
 
+def maybe_remove_rc_from_svn():
+    if state.get_todo_by_id('import_svn').is_done():
+        rev = state.get_todo_state_by_id('build_rc')['git_rev']
+        # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
+        print ("WARN: Need to remove RC with rev %s from svn" % rev)
+        pass # TODO: Remove old RC from svn
+
+
+
 class ReleaseState:
     def __init__(self, config_path, script_version):
         self.script_version = script_version
@@ -601,6 +610,7 @@ class ReleaseState:
 
     def clear_rc(self):
         if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
+            maybe_remove_rc_from_svn()
             dict = OrderedDict()
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
@@ -612,9 +622,7 @@ class ReleaseState:
 
     def new_rc(self):
         if ask_yes_no("Are you sure? This will abort current RC"):
-            if state.get_todo_by_id('import_svn').is_done():
-                # If you have cancelled a prior release candidate, remove it from SVN: svn -m "Remove cancelled Lucene/Solr 6.0.1 RC1" rm https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC1-rev...
-                pass # TODO: Remove old RC from svn
+            maybe_remove_rc_from_svn()
             dict = OrderedDict()
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
@@ -1119,6 +1127,7 @@ def start_new_rc():
 def reset_state():
     global state
     if ask_yes_no("Are you sure? This will erase all current progress"):
+        maybe_remove_rc_from_svn()
         shutil.rmtree(os.path.join(state.config_path, state.release_version))
         state.clear()
 
@@ -1260,6 +1269,7 @@ def generate_asciidoc():
 
 
 def release_other_version():
+    maybe_remove_rc_from_svn()
     os.remove(os.path.join(state.config_path, 'latest.json'))
     print("Please restart the wizard")
     sys.exit(0)
