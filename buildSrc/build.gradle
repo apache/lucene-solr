@@ -18,6 +18,8 @@
 apply plugin: 'groovy'
 apply plugin: 'java-gradle-plugin'
 
+buildDir = new File("build")
+
 group = 'org.apache.lucene.gradle'
 
 repositories {
@@ -85,6 +87,7 @@ task buildTest(type: Test) {
 
   outputs.upToDateWhen { false }
   mustRunAfter tasks.test
+  dependsOn project.rootProject.clean
 }
 
 
