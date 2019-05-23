@@ -15,33 +15,51 @@ package org.apache.lucene.gradle
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/** Task script that is called by Ant's build.xml file:
- * Checks GIT working copy for unversioned or modified files.
- */
-
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 class JFlex extends DefaultTask {
   
-  @InputFile
-  File source
+  @InputDirectory
+  File inputDir
+  
+  @Input
+  String fileName
+  
+  @Optional
+  @Input
+  boolean disableBufferExpansion
   
   @OutputDirectory
   File target
   
   @TaskAction
   void jflex() {
-
+    def skeleton
+    if (disableBufferExpansion) {
+      skeleton = "src/data/jflex/skeleton.disable.buffer.expansion.txt"
+    } else {
+      skeleton = "src/data/jflex/skeleton.default"
+    }
+    
     ant.taskdef(classname: 'jflex.anttask.JFlexTask',
     name: 'jflex',
     classpath: project.rootProject.allprojects.find { project -> project.name == 'buildSrc'}.configurations.jflex.asPath)
     
-    ant.jflex(file: source.getAbsolutePath(), outdir: target.getAbsolutePath(), nobak: 'on', skeleton: "src/data/jflex/skeleton.default")
+    ant.jflex(file: inputDir.getAbsolutePath() + File.separator + fileName + ".jflex", outdir: target.getAbsolutePath(), nobak: 'on', skeleton: skeleton)
+    
+    if (disableBufferExpansion) {
+      // Since the ZZ_BUFFERSIZE declaration is generated rather than in the skeleton, we have to transform it here.
+      ant.replaceregexp(file: inputDir.getAbsolutePath() + File.separator + fileName +  ".java", match: "private static final int ZZ_BUFFERSIZE =", replace: "private int ZZ_BUFFERSIZE =")
+    }
+    
   }
+  
 }
 
 

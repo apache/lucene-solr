@@ -42,7 +42,11 @@ dependencies {
 configurations {
   jflex
   rat
+  
+  jflex.extendsFrom implementation
 }
+
+
 
 dependencies {
   jflex "de.jflex:jflex:1.7.0"
