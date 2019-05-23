@@ -42,7 +42,9 @@ public class StrUtils {
 
   public static List<String> splitSmart(String s, char separator, boolean trimEmpty) {
     List<String> l = splitSmart(s, separator);
-    if (l.size() > 0 && l.get(0).isEmpty()) l.remove(0);
+    if(trimEmpty){
+      if (l.size() > 0 && l.get(0).isEmpty()) l.remove(0);
+    }
     return l;
   }
 
