@@ -23,3 +23,11 @@ subprojects {
 
 tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()
     + System.properties['file.separator'] + "licenses"))
+
+
+task jarChecksum(type: org.apache.lucene.gradle.JarChecksum) {
+  group = 'Build'
+  description = "Generates checksums for Lucene dependency jars."
+  inputDir = new File(project.rootProject.projectDir, "/lucene")
+  target = new File(project.rootProject.projectDir, "/lucene/licenses")
+}
