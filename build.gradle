@@ -27,7 +27,7 @@ plugins {
 def luceneSolrProjects = allprojects.findAll { project -> project.name != 'buildSrc'};
 def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'buildSrc'}
 
-def buildSrcDir = project.rootProject.projectDir;
+def rootProjectDir = project.rootProject.projectDir;
 
 // TOC
 // -> lucene-solr all project config
@@ -40,7 +40,7 @@ def buildSrcDir = project.rootProject.projectDir;
 configure(luceneSolrProjects) {
 
   // setup repositories
-  project.apply from: new File(buildSrcDir, "buildSrc/common/configure-repositories.gradle")
+  project.apply from: new File(rootProjectDir, "buildSrc/common/configure-repositories.gradle")
   
   buildDir = new File("build")
   
@@ -79,11 +79,11 @@ configure(luceneSolrSubProjects) {
     }
     
     // configure tests
-    project.apply from: new File(buildSrcDir, "buildSrc/common/configure-test.gradle")
+    project.apply from: new File(rootProjectDir, "buildSrc/common/configure-test.gradle")
      
     // we create new implementationTran and testImplementationTran configurations that are
     // transitive and can be used between modules
-    project.apply from: new File(buildSrcDir, "buildSrc/common/configure-impltran.gradle")
+    project.apply from: new File(rootProjectDir, "buildSrc/common/configure-impltran.gradle")
     
     // Custom javac options
     tasks.withType(JavaCompile) {
@@ -126,8 +126,8 @@ configure(rootProject) {
 // -> lucene-solr IDE config - setup eclipse and idea
 allprojects {
   plugins.withType(JavaPlugin) {
-    project.apply from: new File(buildSrcDir, "buildSrc/ide/eclipse.gradle")
-    project.apply from: new File(buildSrcDir, "buildSrc/ide/idea.gradle")
+    project.apply from: new File(rootProjectDir, "buildSrc/ide/eclipse.gradle")
+    project.apply from: new File(rootProjectDir, "buildSrc/ide/idea.gradle")
   }
 }
 
