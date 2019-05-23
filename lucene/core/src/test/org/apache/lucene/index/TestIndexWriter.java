@@ -3773,7 +3773,7 @@ public class TestIndexWriter extends LuceneTestCase {
       indexedDocs.acquire(1 + random().nextInt(100));
       w.rollback();
     } finally {
-      stopped.get();
+      stopped.set(true);
       indexer.join();
       refresher.join();
       IOUtils.close(sm, dir);
