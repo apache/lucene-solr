@@ -48,9 +48,8 @@ import yaml
 
 global state
 global current_git_root
-global todo_methods
 global dry_run
-
+global templates
 
 # Solr:Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
@@ -126,7 +125,7 @@ def bootstrap_todos(state):
     if True:
         print("Loading objects from yaml on disk")
         file = open("releaseWizard.yaml", "r")
-        todo_list = yaml.load(file, Loader=yaml.Loader)
+        todo_list = yaml.load(file, Loader=yaml.Loader).get('groups')
         for tg in todo_list:
             if dry_run:
                 print("Group %s" % tg.id)
@@ -947,13 +946,15 @@ class ReleaseState:
 class TodoGroup(SecretYamlObject):
     yaml_tag = u'!TodoGroup'
     hidden_fields = []
-    def __init__(self, id, title, description, todos, is_in_rc_loop=False, depends=None):
+    def __init__(self, id, title, description, todos, is_in_rc_loop=None, depends=None):
         self.id = id
         self.title = title
         self.description = description
         self.depends = depends
         self.is_in_rc_loop = is_in_rc_loop
         self.todos = todos
+        # if not self.is_in_rc_loop:
+        #     self.is_in_rc_loop = False
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -999,12 +1000,6 @@ class TodoGroup(SecretYamlObject):
 
     def get_description(self):
         desc = self.description
-        try:
-            attr = getattr(todo_methods, "%s_desc" % self.id)
-            if callable(attr):
-                desc = attr(self)
-        except:
-            pass
         if desc:
             return expand_jinja(desc)
         else:
@@ -1042,6 +1037,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'state': state,
+        'epoch': unix_time_millis(datetime.utcnow()),
         'keys_downloaded': keys_downloaded(),
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date())
@@ -1050,21 +1046,31 @@ def expand_jinja(text, vars=None):
     if vars:
         global_vars.update(vars)
 
-    filled = text
+    tpl_lines = []
+    for line in text.splitlines():
+        if line.startswith("(( template="):
+            match = re.search(r"^\(\( template=(.+?) \)\)", line)
+            name = match.group(1)
+            tpl_lines.append(templates[name].strip())
+            # print("Replaced %s with %s" % (line.strip(), templates[name]))
+        else:
+            tpl_lines.append(line)
+    filled = "\n".join(tpl_lines)
+
     try:
-        env = Environment(lstrip_blocks=True, keep_trailing_newline=False)
+        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True)
         env.filters['path_join'] = lambda paths: os.path.join(*paths)
-        template = env.from_string(str(text), globals=global_vars)
+        template = env.from_string(str(filled), globals=global_vars)
         filled = template.render()
     except Exception as e:
-        print("Exception while rendering jinja template %s: %s" % (str(text), e))
+        print("Exception while rendering jinja template %s: %s" % (str(filled)[:10], e))
     return filled
 
 
 class Todo(SecretYamlObject):
     yaml_tag = u'!Todo'
     hidden_fields = ['state']
-    def __init__(self, id, title, description=None, post_description=None, done=False, types=None, links=None,
+    def __init__(self, id, title, description=None, post_description=None, done=None, types=None, links=None,
                  commands=None, user_input=None, depends=None, vars=None, asciidoc=None, persist_vars=None):
         self.id = id
         self.title = title
@@ -1080,8 +1086,8 @@ class Todo(SecretYamlObject):
         self.links = links
         self.state = {}
 
-        if not self.vars:
-            self.vars = {}
+        # if not self.vars:
+        #     self.vars = {}
         self.set_done(done)
         if self.types:
             self.types = ensure_list(self.types)
@@ -1092,6 +1098,8 @@ class Todo(SecretYamlObject):
             self.commands.todo_id = self.id
             for c in commands.commands:
                 c.todo_id = self.id
+        # if not done:
+        #     done = False
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -1100,12 +1108,13 @@ class Todo(SecretYamlObject):
 
     def get_vars(self):
         myvars = {}
-        for k in self.vars:
-            val = self.vars[k]
-            if callable(val):
-                myvars[k] = expand_jinja(val(), vars=myvars)
-            else:
-                myvars[k] = expand_jinja(val, vars=myvars)
+        if self.vars:
+            for k in self.vars:
+                val = self.vars[k]
+                if callable(val):
+                    myvars[k] = expand_jinja(val(), vars=myvars)
+                else:
+                    myvars[k] = expand_jinja(val, vars=myvars)
         return myvars
 
     def set_done(self, is_done):
@@ -1153,17 +1162,11 @@ class Todo(SecretYamlObject):
                 for link in self.links:
                     print("- %s" % link)
                 print()
-            try:
-                attr = getattr(todo_methods, self.id)
-                if callable(attr) and not self.is_done():
-                    # print("Calling %s by reclection" % self.id)
-                    attr(self)
-            except Exception as e:
-                pass
             if self.user_input and not self.is_done():
                 ui_list = ensure_list(self.user_input)
                 for ui in ui_list:
                     ui.run(self.state)
+                print()
             cmds = self.get_commands()
             if cmds:
                 if not self.is_done():
@@ -1172,6 +1175,7 @@ class Todo(SecretYamlObject):
                     cmds.run()
                 else:
                     print("This step is already completed. You have to first set it to 'not completed' in order to execute commands again.")
+                print()
             if self.post_description:
                 print("%s" % self.get_post_description())
             completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
@@ -1196,12 +1200,6 @@ class Todo(SecretYamlObject):
 
     def get_description(self):
         desc = self.description
-        try:
-            attr = getattr(todo_methods, "%s_desc" % self.id)
-            if callable(attr):
-                desc = attr(self)
-        except:
-            pass
         if desc:
             return expand_jinja(desc, vars=self.get_vars_and_state())
         else:
@@ -1215,25 +1213,13 @@ class Todo(SecretYamlObject):
 
     def get_commands(self):
         cmds = self.commands
-        try:
-            attr = getattr(todo_methods, "%s_commands" % self.id)
-            if callable(attr):
-                cmds = attr(self)
-        except:
-            pass
         return cmds
 
     def get_asciidoc(self):
         if self.asciidoc:
             return expand_jinja(self.asciidoc, vars=self.get_vars_and_state())
         else:
-            try:
-                attr = getattr(todo_methods, "%s_asciidoc" % self.id)
-                if callable(attr):
-                    return expand_jinja(attr(self), vars=self.get_vars_and_state())
-            except:
-                pass
-        return None
+            return None
 
     def get_vars_and_state(self):
         d = self.get_vars().copy()
@@ -1305,36 +1291,12 @@ def reset_state():
         state.clear()
 
 
+def template(name, vars=None):
+    return expand_jinja(templates[name], vars=vars)
+
+
 def help():
-    print("""
-Welcome to the role as Release Manager for Lucene/Solr, and the releaseWizard!
-
-This tool aims to walk you through the whole release process step by step,
-helping you to to run the right commands in the right order, generating
-e-mail templates for you with the correct texts, versions, paths etc, obeying 
-the voting rules and much more. It also serves as a documentation of all the
-steps, with timestamps, preserving log files from each command etc.
-
-As you complete each step the tool will ask you if the task is complete, making
-it easy for you to know what is done and what is left to do. If you need to
-re-spin a Release Candidata (RC) the Wizard will also help.
-
-The Lucene project has automated much of the release process with various scripts,
-and this wizard is the glue that binds it all together.
-
-In the first TODO step in the checklist you will be asked to read up on the
-Apache release policy and other relevant documents before you start the release. 
-
-NOTE: Even if we have great tooling and some degree of automation, there are 
-      still many manual steps and it is also important that the RM validates
-      and QAs the process, validating that the right commands are run, and that
-      the output from scripts are correct before proceeding.
-
-DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
-            faulty commands, commands that won't work on your OS or with all
-            versions of tooling etc. So pleaes keep the old ReleaseTODO handy
-            for cross-checking for now :)
-""")
+    print(template('help'))
 
 
 def ensure_list(o):
@@ -1433,7 +1395,7 @@ def generate_asciidoc():
                     fh.write("%s%s%s\n" % (pre, c, post))
                 fh.write("----\n\n")
             if todo.post_description and not todo.get_asciidoc():
-                fh.write("%s\n\n" % todo.get_post_description())
+                fh.write("\n%s\n\n" % todo.get_post_description())
 
     fh.close()
     print("Wrote file %s" % os.path.join(state.get_release_folder(), filename_adoc))
@@ -1464,19 +1426,29 @@ def dump_yaml():
     file = open("releaseWizard.yaml", "w")
     yaml.add_representer(str, str_presenter)
     yaml.Dumper.ignore_aliases = lambda *args : True
-    yaml.dump(state.todo_groups, width=180, stream=file, sort_keys=False, default_flow_style=False)
+    dump_obj = {'templates': templates,
+                'groups': state.todo_groups}
+    yaml.dump(dump_obj, width=180, stream=file, sort_keys=False, default_flow_style=False)
+
+
+def load_templates():
+    global templates
+    templates = yaml.load(open("releaseWizard.yaml", "r"), Loader=yaml.Loader).get('templates')
 
 
 def main():
     global state
-    global todo_methods
     global dry_run
+    global templates
 
     if len(sys.argv) > 1 and sys.argv[1] == '-d':
         print("Entering dry-run mode where all commands will be echoed instead of executed")
         dry_run = True
 
-    todo_methods = TodoMethods()
+    try:
+        load_templates()
+    except Exception as e:
+        sys.exit("Failed loading templates. %s" % e)
 
     print("Lucene/Solr releaseWizard v%s\n" % getScriptVersion())
 
@@ -1661,21 +1633,25 @@ def is_windows():
 class Commands(SecretYamlObject):
     yaml_tag = u'!Commands'
     hidden_fields = ['todo_id']
-    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, enable_execute=True,
-                 confirm_each_command=True, env=None, vars={}, todo_id=None, remove_files=None):
+    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, enable_execute=None,
+                 confirm_each_command=None, env=None, vars=None, todo_id=None, remove_files=None):
         self.root_folder = root_folder
         self.commands_text = commands_text
+        # if not vars:
+        #     vars = {}
         self.vars = vars
         self.env = env
         self.run_text = run_text
         self.remove_files = remove_files
         self.todo_id = todo_id
         self.logs_prefix = logs_prefix
+        # if not enable_execute:
+        #     enable_execute = False
         self.enable_execute = enable_execute
+        if not confirm_each_command:
+            confirm_each_command = True
         self.confirm_each_command = confirm_each_command
         self.commands = commands
-        if not self.remove_files:
-            self.remove_files = []
         for c in self.commands:
             c.todo_id = todo_id
 
@@ -1786,12 +1762,13 @@ class Commands(SecretYamlObject):
 
     def get_vars(self):
         myvars = {}
-        for k in self.vars:
-            val = self.vars[k]
-            if callable(val):
-                myvars[k] = expand_jinja(val(), vars=myvars)
-            else:
-                myvars[k] = expand_jinja(val, vars=myvars)
+        if self.vars:
+            for k in self.vars:
+                val = self.vars[k]
+                if callable(val):
+                    myvars[k] = expand_jinja(val(), vars=myvars)
+                else:
+                    myvars[k] = expand_jinja(val, vars=myvars)
         return myvars
 
     def jinjaify(self, data, join=False):
@@ -1815,15 +1792,21 @@ class Commands(SecretYamlObject):
 class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
-    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None, vars={}, todo_id=None):
+    def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, comment=None, vars=None, todo_id=None):
         self.cmd = cmd
         self.cwd = cwd
         self.comment = comment
         self.logfile = logfile
+        # if not vars:
+        #     vars = {}
         self.vars = vars
         self.tee = tee
         self.stdout = stdout
         self.todo_id = todo_id
+        # if not tee:
+        #     tee = False
+        # if not stdout:
+        #     stdout = False
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -1838,12 +1821,13 @@ class Command(SecretYamlObject):
 
     def get_vars(self):
         myvars = {}
-        for k in self.vars:
-            val = self.vars[k]
-            if callable(val):
-                myvars[k] = expand_jinja(val(), vars=myvars)
-            else:
-                myvars[k] = expand_jinja(val, vars=myvars)
+        if self.vars:
+            for k in self.vars:
+                val = self.vars[k]
+                if callable(val):
+                    myvars[k] = expand_jinja(val(), vars=myvars)
+                else:
+                    myvars[k] = expand_jinja(val, vars=myvars)
         return myvars
 
     def __str__(self):
@@ -1867,7 +1851,8 @@ class Command(SecretYamlObject):
 
 class UserInput(SecretYamlObject):
     yaml_tag = u'!UserInput'
-    def __init__(self, name, prompt):
+    def __init__(self, name, prompt, type=None):
+        self.type = type
         self.prompt = prompt
         self.name = name
 
@@ -1878,6 +1863,8 @@ class UserInput(SecretYamlObject):
 
     def run(self, dict=None):
         result = str(input("%s : " % self.prompt))
+        if self.type and self.type == 'int':
+            result = int(result)
         if dict:
             dict[self.name] = result
         return result
@@ -1892,105 +1879,6 @@ def vote_close_72h_date():
     else:
         days_to_add = 0
     return (datetime.utcnow() + timedelta(hours=73) + timedelta(days=days_to_add))
-
-
-
-class TodoMethods:
-    # These are called with reflection based on method matching to_do ID
-    def end_vote(self, todo):
-        initiate_vote_dict = state.get_todo_by_id("initiate_vote").state
-        if not initiate_vote_dict['done'] is True:
-            print("A vote has not been initiated, cannot close.")
-            return
-        else:
-            if initiate_vote_dict['vote_close_epoch'] > unix_time_millis(datetime.now()):
-                print(
-                    "Cannot close vote until 72h vote time plus weekends have passed, which is %s" % initiate_vote_dict[
-                        'vote_close'])
-                if not ask_yes_no("Continue with closing the vote anyway?"):
-                    return
-
-        print("Please sum up the ")
-        plus_binding = int(UserInput("plus_binding", "Number of binding +1 votes (PMC members)").run(todo.state))
-        plus_other = int(UserInput("plus_other", "Number of other +1 votes").run(todo.state))
-        zero = int(UserInput("zero", "Number of 0 votes").run(todo.state))
-        minus = int(UserInput("minus", "Number of -1 votes").run(todo.state))
-
-        success, desc, template = self.end_vote_result(plus_binding, plus_other, zero, minus)
-
-        print("%s\n\n%s" % (desc, template))
-
-    def end_vote_asciidoc(self, todo):
-        return textwrap.dedent("""\
-            Note down how many votes were cast, summing as:
-            
-            * Binding PMC-member +1 votes
-            * Non-binding +1 votes
-            * Neutral +/-0 votes
-            * Negative -1 votes
-            
-            You need 3 binding +1 votes and more +1 than -1 votes for the release to happen.
-            A release cannot be vetoed, see more in provided links.
-            
-            Here are some mail templates for successful and failed vote results with sample numbers:
-            
-            %s
-            
-            %s
-            
-            %s""") % (self.end_vote_result(5, 1, 0, 2)[2],
-                       self.end_vote_result(2, 3, 0, 0)[2],
-                       self.end_vote_result(3, 0, 1, 4)[2])
-
-    def end_vote_result(self, plus_binding, plus_other, zero, minus):
-        desc = ""
-        mail_template = ""
-        if plus_binding >= 3 and plus_binding > minus:
-            success = True
-            desc += "The vote has succeeded\n\n"
-            if minus > 0:
-                desc += """
-However, there were negative votes. A release cannot be vetoed, and as long as
-there are more positive than negative votes you can techically release
-the software. However, please review the negative votes and consider
-a re-spin."""
-
-            mail_template += """            
-.Mail template successful vote
-----
-To: dev@lucene.apache.org
-Subject: [RESULT] [VOTE] Release Lucene/Solr %s RC%s
-
-It's been >72h since the vote was initiated and the result is:
-
-+1  %s  (%s binding)
- 0  %s
--1  %s
-
-This vote has PASSED.
-----""" % (state.release_version, state.rc_number, plus_binding + plus_other, plus_binding, zero, minus)
-        else:
-            success = False
-            if plus_binding < 3:
-                reason = "less than three binding +1 votes"
-            else:
-                reason = "too many -1 votes"
-            desc += "The vote was not successful"
-            mail_template += """
-.Mail template failed vote
-----
-To: dev@lucene.apache.org
-Subject: [FAILED] [VOTE] Release Lucene/Solr %s RC%s
-
-This vote has FAILED due to %s.
-The vote result was:
-
-+1  %s  (%s binding)
- 0  %s
--1  %s
-----
-    """ % (state.release_version, state.rc_number, reason, plus_binding + plus_other, plus_binding, zero, minus)
-        return success, desc, mail_template
 
 
 def get_release_branch():
