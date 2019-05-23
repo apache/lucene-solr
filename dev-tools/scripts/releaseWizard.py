@@ -57,9 +57,54 @@ dry_run = False
 major_minor = ['major', 'minor']
 script_path = os.path.dirname(os.path.realpath(__file__))
 
-class MyScreen(Screen):
-    def clear(self):
-        return
+
+def expand_jinja(text, vars=None):
+    global_vars = OrderedDict({
+        'script_version': state.script_version,
+        'release_version': state.release_version,
+        'ivy2_folder': os.path.expanduser("~/.ivy2/"),
+        'config_path': state.config_path,
+        'rc_number': state.rc_number,
+        'script_branch': state.script_branch,
+        'release_folder': state.get_release_folder(),
+        'git_checkout_folder': state.get_git_checkout_folder(),
+        'rc_folder': state.get_rc_folder(),
+        'release_branch': state.release_branch,
+        'stable_branch': state.get_stable_branch_name(),
+        'minor_branch': state.get_minor_branch_name(),
+        'release_type': state.release_type,
+        'release_version_major': state.release_version_major,
+        'release_version_minor': state.release_version_minor,
+        'release_version_bugfix': state.release_version_bugfix,
+        'state': state,
+        'epoch': unix_time_millis(datetime.utcnow()),
+        'keys_downloaded': keys_downloaded(),
+        'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
+        'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date())
+    })
+    global_vars.update(state.get_todo_states())
+    if vars:
+        global_vars.update(vars)
+
+    tpl_lines = []
+    for line in text.splitlines():
+        if line.startswith("(( template="):
+            match = re.search(r"^\(\( template=(.+?) \)\)", line)
+            name = match.group(1)
+            tpl_lines.append(templates[name].strip())
+            # print("Replaced %s with %s" % (line.strip(), templates[name]))
+        else:
+            tpl_lines.append(line)
+    filled = "\n".join(tpl_lines)
+
+    try:
+        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True)
+        env.filters['path_join'] = lambda paths: os.path.join(*paths)
+        template = env.from_string(str(filled), globals=global_vars)
+        filled = template.render()
+    except Exception as e:
+        print("Exception while rendering jinja template %s: %s" % (str(filled)[:10], e))
+    return filled
 
 
 def getScriptVersion():
@@ -103,27 +148,12 @@ epoch = datetime.utcfromtimestamp(0)
 def unix_time_millis(dt):
     return int((dt - epoch).total_seconds() * 1000.0)
 
-def quote_spaces(path):
-    if " " in path:
-        return '"%s"' % path
-    else:
-        return path
-
-
-def read_file(file, cwd=None):
-    try:
-        if cwd:
-            file = os.path.join(cwd, file)
-        return open(file, encoding='UTF-8').read()
-    except Exception as e:
-        print("Exception while attempting to read file %s: %s" % (file, e))
-        return None
-
 
 def bootstrap_todos(state):
     print("Loading objects from yaml on disk")
     file = open(os.path.join(script_path, "releaseWizard.yaml"), "r")
     todo_list = yaml.load(file, Loader=yaml.Loader).get('groups')
+    # Establish links from commands to to_do for finding todo vars
     for tg in todo_list:
         if dry_run:
             print("Group %s" % tg.id)
@@ -430,8 +460,6 @@ class TodoGroup(SecretYamlObject):
         self.depends = depends
         self.is_in_rc_loop = is_in_rc_loop
         self.todos = todos
-        # if not self.is_in_rc_loop:
-        #     self.is_in_rc_loop = False
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -495,55 +523,6 @@ class TodoGroup(SecretYamlObject):
         return None
 
 
-def expand_jinja(text, vars=None):
-    global_vars = OrderedDict({
-        'script_version': state.script_version,
-        'release_version': state.release_version,
-        'ivy2_folder': os.path.expanduser("~/.ivy2/"),
-        'config_path': state.config_path,
-        'rc_number': state.rc_number,
-        'script_branch': state.script_branch,
-        'release_folder': state.get_release_folder(),
-        'git_checkout_folder': state.get_git_checkout_folder(),
-        'rc_folder': state.get_rc_folder(),
-        'release_branch': state.release_branch,
-        'stable_branch': state.get_stable_branch_name(),
-        'minor_branch': state.get_minor_branch_name(),
-        'release_type': state.release_type,
-        'release_version_major': state.release_version_major,
-        'release_version_minor': state.release_version_minor,
-        'release_version_bugfix': state.release_version_bugfix,
-        'state': state,
-        'epoch': unix_time_millis(datetime.utcnow()),
-        'keys_downloaded': keys_downloaded(),
-        'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
-        'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date())
-    })
-    global_vars.update(state.get_todo_states())
-    if vars:
-        global_vars.update(vars)
-
-    tpl_lines = []
-    for line in text.splitlines():
-        if line.startswith("(( template="):
-            match = re.search(r"^\(\( template=(.+?) \)\)", line)
-            name = match.group(1)
-            tpl_lines.append(templates[name].strip())
-            # print("Replaced %s with %s" % (line.strip(), templates[name]))
-        else:
-            tpl_lines.append(line)
-    filled = "\n".join(tpl_lines)
-
-    try:
-        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True)
-        env.filters['path_join'] = lambda paths: os.path.join(*paths)
-        template = env.from_string(str(filled), globals=global_vars)
-        filled = template.render()
-    except Exception as e:
-        print("Exception while rendering jinja template %s: %s" % (str(filled)[:10], e))
-    return filled
-
-
 class Todo(SecretYamlObject):
     yaml_tag = u'!Todo'
     hidden_fields = ['state']
@@ -563,8 +542,6 @@ class Todo(SecretYamlObject):
         self.links = links
         self.state = {}
 
-        # if not self.vars:
-        #     self.vars = {}
         self.set_done(done)
         if self.types:
             self.types = ensure_list(self.types)
@@ -575,8 +552,6 @@ class Todo(SecretYamlObject):
             self.commands.todo_id = self.id
             for c in commands.commands:
                 c.todo_id = self.id
-        # if not done:
-        #     done = False
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -613,8 +588,6 @@ class Todo(SecretYamlObject):
         return self.state['done'] is True
 
     def get_title(self):
-        # print("Building title for %s: done=%s" % (self.id, self.is_done()))
-        done = ""
         prefix = ""
         if self.is_done():
             prefix = "✓ "
@@ -966,9 +939,9 @@ def main():
     main_menu.append_item(FunctionItem('Clear and restart current RC', state.clear_rc))
     main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
     main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
-    main_menu.append_item(FunctionItem('Generate Asciidoc guide', generate_asciidoc))
+    main_menu.append_item(FunctionItem('Generate Asciidoc guide for this release', generate_asciidoc))
     main_menu.append_item(FunctionItem('Download gpg KEYS file for offline use', download_keys))
-    main_menu.append_item(FunctionItem('Dump YAML', dump_yaml))
+    # main_menu.append_item(FunctionItem('Dump YAML', dump_yaml))
     main_menu.append_item(FunctionItem('Help', help))
 
     main_menu.show()
@@ -1337,6 +1310,11 @@ class UserInput(SecretYamlObject):
         return result
 
 
+class MyScreen(Screen):
+    def clear(self):
+        return
+
+
 def vote_close_72h_date():
     dow = datetime.utcnow().weekday()
     if dow == 6:  # Sun
@@ -1346,10 +1324,6 @@ def vote_close_72h_date():
     else:
         days_to_add = 0
     return (datetime.utcnow() + timedelta(hours=73) + timedelta(days=days_to_add))
-
-
-def get_release_branch():
-    return state.release_branch
 
 
 if __name__ == '__main__':
