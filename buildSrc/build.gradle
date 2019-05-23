@@ -16,6 +16,7 @@
  */
 
 apply plugin: 'groovy'
+apply plugin: 'java'
 apply plugin: 'java-gradle-plugin'
 
 buildDir = new File("build")
@@ -89,5 +90,4 @@ task buildTest(type: Test) {
   mustRunAfter tasks.test
   dependsOn project.rootProject.clean
 }
-
 
