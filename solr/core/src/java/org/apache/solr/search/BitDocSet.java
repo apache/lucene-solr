@@ -385,4 +385,12 @@ public class BitDocSet extends DocSetBase {
   public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
+
+  @Override
+  public String toString() {
+    return "BitDocSet{" +
+        "size=" + size() +
+        ",ramUsed=" + RamUsageEstimator.humanReadableUnits(ramBytesUsed()) +
+        '}';
+  }
 }

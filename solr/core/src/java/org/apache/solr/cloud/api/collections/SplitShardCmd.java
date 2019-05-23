@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -92,12 +93,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     this.ocmh = ocmh;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    split(state, message, results);
+    split(state, message,(NamedList<Object>) results);
   }
 
-  public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     String methodStr = message.getStr(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
     SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
@@ -107,7 +109,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     boolean withTiming = message.getBool(CommonParams.TIMING, false);
 
-    String collectionName = message.getStr(CoreAdminParams.COLLECTION);
+    String extCollectionName = message.getStr(CoreAdminParams.COLLECTION);
+
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
 
     log.debug("Split shard invoked: {}", message);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -231,7 +235,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       final String asyncId = message.getStr(ASYNC);
-      Map<String, String> requestMap = new HashMap<>();
       String nodeName = parentShardLeader.getNodeName();
 
       t = timings.sub("createSubSlicesAndLeadersInState");
@@ -283,30 +286,34 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.addReplica(clusterState, new ZkNodeProps(propMap), results, null);
       }
 
+      @SuppressWarnings("deprecation")
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
-
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard leaders", asyncId, requestMap);
-
+      {
+        final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
+        syncRequestTracker.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard leaders");
+      }
       t.stop();
       t = timings.sub("waitForSubSliceLeadersAlive");
-      for (String subShardName : subShardNames) {
-        // wait for parent leader to acknowledge the sub-shard core
-        log.debug("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
-        String coreNodeName = ocmh.waitForCoreNodeName(collectionName, nodeName, subShardName);
-        CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
-        cmd.setCoreName(subShardName);
-        cmd.setNodeName(nodeName);
-        cmd.setCoreNodeName(coreNodeName);
-        cmd.setState(Replica.State.ACTIVE);
-        cmd.setCheckLive(true);
-        cmd.setOnlyIfLeader(true);
+      {
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        for (String subShardName : subShardNames) {
+          // wait for parent leader to acknowledge the sub-shard core
+          log.debug("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
+          String coreNodeName = ocmh.waitForCoreNodeName(collectionName, nodeName, subShardName);
+          CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+          cmd.setCoreName(subShardName);
+          cmd.setNodeName(nodeName);
+          cmd.setCoreNodeName(coreNodeName);
+          cmd.setState(Replica.State.ACTIVE);
+          cmd.setCheckLive(true);
+          cmd.setOnlyIfLeader(true);
 
-        ModifiableSolrParams p = new ModifiableSolrParams(cmd.getParams());
-        ocmh.sendShardRequest(nodeName, p, shardHandler, asyncId, requestMap);
+          ModifiableSolrParams p = new ModifiableSolrParams(cmd.getParams());
+          shardRequestTracker.sendShardRequest(nodeName, p, shardHandler);
+        }
+
+        shardRequestTracker.processResponses(results, shardHandler, true, "SPLITSHARD timed out waiting for subshard leaders to come up");
       }
-
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD timed out waiting for subshard leaders to come up",
-          asyncId, requestMap);
       t.stop();
 
       log.debug("Successfully created all sub-shards for collection " + collectionName + " parent shard: " + slice
@@ -326,31 +333,37 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       params.set(CoreAdminParams.RANGES, rangesStr);
 
       t = timings.sub("splitParentCore");
+      {
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
 
-      ocmh.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
-
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to invoke SPLIT core admin command", asyncId,
-          requestMap);
+        shardRequestTracker.processResponses(results, shardHandler, true, "SPLITSHARD failed to invoke SPLIT core admin command");
+      }
       t.stop();
 
       log.debug("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
 
       t = timings.sub("applyBufferedUpdates");
       // apply buffered updates on sub-shards
-      for (int i = 0; i < subShardNames.size(); i++) {
-        String subShardName = subShardNames.get(i);
+      {
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
 
-        log.debug("Applying buffered updates on : " + subShardName);
+        for (int i = 0; i < subShardNames.size(); i++) {
+          String subShardName = subShardNames.get(i);
 
-        params = new ModifiableSolrParams();
-        params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-        params.set(CoreAdminParams.NAME, subShardName);
+          log.debug("Applying buffered updates on : " + subShardName);
 
-        ocmh.sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap);
+          params = new ModifiableSolrParams();
+          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+          params.set(CoreAdminParams.NAME, subShardName);
+
+          shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+        }
+
+        shardRequestTracker.processResponses(results, shardHandler, true,
+            "SPLITSHARD failed while asking sub shard leaders" +
+                " to apply buffered updates");
       }
-
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed while asking sub shard leaders" +
-          " to apply buffered updates", asyncId, requestMap);
       t.stop();
 
       log.debug("Successfully applied buffered updates on : " + subShardNames);
@@ -505,7 +518,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       assert TestInjection.injectSplitFailureAfterReplicaCreation();
 
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard replicas", asyncId, requestMap);
+      {
+        final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
+        syncRequestTracker.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard replicas");
+      }
       t.stop();
 
       log.info("Successfully created all replica shards for all sub-slices " + subSlices);
@@ -637,7 +653,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       props.put(SHARD_ID_PROP, subSlice);
       ZkNodeProps m = new ZkNodeProps(props);
       try {
-        ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
+        ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList<Object>());
       } catch (Exception e) {
         log.warn("Cleanup failed after failed split of " + collectionName + "/" + parentShard + ": (deleting existing sub shard " + subSlice + ")", e);
       }

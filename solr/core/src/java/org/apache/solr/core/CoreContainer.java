@@ -45,6 +45,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -100,6 +101,7 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientBuilderPlugin;
@@ -113,8 +115,6 @@ import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.ConnectionLossException;
-import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,6 +203,8 @@ public class CoreContainer {
 
   private volatile SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
+  private SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
+  
   private volatile BackupRepositoryFactory backupRepoFactory;
 
   protected volatile SolrMetricManager metricManager;
@@ -320,6 +322,9 @@ public class CoreContainer {
     this.solrHome = loader.getInstancePath().toString();
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler());
     this.cfg = requireNonNull(config);
+    if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
+      BooleanQuery.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
+    }
     this.coresLocator = locator;
     this.containerProperties = new Properties(properties);
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
@@ -332,6 +337,7 @@ public class CoreContainer {
 
   private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
     authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
+    int newVersion = readVersion(authorizationConf);
     //Initialize the Authorization module
     SecurityPluginHolder<AuthorizationPlugin> old = authorizationPlugin;
     SecurityPluginHolder<AuthorizationPlugin> authorizationPlugin = null;
@@ -340,11 +346,12 @@ public class CoreContainer {
       if (klas == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for authorization plugin");
       }
-      if (old != null && old.getZnodeVersion() == readVersion(authorizationConf)) {
+      if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+        log.debug("Authorization config not modified");
         return;
       }
       log.info("Initializing authorization plugin: " + klas);
-      authorizationPlugin = new SecurityPluginHolder<>(readVersion(authorizationConf),
+      authorizationPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(klas, AuthorizationPlugin.class));
 
       // Read and pass the authorization context to the plugin
@@ -357,12 +364,48 @@ public class CoreContainer {
       try {
         old.plugin.close();
       } catch (Exception e) {
+        log.error("Exception while attempting to close old authorization plugin", e);
       }
     }
   }
 
+  private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
+    auditConf = Utils.getDeepCopy(auditConf, 4);
+    int newVersion = readVersion(auditConf);
+    //Initialize the Auditlog module
+    SecurityPluginHolder<AuditLoggerPlugin> old = auditloggerPlugin;
+    SecurityPluginHolder<AuditLoggerPlugin> newAuditloggerPlugin = null;
+    if (auditConf != null) {
+      String klas = (String) auditConf.get("class");
+      if (klas == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for auditlogger plugin");
+      }
+      if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+        log.debug("Auditlogger config not modified");
+        return;
+      }
+      log.info("Initializing auditlogger plugin: " + klas);
+      newAuditloggerPlugin = new SecurityPluginHolder<>(newVersion,
+          getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
+
+      newAuditloggerPlugin.plugin.init(auditConf);
+    } else {
+      log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
+    }
+    this.auditloggerPlugin = newAuditloggerPlugin;
+    if (old != null) {
+      try {
+        old.plugin.close();
+      } catch (Exception e) {
+        log.error("Exception while attempting to close old auditlogger plugin", e);
+      }
+    }    
+  }
+
+  
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
+    int newVersion = readVersion(authenticationConfig);
     String pluginClassName = null;
     if (authenticationConfig != null) {
       if (authenticationConfig.containsKey("class")) {
@@ -384,10 +427,15 @@ public class CoreContainer {
     SecurityPluginHolder<AuthenticationPlugin> old = authenticationPlugin;
     SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin = null;
 
+    if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+      log.debug("Authentication config not modified");
+      return;
+    }
+
     // Initialize the plugin
     if (pluginClassName != null) {
       log.info("Initializing authentication plugin: " + pluginClassName);
-      authenticationPlugin = new SecurityPluginHolder<>(readVersion(authenticationConfig),
+      authenticationPlugin = new SecurityPluginHolder<>(newVersion,
           getResourceLoader().newInstance(pluginClassName,
               AuthenticationPlugin.class,
               null,
@@ -401,7 +449,9 @@ public class CoreContainer {
     this.authenticationPlugin = authenticationPlugin;
     try {
       if (old != null) old.plugin.close();
-    } catch (Exception e) {/*do nothing*/ }
+    } catch (Exception e) {
+      log.error("Exception while attempting to close old authentication plugin", e);
+    }
 
   }
 
@@ -815,6 +865,10 @@ public class CoreContainer {
     if (pkiAuthenticationPlugin != null && pkiAuthenticationPlugin.getMetricRegistry() == null) {
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
     }
+    initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
+    if (auditloggerPlugin != null) {
+      auditloggerPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/auditlogging");
+    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
@@ -845,26 +899,7 @@ public class CoreContainer {
     try {
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
-
-        if (isZooKeeperAware()) {
-          cancelCoreRecoveries();
-          try {
-            zkSys.zkController.removeEphemeralLiveNode();
-          } catch (AlreadyClosedException | SessionExpiredException | ConnectionLossException e) {
-
-          } catch (Exception e) {
-            log.warn("Error removing live node. Continuing to close CoreContainer", e);
-          }
-        }
-
-        try {
-          if (zkSys.zkController.getZkClient().getConnectionManager().isConnected()) {
-            log.info("Publish this node as DOWN...");
-            zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
-          }
-        } catch (Exception e) {
-          log.warn("Error publishing nodes as down. Continuing to close CoreContainer", e);
-        }
+        zkSys.zkController.preClose();
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
@@ -983,6 +1018,16 @@ public class CoreContainer {
       log.warn("Exception while closing authentication plugin.", e);
     }
 
+    // It should be safe to close the auditlogger plugin at this point.
+    try {
+      if (auditloggerPlugin != null) {
+        auditloggerPlugin.plugin.close();
+        auditloggerPlugin = null;
+      }
+    } catch (Exception e) {
+      log.warn("Exception while closing auditlogger plugin.", e);
+    }
+
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
 
@@ -998,17 +1043,6 @@ public class CoreContainer {
       } catch (Exception e) {
         SolrException.log(log, "Error canceling recovery for core", e);
       }
-    }
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(!isShutDown){
-        log.error("CoreContainer was not close prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance=" + System.identityHashCode(this));
-      }
-    } finally {
-      super.finalize();
     }
   }
 
@@ -1793,6 +1827,10 @@ public class CoreContainer {
     return solrCores.isLoadedNotPendingClose(name);
   }
 
+  // Primarily for transient cores when a core is aged out.
+  public void queueCoreToClose(SolrCore coreToClose) {
+    solrCores.queueCoreToClose(coreToClose);
+  }
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a
    * loaded core, the unloaded descriptor will be returned.
@@ -1843,6 +1881,10 @@ public class CoreContainer {
 
   public AuthenticationPlugin getAuthenticationPlugin() {
     return authenticationPlugin == null ? null : authenticationPlugin.plugin;
+  }
+
+  public AuditLoggerPlugin getAuditLoggerPlugin() {
+    return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
   }
 
   public NodeConfig getNodeConfig() {

@@ -23,21 +23,20 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -64,10 +63,10 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName =  message.getStr(COLLECTION_PROP);
+    String extCollectionName =  message.getStr(COLLECTION_PROP);
+    String collectionName = ocmh.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
-    Map<String, String> requestMap = new HashMap<>();
     NamedList shardRequestResults = new NamedList();
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
@@ -93,6 +92,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     log.info("Existing cores with snapshot for collection={} are {}", collectionName, existingCores);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
@@ -113,12 +113,12 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
           params.set(CoreAdminParams.COMMIT_NAME, commitName);
 
           log.info("Sending deletesnapshot request to core={} with commitName={}", coreName, commitName);
-          ocmh.sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
+          shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
         }
       }
     }
 
-    ocmh.processResponses(shardRequestResults, shardHandler, false, null, asyncId, requestMap);
+    shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
     NamedList success = (NamedList) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {

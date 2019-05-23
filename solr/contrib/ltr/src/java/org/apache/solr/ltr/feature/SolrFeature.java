@@ -92,7 +92,7 @@ public class SolrFeature extends Feature {
 
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(3, 1.0f);
+    final LinkedHashMap<String,Object> params = defaultParamsToMap();
     if (df != null) {
       params.put("df", df);
     }

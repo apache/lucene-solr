@@ -743,6 +743,8 @@
                 useDocValuesAsStored="true"/>
   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
+  <dynamicField name="*_b_dvo" multiValued="false" type="boolean" docValues="true" indexed="false" stored="false"
+                useDocValuesAsStored="true"/>
   <dynamicField name="*_l_dvo" multiValued="false" type="long" docValues="true" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
   <dynamicField name="*_f_dvo" multiValued="false" type="float" docValues="true" indexed="false" stored="false"

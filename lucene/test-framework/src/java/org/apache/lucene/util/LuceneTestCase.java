@@ -1658,7 +1658,7 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       // try empty ctor
-      return clazz.newInstance();
+      return clazz.getConstructor().newInstance();
     } catch (Exception e) {
       Rethrow.rethrow(e);
       throw null; // dummy to prevent compiler failure
@@ -1932,6 +1932,15 @@ public abstract class LuceneTestCase extends Assert {
         ret = random.nextBoolean()
             ? new AssertingIndexSearcher(random, r, ex)
             : new AssertingIndexSearcher(random, r.getContext(), ex);
+      } else if (random.nextBoolean()) {
+        int maxDocPerSlice = 1 + random.nextInt(100000);
+        int maxSegmentsPerSlice = 1 + random.nextInt(20);
+        ret = new IndexSearcher(r, ex) {
+          @Override
+          protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+            return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice);
+          }
+        };
       } else {
         ret = random.nextBoolean()
             ? new IndexSearcher(r, ex)

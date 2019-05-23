@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
-import static org.noggit.ObjectBuilder.getVal;
 
 
 public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBase {
@@ -129,7 +128,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         publisher.close();
       }
       
-      Map map = (Map) getVal(new JSONParser(new StringReader(response)));
+      Map map = (Map) Utils.fromJSONString(response);
       Object errors = map.get("errors");
       if(errors!= null){
         errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));

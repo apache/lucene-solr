@@ -46,7 +46,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
-  
+
   private static final String REMOVE_VERSION_FIELD = "remove.version.field";
   private static final String ENABLE_UPDATE_LOG = "enable.update.log";
   private static final String ZK_HOST = "zkHost";
@@ -66,12 +66,12 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    
+
     String zkDir = testDir.getAbsolutePath() + File.separator
     + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
-    
+
     System.setProperty(ZK_HOST, zkServer.getZkAddress());
     System.setProperty(ENABLE_UPDATE_LOG, "true");
     System.setProperty(REMOVE_VERSION_FIELD, "true");
@@ -86,15 +86,15 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
   }
-  
+
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }
-  
+
   protected String getCloudSchemaFile() {
     return getSchemaFile();
   }
-  
+
   @Override
   protected void createServers(int numShards) throws Exception {
     // give everyone there own solrhome
@@ -110,7 +110,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         .createCollection("control_collection", 1, 1)
         .setCreateNodeSet(controlJetty.getNodeName())
         .process(controlClient).isSuccess());
-    
+
     ZkStateReader zkStateReader = jettys.get(0).getCoreContainer().getZkController()
         .getZkStateReader();
 
@@ -132,17 +132,17 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     shards = sb.toString();
 
   }
-  
+
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose)
       throws Exception {
     waitForRecoveriesToFinish(collection, zkStateReader, verbose, true);
   }
-  
+
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
     waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 330);
   }
-  
+
   public static void waitForRecoveriesToFinish(String collection,
       ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, long timeoutSeconds)
       throws Exception {
@@ -191,7 +191,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       });
     } catch (TimeoutException | InterruptedException e) {
       Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
-      zkStateReader.getZkClient().printLayoutToStdOut();
+      zkStateReader.getZkClient().printLayoutToStream(System.out);
       fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
     }
 
@@ -211,7 +211,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     });
     log.info("Collection has disappeared - collection: " + collection);
   }
-  
+
   static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
       throws Exception {
     log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
@@ -229,17 +229,17 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
       if (timeOut.hasTimedOut()) {
         Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
-        zkStateReader.getZkClient().printLayoutToStdOut();
+        zkStateReader.getZkClient().printLayoutToStream(System.out);
         fail("Could not find new leader even after waiting for " + timeOut.timeElapsed(MILLISECONDS) + "ms");
       }
 
       Thread.sleep(100);
     }
-    
+
     zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (liveNodes, docCollection) -> {
       if (docCollection == null)
         return false;
-      
+
       Slice slice = docCollection.getSlice(shardName);
       if (slice != null && slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
         log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) );
@@ -256,7 +256,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName) != null
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName).getState() == expectedState);
   }
-  
+
   protected static void assertAllActive(String collection, ZkStateReader zkStateReader)
       throws KeeperException, InterruptedException {
 
@@ -266,7 +266,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       if (docCollection == null || docCollection.getSlices() == null) {
         throw new IllegalArgumentException("Cannot find collection:" + collection);
       }
-      
+
       Map<String,Slice> slices = docCollection.getSlicesMap();
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Slice slice = entry.getValue();
@@ -282,7 +282,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         }
       }
   }
-  
+
   @Override
   public void distribTearDown() throws Exception {
     resetExceptionIgnores();
@@ -309,10 +309,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     }
   }
-  
+
   protected void printLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.printLayoutToStdOut();
+    zkClient.printLayoutToStream(System.out);
     zkClient.close();
   }
 

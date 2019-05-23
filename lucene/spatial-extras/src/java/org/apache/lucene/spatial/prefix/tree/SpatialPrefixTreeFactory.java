@@ -59,7 +59,7 @@ public abstract class SpatialPrefixTreeFactory {
     else {
       try {
         Class<?> c = classLoader.loadClass(cname);
-        instance = (SpatialPrefixTreeFactory) c.newInstance();
+        instance = (SpatialPrefixTreeFactory) c.getConstructor().newInstance();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

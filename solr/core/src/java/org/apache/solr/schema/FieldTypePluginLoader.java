@@ -226,7 +226,7 @@ public final class FieldTypePluginLoader
       try {
         // No need to be core-aware as Analyzers are not in the core-aware list
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
-        Analyzer analyzer = clazz.newInstance();
+        Analyzer analyzer = clazz.getConstructor().newInstance();
 
         final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
         final Version luceneMatchVersion = (matchVersionStr == null) ?

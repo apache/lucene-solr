@@ -103,7 +103,7 @@ public interface DistribStateManager extends SolrCloseable {
       }
       List<String> children = listData(node);
       for (final String child : children) {
-        final String childPath = node + "/" + child;
+        final String childPath = node + (node.equals("/") ? "" : "/") + child;
         queue.add(childPath);
         tree.add(childPath);
       }

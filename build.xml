@@ -20,12 +20,12 @@
 <project name="lucene-solr" default="-projecthelp" basedir=".">
   <import file="lucene/common-build.xml"/>
 
-  <property name="jgit-version" value="4.6.0.201612231935-r"/>
+  <property name="jgit-version" value="5.3.0.201903130848-r"/>
   
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <property name="maven-build-dir" value="maven-build"/>
-  <property name="maven-version" value="2.2.1"/>
+  <property name="maven-version" value="3.5.0"/>
   <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
 
   <property name="smokeTestRelease.dir" location="lucene/build/smokeTestRelease/dist"/>
@@ -332,7 +332,7 @@
 
     <echo>
       SUCCESS: You must right-click your project and choose Refresh.
-               Your project must use a Java 8 JRE.
+               Your project must use a Java 11 JRE.
     </echo>
   </target>
 
@@ -379,7 +379,7 @@ following two XML attributes/values (adjust values according to
 JDKs you have defined locally - see 
 File | Project Structure | Platform Settings | SDKs):
 
-    idea.jdk = project-jdk-name="1.8" project-jdk-type="JavaSDK"
+    idea.jdk = project-jdk-name="11" project-jdk-type="JavaSDK"
     </echo>
   </target>
 
@@ -423,23 +423,23 @@ File | Project Structure | Platform Settings | SDKs):
       <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
   </target>
-  
-  <target name="-nightly-smoke-java9params" if="smokeTestRelease.java9">
+
+  <target name="-nightly-smoke-java12params" if="smokeTestRelease.java12">
     <!-- convert path to UNIX style, so windows backslashes don't hurt escaping: -->
-    <pathconvert targetos="unix" property="-smokeTestRelease.java9params">
-      <regexpmapper from="^(.*)$" to="--test-java9 '\1'"/>
-      <path location="${smokeTestRelease.java9}"/>
+    <pathconvert targetos="unix" property="-smokeTestRelease.java12params">
+      <regexpmapper from="^(.*)$" to="--test-java12 '\1'"/>
+      <path location="${smokeTestRelease.java12}"/>
     </pathconvert>
   </target>
-
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it (pass '-DsmokeTestRelease.java9=/path/to/jdk-9' to additionally test with Java 9 or later)"
-    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks,-nightly-smoke-java9params">
-    <fail message="To run nightly smoke, the JDK must be exactly Java 1.8, was: ${java.specification.version}">
+  
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it  (pass '-DsmokeTestRelease.java12=/path/to/jdk-12' to additionally test with Java 12 or later)"
+    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks,-nightly-smoke-java12params">
+    <fail message="To run nightly smoke, the JDK must be exactly Java 11, was: ${java.specification.version}">
       <condition>
-        <not><equals arg1="${java.specification.version}" arg2="1.8"/></not>
+        <not><equals arg1="${java.specification.version}" arg2="11"/></not>
       </condition>
     </fail>
-    <property name="-smokeTestRelease.java9params" value=""/><!-- (if not yet defined) -->
+    <property name="-smokeTestRelease.java12params" value=""/><!-- (if not yet defined) -->
     <exec executable="${python32.exe}" failonerror="true" taskname="python32">
       <arg value="-V"/>
     </exec>
@@ -464,7 +464,7 @@ File | Project Structure | Platform Settings | SDKs):
       <!-- Tell Python not to write any bytecode cache into the filesystem: -->
       <arg value="-B"/>
       <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-      <arg line="${-smokeTestRelease.java9params}"/>
+      <arg line="${-smokeTestRelease.java12params}"/>
       <arg value="--revision"/>
       <arg value="skip"/>
       <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
@@ -485,9 +485,10 @@ File | Project Structure | Platform Settings | SDKs):
     <sequential>
       <local name="wc.unversioned.files"/>
       <local name="wc.modified.files"/>
-      <ivy:cachepath xmlns:ivy="antlib:org.apache.ivy.ant"
-        organisation="org.eclipse.jgit" module="org.eclipse.jgit" revision="${jgit-version}"
-        inline="true" conf="default" transitive="true" pathid="jgit.classpath"/>
+      <ivy:cachepath xmlns:ivy="antlib:org.apache.ivy.ant" transitive="true" resolveId="jgit" pathid="jgit.classpath">
+        <ivy:dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="${jgit-version}" conf="default" />
+        <ivy:dependency org="org.slf4j" name="slf4j-nop" rev="1.7.2" conf="default" />
+      </ivy:cachepath>
       <groovy taskname="wc-checker" classpathref="jgit.classpath" src="${common.dir}/tools/src/groovy/check-working-copy.groovy"/>
       <fail if="wc.unversioned.files"
         message="Source checkout is dirty (unversioned/missing files) after running tests!!! Offending files:${line.separator}${wc.unversioned.files}"/>
@@ -692,5 +693,4 @@ Test args: [${args}]</echo>
 
   <!-- useless targets (override common-build.xml): -->
   <target name="generate-test-reports"/>
-  <target name="patch-mrjar-classes"/>
 </project>

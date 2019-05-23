@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -27,7 +28,6 @@ import org.apache.solr.ltr.model.MultipleAdditiveTreesModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestNoMatchSolrFeature extends TestRerankBase {
 
@@ -100,8 +100,8 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     String res = restTestHarness.query("/query"
         + yesMatchFeatureQuery.toQueryString());
 
-    final Map<String,Object> jsonParse = (Map<String,Object>) ObjectBuilder
-        .fromJSON(res);
+    final Map<String,Object> jsonParse = (Map<String,Object>) Utils
+        .fromJSONString(res);
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 
@@ -165,8 +165,8 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     String res = restTestHarness.query("/query"
         + yesMatchFeatureQuery.toQueryString());
 
-    final Map<String,Object> jsonParse = (Map<String,Object>) ObjectBuilder
-        .fromJSON(res);
+    final Map<String,Object> jsonParse = (Map<String,Object>) Utils
+        .fromJSONString(res);
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 

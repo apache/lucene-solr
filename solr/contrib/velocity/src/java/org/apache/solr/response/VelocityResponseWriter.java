@@ -26,6 +26,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -332,6 +333,20 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     engine.setProperty(RuntimeConstants.RESOURCE_LOADER, String.join(",", loaders));
 
     engine.setProperty(RuntimeConstants.INPUT_ENCODING, "UTF-8");
+
+    // Work around VELOCITY-908 with Velocity not handling locales properly
+    Object spaceGobblingInitProperty = velocityInitProps.get(RuntimeConstants.SPACE_GOBBLING);
+    if(spaceGobblingInitProperty != null) {
+      // If there is an init property, uppercase it before Velocity.
+      velocityInitProps.put(RuntimeConstants.SPACE_GOBBLING,
+          String.valueOf(spaceGobblingInitProperty).toUpperCase(Locale.ROOT));
+    } else {
+      // Fallback to checking if the engine default property is set and if not make it a reasonable default.
+      Object spaceGobblingEngineProperty = engine.getProperty(RuntimeConstants.SPACE_GOBBLING);
+      if(spaceGobblingEngineProperty == null) {
+        engine.setProperty(RuntimeConstants.SPACE_GOBBLING, RuntimeConstants.SpaceGobbling.LINES.toString());
+      }
+    }
 
     // bring in any custom properties too
     engine.init(velocityInitProps);

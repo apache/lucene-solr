@@ -63,6 +63,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
@@ -83,6 +84,9 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -94,6 +98,9 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -113,6 +120,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
@@ -1374,9 +1382,35 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           for (Object val : sfield) {
             if (firstVal) firstVal=false;
             else out.append(',');
+            if(val instanceof SolrInputDocument) {
+              json((SolrInputDocument) val, out);
+            }
             out.append(JSONUtil.toJSON(val));
           }
           out.append(']');
+        } else if(sfield.getValue() instanceof SolrInputDocument) {
+          json((SolrInputDocument) sfield.getValue(), out);
+        } else if (sfield.getValue() instanceof Map) {
+          Map<String, Object> valMap = (Map<String, Object>) sfield.getValue();
+          Set<String> childDocsKeys = valMap.entrySet().stream().filter(record -> isChildDoc(record.getValue()))
+              .map(Entry::getKey).collect(Collectors.toSet());
+          if(childDocsKeys.size() > 0) {
+            Map<String, Object> newMap = new HashMap<>();
+            for(Entry<String, Object> entry: valMap.entrySet()) {
+              String keyName = entry.getKey();
+              Object val = entry.getValue();
+              if(childDocsKeys.contains(keyName)) {
+                if(val instanceof Collection) {
+                  val = ((Collection) val).stream().map(e -> toSolrDoc((SolrInputDocument) e)).collect(Collectors.toList());
+                } else {
+                  val = toSolrDoc((SolrInputDocument) val);
+                }
+              }
+              newMap.put(keyName, val);
+            }
+            valMap = newMap;
+          }
+          out.append(JSONUtil.toJSON(valMap));
         } else {
           out.append(JSONUtil.toJSON(sfield.getValue()));
         }
@@ -1579,7 +1613,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public Comparable get() {
       return getFloat();
     }
-  }  
+  }
+
+  public static class BVal extends Vals {
+
+    @Override
+    public Comparable get() {
+      return random().nextBoolean();
+    }
+  }
 
   public static class SVal extends Vals {
     char start;
@@ -1718,7 +1760,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   }
 
-
+  public static void assertResponseValues(SolrResponseBase rsp, Object... assertions) {
+    Map<String, Object> values = Utils.makeMap(assertions);
+    values.forEach((s, o) -> {
+      if (o instanceof String) {
+        assertEquals(o, rsp.getResponse()._getStr(s, null));
+      } else {
+        assertEquals(o, rsp.getResponse()._get(s, null));
+      }
+    });
+  }
   public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
     if (model == null) {
       model = new LinkedHashMap<>();
@@ -2920,6 +2971,25 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
   }
 
+  private static SolrDocument toSolrDoc(SolrInputDocument sid) {
+    SolrDocument doc = new SolrDocument();
+    for(SolrInputField field: sid) {
+      doc.setField(field.getName(), field.getValue());
+    }
+    return doc;
+  }
+
+  private static boolean isChildDoc(Object o) {
+    if(o instanceof Collection) {
+      Collection col = (Collection) o;
+      if(col.size() == 0) {
+        return false;
+      }
+      return col.iterator().next() instanceof SolrInputDocument;
+    }
+    return o instanceof SolrInputDocument;
+  }
+
   private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
@@ -2933,6 +3003,88 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
-  
-  
+
+
+  /**
+   * See SOLR-11035. There are various "impossible" failures, I can update some documents successfully then not find
+   * them.
+   * <p>
+   * At least one I've seen (Erick Erickson) cannot be cured by waiting on the client side.
+   * <p>
+   * This is a horrible hack, but until we fix the underlying cause using it will reduce the noise from tests. Once the
+   * root cause of SOLR-11035 is found, this should be removed.
+   * <p>
+   * I don't mind the extra commits (why do two?) as this should be pretty rare.
+   *
+   * This test fails 10% - 15% of the time without using this method, especially if you @Ignore all the other
+   * tests in that suite.
+   *
+   * ant test  -Dtestcase=DocValuesNotIndexedTest -Dtests.method=testGroupingDVOnly
+   * -Dtests.seed=54688F608E614440 -Dtests.slow=true -Dtests.locale=nl-BE
+   * -Dtests.timezone=America/North_Dakota/Beulah -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
+   *
+   * This only really works for adding documents. The test at the top of the method will succeed for an update of
+   * an existing doc and nothing will be done. If that becomes necessary we should probably create a new method
+   * that takes a docID, field and value.
+   *
+   * @param client - the client that we'll use to send the request
+   * @param collection - the target collection we'll add and remove the doc from
+   * @param idField - the uniqueKey for this collection. This MUST be a string
+   * @param expectedDocCount - numFound for the query
+   * @param query - The Solr query to check for expectedDocCount.
+   * @param tag - additional information to display on a failure. Often class.method is useful.
+   */
+
+  public static void Solr11035BandAid(SolrClient client, String collection, String idField,
+                                      long expectedDocCount, String query,
+                                      String tag) throws IOException, SolrServerException {
+
+    Solr11035BandAid(client, collection, idField, expectedDocCount, query, tag, false);
+  }
+
+  // Pass true for failAnyway to have this bandaid fail if
+  // 1> it had to attempt the repair
+  // 2> it would have successfully repaired it
+  //
+  // This is useful for verifying that SOLR-11035.
+  //
+  public static void Solr11035BandAid(SolrClient client, String collection, String idField,
+                                      long expectedDocCount, String query, String tag,
+                                      boolean failAnyway) throws IOException, SolrServerException {
+
+    final SolrQuery solrQuery = new SolrQuery(query);
+    QueryResponse rsp = client.query(collection, solrQuery);
+    long found = rsp.getResults().getNumFound();
+
+    if (rsp.getResults().getNumFound() == expectedDocCount) {
+      return;
+    }
+
+    // OK, our counts differ. Insert a document _guaranteed_ to be unique, then delete it so whatever is counting
+    // anything has the correct counts.
+    log.warn("Solr11035BandAid attempting repair, found is {}, expected is {}", found, expectedDocCount);
+
+    String bogusID = java.util.UUID.randomUUID().toString();
+    SolrInputDocument bogus = new SolrInputDocument();
+    bogus.addField(idField, bogusID);
+
+    // Add the bogus doc
+    new UpdateRequest().add(bogus).commit(client, collection);
+
+    // Then remove it, we should be OK now since new searchers have been opened.
+    new UpdateRequest().deleteById(bogusID).commit(client, collection);
+    // Let's check again to see if we succeeded
+    rsp = client.query(collection, solrQuery);
+    found = rsp.getResults().getNumFound();
+
+    if (found != expectedDocCount) {
+      // It's good to see the total response. NOTE: some larger responses are over 10240,
+      // so change the pattern in log4j2.xml if you need to see the whole thing.
+      log.error("Dumping response" + rsp.toString());
+      assertEquals("Solr11035BandAid failed, counts differ after updates:", found, expectedDocCount);
+    } else if (failAnyway) {
+      fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
+          + "' extra info: '" + tag + "'");
+    }
+  }
 }

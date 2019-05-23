@@ -387,11 +387,6 @@ final class BooleanWeight extends Weight {
       return null;
     }
 
-    // we don't need scores, so if we have required clauses, drop optional clauses completely
-    if (scoreMode.needsScores() == false && minShouldMatch == 0 && scorers.get(Occur.MUST).size() + scorers.get(Occur.FILTER).size() > 0) {
-      scorers.get(Occur.SHOULD).clear();
-    }
-
     return new Boolean2ScorerSupplier(this, scorers, scoreMode, minShouldMatch);
   }
 

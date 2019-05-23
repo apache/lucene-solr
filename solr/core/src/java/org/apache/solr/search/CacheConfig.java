@@ -136,7 +136,7 @@ public class CacheConfig implements MapSerializable{
 
   public SolrCache newInstance() {
     try {
-      SolrCache cache = clazz.newInstance();
+      SolrCache cache = clazz.getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {

@@ -413,9 +413,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       throw new SolrServerException("No collection param specified on request and no default collection has been set.");
     }
 
-    //Check to see if the collection is an alias.
+    //Check to see if the collection is an alias. Updates to multi-collection aliases are ok as long
+    // as they are routed aliases
     List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
-    collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
+    if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
+      collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
+    } else {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Update request to non-routed multi-collection alias not supported: "
+        + collection + " -> " + aliasedCollections);
+    }
 
     DocCollection col = getDocCollection(collection, null);
 
@@ -786,8 +792,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
+    boolean isUpdate = (request instanceof IsUpdateRequest) && (request instanceof UpdateRequest);
     if (!inputCollections.isEmpty() && !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
+      Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -957,9 +964,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     connect();
 
     boolean sendToLeaders = false;
+    boolean isUpdate = false;
 
     if (request instanceof IsUpdateRequest) {
       if (request instanceof UpdateRequest) {
+        isUpdate = true;
+        if (inputCollections.size() > 1) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Update request must be sent to a single collection " +
+              "or an alias: " + inputCollections);
+        }
         String collection = inputCollections.isEmpty() ? null : inputCollections.get(0); // getting first mimics HttpSolrCall
         NamedList<Object> response = directUpdate((AbstractUpdateRequest) request, collection);
         if (response != null) {
@@ -993,7 +1006,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
     } else { // Typical...
-      Set<String> collectionNames = resolveAliases(inputCollections);
+      Set<String> collectionNames = resolveAliases(inputCollections, isUpdate);
       if (collectionNames.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "No collection param specified on request and no default collection has been set: " + inputCollections);
@@ -1057,21 +1070,20 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /** Resolves the input collections to their possible aliased collections. Doesn't validate collection existence. */
-  private LinkedHashSet<String> resolveAliases(List<String> inputCollections) {
-    LinkedHashSet<String> collectionNames = new LinkedHashSet<>(); // consistent ordering
+  private Set<String> resolveAliases(List<String> inputCollections, boolean isUpdate) {
+    if (inputCollections.isEmpty()) {
+      return Collections.emptySet();
+    }
+    LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
       if (getClusterStateProvider().getState(collectionName) == null) {
         // perhaps it's an alias
-        List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collectionName);
-        // one more level of alias indirection...  (dubious that we should support this)
-        for (String aliasedCollection : aliasedCollections) {
-          collectionNames.addAll(getClusterStateProvider().resolveAlias(aliasedCollection));
-        }
+        uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
-        collectionNames.add(collectionName); // it's a collection
+        uniqueNames.add(collectionName); // it's a collection
       }
     }
-    return collectionNames;
+    return uniqueNames;
   }
 
   public boolean isUpdatesToLeaders() {

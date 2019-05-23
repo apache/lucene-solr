@@ -21,14 +21,13 @@
 Since version 6, SolrCloud has had the ability to query one or more collections via an alternative name. These
 alternative names for collections are known as aliases, and are useful when you want to:
 
-1. Atomically switch to using a newly (re)indexed collection with zero down time (by re-defining the alias)
-1. Insulate the client programming versus changes in collection names
-1. Issue a single query against several collections with identical schemas
+. Atomically switch to using a newly (re)indexed collection with zero down time (by re-defining the alias)
+. Insulate the client programming versus changes in collection names
+. Issue a single query against several collections with identical schemas
 
-It's also possible to send update commands to aliases, but this is rarely useful if the
-  alias refers to more than one collection (as in case 3 above).
-Since there is no logic by which to distribute documents among the collections, all updates will simply be
-  directed to the first collection in the list.
+It's also possible to send update commands to aliases, but only to those that either resolve to a single collection
+or those that define the routing between multiple collections (Routed Aliases). In other cases update commands are
+rejected with an error since there is no logic by which to distribute documents among the multiple collections.
 
 Standard aliases are created and updated using the <<collections-api.adoc#createalias,CREATEALIAS>> command.
 The current list of collections that are members of an alias can be verified via the
@@ -47,6 +46,17 @@ With multiple collections in an alias this is always a problem, so if you have a
   <<distributed-requests.adoc#distributedidf,ExactStatsCache>> implementations.
 However, for analytical use cases where results are sorted on numeric, date or alphanumeric field values rather
   than relevancy calculations this is not a problem.
+
+== Collection admin commands and aliases
+Starting with version 8.1 SolrCloud supports using alias names in collection admin commands where normally a
+collection name is expected. This works only when the following criteria are satisfied:
+
+* an alias must not refer to more than one collection
+* an alias must not refer to a Routed Alias (see below)
+
+If all criteria are satisfied then the command will resolve alias names and operate on the collections the aliases
+refer to as if it was invoked with the collection names instead. Otherwise the command will not be executed and
+an exception will be thrown.
 
 == Routed Aliases
 
@@ -219,10 +229,10 @@ Unlike time routed aliases, there is no way to predict the next value so such pa
 There is no automated means of removing a category. If a category needs to be removed from a CRA
 the following procedure is recommended:
 
-1. Ensure that no documents with the value corresponding to the category to be removed will be sent
+. Ensure that no documents with the value corresponding to the category to be removed will be sent
    either by stopping indexing or by fixing the incoming data stream
-1. Modify the alias definition in zookeeper, removing the collection corresponding to the category.
-1. Delete the collection corresponding to the category. Note that if the collection is not removed
+. Modify the alias definition in zookeeper, removing the collection corresponding to the category.
+. Delete the collection corresponding to the category. Note that if the collection is not removed
    from the alias first, this step will fail.
 
 === Limitations & Assumptions

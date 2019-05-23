@@ -29,8 +29,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.cloud.Replica.Type;
-import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
@@ -277,7 +278,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   @Override
   public String toString() {
-    return name + ':' + JSONUtil.toJSON(propMap);
+    return name + ':' + toJSONString(propMap);
   }
 
   @Override

@@ -92,6 +92,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
@@ -369,17 +371,29 @@ public class HttpSolrCall {
    * {@link #getCollectionsList()}
    */
   protected List<String> resolveCollectionListOrAlias(String collectionStr) {
-    if (collectionStr == null) {
+    if (collectionStr == null || collectionStr.trim().isEmpty()) {
       return Collections.emptyList();
     }
-    LinkedHashSet<String> resultList = new LinkedHashSet<>();
+    List<String> result = null;
+    LinkedHashSet<String> uniqueList = null;
     Aliases aliases = getAliases();
     List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
+    if (inputCollections.size() > 1) {
+      uniqueList = new LinkedHashSet<>();
+    }
     for (String inputCollection : inputCollections) {
       List<String> resolvedCollections = aliases.resolveAliases(inputCollection);
-      resultList.addAll(resolvedCollections);
+      if (uniqueList != null) {
+        uniqueList.addAll(resolvedCollections);
+      } else {
+        result = resolvedCollections;
+      }
     }
-    return new ArrayList<>(resultList);
+    if (uniqueList != null) {
+      return new ArrayList<>(uniqueList);
+    } else {
+      return result;
+    }
   }
 
   /**
@@ -428,7 +442,7 @@ public class HttpSolrCall {
 
   protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException {
     assert core == null;
-    coreUrl = getRemotCoreUrl(collectionName, origCorename);
+    coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
@@ -462,6 +476,9 @@ public class HttpSolrCall {
 
     if (solrDispatchFilter.abortErrorMessage != null) {
       sendError(500, solrDispatchFilter.abortErrorMessage);
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, getReq()));
+      }
       return RETURN;
     }
 
@@ -481,12 +498,21 @@ public class HttpSolrCall {
             for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
           }
           log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+          if (shouldAudit(EventType.REJECTED)) {
+            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
+          }
         }
         if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
           log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
           sendError(authResponse.statusCode,
               "Unauthorized request, Response code: " + authResponse.statusCode);
+          if (shouldAudit(EventType.UNAUTHORIZED)) {
+            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+          }
           return RETURN;
+        }
+        if (shouldAudit(EventType.AUTHORIZED)) {
+          cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHORIZED, req, context));
         }
       }
 
@@ -514,6 +540,13 @@ public class HttpSolrCall {
                */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
             execute(solrRsp);
+            if (shouldAudit()) {
+              EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+              if (shouldAudit(eventType)) {
+                cores.getAuditLoggerPlugin().doAudit(
+                    new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+              }
+            }
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
             Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
             while (headers.hasNext()) {
@@ -528,6 +561,9 @@ public class HttpSolrCall {
         default: return action;
       }
     } catch (Throwable ex) {
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
+      }
       sendError(ex);
       // walk the the entire cause chain to search for an Error
       Throwable t = ex;
@@ -547,9 +583,18 @@ public class HttpSolrCall {
 
   }
 
+  private boolean shouldAudit() {
+    return cores.getAuditLoggerPlugin() != null;
+  }
+
+  private boolean shouldAudit(AuditEvent.EventType eventType) {
+    return shouldAudit() && cores.getAuditLoggerPlugin().shouldLog(eventType);
+  }
+
   private boolean shouldAuthorize() {
     if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
+    if ("/".equals(path) || "/solr/".equals(path)) return false; // Static Admin UI files must always be served 
     if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
       log.debug("PkiAuthenticationPlugin says authorization required : {} ", b);
@@ -577,7 +622,7 @@ public class HttpSolrCall {
 
   //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
-    HttpRequestBase method = null;
+    HttpRequestBase method;
     HttpEntity httpEntity = null;
     try {
       String urlstr = coreUrl + queryParams.toQueryString();
@@ -671,7 +716,7 @@ public class HttpSolrCall {
           solrParams = SolrRequestParsers.parseQueryString(req.getQueryString());
         } else {
           // we have no params at all, use empty ones:
-          solrParams = new MapSolrParams(Collections.<String, String>emptyMap());
+          solrParams = new MapSolrParams(Collections.emptyMap());
         }
         solrReq = new SolrQueryRequestBase(core, solrParams) {
         };
@@ -722,6 +767,13 @@ public class HttpSolrCall {
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
+    if (shouldAudit()) {
+      EventType eventType = solrResp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+      if (shouldAudit(eventType)) {
+        cores.getAuditLoggerPlugin().doAudit(
+            new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrResp.getException()));
+      }
+    }
   }
 
   /**
@@ -887,7 +939,7 @@ public class HttpSolrCall {
     }
   }
 
-  protected String getRemotCoreUrl(String collectionName, String origCorename) {
+  protected String getRemoteCoreUrl(String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
@@ -911,7 +963,12 @@ public class HttpSolrCall {
       return null;
     }
 
-    collectionsList.add(collectionName);
+    // XXX (ab) most likely this is not needed? it seems all code paths
+    // XXX already make sure the collectionName is on the list
+    if (!collectionsList.contains(collectionName)) {
+      collectionsList = new ArrayList<>(collectionsList);
+      collectionsList.add(collectionName);
+    }
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
         activeSlices, byCoreName, true);
 

@@ -65,24 +65,24 @@ public class HdfsBackupRepository implements BackupRepository {
       }
     }
 
-    // We don't really need this factory instance. But we want to initialize it here to
-    // make sure that all HDFS related initialization is at one place (and not duplicated here).
-    factory = new HdfsDirectoryFactory();
-    factory.init(args);
-    this.hdfsConfig = factory.getConf();
-
-    // Configure the umask mode if specified.
-    if (args.get(HDFS_UMASK_MODE_PARAM) != null) {
-      String umaskVal = (String)args.get(HDFS_UMASK_MODE_PARAM);
-      this.hdfsConfig.set(FsPermission.UMASK_LABEL, umaskVal);
-    }
-
     String hdfsSolrHome = (String) Objects.requireNonNull(args.get(HdfsDirectoryFactory.HDFS_HOME),
         "Please specify " + HdfsDirectoryFactory.HDFS_HOME + " property.");
     Path path = new Path(hdfsSolrHome);
     while (path != null) { // Compute the path of root file-system (without requiring an additional system property).
       baseHdfsPath = path;
       path = path.getParent();
+    }
+
+    // We don't really need this factory instance. But we want to initialize it here to
+    // make sure that all HDFS related initialization is at one place (and not duplicated here).
+    factory = new HdfsDirectoryFactory();
+    factory.init(args);
+    this.hdfsConfig = factory.getConf(new Path(hdfsSolrHome));
+
+    // Configure the umask mode if specified.
+    if (args.get(HDFS_UMASK_MODE_PARAM) != null) {
+      String umaskVal = (String)args.get(HDFS_UMASK_MODE_PARAM);
+      this.hdfsConfig.set(FsPermission.UMASK_LABEL, umaskVal);
     }
 
     try {

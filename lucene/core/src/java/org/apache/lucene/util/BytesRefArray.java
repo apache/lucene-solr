@@ -18,6 +18,7 @@ package org.apache.lucene.util;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -93,7 +94,7 @@ public final class BytesRefArray implements SortableBytesRefArray {
    * @return the <i>n'th</i> element of this {@link BytesRefArray}
    */
   public BytesRef get(BytesRefBuilder spare, int index) {
-    FutureObjects.checkIndex(index, lastElement);
+    Objects.checkIndex(index, lastElement);
     int offset = offsets[index];
     int length = index == lastElement - 1 ? currentOffset - offset
         : offsets[index + 1] - offset;
@@ -106,7 +107,7 @@ public final class BytesRefArray implements SortableBytesRefArray {
   /** Used only by sort below, to set a {@link BytesRef} with the specified slice, avoiding copying bytes in the common case when the slice
    *  is contained in a single block in the byte block pool. */
   private void setBytesRef(BytesRefBuilder spare, BytesRef result, int index) {
-    FutureObjects.checkIndex(index, lastElement);
+    Objects.checkIndex(index, lastElement);
     int offset = offsets[index];
     int length;
     if (index == lastElement - 1) {
