@@ -42,7 +42,6 @@ from datetime import timedelta
 from consolemenu import ConsoleMenu
 from consolemenu.screen import Screen
 from consolemenu.items import FunctionItem, SubmenuItem
-import textwrap
 from jinja2 import Environment
 import yaml
 
@@ -56,7 +55,7 @@ java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
 dry_run = False
 
 major_minor = ['major', 'minor']
-
+script_path = os.path.dirname(os.path.realpath(__file__))
 
 class MyScreen(Screen):
     def clear(self):
@@ -123,7 +122,7 @@ def read_file(file, cwd=None):
 
 def bootstrap_todos(state):
     print("Loading objects from yaml on disk")
-    file = open("releaseWizard.yaml", "r")
+    file = open(os.path.join(script_path, "releaseWizard.yaml"), "r")
     todo_list = yaml.load(file, Loader=yaml.Loader).get('groups')
     for tg in todo_list:
         if dry_run:
@@ -901,7 +900,7 @@ def keys_downloaded():
 
 
 def dump_yaml():
-    file = open("releaseWizard.yaml", "w")
+    file = open(os.path.join(script_path, "releaseWizard.yaml"), "w")
     yaml.add_representer(str, str_presenter)
     yaml.Dumper.ignore_aliases = lambda *args : True
     dump_obj = {'templates': templates,
