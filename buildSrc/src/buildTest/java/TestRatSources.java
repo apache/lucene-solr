@@ -18,26 +18,34 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestBuild extends BaseTestClass {
+public class TestRatSources extends BaseTestClass {
   
-  public TestBuild() {
+  public TestRatSources() {
 
   }
   
   @Before
   public void setUp() throws Exception {
-
+    cleanTestFiles();
   }
   
   @After
   public void tearDown() throws Exception {
+    cleanTestFiles();
+  }
 
+  private void cleanTestFiles() throws Exception {
+    String[] cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/core/src/test/org/no_license_test_file.java\""};
+    runCmd(cmd, env, false, false);
+    
+    cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml\""};
+    runCmd(cmd, env, false, false);
   }
   
   @Test
-  public void testBuild() throws Exception {
-    System.out.println("Start test-build.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "test-build-wdocker/test-build.sh"};
+  public void testRatSources() throws Exception {
+    System.out.println("Start test-rat-sources.sh test in Docker container (" + env + ") ...");
+    String[] cmd = new String[]{"bash", "test-build-wdocker/test-rat-sources.sh"};
     PbResult result = runCmd(cmd, env, false, false, false);
     assertEquals("Testing test-build.sh failed", 0, result.returnCode);
   }
