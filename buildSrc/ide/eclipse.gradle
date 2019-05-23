@@ -44,9 +44,6 @@ eclipse {
     }
     
     file.whenMerged { classpath ->
-      if (project.name == 'buildSrc') {
-        project.tasks.pluginUnderTestMetadata
-      }
       
       classpath.entries.each { entry ->
         
@@ -79,6 +76,9 @@ override=true
 suspend=true
 vf.version=3
 """
+      if (project.name == 'buildSrc') {
+        project.tasks.pluginUnderTestMetadata
+      }
     }
   }
 }
