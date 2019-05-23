@@ -126,11 +126,26 @@ task runjflex(type: org.apache.lucene.gradle.JFlex) {
   group = 'Build Regenerate'
   description = "Runs jflex for StandardTokenizerImpl."
   
-  source = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex")
+  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  fileName = "StandardTokenizerImpl"
+  disableBufferExpansion = true
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
   
   doFirst {
     println "--> Running jflex ..."
+  }
+}
+
+task cleanjflex() {
+  group = 'Build Regenerate'
+  description = "Removed jflex generated artifacts."
+  
+  doLast {
+    ant.delete() {
+      ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "**/*.java") {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
   }
 }
 
