@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -320,7 +321,7 @@ public class Http2SolrClient extends SolrClient {
         .header("User-Agent", HttpSolrClient.AGENT)
         .header("Content-Type", contentType)
         .content(provider);
-    setListeners(updateRequest, postRequest);
+    decorateRequest(postRequest, updateRequest);
     InputStreamResponseListener responseListener = new InputStreamResponseListener();
     postRequest.send(responseListener);
 
@@ -452,22 +453,29 @@ public class Http2SolrClient extends SolrClient {
   private Request makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
-    req.header(HttpHeader.ACCEPT_ENCODING, null);
-    setListeners(solrRequest, req);
-    if (solrRequest.getUserPrincipal() != null) {
-      req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
-    }
-
+    decorateRequest(req, solrRequest);
     return req;
   }
 
-  private void setListeners(SolrRequest solrRequest, Request req) {
+  private void decorateRequest(Request req, SolrRequest solrRequest) {
+    req.header(HttpHeader.ACCEPT_ENCODING, null);
+
     setBasicAuthHeader(solrRequest, req);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
       req.onRequestQueued(listener);
       req.onRequestBegin(listener);
       req.onComplete(listener);
+    }
+
+    if (solrRequest.getUserPrincipal() != null) {
+      req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
+    }
+    Map<String, String> headers = solrRequest.getHeaders();
+    if (headers != null) {
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+        req.header(entry.getKey(), entry.getValue());
+      }
     }
   }
 

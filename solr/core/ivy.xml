@@ -30,6 +30,10 @@
   </configurations>
 
   <dependencies>
+    <dependency org="io.opentracing" name="opentracing-api" rev="${/io.opentracing/opentracing-api}" conf="compile"/>
+    <dependency org="io.opentracing" name="opentracing-noop" rev="${/io.opentracing/opentracing-noop}" conf="compile"/>
+    <dependency org="io.opentracing" name="opentracing-util" rev="${/io.opentracing/opentracing-util}" conf="compile"/>
+
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-exec" rev="${/org.apache.commons/commons-exec}" conf="compile"/>

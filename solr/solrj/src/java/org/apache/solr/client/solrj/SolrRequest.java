@@ -21,7 +21,9 @@ import java.io.Serializable;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -63,6 +65,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private METHOD method = METHOD.GET;
   private String path = null;
+  private Map<String,String> headers;
 
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
@@ -236,5 +239,16 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public String getBasePath() {
     return basePath;
+  }
+
+  public void addHeader(String key, String value) {
+    if (headers == null) {
+      headers = new HashMap<>();
+    }
+    headers.put(key, value);
+  }
+
+  public Map<String, String> getHeaders() {
+    return headers;
   }
 }

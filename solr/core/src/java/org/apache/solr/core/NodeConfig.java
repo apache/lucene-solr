@@ -77,6 +77,8 @@ public class NodeConfig {
 
   private final PluginInfo transientCacheConfig;
 
+  private final PluginInfo tracerConfig;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
@@ -85,7 +87,7 @@ public class NodeConfig {
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads, int replayUpdatesThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig) {
+                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.solrDataHome = solrDataHome;
@@ -111,6 +113,7 @@ public class NodeConfig {
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
     this.transientCacheConfig = transientCacheConfig;
+    this.tracerConfig = tracerConfig;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -226,6 +229,10 @@ public class NodeConfig {
 
   public PluginInfo getTransientCachePluginInfo() { return transientCacheConfig; }
 
+  public PluginInfo getTracerConfiguratorPluginInfo() {
+    return tracerConfig;
+  }
+
   public static class NodeConfigBuilder {
 
     private Path coreRootDirectory;
@@ -253,6 +260,7 @@ public class NodeConfig {
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
     private PluginInfo transientCacheConfig;
+    private PluginInfo tracerConfig;
 
     private final SolrResourceLoader loader;
     private final String nodeName;
@@ -410,12 +418,17 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setTracerConfig(PluginInfo tracerConfig) {
+      this.tracerConfig = tracerConfig;
+      return this;
+    }
+
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, booleanQueryMaxClauseCount,
                             configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig);
     }
   }
 }

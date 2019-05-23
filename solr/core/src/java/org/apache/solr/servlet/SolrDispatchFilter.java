@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,6 +41,8 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
@@ -53,6 +56,12 @@ import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import io.opentracing.Scope;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMapExtractAdapter;
+import io.opentracing.tag.Tags;
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
@@ -77,6 +86,7 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.SolrFileCleaningTracker;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -336,6 +346,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         cc.shutdown();
       }
     }
+
+    if (GlobalTracer.get() instanceof Closeable) {
+      try {
+        ((Closeable) GlobalTracer.get()).close();
+      } catch (IOException e) {
+        log.warn("Exception closing Tracer", e);
+      }
+    }
   }
   
   @Override
@@ -347,7 +365,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!(_request instanceof HttpServletRequest)) return;
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
-    
+    Scope scope = null;
     try {
 
       if (cores == null || cores.isShutDown()) {
@@ -362,9 +380,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
+      String requestPath = request.getServletPath();
       // No need to even create the HttpSolrCall object if this path is excluded.
       if (excludePatterns != null) {
-        String requestPath = request.getServletPath();
         String extraPath = request.getPathInfo();
         if (extraPath != null) {
           // In embedded mode, servlet path is empty - include all post-context path here for testing
@@ -378,6 +396,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           }
         }
       }
+
+      SpanContext parentSpan = GlobalTracer.extract(request);
+      Tracer tracer = GlobalTracer.get();
+
+      Tracer.SpanBuilder spanBuilder = null;
+      String hostAndPort = request.getServerName() + "_" + request.getServerPort();
+      if (parentSpan == null) {
+        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort);
+      } else {
+        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
+            .asChildOf(parentSpan);
+      }
+
+      spanBuilder
+          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+          .withTag(Tags.HTTP_URL.getKey(), request.getRequestURL().toString());
+      scope = spanBuilder.startActive(true);
 
       AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
       if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
@@ -417,6 +452,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     } finally {
       consumeInputFully(request);
+      if (scope != null)
+        scope.close();
     }
   }
   

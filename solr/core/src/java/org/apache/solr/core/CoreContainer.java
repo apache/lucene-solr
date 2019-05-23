@@ -579,6 +579,7 @@ public class CoreContainer {
   public void load()  {
     log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
 
+    TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
     String libDir = cfg.getSharedLibDirectory();
     if (libDir != null) {
