@@ -34,7 +34,6 @@ import shlex
 import time
 import fcntl
 from collections import OrderedDict
-from enum import Enum
 import scriptutil
 from scriptutil import BranchType, Version, check_ant, download, run
 import re
@@ -45,6 +44,7 @@ from consolemenu.screen import Screen
 from consolemenu.items import FunctionItem, SubmenuItem
 import textwrap
 from jinja2 import Environment
+import yaml
 
 global state
 global current_git_root
@@ -56,13 +56,7 @@ global dry_run
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
 dry_run = False
 
-class ReleaseType(Enum):
-    major = 'major'
-    minor = 'minor'
-    bugfix = 'bugfix'
-
-
-major_minor = [ReleaseType.major, ReleaseType.minor]
+major_minor = ['major', 'minor']
 
 
 class MyScreen(Screen):
@@ -128,447 +122,549 @@ def read_file(file, cwd=None):
         return None
 
 
-def init_todos(state):
-    return [
-        TodoGroup('prerequisites',
-                  'Prerequisites',
-                  'description',
-                  [
-                      Todo('read_up',
-                           'Read up on the release process',
-                           description=textwrap.dedent("""\
-                               As a Release Manager (RM) you should be familiar with Apache's release policy, voting rules, 
-                               create a PGP/GPG key for use with signing and more. Please familiarise yourself with the resources 
-                               listed below."""),
-                           links=["http://www.apache.org/dev/release-publishing.html",
-                                  "http://www.apache.org/legal/release-policy.html",
-                                  "http://www.apache.org/dev/release-signing.html",
-                                  "https://wiki.apache.org/lucene-java/ReleaseTodo"],
-                           done=False),
-                      Todo('tools',
-                           'Necessary tools are installed',
-                           description=textwrap.dedent("""\
-                               You will need these tools:
-                               
-                               * Python v3.4 or later
-                               * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
-                               * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
-                               * gpg
-                               * git
-                               * asciidoctor (to generate HTML version)
-                               """),
-                           links=[
-                               "https://gnupg.org/download/index.html",
-                               "https://asciidoctor.org"
-                           ],
-                           done=True),
-                      Todo('gpg',
-                           'GPG key id is configured',
-                           description=textwrap.dedent("""\
-                               To sign the release you need to provide your GPG key ID. This must be 
-                               the same key ID that you have registered in your Apache account. 
-                               The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B93.
-                               
-                               * Make sure it is your 4096 bits key or larger
-                               * Upload your key to the MIT key server, pgp.mit.edu
-                               * Put you GPG key's fingerprint in the OpenPGP Public Key Primary Fingerprint 
-                                 field in your profile
-                               * The tests will complain if your GPG key has not been signed by another Lucene 
-                                 committer. This makes you a part of the GPG "web of trust" (WoT). Ask a committer 
-                                 that you know personally to sign your key for you, providing them with the 
-                                 fingerprint for the key."""),
-                           links=['http://www.apache.org/dev/release-signing.html', 'https://id.apache.org'],
-                           user_input=[
-                               UserInput("gpg_key", "Please enter your gpg key ID, e.g. 0D8D0B93")
-                           ])
-                  ]),
-        TodoGroup('preparation',
-                  'Prepare for the release',
-                  'Work with the community to decide when the release will happen and what work must be completed before it can happen',
-                  [
-                      Todo('decide_jira_issues',
-                           'Select JIRA issues to be included',
-                           description='Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.'),
-                      Todo('decide_branch_date',
-                           'Decide the date for branching',
-                           user_input=UserInput("branch_date", "Enter date (YYYY-MM-DD)"),
-                           type=major_minor),
-                      Todo('decide_freeze_length',
-                           'Decide the lenght of feature freeze',
-                           user_input=UserInput("feature_freeze_date", "Enter end date of feature freeze (YYYY-MM-DD)"),
-                           type=major_minor)
-                  ]),
-        TodoGroup('branching_versions',
-                  'Create branch (if needed) and update versions',
-                  "Here you'll do all the branching and version updates needed to prepare for the new release version",
-                  [
-                      Todo('clean_git_checkout',
-                           'Do a clean git clone to do the release from.',
-                           description="This eliminates the risk of a dirty checkout",
-                           commands=Commands(
-                               state.get_release_folder(),
-                               "Run these commands to make a fresh clone in the release folder",
-                               [
+def bootstrap_todos(state):
+    if True:
+        print("Loading objects from yaml on disk")
+        file = open("releaseWizard.yaml", "r")
+        todo_list = yaml.load(file, Loader=yaml.Loader)
+        for tg in todo_list:
+            if dry_run:
+                print("Group %s" % tg.id)
+            for td in tg.get_todos():
+                if dry_run:
+                    print("  Todo %s" % td.id)
+                cmds = td.commands
+                if cmds:
+                    if dry_run:
+                        print("  Commands")
+                    cmds.todo_id = td.id
+                    for cmd in cmds.commands:
+                        if dry_run:
+                            print("    Command %s" % cmd.cmd)
+                        cmd.todo_id = td.id
+
+        return todo_list
+    else:
+        return [
+            TodoGroup('prerequisites',
+                      'Prerequisites',
+                      'description',
+                      [
+                          Todo('read_up',
+                               'Read up on the release process',
+                               description=textwrap.dedent("""\
+                                   As a Release Manager (RM) you should be familiar with Apache's release policy,
+                                   voting rules, create a PGP/GPG key for use with signing and more. Please familiarise
+                                   yourself with the resources listed below."""),
+                               links=["http://www.apache.org/dev/release-publishing.html",
+                                      "http://www.apache.org/legal/release-policy.html",
+                                      "http://www.apache.org/dev/release-signing.html",
+                                      "https://wiki.apache.org/lucene-java/ReleaseTodo"],
+                               done=False),
+                          Todo('tools',
+                               'Necessary tools are installed',
+                               description=textwrap.dedent("""\
+                                   You will need these tools:
+    
+                                   * Python v3.4 or later
+                                   * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
+                                   * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
+                                   * gpg
+                                   * git
+                                   * asciidoctor (to generate HTML version)
+                                   """),
+                               links=[
+                                   "https://gnupg.org/download/index.html",
+                                   "https://asciidoctor.org"
+                               ],
+                               done=True),
+                          Todo('gpg',
+                               'GPG key id is configured',
+                               description=textwrap.dedent("""\
+                                   To sign the release you need to provide your GPG key ID. This must be
+                                   the same key ID that you have registered in your Apache account.
+                                   The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B93.
+    
+                                   * Make sure it is your 4096 bits key or larger
+                                   * Upload your key to the MIT key server, pgp.mit.edu
+                                   * Put you GPG key's fingerprint in the OpenPGP Public Key Primary Fingerprint
+                                     field in your profile
+                                   * The tests will complain if your GPG key has not been signed by another Lucene
+                                     committer. This makes you a part of the GPG "web of trust" (WoT). Ask a committer
+                                     that you know personally to sign your key for you, providing them with the
+                                     fingerprint for the key."""),
+                               links=['http://www.apache.org/dev/release-signing.html', 'https://id.apache.org'],
+                               user_input=[
+                                   UserInput("gpg_key", "Please enter your gpg key ID, e.g. 0D8D0B93")
+                               ])
+                      ]),
+            TodoGroup('preparation',
+                      'Prepare for the release',
+                      'Work with the community to decide when the release will happen and what work must be completed before it can happen',
+                      [
+                          Todo('decide_jira_issues',
+                               'Select JIRA issues to be included',
+                               description='Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.'),
+                          Todo('decide_branch_date',
+                               'Decide the date for branching',
+                               user_input=UserInput("branch_date", "Enter date (YYYY-MM-DD)"),
+                               types=major_minor),
+                          Todo('decide_freeze_length',
+                               'Decide the lenght of feature freeze',
+                               user_input=UserInput("feature_freeze_date", "Enter end date of feature freeze (YYYY-MM-DD)"),
+                               types=major_minor)
+                      ]),
+            TodoGroup('branching_versions',
+                      'Create branch (if needed) and update versions',
+                      "Here you'll do all the branching and version updates needed to prepare for the new release version",
+                      [
+                          Todo('clean_git_checkout',
+                               'Do a clean git clone to do the release from.',
+                               description="This eliminates the risk of a dirty checkout",
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "Run these commands to make a fresh clone in the release folder",
+                                   [
+                                       Command(
+                                           "git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr",
+                                           logfile="git_clone.log")
+                                   ],
+                                   remove_files=["{{ git_checkout_folder }}"],
+                                   confirm_each_command=False)),
+                          Todo('ant_precommit',
+                               'Run ant precommit and fix issues',
+                               depends="clean_git_checkout",
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   textwrap.dedent("""\
+                                         Fix any problems that are found by pushing fixes to the release branch
+                                         and then running this task again. This task will always do `git pull`
+                                         before `ant precommit` so it will catch changes to your branch :)"""),
+                                   [
+                                       Command("git checkout {{ release_branch }}", stdout=True),
+                                       Command("git pull", stdout=True),
+                                       Command("ant clean precommit")
+                                    ], confirm_each_command=False)
+                               ),
+                          Todo('create_stable_branch',
+                               'Create a new stable branch, i.e. branch_<major>x',
+                               types='major',
+                               depends="clean_git_checkout",
+                               commands=Commands("{{ git_checkout_folder }}",
+                                                 "Run these commands to create a stable branch", [
+                                                     Command("git checkout master", tee=True),
+                                                     Command("git update", tee=True),
+                                                     Command("git checkout -b {{ stable_branch }}", tee=True),
+                                                     Command("git push origin {{ stable_branch }}", tee=True)
+                                                 ], confirm_each_command=True)),
+                          Todo('create_minor_branch',
+                               'Create a minor release branch off the current stable branch',
+                               types='minor',
+                               depends="clean_git_checkout",
+                               commands=Commands("{{ git_checkout_folder }}",
+                                                 "Run these commands to create a release branch", [
+                                                     Command("git checkout {{ stable_branch }}", tee=True),
+                                                     Command("git update", tee=True),
+                                                     Command("git checkout -b {{ minor_branch }}", tee=True),
+                                                     Command("git push origin {{ minor_branch }}", tee=True)
+                                                 ], confirm_each_command=True)),
+                          Todo('add_version_major',
+                               'Add a new major version on master branch',
+                               types='major'),
+                          Todo('add_version_minor',
+                               'Add a new minor version on stable branch',
+                               types='minor'),
+                          Todo('sanity_check_doap',
+                               'Sanity check the DOAP files',
+                               description=textwrap.dedent("""\
+                                    Sanity check the DOAP files under dev-tools/doap/
+                                    Do they contain all releases less than the one in progress?
+    
+                                    TIP: The buildAndPushRelease script run later will check this automatically""")
+                               ),
+                          Todo('jenkins_builds',
+                               'Add Jenkins task for the release branch',
+                               description='...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.',
+                               links=['https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds'],
+                               types=major_minor),
+                          Todo('inform_devs',
+                               'Inform Devs of the Release Branch',
+                               description=textwrap.dedent("""\
+                                    Send a note to dev@ to inform the committers that the branch
+                                    has been created and the feature freeze phase has started.
+    
+                                    This is an e-mail template you can use as a basis for
+                                    announcing the new branch and feature freeze.
+    
+                                    .Mail template
+                                    ----
+                                    To: dev@lucene.apache.org
+                                    Subject: New branch and feature freeze for Lucene/Solr {{ release_version }}
+    
+                                    NOTICE:
+    
+                                    Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on stable branch.
+    
+                                    Please observe the normal rules:
+    
+                                    * No new features may be committed to the branch.
+                                    * Documentation patches, build patches and serious bug fixes may be
+                                      committed to the branch. However, you should submit all patches you
+                                      want to commit to Jira first to give others the chance to review
+                                      and possibly vote against the patch. Keep in mind that it is our
+                                      main intention to keep the branch as stable as possible.
+                                    * All patches that are intended for the branch should first be committed
+                                      to the unstable branch, merged into the stable branch, and then into
+                                      the current release branch.
+                                    * Normal unstable and stable branch development may continue as usual.
+                                      However, if you plan to commit a big change to the unstable branch
+                                      while the branch feature freeze is in effect, think twice: can't the
+                                      addition wait a couple more days? Merges of bug fixes into the branch
+                                      may become more difficult.
+                                    * Only Jira issues with Fix version %s and priority "Blocker" will delay
+                                      a release candidate build.
+                                    ----"""),
+                               types=major_minor),
+                          Todo('inform_devs_bugfix',
+                               'Inform Devs about the release',
+                               description=textwrap.dedent("""\
+                                    Send a note to dev@ to inform the committers about the rules for committing to the branch.
+    
+                                    This is an e-mail template you can use as a basis for
+                                    announcing the rules for committing to the release branch
+    
+                                    .Mail template
+                                    ----
+                                    To: dev@lucene.apache.org
+                                    Subject: Bugfix release Lucene/Solr {{ release_version }}
+    
+                                    NOTICE:
+    
+                                    I am now preparing for a bugfix release from branch {{ release_branch }}
+    
+                                    Please observe the normal rules for committing to this branch:
+    
+                                    * Before committing to the branch, reply to this thread and argue
+                                      why the fix needs backporting and how long it will take.
+                                    * All issues accepted for backporting should be marked with {{ release_version }}
+                                      in JIRA, and issues that should delay the release must be marked as Blocker
+                                    * All patches that are intended for the branch should first be committed
+                                      to the unstable branch, merged into the stable branch, and then into
+                                      the current release branch.
+                                    * Only Jira issues with Fix version %s and priority "Blocker" will delay
+                                      a release candidate build.
+                                    ----"""),
+                               types=major_minor),
+                          Todo('draft_release_notes',
+                               'Get a draft of the release notes in place',
+                               description=textwrap.dedent("""\
+                                   These are typically edited on the Wiki.
+    
+                                   Clone a page for a previous version as a starting point for your release notes.
+                                   You will need two pages, one for Lucene and another for Solr, see links.
+                                   Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
+                                   Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
+                                   release branch creation. It's a good idea to remind the devs of this later in the release too."""),
+                               links=['https://wiki.apache.org/lucene-java/ReleaseNote77',
+                                      'https://wiki.apache.org/solr/ReleaseNote77'],
+                               ),
+                          Todo('new_jira_versions',
+                               'Add a new version in JIRA for the next release',
+                               description=textwrap.dedent("""\
+                                   Go to the JIRA "Manage Versions" Administration pages and add the new version:
+    
+                                   {% if state.get_release_type() == 'major' %}
+                                   # Change name of version `master ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
+                                   # Create a new (unreleased) version `{{ state.get_next_version() }}`
+                                   {% endif %}
+                                   {% if state.get_release_type() == 'minor' %}
+                                   # Create a new (unreleased) version `{{ state.get_next_version() }}`
+                                   {% endif %}
+    
+                                   This needs to be done both for Lucene and Solr JIRAs, see links."""),
+                               links=['https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions',
+                                      'https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions'],
+                               types=major_minor)
+                      ]),
+            TodoGroup('artifacts',
+                      'Build the release artifacts',
+                      textwrap.dedent("""\
+                          If after the last day of the feature freeze phase no blocking issues are
+                          in JIRA with "Fix Version" {{ release_version }}, then it's time to build the
+                          release artifacts, run the smoke tester and stage the RC in svn"""),
+                      [
+                          Todo('run_tests',
+                               'Run javadoc tests',
+                               commands=Commands("{{ git_checkout_folder }}",
+                                                 "Run some tests not ran by `buildAndPublishRelease.py`", [
+                                                     Command("git checkout {{ release_branch }}", stdout=True),
+                                                     Command('ant javadocs', 'lucene'),
+                                                     Command('ant javadocs', 'solr')
+                                                 ], confirm_each_command=True)
+                               ),
+                          # TODO: Examine the results. Did it build without errors? Were there Javadoc warnings? Did the tests succeed? Does the demo application work correctly? Does Test2BTerms pass (this takes a lot of memory)?
+                          # Remove lucene/benchmark/{work,temp}/ if present
+                          Todo('clear_ivy_cache',
+                               'Clear the ivy cache',
+                               commands=Commands(os.path.expanduser("~/.ivy2/"), textwrap.dedent("""\
+                                    It is recommended to clean your Ivy cache before building the artifacts.
+                                    This ensures that all Ivy dependencies are freshly downloaded,
+                                    so we emulate a user that never used the Lucene build system before.
+                                    One way is to rename the ivy cache folder before building."""), [
+                                   Command("mv cache cache_bak", stdout=True),
+                               ], confirm_each_command=False)),
+                          Todo('build_rc',
+                               'Build the release candidate',
+                               vars={'logfile': "/tmp/release.log",
+                                     'builder_path': "{{ ['dev-tools', 'scripts', 'buildAndPushRelease.py'] | path_join }}",
+                                     'dist_path': "{{ [rc_folder, 'dist'] | path_join }}",
+                                     'git_rev': read_file("rev.txt", cwd=state.get_git_checkout_folder()),
+                                     'local_keys': """{% if keys_downloaded %}--local-keys "{{ [config_path, 'KEYS'] | path_join }}"{% endif %}"""
+                                     # 'logfile': "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}",
+                                     },
+                               persist_vars = ['git_rev'],
+                               commands=Commands("{{ git_checkout_folder }}", textwrap.dedent("""\
+                                               In this step we will build the RC using python script `buildAndPushRelease.py`
+                                               We have tried to compile the correct command below, and you need to execute
+                                               it in another Terminal window yourself.
+    
+                                               Note that the script will take a long time. To follow the detailed build
+                                               log, tail the log in another Terminal:
+                                               `tail -f {{ logfile }}`"""), [
+                                   Command("git checkout {{ release_branch }}", tee=True),
+                                   Command("git clean -df", tee=True, comment="Make sure checkout is clean and up to date"),
+                                   Command("git checkout -- .", tee=True),
+                                   Command("git pull", tee=True),
                                    Command(
-                                       "git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr",
-                                       logfile="git_clone.log")
+                                       """python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}""",
+                                       logfile="build_rc.log", tee=True),
+                               ], enable_execute=True, confirm_each_command=False),
+                               #         # Add --logfile %s"
+                               depends="gpg"),
+                          Todo('smoke_tester',
+                               'Run the smoke tester',
+                               vars={
+                                   'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                                   'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
+                                   'tmp_dir': "{{ [rc_folder, 'smoketest'] | path_join }}",
+                                   'smoker_path': "{{ ['dev-tools', 'scripts', 'smokeTestRelease.py'] | path_join }}",
+                                   'local_keys': """{% if keys_downloaded %}--local-keys "{{ [config_path, 'KEYS'] | path_join }}"{% endif %}"""
+                               },
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   """Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.""",
+                                   [
+                                       Command("""python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}""",
+                                               logfile="smoketest.log"),
+                                   ],
+                                   remove_files=["{{ tmp_dir }}"],
+                                   enable_execute=True,
+                                   confirm_each_command=False),
+                               depends="build_rc"),
+                          Todo('import_svn',
+                               'Import artifacts into SVN',
+                               vars={
+                                   'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                                   'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
+                                   'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}"
+                               },
+                               commands=Commands("{{ git_checkout_folder }}",
+                                     """Here we'll import the artifacts into Subversion""", [
+                                         Command(
+                                             """svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}""",
+                                             logfile="import_svn.log", tee=True)
+                                     ],
+                                                 enable_execute=True,
+                                                 confirm_each_command=False
+                                                 ),
+                               depends="smoke_tester")
+                          # Don't delete these artifacts from your local workstation as you'll need to publish the maven subdirectories once the RC passes (see below).
+                      ],
+                      depends=['test', 'prerequisites'],
+                      is_in_rc_loop=True),
+            TodoGroup('voting',
+                      'Hold the vote and sum up the results',
+                      'description',
+                      [
+                          Todo('initiate_vote',
+                               'Initiate the vote',
+                               vars={'vote_close': "{{ vote_close_72h }}",
+                                     'vote_close_epoch': "{{ vote_close_72h_epoch }}"
+                                     },
+                               persist_vars = ['vote_close', 'vote_close_epoch'],
+                               description=textwrap.dedent("""\
+                                    Initiate the vote on the dev mailing list
+    
+                                    .Mail template
+                                    ----
+                                    To: dev@lucene.apache.org
+                                    Subject: [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
+    
+                                    Please vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version }}
+    
+                                    The artifacts can be downloaded from:
+                                    https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+    
+                                    You can run the smoke tester directly with this command:
+    
+                                    python3 -u dev-tools/scripts/smokeTestRelease.py \\
+                                    https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ build_rc.git_rev | default("<git_rev>", True) }}
+    
+                                    Vote will be open for at least 3 working days, i.e. until {{ vote_close_72h }}.
+    
+                                    [ ] +1  approve
+                                    [ ] +0  no opinion
+                                    [ ] -1  disapprove (and reason why)
+    
+                                    Here is my +1
+                                    ----
+                                    """),
+                               links=["https://www.apache.org/foundation/voting.html"]),
+                          Todo('end_vote',
+                               'End vote',
+                               description="At the end of the voting deadline, count the votes and send RESULT message to the mailing list.",
+                               user_input=[
+                                   UserInput("plus_binding", "Number of binding +1 votes (PMC members)"),
+                                   UserInput("plus_other", "Number of other +1 votes"),
+                                   UserInput("zero", "Number of 0 votes"),
+                                   UserInput("minus", "Number of -1 votes")
                                ],
-                               remove_files=["{{ git_checkout_folder }}"],
-                               ask_each=False)),
-                      Todo('ant_precommit',
-                           'Run ant precommit and fix issues',
-                           depends="clean_git_checkout",
-                           commands=Commands(git_checkout_folder, textwrap.dedent("""\
-                                     Fix any problems that are found by pushing fixes to the release branch 
-                                     and then running this task again. This task will always do `git pull` 
-                                     before `ant precommit` so it will catch changes to your branch :)"""), [
-                               Command("git checkout {{ release_branch }}", stdout=True),
-                               Command("git pull", stdout=True),
-                               Command("ant clean precommit")
-                           ], ask_each=False, env={'JAVACMD': state.get_java_cmd()})
-                           ),
-                      Todo('create_stable_branch',
-                           'Create a new stable branch, i.e. branch_<major>x',
-                           type=ReleaseType.major,
-                           depends="clean_git_checkout",
-                           commands=Commands(state.get_git_checkout_folder(),
-                                             "Run these commands to create a stable branch", [
-                                                 Command("git checkout %s" % 'master', stdout=True),
-                                                 Command("git update", stdout=True),
-                                                 Command("git checkout -b %s" % state.get_stable_branch_name()),
-                                                 Command("git push origin %s" % state.get_stable_branch_name())
-                                             ], ask_each=True)),
-                      Todo('create_minor_branch',
-                           'Create a minor release branch off the current stable branch',
-                           type=ReleaseType.minor,
-                           depends="clean_git_checkout",
-                           commands=Commands(state.get_git_checkout_folder(),
-                                             "Run these commands to create a release branch", [
-                                                 Command("git checkout %s" % state.get_stable_branch_name(),
-                                                         stdout=True),
-                                                 Command("git update", stdout=True),
-                                                 Command("git checkout -b %s" % state.get_minor_branch_name()),
-                                                 Command("git push origin %s" % state.get_minor_branch_name())
-                                             ], ask_each=True)),
-                      Todo('add_version_major',
-                           'Add a new major version on master branch',
-                           type=ReleaseType.major),
-                      Todo('add_version_minor',
-                           'Add a new minor version on stable branch',
-                           type=ReleaseType.minor),
-                      Todo('sanity_check_doap',
-                           'Sanity check the DOAP files',
-                           description="""
-Sanity check the DOAP files under dev-tools/doap/
-Do they contain all releases less than the one in progress?
-
-TIP: The buildAndPushRelease script run later will check this automatically"""),
-                      Todo('jenkins_builds',
-                           'Add Jenkins task for the release branch',
-                           description='...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.',
-                           links=['https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds'],
-                           type=major_minor),
-                      Todo('inform_devs',
-                           'Inform Devs of the Release Branch',
-                           description=textwrap.dedent("""\
-                                Send a note to dev@ to inform the committers that the branch 
-                                has been created and the feature freeze phase has started.
-                                
-                                This is an e-mail template you can use as a basis for 
-                                announcing the new branch and feature freeze.
-                                
-                                .Mail template
-                                ----
-                                To: dev@lucene.apache.org
-                                Subject: New branch and feature freeze for Lucene/Solr {{ release_version }}
-                                
-                                NOTICE:
-                                
-                                Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on stable branch.
-                                
-                                Please observe the normal rules:
-                                        
-                                * No new features may be committed to the branch.
-                                * Documentation patches, build patches and serious bug fixes may be 
-                                  committed to the branch. However, you should submit all patches you 
-                                  want to commit to Jira first to give others the chance to review 
-                                  and possibly vote against the patch. Keep in mind that it is our 
-                                  main intention to keep the branch as stable as possible.
-                                * All patches that are intended for the branch should first be committed 
-                                  to the unstable branch, merged into the stable branch, and then into 
-                                  the current release branch.
-                                * Normal unstable and stable branch development may continue as usual. 
-                                  However, if you plan to commit a big change to the unstable branch 
-                                  while the branch feature freeze is in effect, think twice: can't the 
-                                  addition wait a couple more days? Merges of bug fixes into the branch 
-                                  may become more difficult.
-                                * Only Jira issues with Fix version %s and priority "Blocker" will delay 
-                                  a release candidate build.
-                                ----
-                                """),
-                           type=major_minor),
-                      Todo('inform_devs_bugfix',
-                           'Inform Devs about the release',
-                           description=textwrap.dedent("""\
-                                Send a note to dev@ to inform the committers about the rules for committing to the branch.
-                                
-                                This is an e-mail template you can use as a basis for 
-                                announcing the rules for committing to the release branch
-                                
-                                .Mail template
-                                ----
-                                To: dev@lucene.apache.org
-                                Subject: Bugfix release Lucene/Solr {{ release_version }}
-                                
-                                NOTICE:
-                                
-                                I am now preparing for a bugfix release from branch {{ release_branch }}
-                                
-                                Please observe the normal rules for committing to this branch:
-                                        
-                                * Before committing to the branch, reply to this thread and argue
-                                  why the fix needs backporting and how long it will take.
-                                * All issues accepted for backporting should be marked with {{ release_version }}
-                                  in JIRA, and issues that should delay the release must be marked as Blocker
-                                * All patches that are intended for the branch should first be committed 
-                                  to the unstable branch, merged into the stable branch, and then into 
-                                  the current release branch.
-                                * Only Jira issues with Fix version %s and priority "Blocker" will delay 
-                                  a release candidate build.
-                                ----"""),
-                           type=major_minor),
-                      Todo('draft_release_notes',
-                           'Get a draft of the release notes in place',
-                           description=textwrap.dedent("""\
-                               These are typically edited on the Wiki.
-                                                      
-                               Clone a page for a previous version as a starting point for your release notes. 
-                               You will need two pages, one for Lucene and another for Solr, see links.
-                               Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
-                               Ask on dev@ for input. Ideally the timing of this request mostly coincides with the 
-                               release branch creation. It's a good idea to remind the devs of this later in the release too."""),
-                           links=['https://wiki.apache.org/lucene-java/ReleaseNote77',
-                                  'https://wiki.apache.org/solr/ReleaseNote77'],
-                           ),
-                      Todo('new_jira_versions',
-                           'Add a new version in JIRA for the next release',
-                           description=textwrap.dedent("""\
-                               Go to the JIRA "Manage Versions" Administration pages and add the new version:
-                               
-                               {% if state.get_release_type() == 'major' %}
-                               # Change name of version `master ({{ release_version_major }}.0)` into `{{ release_version_major }}.0` 
-                               # Create a new (unreleased) version `{{ state.get_next_version() }}` 
-                               {% endif %}
-                               {% if state.get_release_type() == 'minor' %}
-                               # Create a new (unreleased) version `{{ state.get_next_version() }}` 
-                               {% endif %}
-                               
-                               This needs to be done both for Lucene and Solr JIRAs, see links."""),
-                           links=['https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions',
-                                  'https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions'],
-                           type=major_minor)
-                  ]),
-        TodoGroup('artifacts',
-                  'Build the release artifacts',
-                  textwrap.dedent("""\
-                      If after the last day of the feature freeze phase no blocking issues are
-                      in JIRA with "Fix Version" {{ release_version }}, then it's time to build the
-                      release artifacts, run the smoke tester and stage the RC in svn"""),
-                  [
-                      Todo('run_tests',
-                           'Run javadoc tests',
-                           commands=Commands(git_checkout_folder,
-                                             "Run some tests not ran by `buildAndPublishRelease.py`", [
-                                                 Command("git checkout %s" % get_release_branch(), stdout=True),
-                                                 Command('ant javadocs', 'lucene'),
-                                                 Command('ant javadocs', 'solr')
-                                             ], ask_each=True)
-                           ),
-                      # TODO: Examine the results. Did it build without errors? Were there Javadoc warnings? Did the tests succeed? Does the demo application work correctly? Does Test2BTerms pass (this takes a lot of memory)?
-                      # Remove lucene/benchmark/{work,temp}/ if present
-                      Todo('clear_ivy_cache',
-                           'Clear the ivy cache',
-                           commands=Commands(os.path.expanduser("~/.ivy2/"), textwrap.dedent("""\
-                                It is recommended to clean your Ivy cache before building the artifacts.
-                                This ensures that all Ivy dependencies are freshly downloaded, 
-                                so we emulate a user that never used the Lucene build system before.
-                                One way is to rename the ivy cache folder before building."""), [
-                               Command("mv cache cache_bak", stdout=True),
-                           ], ask_each=False)),
-                      Todo('build_rc',
-                           'Build the release candidate',
-                           vars={'logfile': "/tmp/release.log",
-                                 'builder_path': "{{ ['dev-tools', 'scripts', 'buildAndPushRelease.py'] | path_join }}",
-                                 'dist_path': "{{ [rc_folder, 'dist'] | path_join }}",
-                                 'git_rev': read_file("rev.txt", cwd=state.get_git_checkout_folder()),
-                                 'local_keys': """{% if keys_downloaded %}--local-keys "{{ [config_path, 'KEYS'] | path_join }}"{% endif %}"""
-                                 # 'logfile': "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}",
-                                 },
-                           commands=Commands(state.get_git_checkout_folder(), textwrap.dedent("""\
-                                           In this step we will build the RC using python script `buildAndPushRelease.py`
-                                           We have tried to compile the correct command below, and you need to execute
-                                           it in another Terminal window yourself.
-
-                                           Note that the script will take a long time. To follow the detailed build 
-                                           log, tail the log in another Terminal:
-                                           `tail -f {{ logfile }}`"""), [
-                               Command("git checkout {{ release_branch }}", tee=True),
-                               Command("git clean -df", tee=True, comment="Make sure checkout is clean and up to date"),
-                               Command("git checkout -- .", tee=True),
-                               Command("git pull", tee=True),
-                               Command(
-                                   """python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}""",
-                                   logfile="build_rc.log", tee=True),
-                           ], ask_run=True, ask_each=False, env={'JAVACMD': state.get_java_cmd()}),
-                           #         # Add --logfile %s"
-                           depends="gpg"),
-                      # Todo('foo',
-                      #      'FOO',
-                      #      vars={'logfile': "/tmp/release.log",
-                      #            'builder_path': "{{ ['dev-tools', 'scripts', 'buildAndPushRelease.py'] | path_join }}",
-                      #            'dist_path': "{{ [rc_folder, 'dist'] | path_join }}",
-                      #            'git_rev': read_file("rev.txt", cwd=state.get_git_checkout_folder()),
-                      #            'local_keys': "{% if keys_downloaded %}--foo {{ [config_path, 'KEYS'] | path_join }}{% endif %}"
-                      #            # 'logfile': "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}",
-                      #            },
-                      #      commands=Commands(state.get_git_checkout_folder(), "foo",
-                      #            [
-                      #                Command(
-                      #                    """abc {{ local_keys }} def""", tee=True),
-                      #            ], ask_run=True, ask_each=False, env={'JAVACMD': state.get_java_cmd()}),
-                      #      #         # Add --logfile %s"
-                      #      depends="gpg"),
-                      Todo('smoke_tester',
-                           'Run the smoke tester',
-                           vars={
-                               'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
-                               'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
-                               'tmp_dir': "{{ [rc_folder, 'smoketest'] | path_join }}",
-                               'smoker_path': "{{ ['dev-tools', 'scripts', 'smokeTestRelease.py'] | path_join }}",
-                               'local_keys': """{% if keys_downloaded %}--local-keys "{{ [config_path, 'KEYS'] | path_join }}"{% endif %}"""
-                           },
-                           commands=Commands(
-                               state.get_git_checkout_folder(),
-                               """Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.""",
-                               [
-                                   Command("""python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}""",
-                                           logfile="smoketest.log"),
-                               ],
-                               remove_files=["{{ tmp_dir }}"],
-                               env={'JAVACMD': state.get_java_cmd()},
-                               ask_run=True,
-                               ask_each=False),
-                           depends="build_rc"),
-                      Todo('import_svn',
-                           'Import artifacts into SVN',
-                           vars={
-                               'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
-                               'dist_path': "{{ [rc_folder, 'dist', dist_folder] | path_join }}",
-                               'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}"
-                           },
-                           commands=Commands(state.get_git_checkout_folder(),
-                                 """Here we'll import the artifacts into Subversion""", [
-                                     Command(
-                                         """svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}""",
-                                         logfile="import_svn.log", tee=True)
-                                 ],
-                                 ask_run=True,
-                                 ask_each=False
+                               links=["https://www.apache.org/foundation/voting.html"],
+                               depends='initiate_vote')
+                      ],
+                      is_in_rc_loop=True),
+            TodoGroup('publish',
+                      'Publishing to the ASF Mirrors',
+                      """Once the vote has passed, the release may be published to the ASF Mirrors and to Maven Central.""",
+                      [
+                          Todo('tag_release',
+                               'Tag the release',
+                               description="Tag the release from the same revision from which the passing release candidate's was built",
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "This will tag the release in git",
+                                   [
+                                       Command("""git tag -a releases/lucene-solr/5.5.0 -m "Lucene/Solr 5.5.0 release" 2a228b3920a07f930f7afb6a42d0d20e184a943c""",
+                                               tee=True, logfile="git_tag.log"),
+                                       Command("""git push origin releases/lucene-solr/5.5.0""",
+                                               tee=True, logfile="git_push_tag.log")
+                                   ]
+                               )
                             ),
-                           depends="smoke_tester")
-                      # Don't delete these artifacts from your local workstation as you'll need to publish the maven subdirectories once the RC passes (see below).
-                  ],
-                  depends=['test', 'prerequisites'],
-                  in_rc_loop=True),
-        TodoGroup('voting',
-                  'Hold the vote and sum up the results',
-                  'description',
-                  [
-                      Todo('initiate_vote',
-                           'Initiate the vote',
-                           vars={'vote_close': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
-                                 'vote_close_epoch': unix_time_millis(vote_close_72h_date())
-                                 },
-                           description=textwrap.dedent("""\
-                                Initiate the vote on the dev mailing list
-
-                                .Mail template
-                                ----
-                                To: dev@lucene.apache.org
-                                Subject: [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
-                                
-                                Please vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version }}
-                                
-                                The artifacts can be downloaded from:
-                                https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
-                                
-                                You can run the smoke tester directly with this command:
-                                
-                                python3 -u dev-tools/scripts/smokeTestRelease.py \\
-                                https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ build_rc.git_rev | default("<git_rev>", True) }}
-                                
-                                Vote will be open for at least 3 working days, i.e. until {{ vote_close }}.
-                                
-                                [ ] +1  approve
-                                [ ] +0  no opinion
-                                [ ] -1  disapprove (and reason why)
-                                
-                                Here is my +1
-                                ----"""),
-                           links=["https://www.apache.org/foundation/voting.html"]),
-                      Todo('end_vote',
-                           'End vote',
-                           description="At the end of the voting deadline, count the votes and send RESULT message to the mailing list.",
-                           user_input=[
-                               UserInput("plus_binding", "Number of binding +1 votes (PMC members)"),
-                               UserInput("plus_other", "Number of other +1 votes"),
-                               UserInput("zero", "Number of 0 votes"),
-                               UserInput("minus", "Number of -1 votes")
-                           ],
-                           links=["https://www.apache.org/foundation/voting.html"],
-                           depends='initiate_vote')
-                  ],
-                  in_rc_loop=True),
-        TodoGroup('publish',
-                  'Publish the release artifacts',
-                  'description',
-                  [
-                      Todo('id', 'title')
-                  ]),
-        TodoGroup('website',
-                  'Update the website',
-                  'description',
-                  [
-                      Todo('id', 'title')
-                  ]),
-        TodoGroup('doap',
-                  'Update the DOAP file',
-                  'description',
-                  [
-                      Todo('id', 'title')
-                  ]),
-        TodoGroup('announce',
-                  'Announce the release',
-                  'description',
-                  [
-                      Todo('id', 'title')
-                  ]),
-        TodoGroup('post_release',
-                  'Tasks to do after release',
-                  'description',
-                  [
-                      Todo('add_version_bugfix',
-                           'Add a new bugfix version on release branch',
-                           type=ReleaseType.bugfix,
-                           commands=Commands(state.get_git_checkout_folder(),
-                                             "Do the following on the release branch only:", [
-                                                 Command("git checkout %s" % state.get_minor_branch_name()),
-                                                 Command("python3 -u %s %s" % (
-                                                     os.path.join(current_git_root, 'dev-tools/scripts/addVersion.py'),
-                                                     state.release_version)),
-                                             ], ask_each=False))
-                  ])
-    ]
+                          Todo('rm_staged_mvn',
+                               'Delete mvn artifacts from staging repo',
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "This will remove only maven artifacts",
+                                   [
+                                       Command("""svn rm -m "delete the lucene maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene/maven""",
+                                               tee=True, logfile="svn_rm_mvn_lucene.log"),
+                                       Command("""svn rm -m "delete the solr maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../solr/maven""",
+                                               tee=True, logfile="svn_rm_mvn_solr.log")
+                                   ]
+                               )
+                            ),
+                          Todo('mv_to_release',
+                               'Move release artifacts to release repo',
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "This will move the new release artifacts from staging repo to the release repo",
+                                   [
+                                       Command("""svn move -m "Move Lucene RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene https://dist.apache.org/repos/dist/release/lucene/java/5.1.0""",
+                                               tee=True, logfile="svn_mv_lucene.log"),
+                                       Command("""svn move -m "Move Solr RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../solr https://dist.apache.org/repos/dist/release/lucene/solr/5.1.0""",
+                                               tee=True, logfile="svn_mv_solr.log")
+                                   ]
+                               ),
+                               post_description="""Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" """
+                          ),
+                          Todo('rm_staging',
+                               'Clean up folder on the staging repo',
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "This will clean up the containing folder left in the staging repo",
+                                   [
+                                       Command("""svn rm -m "Clean up the RC folder" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev...""",
+                                               tee=True, logfile="svn_rm_containing.log")
+                                   ]
+                               )
+                          ),
+                          Todo('publish_maven',
+                               'Publish maven artifacts',
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)",
+                                   [
+                                       Command("""ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../lucene/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2""",
+                                               tee=True, logfile="publish_lucene_maven.log"),
+                                       Command("""ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../solr/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2""",
+                                               tee=True, logfile="publish_solr_maven.log")
+                                   ]
+                               ),
+                               post_description=textwrap.dedent("""\
+                                    Once you have transferred all maven artifacts to repository.apache.org,
+                                    you will need to:
+    
+                                    * Log in there with your ASF credentials
+                                    * locate the staging repository containing the release that you just uploaded
+                                    * "close" the staging repository
+                                    * wait and wait and keep clicking refresh until it allows you to
+                                    * then "release" the staging repository. This will cause them to sync to
+                                      Maven Central See links for details
+    
+                                    Maven central should show the release after a short while, but you need to
+                                    wait 24 hours to give the Apache mirrors a chance to copy the new release.
+                                    """),
+                               links=["https://wiki.apache.org/lucene-java/PublishMavenArtifacts"]
+                            ),
+                          #If you wish, use this script to continually check the number and percentage of mirrors (and Maven Central) that have the release: dev-tools/scripts/poll-mirrors.py -version 5.5.0.
+                          Todo('check_mirroring',
+                               'Check state of mirroring so far. Mark this as complete once a good spread is confirmed',
+                               commands=Commands(
+                                   "{{ git_checkout_folder }}",
+                                   "Run this script to check the number and percentage of mirrors (and Maven Central) that have the release",
+                                   [
+                                       Command("""dev-tools/scripts/poll-mirrors.py -version 5.5.0""",
+                                               tee=True, logfile="publish_lucene_maven.log")
+                                   ]
+                               )
+                            )
+                      ],
+                    ),
+            TodoGroup('website',
+                      'Update the website',
+                      'description',
+                      [
+                          Todo('id', 'title')
+                      ]),
+            TodoGroup('doap',
+                      'Update the DOAP file',
+                      'description',
+                      [
+                          Todo('id', 'title')
+                      ]),
+            TodoGroup('announce',
+                      'Announce the release',
+                      'description',
+                      [
+                          Todo('id', 'title')
+                      ]),
+            TodoGroup('post_release',
+                      'Tasks to do after release',
+                      'description',
+                      [
+                          Todo('add_version_bugfix',
+                               'Add a new bugfix version on release branch',
+                               types='bugfix',
+                               commands=Commands(state.get_git_checkout_folder(),
+                                                 "Do the following on the release branch only:", [
+                                                     Command("git checkout %s" % state.get_minor_branch_name()),
+                                                     Command("python3 -u %s %s" % (
+                                                         os.path.join(current_git_root, 'dev-tools/scripts/addVersion.py'),
+                                                         state.release_version)),
+                                                 ], confirm_each_command=False))
+                      ])
+        ]
 
 
 def maybe_remove_rc_from_svn():
@@ -576,8 +672,8 @@ def maybe_remove_rc_from_svn():
     if todo and todo.is_done():
         print("import_svn done")
         Commands(state.get_git_checkout_folder(),
-             """Looks like you uploaded artifacts for {{ build_rc.git_rev | default("<git_rev>", True) }} to svn which needs to be removed.""",
-             [Command(
+                 """Looks like you uploaded artifacts for {{ build_rc.git_rev | default("<git_rev>", True) }} to svn which needs to be removed.""",
+                 [Command(
                  """svn -m "Remove cancelled Lucene/Solr {{ release_version }} RC{{ rc_number }}" rm {{ dist_url }}""",
                  logfile="svn_rm.log",
                  tee=True,
@@ -586,10 +682,33 @@ def maybe_remove_rc_from_svn():
                      'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder }}"
                  }
              )],
-             ask_run=True, ask_each=False).run()
+                 enable_execute=True, confirm_each_command=False).run()
     else:
         print("import_svn not done: %s" % todo)
 
+
+# To be able to hide fields when dumping Yaml
+class SecretYamlObject(yaml.YAMLObject):
+    hidden_fields = []
+    @classmethod
+    def to_yaml(cls,dumper,data):
+        print("Dumping object %s" % type(data))
+
+        new_data = copy.deepcopy(data)
+        for item in cls.hidden_fields:
+            if item in new_data.__dict__:
+                del new_data.__dict__[item]
+        for item in data.__dict__:
+            if item in new_data.__dict__ and new_data.__dict__[item] is None:
+                del new_data.__dict__[item]
+        return dumper.represent_yaml_object(cls.yaml_tag, new_data, cls,
+                                            flow_style=cls.yaml_flow_style)
+
+
+def str_presenter(dumper, data):
+    if len(data.split('\n')) > 1:  # check for multiline string
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
 
 class ReleaseState:
@@ -606,12 +725,12 @@ class ReleaseState:
         self.release_version_bugfix = None
         self.rc_number = 1
         self.start_date = unix_time_millis(datetime.now())
-        self.branch = run("git rev-parse --abbrev-ref HEAD").strip()
-        self.release_branch = self.branch
+        self.script_branch = run("git rev-parse --abbrev-ref HEAD").strip()
+        self.release_branch = None
         try:
             self.branch_type = scriptutil.find_branch_type()
         except:
-            print("WARNING: This script shold (ideally) run from the release branch, not a feature branch (%s)" % self.branch)
+            print("WARNING: This script shold (ideally) run from the release branch, not a feature branch (%s)" % self.script_branch)
             self.branch_type = 'feature'
 
     def set_release_version(self, version):
@@ -621,13 +740,13 @@ class ReleaseState:
         self.release_version_minor = v.minor
         self.release_version_bugfix = v.bugfix
         if v.is_major_release():
-            self.release_type = ReleaseType.major
+            self.release_type = 'major'
             self.release_branch = "master"
         elif v.is_minor_release():
-            self.release_type = ReleaseType.minor
+            self.release_type = 'minor'
             self.release_branch = self.get_stable_branch_name()
         else:
-            self.release_type = ReleaseType.bugfix
+            self.release_type = 'bugfix'
             self.release_branch = self.get_minor_branch_name()
 
     def clear_rc(self):
@@ -665,7 +784,7 @@ class ReleaseState:
             'release_version': self.release_version,
             'start_date': self.start_date,
             'rc_number': self.rc_number,
-            'script_branch': self.branch,
+            'script_branch': self.script_branch,
             'todos': tmp_todos,
             'previous_rcs': self.previous_rcs
         })
@@ -676,10 +795,13 @@ class ReleaseState:
         if 'start_date' in dict:
             self.start_date = dict['start_date']
         self.rc_number = dict['rc_number']
-        self.branch = dict['script_branch']
+        self.script_branch = dict['script_branch']
         self.previous_rcs = copy.deepcopy(dict['previous_rcs'])
-        self.todo_groups = init_todos(self)
-        self.init_todos()
+        try:
+            self.todo_groups = bootstrap_todos(self)
+            self.init_todos()
+        except Exception as e:
+            print("ERROR: %s" % e)
         for todo_id in dict['todos']:
             if todo_id in self.todos:
                 t = self.todos[todo_id]
@@ -694,7 +816,7 @@ class ReleaseState:
         if not os.path.exists(self.config_path):
             print("Creating folder %s" % self.config_path)
             os.makedirs(self.config_path)
-            self.todo_groups = init_todos(self)
+            self.todo_groups = bootstrap_todos(self)
             self.init_todos()
         else:
             if os.path.exists(os.path.join(self.config_path, 'latest.json')):
@@ -731,7 +853,6 @@ class ReleaseState:
         for t_id in self.todos:
             t = self.todos[t_id]
             t.state = {}
-            t.set_done(t.done_initial_value)
         self.save()
 
     def get_rc_number(self):
@@ -786,11 +907,11 @@ class ReleaseState:
         return "branch_%sx" % self.release_version_major
 
     def get_next_version(self):
-        if self.release_type == ReleaseType.major:
+        if self.release_type == 'major':
             return "master (%s.0)" % (self.release_version_major + 1)
-        if self.release_type == ReleaseType.minor:
+        if self.release_type == 'minor':
             return "%s.%s" % (self.release_version_major, self.release_version_minor + 1)
-        if self.release_type == ReleaseType.bugfix:
+        if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
 
     def get_java_home(self):
@@ -823,23 +944,27 @@ class ReleaseState:
                 self.todos[t.id] = t
 
 
-class TodoGroup:
-    def __init__(self, id, title, description, checklist, pre_fun=None, in_rc_loop=False, depends=None):
-        self.depends = depends
-        self.description = description
-        self.is_in_rc_loop = in_rc_loop
-        self.pre_fun = pre_fun
-        self.title = title
+class TodoGroup(SecretYamlObject):
+    yaml_tag = u'!TodoGroup'
+    hidden_fields = []
+    def __init__(self, id, title, description, todos, is_in_rc_loop=False, depends=None):
         self.id = id
-        self.checklist = checklist
-        if not checklist:
-            self.checklist = []
+        self.title = title
+        self.description = description
+        self.depends = depends
+        self.is_in_rc_loop = is_in_rc_loop
+        self.todos = todos
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        fields = loader.construct_mapping(node, deep = True)
+        return TodoGroup(**fields)
 
     def num_done(self):
-        return sum(1 for x in self.checklist if x.is_done() > 0)
+        return sum(1 for x in self.todos if x.is_done() > 0)
 
     def num_applies(self):
-        count = sum(1 for x in self.checklist if x.applies(state.release_type))
+        count = sum(1 for x in self.todos if x.applies(state.release_type))
         # print("num_applies=%s" % count)
         return count
 
@@ -867,7 +992,7 @@ class TodoGroup:
         return item
 
     def get_todos(self):
-        return self.checklist
+        return self.todos
 
     def in_rc_loop(self):
         return self.is_in_rc_loop is True
@@ -902,19 +1027,24 @@ def expand_jinja(text, vars=None):
     global_vars = OrderedDict({
         'script_version': state.script_version,
         'release_version': state.release_version,
+        'ivy2_folder': os.path.expanduser("~/.ivy2/"),
         'config_path': state.config_path,
         'rc_number': state.rc_number,
-        'script_branch': state.branch,
+        'script_branch': state.script_branch,
         'release_folder': state.get_release_folder(),
         'git_checkout_folder': state.get_git_checkout_folder(),
         'rc_folder': state.get_rc_folder(),
         'release_branch': state.release_branch,
+        'stable_branch': state.get_stable_branch_name(),
+        'minor_branch': state.get_minor_branch_name(),
         'release_type': state.release_type,
         'release_version_major': state.release_version_major,
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'state': state,
-        'keys_downloaded': keys_downloaded()
+        'keys_downloaded': keys_downloaded(),
+        'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
+        'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date())
     })
     global_vars.update(state.get_todo_states())
     if vars:
@@ -931,34 +1061,42 @@ def expand_jinja(text, vars=None):
     return filled
 
 
-class Todo:
-    def __init__(self, id, title, description=None, post_description=None, done=False, type=None, fun=None, fun_args=None, links=None,
-                 commands=None, user_input=None, depends=None, vars={}, asciidoc=None):
+class Todo(SecretYamlObject):
+    yaml_tag = u'!Todo'
+    hidden_fields = ['state']
+    def __init__(self, id, title, description=None, post_description=None, done=False, types=None, links=None,
+                 commands=None, user_input=None, depends=None, vars=None, asciidoc=None, persist_vars=None):
+        self.id = id
+        self.title = title
+        self.description = description
         self.asciidoc = asciidoc
-        self.post_description = post_description
-        self.vars = vars
+        self.types = types
         self.depends = depends
+        self.vars = vars
+        self.persist_vars = persist_vars
         self.user_input = user_input
         self.commands = commands
-        if commands:
-            self.commands.todo_ref = self
-            for c in commands.commands:
-                c.todo_ref = self
+        self.post_description = post_description
         self.links = links
-        self.done_initial_value = done
-        self.fun = fun
-        self.fun_args = fun_args
-        self.types = type
-        if not self.types:
-            self.types = [ReleaseType.bugfix, ReleaseType.minor, ReleaseType.major]
-        else:
-            self.types = ensure_list(self.types)
-        self.description = description
-        self.title = title
-        self.id = id
         self.state = {}
-        self.set_done(done)
 
+        if not self.vars:
+            self.vars = {}
+        self.set_done(done)
+        if self.types:
+            self.types = ensure_list(self.types)
+            for t in self.types:
+                if not t in ['minor', 'major', 'bugfix']:
+                    sys.exit("Wrong Todo config for '%s'. Type needs to be either 'minor', 'major' or 'bugfix'" % self.id)
+        if commands:
+            self.commands.todo_id = self.id
+            for c in commands.commands:
+                c.todo_id = self.id
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        fields = loader.construct_mapping(node, deep = True)
+        return Todo(**fields)
 
     def get_vars(self):
         myvars = {}
@@ -973,15 +1111,17 @@ class Todo:
     def set_done(self, is_done):
         if is_done:
             self.state['done_date'] = unix_time_millis(datetime.now())
-            if len(self.vars) > 0:
-                self.state.update(self.get_vars())
+            if self.persist_vars:
+                for k in self.persist_vars:
+                    self.state[k] = self.get_vars()[k]
         else:
             self.state.clear()
         self.state['done'] = is_done
 
     def applies(self, type):
-        # print("applies type=%s, types=%s" % (type, self.types))
-        return type in self.types
+        if self.types:
+            return type in self.types
+        return True
 
     def is_done(self):
         return self.state['done'] is True
@@ -1019,9 +1159,7 @@ class Todo:
                     # print("Calling %s by reclection" % self.id)
                     attr(self)
             except Exception as e:
-                if self.fun and not self.is_done():
-                    # print("Calling defined fun %s" % self.fun)
-                    self.fun(self)
+                pass
             if self.user_input and not self.is_done():
                 ui_list = ensure_list(self.user_input)
                 for ui in ui_list:
@@ -1052,7 +1190,6 @@ class Todo:
 
     def clear(self):
         self.state.clear()
-        self.set_done(self.done_initial_value)
 
     def get_state(self):
         return self.state
@@ -1088,12 +1225,12 @@ class Todo:
 
     def get_asciidoc(self):
         if self.asciidoc:
-            return expand_jinja(self.asciidoc)
+            return expand_jinja(self.asciidoc, vars=self.get_vars_and_state())
         else:
             try:
                 attr = getattr(todo_methods, "%s_asciidoc" % self.id)
                 if callable(attr):
-                    return expand_jinja(attr(self))
+                    return expand_jinja(attr(self), vars=self.get_vars_and_state())
             except:
                 pass
         return None
@@ -1272,7 +1409,7 @@ def generate_asciidoc():
                 fh.write("\n")
             cmds = todo.get_commands()
             if cmds:
-                fh.write("%s\n\n" % cmds.commands_text)
+                fh.write("%s\n\n" % cmds.get_commands_text())
                 fh.write("[source,sh]\n----\n")
                 if cmds.env:
                     for key in cmds.env:
@@ -1290,9 +1427,9 @@ def generate_asciidoc():
                         post = " && popd"
                     if c.comment:
                         if is_windows():
-                            fh.write("REM %s\n" % c.comment)
+                            fh.write("REM %s\n" % c.get_comment())
                         else:
-                            fh.write("# %s\n" % c.comment)
+                            fh.write("# %s\n" % c.get_comment())
                     fh.write("%s%s%s\n" % (pre, c, post))
                 fh.write("----\n\n")
             if todo.post_description and not todo.get_asciidoc():
@@ -1323,6 +1460,13 @@ def keys_downloaded():
     return os.path.exists(os.path.join(state.config_path, "KEYS"))
 
 
+def dump_yaml():
+    file = open("releaseWizard.yaml", "w")
+    yaml.add_representer(str, str_presenter)
+    yaml.Dumper.ignore_aliases = lambda *args : True
+    yaml.dump(state.todo_groups, width=180, stream=file, sort_keys=False, default_flow_style=False)
+
+
 def main():
     global state
     global todo_methods
@@ -1342,7 +1486,7 @@ def main():
 
     if not state.release_version:
         input_version = get_release_version()
-        validate_release_version(state.branch_type, state.branch, input_version)
+        validate_release_version(state.branch_type, state.script_branch, input_version)
         state.set_release_version(input_version)
         state.save()
 
@@ -1375,7 +1519,7 @@ def main():
     main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
     main_menu.append_item(FunctionItem('Generate Asciidoc guide', generate_asciidoc))
     main_menu.append_item(FunctionItem('Download gpg KEYS file for offline use', download_keys))
-#    main_menu.append_item(FunctionItem('Maybe', maybe_remove_rc_from_svn))
+    main_menu.append_item(FunctionItem('Dump YAML', dump_yaml))
     main_menu.append_item(FunctionItem('Help', help))
 
     main_menu.show()
@@ -1514,24 +1658,31 @@ def is_windows():
     return platform.system().startswith("Win")
 
 
-class Commands:
-    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, ask_run=True,
-                 ask_each=True, tail_lines=25, stdout=False, env=None, vars={}, todo_ref=None, remove_files=None):
-        self.remove_files = remove_files
-        self.todo_ref = todo_ref
+class Commands(SecretYamlObject):
+    yaml_tag = u'!Commands'
+    hidden_fields = ['todo_id']
+    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, enable_execute=True,
+                 confirm_each_command=True, env=None, vars={}, todo_id=None, remove_files=None):
+        self.root_folder = root_folder
+        self.commands_text = commands_text
         self.vars = vars
         self.env = env
-        self.logs_prefix = logs_prefix
-        self.stdout = stdout
-        self.tail_lines = tail_lines
-        self.ask_each = ask_each
-        self.ask_run = ask_run
-        self.commands = commands
         self.run_text = run_text
-        self.commands_text = commands_text
-        self.root_folder = root_folder
+        self.remove_files = remove_files
+        self.todo_id = todo_id
+        self.logs_prefix = logs_prefix
+        self.enable_execute = enable_execute
+        self.confirm_each_command = confirm_each_command
+        self.commands = commands
+        if not self.remove_files:
+            self.remove_files = []
         for c in self.commands:
-            c.todo_ref = todo_ref
+            c.todo_id = todo_id
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        fields = loader.construct_mapping(node, deep = True)
+        return Commands(**fields)
 
     def run(self):
         root = self.get_root_folder()
@@ -1539,7 +1690,7 @@ class Commands:
         print(expand_jinja(self.commands_text))
         if self.env:
             for key in self.env:
-                val = self.env[key]
+                val = expand_jinja(self.env[key])
                 os.environ[key] = val
                 if is_windows():
                     print("\n  SET %s=%s" % (key, val))
@@ -1558,12 +1709,12 @@ class Commands:
                 pre = "pushd %s && " % cmd.cwd
                 post = " && popd"
             print("  %s%s%s" % (pre, cmd.get_cmd(), post))
-
-        if self.ask_run:
+        print()
+        if self.enable_execute:
             if self.run_text:
-                print("\n%s\n" % expand_jinja(self.run_text))
-            if len(self.commands) > 1:
-                if self.ask_each:
+                print("\n%s\n" % self.get_run_text())
+            if len(commands) > 1:
+                if self.confirm_each_command:
                     print("You will get prompted before running each individual command.")
                 else:
                     print(
@@ -1595,12 +1746,12 @@ class Commands:
                     folder_prefix = ''
                     if cmd.cwd:
                         folder_prefix = cmd.cwd + "_"
-                    if not self.ask_each or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
-                        if not self.ask_each:
+                    if not self.confirm_each_command or len(commands) == 1 or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
+                        if not self.confirm_each_command:
                             print("------------\nRunning '%s' in folder '%s'" % (cmd, cwd))
                         logfilename = cmd.logfile
                         logfile = None
-                        if not cmd.stdout and not self.stdout:
+                        if not cmd.stdout:
                             if not log_folder:
                                 log_folder = os.path.join(state.get_rc_folder(), "logs")
                             elif not os.path.isabs(log_folder):
@@ -1611,10 +1762,10 @@ class Commands:
                             print("Wait until command completes... Full log in %s\n" % logfile)
                         cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
                         if not run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee,
-                                                 tail_lines=self.tail_lines) == 0:
+                                                 tail_lines=25) == 0:
                             print("WARN: Command %s returned with error" % cmd.get_cmd())
                             success = False
-                            if not self.ask_each:
+                            if not self.confirm_each_command:
                                 print("Aborting")
                                 break
             if not success:
@@ -1622,41 +1773,68 @@ class Commands:
             return success
 
     def get_root_folder(self):
-        root = self.root_folder
-        if callable(root):
-            root = root()
-        return root
+        return expand_jinja(self.root_folder)
+
+    def get_commands_text(self):
+        return self.jinjaify(self.commands_text)
+
+    def get_run_text(self):
+        return self.jinjaify(self.run_text)
 
     def get_remove_files(self):
-        res = []
-        vars = {}
-        if self.todo_ref:
-            vars = self.todo_ref.get_vars()
-        if self.remove_files:
-            for rf in self.remove_files:
-                res.append(expand_jinja(rf, vars))
-        return res
+        return self.jinjaify(self.remove_files)
+
+    def get_vars(self):
+        myvars = {}
+        for k in self.vars:
+            val = self.vars[k]
+            if callable(val):
+                myvars[k] = expand_jinja(val(), vars=myvars)
+            else:
+                myvars[k] = expand_jinja(val, vars=myvars)
+        return myvars
+
+    def jinjaify(self, data, join=False):
+        if not data:
+            return None
+        v = self.get_vars()
+        if self.todo_id:
+            v.update(state.get_todo_by_id(self.todo_id).get_vars())
+        if isinstance(data, list):
+            if join:
+                return expand_jinja(" ".join(data), v)
+            else:
+                res = []
+                for rf in data:
+                    res.append(expand_jinja(rf, v))
+                return res
+        else:
+            return expand_jinja(data, v)
 
 
-class Command:
-    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None, vars={}, todo_ref=None):
-        self.todo_ref = todo_ref
-        self.vars = vars
-        self.comment = comment
-        self.tee = tee
-        self.logfile = logfile
-        self.stdout = stdout
-        self.cwd = cwd
+class Command(SecretYamlObject):
+    yaml_tag = u'!Command'
+    hidden_fields = ['todo_id']
+    def __init__(self, cmd, cwd=None, stdout=False, logfile=None, tee=False, comment=None, vars={}, todo_id=None):
         self.cmd = cmd
+        self.cwd = cwd
+        self.comment = comment
+        self.logfile = logfile
+        self.vars = vars
+        self.tee = tee
+        self.stdout = stdout
+        self.todo_id = todo_id
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        fields = loader.construct_mapping(node, deep = True)
+        return Command(**fields)
+
+    def get_comment(self):
+        return self.jinjaify(self.comment)
 
     def get_cmd(self):
-        v = self.get_vars()
-        if self.todo_ref:
-            v.update(self.todo_ref.get_vars())
-        if isinstance(self.cmd, list):
-            return expand_jinja(" ".join(self.cmd), v)
-        else:
-            return expand_jinja(self.cmd, v)
+        return self.jinjaify(self.cmd, join=True)
 
     def get_vars(self):
         myvars = {}
@@ -1671,11 +1849,32 @@ class Command:
     def __str__(self):
         return self.get_cmd()
 
+    def jinjaify(self, data, join=False):
+        v = self.get_vars()
+        if self.todo_id:
+            v.update(state.get_todo_by_id(self.todo_id).get_vars())
+        if isinstance(data, list):
+            if join:
+                return expand_jinja(" ".join(data), v)
+            else:
+                res = []
+                for rf in data:
+                    res.append(expand_jinja(rf, v))
+                return res
+        else:
+            return expand_jinja(data, v)
 
-class UserInput():
+
+class UserInput(SecretYamlObject):
+    yaml_tag = u'!UserInput'
     def __init__(self, name, prompt):
         self.prompt = prompt
         self.name = name
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        fields = loader.construct_mapping(node, deep = True)
+        return UserInput(**fields)
 
     def run(self, dict=None):
         result = str(input("%s : " % self.prompt))

@@ -1,0 +1,770 @@
+- !TodoGroup
+  id: prerequisites
+  title: Prerequisites
+  description: description
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: read_up
+    title: Read up on the release process
+    description: |-
+      As a Release Manager (RM) you should be familiar with Apache's release policy,
+      voting rules, create a PGP/GPG key for use with signing and more. Please familiarise
+      yourself with the resources listed below.
+    vars: {}
+    links:
+    - http://www.apache.org/dev/release-publishing.html
+    - http://www.apache.org/legal/release-policy.html
+    - http://www.apache.org/dev/release-signing.html
+    - https://wiki.apache.org/lucene-java/ReleaseTodo
+  - !Todo
+    id: tools
+    title: Necessary tools are installed
+    description: |
+      You will need these tools:
+
+      * Python v3.4 or later
+      * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
+      * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
+      * gpg
+      * git
+      * asciidoctor (to generate HTML version)
+    vars: {}
+    links:
+    - https://gnupg.org/download/index.html
+    - https://asciidoctor.org
+  - !Todo
+    id: gpg
+    title: GPG key id is configured
+    description: |-
+      To sign the release you need to provide your GPG key ID. This must be
+      the same key ID that you have registered in your Apache account.
+      The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B93.
+
+      * Make sure it is your 4096 bits key or larger
+      * Upload your key to the MIT key server, pgp.mit.edu
+      * Put you GPG key's fingerprint in the OpenPGP Public Key Primary Fingerprint
+        field in your profile
+      * The tests will complain if your GPG key has not been signed by another Lucene
+        committer. This makes you a part of the GPG "web of trust" (WoT). Ask a committer
+        that you know personally to sign your key for you, providing them with the
+        fingerprint for the key.
+    vars: {}
+    user_input:
+    - !UserInput
+      prompt: Please enter your gpg key ID, e.g. 0D8D0B93
+      name: gpg_key
+    links:
+    - http://www.apache.org/dev/release-signing.html
+    - https://id.apache.org
+- !TodoGroup
+  id: preparation
+  title: Prepare for the release
+  description: Work with the community to decide when the release will happen and what work must be completed before it can happen
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: decide_jira_issues
+    title: Select JIRA issues to be included
+    description: Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.
+    vars: {}
+  - !Todo
+    id: decide_branch_date
+    title: Decide the date for branching
+    types:
+    - major
+    - minor
+    vars: {}
+    user_input: !UserInput
+      prompt: Enter date (YYYY-MM-DD)
+      name: branch_date
+  - !Todo
+    id: decide_freeze_length
+    title: Decide the lenght of feature freeze
+    types:
+    - major
+    - minor
+    vars: {}
+    user_input: !UserInput
+      prompt: Enter end date of feature freeze (YYYY-MM-DD)
+      name: feature_freeze_date
+- !TodoGroup
+  id: branching_versions
+  title: Create branch (if needed) and update versions
+  description: Here you'll do all the branching and version updates needed to prepare for the new release version
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: clean_git_checkout
+    title: Do a clean git clone to do the release from.
+    description: This eliminates the risk of a dirty checkout
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to make a fresh clone in the release folder
+      vars: {}
+      remove_files:
+      - '{{ git_checkout_folder }}'
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr
+        logfile: git_clone.log
+        vars: {}
+        tee: false
+        stdout: false
+  - !Todo
+    id: ant_precommit
+    title: Run ant precommit and fix issues
+    depends: clean_git_checkout
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: |-
+        Fix any problems that are found by pushing fixes to the release branch
+        and then running this task again. This task will always do `git pull`
+        before `ant precommit` so it will catch changes to your branch :)
+      vars: {}
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        vars: {}
+        tee: false
+        stdout: true
+      - !Command
+        cmd: git pull
+        vars: {}
+        tee: false
+        stdout: true
+      - !Command
+        cmd: ant clean precommit
+        vars: {}
+        tee: false
+        stdout: false
+  - !Todo
+    id: create_stable_branch
+    title: Create a new stable branch, i.e. branch_<major>x
+    types:
+    - major
+    depends: clean_git_checkout
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to create a stable branch
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout master
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git update
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git checkout -b {{ stable_branch }}
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git push origin {{ stable_branch }}
+        vars: {}
+        tee: true
+        stdout: false
+  - !Todo
+    id: create_minor_branch
+    title: Create a minor release branch off the current stable branch
+    types:
+    - minor
+    depends: clean_git_checkout
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to create a release branch
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout {{ stable_branch }}
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git update
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git checkout -b {{ minor_branch }}
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git push origin {{ minor_branch }}
+        vars: {}
+        tee: true
+        stdout: false
+  - !Todo
+    id: add_version_major
+    title: Add a new major version on master branch
+    types:
+    - major
+    vars: {}
+  - !Todo
+    id: add_version_minor
+    title: Add a new minor version on stable branch
+    types:
+    - minor
+    vars: {}
+  - !Todo
+    id: sanity_check_doap
+    title: Sanity check the DOAP files
+    description: |-
+      Sanity check the DOAP files under dev-tools/doap/
+      Do they contain all releases less than the one in progress?
+
+      TIP: The buildAndPushRelease script run later will check this automatically
+    vars: {}
+  - !Todo
+    id: jenkins_builds
+    title: Add Jenkins task for the release branch
+    description: '...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.'
+    types:
+    - major
+    - minor
+    vars: {}
+    links:
+    - https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds
+  - !Todo
+    id: inform_devs
+    title: Inform Devs of the Release Branch
+    description: |-
+      Send a note to dev@ to inform the committers that the branch
+      has been created and the feature freeze phase has started.
+
+      This is an e-mail template you can use as a basis for
+      announcing the new branch and feature freeze.
+
+      .Mail template
+      ----
+      To: dev@lucene.apache.org
+      Subject: New branch and feature freeze for Lucene/Solr {{ release_version }}
+
+      NOTICE:
+
+      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on stable branch.
+
+      Please observe the normal rules:
+
+      * No new features may be committed to the branch.
+      * Documentation patches, build patches and serious bug fixes may be
+        committed to the branch. However, you should submit all patches you
+        want to commit to Jira first to give others the chance to review
+        and possibly vote against the patch. Keep in mind that it is our
+        main intention to keep the branch as stable as possible.
+      * All patches that are intended for the branch should first be committed
+        to the unstable branch, merged into the stable branch, and then into
+        the current release branch.
+      * Normal unstable and stable branch development may continue as usual.
+        However, if you plan to commit a big change to the unstable branch
+        while the branch feature freeze is in effect, think twice: can't the
+        addition wait a couple more days? Merges of bug fixes into the branch
+        may become more difficult.
+      * Only Jira issues with Fix version %s and priority "Blocker" will delay
+        a release candidate build.
+      ----
+    types:
+    - major
+    - minor
+    vars: {}
+  - !Todo
+    id: inform_devs_bugfix
+    title: Inform Devs about the release
+    description: |-
+      Send a note to dev@ to inform the committers about the rules for committing to the branch.
+
+      This is an e-mail template you can use as a basis for
+      announcing the rules for committing to the release branch
+
+      .Mail template
+      ----
+      To: dev@lucene.apache.org
+      Subject: Bugfix release Lucene/Solr {{ release_version }}
+
+      NOTICE:
+
+      I am now preparing for a bugfix release from branch {{ release_branch }}
+
+      Please observe the normal rules for committing to this branch:
+
+      * Before committing to the branch, reply to this thread and argue
+        why the fix needs backporting and how long it will take.
+      * All issues accepted for backporting should be marked with {{ release_version }}
+        in JIRA, and issues that should delay the release must be marked as Blocker
+      * All patches that are intended for the branch should first be committed
+        to the unstable branch, merged into the stable branch, and then into
+        the current release branch.
+      * Only Jira issues with Fix version %s and priority "Blocker" will delay
+        a release candidate build.
+      ----
+    types:
+    - major
+    - minor
+    vars: {}
+  - !Todo
+    id: draft_release_notes
+    title: Get a draft of the release notes in place
+    description: |-
+      These are typically edited on the Wiki.
+
+      Clone a page for a previous version as a starting point for your release notes.
+      You will need two pages, one for Lucene and another for Solr, see links.
+      Edit the contents of `CHANGES.txt` into a more concise format for public consumption.
+      Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
+      release branch creation. It's a good idea to remind the devs of this later in the release too.
+    vars: {}
+    links:
+    - https://wiki.apache.org/lucene-java/ReleaseNote77
+    - https://wiki.apache.org/solr/ReleaseNote77
+  - !Todo
+    id: new_jira_versions
+    title: Add a new version in JIRA for the next release
+    description: |-
+      Go to the JIRA "Manage Versions" Administration pages and add the new version:
+
+      {% if release_type == 'major' %}
+      # Change name of version `master ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
+      # Create a new (unreleased) version `{{ state.get_next_version() }}`
+      {% endif %}
+      {% if release_type == 'minor' %}
+      # Create a new (unreleased) version `{{ state.get_next_version() }}`
+      {% endif %}
+
+      This needs to be done both for Lucene and Solr JIRAs, see links.
+    types:
+    - major
+    - minor
+    vars: {}
+    links:
+    - https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions
+    - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
+- !TodoGroup
+  id: artifacts
+  title: Build the release artifacts
+  description: |-
+    If after the last day of the feature freeze phase no blocking issues are
+    in JIRA with "Fix Version" {{ release_version }}, then it's time to build the
+    release artifacts, run the smoke tester and stage the RC in svn
+  depends:
+  - test
+  - prerequisites
+  is_in_rc_loop: true
+  todos:
+  - !Todo
+    id: run_tests
+    title: Run javadoc tests
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run some tests not ran by `buildAndPublishRelease.py`
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        vars: {}
+        tee: false
+        stdout: true
+      - !Command
+        cmd: ant javadocs
+        cwd: lucene
+        vars: {}
+        tee: false
+        stdout: false
+      - !Command
+        cmd: ant javadocs
+        cwd: solr
+        vars: {}
+        tee: false
+        stdout: false
+  - !Todo
+    id: clear_ivy_cache
+    title: Clear the ivy cache
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ ivy2_folder }}'
+      commands_text: |-
+        It is recommended to clean your Ivy cache before building the artifacts.
+        This ensures that all Ivy dependencies are freshly downloaded,
+        so we emulate a user that never used the Lucene build system before.
+        One way is to rename the ivy cache folder before building.
+      vars: {}
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: mv cache cache_bak
+        vars: {}
+        tee: false
+        stdout: true
+  - !Todo
+    id: build_rc
+    title: Build the release candidate
+    depends: gpg
+    vars:
+      logfile: "{{ [rc_folder, 'logs', 'buildAndPushRelease.log'] | path_join }}"
+      builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'
+      dist_path: '{{ [rc_folder, ''dist''] | path_join }}'
+      git_rev: fced8ab89e98c565166059e5052d3bc700468199
+      local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+    persist_vars:
+    - git_rev
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: |-
+        In this step we will build the RC using python script `buildAndPushRelease.py`
+        We have tried to compile the correct command below, and you need to execute
+        it in another Terminal window yourself.
+
+        Note that the script will take a long time. To follow the detailed build
+        log, tail the log in another Terminal:
+
+        `tail -f {{ logfile | default("<logfile>") }}`
+      vars: {}
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git clean -df
+        comment: Make sure checkout is clean and up to date
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git checkout -- .
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git pull
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}
+        logfile: build_rc.log
+        vars: {}
+        tee: true
+        stdout: false
+  - !Todo
+    id: smoke_tester
+    title: Run the smoke tester
+    depends: build_rc
+    vars:
+      dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_path: '{{ [rc_folder, ''dist'', dist_folder] | path_join }}'
+      tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
+      smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
+      local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
+      vars: {}
+      remove_files:
+      - '{{ tmp_dir }}'
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}
+        logfile: smoketest.log
+        vars: {}
+        tee: false
+        stdout: false
+  - !Todo
+    id: import_svn
+    title: Import artifacts into SVN
+    depends: smoke_tester
+    vars:
+      dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_path: '{{ [rc_folder, ''dist'', dist_folder] | path_join }}'
+      dist_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Here we'll import the artifacts into Subversion
+      vars: {}
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}
+        logfile: import_svn.log
+        vars: {}
+        tee: true
+        stdout: false
+- !TodoGroup
+  id: voting
+  title: Hold the vote and sum up the results
+  description: description
+  is_in_rc_loop: true
+  todos:
+  - !Todo
+    id: initiate_vote
+    title: Initiate the vote
+    description: "Initiate the vote on the dev mailing list\n\n.Mail template\n----\nTo: dev@lucene.apache.org\nSubject: [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number\
+      \ }}\n\nPlease vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version\_}}\n\nThe artifacts can be downloaded from:\nhttps://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{\
+      \ release_version\_}}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default(\"<git_rev>\", True) }}\n\nYou can run the smoke tester directly with this command:\n\npython3 -u dev-tools/scripts/smokeTestRelease.py\
+      \ \\\nhttps://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version\_}}-RC{{ rc_number }}-reve{{ build_rc.git_rev | default(\"<git_rev>\", True) }}\n\nVote will\
+      \ be open for at least 3 working days, i.e. until {{ vote_close_72h }}.\n\n[ ] +1  approve\n[ ] +0  no opinion\n[ ] -1  disapprove (and reason why)\n\nHere is my +1\n----\n"
+    vars:
+      vote_close: '{{ vote_close_72h }}'
+      vote_close_epoch: '{{ vote_close_72h_epoch }}'
+    persist_vars:
+    - vote_close
+    - vote_close_epoch
+    links:
+    - https://www.apache.org/foundation/voting.html
+  - !Todo
+    id: end_vote
+    title: End vote
+    description: At the end of the voting deadline, count the votes and send RESULT message to the mailing list.
+    depends: initiate_vote
+    vars: {}
+    user_input:
+    - !UserInput
+      prompt: Number of binding +1 votes (PMC members)
+      name: plus_binding
+    - !UserInput
+      prompt: Number of other +1 votes
+      name: plus_other
+    - !UserInput
+      prompt: Number of 0 votes
+      name: zero
+    - !UserInput
+      prompt: Number of -1 votes
+      name: minus
+    links:
+    - https://www.apache.org/foundation/voting.html
+- !TodoGroup
+  id: publish
+  title: Publishing to the ASF Mirrors
+  description: Once the vote has passed, the release may be published to the ASF Mirrors and to Maven Central.
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: tag_release
+    title: Tag the release
+    description: Tag the release from the same revision from which the passing release candidate's was built
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: This will tag the release in git
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git tag -a releases/lucene-solr/5.5.0 -m "Lucene/Solr 5.5.0 release" 2a228b3920a07f930f7afb6a42d0d20e184a943c
+        logfile: git_tag.log
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: git push origin releases/lucene-solr/5.5.0
+        logfile: git_push_tag.log
+        vars: {}
+        tee: true
+        stdout: false
+  - !Todo
+    id: rm_staged_mvn
+    title: Delete mvn artifacts from staging repo
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: This will remove only maven artifacts
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: svn rm -m "delete the lucene maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene/maven
+        logfile: svn_rm_mvn_lucene.log
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: svn rm -m "delete the solr maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../solr/maven
+        logfile: svn_rm_mvn_solr.log
+        vars: {}
+        tee: true
+        stdout: false
+  - !Todo
+    id: mv_to_release
+    title: Move release artifacts to release repo
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: This will move the new release artifacts from staging repo to the release repo
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: svn move -m "Move Lucene RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene https://dist.apache.org/repos/dist/release/lucene/java/5.1.0
+        logfile: svn_mv_lucene.log
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: svn move -m "Move Solr RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../solr https://dist.apache.org/repos/dist/release/lucene/solr/5.1.0
+        logfile: svn_mv_solr.log
+        vars: {}
+        tee: true
+        stdout: false
+    post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
+  - !Todo
+    id: rm_staging
+    title: Clean up folder on the staging repo
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: This will clean up the containing folder left in the staging repo
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: svn rm -m "Clean up the RC folder" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev...
+        logfile: svn_rm_containing.log
+        vars: {}
+        tee: true
+        stdout: false
+  - !Todo
+    id: publish_maven
+    title: Publish maven artifacts
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../lucene/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2
+        logfile: publish_lucene_maven.log
+        vars: {}
+        tee: true
+        stdout: false
+      - !Command
+        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../solr/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2
+        logfile: publish_solr_maven.log
+        vars: {}
+        tee: true
+        stdout: false
+    post_description: |
+      Once you have transferred all maven artifacts to repository.apache.org,
+      you will need to:
+
+      * Log in there with your ASF credentials
+      * locate the staging repository containing the release that you just uploaded
+      * "close" the staging repository
+      * wait and wait and keep clicking refresh until it allows you to
+      * then "release" the staging repository. This will cause them to sync to
+        Maven Central See links for details
+
+      Maven central should show the release after a short while, but you need to
+      wait 24 hours to give the Apache mirrors a chance to copy the new release.
+    links:
+    - https://wiki.apache.org/lucene-java/PublishMavenArtifacts
+  - !Todo
+    id: check_mirroring
+    title: Check state of mirroring so far
+    description: Mark this as complete once a good spread is confirmed
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run this script to check the number and percentage of mirrors (and Maven Central) that have the release
+      vars: {}
+      enable_execute: true
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: dev-tools/scripts/poll-mirrors.py -version 5.5.0
+        logfile: publish_lucene_maven.log
+        vars: {}
+        tee: true
+        stdout: false
+- !TodoGroup
+  id: website
+  title: Update the website
+  description: description
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: id
+    title: title
+    vars: {}
+- !TodoGroup
+  id: doap
+  title: Update the DOAP file
+  description: description
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: id
+    title: title
+    vars: {}
+- !TodoGroup
+  id: announce
+  title: Announce the release
+  description: description
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: id
+    title: title
+    vars: {}
+- !TodoGroup
+  id: post_release
+  title: Tasks to do after release
+  description: description
+  is_in_rc_loop: false
+  todos:
+  - !Todo
+    id: add_version_bugfix
+    title: Add a new bugfix version on release branch
+    types:
+    - bugfix
+    vars: {}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: 'Do the following on the release branch only:'
+      vars: {}
+      enable_execute: true
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: git checkout branch_7_7
+        vars: {}
+        tee: false
+        stdout: false
+      - !Command
+        cmd: python3 -u /Users/janhoy/git/lucene-solr/dev-tools/scripts/addVersion.py 7.7.2
+        vars: {}
+        tee: false
+        stdout: false
