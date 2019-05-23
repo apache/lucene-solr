@@ -32,7 +32,7 @@ RUN export JAVA_HOME
 RUN useradd -ms /bin/bash lucene
 
 # Define working directory.
-WORKDIR /home/lucene
+WORKDIR /home/lucene/project
 
 RUN chown -R lucene:lucene /home/lucene
 
