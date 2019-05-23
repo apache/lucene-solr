@@ -61,7 +61,7 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
     if (flushIntervalArg != null && !(flushIntervalArg instanceof Integer)) {
       throw new IllegalArgumentException("Expected a required int for param '" + FLUSH_INTERVAL +"'");
     }
-    int flushInterval = flushIntervalArg == null ? 1000 : (Integer) flushIntervalArg;
+    int flushInterval = flushIntervalArg == null ? 5000 : (Integer) flushIntervalArg;
 
     Object maxQueueArgs = args.get(MAX_QUEUE_SIZE);
     if (maxQueueArgs != null && !(maxQueueArgs instanceof Integer)) {
@@ -72,11 +72,13 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
     Configuration.SamplerConfiguration samplerConfig = new Configuration.SamplerConfiguration()
         .withType(ConstSampler.TYPE)
         .withParam(1);
-    Configuration.SenderConfiguration senderConfig = new Configuration.SenderConfiguration()
+
+    Configuration envConfig = Configuration.fromEnv();
+    Configuration.SenderConfiguration senderConfig = envConfig.getReporter().getSenderConfiguration()
         .withAgentHost(host.toString())
         .withAgentPort(port);
 
-    Configuration.ReporterConfiguration reporterConfig = new Configuration.ReporterConfiguration()
+    Configuration.ReporterConfiguration reporterConfig = envConfig.getReporter()
         .withLogSpans(logSpans)
         .withFlushInterval(flushInterval)
         .withMaxQueueSize(maxQueue)
