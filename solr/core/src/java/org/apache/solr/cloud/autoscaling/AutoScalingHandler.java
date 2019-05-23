@@ -29,8 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -102,6 +104,20 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     DEFAULT_ACTIONS.add(map);
   }
 
+  Optional<BiConsumer<SolrQueryResponse, AutoScalingConfig>> getSubpathExecutor(List<String> path) {
+    if (path.size() == 3) {
+      if (DIAGNOSTICS.equals(path.get(2))) {
+        return Optional.of(this::handleDiagnostics);
+      } else if (SUGGESTIONS.equals(path.get(2))) {
+        return Optional.of(this::handleSuggestions);
+      } else {
+        return Optional.empty();
+      }
+
+    }
+    return Optional.empty();
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {
@@ -111,8 +127,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       if ("GET".equals(httpMethod)) {
         String path = (String) req.getContext().get("path");
         if (path == null) path = "/cluster/autoscaling";
-        List<String> parts = StrUtils.splitSmart(path, '/');
-        if (parts.get(0).isEmpty()) parts.remove(0);
+        List<String> parts = StrUtils.splitSmart(path, '/', true);
 
         if (parts.size() < 2 || parts.size() > 3) {
           // invalid
@@ -129,12 +144,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
               return this;
             }
           });
-        } else if (parts.size() == 3) {
-          if (DIAGNOSTICS.equals(parts.get(2))) {
-            handleDiagnostics(rsp, autoScalingConf);
-          } else if (SUGGESTIONS.equals(parts.get(2))) {
-            handleSuggestions(rsp, autoScalingConf);
-          }
+        } else {
+          getSubpathExecutor(parts).ifPresent(it -> it.accept(rsp, autoScalingConf));
         }
       } else {
         if (req.getContentStreams() == null) {
@@ -142,20 +153,22 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         }
         String path = (String) req.getContext().get("path");
         if (path != null) {
-          List<String> parts = StrUtils.splitSmart(path, '/');
-          if (parts.get(0).isEmpty()) parts.remove(0);
-          if(parts.size() == 3) {
-            Map map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
-            if (SUGGESTIONS.equals(parts.get(2))) {
-              handleSuggestions(rsp, new AutoScalingConfig(map));
-              return;
-            } else if (DIAGNOSTICS.equals(parts.get(2))) {
-              handleDiagnostics(rsp, new AutoScalingConfig(map));
-              return;
-            }
-          }
-        }
+          List<String> parts = StrUtils.splitSmart(path, '/', true);
+          if(parts.size() == 3){
+            getSubpathExecutor(parts).ifPresent(it -> {
+              Map map = null;
+              try {
+                map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
+              } catch (IOException e1) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error parsing payload", e1);
+              }
+              it.accept(rsp, new AutoScalingConfig(map));
+            });
 
+            return;
+          }
+
+        }
         List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues(), singletonCommands);
         if (ops == null) {
           // errors have already been added to the response so there's nothing left to do
@@ -163,6 +176,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         }
         processOps(req, rsp, ops);
       }
+
     } catch (Exception e) {
       rsp.getValues().add("result", "failure");
       throw e;
@@ -172,7 +186,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
 
-  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
+  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) {
     rsp.getValues().add("suggestions",
         PolicyHelper.getSuggestions(autoScalingConf, cloudManager));
   }
@@ -254,7 +268,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig.withProperties(configProps);
   }
 
-  private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
+  private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) {
     Policy policy = autoScalingConf.getPolicy();
     rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, cloudManager));
   }
@@ -689,8 +703,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     switch (request.getHttpMethod()) {
       case "GET":
         return Name.AUTOSCALING_READ_PERM;
-      case "POST":
-        return Name.AUTOSCALING_WRITE_PERM;
+      case "POST": {
+        return StrUtils.splitSmart(request.getResource(), '/', true).size() == 3 ?
+            Name.AUTOSCALING_READ_PERM :
+            Name.AUTOSCALING_WRITE_PERM;
+      }
       default:
         return null;
     }

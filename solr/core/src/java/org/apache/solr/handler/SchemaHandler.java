@@ -159,8 +159,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           break;
         }
         default: {
-          List<String> parts = StrUtils.splitSmart(path, '/');
-          if (parts.get(0).isEmpty()) parts.remove(0);
+          List<String> parts = StrUtils.splitSmart(path, '/', true);
           if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
             String realName = parts.get(1);
             String fieldName = IndexSchema.nameMapping.get(realName);
@@ -216,8 +215,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
-    List<String> parts = StrUtils.splitSmart(subPath, '/');
-    if (parts.get(0).isEmpty()) parts.remove(0);
+    List<String> parts = StrUtils.splitSmart(subPath, '/', true);
     String prefix =  parts.get(0);
     if(subPaths.contains(prefix)) return this;
 
