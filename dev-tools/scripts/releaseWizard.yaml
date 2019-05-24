@@ -356,6 +356,7 @@ groups:
     types:
     - major
     - minor
+    depends: clean_git_checkout
     vars:
       next_version: "{{ release_version_major }}.{{ release_version_minor + 1 }}.0"
     commands: !Commands
@@ -420,7 +421,7 @@ groups:
         while the branch feature freeze is in effect, think twice: can't the
         addition wait a couple more days? Merges of bug fixes into the branch
         may become more difficult.
-      * Only Jira issues with Fix version %s and priority "Blocker" will delay
+      * Only Jira issues with Fix version {{ release_version_major }}.{{ release_version_minor }} and priority "Blocker" will delay
         a release candidate build.
       ----
     types:
@@ -457,8 +458,7 @@ groups:
         a release candidate build.
       ----
     types:
-    - major
-    - minor
+    - bugfix
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -480,9 +480,9 @@ groups:
       Go to the JIRA "Manage Versions" Administration pages and add the new version:
 
       {% if release_type == 'major' -%}
-      # Change name of version `master ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
+      . Change name of version `master ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
       {%- endif %}
-      # Create a new (unreleased) version `{{ get_next_version }}`
+      . Create a new (unreleased) version `{{ get_next_version }}`
 
       This needs to be done both for Lucene and Solr JIRAs, see links.
     types:
@@ -506,6 +506,7 @@ groups:
   - !Todo
     id: run_tests
     title: Run javadoc tests
+    depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Run some tests not ran by `buildAndPublishRelease.py`
@@ -529,7 +530,8 @@ groups:
         It is recommended to clean your Ivy cache before building the artifacts.
         This ensures that all Ivy dependencies are freshly downloaded,
         so we emulate a user that never used the Lucene build system before.
-        One way is to rename the ivy cache folder before building.
+        This script will help you rename the folder so you can get it back later
+        if you wish.
       commands:
       - !Command
         cmd: mv cache cache_bak
@@ -537,7 +539,9 @@ groups:
   - !Todo
     id: build_rc
     title: Build the release candidate
-    depends: gpg
+    depends: 
+    - gpg
+    - run_tests
     vars:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'      
@@ -549,10 +553,10 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |-
         In this step we will build the RC using python script `buildAndPushRelease.py`
-        We have tried to compile the correct command below, and you need to execute
-        it in another Terminal window yourself.
+        We have tried to compile the correct command below, and you can choose whether
+        to let this script kick it off or execute them in another Terminal window yourself
 
-        Note that the script will take a long time. To follow the detailed build
+        Note that the build will take a long time. To follow the detailed build
         log, tail the log in another Terminal:
 
         `tail -f {{ logfile | default("<logfile>") }}`
@@ -610,17 +614,37 @@ groups:
         cmd: svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}
         logfile: import_svn.log
         tee: true
+  - !Todo
+    id: smoke_tester_staged
+    title: Run the smoke tester on the staged artifacts
+    depends: import_svn
+    vars:
+      dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
+      tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
+      smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
+      local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Here we'll smoke test the release again against the actually staged artifacts.
+      remove_files:
+      - '{{ tmp_dir }}'
+      commands:
+      - !Command
+        cmd: python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" {{ dist_url }}
+        logfile: smoketest_staged.log
 - !TodoGroup
   id: voting
   title: Hold the vote and sum up the results
-  description: description
+  description: These are the steps necessary for the voting process. Read up on the link first!
   is_in_rc_loop: true
   todos:
   - !Todo
     id: initiate_vote
     title: Initiate the vote
+    depends: smoke_tester_staged
     description: |
-      Initiate the vote on the dev mailing list
+      If the smoke test passes against the staged artifacts, send an email to the dev mailing list announcing the release candidate.
 
       .Mail template
       ----
@@ -656,6 +680,7 @@ groups:
   - !Todo
     id: end_vote
     title: End vote
+    depends: initiate_vote
     description: |
       At the end of the voting deadline, count the votes and send RESULT message to the mailing list.
 
@@ -684,7 +709,6 @@ groups:
       {{ end_vote_result(3,1,0,4) }}
 
       {{ end_vote_result(2,9,0,0) }}
-    depends: initiate_vote
     user_input:
     - !UserInput
       type: int

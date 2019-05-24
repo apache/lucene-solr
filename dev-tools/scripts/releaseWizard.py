@@ -78,7 +78,7 @@ def expand_jinja(text, vars=None):
         'git_checkout_folder': state.get_git_checkout_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
-        'dist_file_path': "{{ [rc_folder, 'dist'] | path_join }}",
+        'dist_file_path': state.get_dist_folder(),
         'rc_folder': state.get_rc_folder(),
         'base_branch': state.get_base_branch_name(),
         'release_branch': state.release_branch,
@@ -416,6 +416,13 @@ class ReleaseState:
 
     def get_rc_folder(self):
         folder = os.path.join(self.get_release_folder(), "RC%d" % self.rc_number)
+        if not os.path.exists(folder):
+            print("Creating folder %s" % folder)
+            os.makedirs(folder)
+        return folder
+
+    def get_dist_folder(self):
+        folder = os.path.join(self.get_rc_folder(), "dist")
         if not os.path.exists(folder):
             print("Creating folder %s" % folder)
             os.makedirs(folder)
