@@ -179,7 +179,7 @@ ant.fileScanner{
       }
     }
     // make sure that SPI names of all tokenizers/charfilters/tokenfilters are documented
-    if (!f.name.contains("Test") && !f.name.contains("Mock") && !text.contains("abstract") &&
+    if (!f.name.contains("Test") && !f.name.contains("Mock") && !text.contains("abstract class") &&
         !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
         (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
             f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
