@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class PortugueseLightStemFilterFactory extends TokenFilterFactory {
 
-  public static final String NAME = "portugueseMinimalStem";
+  public static final String NAME = "portugueseLightStem";
   
   /** Creates a new PortugueseLightStemFilterFactory */
   public PortugueseLightStemFilterFactory(Map<String,String> args) {

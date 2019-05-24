@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class SoraniNormalizationFilterFactory extends TokenFilterFactory {
 
-  public static final String NAME = "soraniStem";
+  public static final String NAME = "soraniNormalization";
 
   /** Creates a new SoraniNormalizationFilterFactory */
   public SoraniNormalizationFilterFactory(Map<String,String> args) {

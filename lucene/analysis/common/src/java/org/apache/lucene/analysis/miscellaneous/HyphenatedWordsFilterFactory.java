@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class HyphenatedWordsFilterFactory extends TokenFilterFactory {
 
-  public static final String NAME = "hyphenationCompoundWord";
+  public static final String NAME = "hyphenatedWords";
   
   /** Creates a new HyphenatedWordsFilterFactory */
   public HyphenatedWordsFilterFactory(Map<String,String> args) {
