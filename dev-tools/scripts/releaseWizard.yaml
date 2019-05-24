@@ -298,8 +298,8 @@ groups:
         tee: true
   - !Todo
     id: create_minor_branch
-    title: Create a minor release branch off the stable branch
-    description: In our case we'll create {{ release_branch }}
+    title: Create a new minor branch off the stable branch
+    description: In our case we'll create {{ minor_branch }}
     types:
     - major
     - minor
@@ -331,11 +331,43 @@ groups:
     types:
     - major
     depends: clean_git_checkout
+    vars:
+      next_version: "{{ release_version_major + 1 }}.0.0"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add the new major version {{ next_version }} to the master branch
+      commands:
+      - !Command
+        cmd: git checkout master
+        tee: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
+        tee: true
+    post_description: |
+      Make sure to follow the manual instructions printed by the script:
+
+      * Move backcompat oldIndexes to unsupportedIndexes in TestBackwardsCompatibility
+      * Update IndexFormatTooOldException throw cases
+
+      There may be other steps needed as well
   - !Todo
     id: add_version_minor
     title: Add a new minor version on stable branch
     types:
+    - major
     - minor
+    vars:
+      next_version: "{{ release_version_major }}.{{ release_version_minor + 1 }}.0"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add the new major version {{ next_version }} to the stable branch
+      commands:
+      - !Command
+        cmd: git checkout {{ stable_branch }}
+        tee: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
+        tee: true
   - !Todo
     id: sanity_check_doap
     title: Sanity check the DOAP files
