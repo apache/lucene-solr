@@ -59,7 +59,7 @@ import org.apache.lucene.util.automaton.RegExp;
  */
 public class SimplePatternTokenizerFactory extends TokenizerFactory {
 
-  public static final String NAME = "simplePatternSplit";
+  public static final String NAME = "simplePattern";
 
   public static final String PATTERN = "pattern";
   private final Automaton dfa;
