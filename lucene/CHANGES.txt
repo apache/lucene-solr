@@ -18,6 +18,10 @@ API Changes
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
   removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
 
+* LUCENE-8805: StoredFieldVisitor#stringField now takes a String rather than a
+  byte[] that stores the UTF-8 bytes of the stored string.
+  (Namgyu Kim via Adrien Grand)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -35,6 +39,12 @@ Other
 
 ======================= Lucene 8.2.0 =======================
 
+New Features
+
+* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a 
+  feature. This is exposed via the factory method FeatureField#newFeatureSort.
+  (Colin Goodheart-Smithe via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
@@ -48,6 +58,13 @@ Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
   as opposed to eliminating them during scoring construction. (Atri Sharma via Jim Ferenczi)
+
+* LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
+  executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
+
+* LUCENE-8757: When provided with an ExecutorService to run queries across
+  multiple threads, IndexSearcher now groups small segments together, up to
+  250k docs per slice. (Atri Sharma via Adrien Grand)
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)

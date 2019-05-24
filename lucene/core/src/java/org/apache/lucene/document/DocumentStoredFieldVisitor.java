@@ -17,8 +17,8 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
@@ -67,12 +67,12 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   }
 
   @Override
-  public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
+  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
     final FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setStoreTermVectors(fieldInfo.hasVectors());
     ft.setOmitNorms(fieldInfo.omitsNorms());
     ft.setIndexOptions(fieldInfo.getIndexOptions());
-    doc.add(new StoredField(fieldInfo.name, new String(value, StandardCharsets.UTF_8), ft));
+    doc.add(new StoredField(fieldInfo.name, Objects.requireNonNull(value, "String value should not be null"), ft));
   }
 
   @Override

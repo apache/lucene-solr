@@ -345,7 +345,7 @@
         if (!(url =~ /\/$/)) url += '/';
       } else {
         version = version.replace('.', '_');
-        url = 'http://lucene.apache.org/core/' + version + '/';
+        url = 'https://lucene.apache.org/core/' + version + '/';
       }
       task.log('Using the following URL to refer to Lucene Javadocs: ' + url);
       properties['lucene.javadoc.url'] = url;
@@ -360,7 +360,7 @@
         task.log('Disabled Solr Javadocs online URL for packaging (custom build / SNAPSHOT version).');
       } else {
         version = version.replace('.', '_');
-        url = 'http://lucene.apache.org/solr/' + version + '/';
+        url = 'https://lucene.apache.org/solr/' + version + '/';
         task.log('Using the following URL to refer to Solr Javadocs: ' + url);
       }
       properties['solr.javadoc.url'] = url;

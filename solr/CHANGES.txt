@@ -93,6 +93,8 @@ New Features
 * SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
   unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
 
+* SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
+
 Bug Fixes
 ----------------------
 
