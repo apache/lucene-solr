@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr;
+package org.apache.solr.jaeger;
 
 import io.jaegertracing.Configuration;
 import io.jaegertracing.samplers.ConstSampler;
@@ -73,13 +73,12 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
         .withType(ConstSampler.TYPE)
         .withParam(1);
 
-    Configuration envConfig = Configuration.fromEnv();
-    Configuration.SenderConfiguration senderConfig = envConfig.getReporter().getSenderConfiguration()
+    Configuration.ReporterConfiguration reporterConfig = Configuration.ReporterConfiguration.fromEnv();
+    Configuration.SenderConfiguration senderConfig = reporterConfig.getSenderConfiguration()
         .withAgentHost(host.toString())
         .withAgentPort(port);
 
-    Configuration.ReporterConfiguration reporterConfig = envConfig.getReporter()
-        .withLogSpans(logSpans)
+    reporterConfig.withLogSpans(logSpans)
         .withFlushInterval(flushInterval)
         .withMaxQueueSize(maxQueue)
         .withSender(senderConfig);

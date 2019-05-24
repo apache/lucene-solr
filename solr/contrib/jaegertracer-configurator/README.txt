@@ -8,7 +8,7 @@ Apache Solr Jaeger Tracer Configurator (solr-jaeger-tracer) provides a way for y
 Note that all library of solr-jaeger-tracer must be included in the classpath of all nodes then Jaeger tracer can be setup in `solr.xml` like this:
 
 ```
-<tracerConfig name="tracerConfig" class="org.apache.solr.JaegerTracerConfigurator">
+<tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
     <double name="sampleRate">100.0</double>
     <str name="agentHost">localhost</str>
     <int name="agentPort">5775</int>

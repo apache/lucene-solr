@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.solr;
+package org.apache.solr.jaeger;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.junit.Test;
 
-import static org.apache.solr.JaegerTracerConfigurator.AGENT_HOST;
-import static org.apache.solr.JaegerTracerConfigurator.AGENT_PORT;
-import static org.apache.solr.JaegerTracerConfigurator.FLUSH_INTERVAL;
-import static org.apache.solr.JaegerTracerConfigurator.LOG_SPANS;
-import static org.apache.solr.JaegerTracerConfigurator.MAX_QUEUE_SIZE;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_HOST;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_PORT;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.FLUSH_INTERVAL;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.LOG_SPANS;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.MAX_QUEUE_SIZE;
 
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
