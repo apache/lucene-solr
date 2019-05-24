@@ -45,7 +45,6 @@
     <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile"/>
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
     <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
-    <dependency org="io.sgr" name="s2-geometry-library-java" rev="${/io.sgr/s2-geometry-library-java}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="compile"/>
     <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}" conf="compile"/>
@@ -138,6 +137,16 @@
 
     <!-- JWT Auth plugin -->
     <dependency org="org.bitbucket.b_c" name="jose4j" rev="${/org.bitbucket.b_c/jose4j}" conf="compile"/>
+
+    <!-- added for S3 blob store usage -->
+    <dependency org="com.amazonaws" name="aws-java-sdk" rev="${/com.amazonaws/aws-java-sdk}" conf="compile"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="${/com.amazonaws/aws-java-sdk-core}" conf="compile"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="compile"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-kms" rev="${/com.amazonaws/aws-java-sdk-kms}" conf="compile"/>
+    <dependency org="com.amazonaws" name="jmespath-java" rev="${/com.amazonaws/jmespath-java}" conf="compile"/>
+    <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-cbor" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-cbor}" conf="compile"/>
+    <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
+    <dependency org="com.google.code.gson" name="gson" rev="${/com.google/gson}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
