@@ -205,8 +205,6 @@ def maybe_remove_rc_from_svn():
                  }
              )],
                  enable_execute=True, confirm_each_command=False).run()
-    else:
-        print("import_svn not done: %s" % todo)
 
 
 # To be able to hide fields when dumping Yaml
@@ -606,7 +604,7 @@ class Todo(SecretYamlObject):
         return True
 
     def is_done(self):
-        return self.state['done'] is True
+        return 'done' in self.state and self.state['done'] is True
 
     def get_title(self):
         prefix = ""
@@ -1233,7 +1231,7 @@ class Commands(SecretYamlObject):
                                 success = False
                                 break
                         else:
-                            if cmd.should_fail:
+                            if cmd.should_fail and not dry_run:
                                 print("Expected command to fail, but it succeeded.")
                                 success = False
                                 break
