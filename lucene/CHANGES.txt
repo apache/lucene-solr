@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 8.2.0 =======================
 
+New Features
+
+* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a 
+  feature. This is exposed via the factory method FeatureField#newFeatureSort.
+  (Colin Goodheart-Smithe via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
