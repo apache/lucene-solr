@@ -30,7 +30,7 @@ import org.apache.lucene.util.Version;
 public class TestAnalysisSPILoader extends LuceneTestCase {
   
   private Map<String,String> versionArgOnly() {
-    return new HashMap<>() {{
+    return new HashMap<String, String>() {{
       put("luceneMatchVersion", Version.LATEST.toString());
     }};
   }
