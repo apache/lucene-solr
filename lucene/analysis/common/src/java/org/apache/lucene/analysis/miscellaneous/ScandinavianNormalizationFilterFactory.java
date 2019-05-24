@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ScandinavianNormalizationFilterFactory extends TokenFilterFactory {
 
-  public static final String NAME = "scandinavianFolding";
+  public static final String NAME = "scandinavianNormalization";
 
   public ScandinavianNormalizationFilterFactory(Map<String, String> args) {
     super(args);
