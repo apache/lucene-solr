@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ServiceConfigurationError;
+import java.util.TreeMap;
 
 import org.apache.lucene.util.SPIClassIterator;
 
@@ -84,7 +85,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
         if (Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
             field.getType().equals(String.class) &&
             Objects.equals(field.getDeclaringClass(), service)) {
-          name = ((String)field.get(null)).toLowerCase(Locale.ROOT);
+          name = (String)field.get(null);
         }
       } catch (NoSuchFieldException | IllegalAccessException e) {
         cause = e;
@@ -114,7 +115,9 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   }
   
   public Class<? extends S> lookupClass(String name) {
-    final Class<? extends S> service = services.get(name.toLowerCase(Locale.ROOT));
+    final Map<String,Class<? extends S>> services = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    services.putAll(this.services);
+    final Class<? extends S> service = services.get(name);
     if (service != null) {
       return service;
     } else {
