@@ -170,7 +170,7 @@ groups:
     description: |
       You will need these tools:
 
-      * Python v3.4 or later
+      * Python v3.4 or later, with dependencies listed in requirements.txt
       * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
       * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
       * gpg
@@ -239,7 +239,7 @@ groups:
     title: Do a clean git clone to do the release from.
     description: This eliminates the risk of a dirty checkout
     commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
+      root_folder: '{{ release_folder }}'
       commands_text: Run these commands to make a fresh clone in the release folder
       remove_files:
       - '{{ git_checkout_folder }}'
@@ -254,13 +254,14 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |-
-        Fix any problems that are found by pushing fixes to the release branch
+        From the base branch {{ base_branch }} we'll run precommit tests.
+        Fix any problems that are found by pushing fixes to the branch
         and then running this task again. This task will always do `git pull`
         before `ant precommit` so it will catch changes to your branch :)
       confirm_each_command: false
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }}
+        cmd: git checkout {{ base_branch }}
         stdout: true
       - !Command
         cmd: git pull
@@ -269,7 +270,8 @@ groups:
         cmd: ant clean precommit
   - !Todo
     id: create_stable_branch
-    title: Create a new stable branch, i.e. branch_<major>x
+    title: Create a new stable branch, off from master
+    description: In our case we'll create {{ stable_branch }}
     types:
     - major
     depends: clean_git_checkout
@@ -284,6 +286,11 @@ groups:
         cmd: git update
         tee: true
       - !Command
+        cmd: git ls-remote --exit-code --heads origin {{ stable_branch }}
+        stdout: true
+        should_fail: true
+        comment: This command should fail with exit code 2 to verify branch {{ stable_branch }} does not already exist
+      - !Command
         cmd: git checkout -b {{ stable_branch }}
         tee: true
       - !Command
@@ -291,8 +298,10 @@ groups:
         tee: true
   - !Todo
     id: create_minor_branch
-    title: Create a minor release branch off the current stable branch
+    title: Create a minor release branch off the stable branch
+    description: In our case we'll create {{ release_branch }}
     types:
+    - major
     - minor
     depends: clean_git_checkout
     commands: !Commands
@@ -306,6 +315,11 @@ groups:
         cmd: git update
         tee: true
       - !Command
+        cmd: git ls-remote --exit-code --heads origin {{ minor_branch }}
+        stdout: true
+        should_fail: true
+        comment: This command should fail with exit code 2 to verify branch {{ minor_branch }} does not already exist
+      - !Command
         cmd: git checkout -b {{ minor_branch }}
         tee: true
       - !Command
@@ -316,6 +330,7 @@ groups:
     title: Add a new major version on master branch
     types:
     - major
+    depends: clean_git_checkout
   - !Todo
     id: add_version_minor
     title: Add a new minor version on stable branch
@@ -434,11 +449,8 @@ groups:
 
       {% if release_type == 'major' -%}
       # Change name of version `master ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
-      # Create a new (unreleased) version `{{ state.get_next_version() }}`
       {%- endif %}
-      {% if release_type == 'minor' -%}
-      # Create a new (unreleased) version `{{ state.get_next_version() }}`
-      {%- endif %}
+      # Create a new (unreleased) version `{{ get_next_version }}`
 
       This needs to be done both for Lucene and Solr JIRAs, see links.
     types:
@@ -496,9 +508,8 @@ groups:
     depends: gpg
     vars:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
-      builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'
-      dist_path: '{{ [rc_folder, ''dist''] | path_join }}'
-      git_rev: fced8ab89e98c565166059e5052d3bc700468199
+      builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'      
+      git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
       local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     persist_vars:
     - git_rev
@@ -529,7 +540,7 @@ groups:
         cmd: git pull
         tee: true
       - !Command
-        cmd: python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}
+        cmd: python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_file_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}
         logfile: build_rc.log
         tee: true
   - !Todo
@@ -538,7 +549,7 @@ groups:
     depends: build_rc
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
-      dist_path: '{{ [rc_folder, ''dist'', dist_folder] | path_join }}'
+      dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
       smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
       local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -557,7 +568,7 @@ groups:
     depends: smoke_tester
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
-      dist_path: '{{ [rc_folder, ''dist'', dist_folder] | path_join }}'
+      dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -701,31 +712,39 @@ groups:
   - !Todo
     id: rm_staged_mvn
     title: Delete mvn artifacts from staging repo
+    vars:
+      dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
+      dist_stage_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: This will remove only maven artifacts
       commands:
       - !Command
-        cmd: svn rm -m "delete the lucene maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}/lucene/maven
+        cmd: svn rm -m "delete the lucene maven artifacts" {{ dist_stage_url }}/lucene/maven
         logfile: svn_rm_mvn_lucene.log
         tee: true
       - !Command
-        cmd: svn rm -m "delete the solr maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}/solr/maven
+        cmd: svn rm -m "delete the solr maven artifacts" {{ dist_stage_url }}/solr/maven
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
     id: mv_to_release
     title: Move release artifacts to release repo
+    vars:
+      dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_stage_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
+      dist_release_url: https://dist.apache.org/repos/dist/release/lucene
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: This will move the new release artifacts from staging repo to the release repo
       commands:
       - !Command
-        cmd: svn move -m "Move Lucene RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene https://dist.apache.org/repos/dist/release/lucene/java/5.1.0
+        cmd: svn move -m "Move Lucene {{ release_version }} RC{{ rc_number }} to release repo" {{ dist_stage_url }}/lucene {{ dist_release_url }}/java/{{ release_version }}
         logfile: svn_mv_lucene.log
         tee: true
       - !Command
-        cmd: svn move -m "Move Solr RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../solr https://dist.apache.org/repos/dist/release/lucene/solr/5.1.0
+        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo" {{ dist_stage_url }}/solr {{ dist_release_url }}/solr/{{ release_version }}
         logfile: svn_mv_solr.log
         tee: true
     post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
@@ -737,22 +756,24 @@ groups:
       commands_text: This will clean up the containing folder left in the staging repo
       commands:
       - !Command
-        cmd: svn rm -m "Clean up the RC folder" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev...
+        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: svn_rm_containing.log
         tee: true
   - !Todo
     id: publish_maven
     title: Publish maven artifacts
+    vars:
+      dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
       - !Command
-        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../lucene/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2
+        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }} -Dm2.repository.id=apache.releases.https -Dm2.repository.url={{ m2_repository_url }}
         logfile: publish_lucene_maven.log
         tee: true
       - !Command
-        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../solr/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2
+        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }} -Dm2.repository.id=apache.releases.https -Dm2.repository.url={{ m2_repository_url }}
         logfile: publish_solr_maven.log
         tee: true
     post_description: |
@@ -779,7 +800,7 @@ groups:
       commands_text: Run this script to check the number and percentage of mirrors (and Maven Central) that have the release
       commands:
       - !Command
-        cmd: dev-tools/scripts/poll-mirrors.py -version 5.5.0
+        cmd: dev-tools/scripts/poll-mirrors.py -version {{ release_version }}
         logfile: publish_lucene_maven.log
         tee: true
 - !TodoGroup
@@ -824,4 +845,4 @@ groups:
       - !Command
         cmd: git checkout branch_7_7
       - !Command
-        cmd: python3 -u /Users/janhoy/git/lucene-solr/dev-tools/scripts/addVersion.py 7.7.2
+        cmd: python3 -u /Users/janhoy/git/lucene-solr/dev-tools/scripts/addVersion.py {{ get_next_version }}

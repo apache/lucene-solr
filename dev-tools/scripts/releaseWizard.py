@@ -22,8 +22,18 @@
 # Requirements:
 #   Install requirements with this command:
 #   pip3 install -r requirements.txt
+#
+# Usage:
+#   releaseWizard.py [-h] [--dry-run] [--root PATH]
+#
+#   optional arguments:
+#   -h, --help   show this help message and exit
+#   --dry-run    Do not execute any commands, but echo them instead. Display
+#   extra debug info
+#   --root PATH  Specify different root folder than ~/.lucene-releases
 
 import os
+import argparse
 import platform
 import sys
 import json
@@ -53,7 +63,7 @@ dry_run = False
 
 major_minor = ['major', 'minor']
 script_path = os.path.dirname(os.path.realpath(__file__))
-
+os.chdir(script_path)
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -66,7 +76,11 @@ def expand_jinja(text, vars=None):
         'script_branch': state.script_branch,
         'release_folder': state.get_release_folder(),
         'git_checkout_folder': state.get_git_checkout_folder(),
+        'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
+        'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
+        'dist_file_path': "{{ [rc_folder, 'dist'] | path_join }}",
         'rc_folder': state.get_rc_folder(),
+        'base_branch': state.get_base_branch_name(),
         'release_branch': state.release_branch,
         'stable_branch': state.get_stable_branch_name(),
         'minor_branch': state.get_minor_branch_name(),
@@ -76,6 +90,8 @@ def expand_jinja(text, vars=None):
         'release_version_bugfix': state.release_version_bugfix,
         'state': state,
         'epoch': unix_time_millis(datetime.utcnow()),
+        'get_next_version': state.get_next_version(),
+        'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date())
@@ -122,7 +138,6 @@ def getScriptVersion():
 
 
 def check_prerequisites():
-    print("Checking prerequisites...")
     if sys.version_info < (3, 4):
         sys.exit("Script requires Python v3.4 or later")
     try:
@@ -151,7 +166,6 @@ def unix_time_millis(dt):
 
 
 def bootstrap_todos(state):
-    print("Loading objects from yaml on disk")
     file = open(os.path.join(script_path, "releaseWizard.yaml"), "r")
     todo_list = yaml.load(file, Loader=yaml.Loader).get('groups')
     # Establish links from commands to to_do for finding todo vars
@@ -171,6 +185,7 @@ def bootstrap_todos(state):
                         print("    Command %s" % cmd.cmd)
                     cmd.todo_id = td.id
 
+    print("Loaded TODO definitions from releaseWizard.yaml")
     return todo_list
 
 
@@ -186,7 +201,7 @@ def maybe_remove_rc_from_svn():
                  tee=True,
                  vars={
                      'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
-                     'dist_url': "https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder }}"
+                     'dist_url': "{{ dist_url_base }}/{{ dist_folder }}"
                  }
              )],
                  enable_execute=True, confirm_each_command=False).run()
@@ -246,15 +261,22 @@ class ReleaseState:
         self.release_version_major = v.major
         self.release_version_minor = v.minor
         self.release_version_bugfix = v.bugfix
+        self.release_branch = self.get_minor_branch_name()
         if v.is_major_release():
             self.release_type = 'major'
-            self.release_branch = "master"
         elif v.is_minor_release():
             self.release_type = 'minor'
-            self.release_branch = self.get_stable_branch_name()
         else:
             self.release_type = 'bugfix'
-            self.release_branch = self.get_minor_branch_name()
+
+    def get_base_branch_name(self):
+        v = Version.parse(self.release_version)
+        if v.is_major_release():
+            return 'master'
+        elif v.is_minor_release():
+            return self.get_stable_branch_name()
+        else:
+            return self.get_minor_branch_name()
 
     def clear_rc(self):
         if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
@@ -304,11 +326,6 @@ class ReleaseState:
         self.rc_number = dict['rc_number']
         self.script_branch = dict['script_branch']
         self.previous_rcs = copy.deepcopy(dict['previous_rcs'])
-        try:
-            self.todo_groups = bootstrap_todos(self)
-            self.init_todos()
-        except Exception as e:
-            print("ERROR: %s" % e)
         for todo_id in dict['todos']:
             if todo_id in self.todos:
                 t = self.todos[todo_id]
@@ -320,26 +337,26 @@ class ReleaseState:
     def load(self):
         latest = None
 
+        if not self.todo_groups:
+            self.todo_groups = bootstrap_todos(self)
+            self.init_todos()
         if not os.path.exists(self.config_path):
             print("Creating folder %s" % self.config_path)
             os.makedirs(self.config_path)
-            self.todo_groups = bootstrap_todos(self)
-            self.init_todos()
-        else:
-            if os.path.exists(os.path.join(self.config_path, 'latest.json')):
-                with open(os.path.join(self.config_path, 'latest.json'), 'r') as fp:
-                    latest = json.load(fp)['version']
-                    print("Found an already started release version %s in %s" % (latest, os.path.join(self.config_path, 'latest.json')))
+        if os.path.exists(os.path.join(self.config_path, 'latest.json')):
+            with open(os.path.join(self.config_path, 'latest.json'), 'r') as fp:
+                latest = json.load(fp)['version']
+                print("Continuing an in-progress release version %s in %s" % (latest, os.path.join(self.config_path, 'latest.json')))
 
-            if latest and os.path.exists(os.path.join(self.config_path, latest, 'state.json')):
-                with open(os.path.join(self.config_path, latest, 'state.json'), 'r') as fp:
-                    try:
-                        dict = json.load(fp)
-                        self.restore_from_dict(dict)
-                    except Exception as e:
-                        print("Failed to load state from %s: %s" % (os.path.join(self.config_path, latest, 'state.json'), e))
-        print("Loaded state from disk")
-        # print(" -- %s" % self.get_todo_states())
+        if latest and os.path.exists(os.path.join(self.config_path, latest, 'state.json')):
+            state_file = os.path.join(self.config_path, latest, 'state.json')
+            with open(state_file, 'r') as fp:
+                try:
+                    dict = json.load(fp)
+                    self.restore_from_dict(dict)
+                    print("Loaded state from %s" % state_file)
+                except Exception as e:
+                    print("Failed to load state from %s: %s" % (state_file, e))
 
     def save(self):
         print("Saving")
@@ -365,8 +382,11 @@ class ReleaseState:
     def get_rc_number(self):
         return self.rc_number
 
-    def get_git_rev(self):
-        return run("git rev-parse HEAD", cwd=self.get_git_checkout_folder()).strip()
+    def get_current_git_rev(self):
+        try:
+            return run("git rev-parse HEAD", cwd=self.get_git_checkout_folder()).strip()
+        except:
+            return "<git-rev>"
 
     def get_group_by_id(self, id):
         lst = list(filter(lambda x: x.id == id, self.todo_groups))
@@ -592,7 +612,7 @@ class Todo(SecretYamlObject):
         prefix = ""
         if self.is_done():
             prefix = "✓ "
-        return "%s%s" % (prefix, self.title)
+        return expand_jinja("%s%s" % (prefix, self.title), self.get_vars_and_state())
 
     def display_and_confirm(self):
         try:
@@ -885,7 +905,20 @@ def dump_yaml():
 
 def load_templates():
     global templates
-    templates = yaml.load(open("releaseWizard.yaml", "r"), Loader=yaml.Loader).get('templates')
+    templates = yaml.load(open(os.path.join(script_path, "releaseWizard.yaml"), "r"), Loader=yaml.Loader).get('templates')
+
+
+def parse_config():
+    description = 'Script to guide a RM through the whole release process'
+    parser = argparse.ArgumentParser(description=description, epilog="Go push that release!",
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--dry-run', dest='dry', action='store_true', default=False,
+                        help='Do not execute any commands, but echo them instead. Display extra debug info')
+    parser.add_argument('--root', metavar='PATH',
+                        help='Specify different root folder than ~/.lucene-releases')
+    config = parser.parse_args()
+
+    return config
 
 
 def main():
@@ -893,19 +926,26 @@ def main():
     global dry_run
     global templates
 
-    if len(sys.argv) > 1 and sys.argv[1] == '-d':
+    print("Lucene/Solr releaseWizard v%s" % getScriptVersion())
+    c = parse_config()
+    if c.dry:
         print("Entering dry-run mode where all commands will be echoed instead of executed")
         dry_run = True
+
+    release_root = os.path.expanduser("~/.lucene-releases")
+    if c.root:
+        release_root = c.root
+        if not os.path.exists(release_root):
+            sys.exit("Custom release root %s does not exist, please create" % release_root)
+        print("Using %s as release root instead of ~/.lucene-releases" % release_root)
 
     try:
         load_templates()
     except Exception as e:
         sys.exit("Failed loading templates. %s" % e)
 
-    print("Lucene/Solr releaseWizard v%s\n" % getScriptVersion())
-
     check_prerequisites()
-    state = ReleaseState(os.path.expanduser("~/.lucene-releases/"), getScriptVersion())
+    state = ReleaseState(release_root, getScriptVersion())
     state.load()
 
     if not state.release_version:
@@ -1183,12 +1223,19 @@ class Commands(SecretYamlObject):
                             logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
                             print("Wait until command completes... Full log in %s\n" % logfile)
                         cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
-                        if not run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee,
-                                                 tail_lines=25) == 0:
-                            print("WARN: Command %s returned with error" % cmd.get_cmd())
-                            success = False
-                            if self.confirm_each_command is False:
-                                print("Aborting")
+                        returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25)
+                        if not returncode == 0:
+                            if cmd.should_fail:
+                                print("Command failed, which was expected")
+                                success = True
+                            else:
+                                print("WARN: Command %s returned with error" % cmd.get_cmd())
+                                success = False
+                                break
+                        else:
+                            if cmd.should_fail:
+                                print("Expected command to fail, but it succeeded.")
+                                success = False
                                 break
             if not success:
                 print("WARNING: One or more commands failed, you may want to check the logs")
@@ -1238,7 +1285,7 @@ class Commands(SecretYamlObject):
 class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
-    def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, comment=None, vars=None, todo_id=None):
+    def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, comment=None, vars=None, todo_id=None, should_fail=None):
         self.cmd = cmd
         self.cwd = cwd
         self.comment = comment
@@ -1246,6 +1293,7 @@ class Command(SecretYamlObject):
         self.vars = vars
         self.tee = tee
         self.stdout = stdout
+        self.should_fail = should_fail
         self.todo_id = todo_id
 
     @classmethod
@@ -1291,6 +1339,7 @@ class Command(SecretYamlObject):
 
 class UserInput(SecretYamlObject):
     yaml_tag = u'!UserInput'
+
     def __init__(self, name, prompt, type=None):
         self.type = type
         self.prompt = prompt
